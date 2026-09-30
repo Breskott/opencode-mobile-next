@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
+import 'package:opencode_mobile/domain/phone_project_engine.dart';
+import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/state/automatic_activity.dart';
 import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/state/connection.dart';
@@ -42,6 +44,56 @@ class _StatusApi extends OpenCodeApi {
       Session(id: id, directory: directory);
 }
 
+class _ChatGateway extends PhoneEngineGateway {
+  _ChatGateway({
+    required super.baseUrl,
+    required super.profileId,
+    required super.bearerToken,
+    required this.heartbeats,
+  }) : super(
+         health: PhoneEngineHealth.fromJson(
+           engine.health(profileId),
+           profileId,
+         ),
+       );
+
+  final List<Map<String, dynamic>> heartbeats;
+
+  @override
+  Future<PhoneEngineHealth> probe() async => health!;
+
+  @override
+  Future<TeamWorkspace> teamWorkspace() async =>
+      TeamWorkspace.fromJson(engine.workspace());
+
+  @override
+  Future<List<ActivityEvent>> activity({
+    int? afterSeq,
+    int limit = 100,
+  }) async => [];
+
+  @override
+  Future<void> sendChatBusy({
+    required int until,
+    required List<String> sessionIds,
+    required List<String> directories,
+    required bool known,
+    required String appInstance,
+    required int sequence,
+  }) async {
+    // This suite tests admission observation/tracking, not HTTP decoding.
+    // The gateway's actual request contract has its own focused test file.
+    heartbeats.add({
+      'until': until,
+      'sessionIds': List<String>.of(sessionIds),
+      'directories': List<String>.of(directories),
+      'known': known,
+      'appInstance': appInstance,
+      'sequence': sequence,
+    });
+  }
+}
+
 class _Phone {
   _Phone(this.tester, this.connection, this.api, this.connect, this.heartbeats);
   final WidgetTester tester;
@@ -49,17 +101,40 @@ class _Phone {
   final _StatusApi api;
   final Future<void> connect;
   final List<Map<String, dynamic>> heartbeats;
+  Future<void> settle(Future<void> future) async {
+    var done = false;
+    Object? error;
+    StackTrace? stack;
+    unawaited(
+      future.then<void>(
+        (_) {
+          done = true;
+        },
+        onError: (Object caught, StackTrace trace) {
+          error = caught;
+          stack = trace;
+          done = true;
+        },
+      ),
+    );
+    for (var i = 0; i < 100 && !done; i++) {
+      await tester.pump();
+    }
+    if (!done) {
+      throw StateError('The fake-clock async operation did not drain');
+    }
+    if (error != null) {
+      Error.throwWithStackTrace(error!, stack!);
+    }
+  }
+
   Future<Map<String, dynamic>> heartbeat() async {
-    // Drain fake-clock producers, then let Dio's response decoding finish on
-    // the real async loop. The polling/renewal timers still use tester.pump.
-    await tester.pump();
-    return (await tester.runAsync(() async {
-      await connection.phoneProjectEngine.pushChatHeartbeat(
-        'phone',
-        force: true,
-      );
-      return heartbeats.last;
-    }))!;
+    // Heartbeat tail callbacks are created under the fake clock. Pump their
+    // actual queue instead of waiting for them from a different runAsync zone.
+    await settle(
+      connection.phoneProjectEngine.pushChatHeartbeat('phone', force: true),
+    );
+    return heartbeats.last;
   }
 }
 
@@ -137,23 +212,11 @@ void main() {
       phoneEngineBridge: NativeBridge(),
       phoneEngineGatewayBuilder:
           ({required baseUrl, required profileId, required bearerToken}) =>
-              PhoneEngineGateway(
+              _ChatGateway(
                 baseUrl: baseUrl,
                 profileId: profileId,
                 bearerToken: bearerToken,
-                adapter: engine.FakeEngineAdapter((request) async {
-                  if (request.path == '/v1/health') {
-                    return engine.jsonBody(engine.health(profileId));
-                  }
-                  if (request.path == '/v1/chatBusy') {
-                    beats.add(Map<String, dynamic>.from(request.data as Map));
-                    return engine.jsonBody({'accepted': true});
-                  }
-                  if (request.path == '/v1/events') {
-                    return engine.jsonBody([]);
-                  }
-                  return engine.jsonBody(engine.workspace());
-                }),
+                heartbeats: beats,
               ),
       localWakeLockEnsurer: () async {},
       draftAttachmentVault: StashMemoryVault(),
@@ -171,14 +234,11 @@ void main() {
     addTearDown(() async {
       // Dispose first in the fake-clock zone so all periodic timers stop.
       connection.dispose();
-      await tester.pump();
-      await tester.runAsync(() async {
-        if (!api.healthGate.isCompleted) {
-          api.healthGate.complete(Health(healthy: true, version: '1.18.32'));
-        }
-        await connecting;
-        await connection.phoneProjectEngine.close();
-      });
+      if (!api.healthGate.isCompleted) {
+        api.healthGate.complete(Health(healthy: true, version: '1.18.32'));
+      }
+      await phone.settle(connecting);
+      await phone.settle(connection.phoneProjectEngine.close());
     });
     return phone;
   }
@@ -355,14 +415,11 @@ void main() {
         return engine.jsonBody(null, 204);
       });
       await phone.heartbeat();
-      late final Future<void> prompt;
-      await tester.runAsync(() async {
-        prompt = phone.api.promptAsync(
-          'ses_human',
-          text: 'Help with this project',
-        );
-        await onWire.future;
-      });
+      final prompt = phone.api.promptAsync(
+        'ses_human',
+        text: 'Help with this project',
+      );
+      await phone.settle(onWire.future);
       await phone.connection.reconcileBusySessionsForTesting();
       final before = await phone.heartbeat();
       expect(before['known'], isTrue);
@@ -377,7 +434,7 @@ void main() {
         greaterThan(before['sequence'] as int),
       );
       release.complete();
-      await tester.runAsync(() => prompt);
+      await phone.settle(prompt);
     },
   );
 }
