@@ -197,3 +197,39 @@ fn profile_parent_policy_and_symlink_replacements_are_not_authority() {
         "attestationFileUnavailable"
     );
 }
+
+#[test]
+fn cached_binaries_do_not_cache_receipt_signature_or_runtime_authority() {
+    let fixture = Fixture::new();
+    let accepted = attestation::verify(&fixture.expected()).unwrap();
+    for _ in 0..10 {
+        assert!(attestation::verify_current(&fixture.expected(), &accepted).is_ok());
+    }
+    std::fs::write(attestation::signature_path(&fixture.receipt), b"bad-der").unwrap();
+    assert_eq!(
+        attestation::verify_current(&fixture.expected(), &accepted)
+            .unwrap_err()
+            .0,
+        "attestationSignatureInvalid"
+    );
+    fixture.sign();
+    let changed_parent = AttestationExpectation {
+        expected_parent_pid: unsafe { libc::getppid() } + 1,
+        ..fixture.expected()
+    };
+    assert_eq!(
+        attestation::verify_current(&changed_parent, &accepted)
+            .unwrap_err()
+            .0,
+        "attestationGenerationMismatch"
+    );
+    let replacement = fixture.engine.with_extension("replacement");
+    std::fs::write(&replacement, b"edited").unwrap();
+    std::fs::rename(replacement, &fixture.engine).unwrap();
+    assert_eq!(
+        attestation::verify_current(&fixture.expected(), &accepted)
+            .unwrap_err()
+            .0,
+        "attestationBinaryMismatch"
+    );
+}
