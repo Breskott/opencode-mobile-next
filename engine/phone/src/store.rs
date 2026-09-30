@@ -572,7 +572,13 @@ impl Store {
                     if !task_fields.contains(&key.as_str()) {
                         return Err(StoreError("invalidTaskPatch"));
                     }
-                    task[key] = value.clone();
+                    if key == "findings" {
+                        let findings = open_checker_findings(value)?;
+                        task[key] = findings.clone();
+                        j[key] = findings;
+                    } else {
+                        task[key] = value.clone();
+                    }
                 }
             }
             for key in ["findings", "criterionResults"] {
@@ -580,15 +586,32 @@ impl Store {
                     if !value.is_array() {
                         return Err(StoreError("invalidTaskPatch"));
                     }
-                    task[key] = value.clone();
-                    j[key] = value.clone();
+                    let published = if key == "findings" {
+                        open_checker_findings(value)?
+                    } else {
+                        value.clone()
+                    };
+                    task[key] = published.clone();
+                    j[key] = published;
                 }
             }
             task["status"] = json!(task_status(stage));
             if !usage_only {
                 task["changedAt"] = json!(now());
             }
-            if let Some(reason) = patch.get("reason") {
+            if stage == "needsFix" {
+                let reason = patch["reason"]
+                    .as_str()
+                    .filter(|reason| !reason.is_empty())
+                    .or_else(|| {
+                        patch["task"]["reason"]
+                            .as_str()
+                            .filter(|reason| !reason.is_empty())
+                    })
+                    .unwrap_or("checkerFindings");
+                j["reason"] = json!(reason);
+                task["reason"] = json!(reason);
+            } else if let Some(reason) = patch.get("reason") {
                 task["reason"] = reason.clone();
             }
             if let Some(tokens) = j["usage"]["tokens"].as_u64() {
@@ -1156,6 +1179,7 @@ fn append_job_timeline(project: &mut Value, job: &Value) -> Result<(), StoreErro
             }
             "laneCap" => "is waiting for a free lane.",
             "dependencyPending" => "is waiting for another task to finish.",
+            "checkerFindings" => "has checker findings that need review.",
             "restartNeedsReconciliation" => {
                 "was interrupted when the app stopped. Resume to check its existing session."
             }
@@ -1738,6 +1762,22 @@ fn sync_task_stages(p: &mut Value, jobs: &[Value]) {
         }
     }
 }
+// A checker reports evidence, never the owner's finding resolution state.
+// Preserve the complete authored finding except for that authority-bearing field.
+fn open_checker_findings(value: &Value) -> Result<Value, StoreError> {
+    let findings = value.as_array().ok_or(StoreError("invalidTaskPatch"))?;
+    let mut published = Vec::with_capacity(findings.len());
+    for finding in findings {
+        let mut finding = finding
+            .as_object()
+            .ok_or(StoreError("invalidTaskPatch"))?
+            .clone();
+        finding.insert("status".into(), json!("open"));
+        published.push(Value::Object(finding));
+    }
+    Ok(Value::Array(published))
+}
+
 fn task_status(stage: &str) -> &str {
     match stage {
         "starting" | "working" => "running",
@@ -1898,4 +1938,141 @@ fn apply_repo_receipt(
     };
     p["receipts"].as_array_mut().ok_or(StoreError("storageCorrupt"))?.push(json!({"id":binding["id"],"kind":kind,"repoId":repo_id,"taskId":binding["taskId"].as_str().unwrap_or(""),"before":receipt["before"][ref_key],"after":receipt["after"][ref_key],"at":now(),"actor":"engine","beforeRefs":receipt["before"],"afterRefs":receipt["after"]}));
     Ok(())
+}
+
+#[cfg(test)]
+mod checker_publication_tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn storage() -> tempfile::TempDir {
+        let root = std::env::var_os("OC_ENGINE_TEST_ROOT")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from("/home/eslam/Storage/tmp/oc-phone-engine-tests"));
+        fs::create_dir_all(&root).unwrap();
+        tempfile::Builder::new()
+            .prefix("checker-publication-")
+            .tempdir_in(root)
+            .unwrap()
+    }
+
+    fn checking(store: &Store) -> String {
+        let create = json!({"requestId":"create","action":"createQuickTask","confirmed":true,
+            "name":"Finding publication","settings":{"mode":"single","maxLanes":1,"reviewLevel":"milestones","maxFixRounds":0,
+                "chargingOnly":false,"budget":{"chosen":true,"unlimited":true}},
+            "spec":{"goal":"Preserve findings","milestones":[{"id":"milestone","title":"Checked","criteria":["Behavior is verified"]}]},
+            "repos":[{"id":"repo","serverId":"phone","path":"/workspace/source","devCommit":"seed","mainCommit":"seed"}]});
+        assert_eq!(store.execute(&create).unwrap()["accepted"], true);
+        let id = store.jobs().unwrap()[0]["id"].as_str().unwrap().to_owned();
+        for (before, after) in [
+            ("queued", "starting"),
+            ("starting", "running"),
+            ("running", "checking"),
+        ] {
+            store
+                .update_job(&id, before, &json!({"stage":after}))
+                .unwrap();
+        }
+        id
+    }
+
+    #[test]
+    fn authored_finding_statuses_publish_open_on_job_and_task_after_restart() {
+        for status in ["met", "fixed", "ignored", "closed", "open"] {
+            for nested in [false, true] {
+                let root = storage();
+                let store = Store::open(root.path(), "p").unwrap();
+                let id = checking(&store);
+                let authored = json!({"id":"finding","status":status,"severity":"minor","criterion":"Behavior is verified",
+                    "location":"README.md:1","text":"Explanatory finding remains reviewable","extra":{"evidence":"Retain this"}});
+                let mut expected = authored.clone();
+                expected["status"] = json!("open");
+                let criteria = store.jobs().unwrap()[0]["criteria"].clone();
+                let results = json!([{"criterion":"Behavior is verified","status":"met","note":"Authored result"}]);
+                let mut patch = json!({"stage":"needsFix","criterionResults":results});
+                if nested {
+                    patch["task"] = json!({"findings":[authored]});
+                } else {
+                    patch["findings"] = json!([authored]);
+                }
+                let updated = store.update_job(&id, "checking", &patch).unwrap();
+                assert_eq!(updated["stage"], "needsFix");
+                assert_eq!(updated["findings"], json!([expected.clone()]));
+                assert_eq!(updated["reason"], "checkerFindings");
+                drop(store);
+                let store = Store::open(root.path(), "p").unwrap();
+                let job = store.jobs().unwrap()[0].clone();
+                let project = store.workspace().unwrap()["projects"][0].clone();
+                let task = &project["tasks"][0];
+                assert_eq!(job["stage"], "needsFix");
+                assert_eq!(task["status"], "needsFix");
+                assert_eq!(job["findings"], json!([expected.clone()]));
+                assert_eq!(task["findings"], json!([expected]));
+                assert_eq!(job["reason"], "checkerFindings");
+                assert_eq!(task["reason"], "checkerFindings");
+                assert_eq!(job["criteria"], criteria);
+                assert_eq!(task["criteria"], criteria);
+                assert_eq!(job["criterionResults"], results);
+                assert_eq!(task["criterionResults"], results);
+                assert_eq!(crate::daemon::validate_check(&job, &criteria), Ok(false));
+                assert!(project["timeline"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|event| event["text"] == "Work has checker findings that need review."));
+            }
+        }
+    }
+
+    #[test]
+    fn empty_successful_check_preserves_results_and_merge_ready_stage() {
+        let root = storage();
+        let store = Store::open(root.path(), "p").unwrap();
+        let id = checking(&store);
+        let results = json!([{"criterion":"Behavior is verified","status":"met"}]);
+        let updated = store
+            .update_job(
+                &id,
+                "checking",
+                &json!({"stage":"mergeReady","findings":[],"criterionResults":results}),
+            )
+            .unwrap();
+        assert_eq!(updated["stage"], "mergeReady");
+        assert_eq!(updated["findings"], json!([]));
+        assert_eq!(updated["criterionResults"], results);
+        assert_ne!(updated["reason"], "checkerFindings");
+        assert_eq!(
+            crate::daemon::validate_check(&updated, &updated["criteria"]),
+            Ok(true)
+        );
+        drop(store);
+        let store = Store::open(root.path(), "p").unwrap();
+        let task = store.workspace().unwrap()["projects"][0]["tasks"][0].clone();
+        assert_eq!(task["status"], "checked");
+        assert_eq!(task["findings"], json!([]));
+        assert_eq!(task["criterionResults"], results);
+        assert_ne!(task["reason"], "checkerFindings");
+    }
+
+    #[test]
+    fn needs_fix_keeps_explicit_reason_and_defaults_absent_or_empty_reason() {
+        for reason in [None, Some(""), Some("acceptanceUnmet")] {
+            let root = storage();
+            let store = Store::open(root.path(), "p").unwrap();
+            let id = checking(&store);
+            let mut patch = json!({"stage":"needsFix","findings":[],"criterionResults":[{"criterion":"Behavior is verified","status":"unmet"}]});
+            if let Some(reason) = reason {
+                patch["reason"] = json!(reason);
+            }
+            let updated = store.update_job(&id, "checking", &patch).unwrap();
+            let expected = reason
+                .filter(|reason| !reason.is_empty())
+                .unwrap_or("checkerFindings");
+            assert_eq!(updated["reason"], expected);
+            assert_eq!(
+                store.workspace().unwrap()["projects"][0]["tasks"][0]["reason"],
+                expected
+            );
+        }
+    }
 }
