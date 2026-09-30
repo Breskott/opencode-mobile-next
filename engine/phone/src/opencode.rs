@@ -704,6 +704,29 @@ fn role_permissions(readonly: bool) -> Value {
     }
 }
 
+/// Local preflight only. Empty selection means the pinned OC1 server chooses
+/// its configured default; explicit selections retain provider/model validation.
+pub fn validate_model(model: &str) -> Result<(), ProtocolError> {
+    model_selection(model).map(|_| ())
+}
+
+fn model_selection(model: &str) -> Result<Option<(&str, &str)>, ProtocolError> {
+    if model.is_empty() {
+        return Ok(None);
+    }
+    let (provider, model) = model
+        .split_once('/')
+        .ok_or(ProtocolError("invalid_model"))?;
+    if provider.is_empty()
+        || model.is_empty()
+        || provider.chars().any(char::is_whitespace)
+        || model.chars().any(char::is_whitespace)
+    {
+        return Err(ProtocolError("invalid_model"));
+    }
+    Ok(Some((provider, model)))
+}
+
 fn prompt_body(
     role: &str,
     model: &str,
@@ -718,23 +741,16 @@ fn prompt_body(
     {
         return Err(ProtocolError("invalid_role"));
     }
-    let (provider, model) = model
-        .split_once('/')
-        .ok_or(ProtocolError("invalid_model"))?;
-    if provider.is_empty()
-        || model.is_empty()
-        || provider.chars().any(char::is_whitespace)
-        || model.chars().any(char::is_whitespace)
-    {
-        return Err(ProtocolError("invalid_model"));
-    }
+    let selection = model_selection(model)?;
     // Role names are engine policy, not presumed server agent configuration.
     // The built-in build agent is callable; system is the exact custom field.
-    Ok(
-        json!({"agent":"build", "model":{"providerID":provider,"modelID":model},
+    let mut body = json!({"agent":"build",
         "system":format!("AI Team role: {role}.\n{instructions}"),
-        "parts":[{"type":"text","text":text}]}),
-    )
+        "parts":[{"type":"text","text":text}]});
+    if let Some((provider, model)) = selection {
+        body["model"] = json!({"providerID":provider,"modelID":model});
+    }
+    Ok(body)
 }
 
 fn validate_openapi(doc: &Value) -> Result<(), ProtocolError> {
@@ -777,6 +793,19 @@ fn validate_openapi(doc: &Value) -> Result<(), ProtocolError> {
     };
     let prompt = body("/session/{sessionID}/prompt_async", "post")
         .ok_or(ProtocolError("openapi_unconfirmed"))?;
+    let required = prompt
+        .get("required")
+        .and_then(Value::as_array)
+        .ok_or(ProtocolError("openapi_unconfirmed"))?;
+    if !required.iter().any(|field| field.as_str() == Some("parts"))
+        || required
+            .iter()
+            .any(|field| !matches!(field.as_str(), Some("parts" | "agent" | "system")))
+    {
+        // Omission is supported only by the current callable schema. A server
+        // that requires model (or another unsupplied field) is not this driver.
+        return Err(ProtocolError("openapi_unconfirmed"));
+    }
     for (name, kind) in [
         ("agent", "string"),
         ("system", "string"),
@@ -1094,6 +1123,106 @@ mod tests {
         assert!(prompt_body("checker", "openai/gpt-6", "check", "task", false).is_err());
         assert!(prompt_body("worker", "gpt-6", "work", "task", false).is_err());
     }
+    #[test]
+    fn empty_model_selection_omits_wire_field_and_keeps_authored_role() {
+        assert!(validate_model("").is_ok());
+        for (role, readonly) in [("planner", true), ("worker", false), ("checker", true)] {
+            let body =
+                prompt_body(role, "", "role instructions", "approved task", readonly).unwrap();
+            assert!(body.get("model").is_none());
+            assert_eq!(body["agent"], "build");
+            assert_eq!(
+                body["system"],
+                format!("AI Team role: {role}.\nrole instructions")
+            );
+            assert_eq!(
+                body["parts"],
+                json!([{"type":"text","text":"approved task"}])
+            );
+        }
+    }
+
+    #[test]
+    fn nonempty_model_preflight_and_explicit_wire_selection_agree() {
+        for model in [
+            "glm-5.3",
+            " ",
+            "/glm-5.3",
+            "zai/",
+            "z ai/glm-5.3",
+            "zai/glm 5.3",
+        ] {
+            assert_eq!(validate_model(model).unwrap_err().code(), "invalid_model");
+            assert_eq!(
+                prompt_body("worker", model, "work", "task", false)
+                    .unwrap_err()
+                    .code(),
+                "invalid_model"
+            );
+        }
+        assert!(validate_model("zai/glm-5.3").is_ok());
+        assert_eq!(
+            prompt_body("worker", "zai/glm-5.3", "work", "task", false).unwrap()["model"],
+            json!({"providerID":"zai","modelID":"glm-5.3"})
+        );
+    }
+
+    fn pinned_document() -> Value {
+        serde_json::from_str(include_str!(
+            "../../../contracts/opencode-openapi-f12e14cf.json"
+        ))
+        .unwrap()
+    }
+
+    #[test]
+    fn callable_prompt_contract_must_support_model_omission() {
+        let mut doc = pinned_document();
+        assert!(validate_openapi(&doc).is_ok());
+        let prompt = doc.pointer_mut("/paths/~1session~1{sessionID}~1prompt_async/post/requestBody/content/application~1json/schema").unwrap();
+        prompt["required"] = json!(["parts", "model"]);
+        assert_eq!(
+            validate_openapi(&doc).unwrap_err().code(),
+            "openapi_unconfirmed"
+        );
+        for required in [
+            Value::Null,
+            json!(["parts", 42]),
+            json!(["parts", "unknownField"]),
+            json!([]),
+        ] {
+            doc.pointer_mut("/paths/~1session~1{sessionID}~1prompt_async/post/requestBody/content/application~1json/schema").unwrap()["required"] = required;
+            assert!(validate_openapi(&doc).is_err());
+        }
+    }
+
+    #[tokio::test]
+    async fn invalid_explicit_model_does_not_send_any_http_request() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let client = OpenCodeClient::new(
+            &format!("http://{}", listener.local_addr().unwrap()),
+            "opencode",
+            "isolated-fixture",
+        )
+        .unwrap();
+        let result = client
+            .prompt(
+                "/root/projects/fixture",
+                "ses_test",
+                "worker",
+                "bad-model",
+                "work",
+                "task",
+                false,
+            )
+            .await;
+        assert_eq!(result.unwrap_err().code(), "invalid_model");
+        assert_eq!(
+            listener.accept().unwrap_err().kind(),
+            std::io::ErrorKind::WouldBlock
+        );
+    }
+
     #[test]
     fn endpoint_and_error_never_expose_credentials() {
         for url in [
