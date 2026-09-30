@@ -19,7 +19,7 @@ rustup target add aarch64-linux-android x86_64-linux-android
 Run from the engine checkout under the shared machine lock:
 
 ```bash
-OC_TEST_SLOTS=1 tool/qa/machine_lock.sh engine/phone/tool/build-android.sh --stage-android
+OC_TEST_SLOTS=1 tool/qa/machine_lock.sh build -- engine/phone/tool/build-android.sh --stage-android
 ```
 
 The default artifact directory is
