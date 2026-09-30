@@ -4,6 +4,11 @@ Finish line: a phone-resident native Rust daemon persists project commands and t
 
 Non-goal: UI changes, OC2 execution, multi-host migration, signing, publishing, unbounded Android lifetime, or per-session CPU/IO priority claims.
 
+**Latest follow-up:** [x86_64 and live acceptance handoff](x86-acceptance/README.md)
+records dual-ABI packaging, the release preview runner, startup/recovery review
+fixes and current focused results. ARM64-only statements and earlier counts
+below describe the preceding candidate.
+
 The coordinator now requires focused engine and Dart proofs before merge. Local verification is recorded below; phone runtime proof is performed at each native startup and no device pass is inferred from host checks. Build/test artifacts use Storage.
 
 ## Ownership and frozen contracts

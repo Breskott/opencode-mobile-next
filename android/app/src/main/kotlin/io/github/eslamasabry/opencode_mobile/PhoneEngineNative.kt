@@ -342,8 +342,13 @@ internal class PhoneEngineNative(private val context: Context) {
         }
         if (OsConstants.S_ISDIR(stat.st_mode)) {
             val directory = Os.open(file.absolutePath, OsConstants.O_RDONLY or
-                OsConstants.O_DIRECTORY or OsConstants.O_NOFOLLOW or OsConstants.O_CLOEXEC, 0)
-            try { Os.fchmod(directory, 448) } finally { Os.close(directory) } // 0700
+                OsConstants.O_NOFOLLOW or OsConstants.O_NONBLOCK or OsConstants.O_CLOEXEC, 0)
+            try {
+                val opened = Os.fstat(directory)
+                if (!OsConstants.S_ISDIR(opened.st_mode) || opened.st_dev != stat.st_dev || opened.st_ino != stat.st_ino)
+                    throw Failure("private_state_unavailable")
+                Os.fchmod(directory, 448) // 0700, on the verified directory descriptor.
+            } finally { Os.close(directory) }
             for (child in file.listFiles() ?: throw Failure("private_state_unavailable")) eraseNoLinks(child)
         }
         if (!file.delete()) throw Failure("private_state_unavailable")

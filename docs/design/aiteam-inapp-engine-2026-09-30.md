@@ -174,13 +174,52 @@ and OS policy; timeout/stop does not promise an unbounded background worker.
 
 ## Local packaging and evidence
 
-`engine/phone/tool/build-android.sh --stage-android` builds the three ARM64 native
-executables with the pinned NDK, stages them in jniLibs, adds an Android asset
-manifest with SHA-256 hashes/source digest and bundles exact dependency notices.
-Native launch/proof verifies the packaged hashes. Android's existing legacy JNI
-packaging extracts the executables into nativeLibraryDir outside app-writable
-data. Other ABIs have no engine artifact and fail unavailable.
+`engine/phone/tool/build-android.sh --stage-android` builds all three native
+executables for ARM64 and x86_64 with the pinned NDK. Manifest schema 2 contains
+an `abis` object with each target, API and exact binary hashes, plus the shared
+source digest and dependency notices. Native verification selects the actual
+installed ELF architecture, checks all three files and rejects mixed bundles.
+Android's existing JNI packaging extracts them into nativeLibraryDir outside
+app-writable data. Other ABIs remain unavailable. An x86_64 build does not waive
+the real emulator kernel/proot boundary proof.
 
 See [slice QA](../qa/aiteam-phone-engine-2026-09-30/README.md) and the linked
 per-slice READMEs for commands and remaining device acceptance. Compiling/staging these
 artifacts is not device verification, APK signing, installation or release.
+
+## Startup and recovery follow-up
+
+The native `port` argument is now a compatibility hint. The child binds port 0
+and reports its actual port over its private stdout pipe, authenticated with
+HMAC-SHA256 over `oc-phone-engine-ready-v1\n<profile>\n<port>\n<nonce>`.
+Native sends no bearer token to TCP before verifying that child message.
+Always use `phoneEngineCredentials.baseUrl`; the app must not assume port 4098.
+The app holds child stdin open; EOF on stop or whole-process death triggers
+graceful engine shutdown. A short-lived channel thread exiting no longer stops
+the daemon. Trusted Android app-data aliases normalize to canonical paths;
+symlinks below app storage still refuse launch/import.
+
+Explicit `resumeTask`/`resumeProject` now refetch recorded dispatched or uncertain
+sessions. A completed worker continues to a new checker without resending its
+worker prompt. A provably undispatched abandoned clone can be recreated from
+current dev. Missing dispatch evidence or uncertain session creation remains
+blocked for review. This does not claim automatic recovery of every interrupted
+merge/fix/permission checkpoint. Usage-only updates advance workspace revision
+and a usage revision, while keeping the project command revision stable.
+
+The person-directory ledger excludes the entire team worker namespace before
+session-birth events can pollute it. Its bounded LRU protects busy/current scopes;
+unknown observations recover only through complete fresh scoped status evidence
+at the same observation revision with a continuously connected observer.
+
+Accepted commands retain their result when a later refresh fails. Older workspace
+snapshots are ignored. Ordinary profile edits preserve the existing engine
+Keystore token; explicit clearing/deletion has a separate operation. Closed
+gateway clients leave controller ownership, and failed deletion stays durably
+fenced and retryable.
+
+The checker is advisory model evidence. An agent capable of replacing its OC1
+server can falsify that server's responses; confirmation must still review the
+actual dev diff and expected refs. Canonical main is protected independently.
+The live acceptance wrapper and test-only preview runner are documented in
+[acceptance QA](../qa/aiteam-phone-engine-2026-09-30/acceptance/README.md).

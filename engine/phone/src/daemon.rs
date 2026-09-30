@@ -35,6 +35,7 @@ pub struct Engine {
     pub(crate) parent_pid: i32,
     lane_admission: tokio::sync::Mutex<()>,
     boundary: Option<BoundaryAuthority>,
+    deleting: std::sync::atomic::AtomicBool,
 }
 type Shared = Arc<Engine>;
 #[derive(Debug)]
@@ -75,6 +76,7 @@ pub async fn serve(config: Config, pins: Option<LaunchPins>) -> Result<(), &'sta
     let chat = crate::admission::load_directories(&config);
     let engine = Arc::new(Engine {
         boundary,
+        deleting: std::sync::atomic::AtomicBool::new(false),
         lane_admission: tokio::sync::Mutex::new(()),
         chat: tokio::sync::RwLock::new(chat),
         observer_connected: Mutex::new(false),
@@ -92,6 +94,16 @@ pub async fn serve(config: Config, pins: Option<LaunchPins>) -> Result<(), &'sta
     let listener = tokio::net::TcpListener::bind(address)
         .await
         .map_err(|_| "listenUnavailable")?;
+    // The private child pipe introduces its already-bound listener before
+    // native sends any bearer token over loopback.
+    crate::startup::publish_ready(
+        listener
+            .local_addr()
+            .map_err(|_| "listenUnavailable")?
+            .port(),
+        &engine.config.profile_id,
+        std::str::from_utf8(&engine.token).map_err(|_| "authInvalid")?,
+    )?;
     let task_engine = engine.clone();
     let background = tokio::spawn(async move { reconcile(task_engine).await });
     let observer = tokio::spawn(crate::admission::observe(engine.clone()));
@@ -234,7 +246,8 @@ fn boundary_verified(e: &Engine) -> bool {
         .is_some()
 }
 fn execution_enabled(engine: &Engine) -> bool {
-    boundary_verified(engine)
+    !engine.deleting.load(std::sync::atomic::Ordering::SeqCst)
+        && boundary_verified(engine)
         && engine.protocol.lock().ok().is_some_and(|p| {
             p["capabilities"]["executionDriver"] == true
                 && p["pinnedVersion"] == true
@@ -472,6 +485,8 @@ async fn command(
     Ok(Json(result))
 }
 async fn delete_profile(State(e): State<Shared>) -> Result<Json<Value>, ApiError> {
+    e.deleting.store(true, std::sync::atomic::Ordering::SeqCst);
+    let _dispatch_fence = e.chat.write().await;
     // Store deletion is a durable tombstone, serialized with every job write.
     // Native owner stops processes and sweeps canonical/worker files afterward.
     let jobs = e
@@ -510,6 +525,22 @@ async fn reconcile(e: Shared) {
     let mut next_verify = tokio::time::Instant::now();
     loop {
         ticks.tick().await;
+        if e.deleting.load(std::sync::atomic::Ordering::SeqCst) {
+            let tombstoned = e
+                .store
+                .lock()
+                .ok()
+                .and_then(|store| store.workspace().err())
+                .is_some_and(|error| error.code() == "profileDeleted");
+            if tombstoned {
+                tasks.abort_all();
+                while tasks.join_next().await.is_some() {}
+                return;
+            }
+            // DELETE is still waiting for the dispatch fence. Cancelling a
+            // request before its ACK could let it start after an early abort.
+            continue;
+        }
         while let Some(result) = tasks.try_join_next() {
             if let Ok(id) = result {
                 active.remove(&id);
@@ -620,6 +651,9 @@ async fn stage_admitted_with_ledger(
     requested: &Value,
     ledger: &ChatLedger,
 ) -> Result<(), &'static str> {
+    if e.deleting.load(std::sync::atomic::Ordering::SeqCst) {
+        return Err("profileDeleted");
+    }
     if !execution_enabled(e) {
         return Err("executionUnavailable");
     }
@@ -732,6 +766,7 @@ async fn admitted_prompt(
     model: &str,
     instructions: &str,
     prompt: &str,
+    checkpoint_role: &str,
     read_only: bool,
 ) -> Result<(), &'static str> {
     loop {
@@ -744,9 +779,11 @@ async fn admitted_prompt(
             }
             Err(code) => return Err(code),
             Ok(()) => {
-                return e
-                    .server
-                    .prompt(
+                let id = job["id"].as_str().ok_or("jobInvalid")?;
+                record_dispatch(e, id, checkpoint_role, "dispatching")?;
+                let dispatch = tokio::time::timeout(
+                    Duration::from_secs(5),
+                    e.server.prompt(
                         directory,
                         session,
                         role,
@@ -754,13 +791,50 @@ async fn admitted_prompt(
                         instructions,
                         prompt,
                         read_only,
-                    )
-                    .await
-                    .map(|_| ())
-                    .map_err(|_| "promptUncertain")
+                    ),
+                )
+                .await;
+                drop(ledger);
+                if active_stage(e, id).is_err() {
+                    let _ = e.server.abort(directory, session).await;
+                    return Err("jobNotActive");
+                }
+                match dispatch {
+                    Ok(Ok(_)) => {
+                        if record_dispatch(e, id, checkpoint_role, "dispatched").is_err() {
+                            let _ = e.server.abort(directory, session).await;
+                            return Err("jobNotActive");
+                        }
+                        return Ok(());
+                    }
+                    _ => return Err("promptUncertain"),
+                }
             }
         }
     }
+}
+fn active_stage(e: &Engine, id: &str) -> Result<String, &'static str> {
+    if e.deleting.load(std::sync::atomic::Ordering::SeqCst) {
+        return Err("profileDeleted");
+    }
+    let store = e.store.lock().map_err(|_| "storeUnavailable")?;
+    let jobs = store.jobs().map_err(|_| "jobChanged")?;
+    let stage = jobs
+        .iter()
+        .find(|j| j["id"] == id)
+        .and_then(|j| j["stage"].as_str())
+        .ok_or("jobChanged")?;
+    if matches!(
+        stage,
+        "paused" | "stopped" | "interrupted" | "failed" | "completed"
+    ) {
+        return Err("jobNotActive");
+    }
+    Ok(stage.to_owned())
+}
+fn record_dispatch(e: &Engine, id: &str, role: &str, state: &str) -> Result<(), &'static str> {
+    let stage = active_stage(e, id)?;
+    patch(e, id, &stage, json!({"promptDispatch":{role:state}})).map(|_| ())
 }
 fn utc_day() -> String {
     #[cfg(unix)]
@@ -844,11 +918,14 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
         stage_admitted(e, job).await?;
         patch(e, id, "queued", json!({"stage":"starting"}))?;
     }
+    if !undispatched_clone_allowed(job) {
+        return Err("recoveryNeedsReview");
+    }
     let work = e
         .repositories
         .lock()
         .map_err(|_| "repositoryUnavailable")?
-        .prepare_worker(repo, task)
+        .prepare_fresh_worker(repo, task)
         .map_err(|_| "workerCloneFailed")?;
     let directory = format!("{}/{}/{}", e.config.guest_worker_root, repo, task);
     let dev = work["devCommit"].as_str().ok_or("repoInvalid")?;
@@ -870,12 +947,15 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     } else {
         json!({"worker":session})
     };
-    patch(
+    if patch(
         e,
         id,
         "starting",
         json!({"stage":"running","directory":directory,"sessionIds":sessions,"expectedDevCommit":dev}),
-    )?;
+    ).is_err() {
+        let _ = e.server.abort(&directory, &session).await;
+        return Err("jobChanged");
+    }
     stage_admitted(e, job).await?;
     let request = if planner {
         format!("Plan the approved specification. Return only JSON {{spec: TeamSpec, phases: TeamPhase[], tasks: TeamTask[]}}. Every task needs roleId, repoId, criteria and dependsOn. Do not modify files. Input: {}",job)
@@ -891,16 +971,34 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
         model,
         instructions,
         &request,
+        if planner { "planner" } else { "worker" },
         planner || job["readOnly"] == true,
     )
     .await?;
-    let output = await_completion(e, id, role, &directory, &session).await?;
+    let output = await_completion(
+        e,
+        id,
+        if planner { "planner" } else { "worker" },
+        &directory,
+        &session,
+    )
+    .await?;
     if planner {
         let plan = structured_output(&output)?;
         validate_plan(&plan, repo)?;
         patch(e, id, "running", json!({"stage":"completed","plan":plan}))?;
         return Ok(());
     }
+    check_and_merge(e, job, &session).await
+}
+async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &'static str> {
+    let id = job["id"].as_str().ok_or("jobInvalid")?;
+    let task = job["taskId"]
+        .as_str()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(id);
+    let repo = job["repoId"].as_str().ok_or("repoInvalid")?;
+    let directory = format!("{}/{}/{}", e.config.guest_worker_root, repo, task);
     let expected_dev = current_dev(e, repo)?;
     let collected = e
         .repositories
@@ -915,12 +1013,15 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
         .create_session(&directory, "checker")
         .await
         .map_err(|_| "sessionCreateUncertain")?;
-    patch(
+    if patch(
         e,
         id,
         "running",
         json!({"stage":"checking","sessionIds":{"worker":session,"checker":checker},"taskCommit":commit}),
-    )?;
+    ).is_err() {
+        let _ = e.server.abort(&directory, &checker).await;
+        return Err("jobChanged");
+    }
     let check = format!("Read-only verification. Inspect committed task changes against every criterion {}. Return only JSON {{findings:[{{id,severity,criterion,location,text,status}}],criterionResults:[{{criterion,status}}]}}. status must be met/unmet/notApplicable, findings severity critical/major/minor. Do not modify files.",job["criteria"]);
     stage_admitted(e, job).await?;
     admitted_prompt(
@@ -936,6 +1037,7 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
             .as_str()
             .ok_or("checkerRoleMissing")?,
         &check,
+        "checker",
         true,
     )
     .await?;
@@ -980,6 +1082,17 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     )?;
     Ok(())
 }
+fn undispatched_clone_allowed(job: &Value) -> bool {
+    job["stage"] == "queued"
+        && job["sessionIds"]
+            .as_object()
+            .is_some_and(|ids| ids.is_empty())
+        && (job["promptDispatch"].is_null()
+            || job["promptDispatch"]
+                .as_object()
+                .is_some_and(|ids| ids.is_empty()))
+        && job["reason"] != "sessionCreateUncertain"
+}
 fn current_dev(e: &Engine, repo: &str) -> Result<String, &'static str> {
     if !boundary_verified(e) {
         return Err("boundaryUnavailable");
@@ -1020,10 +1133,11 @@ async fn resume_job(e: &Engine, job: &Value) -> Result<(), &'static str> {
         patch(e, id, "resuming", json!({"stage":"completed","plan":plan}))?;
         return Ok(());
     }
-    // Worker completion needs a NEW explicit checker step. Preserve the
-    // recorded checkpoint for user review rather than re-submit the worker.
+    // Explicit resume observes the original worker, then creates a fresh
+    // checker. It never resends the original worker prompt.
     if role == "worker" {
-        return Err("checkerResumeNeedsReview");
+        patch(e, id, "resuming", json!({"stage":"running"}))?;
+        return check_and_merge(e, job, session).await;
     }
     let checked = structured_output(&observed)?;
     if !validate_check(&checked, &job["criteria"])? {
@@ -1078,13 +1192,24 @@ async fn await_completion(
     directory: &str,
     id: &str,
 ) -> Result<Value, &'static str> {
+    let accepted_at = tokio::time::Instant::now();
+    let mut seen_running = false;
+    let mut errors = 0;
     for _ in 0..1800 {
         // One hour; expiration leaves a durable uncertain checkpoint.
-        let observed = e
-            .server
-            .observe(directory, id)
-            .await
-            .map_err(|_| "sessionUnknown")?;
+        active_stage(e, job_id)?;
+        let observed = match e.server.observe(directory, id).await {
+            Ok(value) => {
+                errors = 0;
+                value
+            }
+            Err(_) if errors < 3 => {
+                errors += 1;
+                tokio::time::sleep(Duration::from_secs(2)).await;
+                continue;
+            }
+            Err(_) => return Err("sessionUnknown"),
+        };
         let usage = normalized_usage(&observed["usage"]);
         {
             let store = e.store.lock().map_err(|_| "storeUnavailable")?;
@@ -1105,9 +1230,17 @@ async fn await_completion(
         }
         match observed["state"].as_str() {
             Some("completed") => return Ok(observed),
-            Some("running") => tokio::time::sleep(Duration::from_secs(2)).await,
+            Some("running") => {
+                seen_running = true;
+                tokio::time::sleep(Duration::from_secs(2)).await
+            }
             Some("blocked") => return Err("needsAnswer"),
             Some("failed") => return Err("sessionFailed"),
+            Some("unknown") if !seen_running && accepted_at.elapsed() < Duration::from_secs(30) => {
+                // A 204 may precede both status and turn persistence. Missing
+                // evidence stays pending briefly, never completed or resent.
+                tokio::time::sleep(Duration::from_secs(2)).await;
+            }
             _ => return Err("sessionUnknown"),
         }
     }
@@ -1224,6 +1357,144 @@ mod tests {
     use super::*;
     use axum::body::Body;
     use tower::ServiceExt;
+
+    fn running_planner(e: &Engine) -> (String, String) {
+        let store = e.store.lock().unwrap();
+        let created = store.execute(&json!({"requestId":"create-poll","action":"createProject","name":"Poll proof",
+            "settings":{"mode":"single","maxLanes":1,"reviewLevel":"milestones","maxFixRounds":2,"chargingOnly":false,"budget":{"chosen":true,"unlimited":true}},
+            "spec":{"goal":"Poll safely","milestones":[{"id":"m","title":"Safe","criteria":["Observe exact turn"]}]},
+            "repos":[{"id":"repo","serverId":"phone","path":"/root/projects/poll","devCommit":"seed","mainCommit":"seed"}]})).unwrap();
+        assert_eq!(created["accepted"], true);
+        let project = created["projectId"].as_str().unwrap().to_owned();
+        let revision = store.workspace().unwrap()["projects"][0]["revision"]
+            .as_u64()
+            .unwrap();
+        assert_eq!(store.execute(&json!({"requestId":"approve-poll","action":"approveSpec","projectId":project,"expectedRevision":revision})).unwrap()["accepted"],true);
+        let job = store.jobs().unwrap()[0]["id"].as_str().unwrap().to_owned();
+        store
+            .update_job(&job, "queued", &json!({"stage":"starting"}))
+            .unwrap();
+        store.update_job(&job,"starting",&json!({"stage":"running","directory":"/root/projects/poll","sessionIds":{"planner":"ses_test"},"promptDispatch":{"planner":"dispatched"}})).unwrap();
+        (project, job)
+    }
+
+    async fn poll_server(
+        complete: bool,
+        fail_first: bool,
+    ) -> (
+        String,
+        Arc<std::sync::atomic::AtomicUsize>,
+        Arc<std::sync::atomic::AtomicUsize>,
+        tokio::task::JoinHandle<()>,
+    ) {
+        use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+        let polls = Arc::new(AtomicUsize::new(0));
+        let posts = Arc::new(AtomicUsize::new(0));
+        let failure = Arc::new(AtomicBool::new(fail_first));
+        let counts = polls.clone();
+        let writes = posts.clone();
+        let app = Router::new().fallback(move |request: Request| {
+            let counts = counts.clone(); let writes = writes.clone(); let failure = failure.clone();
+            async move {
+                if request.method() != axum::http::Method::GET { writes.fetch_add(1, Ordering::SeqCst); }
+                if failure.swap(false, Ordering::SeqCst) { return (StatusCode::SERVICE_UNAVAILABLE, Json(json!({}))).into_response(); }
+                let body = match request.uri().path() {
+                    "/global/health" => json!({"healthy":true,"version":"1.18.32"}),
+                    "/session/ses_test" => json!({"id":"ses_test","directory":"/root/projects/poll"}),
+                    "/session/status" => json!({}),
+                    "/session/ses_test/message" => {
+                        let index = counts.fetch_add(1, Ordering::SeqCst);
+                        if complete && index > 0 { json!([
+                            {"info":{"id":"msg_u","sessionID":"ses_test","role":"user"},"parts":[]},
+                            {"info":{"id":"msg_a","sessionID":"ses_test","role":"assistant","parentID":"msg_u","finish":"stop","time":{"completed":1},"cost":0.2},"parts":[{"type":"text","text":"completed proof"}]}
+                        ]) } else { json!([]) }
+                    },
+                    "/permission" | "/question" => json!([]),
+                    _ => json!({}),
+                };
+                Json(body).into_response()
+            }
+        });
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = format!("http://{}", listener.local_addr().unwrap());
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        (address, polls, posts, server)
+    }
+
+    #[tokio::test]
+    async fn accepted_async_turn_can_appear_after_first_idle_poll_without_resubmission() {
+        let root = tempfile::tempdir().unwrap();
+        let mut e = fixture(root.path());
+        let (url, polls, posts, server) = poll_server(true, false).await;
+        Arc::get_mut(&mut e).unwrap().server =
+            OpenCodeClient::new(&url, "opencode", "fixture-only").unwrap();
+        let (_, job) = running_planner(&e);
+        let result = await_completion(&e, &job, "planner", "/root/projects/poll", "ses_test").await;
+        server.abort();
+        assert_eq!(result.unwrap()["state"], "completed");
+        assert!(polls.load(std::sync::atomic::Ordering::SeqCst) >= 2);
+        assert_eq!(posts.load(std::sync::atomic::Ordering::SeqCst), 0);
+        assert_eq!(
+            e.store.lock().unwrap().jobs().unwrap()[0]["sessionIds"]["planner"],
+            "ses_test"
+        );
+    }
+
+    #[tokio::test]
+    async fn transient_observe_failure_refetches_same_session_without_new_prompt() {
+        let root = tempfile::tempdir().unwrap();
+        let mut e = fixture(root.path());
+        let (url, _, posts, server) = poll_server(true, true).await;
+        Arc::get_mut(&mut e).unwrap().server =
+            OpenCodeClient::new(&url, "opencode", "fixture-only").unwrap();
+        let (_, job) = running_planner(&e);
+        let result = await_completion(&e, &job, "planner", "/root/projects/poll", "ses_test").await;
+        server.abort();
+        assert_eq!(result.unwrap()["state"], "completed");
+        assert_eq!(posts.load(std::sync::atomic::Ordering::SeqCst), 0);
+    }
+
+    #[tokio::test]
+    async fn stop_remains_effective_while_unknown_turn_is_in_grace_window() {
+        let root = tempfile::tempdir().unwrap();
+        let mut e = fixture(root.path());
+        let (url, _, posts, server) = poll_server(false, false).await;
+        Arc::get_mut(&mut e).unwrap().server =
+            OpenCodeClient::new(&url, "opencode", "fixture-only").unwrap();
+        let (project, job) = running_planner(&e);
+        let observation = await_completion(&e, &job, "planner", "/root/projects/poll", "ses_test");
+        let stop = async {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            let store = e.store.lock().unwrap();
+            let revision = store.workspace().unwrap()["projects"][0]["revision"].clone();
+            store.execute(&json!({"requestId":"stop-poll","action":"stopProject","projectId":project,"expectedRevision":revision,"confirmed":true})).unwrap()
+        };
+        let (result, stopped) = tokio::join!(observation, stop);
+        server.abort();
+        assert_eq!(stopped["accepted"], true);
+        assert_eq!(result.unwrap_err(), "jobNotActive");
+        assert_eq!(posts.load(std::sync::atomic::Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn fresh_clone_reset_never_reuses_a_dispatched_or_uncertain_checkpoint() {
+        let pristine = json!({"stage":"queued","sessionIds":{},"promptDispatch":{}});
+        assert!(undispatched_clone_allowed(&pristine));
+        for patch in [
+            json!({"sessionIds":{"worker":"ses_known"}}),
+            json!({"promptDispatch":{"worker":"dispatching"}}),
+            json!({"stage":"resuming"}),
+            json!({"reason":"sessionCreateUncertain"}),
+        ] {
+            let mut candidate = pristine.clone();
+            for (key, value) in patch.as_object().unwrap() {
+                candidate[key] = value.clone();
+            }
+            assert!(!undispatched_clone_allowed(&candidate));
+        }
+    }
     fn fixture(path: &std::path::Path) -> Shared {
         let private = path.join("private");
         let worker = path.join("worker");
@@ -1263,6 +1534,7 @@ mod tests {
             token: vec![b'a'; 64],
             protocol: Mutex::new(json!({})),
             boundary: None,
+            deleting: std::sync::atomic::AtomicBool::new(false),
             lane_admission: tokio::sync::Mutex::new(()),
             chat: tokio::sync::RwLock::new(ChatLedger::default()),
             observer_connected: Mutex::new(false),
@@ -1335,6 +1607,10 @@ mod tests {
         assert!(execution_enabled(e));
         assert!(command_actions(e).contains(&"createProject"));
         assert!(command_actions(e).contains(&"promote"));
+        e.deleting.store(true, std::sync::atomic::Ordering::SeqCst);
+        assert!(!execution_enabled(e));
+        assert!(!command_actions(e).contains(&"promote"));
+        e.deleting.store(false, std::sync::atomic::Ordering::SeqCst);
         // No permanently cached verified boolean may survive a receipt change.
         fs::write(receipt_file, b"replacement").unwrap();
         assert!(!execution_enabled(e));
