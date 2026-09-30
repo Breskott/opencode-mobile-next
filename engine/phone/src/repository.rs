@@ -20,7 +20,7 @@ const MAX_SNAPSHOT_FILES: usize = 200_000;
 #[derive(Debug)]
 pub struct RepoError(&'static str);
 impl RepoError {
-    pub fn code(&self) -> &str {
+    pub fn code(&self) -> &'static str {
         self.0
     }
 }
@@ -196,6 +196,9 @@ impl RepositoryAuthority {
             .bare(true)
             .clone_local(git2::build::CloneLocal::None)
             .clone(path_string(&snapshot.0)?, &staged)?;
+        if repo.is_empty()? {
+            return Err(RepoError("repository_empty"));
+        }
         let seed = repo
             .find_reference(MAIN)
             .and_then(|r| r.peel_to_commit())
@@ -734,10 +737,26 @@ impl RepositoryAuthority {
         for id in &collected {
             // Durable first: partial cleanup or process death cannot permit reuse of
             // an ID whose previous confirmed receipts still exist.
-            atomic_json(
-                &self.private_root.join("retired").join(format!("{id}.json")),
-                &json!({"repoId":id,"state":"retired"}),
-            )?;
+            // An authored import binding alone is not a published repository.
+            // Failed imports must be correctable using the same editor ID. Once
+            // canonical refs or worker authority exist, retirement stays durable.
+            if self.repo_path(id).exists()
+                || self.worker_root.join(id).exists()
+                || record_names.iter().any(|name| {
+                    name.to_str()
+                        .is_some_and(|name| name.starts_with(&format!("{id}.")))
+                })
+                || self
+                    .private_root
+                    .join("retired")
+                    .join(format!("{id}.json"))
+                    .exists()
+            {
+                atomic_json(
+                    &self.private_root.join("retired").join(format!("{id}.json")),
+                    &json!({"repoId":id,"state":"retired"}),
+                )?;
+            }
             let mut count = 0;
             remove_collected_child(&workers, OsStr::new(id), 0, &mut count, true)?;
             count = 0;

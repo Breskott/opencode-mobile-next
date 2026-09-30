@@ -14,7 +14,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoreError(&'static str);
 impl StoreError {
-    pub fn code(&self) -> &str {
+    pub fn code(&self) -> &'static str {
         self.0
     }
 }

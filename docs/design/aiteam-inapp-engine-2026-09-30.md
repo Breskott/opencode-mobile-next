@@ -312,3 +312,28 @@ wait for fresh `health.canExecute`. Requiring `canExecute` while OC1 is stopped
 is circular. Missing real OC1 auth now reports `server_auth_unavailable` before
 signing or starting; the durable store is not advertised as runnable without
 that execution prerequisite. No fabricated credentials are installed.
+
+
+## Additive command refusal contract (run 3 repair)
+
+Authenticated HTTP command failures return only `{"code": "<static symbolic reason>"}` (409 for semantic refusals). Dart preserves that code in `TeamCommandResult.code`; it never carries raw exceptions, response bodies, Git paths or credentials into UI errors. HTTP 2xx `accepted:false` keeps the existing typed receipt. Redirects remain `redirectRefused`, missing authentication is `authenticationRequired`, and a write with unknown transport outcome is `transportUncertain` (never automatically resend).
+
+Creation imports committed Git history into the private canonical repo; an unborn repository is refused as `repository_empty`. Commit the intended seed in the source, then retry. Failed imports that published no canonical or worker authority no longer retire the editor's repository ID. Published/deleted canonical repository IDs remain permanently retired. Old retirement markers are not automatically resurrected because their history is ambiguous; use a fresh repo ID/form.
+
+Primary UI mappings:
+
+| Code | Meaning |
+| --- | --- |
+| `repository_empty` | Source Git repository has no initial commit. |
+| `repoPathInvalid` | Folder does not resolve inside the phone's permitted projects root. |
+| `repository_retired` | This engine repository ID was retired; create a fresh project/repo ID. |
+| `repository_exists` / `import_binding_mismatch` | Existing import belongs to another request; do not overwrite it. |
+| `repository_io` / `repository_git` | Repository could not be read or imported; raw OS/Git errors are withheld. |
+| `unsafe_repository_metadata` / `unsafe_repository_config` / `shared_repository_objects` / `symlink_refused` / `unsafe_repository_path` | Source metadata fails isolation checks; symlinks/alternates/config includes are never followed into private storage. |
+| `divergent_import` | Source dev is not descended from source main. |
+| `staleRevision` / `stale_dev` / `stale_main` | Reviewed project/ref changed; refresh and review again. |
+| `confirmationRequired` | Promotion requires explicit app confirmation and reviewed SHAs. |
+| `boundaryUnavailable` / `executionUnavailable` | Phone protection/execution proof is unavailable. |
+| `chooseExecutionMode` / `chooseBudget` / `invalidPlacement` / `invalidSpec` | Correct the corresponding draft field. |
+
+The full static repository and store reason catalog is in [run 3 backend QA](../qa/aiteam-phone-engine-2026-09-30/run3-backend/README.md). The gateway change is additive; Claude owns plain-language UI mappings and Details.

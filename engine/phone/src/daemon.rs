@@ -388,7 +388,7 @@ async fn command(
         }
         if let Some(result) = store
             .command_result(&c)
-            .map_err(|_| internal("requestIdReuse"))?
+            .map_err(|error| internal(error.code()))?
         {
             return Ok(Json(result));
         }
@@ -403,7 +403,7 @@ async fn command(
                 true,
                 c["requestId"].as_str().unwrap_or(""),
             )
-            .map_err(|_| internal("promotionRefused"))?;
+            .map_err(|error| internal(error.code()))?;
         return Ok(Json(
             store
                 .record_promotion(&c, &receipt)
@@ -421,7 +421,7 @@ async fn command(
         let store = e.store.lock().map_err(|_| internal("storeUnavailable"))?;
         store
             .command_result(&c)
-            .map_err(|_| internal("requestIdReuse"))?
+            .map_err(|error| internal(error.code()))?
     };
     if let Some(result) = previous_result {
         let mut result = result;
@@ -435,7 +435,7 @@ async fn command(
         if store.validate_command(&c).is_err() {
             // Persist the rejection before touching canonical storage.
             return Ok(Json(
-                store.execute(&c).map_err(|_| internal("commandRefused"))?,
+                store.execute(&c).map_err(|error| internal(error.code()))?,
             ));
         }
     }
@@ -474,7 +474,7 @@ async fn command(
         } else {
             store.execute_with_repositories(&c, &json!(imported))
         }
-        .map_err(|_| internal("commandRefused"))?
+        .map_err(|error| internal(error.code()))?
     };
     if result["accepted"] == true
         && matches!(
@@ -546,7 +546,7 @@ fn import_requested_repositories(e: &Engine, c: &Value) -> Result<Vec<Value>, Ap
                     .as_str()
                     .ok_or(internal("requestIdRequired"))?,
             )
-            .map_err(|_| internal("importFailed"))?;
+            .map_err(|error| internal(error.code()))?;
         let mut edited = repo.clone();
         edited["devCommit"] = refs["devCommit"].clone();
         edited["mainCommit"] = refs["mainCommit"].clone();
@@ -1669,6 +1669,42 @@ mod tests {
             parent_pid: unsafe { libc::getppid() },
             config,
         })
+    }
+    #[tokio::test]
+    async fn repository_import_refusal_returns_static_typed_code_and_allows_corrected_retry() {
+        let temp = tempfile::tempdir().unwrap();
+        let projects = temp.path().join("projects");
+        let source = projects.join("scratch");
+        let repo = git2::Repository::init(&source).unwrap();
+        repo.set_head("refs/heads/main").unwrap();
+        drop(repo);
+        let mut shared = fixture(temp.path());
+        Arc::get_mut(&mut shared).unwrap().config.source_roots = vec![crate::config::SourceRoot {
+            host_root: projects,
+            guest_root: "/root/projects".into(),
+        }];
+        let command = json!({"requestId":"create-scratch","repos":[{"id":"editor_repo","serverId":"phone","path":"/root/projects/scratch"}]});
+        let error = import_requested_repositories(&shared, &command).unwrap_err();
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::CONFLICT);
+        let bytes = axum::body::to_bytes(response.into_body(), 65536)
+            .await
+            .unwrap();
+        assert_eq!(
+            serde_json::from_slice::<Value>(&bytes).unwrap(),
+            json!({"code":"repository_empty"})
+        );
+        collect_unused_repositories(&shared).unwrap();
+        let repo = git2::Repository::open(&source).unwrap();
+        let tree_id = repo.index().unwrap().write_tree().unwrap();
+        let tree = repo.find_tree(tree_id).unwrap();
+        let signature = git2::Signature::now("QA", "qa@localhost.invalid").unwrap();
+        let seed = repo
+            .commit(Some("HEAD"), &signature, &signature, "Seed", &tree, &[])
+            .unwrap();
+        let imported = import_requested_repositories(&shared, &command).unwrap();
+        assert_eq!(imported[0]["mainCommit"], seed.to_string());
+        assert_eq!(imported[0]["devCommit"], seed.to_string());
     }
     fn attested_fixture(path: &std::path::Path, tier: &str) -> Shared {
         use p256::{

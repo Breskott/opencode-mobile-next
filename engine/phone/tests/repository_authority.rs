@@ -957,3 +957,43 @@ fn source_dev_branch_is_preserved_when_source_head_remains_main() {
     let worker = f.authority.prepare_worker("with-dev", "task").unwrap();
     assert_eq!(worker["devCommit"], dev.to_string());
 }
+
+#[test]
+fn failed_empty_import_can_be_corrected_and_retried_without_retiring_editor_id() {
+    let f = Fixture::new();
+    let empty = f._dir.path().join("empty-source");
+    let repo = Repository::init(&empty).unwrap();
+    repo.set_head("refs/heads/main").unwrap();
+    drop(repo);
+    assert!(f
+        .authority
+        .import_repo_for_request("editor_repo", &empty, "create-request")
+        .is_err());
+    f.authority
+        .collect_unreferenced_repositories(&["repo".into()])
+        .unwrap();
+    assert!(!f.private.join("retired/editor_repo.json").exists());
+    let seed = commit(&empty, "README.md", "Corrected source\n").to_string();
+    let imported = f
+        .authority
+        .import_repo_for_request("editor_repo", &empty, "create-request")
+        .unwrap();
+    assert_eq!(imported["mainCommit"], seed);
+    assert_eq!(imported["devCommit"], seed);
+    let replay = f
+        .authority
+        .import_repo_for_request("editor_repo", &empty, "create-request")
+        .unwrap();
+    assert_eq!(replay["mainCommit"], imported["mainCommit"]);
+    assert_eq!(replay["devCommit"], imported["devCommit"]);
+    f.authority
+        .collect_unreferenced_repositories(&["repo".into()])
+        .unwrap();
+    assert_eq!(
+        f.authority
+            .import_repo_for_request("editor_repo", &empty, "next-request")
+            .unwrap_err()
+            .code(),
+        "repository_retired"
+    );
+}
