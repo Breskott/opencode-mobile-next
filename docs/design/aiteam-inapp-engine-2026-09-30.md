@@ -435,3 +435,11 @@ connected, using the existing deduplicated and generation-fenced recovery.
 This replaces an event stream failed by the deliberate protected restart.
 Readiness never grants chat idle: admission stays unknown until fresh
 authenticated status and connection evidence arrive.
+
+
+Task wait reasons track the authoritative scoped job when admission changes.
+For legacy stored tasks, workspace reads project the latest matching task-job
+reason without rewriting task status, checkpoints or command revision. Clearing
+a job admission wait clears the displayed task wait; nested planner/tool waits
+retain their explicit typed reason. An old persisted `chatStatusUnknown` is not
+shown on an already completed task whose authoritative job has no wait reason.
