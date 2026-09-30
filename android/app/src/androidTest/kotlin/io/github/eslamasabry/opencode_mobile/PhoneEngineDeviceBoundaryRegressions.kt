@@ -43,87 +43,120 @@ internal object PhoneEngineDeviceBoundaryRegressions {
 
         onStage("kernel_probe")
         val kernelExit = kernelProbe(context)
-        onStage("proot_controls")
-        val diagnostic = linux.runProotViewBoundaryProbe()
-        check(diagnostic["positiveWrite"] == true) { "positive_write_failed" }
-        check(diagnostic["positiveGit"] == true) { "positive_git_failed" }
-        check(controls.all { diagnostic[it] is Boolean }) { "diagnostic_controls_missing" }
-        // Preserve the actual controls. Their conjunction is evidence only.
-        val result = linkedMapOf<String, Any?>(
-            "kernelProbeStable" to true,
-            "kernelExit" to kernelExit,
-            "landlockAvailable" to (kernelExit == 0),
-            "ubuntuInitialized" to true,
-        )
-        controls.forEach { result[it] = diagnostic[it] }
-        val complete = controls.filter { it != "complete" }.all { diagnostic[it] == true }
-        check(diagnostic["complete"] == complete) { "diagnostic_complete_inconsistent" }
-
         val profile = "qa_device_${UUID.randomUUID().toString().replace("-", "")}"
-        val script = "exec sleep 600"
+        val result = linkedMapOf<String, Any?>("kernelProbeStable" to true,
+            "kernelExit" to kernelExit, "landlockAvailable" to (kernelExit == 0))
+        val passwordFile = File(linux.rootfs, "root/.oc-builtin/server.password")
+        val createdPassword = !passwordFile.exists()
+        if (createdPassword) {
+            passwordFile.parentFile!!.mkdirs()
+            val bytes = ByteArray(32).also { java.security.SecureRandom().nextBytes(it) }
+            passwordFile.writeText(bytes.joinToString("") { "%02x".format(it.toInt() and 255) })
+            android.system.Os.chmod(passwordFile.absolutePath, 384)
+        }
         var ownsService = false
+        val script = """
+            set -eu
+            mkdir -p /root/projects
+            cd /root/projects
+            password=${'$'}(cat /root/.oc-builtin/server.password)
+            export OPENCODE_SERVER_USERNAME=opencode
+            export OPENCODE_SERVER_PASSWORD="${'$'}password"
+            export OPENCODE_PASSWORD="${'$'}password"
+            unset password
+            exec opencode serve --hostname 127.0.0.1 --port 4097
+        """.trimIndent()
         try {
-            onStage("activation_rollback")
-            check(linux.phoneEngineStatus(profile)["unconfinedChildren"] == false) {
-                "idle_processes_required"
-            }
-            // Exercise the same tracked stop/activation/restart sequence as setup,
-            // without a real server, port listener, model, or provider password.
+            onStage("bootstrap_opencode")
+            val installed = linux.run("""
+                set -eu
+                if ! command -v opencode >/dev/null 2>&1; then
+                    export DEBIAN_FRONTEND=noninteractive
+                    command -v curl >/dev/null 2>&1 || {
+                        apt-get update -qq >/dev/null 2>&1
+                        apt-get install -y -qq --no-install-recommends curl ca-certificates >/dev/null 2>&1
+                    }
+                    case "${'$'}(uname -m)" in
+                        x86_64) archive=opencode-linux-x64-baseline.tar.gz; expected=763af386ef88a8cab18df00fcf055690e5a55e31a7088beabe02307142a6adce;;
+                        aarch64) archive=opencode-linux-arm64.tar.gz; expected=568461b7d4d8c19865c97e9a1102e613049c6039d01fe772154de873c1865840;;
+                        *) exit 78;;
+                    esac
+                    curl --fail --location --retry 3 --max-time 180 --silent --show-error "https://github.com/anomalyco/opencode/releases/download/v1.18.32/${'$'}archive" -o /tmp/phone-engine-qa-opencode.tar.gz >/dev/null 2>&1
+                    printf '%s  %s\n' "${'$'}expected" /tmp/phone-engine-qa-opencode.tar.gz | sha256sum -c - >/dev/null 2>&1
+                    tar -xzf /tmp/phone-engine-qa-opencode.tar.gz -C /usr/local/bin opencode
+                    chmod 755 /usr/local/bin/opencode
+                    rm -f /tmp/phone-engine-qa-opencode.tar.gz
+                fi
+                [ "${'$'}(opencode --version 2>/dev/null)" = '1.18.32' ]
+            """.trimIndent(), 300)
+            check(installed.exitCode == 0) { "opencode_not_initialized" }
+            onStage("activation_proof")
             linux.startServer(script, 4097)
             ownsService = true
             waitUntil(5_000, "fixture_service_not_running") { linux.serverRunning }
             linux.stopServer(forPhoneEngineSetup = true)
-            check(!linux.serverRunning) { "fixture_service_not_stopped" }
-            var unsupported = false
-            val started = SystemClock.elapsedRealtime()
-            try {
-                val status = linux.startPhoneEngine(profile, 4098, null)
-                check(kernelExit == 0) { "unsupported_kernel_activated_engine" }
-                check(status["running"] == true && status["boundary"] == true) {
-                    "production_boundary_not_verified"
-                }
-                result["productionBoundaryVerified"] = true
-            } catch (failure: PhoneEngineNative.Failure) {
-                check(kernelExit == 78 && failure.code == "boundary_unsupported") {
-                    "unsupported_failure_code_invalid"
-                }
-                unsupported = true
-                result["typedUnsupported"] = true
+            val status = linux.startPhoneEngine(profile, 4098, null)
+            val tier = if (kernelExit == 0) "landlock" else "proot"
+            check(status["running"] == true && status["boundary"] == true && status["boundaryTier"] == tier) {
+                "production_boundary_not_verified"
             }
-            check(SystemClock.elapsedRealtime() - started < 90_000) { "activation_timeout" }
-            if (unsupported) {
-                val status = linux.phoneEngineStatus(profile)
-                check(status["running"] != true && status["boundary"] != true &&
-                    status["execution"] != true) { "unsupported_authority_enabled" }
-                waitUntil(10_000, "failed_activation_did_not_restore_server") { linux.serverRunning }
-                result["failedActivationRestoredServer"] = true
-            } else {
-                // This branch remains useful on genuinely supported phones;
-                // it does not weaken the API 34/35 unsupported assertions.
-                linux.stopPhoneEngine(profile)
-                linux.startServer(script, 4097)
+            result["boundaryTier"] = tier
+            result["productionBoundaryVerified"] = true
+            val root = File(context.filesDir.canonicalFile, "oc.teamEngine.$profile")
+            val receipt = org.json.JSONObject(File(root, "boundary-receipt.json").readText())
+            check(receipt.getInt("schemaVersion") == 2 && receipt.getString("tier") == tier) { "signed_tier_invalid" }
+            val signed = receipt.getJSONObject("controls")
+            result["signedTierVerified"] = true
+            if (tier == "proot") {
+                result.putAll(linux.phoneBoundaryControls())
+                for (control in listOf("canonicalPathsDenied", "daemonProcDenied", "fdHygiene", "parentInspectionDenied",
+                    "prootGitCompatible", "fixtureUnchanged", "complete")) {
+                    check(signed.getBoolean(control)) { "production_boundary_not_verified" }
+                    result[control] = true
+                }
+                check(!signed.getBoolean("nativeAttacksDenied")) { "proot_claimed_kernel_boundary" }
             }
-            Thread.sleep(300)
-            onStage("idempotent_restart")
+            onStage("protected_server_restart")
+            linux.startProtectedPhoneServer(profile, script, 4097)
+            val auth = linux.phoneEngineCredentials(profile)
+            fun health(): org.json.JSONObject {
+                val c = java.net.URL("${auth["baseUrl"]}/v1/health").openConnection() as java.net.HttpURLConnection
+                try {
+                    c.connectTimeout = 2000; c.readTimeout = 3000
+                    c.setRequestProperty("Authorization", "Bearer ${auth["bearerToken"]}")
+                    check(c.responseCode == 200) { "engine_health_unavailable" }
+                    return org.json.JSONObject(c.inputStream.bufferedReader().use { it.readText() })
+                } finally { c.disconnect() }
+            }
+            onStage("execution_capability")
+            waitUntil(120_000, "execution_capability_unavailable") {
+                val h = health()
+                h.getJSONObject("capabilities").getBoolean("execution") && h.getString("boundaryTier") == tier
+            }
+            result["executionEnabled"] = true
+            result["oc1ProtocolVerified"] = true
             val before = linux.serverUptimeMs ?: error("fixture_service_uptime_missing")
             linux.startServer(script, 4097)
-            val after = linux.serverUptimeMs ?: error("fixture_service_uptime_missing")
-            check(after >= before) { "identical_server_start_rotated_process" }
+            check((linux.serverUptimeMs ?: 0) >= before) { "identical_server_start_rotated_process" }
             result["serverRestartIdempotent"] = true
-            if (unsupported) {
-                linux.stopServer()
-                try { linux.startPhoneEngine(profile, 4098, null); error("unsupported_kernel_activated_engine") }
-                catch (failure: PhoneEngineNative.Failure) { check(failure.code == "boundary_unsupported") }
-                check(!linux.serverRunning) { "intentional_stop_was_resurrected" }
-                result["intentionalStopPreserved"] = true
-            }
+            onStage("signed_receipt_tamper")
+            val file = File(root, "boundary-receipt.json")
+            val original = file.readBytes()
+            try {
+                PhoneEngineAttestation.write(file, receipt.put("tier", if (tier == "proot") "landlock" else "proot").toString().toByteArray())
+                val h = health()
+                check(!h.getJSONObject("capabilities").getBoolean("boundary") &&
+                    !h.getJSONObject("capabilities").getBoolean("execution") && h.getString("boundaryTier") == "none") {
+                    "tampered_receipt_enabled_authority"
+                }
+                result["tamperedReceiptDenied"] = true
+            } finally { PhoneEngineAttestation.write(file, original) }
             return result
         } finally {
-            // Attempt every cleanup even if an earlier one fails. Never kill by
-            // pattern or stop a service that existed before this isolated run.
-            try { linux.stopPhoneEngine(profile) } finally {
-                try { linux.deletePhoneEngine(profile) } finally {
-                    if (ownsService) linux.stopServer()
+            try { if (ownsService) linux.stopServer() } finally {
+                try { linux.stopPhoneEngine(profile) } finally {
+                    linux.deletePhoneEngine(profile)
+                    if (createdPassword) passwordFile.delete()
                 }
             }
         }

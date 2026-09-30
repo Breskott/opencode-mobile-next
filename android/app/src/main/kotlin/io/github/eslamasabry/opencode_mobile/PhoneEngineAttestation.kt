@@ -16,7 +16,7 @@ import java.security.MessageDigest
 import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 
-/** The signer is inaccessible to confined tools: no Binder device/socket access. */
+/** AndroidKeystore signs native-observed controls; receipts name the actual tier. */
 internal class PhoneEngineAttestation(private val context: Context) {
     data class Receipt(val file: File, val publicKeyFile: File, val generation: String,
         val keySha256: String, val policySha256: String)

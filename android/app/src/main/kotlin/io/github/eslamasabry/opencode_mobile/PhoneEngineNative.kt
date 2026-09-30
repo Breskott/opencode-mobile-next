@@ -36,7 +36,7 @@ internal class PhoneEngineNative(private val context: Context) {
 
     internal fun processId(): Int? {
         val child = process?.takeIf { it.isAlive } ?: return null
-        val pid = try { child.pid() } catch (_: Throwable) {
+        val pid = try { (child.javaClass.getMethod("pid").invoke(child) as Number).toLong() } catch (_: Throwable) {
             try {
                 child.javaClass.getDeclaredField("pid").run { isAccessible = true; getInt(child).toLong() }
             } catch (_: Throwable) { return null }

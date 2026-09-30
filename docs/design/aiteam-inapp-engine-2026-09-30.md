@@ -288,3 +288,27 @@ never signs a receipt or grants capabilities. A failed denial or escaped write
 means this device remains unsupported. Changing `/proc` binds alone cannot
 replace enforcement if a worker can detach from proot. Device results and
 artifact hashes are recorded in the E2E-fixes QA README.
+
+### Owner-selected proot tier, 2026-09-30
+
+Landlock remains preferred. Android-seccomp-blocked devices now attempt the
+owner-approved proot tier instead of refusing solely on `boundary_unsupported`.
+A complete inside-proot private-path/process/FD/environment proof signs a
+schema-2 receipt with `tier=proot`, `nativeAttacksDenied=false`, and the actual
+proot controls. Before auth handoff the actual daemon is checked again. Failure
+remains a typed refusal, without execution authority. Fresh activation requires
+all old server/terminal/tool processes stopped, including older proot generations.
+
+`PhoneEngineHealth.boundaryTier` and native status `boundaryTier` are additive
+strings (`none`, `landlock`, `proot`). Health reports the tier at both top level
+and in `capabilities`; tier tampering invalidates authority. For `proot`, UI may
+show the owner-approved plain line: "Protected by this phone Linux sandbox".
+PRoot is ptrace-based path translation, not a kernel boundary; the signed tier
+does not claim denial of raw native/tracer attacks. The QA README records this.
+
+The setup sequencing contract still applies: after confirmed stop, require
+`health.boundary` before restarting OC1 via `startProtectedPhoneServer`, then
+wait for fresh `health.canExecute`. Requiring `canExecute` while OC1 is stopped
+is circular. Missing real OC1 auth now reports `server_auth_unavailable` before
+signing or starting; the durable store is not advertised as runnable without
+that execution prerequisite. No fabricated credentials are installed.

@@ -47,7 +47,7 @@ Map<String, Object?> health(
   'schemaVersion': 1,
   'engineVersion': 'test-v1',
   'profileId': profile,
-  'capabilities': {
+  'capabilities': <String, Object?>{
     'execution': execution,
     'boundary': execution,
     'oc1Verified': execution,

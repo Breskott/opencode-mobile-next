@@ -53,6 +53,10 @@ class PhoneEngineAcceptance : Instrumentation() {
         } catch (failure: Refused) {
             emit("FAIL", currentStep, failure.safeCode)
         } catch (failure: PhoneEngineNative.Failure) {
+            BuiltinLinux.get(targetContext).phoneBoundaryControls().forEach { (key, value) ->
+                if (value is Boolean || value in listOf("proot", "landlock"))
+                    sendStatus(0, Bundle().apply { putString("phoneEngineControl", "$key=$value") })
+            }
             emit("FAIL", currentStep, failure.code)
         } catch (failure: IllegalStateException) {
             val allowed = setOf("preview_required", "idle_runtime_required", "idle_terminals_required",
@@ -62,7 +66,9 @@ class PhoneEngineAcceptance : Instrumentation() {
                 "production_boundary_not_verified", "unsupported_failure_code_invalid", "activation_timeout",
                 "unsupported_authority_enabled", "failed_activation_did_not_restore_server",
                 "fixture_service_uptime_missing", "identical_server_start_rotated_process",
-                "intentional_stop_was_resurrected", "kernel_probe_timeout", "kernel_probe_signalled_or_invalid")
+                "intentional_stop_was_resurrected", "kernel_probe_timeout", "kernel_probe_signalled_or_invalid",
+                "opencode_not_initialized", "signed_tier_invalid", "proot_claimed_kernel_boundary",
+                "engine_health_unavailable", "execution_capability_unavailable", "tampered_receipt_enabled_authority")
             emit("FAIL", currentStep, failure.message?.takeIf { it in allowed } ?: "acceptance_failed")
         } catch (_: Exception) {
             // Never forward exception text, model output, server output or auth.
