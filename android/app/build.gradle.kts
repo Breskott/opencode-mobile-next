@@ -1,5 +1,6 @@
 import java.io.FileInputStream
 import java.util.Properties
+import com.android.build.api.artifact.SingleArtifact
 
 plugins {
     id("com.android.application")
@@ -83,7 +84,35 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
+            // Runtime attestation hashes these exact staged executables. AGP's
+            // release strip step must not rewrite them after manifest creation.
+            keepDebugSymbols += "**/libaiteam_*.so"
         }
+    }
+}
+
+// Check the APK, rather than only the staging directory: stripping, ABI
+// filtering, or packaging changes must fail the build before delivery.
+androidComponents.onVariants(androidComponents.selector().withBuildType("release")) { variant ->
+    val capitalizedName = variant.name.replaceFirstChar { it.uppercaseChar() }
+    val packagedApks = variant.artifacts.get(SingleArtifact.APK)
+    val checker = rootProject.file("../tool/qa/verify_phone_engine_apk.py")
+    val manifest = file("src/main/assets/aiteam-engine-manifest.json")
+    val abiFilters = android.defaultConfig.ndk.abiFilters.toList().sorted()
+    val verifyBundle = tasks.register<Exec>("verify${capitalizedName}PhoneEngineApk") {
+        group = "verification"
+        description = "Verify packaged AI Team executable hashes against the runtime manifest."
+        inputs.file(checker)
+        inputs.file(manifest)
+        inputs.dir(packagedApks)
+        commandLine(
+            listOf("python3", checker.absolutePath, "--manifest", manifest.absolutePath,
+                "--apk-dir", packagedApks.get().asFile.absolutePath) +
+                abiFilters.flatMap { listOf("--abi", it) }
+        )
+    }
+    tasks.matching { it.name == "assemble$capitalizedName" }.configureEach {
+        dependsOn(verifyBundle)
     }
 }
 
