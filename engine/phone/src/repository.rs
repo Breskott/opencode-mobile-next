@@ -3,6 +3,7 @@
 use git2::{build::RepoBuilder, Oid, Repository, Signature};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::collections::HashSet;
 use std::ffi::{CStr, CString, OsStr};
 use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
@@ -40,6 +41,26 @@ impl From<git2::Error> for RepoError {
     }
 }
 type Result<T> = std::result::Result<T, RepoError>;
+
+/// Trusted native deletion after all users of the tree have been stopped. The
+/// caller supplies the app-owned root; descendants never become trusted paths.
+/// Missing roots succeed and symlinks are unlinked without following them.
+pub fn erase_tree_no_links(path: &Path) -> Result<()> {
+    if !path.is_absolute()
+        || path
+            .components()
+            .any(|c| matches!(c, Component::CurDir | Component::ParentDir))
+    {
+        return Err(RepoError("invalid_path"));
+    }
+    let parent = path.parent().ok_or(RepoError("invalid_path"))?;
+    let name = path.file_name().ok_or(RepoError("invalid_path"))?;
+    check_ancestors(parent)?;
+    let parent = open_directory(parent)?;
+    let mut count = 0;
+    remove_collected_child(&parent, name, 0, &mut count, true)?;
+    sync_fd(&parent)
+}
 
 pub struct RepositoryAuthority {
     private_root: PathBuf,
@@ -93,7 +114,15 @@ impl RepositoryAuthority {
         }
         secure_create_dir(&private_root)?;
         secure_create_dir(&worker_root)?;
-        for name in ["repos", "workers", "receipts", "staging", "imports"] {
+        for name in [
+            "repos",
+            "workers",
+            "receipts",
+            "receipt-scopes",
+            "retired",
+            "staging",
+            "imports",
+        ] {
             secure_create_dir(&private_root.join(name))?;
         }
         Ok(Self {
@@ -137,6 +166,14 @@ impl RepositoryAuthority {
             .join("imports")
             .join(format!("{repo_id}.json"));
         let binding = json!({"repoId":repo_id,"source":source,"requestId":request});
+        if self
+            .private_root
+            .join("retired")
+            .join(format!("{repo_id}.json"))
+            .exists()
+        {
+            return Err(RepoError("repository_retired"));
+        }
         if target.exists() {
             if request.is_some() && read_json::<Value>(&binding_path)? == binding {
                 return self.refs_unlocked(repo_id);
@@ -181,6 +218,8 @@ impl RepositoryAuthority {
         if !descends(&repo, initial_dev, seed)? {
             return Err(RepoError("divergent_import"));
         }
+        validate_commit_tree(&repo, seed)?;
+        validate_commit_tree(&repo, initial_dev)?;
         remove_remotes(&repo)?;
         repo.set_head(DEV)?;
         install_hooks(&repo)?;
@@ -242,6 +281,7 @@ impl RepositoryAuthority {
         let canonical = self.open_repo(repo_id)?;
         let dev = commit_ref(&canonical, DEV)?;
         let main = commit_ref(&canonical, MAIN)?;
+        validate_commit_tree(&canonical, dev)?;
         let path = self.worker_path(repo_id, task_id);
         if fs::symlink_metadata(&path).is_ok() {
             return Err(RepoError("worker_exists"));
@@ -330,6 +370,7 @@ impl RepositoryAuthority {
         let task_ref = format!("refs/heads/{}", task_branch(task_id));
         // Never resolve symbolic refs supplied by an agent (including refs that alias main).
         let task = direct_commit_ref(&worker, &task_ref)?;
+        validate_commit_tree(&worker, task)?;
         if !descends(&worker, task, base)? {
             return Err(RepoError("task_not_descendant"));
         }
@@ -387,6 +428,8 @@ impl RepositoryAuthority {
         if direct_commit_ref(&repo, &incoming_ref(task_id))? != expected_task {
             return Err(RepoError("stale_task"));
         }
+        validate_commit_tree(&repo, dev)?;
+        validate_commit_tree(&repo, expected_task)?;
         let next = if descends(&repo, expected_task, dev)? {
             expected_task
         } else if descends(&repo, dev, expected_task)? {
@@ -410,6 +453,7 @@ impl RepositoryAuthority {
                 &[&ours, &theirs],
             )?
         };
+        validate_commit_tree(&repo, next)?;
         tx.set_target(
             DEV,
             next,
@@ -446,6 +490,7 @@ impl RepositoryAuthority {
             .private_root
             .join("receipts")
             .join(format!("{request_id}.json"));
+        self.bind_receipt_scope(repo_id, request_id)?;
         let mut receipt = if receipt_path.exists() {
             let old: PromotionReceipt = read_json(&receipt_path)?;
             if old.schema_version != 1
@@ -522,15 +567,32 @@ impl RepositoryAuthority {
             if path.extension() != Some(OsStr::new("json")) {
                 continue;
             }
-            let mut receipt: PromotionReceipt = read_json(&path)?;
-            if receipt.repo_id != repo_id
-                || receipt.request_id == request_id
-                || receipt.state != "prepared"
-            {
+            // Scope is durable before a new intent. An unreadable body must block its
+            // own repository, never every other one. Legacy readable JSON can provide
+            // the scope before its strict receipt schema is interpreted.
+            let id = path
+                .file_stem()
+                .and_then(OsStr::to_str)
+                .ok_or(RepoError("invalid_receipt"))?;
+            valid_id(id)?;
+            if self.receipt_repo_id(&path, id)? != repo_id {
                 continue;
             }
-            if receipt.schema_version != 1 || !receipt.confirmed {
+            let mut receipt: PromotionReceipt = read_json(&path)?;
+            if receipt.repo_id != repo_id || receipt.request_id != id {
                 return Err(RepoError("invalid_receipt"));
+            }
+            if receipt.schema_version != 1
+                || !receipt.confirmed
+                || !matches!(
+                    receipt.state.as_str(),
+                    "prepared" | "applied" | "superseded"
+                )
+            {
+                return Err(RepoError("invalid_receipt"));
+            }
+            if receipt.request_id == request_id || receipt.state != "prepared" {
+                continue;
             }
             let dev = parse_oid(&receipt.expected_dev)?;
             let main = parse_oid(&receipt.expected_main)?;
@@ -567,10 +629,135 @@ impl RepositoryAuthority {
         Ok(())
     }
 
+    fn bind_receipt_scope(&self, repo_id: &str, request_id: &str) -> Result<()> {
+        let path = self
+            .private_root
+            .join("receipt-scopes")
+            .join(format!("{request_id}.json"));
+        let binding = json!({"repoId":repo_id,"requestId":request_id});
+        if path.exists() {
+            if read_json::<Value>(&path)? != binding {
+                return Err(RepoError("request_id_conflict"));
+            }
+        } else {
+            // Do not attach a new repository to an existing request body.
+            let old = self
+                .private_root
+                .join("receipts")
+                .join(format!("{request_id}.json"));
+            if old.exists() && read_json::<Value>(&old)?["repoId"] != repo_id {
+                return Err(RepoError("request_id_conflict"));
+            }
+            atomic_json(&path, &binding)?;
+        }
+        Ok(())
+    }
+
+    fn receipt_repo_id(&self, receipt: &Path, request_id: &str) -> Result<String> {
+        let scope = self
+            .private_root
+            .join("receipt-scopes")
+            .join(format!("{request_id}.json"));
+        let body: Value = if scope.exists() {
+            let binding: Value = read_json(&scope)?;
+            if binding["requestId"] != request_id {
+                return Err(RepoError("invalid_receipt"));
+            }
+            binding
+        } else {
+            // Completely corrupted legacy records have no trustworthy repository
+            // scope. Keep that ambiguity fail-closed for operator review.
+            read_json(receipt).map_err(|_| RepoError("legacy_receipt_scope_unknown"))?
+        };
+        let id = body["repoId"]
+            .as_str()
+            .ok_or(RepoError("legacy_receipt_scope_unknown"))?;
+        valid_id(id)?;
+        Ok(id.to_owned())
+    }
+
     pub fn refs(&self, repo_id: &str) -> Result<Value> {
         valid_id(repo_id)?;
         let _lock = self.lock()?;
         self.refs_unlocked(repo_id)
+    }
+
+    /// Call only after the backend fences pipelines and snapshots all committed
+    /// repository IDs. Receipts/scopes and retirement markers remain private audit
+    /// records; repository IDs cannot be reused after their data was collected.
+    pub fn collect_unreferenced_repositories(&self, retained_repo_ids: &[String]) -> Result<Value> {
+        for id in retained_repo_ids {
+            valid_id(id)?;
+        }
+        let retained: HashSet<&str> = retained_repo_ids.iter().map(String::as_str).collect();
+        let _lock = self.lock()?;
+        let repos = open_directory(&self.private_root.join("repos"))?;
+        let imports = open_directory(&self.private_root.join("imports"))?;
+        let records = open_directory(&self.private_root.join("workers"))?;
+        let workers = open_directory(&self.worker_root)?;
+        let mut candidates = HashSet::<String>::new();
+        for (directory, suffix) in [(&repos, ".git"), (&imports, ".json")] {
+            for name in directory_names(directory)? {
+                let id = name
+                    .to_str()
+                    .and_then(|s| s.strip_suffix(suffix))
+                    .ok_or(RepoError("unsafe_repository_metadata"))?;
+                valid_id(id)?;
+                candidates.insert(id.to_owned());
+            }
+        }
+        for name in directory_names(&workers)? {
+            let id = name.to_str().ok_or(RepoError("invalid_id"))?;
+            valid_id(id)?;
+            candidates.insert(id.to_owned());
+        }
+        let record_names = directory_names(&records)?;
+        for name in &record_names {
+            let (id, task) = name
+                .to_str()
+                .and_then(|s| s.strip_suffix(".json"))
+                .and_then(|s| s.split_once('.'))
+                .ok_or(RepoError("unsafe_repository_metadata"))?;
+            valid_id(id)?;
+            valid_id(task)?;
+            candidates.insert(id.to_owned());
+        }
+        let mut collected: Vec<_> = candidates
+            .into_iter()
+            .filter(|id| !retained.contains(id.as_str()))
+            .collect();
+        collected.sort();
+        for id in &collected {
+            // Durable first: partial cleanup or process death cannot permit reuse of
+            // an ID whose previous confirmed receipts still exist.
+            atomic_json(
+                &self.private_root.join("retired").join(format!("{id}.json")),
+                &json!({"repoId":id,"state":"retired"}),
+            )?;
+            let mut count = 0;
+            remove_collected_child(&workers, OsStr::new(id), 0, &mut count, true)?;
+            count = 0;
+            remove_collected_child(
+                &repos,
+                OsStr::new(&format!("{id}.git")),
+                0,
+                &mut count,
+                true,
+            )?;
+            unlink_child(&imports, OsStr::new(&format!("{id}.json")), false)?;
+            for name in &record_names {
+                if name
+                    .to_str()
+                    .is_some_and(|s| s.starts_with(&format!("{id}.")))
+                {
+                    unlink_child(&records, name, false)?;
+                }
+            }
+        }
+        for directory in [&workers, &repos, &imports, &records] {
+            sync_fd(directory)?;
+        }
+        Ok(json!({"removedRepoIds":collected,"receiptsRetained":true}))
     }
     fn refs_unlocked(&self, repo_id: &str) -> Result<Value> {
         let repo = self.open_repo(repo_id)?;
@@ -728,6 +915,60 @@ fn commit_ref(repo: &Repository, name: &str) -> Result<Oid> {
 fn descends(repo: &Repository, next: Oid, before: Oid) -> Result<bool> {
     Ok(next == before || repo.graph_descendant_of(next, before)?)
 }
+
+/// Validate object trees before they can become canonical dev or reach a private
+/// libgit2 checkout. Object metadata is agent input, including duplicate entries.
+fn validate_commit_tree(repo: &Repository, commit: Oid) -> Result<()> {
+    let tree = repo.find_commit(commit)?.tree()?;
+    let mut remaining = MAX_SNAPSHOT_FILES;
+    validate_tree(repo, &tree, 0, &mut remaining)
+}
+
+fn validate_tree(
+    repo: &Repository,
+    tree: &git2::Tree<'_>,
+    depth: usize,
+    remaining: &mut usize,
+) -> Result<()> {
+    if depth > 128 {
+        return Err(RepoError("unsafe_task_tree"));
+    }
+    let mut names = HashSet::new();
+    for entry in tree.iter() {
+        if *remaining == 0 {
+            return Err(RepoError("unsafe_task_tree"));
+        }
+        *remaining -= 1;
+        let name = entry.name_bytes();
+        if name.is_empty()
+            || name == b"."
+            || name == b".."
+            || name.eq_ignore_ascii_case(b".git")
+            || name.contains(&b'/')
+            || !names.insert(name.to_vec())
+        {
+            return Err(RepoError("unsafe_task_tree"));
+        }
+        match entry.filemode() {
+            0o040000 => validate_tree(repo, &repo.find_tree(entry.id())?, depth + 1, remaining)?,
+            0o120000 => {
+                let target = repo.find_blob(entry.id())?;
+                let bytes = target.content();
+                if bytes.is_empty()
+                    || bytes.len() > 4096
+                    || bytes.starts_with(b"/")
+                    || bytes.contains(&0)
+                    || bytes.split(|b| *b == b'/').any(|part| part == b"..")
+                {
+                    return Err(RepoError("unsafe_task_tree"));
+                }
+            }
+            0o100644 | 0o100755 | 0o160000 => {}
+            _ => return Err(RepoError("unsafe_task_tree")),
+        }
+    }
+    Ok(())
+}
 fn remove_remotes(repo: &Repository) -> Result<()> {
     let names: Vec<String> = repo
         .remotes()?
@@ -838,6 +1079,16 @@ fn remove_worker_child(
     depth: usize,
     count: &mut usize,
 ) -> Result<()> {
+    remove_collected_child(parent, name, depth, count, false)
+}
+
+fn remove_collected_child(
+    parent: &OwnedFd,
+    name: &OsStr,
+    depth: usize,
+    count: &mut usize,
+    unlink_symlinks: bool,
+) -> Result<()> {
     if depth > 128 || *count >= MAX_SNAPSHOT_FILES {
         return Err(RepoError("repository_too_large"));
     }
@@ -872,7 +1123,7 @@ fn remove_worker_child(
             )?;
             let directory = open_child(anchored.as_raw_fd(), OsStr::new("."))?;
             for child in directory_names(&directory)? {
-                remove_worker_child(&directory, &child, depth + 1, count)?;
+                remove_collected_child(&directory, &child, depth + 1, count, unlink_symlinks)?;
             }
             sync_fd(&directory)?;
             let Some(current) = child_stat(parent, name)? else {
@@ -886,7 +1137,9 @@ fn remove_worker_child(
             }
             unlink_child(parent, name, true)
         }
+        libc::S_IFLNK if unlink_symlinks => unlink_child(parent, name, false),
         libc::S_IFLNK => Err(RepoError("symlink_refused")),
+        _ if unlink_symlinks => unlink_child(parent, name, false),
         _ => Err(RepoError("unsafe_repository_metadata")),
     }
 }

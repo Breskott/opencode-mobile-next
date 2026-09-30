@@ -638,3 +638,304 @@ fn import_replay_binds_the_authored_request_across_restart() {
         .import_repo_for_request("other", &f.source, "different-request")
         .is_err());
 }
+
+// Build objects directly: filesystem/index helpers sanitize exactly the authored
+// tree metadata that this boundary must reject before private checkout.
+fn authored_tree(repo: &Repository, entries: &[(&str, &[u8], Oid)]) -> Oid {
+    let mut bytes = Vec::new();
+    for (mode, name, oid) in entries {
+        bytes.extend_from_slice(mode.as_bytes());
+        bytes.push(b' ');
+        bytes.extend_from_slice(name);
+        bytes.push(0);
+        bytes.extend_from_slice(oid.as_bytes());
+    }
+    repo.odb()
+        .unwrap()
+        .write(git2::ObjectType::Tree, &bytes)
+        .unwrap()
+}
+
+fn authored_commit(repo: &Repository, tree: Oid, branch: &str) -> Oid {
+    let parent = repo.head().unwrap().peel_to_commit().unwrap();
+    let text = format!("tree {tree}\nparent {}\nauthor Fixture <fixture@localhost> 1 +0000\ncommitter Fixture <fixture@localhost> 1 +0000\n\nauthored fixture\n", parent.id());
+    let id = repo
+        .odb()
+        .unwrap()
+        .write(git2::ObjectType::Commit, text.as_bytes())
+        .unwrap();
+    repo.reference(branch, id, true, "test authored tree")
+        .unwrap();
+    id
+}
+
+#[test]
+fn authored_unsafe_trees_never_enter_canonical_dev_or_private_checkout() {
+    for attack in [
+        "absolute",
+        "parent",
+        "nested-parent",
+        "git-component",
+        "duplicate",
+    ] {
+        let f = Fixture::new();
+        let (worker, _) = f.worker("task");
+        let repo = Repository::open(&worker).unwrap();
+        let tree = match attack {
+            "absolute" | "parent" | "nested-parent" => {
+                let target: &[u8] = match attack {
+                    "absolute" => b"/native-private/receipts",
+                    "parent" => b"../../repos/x.git/refs/heads",
+                    _ => b"directory/../file",
+                };
+                let blob = repo.blob(target).unwrap();
+                authored_tree(&repo, &[("120000", b"link", blob)])
+            }
+            "git-component" => {
+                let blob = repo.blob(b"payload").unwrap();
+                let inner = authored_tree(&repo, &[("100644", b".GiT", blob)]);
+                authored_tree(&repo, &[("40000", b"directory", inner)])
+            }
+            _ => {
+                let blob = repo.blob(b"payload").unwrap();
+                let empty = repo
+                    .odb()
+                    .unwrap()
+                    .write(git2::ObjectType::Tree, b"")
+                    .unwrap();
+                authored_tree(&repo, &[("100644", b"a", blob), ("40000", b"a", empty)])
+            }
+        };
+        authored_commit(&repo, tree, "refs/heads/task/task");
+        assert_eq!(
+            f.authority
+                .collect_worker("repo", "task", &f.initial)
+                .unwrap_err()
+                .code(),
+            "unsafe_task_tree",
+            "{attack}"
+        );
+        assert_eq!(f.authority.refs("repo").unwrap()["devCommit"], f.initial);
+        f.unchanged_main();
+        assert_eq!(fs::read_dir(f.private.join("staging")).unwrap().count(), 0);
+    }
+}
+
+#[test]
+fn safe_relative_symlinks_remain_supported() {
+    let f = Fixture::new();
+    let (worker, _) = f.worker("task");
+    let repo = Repository::open(&worker).unwrap();
+    let target = repo.blob(b"README").unwrap();
+    let readme = repo.blob(b"readme").unwrap();
+    let tree = authored_tree(
+        &repo,
+        &[("100644", b"README", readme), ("120000", b"link", target)],
+    );
+    let id = authored_commit(&repo, tree, "refs/heads/task/task");
+    f.authority
+        .collect_worker("repo", "task", &f.initial)
+        .unwrap();
+    f.authority
+        .merge_dev("repo", "task", &f.initial, &id.to_string())
+        .unwrap();
+    let (next, _) = f.worker("next");
+    assert_eq!(
+        fs::read_link(next.join("link")).unwrap(),
+        Path::new("README")
+    );
+    f.unchanged_main();
+}
+
+#[test]
+fn unsafe_imported_dev_is_refused_before_canonical_install() {
+    let f = Fixture::new();
+    let repo = Repository::open(&f.source).unwrap();
+    let link = repo.blob(b"../../native-private").unwrap();
+    let tree = authored_tree(&repo, &[("120000", b"link", link)]);
+    authored_commit(&repo, tree, "refs/heads/dev");
+    assert_eq!(
+        f.authority
+            .import_repo("unsafe", &f.source)
+            .unwrap_err()
+            .code(),
+        "unsafe_task_tree"
+    );
+    assert!(!f.private.join("repos/unsafe.git").exists());
+}
+
+#[test]
+fn unsafe_incoming_ref_cannot_bypass_merge_tree_validation() {
+    let f = Fixture::new();
+    let canonical = Repository::open_bare(f.private.join("repos/repo.git")).unwrap();
+    let link = canonical.blob(b"../../receipts").unwrap();
+    let tree = authored_tree(&canonical, &[("120000", b"link", link)]);
+    let id = authored_commit(&canonical, tree, "refs/aiteam/collected/task");
+    assert_eq!(
+        f.authority
+            .merge_dev("repo", "task", &f.initial, &id.to_string())
+            .unwrap_err()
+            .code(),
+        "unsafe_task_tree"
+    );
+    assert_eq!(f.authority.refs("repo").unwrap()["devCommit"], f.initial);
+    f.unchanged_main();
+}
+
+#[test]
+fn malformed_receipt_for_another_repository_does_not_block_promotion() {
+    let f = Fixture::new();
+    fs::write(
+        f.private.join("receipts/other.json"),
+        r#"{"repoId":"unrelated","schemaVersion":"bad"}"#,
+    )
+    .unwrap();
+    let dev = integrate(&f, "first", "change", "safe", &f.initial);
+    f.authority
+        .promote("repo", &dev, &f.initial, true, "good")
+        .unwrap();
+    assert_eq!(f.authority.refs("repo").unwrap()["mainCommit"], dev);
+    assert!(f.private.join("receipts/other.json").exists());
+}
+
+#[test]
+fn durable_receipt_scope_contains_complete_body_corruption_to_its_repository() {
+    let f = Fixture::new();
+    f.authority.import_repo("other", &f.source).unwrap();
+    f.authority
+        .promote("other", &f.initial, &f.initial, true, "other-receipt")
+        .unwrap();
+    fs::write(
+        f.private.join("receipts/other-receipt.json"),
+        "corrupted body",
+    )
+    .unwrap();
+    let dev = integrate(&f, "first", "change", "safe", &f.initial);
+    f.authority
+        .promote("repo", &dev, &f.initial, true, "good")
+        .unwrap();
+    assert_eq!(
+        f.authority
+            .promote("other", &f.initial, &f.initial, true, "other-new")
+            .unwrap_err()
+            .code(),
+        "invalid_receipt"
+    );
+    assert!(f.private.join("receipts/other-receipt.json").exists());
+}
+
+#[test]
+fn legacy_receipt_with_unknown_scope_remains_fail_closed_and_preserved() {
+    let f = Fixture::new();
+    fs::write(
+        f.private.join("receipts/unknown.json"),
+        "corrupted legacy body",
+    )
+    .unwrap();
+    assert_eq!(
+        f.authority
+            .promote("repo", &f.initial, &f.initial, true, "new")
+            .unwrap_err()
+            .code(),
+        "legacy_receipt_scope_unknown"
+    );
+    assert_eq!(
+        fs::read_to_string(f.private.join("receipts/unknown.json")).unwrap(),
+        "corrupted legacy body"
+    );
+    f.unchanged_main();
+}
+
+#[test]
+fn collection_erases_only_unreferenced_storage_and_keeps_audit_receipts() {
+    use std::os::unix::fs::PermissionsExt;
+    let f = Fixture::new();
+    f.authority
+        .import_repo_for_request("other", &f.source, "create-other")
+        .unwrap();
+    let exported = f.authority.prepare_worker("other", "task").unwrap();
+    let worker = PathBuf::from(exported["workerPath"].as_str().unwrap());
+    let kept = f.worker("retained").0;
+    let sentinel = f._dir.path().join("sentinel");
+    fs::create_dir(&sentinel).unwrap();
+    fs::write(sentinel.join("keep"), "private data must survive").unwrap();
+    symlink(&sentinel, worker.join("agent-link")).unwrap();
+    fs::create_dir(worker.join("mode-zero")).unwrap();
+    fs::write(worker.join("mode-zero/file"), "discard").unwrap();
+    fs::set_permissions(worker.join("mode-zero"), fs::Permissions::from_mode(0)).unwrap();
+    f.authority
+        .promote("other", &f.initial, &f.initial, true, "audit")
+        .unwrap();
+    let summary = f
+        .authority
+        .collect_unreferenced_repositories(&["repo".into()])
+        .unwrap();
+    assert_eq!(summary["removedRepoIds"], json!(["other"]));
+    assert!(!f.private.join("repos/other.git").exists());
+    assert!(!f.private.join("imports/other.json").exists());
+    assert!(!f.private.join("workers/other.task.json").exists());
+    assert!(!f.workers.join("other").exists());
+    assert!(kept.exists());
+    assert!(f.private.join("receipts/audit.json").exists());
+    assert!(f.private.join("receipt-scopes/audit.json").exists());
+    assert_eq!(
+        fs::read_to_string(sentinel.join("keep")).unwrap(),
+        "private data must survive"
+    );
+    assert_eq!(
+        f.authority
+            .import_repo("other", &f.source)
+            .unwrap_err()
+            .code(),
+        "repository_retired"
+    );
+    assert_eq!(
+        f.authority
+            .collect_unreferenced_repositories(&["repo".into()])
+            .unwrap()["removedRepoIds"],
+        json!([])
+    );
+    f.unchanged_main();
+}
+
+#[test]
+fn collection_rejects_invalid_retained_ids_before_mutation() {
+    let f = Fixture::new();
+    assert_eq!(
+        f.authority
+            .collect_unreferenced_repositories(&["../escape".into()])
+            .unwrap_err()
+            .code(),
+        "invalid_id"
+    );
+    assert!(f.private.join("repos/repo.git").exists());
+    assert_eq!(fs::read_dir(f.private.join("retired")).unwrap().count(), 0);
+}
+
+#[test]
+fn trusted_native_erase_handles_mode_zero_and_unlinks_symlinks_without_following() {
+    use oc_phone_engine::repository::erase_tree_no_links;
+    use std::os::unix::fs::PermissionsExt;
+    let f = Fixture::new();
+    let external = f._dir.path().join("external");
+    fs::create_dir(&external).unwrap();
+    fs::write(external.join("keep"), "preserve").unwrap();
+    let root = f._dir.path().join("erase");
+    fs::create_dir(&root).unwrap();
+    fs::create_dir(root.join("zero")).unwrap();
+    fs::write(root.join("zero/file"), "remove").unwrap();
+    symlink(&external, root.join("link")).unwrap();
+    fs::set_permissions(root.join("zero"), fs::Permissions::from_mode(0)).unwrap();
+    fs::set_permissions(&root, fs::Permissions::from_mode(0o555)).unwrap();
+    erase_tree_no_links(&root).unwrap();
+    assert!(!root.exists());
+    assert!(external.join("keep").exists());
+    erase_tree_no_links(&root).unwrap();
+    let alias = f._dir.path().join("alias");
+    symlink(&external, &alias).unwrap();
+    assert_eq!(
+        erase_tree_no_links(&alias.join("keep")).unwrap_err().code(),
+        "symlink_refused"
+    );
+    assert!(external.join("keep").exists());
+}
