@@ -416,9 +416,13 @@ class PhoneTeamSetupController extends ChangeNotifier {
     }
 
     ports.replyChanges.addListener(check);
+    // A just-sent prompt's grace window ends without any change event, so
+    // look again on a timer: the flow must never wait on a reply that ended.
+    final poll = Timer.periodic(const Duration(seconds: 2), (_) => check());
     try {
       await done.future;
     } finally {
+      poll.cancel();
       ports.replyChanges.removeListener(check);
     }
   }
@@ -498,7 +502,9 @@ class PhoneTeamSetupController extends ChangeNotifier {
         health = await ports.startEngine();
       }
       _health = health;
-      if (!health.canExecute) {
+      // The check proves the boundary; OpenCode itself is verified only
+      // after step d starts it again, so canExecute is judged there.
+      if (!health.boundary) {
         await _failWith(
           PhoneTeamSetupProblem.unsafe,
           PhoneTeamSetupStep.check,

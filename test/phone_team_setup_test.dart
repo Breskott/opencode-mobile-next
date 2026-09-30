@@ -25,6 +25,7 @@ final _en = lookupAppLocalizations(const Locale('en'));
 PhoneEngineHealth _health({
   bool execution = true,
   bool boundary = true,
+  bool oc1Verified = true,
   bool restartRequired = false,
   String reason = '',
 }) => PhoneEngineHealth(
@@ -32,7 +33,7 @@ PhoneEngineHealth _health({
   engineVersion: '1',
   execution: execution,
   boundary: boundary,
-  oc1Verified: true,
+  oc1Verified: oc1Verified,
   oc2: false,
   commandActions: const {},
   restartRequired: restartRequired,
@@ -194,6 +195,31 @@ void main() {
       await run;
       expect(flow.phase, PhoneTeamSetupPhase.done);
       expect(phone.calls.first, 'inspect');
+    });
+
+    test('a reply whose grace ends without an event does not hold the '
+        'flow', () async {
+      // replyRunning turns false with no notification (a just-sent
+      // prompt's grace window expiring); the flow must still move on.
+      final phone = _Phone()..reply = true;
+      final flow = _flow(phone);
+      final run = flow.run();
+      await Future<void>.delayed(Duration.zero);
+      expect(flow.waitingForReply, isTrue);
+      phone.reply = false; // no notifyListeners
+      await run.timeout(const Duration(seconds: 5));
+      expect(flow.phase, PhoneTeamSetupPhase.done);
+    });
+
+    test('a passed check before OpenCode restarts is not a failure '
+        '(boundary_attested)', () async {
+      // Right after the proof, OpenCode is not verified yet: the check
+      // passes on the boundary and the server step waits for canExecute.
+      final phone = _Phone()
+        ..started = _health(oc1Verified: false, reason: 'boundary_attested');
+      final flow = _flow(phone);
+      await flow.run();
+      expect(flow.isDone, isTrue);
     });
 
     test(
@@ -546,7 +572,11 @@ void main() {
       await _settle(tester);
       expect(find.byKey(const ValueKey('phone-team-steps')), findsOneWidget);
       expect(find.textContaining(_en.phoneTeamReplyWaiting), findsOneWidget);
+      // Let the flow finish so its reply poll ends with the test.
+      phone.finishReply();
+      await tester.pump(const Duration(seconds: 3));
       await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
     });
 
     testWidgets('ready engine: no line, New project is there', (tester) async {
