@@ -18,6 +18,64 @@ STEPS = (
 )
 STAGES = ("project_created", "planner_completed", "plan_approved", "worker_completed", "checker_completed", "dev_merged")
 
+# Frozen compile-time vocabulary shared with the test runner. Never print a
+# syntactically plausible but unknown server/native string (it may be a secret).
+SAFE_FAILURE_CODES = frozenset({
+    "acceptance_failed",
+    'approveSpecFirst', 'authInvalid', 'authUnavailable', 'boundaryUnavailable',
+    'boundary_proof_failed', 'canonical_ref_invalid', 'canonical_ref_missing', 'chargingUnsupported',
+    'chatBusy', 'chat_status_unknown', 'checkInvalid', 'checkedCommitChanged',
+    'checkerMustBeReadOnly', 'checkerRoleMissing', 'chooseBudget', 'chooseExecutionMode',
+    'clockUnknown', 'collectFailed', 'committed_criterion_mismatch', 'confirmationRequired',
+    'confirmation_required', 'confirmed_promotion_refused', 'cursorExpired', 'dependencyCycle',
+    'dev_merge_mismatch', 'directory_scope_unknown', 'divergent_import', 'durable_receipt_missing',
+    'elf_parser_negative_failed', 'engine_auth_unavailable', 'engine_bundle_invalid', 'engine_command_refused',
+    'engine_delete_failed', 'engine_health_invalid', 'engine_in_use', 'engine_not_packaged',
+    'engine_not_running', 'engine_ready_invalid', 'engine_start_failed', 'engine_stop_failed',
+    'executionUnavailable', 'heartbeat_refused', 'import_binding_mismatch', 'in_app_server_exited',
+    'in_app_server_required', 'invalidCommand', 'invalidCursor', 'invalidFixRounds',
+    'invalidJob', 'invalidJobPatch', 'invalidJobTransition', 'invalidPlacement',
+    'invalidPlan', 'invalidProfile', 'invalidRepositoryReceipt', 'invalidRequestId',
+    'invalidReviewLevel', 'invalidRole', 'invalidSpec', 'invalidTaskPatch',
+    'invalidUsage', 'invalid_commit', 'invalid_id', 'invalid_path',
+    'invalid_port', 'invalid_profile', 'invalid_receipt', 'invalid_repository',
+    'invalid_request', 'jobChanged', 'jobInvalid', 'jobMissing',
+    'jobNotActive', 'jobNotFound', 'job_stage_evidence_missing', 'label',
+    'legacy_receipt_scope_unknown', 'linked_repository', 'listenUnavailable', 'mergeRefused',
+    'merge_conflict', 'merge_receipt_missing', 'missingCriteria', 'missingDependency',
+    'missingProjectDetails', 'model_invalid', 'model_required', 'model_spend_required',
+    'needsAnswer', 'needsReconciliation', 'other_service_running', 'overlapping_roots',
+    'person_chat_busy', 'person_terminal_running', 'planAlreadyRunning', 'planInvalid',
+    'plan_not_single_task', 'plan_scope_mismatch', 'planner_not_completed', 'private_state_invalid',
+    'private_state_unavailable', 'profileDeleted', 'projectBusy', 'projectMissing',
+    'projectNotFound', 'projectPaused', 'projectStopped', 'project_missing',
+    'promoted_refs_mismatch', 'promotion_not_fast_forward', 'promotion_recovery_required', 'promotion_superseded',
+    'promptAlreadyDispatched', 'promptUncertain', 'protocol_not_verified', 'qa_job_failed',
+    'qa_job_interrupted', 'qa_job_needs_fix', 'qa_job_paused', 'qa_job_stopped',
+    'qa_project_needs_fix', 'qa_project_paused_budget', 'quickTaskNeedsOneRepo', 'receipt_encoding',
+    'recoveryFailed', 'recoveryNeedsReview', 'repoInvalid', 'repoNotFound',
+    'repositoryUnavailable', 'repository_busy', 'repository_changed', 'repository_empty',
+    'repository_exists', 'repository_git', 'repository_io', 'repository_retired',
+    'repository_too_large', 'repository_unavailable', 'reproofRegression', 'requestIdReuse',
+    'request_id_conflict', 'request_timeout', 'response_limit', 'roleInUse',
+    'roleNotFound', 'scratch_exists', 'scratch_git_failed', 'scratch_import_mismatch',
+    'serverConfigInvalid', 'serverCredentialsInvalid', 'serverCredentialsUnavailable', 'serverStopped',
+    'server_auth_unavailable', 'server_status_stale', 'server_status_unknown', 'sessionAlreadyRecorded',
+    'sessionCreateUncertain', 'sessionFailed', 'sessionUncertain', 'sessionUnknown',
+    'shared_repository_objects', 'sqlite_missing', 'sqlite_workspace_missing', 'stable_server_not_running',
+    'stable_server_restore_failed', 'stable_server_restore_timeout', 'staleJobStage', 'staleRepositoryRefs',
+    'staleRevision', 'stale_dev', 'stale_main', 'stale_task',
+    'storageCorrupt', 'storageUnavailable', 'storeUnavailable', 'structuredOutputInvalid',
+    'symbolic_ref_refused', 'symlink_refused', 'taskAlreadyDone', 'taskIdAlreadyUsed',
+    'taskNotFound', 'taskNotPaused', 'task_changed', 'task_job_missing',
+    'task_not_descendant', 'task_not_merged', 'task_rewritten', 'task_sessions_not_proved',
+    'timeout_invalid', 'ubuntu_not_initialized', 'unconfirmed_promotion_allowed', 'unsafeStoragePath',
+    'unsafe_repository_config', 'unsafe_repository_metadata', 'unsafe_repository_path', 'unsafe_source',
+    'unsafe_task_tree', 'unsupportedAction', 'unsupportedServer', 'usageRegression',
+    'usageUncertain', 'workerCloneFailed', 'worker_binding_mismatch', 'worker_exists',
+    'worker_reset_refused', 'workspace_unavailable',
+})
+
 
 def fail(step, code, exit_code=1):
     print(f"FAIL {step} {code}", flush=True)
@@ -128,9 +186,10 @@ try:
                 malformed = True
                 return
             seen.append(step)
-            # Even a syntactically safe code could contain a token. Only the
-            # fixed step and outcome vocabulary is relayed to the host terminal.
-            print(f"{outcome} {step}", flush=True)
+            # Only compiled public codes may be relayed, and only for explicit
+            # paid stable QA failures. Unknown strings can contain credentials.
+            safe_code = code if args.stable_app_qa and outcome == "FAIL" and code in SAFE_FAILURE_CODES else None
+            print(f"{outcome} {step}" + (f" {safe_code}" if safe_code else ""), flush=True)
             if outcome == "FAIL":
                 protocol_failure = True
         elif line.startswith("INSTRUMENTATION_STATUS: phoneEngineStage="):

@@ -21,6 +21,64 @@ import java.util.concurrent.atomic.AtomicBoolean
 /** Test APK only: no public app command, host credential export, or fake proof. */
 class PhoneEngineAcceptance : Instrumentation() {
     private class Refused(val safeCode: String) : Exception()
+    private companion object {
+        // Compile-time public refusal vocabulary; never relay arbitrary response text.
+        val SAFE_FAILURE_CODES = setOf(
+            "acceptance_failed",
+            "approveSpecFirst", "authInvalid", "authUnavailable", "boundaryUnavailable",
+            "boundary_proof_failed", "canonical_ref_invalid", "canonical_ref_missing", "chargingUnsupported",
+            "chatBusy", "chat_status_unknown", "checkInvalid", "checkedCommitChanged",
+            "checkerMustBeReadOnly", "checkerRoleMissing", "chooseBudget", "chooseExecutionMode",
+            "clockUnknown", "collectFailed", "committed_criterion_mismatch", "confirmationRequired",
+            "confirmation_required", "confirmed_promotion_refused", "cursorExpired", "dependencyCycle",
+            "dev_merge_mismatch", "directory_scope_unknown", "divergent_import", "durable_receipt_missing",
+            "elf_parser_negative_failed", "engine_auth_unavailable", "engine_bundle_invalid", "engine_command_refused",
+            "engine_delete_failed", "engine_health_invalid", "engine_in_use", "engine_not_packaged",
+            "engine_not_running", "engine_ready_invalid", "engine_start_failed", "engine_stop_failed",
+            "executionUnavailable", "heartbeat_refused", "import_binding_mismatch", "in_app_server_exited",
+            "in_app_server_required", "invalidCommand", "invalidCursor", "invalidFixRounds",
+            "invalidJob", "invalidJobPatch", "invalidJobTransition", "invalidPlacement",
+            "invalidPlan", "invalidProfile", "invalidRepositoryReceipt", "invalidRequestId",
+            "invalidReviewLevel", "invalidRole", "invalidSpec", "invalidTaskPatch",
+            "invalidUsage", "invalid_commit", "invalid_id", "invalid_path",
+            "invalid_port", "invalid_profile", "invalid_receipt", "invalid_repository",
+            "invalid_request", "jobChanged", "jobInvalid", "jobMissing",
+            "jobNotActive", "jobNotFound", "job_stage_evidence_missing", "label",
+            "legacy_receipt_scope_unknown", "linked_repository", "listenUnavailable", "mergeRefused",
+            "merge_conflict", "merge_receipt_missing", "missingCriteria", "missingDependency",
+            "missingProjectDetails", "model_invalid", "model_required", "model_spend_required",
+            "needsAnswer", "needsReconciliation", "other_service_running", "overlapping_roots",
+            "person_chat_busy", "person_terminal_running", "planAlreadyRunning", "planInvalid",
+            "plan_not_single_task", "plan_scope_mismatch", "planner_not_completed", "private_state_invalid",
+            "private_state_unavailable", "profileDeleted", "projectBusy", "projectMissing",
+            "projectNotFound", "projectPaused", "projectStopped", "project_missing",
+            "promoted_refs_mismatch", "promotion_not_fast_forward", "promotion_recovery_required", "promotion_superseded",
+            "promptAlreadyDispatched", "promptUncertain", "protocol_not_verified", "qa_job_failed",
+            "qa_job_interrupted", "qa_job_needs_fix", "qa_job_paused", "qa_job_stopped",
+            "qa_project_needs_fix", "qa_project_paused_budget", "quickTaskNeedsOneRepo", "receipt_encoding",
+            "recoveryFailed", "recoveryNeedsReview", "repoInvalid", "repoNotFound",
+            "repositoryUnavailable", "repository_busy", "repository_changed", "repository_empty",
+            "repository_exists", "repository_git", "repository_io", "repository_retired",
+            "repository_too_large", "repository_unavailable", "reproofRegression", "requestIdReuse",
+            "request_id_conflict", "request_timeout", "response_limit", "roleInUse",
+            "roleNotFound", "scratch_exists", "scratch_git_failed", "scratch_import_mismatch",
+            "serverConfigInvalid", "serverCredentialsInvalid", "serverCredentialsUnavailable", "serverStopped",
+            "server_auth_unavailable", "server_status_stale", "server_status_unknown", "sessionAlreadyRecorded",
+            "sessionCreateUncertain", "sessionFailed", "sessionUncertain", "sessionUnknown",
+            "shared_repository_objects", "sqlite_missing", "sqlite_workspace_missing", "stable_server_not_running",
+            "stable_server_restore_failed", "stable_server_restore_timeout", "staleJobStage", "staleRepositoryRefs",
+            "staleRevision", "stale_dev", "stale_main", "stale_task",
+            "storageCorrupt", "storageUnavailable", "storeUnavailable", "structuredOutputInvalid",
+            "symbolic_ref_refused", "symlink_refused", "taskAlreadyDone", "taskIdAlreadyUsed",
+            "taskNotFound", "taskNotPaused", "task_changed", "task_job_missing",
+            "task_not_descendant", "task_not_merged", "task_rewritten", "task_sessions_not_proved",
+            "timeout_invalid", "ubuntu_not_initialized", "unconfirmed_promotion_allowed", "unsafeStoragePath",
+            "unsafe_repository_config", "unsafe_repository_metadata", "unsafe_repository_path", "unsafe_source",
+            "unsafe_task_tree", "unsupportedAction", "unsupportedServer", "usageRegression",
+            "usageUncertain", "workerCloneFailed", "worker_binding_mismatch", "worker_exists",
+            "worker_reset_refused", "workspace_unavailable"
+        )
+    }
     private lateinit var arguments: Bundle
     private lateinit var linux: BuiltinLinux
     private lateinit var privateRoot: File
@@ -259,7 +317,11 @@ class PhoneEngineAcceptance : Instrumentation() {
 
         currentStep = "approved_plan"
         commandFor(projectId, "approveSpec", JSONObject().put("confirmed", true))
-        waitUntil("planner_not_completed") { project(projectId).optString("status") == "needsPlanApproval" }
+        waitUntil("planner_not_completed") {
+            val current = project(projectId)
+            assertOwnQaJobNotFailed(projectId, "", current)
+            current.optString("status") == "needsPlanApproval"
+        }
         val proposed = project(projectId)
         proveJobStages(projectId, "", listOf("running", "completed"))
         trace("planner_completed")
@@ -277,7 +339,11 @@ class PhoneEngineAcceptance : Instrumentation() {
         emit("PASS", currentStep)
 
         currentStep = "checked_dev_merge"
-        waitUntil("task_not_merged") { project(projectId).getJSONArray("tasks").getJSONObject(0).optString("status") == "merged" }
+        waitUntil("task_not_merged") {
+            val current = project(projectId)
+            assertOwnQaJobNotFailed(projectId, "task_qa", current)
+            current.getJSONArray("tasks").getJSONObject(0).optString("status") == "merged"
+        }
         val checked = project(projectId)
         proveJobStages(projectId, "task_qa", listOf("running", "checking", "mergeReady", "merging", "completed"))
         val completedJob = database { db ->
@@ -455,8 +521,42 @@ class PhoneEngineAcceptance : Instrumentation() {
     private fun command(body: JSONObject): JSONObject {
         if (!body.has("requestId")) body.put("requestId", "request_${UUID.randomUUID()}")
         val reply = engine("POST", "/v1/commands", body)
-        requireSafe(reply.status == 200 && reply.body.optBoolean("accepted"), "engine_command_refused")
+        if (reply.status != 200 || !reply.body.optBoolean("accepted")) {
+            throw Refused(safeFailure(reply.body.optString("code"), "engine_command_refused"))
+        }
         return reply.body
+    }
+
+    private fun safeFailure(code: String?, fallback: String): String =
+        code?.takeIf { it in SAFE_FAILURE_CODES } ?: fallback
+
+    private fun assertOwnQaJobNotFailed(projectId: String, taskId: String, project: JSONObject) {
+        // This database belongs only to the random QA profile. Inspect stage and
+        // reason vocabulary, never provider output, findings text or other profiles.
+        database { db ->
+            db.rawQuery("SELECT data FROM jobs", null).use { rows ->
+                while (rows.moveToNext()) {
+                    val job = JSONObject(rows.getString(0))
+                    if (job.optString("projectId") != projectId || job.optString("taskId") != taskId) continue
+                    val fallback = when (job.optString("stage")) {
+                        "failed" -> "qa_job_failed"
+                        "interrupted" -> "qa_job_interrupted"
+                        "needsFix" -> "qa_job_needs_fix"
+                        "paused" -> "qa_job_paused"
+                        "stopped" -> "qa_job_stopped"
+                        else -> null
+                    }
+                    if (fallback != null) throw Refused(safeFailure(job.optString("reason"), fallback))
+                }
+            }
+        }
+        if (project.optString("status") == "needsFix") throw Refused("qa_project_needs_fix")
+        if (project.optString("status") == "pausedBudget") throw Refused("qa_project_paused_budget")
+        if (taskId.isNotEmpty()) project.getJSONArray("tasks").objects()
+            .singleOrNull { it.optString("id") == taskId }?.let { task ->
+                if (task.optString("status") == "needsFix")
+                    throw Refused(safeFailure(task.optString("reason"), "qa_job_needs_fix"))
+            }
     }
 
     private fun commandFor(projectId: String, action: String, body: JSONObject): JSONObject =

@@ -109,6 +109,16 @@ The new scratch/profile and receipts remain available for inspection. This
 procedure does not restore an interrupted live reply: busy or unknown chat is a
 refusal, not permission to interrupt it.
 
+Paid stable failures relay only the compile-time public refusal vocabulary shared
+by the runner and host wrapper (for example `symlink_refused`, `repository_git`,
+`sessionFailed`). An unknown command response code falls back to
+`engine_command_refused`; unknown job reasons become a fixed QA failure code.
+Planner/task waits inspect only their own random QA profile's durable job
+stage/reason and project/task status. Failed, interrupted, stopped, paused or
+needs-fix jobs stop the wait promptly, so a failed paid turn is not polled until
+the entire 15-minute timeout. Arbitrary response text, provider output and keys
+remain suppressed. Preview failures continue to suppress optional codes.
+
 Expected success:
 
 ```text
@@ -133,8 +143,9 @@ The wrapper accepts each fixed step exactly once, in order, followed by
 `phoneEngineResult=PASS` and `INSTRUMENTATION_CODE: -1`, and also requires adb to
 exit successfully. Failure status, missing/duplicate/conflicting/out-of-order
 steps, instrumentation errors, unsupported ABI, malformed output and timeout all
-exit nonzero. Raw adb output, exceptions, private paths, model text and optional
-runner codes are discarded. On interruption it terminates only its own host adb
+exit nonzero. Raw adb output, exceptions, private paths and model text are
+discarded; optional codes are relayed only through the paid stable allowlist
+described above. On interruption it terminates only its own host adb
 client; the native runner owns cleanup under its bounded deadline. Interrupted
 commands are not a pass, and native cleanup may finish after the client exits.
 
@@ -147,12 +158,13 @@ bash -n tool/qa/phone_engine_acceptance.sh
 git diff --check
 ```
 
-Executed for the stable extension: **14 host tests passed**, shell syntax passed,
+Executed for the stable diagnostics extension: **16 host tests passed**, shell syntax passed,
 and whitespace check passed. Tests use a local fake adb transcript and cover the
 six-step success protocol, ARM64/x86_64 preflight, failure/result conflicts,
 duplicate/order/missing/malformed steps, error redaction, absent app/runner,
 device/ABI failure, consent, shell-injection rejection, exact stable target,
-mutually exclusive opt-in, required stage/cleanup evidence and cleanup failure.
+mutually exclusive opt-in, required stage/cleanup evidence, cleanup failure,
+known-code diagnostics and unknown-secret rejection in paid stable mode.
 They do not establish
 Android proof, a live provider task, a UI pass or a full-suite result. At slice
 creation no adb device was attached; live acceptance is pending on an authorized

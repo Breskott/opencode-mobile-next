@@ -187,6 +187,28 @@ class PhoneEngineAcceptanceTest(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertNotIn("private-token", result.stdout + result.stderr)
 
+    def test_paid_stable_failure_only_relays_compiled_public_refusal_codes(self):
+        stable_args = ("--package", "io.github.eslamasabry.opencode_mobile", "--stable-app-qa", "--allow-model-spend")
+        for code in ("symlink_refused", "repository_git", "sessionFailed", "qa_job_interrupted"):
+            with self.subTest(code=code):
+                self.output.write_text(transcript().replace("PASS scratch_repo", "FAIL scratch_repo " + code))
+                result = self.run_script(extra=stable_args, env_extra={"MOCK_STABLE": "1"}, consent=False)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("FAIL scratch_repo " + code, result.stdout)
+        for secret in ("sk-private-token", "private-token", "zai-secret-123456", "some_unknown_reason"):
+            with self.subTest(secret=secret):
+                self.output.write_text(transcript().replace("PASS scratch_repo", "FAIL scratch_repo " + secret))
+                result = self.run_script(extra=stable_args, env_extra={"MOCK_STABLE": "1"}, consent=False)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("FAIL scratch_repo\n", result.stdout)
+                self.assertNotIn(secret, result.stdout + result.stderr)
+
+    def test_preview_still_suppresses_optional_known_failure_code(self):
+        self.output.write_text(transcript().replace("PASS scratch_repo", "FAIL scratch_repo symlink_refused"))
+        result = self.run_script()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("symlink_refused", result.stdout + result.stderr)
+
     def test_device_app_runner_and_abi_preflight_failures(self):
         for env in ({"MOCK_STATE": "offline"}, {"MOCK_ABI": "armeabi-v7a"},
                     {"MOCK_MISSING_PACKAGE": "1"}, {"MOCK_MISSING_RUNNER": "1"}):
