@@ -909,7 +909,7 @@ class _LivingEdgeState extends State<_LivingEdge>
   late final AnimationController _open = AnimationController(vsync: this);
   late final AnimationController _flash = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 520),
+    duration: KitMotion.composerFlash,
   );
   late final Ticker _ticker = createTicker(_step);
   final _light = _EdgeLight();
@@ -948,11 +948,12 @@ class _LivingEdgeState extends State<_LivingEdge>
       _open.value = to;
       return;
     }
-    final ms = _level == KitMotionLevel.calm ? 150 : 380;
     _open.animateTo(
       to,
-      duration: Duration(milliseconds: ms),
-      curve: Curves.easeInOutCubic,
+      duration: _level == KitMotionLevel.calm
+          ? KitMotion.composerOpenCalm
+          : KitMotion.composerOpen,
+      curve: KitMotion.composerOpenCurve,
     );
   }
 
@@ -1036,7 +1037,7 @@ class _LivingEdgeState extends State<_LivingEdge>
       _seal = st;
       final u = (st / _sealSeconds).clamp(0.0, 1.0);
       l.phase = (l.phase + l.speed * dt) % 1;
-      l.bright = _sealBright * (1 - Curves.easeInOut.transform(u));
+      l.bright = _sealBright * (1 - KitMotion.sealFade.transform(u));
       l.stall = 0;
       if (st >= _sealSeconds * 0.4 && !_closing) {
         _closing = true;
@@ -1391,7 +1392,9 @@ class _EdgePainter extends CustomPainter {
     final length = metric.length;
     for (var i = 0; i < pieces; i++) {
       final u0 = i / pieces, u1 = (i + 1) / pieces, mid = (u0 + u1) / 2;
-      final fadeIn = Curves.easeOut.transform((mid / 0.14).clamp(0.0, 1.0));
+      final fadeIn = KitMotion.tailFadeIn.transform(
+        (mid / 0.14).clamp(0.0, 1.0),
+      );
       final profile = math.pow(1 - mid, 1.5) * fadeIn;
       // Neighbouring blurs overlap, so each piece carries about half.
       final alpha = 0.2 * strength * profile;
@@ -1571,17 +1574,22 @@ class _EdgeCaption extends StatelessWidget {
     final row = Padding(
       // 48 dp tall in all, with the words' x-height centre at its middle,
       // which is where the border line runs.
-      padding: EdgeInsets.fromLTRB(6, top, 6, 48 - top - textHeight),
+      padding: EdgeInsets.fromLTRB(
+        _railEnd,
+        top,
+        _railEnd,
+        _railHeight - top - textHeight,
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _running(context, l10n, live),
           if (live.onStop != null) ...[
-            const SizedBox(width: 4),
+            const SizedBox(width: _stopGap),
             Padding(
-              padding: EdgeInsets.only(top: xCentre - 4),
-              child: _square(tokens, 8),
+              padding: EdgeInsets.only(top: xCentre - _stopGap),
+              child: _square(tokens, _stopSide),
             ),
           ],
         ],
@@ -1598,12 +1606,19 @@ class _EdgeCaption extends StatelessWidget {
     );
   }
 
+  // The rail's hand-set measures, in logical pixels (48 dp tall in all).
+  static const _railHeight = 48.0;
+  static const _railEnd = 6.0;
+  static const _stopGap = 4.0;
+  static const _stopSide = 8.0;
+  static const _stopRadius = 2.0;
+
   static Widget _square(KitTokens tokens, double side) => Container(
     width: side,
     height: side,
     decoration: BoxDecoration(
       color: tokens.roles.danger,
-      borderRadius: BorderRadius.circular(2),
+      borderRadius: BorderRadius.circular(_stopRadius),
     ),
   );
 
@@ -1683,7 +1698,7 @@ class _EdgeCaption extends StatelessWidget {
     KitTokens tokens,
     KitComposerFailure failure,
   ) => [
-    const SizedBox(width: 6),
+    const SizedBox(width: _railEnd),
     _words(failure.words, failure.words, failure.words, KitTextTone.danger),
     KitTappable(
       tappableKey: failure.retryKey,
@@ -1713,7 +1728,7 @@ class _EdgeCaption extends StatelessWidget {
           ),
         ),
       ),
-    const SizedBox(width: 6),
+    const SizedBox(width: _railEnd),
   ];
 }
 

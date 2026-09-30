@@ -20,6 +20,24 @@ abstract final class KitMotion {
   /// A control answering a touch: a chip, a toggle, a row's state.
   static const quick = Duration(milliseconds: 150);
 
+  /// The composer's edge light flashing once (a send, a stop).
+  static const composerFlash = Duration(milliseconds: 520);
+
+  /// The composer opening or closing under Animations: Full.
+  static const composerOpen = Duration(milliseconds: 380);
+
+  /// The composer opening or closing under Animations: Calm.
+  static const composerOpenCalm = Duration(milliseconds: 150);
+
+  /// The curve of the composer opening or closing.
+  static const Curve composerOpenCurve = Curves.easeInOutCubic;
+
+  /// The edge light settling after a send.
+  static const Curve sealFade = Curves.easeInOut;
+
+  /// The edge light's tail fading in along its length.
+  static const Curve tailFadeIn = Curves.easeOut;
+
   /// A part appearing or changing size: a notice, a section unfolding.
   static const standard = Duration(milliseconds: 250);
 

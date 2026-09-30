@@ -165,10 +165,7 @@ class _NotificationsSettingsScreenState
   void _showSection(String slug) {
     final target = _sectionKeys[slug]?.currentContext;
     if (target != null) {
-      Scrollable.ensureVisible(
-        target,
-        duration: const Duration(milliseconds: 250),
-      );
+      Scrollable.ensureVisible(target, duration: KitMotion.standard);
     }
   }
 
