@@ -9,6 +9,8 @@ plugins {
 }
 
 val ocPreview = (project.findProperty("ocPreview") as String?) == "true"
+// Explicit test-build opt-in only; production builds retain normal R8 rules.
+val ocStableEngineQa = (project.findProperty("ocStableEngineQa") as String?) == "true"
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.isFile) {
@@ -48,7 +50,7 @@ android {
     }
 
     // Shorebird's pinned embedding ships release engine jars. This runner is
-    // test-only and refuses the stable package at runtime.
+    // test-only; the stable journey additionally requires explicit runtime opt-in.
     testBuildType = "release"
 
     signingConfigs {
@@ -65,7 +67,7 @@ android {
             signingConfig = signingConfigs.getByName("release")
             // Release instrumentation shares the target's Kotlin/native ABI.
             // R8 prototype rewrites otherwise break test-APK calls into it.
-            if (ocPreview) proguardFiles("phone-engine-instrumentation.pro")
+            if (ocPreview || ocStableEngineQa) proguardFiles("phone-engine-instrumentation.pro")
         }
     }
 }

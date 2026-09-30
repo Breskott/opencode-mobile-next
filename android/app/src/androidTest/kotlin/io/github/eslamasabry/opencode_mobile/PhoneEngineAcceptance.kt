@@ -34,6 +34,8 @@ class PhoneEngineAcceptance : Instrumentation() {
     private var activity: Activity? = null
     private var engineStarted = false
     private var serverStarted = false
+    private var stableQa = false
+    private var stableServerStopped = false
     private var currentStep = "engine_start_proof"
     private var deadline = 0L
     private val criterion = "The repository root contains PHONE_ENGINE_QA.txt with exactly phone-engine-live-acceptance followed by a newline, committed on the task branch; no other tracked file is changed."
@@ -78,8 +80,24 @@ class PhoneEngineAcceptance : Instrumentation() {
             heartbeatThread?.interrupt()
             heartbeatThread?.join(1200)
             if (::linux.isInitialized) {
-                if (serverStarted) try { linux.stopServer() } catch (_: Exception) { }
-                if (engineStarted) try { linux.stopPhoneEngine(profile) } catch (_: Exception) { }
+                if (!stableQa && serverStarted) try { linux.stopServer() } catch (_: Exception) { passed = false }
+                if (engineStarted) try { linux.stopPhoneEngine(profile) } catch (_: Exception) { passed = false }
+                if (stableQa && stableServerStopped) {
+                    try {
+                        if (!linux.serverRunning) startAcceptanceServer()
+                        val restoreDeadline = SystemClock.elapsedRealtime() + 30_000L
+                        var restored = false
+                        while (!restored && SystemClock.elapsedRealtime() < restoreDeadline) {
+                            restored = try { scopedBusySessions(emptySet()); true } catch (_: Exception) { false }
+                            if (!restored) Thread.sleep(500)
+                        }
+                        requireSafe(restored, "stable_server_restore_failed")
+                        sendStatus(0, Bundle().apply { putString("phoneEngineCleanup", "PASS stable_server_restored") })
+                    } catch (_: Exception) {
+                        passed = false
+                        sendStatus(0, Bundle().apply { putString("phoneEngineCleanup", "FAIL stable_server_restore_failed") })
+                    }
+                }
             }
             activity?.let { try { runOnMainSync { it.finish() } } catch (_: Exception) { } }
             finish(if (passed) Activity.RESULT_OK else Activity.RESULT_CANCELED,
@@ -88,8 +106,14 @@ class PhoneEngineAcceptance : Instrumentation() {
     }
 
     private fun execute() {
-        requireSafe(targetContext.packageName == "io.github.eslamasabry.opencode_mobile.preview", "preview_required")
-        requireSafe(arguments.getString("isolatedQa") == "true", "isolated_qa_required")
+        stableQa = targetContext.packageName == "io.github.eslamasabry.opencode_mobile" &&
+            arguments.getString("stableAppQa") == "true"
+        val previewQa = targetContext.packageName == "io.github.eslamasabry.opencode_mobile.preview" &&
+            arguments.getString("isolatedQa") == "true"
+        requireSafe((stableQa || previewQa) && !(arguments.getString("stableAppQa") == "true" &&
+            arguments.getString("isolatedQa") == "true"), "explicit_target_qa_required")
+        if (stableQa) requireSafe(listOf("boundaryRegressions", "nativeRegressions", "reproofRegression")
+            .none { arguments.getString(it) == "true" }, "stable_regression_refused")
         if (arguments.getString("boundaryRegressions") == "true") {
             currentStep = "device_boundary_regressions"
             activity = startActivitySync(Intent(targetContext, MainActivity::class.java)
@@ -126,7 +150,8 @@ class PhoneEngineAcceptance : Instrumentation() {
         deadline = SystemClock.elapsedRealtime() + timeout * 1000L
         assertPackagedAbiParser()
 
-        // Instrumentation deliberately runs only in disposable preview storage.
+        // Stable testing uses only a new QA engine profile and scratch repository.
+        // It never resets app data or edits the person's projects/configuration.
         // Foreground the real activity before invoking its native FGS controls.
         activity = startActivitySync(Intent(targetContext, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -140,11 +165,18 @@ class PhoneEngineAcceptance : Instrumentation() {
         learnPersonDirectories(File(targetContext.filesDir, "projects"))
         personDirectories.add("/root")
         personDirectories.add("/root/projects")
-        if (linux.runningServices().contains(BuiltinLinux.SERVER)) {
+        val services = linux.runningServices()
+        if (stableQa) {
+            requireSafe(services.contains(BuiltinLinux.SERVER), "stable_server_not_running")
+            requireSafe(services.all { it == BuiltinLinux.SERVER }, "other_service_running")
+            requireSafe(LocalTerminal.get(targetContext).list().none { it.running }, "person_terminal_running")
+        }
+        if (services.contains(BuiltinLinux.SERVER)) {
             requireSafe(scopedBusySessions(emptySet()).isEmpty(), "person_chat_busy")
         }
+        if (stableQa) stableServerStopped = true
         linux.stopServer()
-        LocalTerminal.get(targetContext).list().forEach { it.stop() }
+        if (!stableQa) LocalTerminal.get(targetContext).list().forEach { it.stop() }
         // Never stop services by PID pattern, or silently replace another engine.
         requireSafe(linux.runningServices().isEmpty(), "other_service_running")
         // Compatibility hint only; native startup gets the actual ephemeral
@@ -158,18 +190,7 @@ class PhoneEngineAcceptance : Instrumentation() {
         requireSafe(engine("GET", "/v1/health").body.getJSONObject("capabilities").getBoolean("boundary"), "boundary_proof_failed")
         // Same OC1 command/auth contract as BuiltinLinux.serverScript. The
         // optional phone context hint has no bearing on server authentication.
-        linux.startServer("""
-            set -eu
-            mkdir -p /root/projects
-            cd /root/projects
-            [ -s /root/.oc-builtin/server.password ] || exit 78
-            password=${'$'}(cat /root/.oc-builtin/server.password)
-            export OPENCODE_SERVER_USERNAME=opencode
-            export OPENCODE_SERVER_PASSWORD="${'$'}password"
-            export OPENCODE_PASSWORD="${'$'}password"
-            unset password
-            exec opencode serve --hostname 127.0.0.1 --port 4097
-        """.trimIndent(), 4097)
+        startAcceptanceServer()
         serverStarted = true
         waitUntil("protocol_not_verified") {
             requireSafe(linux.serverRunning, "in_app_server_exited")
@@ -240,6 +261,8 @@ class PhoneEngineAcceptance : Instrumentation() {
         commandFor(projectId, "approveSpec", JSONObject().put("confirmed", true))
         waitUntil("planner_not_completed") { project(projectId).optString("status") == "needsPlanApproval" }
         val proposed = project(projectId)
+        proveJobStages(projectId, "", listOf("running", "completed"))
+        trace("planner_completed")
         val tasks = proposed.getJSONArray("tasks")
         val phases = proposed.getJSONArray("phases")
         requireSafe(tasks.length() == 1 && phases.length() == 1, "plan_not_single_task")
@@ -255,6 +278,26 @@ class PhoneEngineAcceptance : Instrumentation() {
         currentStep = "checked_dev_merge"
         waitUntil("task_not_merged") { project(projectId).getJSONArray("tasks").getJSONObject(0).optString("status") == "merged" }
         val checked = project(projectId)
+        proveJobStages(projectId, "task_qa", listOf("running", "checking", "mergeReady", "merging", "completed"))
+        val completedJob = database { db ->
+            db.rawQuery("SELECT data FROM jobs", null).use { rows ->
+                val matching = mutableListOf<JSONObject>()
+                while (rows.moveToNext()) {
+                    val job = JSONObject(rows.getString(0))
+                    if (job.optString("projectId") == projectId && job.optString("taskId") == "task_qa") matching.add(job)
+                }
+                requireSafe(matching.size == 1, "task_job_missing")
+                matching.single()
+            }
+        }
+        requireSafe(completedJob.optString("stage") == "completed" &&
+            completedJob.getJSONObject("sessionIds").optString("worker").isNotEmpty() &&
+            completedJob.getJSONObject("sessionIds").optString("checker").isNotEmpty() &&
+            completedJob.getJSONObject("sessionIds").optString("worker") != completedJob.getJSONObject("sessionIds").optString("checker") &&
+            completedJob.getJSONObject("promptDispatch").optString("worker") == "dispatched" &&
+            completedJob.getJSONObject("promptDispatch").optString("checker") == "dispatched", "task_sessions_not_proved")
+        trace("worker_completed")
+        trace("checker_completed")
         val checkedTask = checked.getJSONArray("tasks").getJSONObject(0)
         requireSafe(checkedTask.getJSONArray("findings").length() == 0 &&
             checkedTask.getJSONArray("criterionResults").length() == 1 &&
@@ -272,6 +315,7 @@ class PhoneEngineAcceptance : Instrumentation() {
         """.trimIndent(), 30)
         requireSafe(taskDirectory.isDirectory && checkGit.exitCode == 0, "committed_criterion_mismatch")
         requireSafe(checked.getJSONArray("receipts").objects().any { it.optString("kind") == "merge" && it.optString("after") == dev }, "merge_receipt_missing")
+        trace("dev_merged")
         emit("PASS", currentStep)
 
         currentStep = "unconfirmed_promotion_refused"
@@ -303,6 +347,44 @@ class PhoneEngineAcceptance : Instrumentation() {
     }
 
     private data class Reply(val status: Int, val body: JSONObject)
+
+    private fun startAcceptanceServer() {
+        linux.startServer("""
+            set -eu
+            mkdir -p /root/projects
+            cd /root/projects
+            [ -s /root/.oc-builtin/server.password ] || exit 78
+            password=${'$'}(cat /root/.oc-builtin/server.password)
+            export OPENCODE_SERVER_USERNAME=opencode
+            export OPENCODE_SERVER_PASSWORD="${'$'}password"
+            export OPENCODE_PASSWORD="${'$'}password"
+            unset password
+            exec opencode serve --hostname 127.0.0.1 --port 4097
+        """.trimIndent(), 4097)
+    }
+
+    // Durable ordered transitions prove the real sessions even if a short stage
+    // completes between polls. No session/model response text leaves the app.
+    private fun proveJobStages(projectId: String, taskId: String, expected: List<String>) {
+        val actions = database { db ->
+            val actions = mutableListOf<String>()
+            db.rawQuery("SELECT data FROM events ORDER BY seq", null).use { rows ->
+                while (rows.moveToNext()) {
+                    val event = JSONObject(rows.getString(0))
+                    if (event.optString("kind") == "job" && event.optString("projectId") == projectId &&
+                        event.optString("taskId") == taskId) actions.add(event.optString("action"))
+                }
+            }
+            actions
+        }
+        var index = 0
+        for (action in actions) if (index < expected.size && action == expected[index]) index++
+        requireSafe(index == expected.size, "job_stage_evidence_missing")
+    }
+
+    private fun trace(stage: String) = sendStatus(0, Bundle().apply {
+        putString("phoneEngineStage", "PASS $stage")
+    })
 
     private fun request(base: String, auth: String, method: String, path: String, body: JSONObject? = null): Reply {
         val connection = URL(base + path).openConnection() as HttpURLConnection

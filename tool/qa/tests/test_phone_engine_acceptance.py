@@ -18,7 +18,8 @@ args = sys.argv[1:]
 assert args[:2] == ["-s", "emulator-5554"], args
 cmd = args[2:]
 Path(os.environ["MOCK_CALLED"]).write_text("called")
-package = "io.github.eslamasabry.opencode_mobile.preview"
+stable = os.environ.get("MOCK_STABLE") == "1"
+package = "io.github.eslamasabry.opencode_mobile" + ("" if stable else ".preview")
 if cmd == ["get-state"]:
     print(os.environ.get("MOCK_STATE", "device"))
 elif cmd == ["shell", "getprop", "ro.product.cpu.abi"]:
@@ -32,7 +33,8 @@ elif cmd == ["shell", "pm", "list", "instrumentation"]:
 elif cmd[:3] == ["shell", "am", "instrument"]:
     assert cmd == ["shell", "am", "instrument", "-w", "-r",
         "-e", "server", "http://127.0.0.1:4097", "-e", "model", "example/test-model",
-        "-e", "timeoutSeconds", "30", "-e", "isolatedQa", "true",
+        "-e", "timeoutSeconds", "30", "-e", "isolatedQa", "false" if stable else "true",
+        "-e", "stableAppQa", "true" if stable else "false",
         "-e", "allowModelSpend", "true",
         package + ".test/io.github.eslamasabry.opencode_mobile.PhoneEngineAcceptance"], cmd
     sys.stdout.write(Path(os.environ["MOCK_TRANSCRIPT"]).read_text())
@@ -154,6 +156,33 @@ class PhoneEngineAcceptanceTest(unittest.TestCase):
         result = self.run_script(consent=False)
         self.assertEqual(result.returncode, 64)
         self.assertFalse(self.called.exists())
+
+    def test_stable_requires_exact_package_explicit_optin_and_stage_cleanup_evidence(self):
+        stable_args = ("--package", "io.github.eslamasabry.opencode_mobile", "--stable-app-qa", "--allow-model-spend")
+        evidence = ["INSTRUMENTATION_STATUS: phoneEngineStage=PASS " + stage for stage in
+                    ("planner_completed", "worker_completed", "checker_completed", "dev_merged")]
+        evidence.append("INSTRUMENTATION_STATUS: phoneEngineCleanup=PASS stable_server_restored")
+        body = transcript().replace("INSTRUMENTATION_RESULT:", "\n".join(evidence) + "\nINSTRUMENTATION_RESULT:")
+        self.output.write_text(body)
+        result = self.run_script(extra=stable_args, env_extra={"MOCK_STABLE": "1"}, consent=False)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("PASS worker_completed", result.stdout)
+        self.assertIn("PASS checker_completed", result.stdout)
+        self.assertIn("PASS stable_server_restored", result.stdout)
+        self.output.write_text(transcript())
+        result = self.run_script(extra=stable_args, env_extra={"MOCK_STABLE": "1"}, consent=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("incomplete_stable_evidence", result.stdout)
+
+    def test_ambiguous_target_and_failed_cleanup_fail(self):
+        result = self.run_script(extra=("--stable-app-qa",))
+        self.assertEqual(result.returncode, 64)
+        self.assertFalse(self.called.exists())
+        self.output.write_text(transcript().replace("INSTRUMENTATION_RESULT:",
+            "INSTRUMENTATION_STATUS: phoneEngineCleanup=FAIL private-token\nINSTRUMENTATION_RESULT:"))
+        result = self.run_script()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("private-token", result.stdout + result.stderr)
 
     def test_device_app_runner_and_abi_preflight_failures(self):
         for env in ({"MOCK_STATE": "offline"}, {"MOCK_ABI": "armeabi-v7a"},

@@ -6,7 +6,8 @@ checked dev merge, unconfirmed promotion refusal and confirmed promotion receipt
 with one safe PASS/FAIL line per step.
 
 Non-goal: signing or installing APKs, starting an emulator, modifying the stable
-app, exposing engine credentials to adb, simulating the proof or model responses,
+app's existing profiles/projects/provider settings, exposing engine credentials
+to adb, simulating the proof or model responses,
 or verifying the separate UI journey. The host command is a test driver; the
 engine, canonical repositories, authentication and proof remain inside the app.
 
@@ -54,6 +55,55 @@ does not promise a dollar ceiling. `--timeout-seconds` defaults to 900 and accep
 30–3600; `--adb /absolute/path/to/adb` overrides PATH/SDK discovery. `--package`
 may select another matching test build but must end in `.preview`.
 
+## Explicit stable-app QA
+
+The owner subsequently authorized one live task with the stable app's existing
+authenticated `zai-coding-plan/glm-5.3` setup. The default remains the preview.
+The exact stable target requires **both** `--stable-app-qa` and
+`--package io.github.eslamasabry.opencode_mobile`; it cannot be combined with
+`--isolated-qa`. Prepare matching stable/test APKs separately under the owner's
+installation authorization, preserving app data and comparing the installed
+certificate before delivery. Never uninstall, clear data, reset provider auth or
+replace the certificate to make the test work.
+
+The stable QA target must be built with `-PocStableEngineQa=true` (or Flutter's
+`--android-project-arg=ocStableEngineQa=true`) to retain its Kotlin/native
+instrumentation ABI through R8. Normal stable builds retain their usual rules.
+For a compile-only check, the coordinator uses JDK 17 and the machine lock with
+Gradle `:app:compileReleaseAndroidTestKotlin -PocStableEngineQa=true`.
+
+```bash
+tool/qa/phone_engine_acceptance.sh \
+  --serial '<authorized-adb-serial>' \
+  --server http://127.0.0.1:4097 \
+  --model zai-coding-plan/glm-5.3 \
+  --package io.github.eslamasabry.opencode_mobile \
+  --stable-app-qa --allow-model-spend
+```
+
+Instrumentation restarts the stable app process. Start its existing authenticated
+in-app OC1 server, finish the person's chat reply, and close terminals first. The
+runner refuses a missing/untracked server, known busy chat, unknown scoped status,
+live terminal or another service. It uses existing native stop/start controls
+only after that check, creates a new random `qa_*` engine profile and one scratch
+repository, and drives the actual approved planner/worker/checker sessions. It
+never edits the person's projects, existing engine profiles or provider settings.
+Native first activation still performs its normal durable confinement setup;
+the runner never bypasses proof or deletes protection state.
+
+Ordered durable job events prove planner completion and the task's
+`running → checking → mergeReady → merging → completed` transitions. The task
+must also have distinct worker/checker sessions and durable dispatched prompts.
+Additional fixed PASS lines report `planner_completed`, `worker_completed`,
+`checker_completed` and `dev_merged`; they reflect persisted evidence, so a fast
+stage cannot be missed by polling. Stable success additionally requires
+`PASS stable_server_restored` from cleanup. The QA engine stops; the person's OC1
+server availability is restored using the same installed OC1/authentication
+contract. Restore failure makes the final result fail even if task steps passed.
+The new scratch/profile and receipts remain available for inspection. This
+procedure does not restore an interrupted live reply: busy or unknown chat is a
+refusal, not permission to interrupt it.
+
 Expected success:
 
 ```text
@@ -92,11 +142,13 @@ bash -n tool/qa/phone_engine_acceptance.sh
 git diff --check
 ```
 
-Executed for this wrapper slice: **12 host tests passed**, shell syntax passed,
+Executed for the stable extension: **14 host tests passed**, shell syntax passed,
 and whitespace check passed. Tests use a local fake adb transcript and cover the
 six-step success protocol, ARM64/x86_64 preflight, failure/result conflicts,
 duplicate/order/missing/malformed steps, error redaction, absent app/runner,
-device/ABI failure, consent and shell-injection rejection. They do not establish
+device/ABI failure, consent, shell-injection rejection, exact stable target,
+mutually exclusive opt-in, required stage/cleanup evidence and cleanup failure.
+They do not establish
 Android proof, a live provider task, a UI pass or a full-suite result. At slice
 creation no adb device was attached; live acceptance is pending on an authorized
 prepared preview installation. No APK was signed/installed and nothing was pushed.
