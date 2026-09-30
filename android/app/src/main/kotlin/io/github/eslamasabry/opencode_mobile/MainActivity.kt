@@ -401,7 +401,13 @@ class MainActivity : FlutterActivity() {
                     main.post { result.success(value) }
                 } catch (error: Throwable) {
                     main.post {
-                        if (error is SetupPersistenceException) {
+                        if (error is PhoneEngineNative.Failure) {
+                            result.error(error.code, "The phone engine is unavailable.", null)
+                        } else if (call.method in setOf("startPhoneEngine", "phoneEngineStatus",
+                            "phoneEngineCredentials", "stopPhoneEngine", "deletePhoneEngine",
+                            "startProtectedPhoneServer", "runPhoneEngineBoundaryProbe")) {
+                            result.error("engine_unavailable", "The phone engine is unavailable.", null)
+                        } else if (error is SetupPersistenceException) {
                             result.error(SetupPersistenceException.CODE, null, null)
                         } else {
                             result.error("builtin_linux", error.message ?: error.javaClass.simpleName, null)
@@ -411,6 +417,32 @@ class MainActivity : FlutterActivity() {
             }.start()
         }
         when (call.method) {
+            "runPhoneEngineBoundaryProbe" -> inBackground { linux.runPhoneEngineBoundaryProbe() }
+            "startPhoneEngine", "phoneEngineStatus", "phoneEngineCredentials",
+            "stopPhoneEngine", "deletePhoneEngine", "startProtectedPhoneServer" -> {
+                val profile = call.argument<String>("profileId")
+                if (profile == null) {
+                    result.error("invalid_profile", "The phone engine is unavailable.", null)
+                    return
+                }
+                inBackground {
+                    when (call.method) {
+                        "startPhoneEngine" -> linux.startPhoneEngine(profile,
+                            call.argument<Int>("port") ?: 4098, call.argument<String>("notice"))
+                        "phoneEngineStatus" -> linux.phoneEngineStatus(profile)
+                        "phoneEngineCredentials" -> linux.phoneEngineCredentials(profile)
+                        "stopPhoneEngine" -> linux.stopPhoneEngine(profile)
+                        "deletePhoneEngine" -> { linux.deletePhoneEngine(profile); null }
+                        else -> {
+                            val script = call.argument<String>("script")
+                                ?: throw PhoneEngineNative.Failure("invalid_script")
+                            linux.startProtectedPhoneServer(profile, script,
+                                call.argument<Int>("port") ?: 4097)
+                            null
+                        }
+                    }
+                }
+            }
             "status" -> inBackground {
                 mapOf(
                     "installed" to linux.installed,

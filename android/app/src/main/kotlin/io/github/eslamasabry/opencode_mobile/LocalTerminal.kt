@@ -206,7 +206,7 @@ class LocalTerminal private constructor(private val context: Context) {
                     .map { (key, value) -> "$key=$value" }
                 val pid = IntArray(1)
                 val fd = PtyAccess.createSubprocess(
-                    linux.prootPath,
+                    linux.prootLaunchPath,
                     context.filesDir.absolutePath,
                     argv.toTypedArray(),
                     env.toTypedArray(),
@@ -230,6 +230,9 @@ class LocalTerminal private constructor(private val context: Context) {
 
     @Synchronized
     fun list(): List<Session> = sessions.values.toList()
+
+    @Synchronized
+    fun hasLiveSessions(): Boolean = sessions.values.any { it.running }
 
     /** Forgets a shell, stopping it first when it still runs. */
     fun remove(id: Int) {

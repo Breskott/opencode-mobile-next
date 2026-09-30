@@ -179,6 +179,54 @@ class BuiltinLinuxException implements Exception {
   String toString() => message;
 }
 
+/// Native lifetime and prerequisites, without authentication material.
+class BuiltinPhoneEngineStatus {
+  const BuiltinPhoneEngineStatus({
+    required this.profileId,
+    this.running = false,
+    this.port,
+    this.boundary = false,
+    this.execution = false,
+    this.restartRequired = false,
+    this.boundaryReason = 'boundary_unverified',
+  });
+
+  factory BuiltinPhoneEngineStatus.fromMap(Map<Object?, Object?> map) =>
+      BuiltinPhoneEngineStatus(
+        profileId: map['profileId'] is String ? map['profileId'] as String : '',
+        running: map['running'] == true,
+        port: map['port'] is num ? (map['port'] as num).toInt() : null,
+        boundary: map['boundary'] == true,
+        execution: map['execution'] == true,
+        restartRequired: map['restartRequired'] == true,
+        boundaryReason: map['boundaryReason'] is String
+            ? map['boundaryReason'] as String
+            : 'boundary_unverified',
+      );
+
+  final String profileId;
+  final bool running;
+  final int? port;
+  final bool boundary;
+  final bool execution;
+  final bool restartRequired;
+  final String boundaryReason;
+}
+
+/// Ephemeral channel handoff. Never persist this object or include it in logs.
+class BuiltinPhoneEngineCredentials {
+  const BuiltinPhoneEngineCredentials({
+    required this.baseUrl,
+    required this.bearerToken,
+  });
+
+  final String baseUrl;
+  final String bearerToken;
+
+  @override
+  String toString() => 'BuiltinPhoneEngineCredentials(<redacted>)';
+}
+
 /// Fresh logical file sizes, not the cached status estimate or filesystem
 /// allocation. Values can change while programs write; refresh after removal.
 class BuiltinProjectStorage {
@@ -328,6 +376,86 @@ class BuiltinLinux {
   }
 
   Future<void> stopServer() => _invoke<void>('stopServer');
+
+  Future<BuiltinPhoneEngineStatus> startPhoneEngine({
+    required String profileId,
+    int port = 4098,
+    String? notice,
+  }) async => BuiltinPhoneEngineStatus.fromMap(
+    await _invoke<Map<Object?, Object?>>('startPhoneEngine', {
+          'profileId': profileId,
+          'port': port,
+          if (notice != null) 'notice': notice,
+        }) ??
+        const {},
+  );
+
+  Future<BuiltinPhoneEngineStatus> phoneEngineStatus(String profileId) async =>
+      BuiltinPhoneEngineStatus.fromMap(
+        await _invoke<Map<Object?, Object?>>('phoneEngineStatus', {
+              'profileId': profileId,
+            }) ??
+            const {},
+      );
+
+  Future<BuiltinPhoneEngineCredentials> phoneEngineCredentials(
+    String profileId,
+  ) async {
+    final raw = await _invoke<Map<Object?, Object?>>('phoneEngineCredentials', {
+      'profileId': profileId,
+    });
+    final baseUrl = raw?['baseUrl'];
+    final bearerToken = raw?['bearerToken'];
+    final uri = baseUrl is String ? Uri.tryParse(baseUrl) : null;
+    if (uri == null ||
+        uri.scheme != 'http' ||
+        uri.host != '127.0.0.1' ||
+        uri.userInfo.isNotEmpty ||
+        uri.path.isNotEmpty ||
+        uri.hasQuery ||
+        uri.hasFragment ||
+        !uri.hasPort ||
+        uri.port < 1024 ||
+        bearerToken is! String ||
+        !RegExp(r'^[a-f0-9]{64}$').hasMatch(bearerToken)) {
+      throw const BuiltinLinuxException(
+        'The phone engine is unavailable.',
+        code: 'engine_auth_unavailable',
+      );
+    }
+    return BuiltinPhoneEngineCredentials(
+      baseUrl: baseUrl as String,
+      bearerToken: bearerToken,
+    );
+  }
+
+  Future<BuiltinPhoneEngineStatus> stopPhoneEngine(String profileId) async =>
+      BuiltinPhoneEngineStatus.fromMap(
+        await _invoke<Map<Object?, Object?>>('stopPhoneEngine', {
+              'profileId': profileId,
+            }) ??
+            const {},
+      );
+
+  Future<void> deletePhoneEngine(String profileId) =>
+      _invoke<void>('deletePhoneEngine', {'profileId': profileId});
+
+  /// Runs only isolated proof fixtures. A complete result does not enable work.
+  Future<Map<Object?, Object?>> runPhoneEngineBoundaryProbe() async =>
+      await _invoke<Map<Object?, Object?>>('runPhoneEngineBoundaryProbe') ??
+      const {};
+
+  /// Explicit restart path. An existing chat server is never stopped here.
+  /// A successful launch is still not a completed device boundary proof.
+  Future<void> startProtectedPhoneServer({
+    required String profileId,
+    required String script,
+    int port = serverPort,
+  }) => _invoke<void>('startProtectedPhoneServer', {
+    'profileId': profileId,
+    'script': script,
+    'port': port,
+  });
 
   /// Keeps the phone awake while a reply runs on the in-app server ([on]),
   /// for at most [hold] (Android caps it at 15 minutes); the caller renews

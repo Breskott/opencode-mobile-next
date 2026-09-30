@@ -60,6 +60,8 @@ class BuiltinLinux(private val context: Context) {
     private var installingRuntime = false
     private val ready = File(home, "ubuntu.ready")
     private val nativeDir = context.applicationInfo.nativeLibraryDir
+    private val phoneEngine = PhoneEngineNative(context)
+    @Volatile private var protectedProot = false
 
     val installed: Boolean get() = ready.isFile
 
@@ -175,7 +177,7 @@ class BuiltinLinux(private val context: Context) {
     fun prootCommand(program: List<String>): List<String> {
         check(!installingRuntime) { "Runtime installation is still running" }
         projectStorage.prepare()
-        return listOf(
+        val command = listOf(
             prootPath,
             "--root-id",
             "--kill-on-exit",
@@ -198,6 +200,182 @@ class BuiltinLinux(private val context: Context) {
             "TERM=xterm-256color",
             "TMPDIR=/tmp",
         ) + program
+        return if (protectedProot) protectedCommand(command) else command
+    }
+
+    /** The executable must match argv[0], including for the native PTY bridge. */
+    val prootLaunchPath: String get() =
+        if (protectedProot) "$nativeDir/libaiteam_sandbox.so" else prootPath
+
+    private fun protectedCommand(command: List<String>): List<String> {
+        val tmp = File(context.cacheDir, "proot-tmp").apply { mkdirs() }
+        val policy = listOf(
+            "$nativeDir/libaiteam_sandbox.so", "--read-only", nativeDir,
+            "--read-write", home.absolutePath,
+            "--read-write", projectStorage.projects.absolutePath,
+            "--read-write", tmp.absolutePath,
+        ) + listOf("/system", "/apex", "/vendor", "/proc", "/sys")
+            .filter { File(it).exists() }.flatMap { listOf("--read-only", it) } +
+            listOf("/dev/null", "/dev/zero", "/dev/random", "/dev/urandom")
+                .filter { File(it).exists() }.flatMap { listOf("--device", it) }
+        return policy + listOf("--") + command
+    }
+
+    /** Isolated acceptance harness; it never grants execution authority. */
+    @Synchronized
+    fun runPhoneEngineBoundaryProbe(): Map<String, Any?> {
+        if (!installed || services.any { it.key != PHONE_ENGINE && it.value.process.isAlive } ||
+            processes.any { it.isAlive } || LocalTerminal.get(context).hasLiveSessions()) {
+            throw PhoneEngineNative.Failure("restart_required")
+        }
+        val probe = File(nativeDir, "libaiteam_boundary_probe.so")
+        if (!probe.canExecute()) throw PhoneEngineNative.Failure("boundary_not_packaged")
+        val id = java.util.UUID.randomUUID().toString()
+        val fixture = File(context.filesDir, ".phone-engine-proof-$id")
+        val protected = File(fixture, "protected")
+        val worker = File(projectStorage.projects, ".phone-engine-proof-$id")
+        projectStorage.prepare()
+        check(protected.mkdirs() && worker.mkdir())
+        val sentinel = File(protected, "sentinel")
+        sentinel.writeText("proof-only-canonical-state")
+        Os.chmod(sentinel.absolutePath, 384)
+        Os.symlink(protected.absolutePath, File(worker, "protected-alias").absolutePath)
+        fun runProbe(argv: List<String>, environment: Map<String, String> = emptyMap()): Boolean {
+            val process = ProcessBuilder(argv).apply {
+                environment().clear()
+                environment().putAll(environment)
+                redirectOutput(File("/dev/null"))
+                redirectError(File("/dev/null"))
+            }.start()
+            process.outputStream.close()
+            if (!process.waitFor(30, TimeUnit.SECONDS)) {
+                stopTree(process)
+                return false
+            }
+            return process.exitValue() == 0
+        }
+        return try {
+            val native = runProbe(protectedCommand(listOf(probe.absolutePath,
+                protected.absolutePath, worker.absolutePath, AndroidProcess.myPid().toString())))
+            val escapedRoot = protected.absolutePath.replace("'", "'\"'\"'")
+            val guestWorker = "/root/projects/${worker.name}"
+            val script = """
+                set -eu
+                cd '$guestWorker'
+                # Positive controls cover writes, real Git refs and commits.
+                printf 'worker\n' > positive-control
+                git init -q positive-repo
+                git -C positive-repo config user.name proof
+                git -C positive-repo config user.email proof@invalid.example
+                printf 'change\n' > positive-repo/file
+                git -C positive-repo add file
+                git -C positive-repo commit -q -m proof
+                git -C positive-repo update-ref refs/heads/worker-proof HEAD
+                git -C positive-repo show-ref --verify --quiet refs/heads/worker-proof
+                # These are defence-in-depth view tests; the native raw probes
+                # above establish OS denial independently of proot rewriting.
+                if (printf 'attack' > '$escapedRoot/sentinel') 2>/dev/null; then exit 1; fi
+                if (printf 'attack' > '/proc/${AndroidProcess.myPid()}/root$escapedRoot/sentinel') 2>/dev/null; then exit 1; fi
+                if cat '/proc/${AndroidProcess.myPid()}/environ' >/dev/null 2>&1; then exit 1; fi
+                if git -c core.hooksPath=/dev/null -C '$escapedRoot' update-ref refs/heads/main HEAD >/dev/null 2>&1; then exit 1; fi
+                if git --git-dir='$escapedRoot/.git' config core.hooksPath /dev/null >/dev/null 2>&1; then exit 1; fi
+                if (printf 'attack' > '$escapedRoot/.git/refs/heads/main') 2>/dev/null; then exit 1; fi
+            """.trimIndent()
+            val wasProtected = protectedProot
+            val proot = try {
+                protectedProot = true
+                runProbe(prootCommand(listOf("/bin/sh", "-c", script)), prootEnvironment())
+            } finally { protectedProot = wasProtected }
+            val unchanged = sentinel.readText() == "proof-only-canonical-state" &&
+                (Os.lstat(sentinel.absolutePath).st_mode and 511) == 384
+            mapOf("schemaVersion" to 1, "nativeAttacksDenied" to native,
+                "prootGitCompatible" to proot, "fixtureUnchanged" to unchanged,
+                "complete" to (native && proot && unchanged),
+                "enablesExecution" to false, "boundaryReason" to "boundary_unverified")
+        } finally {
+            // Fixture traversal never follows links into protected app state.
+            fun erase(file: File) {
+                if (OsConstants.S_ISDIR(Os.lstat(file.absolutePath).st_mode))
+                    file.listFiles()?.forEach { erase(it) }
+                if (!file.delete()) throw PhoneEngineNative.Failure("proof_cleanup_failed")
+            }
+            erase(worker)
+            erase(fixture)
+        }
+    }
+
+    @Synchronized
+    fun startProtectedPhoneServer(profile: String, script: String, port: Int) {
+        phoneEngine.status(profile) // Validates the profile, without reading auth.
+        if (serverRunning || services.any { it.key != PHONE_ENGINE && it.value.process.isAlive } ||
+            processes.any { it.isAlive } || LocalTerminal.get(context).hasLiveSessions()) {
+            throw PhoneEngineNative.Failure("restart_required")
+        }
+        if (port !in 1024..65535) throw PhoneEngineNative.Failure("invalid_port")
+        val launcher = File(nativeDir, "libaiteam_sandbox.so")
+        if (!launcher.canExecute()) throw PhoneEngineNative.Failure("boundary_not_packaged")
+        val probe = ProcessBuilder(launcher.absolutePath, "--check-kernel")
+            .redirectOutput(File("/dev/null")).redirectError(File("/dev/null")).start()
+        probe.outputStream.close()
+        if (!probe.waitFor(3, TimeUnit.SECONDS)) {
+            probe.destroyForcibly()
+            throw PhoneEngineNative.Failure("boundary_unavailable")
+        }
+        if (probe.exitValue() != 0) throw PhoneEngineNative.Failure("boundary_unavailable")
+        // This affects every subsequent run, service and PTY launch. Kernel
+        // support is a prerequisite, not proof; capabilities remain false.
+        protectedProot = true
+        try { startServer(script, port) } catch (error: Exception) {
+            protectedProot = false
+            throw error
+        }
+    }
+
+    @Synchronized
+    fun phoneEngineStatus(profile: String): Map<String, Any?> = phoneEngine.status(profile) +
+        mapOf("restartRequired" to (serverRunning && !protectedProot))
+
+    @Synchronized
+    fun phoneEngineCredentials(profile: String): Map<String, String> = phoneEngine.credentials(profile)
+
+    @Synchronized
+    fun startPhoneEngine(profile: String, port: Int, notice: String?): Map<String, Any?> {
+        val child = phoneEngine.start(profile, port, serverRunning && !protectedProot)
+        if (services[PHONE_ENGINE]?.process !== child) {
+            services[PHONE_ENGINE] = Service(child, port, notice)
+            recordRunning()
+            try { BuiltinServerService.start(context, currentNotice()) } catch (error: Exception) {
+                phoneEngine.stop(profile)
+                services.remove(PHONE_ENGINE)
+                serviceSetChanged()
+                throw PhoneEngineNative.Failure("foreground_unavailable")
+            }
+            Thread {
+                child.waitFor()
+                synchronized(this) {
+                    if (services[PHONE_ENGINE]?.process === child) {
+                        services.remove(PHONE_ENGINE)
+                        serviceSetChanged()
+                    }
+                }
+            }.start()
+        }
+        return phoneEngineStatus(profile)
+    }
+
+    @Synchronized
+    fun stopPhoneEngine(profile: String): Map<String, Any?> {
+        phoneEngine.stop(profile)
+        if (services[PHONE_ENGINE]?.process?.isAlive != true) services.remove(PHONE_ENGINE)
+        serviceSetChanged()
+        return phoneEngine.status(profile)
+    }
+
+    @Synchronized
+    fun deletePhoneEngine(profile: String) {
+        phoneEngine.delete(profile)
+        if (services[PHONE_ENGINE]?.process?.isAlive != true) services.remove(PHONE_ENGINE)
+        serviceSetChanged()
     }
 
     /**
@@ -395,6 +573,7 @@ class BuiltinLinux(private val context: Context) {
     fun startService(name: String, script: String, port: Int?, notice: String?) {
         check(installed) { "Ubuntu is not installed in the app yet" }
         require(NAME.matches(name)) { "Invalid service name: $name" }
+        require(name != PHONE_ENGINE) { "The native phone engine has a dedicated launcher." }
         if (name == SERVER) setServerWanted(true)
         launchService(name, script, port, notice)
     }
@@ -458,6 +637,7 @@ class BuiltinLinux(private val context: Context) {
     }
 
     private fun removeService(name: String) {
+        if (name == PHONE_ENGINE) phoneEngine.stopTracked()
         val service = services.remove(name) ?: return
         stopTree(service.process)
         serviceSetChanged()
@@ -1077,6 +1257,7 @@ class BuiltinLinux(private val context: Context) {
         // Ubuntu Base 24.04.5 (noble), from Canonical's SHA256SUMS.
         /** What the setup checklist shows for the Linux base once installed. */
         const val VERSION = "24.04.5"
+        const val PHONE_ENGINE = "phone-engine"
 
         private const val BASE =
             "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/"

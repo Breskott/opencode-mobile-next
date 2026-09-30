@@ -13,7 +13,7 @@ import android.os.IBinder
 
 /**
  * Keeps the app alive while the OpenCode server (and, when it is on, AI Team)
- * runs inside it.
+ * runs inside it, together with the native Rust phone project engine.
  *
  * The services are children of the app's process, so when Android reclaims
  * the process they go with it, mid-task. While any of them runs, this service
@@ -69,7 +69,7 @@ class BuiltinServerService : Service() {
                 "OpenCode on this phone",
                 NotificationManager.IMPORTANCE_LOW,
             ).apply {
-                description = "Shown while the OpenCode server runs inside the app"
+                description = "Shown while the phone server or project engine runs"
                 setShowBadge(false)
             },
         )
