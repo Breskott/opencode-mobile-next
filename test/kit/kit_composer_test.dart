@@ -257,23 +257,17 @@ void main() {
   });
 
   // Owner decision (critique 2026-09-29): Stop is always red.
-  testWidgets('Stop is a text1 circle with a red (danger) square', (
-    tester,
-  ) async {
+  testWidgets('Stop is a red circle', (tester) async {
     final h = _host('');
     await _pump(tester, _composer(h, busy: true));
     final roles = KitTokens.of(tester.element(find.byType(KitComposer))).roles;
     final circle = tester.widget<DecoratedBox>(
       find.byKey(const ValueKey('kit-composer-circle-stop')),
     );
-    expect((circle.decoration as BoxDecoration).color, roles.text1);
-    final square = tester.widget<DecoratedBox>(
-      find.descendant(
-        of: find.byKey(const ValueKey('kit-composer-stop-square')),
-        matching: find.byType(DecoratedBox),
-      ),
+    expect(
+      (circle.decoration as BoxDecoration).color,
+      anyOf(roles.danger, roles.dangerFill),
     );
-    expect((square.decoration as BoxDecoration).color, roles.danger);
   });
 
   group('delivery', () {
