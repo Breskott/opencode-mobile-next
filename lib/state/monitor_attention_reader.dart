@@ -5,6 +5,8 @@ import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../orchestration/adapters/fixture/project_fixture_gateway.dart';
+import '../orchestration/adapters/inapp/phone_engine_gateway.dart';
+import '../domain/team_project_gateway.dart';
 import 'team_project_persistence.dart';
 
 import '../api/models.dart';
@@ -23,14 +25,23 @@ class MonitorAttentionReader {
   MonitorAttentionReader({
     OrchestrationProbe? probe,
     OrchestrationGatewayFactory? teamGatewayFactory,
+    PhoneEngineGateway Function(ServerProfile profile)? phoneGatewayBuilder,
     DateTime Function()? now,
     this.timeout = const Duration(seconds: 8),
   }) : _probe = probe ?? OrchestrationController.defaultProbe,
        _teamGatewayFactory = teamGatewayFactory,
+       _phoneGatewayBuilder = phoneGatewayBuilder ?? _phoneGateway,
        _now = now ?? DateTime.now;
 
   final OrchestrationProbe _probe;
   final OrchestrationGatewayFactory? _teamGatewayFactory;
+  final PhoneEngineGateway Function(ServerProfile profile) _phoneGatewayBuilder;
+  static PhoneEngineGateway _phoneGateway(ServerProfile profile) =>
+      PhoneEngineGateway(
+        baseUrl: profile.orchestration!.url,
+        profileId: profile.id,
+        bearerToken: profile.teamEngineAuth,
+      );
   final DateTime Function() _now;
   final Duration timeout;
   final _cursors = <String, ({String location, int offset})>{};
@@ -132,7 +143,40 @@ class MonitorAttentionReader {
 
     final config = profile.orchestration;
     OrchestrationGateway? team;
-    if (config != null && allowed()) {
+    if (config?.provider == OrchestrationProvider.phoneEngine && allowed()) {
+      try {
+        // One authenticated client owns the probe and the read. Generic probes
+        // have no profile credential context and cannot identify this engine.
+        final gateway = _phoneGatewayBuilder(profile);
+        team = gateway;
+        await call(gateway.probe);
+        if (!gateway.capabilities.projects) throw const _ReadExpired();
+        final snapshot = await call(gateway.teamWorkspace);
+        final records = snapshot.projects.fold<int>(
+          snapshot.projects.length,
+          (count, project) =>
+              count + project.tasks.length + project.requests.length,
+        );
+        items.addAll(
+          projectObservations(
+            snapshot,
+            observedAt: _now(),
+            directory: pair.gateway.directory,
+            workspace: pair.gateway.workspace,
+          ),
+        );
+        teamComplete = records <= teamRecordLimit && allowed();
+      } catch (_) {
+        teamComplete = false;
+      } finally {
+        try {
+          await team?.close();
+        } catch (_) {
+          teamComplete = false;
+        }
+        team = null;
+      }
+    } else if (config != null && allowed()) {
       try {
         final verdict = await call(() => _probe(config));
         if (verdict is! ProbeFound) throw const _ReadExpired();
@@ -239,6 +283,66 @@ class MonitorAttentionReader {
       checkedSessionIDs: checked,
       teamComplete: teamComplete,
     );
+  }
+
+  /// Bounded projection of the authenticated phone engine's project snapshot.
+  static List<AttentionObservation> projectObservations(
+    TeamWorkspace snapshot, {
+    required DateTime observedAt,
+    String? directory,
+    String? workspace,
+  }) {
+    final result = <AttentionObservation>[];
+    var remaining = teamRecordLimit;
+    for (final project in snapshot.projects) {
+      if (remaining-- <= 0) break;
+      final requestedTasks = <String>{};
+      for (final request in project.requests) {
+        if (remaining-- <= 0) return result;
+        if (request.answered) continue;
+        requestedTasks.add(request.taskId);
+        result.add(
+          AttentionObservation(
+            id: 'team-project-request:${project.id}:${request.id}',
+            kind: AttentionKind.teamGate,
+            facts: const WorkRowFacts(phase: WorkRowPhase.needsYou),
+            observedAt: observedAt,
+            requestID: request.id,
+            taskID: request.taskId.isEmpty ? null : request.taskId,
+            title: _title(request.title),
+            directory: directory,
+            workspace: workspace,
+          ),
+        );
+      }
+      for (final task in project.tasks) {
+        if (remaining-- <= 0) return result;
+        if (requestedTasks.contains(task.id) ||
+            !{
+              'failed',
+              'interrupted',
+              'needsYou',
+              'waitingForYou',
+            }.contains(task.status))
+          continue;
+        final failed = task.status == 'failed';
+        result.add(
+          AttentionObservation(
+            id: 'team-project-task:${project.id}:${task.id}',
+            kind: failed ? AttentionKind.failedRun : AttentionKind.teamGate,
+            facts: WorkRowFacts(
+              phase: failed ? WorkRowPhase.failed : WorkRowPhase.needsYou,
+            ),
+            observedAt: observedAt,
+            taskID: task.id,
+            title: _title(task.title),
+            directory: directory,
+            workspace: workspace,
+          ),
+        );
+      }
+    }
+    return result;
   }
 
   /// Shared projection for the active team controller and monitor reads.

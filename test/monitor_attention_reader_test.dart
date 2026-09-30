@@ -15,6 +15,9 @@ import 'package:opencode_mobile/state/profile_monitor.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 
 import 'support/profile_monitor_fixture.dart';
+import 'package:opencode_mobile/orchestration/adapters/inapp/phone_engine_gateway.dart';
+import 'package:opencode_mobile/domain/team_project_gateway.dart';
+import 'phone_project_engine_gateway_test.dart' as phone;
 
 final at = DateTime.utc(2026, 9, 28);
 ServerProfile profile({bool team = false}) => ServerProfile(
@@ -107,6 +110,178 @@ MonitorGatewayPair _pair(_Messages gateway) =>
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test(
+    'phone monitor authenticates the selected profile and reads project attention',
+    () async {
+      final selected = profile()
+        ..teamEngineAuth = 'private-phone-token'
+        ..orchestration = const OrchestrationConfig(
+          provider: OrchestrationProvider.phoneEngine,
+          url: 'http://127.0.0.1:42761',
+        );
+      final adapter = phone.FakeEngineAdapter((request) async {
+        expect(request.headers['Authorization'], 'Bearer private-phone-token');
+        return phone.jsonBody(
+          request.path == '/v1/health'
+              ? phone.health('server')
+              : const TeamWorkspace(
+                  simulated: false,
+                  projects: [
+                    TeamProject(
+                      id: 'project',
+                      simulated: false,
+                      tasks: [
+                        TeamTask(
+                          id: 'failed',
+                          title: 'Failed task',
+                          status: 'failed',
+                        ),
+                        TeamTask(
+                          id: 'running',
+                          title: 'Running task',
+                          status: 'running',
+                        ),
+                        TeamTask(
+                          id: 'interrupted',
+                          title: 'Paused task',
+                          status: 'interrupted',
+                        ),
+                      ],
+                      requests: [
+                        TeamRequest(
+                          id: 'question',
+                          taskId: 'task',
+                          title: 'Choose a behavior',
+                        ),
+                        TeamRequest(
+                          id: 'answered',
+                          answered: true,
+                          title: 'Already answered',
+                        ),
+                      ],
+                    ),
+                  ],
+                ).toJson(),
+        );
+      });
+      final reader = MonitorAttentionReader(
+        probe: (_) => throw StateError('Credential-free probe must not run'),
+        phoneGatewayBuilder: (owner) => PhoneEngineGateway(
+          baseUrl: owner.orchestration!.url,
+          profileId: owner.id,
+          bearerToken: owner.teamEngineAuth,
+          adapter: adapter,
+        ),
+      );
+      final details = await reader.read(
+        selected,
+        _pair(_Messages()),
+        [],
+        {},
+        () => true,
+      );
+      expect(details.teamComplete, isTrue);
+      expect(
+        details.items.map((item) => item.taskID),
+        containsAll(['task', 'failed', 'interrupted']),
+      );
+      expect(details.items, hasLength(3));
+      expect(adapter.requests.map((request) => request.path), [
+        '/v1/health',
+        '/v1/workspace',
+      ]);
+      expect(adapter.closed, isTrue);
+      reader.dispose();
+    },
+  );
+
+  test(
+    'phone monitor treats wrong identity and missing credentials as unknown',
+    () async {
+      for (final missing in [false, true]) {
+        final selected = profile()
+          ..teamEngineAuth = missing ? '' : 'private-phone-token'
+          ..orchestration = const OrchestrationConfig(
+            provider: OrchestrationProvider.phoneEngine,
+            url: 'http://127.0.0.1:42761',
+          );
+        final adapter = phone.FakeEngineAdapter(
+          (_) async => phone.jsonBody(phone.health('another-profile')),
+        );
+        final reader = MonitorAttentionReader(
+          phoneGatewayBuilder: (owner) => PhoneEngineGateway(
+            baseUrl: owner.orchestration!.url,
+            profileId: owner.id,
+            bearerToken: owner.teamEngineAuth,
+            adapter: adapter,
+          ),
+        );
+        final details = await reader.read(
+          selected,
+          _pair(_Messages()),
+          [],
+          {},
+          () => true,
+        );
+        expect(details.teamComplete, isFalse);
+        expect(details.items, isEmpty);
+        expect(adapter.requests.length, missing ? 0 : 1);
+        if (!missing) expect(adapter.closed, isTrue);
+        reader.dispose();
+      }
+    },
+  );
+
+  test('phone project inventory cap keeps coverage partial', () async {
+    final selected = profile()
+      ..teamEngineAuth = 'private-phone-token'
+      ..orchestration = const OrchestrationConfig(
+        provider: OrchestrationProvider.phoneEngine,
+        url: 'http://127.0.0.1:42761',
+      );
+    final adapter = phone.FakeEngineAdapter(
+      (request) async => phone.jsonBody(
+        request.path == '/v1/health'
+            ? phone.health('server')
+            : TeamWorkspace(
+                simulated: false,
+                projects: [
+                  TeamProject(
+                    id: 'project',
+                    tasks: List.generate(
+                      300,
+                      (i) =>
+                          TeamTask(id: '$i', title: 'task', status: 'failed'),
+                    ),
+                  ),
+                ],
+              ).toJson(),
+      ),
+    );
+    final reader = MonitorAttentionReader(
+      phoneGatewayBuilder: (owner) => PhoneEngineGateway(
+        baseUrl: owner.orchestration!.url,
+        profileId: owner.id,
+        bearerToken: owner.teamEngineAuth,
+        adapter: adapter,
+      ),
+    );
+    final details = await reader.read(
+      selected,
+      _pair(_Messages()),
+      [],
+      {},
+      () => true,
+    );
+    expect(details.teamComplete, isFalse);
+    expect(
+      details.items,
+      hasLength(MonitorAttentionReader.teamRecordLimit - 1),
+    );
+    expect(adapter.closed, isTrue);
+    reader.dispose();
+  });
+
   test(
     'project demo monitor reads saved decisions without mutating recovery',
     () async {

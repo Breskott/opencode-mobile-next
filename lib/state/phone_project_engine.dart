@@ -332,6 +332,14 @@ class PhoneProjectEngineController {
   String _tombstone(String id) => 'oc.teamEngineDeleted.$id';
   bool _blocked(String id) =>
       _deleted.contains(id) || store.prefs.getBool(_tombstone(id)) == true;
+
+  /// Includes a first activation that has not persisted its credentials yet.
+  bool hasLifecycleOwnership(String profileId) =>
+      _tails.containsKey(profileId) ||
+      _gateways.containsKey(profileId) ||
+      _deletions.containsKey(profileId) ||
+      _blocked(profileId);
+
   ServerProfile _profile(String id) => store.profiles.firstWhere(
     (p) => p.id == id,
     orElse: () => throw const PhoneEngineException('profileMissing'),
