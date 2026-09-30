@@ -90,6 +90,16 @@ class BuiltinTeamStartProgress extends ChangeNotifier {
     return _generation;
   }
 
+  /// Supersedes pending observers without completing any unfinished step.
+  void cancel() {
+    _generation++;
+    _running = false;
+    _step = null;
+    _failedStep = null;
+    _error = null;
+    notifyListeners();
+  }
+
   bool isCurrent(int generation) => generation == _generation;
 
   /// [step] begins; the one before it is done.
