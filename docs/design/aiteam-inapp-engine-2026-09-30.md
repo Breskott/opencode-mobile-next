@@ -426,3 +426,12 @@ successful observations in findings. The report is model-authored inspectable
 evidence, not an execution attestation. Missing or inconclusive required
 evidence blocks merge. Canonical receipt and checker validation gates remain
 unchanged.
+
+Execution-ready attachment adds an optional `onReady(profileId)` lifecycle
+callback after saved engine credentials and heartbeat ownership. Health polls
+and store-only attachment do not invoke it. ConnectionController reconnects
+only the same managed foreground phone profile when its chat transport is not
+connected, using the existing deduplicated and generation-fenced recovery.
+This replaces an event stream failed by the deliberate protected restart.
+Readiness never grants chat idle: admission stays unknown until fresh
+authenticated status and connection evidence arrive.
