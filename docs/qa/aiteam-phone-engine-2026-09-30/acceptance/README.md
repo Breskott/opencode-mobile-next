@@ -83,7 +83,10 @@ tool/qa/phone_engine_acceptance.sh \
 
 Instrumentation restarts the stable app process. Start its existing authenticated
 in-app OC1 server, finish the person's chat reply, and close terminals first. The
-runner refuses a missing/untracked server, known busy chat, unknown scoped status,
+runner observes asynchronous restoration of the already-configured server for at
+most 90 seconds after instrumentation restarts the app. It never forces a server
+start or adopts an unknown process during this wait. It then refuses a
+missing/untracked server, known busy chat, unknown scoped status,
 live terminal or another service. It uses existing native stop/start controls
 only after that check, creates a new random `qa_*` engine profile and one scratch
 repository, and drives the actual approved planner/worker/checker sessions. It
@@ -94,8 +97,10 @@ the runner never bypasses proof or deletes protection state.
 Ordered durable job events prove planner completion and the task's
 `running → checking → mergeReady → merging → completed` transitions. The task
 must also have distinct worker/checker sessions and durable dispatched prompts.
-Additional fixed PASS lines report `planner_completed`, `worker_completed`,
-`checker_completed` and `dev_merged`; they reflect persisted evidence, so a fast
+Additional fixed PASS lines report `project_created`, `planner_completed`,
+`plan_approved`, `worker_completed`, `checker_completed` and `dev_merged`.
+The create/approval lines follow successful authenticated commands; the session
+lines reflect persisted evidence, so a fast
 stage cannot be missed by polling. Stable success additionally requires
 `PASS stable_server_restored` from cleanup. The QA engine stops; the person's OC1
 server availability is restored using the same installed OC1/authentication

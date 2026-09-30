@@ -16,7 +16,7 @@ STEPS = (
     "engine_start_proof", "scratch_repo", "approved_plan", "checked_dev_merge",
     "unconfirmed_promotion_refused", "confirmed_promotion_receipt",
 )
-STAGES = ("planner_completed", "worker_completed", "checker_completed", "dev_merged")
+STAGES = ("project_created", "planner_completed", "plan_approved", "worker_completed", "checker_completed", "dev_merged")
 
 
 def fail(step, code, exit_code=1):

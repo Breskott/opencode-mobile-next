@@ -160,13 +160,16 @@ class PhoneEngineAcceptanceTest(unittest.TestCase):
     def test_stable_requires_exact_package_explicit_optin_and_stage_cleanup_evidence(self):
         stable_args = ("--package", "io.github.eslamasabry.opencode_mobile", "--stable-app-qa", "--allow-model-spend")
         evidence = ["INSTRUMENTATION_STATUS: phoneEngineStage=PASS " + stage for stage in
-                    ("planner_completed", "worker_completed", "checker_completed", "dev_merged")]
+                    ("project_created", "planner_completed", "plan_approved", "worker_completed", "checker_completed", "dev_merged")]
         evidence.append("INSTRUMENTATION_STATUS: phoneEngineCleanup=PASS stable_server_restored")
         body = transcript().replace("INSTRUMENTATION_RESULT:", "\n".join(evidence) + "\nINSTRUMENTATION_RESULT:")
         self.output.write_text(body)
         result = self.run_script(extra=stable_args, env_extra={"MOCK_STABLE": "1"}, consent=False)
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIn("PASS worker_completed", result.stdout)
+        self.assertIn("PASS project_created", result.stdout)
+        self.assertIn("PASS planner_completed", result.stdout)
+        self.assertIn("PASS plan_approved", result.stdout)
         self.assertIn("PASS checker_completed", result.stdout)
         self.assertIn("PASS stable_server_restored", result.stdout)
         self.output.write_text(transcript())

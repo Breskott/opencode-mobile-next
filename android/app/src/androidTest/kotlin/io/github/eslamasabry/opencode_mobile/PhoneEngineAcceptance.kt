@@ -38,6 +38,7 @@ class PhoneEngineAcceptance : Instrumentation() {
     private var stableServerStopped = false
     private var currentStep = "engine_start_proof"
     private var deadline = 0L
+    private var statusWaitDeadline = 0L
     private val criterion = "The repository root contains PHONE_ENGINE_QA.txt with exactly phone-engine-live-acceptance followed by a newline, committed on the task branch; no other tracked file is changed."
     private val personDirectories = linkedSetOf<String>()
 
@@ -165,12 +166,10 @@ class PhoneEngineAcceptance : Instrumentation() {
         learnPersonDirectories(File(targetContext.filesDir, "projects"))
         personDirectories.add("/root")
         personDirectories.add("/root/projects")
-        val services = linux.runningServices()
         if (stableQa) {
-            requireSafe(services.contains(BuiltinLinux.SERVER), "stable_server_not_running")
-            requireSafe(services.all { it == BuiltinLinux.SERVER }, "other_service_running")
-            requireSafe(LocalTerminal.get(targetContext).list().none { it.running }, "person_terminal_running")
+            awaitExistingStableServer()
         }
+        val services = linux.runningServices()
         if (services.contains(BuiltinLinux.SERVER)) {
             requireSafe(scopedBusySessions(emptySet()).isEmpty(), "person_chat_busy")
         }
@@ -255,6 +254,7 @@ class PhoneEngineAcceptance : Instrumentation() {
         val projectId = created.getString("projectId")
         val canonical = File(privateRoot, "repos/repos/$repoId.git")
         requireSafe(readRef(canonical, "main") == seed && readRef(canonical, "dev") == seed, "scratch_import_mismatch")
+        trace("project_created")
         emit("PASS", currentStep)
 
         currentStep = "approved_plan"
@@ -273,6 +273,7 @@ class PhoneEngineAcceptance : Instrumentation() {
             task.getJSONArray("criteria").length() == 1 && task.getJSONArray("criteria").getString(0) == criterion &&
             phases.getJSONObject(0).optString("id") == "phase_qa", "plan_scope_mismatch")
         commandFor(projectId, "approvePlan", JSONObject().put("confirmed", true))
+        trace("plan_approved")
         emit("PASS", currentStep)
 
         currentStep = "checked_dev_merge"
@@ -348,6 +349,30 @@ class PhoneEngineAcceptance : Instrumentation() {
 
     private data class Reply(val status: Int, val body: JSONObject)
 
+    private fun awaitExistingStableServer() {
+        // Instrumentation restarts the app process. Flutter/native restore is
+        // asynchronous; observe its existing server for at most 90 seconds.
+        // This wait never starts, stops or adopts an unknown server/process.
+        statusWaitDeadline = minOf(deadline, SystemClock.elapsedRealtime() + 90_000L)
+        try {
+            while (SystemClock.elapsedRealtime() < statusWaitDeadline) {
+                val services = linux.runningServices()
+                requireSafe(services.all { it == BuiltinLinux.SERVER }, "other_service_running")
+                requireSafe(LocalTerminal.get(targetContext).list().none { it.running }, "person_terminal_running")
+                if (services.contains(BuiltinLinux.SERVER) && linux.serverRunning) {
+                    val busy = try { scopedBusySessions(emptySet()) } catch (_: Exception) { null }
+                    if (busy != null) {
+                        requireSafe(busy.isEmpty(), "person_chat_busy")
+                        return
+                    }
+                }
+                val remaining = statusWaitDeadline - SystemClock.elapsedRealtime()
+                if (remaining > 0L) Thread.sleep(minOf(500L, remaining))
+            }
+            throw Refused("stable_server_restore_timeout")
+        } finally { statusWaitDeadline = 0L }
+    }
+
     private fun startAcceptanceServer() {
         linux.startServer("""
             set -eu
@@ -389,10 +414,17 @@ class PhoneEngineAcceptance : Instrumentation() {
     private fun request(base: String, auth: String, method: String, path: String, body: JSONObject? = null): Reply {
         val connection = URL(base + path).openConnection() as HttpURLConnection
         try {
+            val requestDeadline = minOf(SystemClock.elapsedRealtime() + 8000L,
+                statusWaitDeadline.takeIf { it > 0L } ?: Long.MAX_VALUE)
+            fun remaining(): Int {
+                val remaining = requestDeadline - SystemClock.elapsedRealtime()
+                requireSafe(remaining > 0L, "request_timeout")
+                return remaining.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            }
             connection.requestMethod = method
             connection.instanceFollowRedirects = false
-            connection.connectTimeout = 3000
-            connection.readTimeout = 5000
+            connection.connectTimeout = minOf(3000, remaining())
+            connection.readTimeout = minOf(5000, remaining())
             connection.setRequestProperty("Authorization", auth)
             if (body != null) {
                 connection.doOutput = true
@@ -405,6 +437,7 @@ class PhoneEngineAcceptance : Instrumentation() {
                 val output = java.io.ByteArrayOutputStream()
                 val buffer = ByteArray(4096)
                 while (output.size() <= 1_048_576) {
+                    connection.readTimeout = minOf(5000, remaining())
                     val read = it.read(buffer, 0, minOf(buffer.size, 1_048_577 - output.size()))
                     if (read < 0) break
                     output.write(buffer, 0, read)
