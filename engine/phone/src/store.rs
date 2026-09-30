@@ -33,6 +33,8 @@ impl From<rusqlite::Error> for StoreError {
 pub struct Store {
     conn: Mutex<Connection>,
 }
+/// Event cursors are bounded independently of command and project history.
+pub const EVENT_RETENTION_LIMIT: usize = 10_000;
 impl Store {
     pub fn open(root: &Path, profile: &str) -> Result<Self, StoreError> {
         if profile.is_empty()
@@ -61,8 +63,10 @@ impl Store {
         let mut conn = Connection::open(path).map_err(StoreError::from)?;
         conn.busy_timeout(std::time::Duration::from_secs(5))?;
         conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA secure_delete=ON; CREATE TABLE IF NOT EXISTS meta(id INTEGER PRIMARY KEY CHECK(id=1), deleted INTEGER NOT NULL DEFAULT 0); INSERT OR IGNORE INTO meta(id,deleted) VALUES(1,0); CREATE TABLE IF NOT EXISTS workspace(id INTEGER PRIMARY KEY CHECK(id=1), data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS commands(id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, result TEXT NOT NULL); CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL);")?;
+        conn.execute_batch("CREATE TABLE IF NOT EXISTS event_retention(id INTEGER PRIMARY KEY CHECK(id=1), pruned_through INTEGER NOT NULL DEFAULT 0); INSERT OR IGNORE INTO event_retention(id,pruned_through) VALUES(1,0);")?;
         let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
         alive(&tx)?;
+        prune_events(&tx)?;
         tx.execute(
             "INSERT OR IGNORE INTO workspace(id,data) VALUES(1,?1)",
             [initial_workspace().to_string()],
@@ -93,6 +97,14 @@ impl Store {
         }
         let conn = self.lock()?;
         alive(&conn)?;
+        let pruned: i64 = conn.query_row(
+            "SELECT pruned_through FROM event_retention WHERE id=1",
+            [],
+            |r| r.get(0),
+        )?;
+        if after < pruned {
+            return Err(StoreError("cursorExpired"));
+        }
         let mut stmt =
             conn.prepare("SELECT seq,data FROM events WHERE seq>?1 ORDER BY seq LIMIT ?2")?;
         let rows = stmt.query_map(params![after, limit as i64], |r| {
@@ -106,6 +118,39 @@ impl Store {
             out.push(value);
         }
         Ok(out)
+    }
+    /// Clients must disclose a digest gap and refetch workspace after cursor expiry.
+    pub fn event_window(&self) -> Result<Value, StoreError> {
+        let conn = self.lock()?;
+        alive(&conn)?;
+        let pruned: i64 = conn.query_row(
+            "SELECT pruned_through FROM event_retention WHERE id=1",
+            [],
+            |r| r.get(0),
+        )?;
+        let (earliest, latest): (Option<i64>, Option<i64>) =
+            conn.query_row("SELECT MIN(seq),MAX(seq) FROM events", [], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })?;
+        Ok(
+            json!({"retentionLimit":EVENT_RETENTION_LIMIT,"prunedThroughSeq":pruned,"earliestAvailableSeq":earliest,"latestSeq":latest.unwrap_or(pruned)}),
+        )
+    }
+    /// Mutation-free semantic preflight before any repository import side effects.
+    /// Replay remains command_result's responsibility, and execute rechecks current state.
+    pub fn validate_command(&self, command: &Value) -> Result<(), StoreError> {
+        if !command.is_object() || command.to_string().len() > 1_048_576 {
+            return Err(StoreError("invalidCommand"));
+        }
+        if required_str(command, "requestId", "invalidRequestId")?.len() > 128 {
+            return Err(StoreError("invalidRequestId"));
+        }
+        let conn = self.lock()?;
+        alive(&conn)?;
+        let mut workspace = load_workspace(&conn)?;
+        let mut jobs = load_jobs(&conn)?;
+        apply_command(&mut workspace, &mut jobs, command)?;
+        Ok(())
     }
     pub fn execute(&self, command: &Value) -> Result<Value, StoreError> {
         self.execute_command(command, None)
@@ -690,6 +735,24 @@ fn event(
     revision: u64,
 ) -> Result<(), StoreError> {
     conn.execute("INSERT INTO events(data) VALUES(?1)",[json!({"kind":kind,"action":action,"projectId":project,"taskId":task,"revision":revision,"at":now()}).to_string()])?;
+    prune_events(conn)?;
+    Ok(())
+}
+fn prune_events(conn: &Connection) -> Result<(), StoreError> {
+    let cutoff: Option<i64> = conn
+        .query_row(
+            "SELECT seq FROM events ORDER BY seq DESC LIMIT 1 OFFSET ?1",
+            [EVENT_RETENTION_LIMIT as i64],
+            |r| r.get(0),
+        )
+        .optional()?;
+    if let Some(cutoff) = cutoff {
+        conn.execute(
+            "UPDATE event_retention SET pruned_through=MAX(pruned_through,?1) WHERE id=1",
+            [cutoff],
+        )?;
+        conn.execute("DELETE FROM events WHERE seq<=?1", [cutoff])?;
+    }
     Ok(())
 }
 fn now() -> String {
@@ -774,6 +837,9 @@ fn normalize_spec(spec: &Value) -> Result<Value, StoreError> {
     Ok(out)
 }
 fn validate_settings(s: &Value) -> Result<(), StoreError> {
+    if s["chargingOnly"] == true {
+        return Err(StoreError("chargingUnsupported"));
+    }
     if !matches!(s["mode"].as_str(), Some("single" | "parallel"))
         || !matches!(s["maxLanes"].as_u64(), Some(1..=32))
     {

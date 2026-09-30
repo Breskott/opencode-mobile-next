@@ -19,6 +19,170 @@ fn settings() -> Value {
 fn create(request: &str) -> Value {
     json!({"requestId":request,"action":"createProject","name":"Durable authored project","settings":settings(),"spec":{"goal":"Implement the approved change","milestones":[{"id":"m1","title":"Works","criteria":["Behavior is verified"]}]},"repos":[{"id":"repo","serverId":"phone","path":"/workspace/source","devCommit":"abc","mainCommit":"abc"}]})
 }
+#[test]
+fn semantic_preflight_rejects_before_side_effects_and_does_not_consume_request() {
+    let root = storage();
+    let store = Store::open(root.path(), "p").unwrap();
+    let before = store.workspace().unwrap();
+    let mut c = create("preflight");
+    c["settings"]["budget"]["chosen"] = json!(false);
+    assert_eq!(
+        store.validate_command(&c).unwrap_err().code(),
+        "chooseBudget"
+    );
+    assert_eq!(store.workspace().unwrap(), before);
+    assert!(store.jobs().unwrap().is_empty());
+    assert!(store.events(0, 100).unwrap().is_empty());
+    assert!(store.command_result(&c).unwrap().is_none());
+
+    c["settings"] = settings();
+    store.validate_command(&c).unwrap();
+    assert_eq!(store.workspace().unwrap(), before);
+    assert!(store.command_result(&c).unwrap().is_none());
+    let accepted = store.execute(&c).unwrap();
+    assert_eq!(accepted["accepted"], true);
+    assert_eq!(
+        store.workspace().unwrap()["projects"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(store.events(0, 100).unwrap().len(), 1);
+}
+
+#[test]
+fn semantic_preflight_rechecks_current_revision_without_persisting_cloned_jobs() {
+    let root = storage();
+    let store = Store::open(root.path(), "p").unwrap();
+    let created = store.execute(&create("create")).unwrap();
+    let project = created["projectId"].as_str().unwrap();
+    let c = command("approve", "approveSpec", project, 0);
+    let before = store.workspace().unwrap();
+    let events = store.events(0, 100).unwrap();
+    store.validate_command(&c).unwrap();
+    assert_eq!(store.workspace().unwrap(), before);
+    assert!(store.jobs().unwrap().is_empty());
+    assert_eq!(store.events(0, 100).unwrap(), events);
+    store.execute(&c).unwrap();
+    assert_eq!(
+        store.validate_command(&c).unwrap_err().code(),
+        "staleRevision"
+    );
+}
+
+#[test]
+fn charging_only_is_rejected_at_creation_defaults_and_settings_update() {
+    let root = storage();
+    let store = Store::open(root.path(), "p").unwrap();
+    let mut unsupported = settings();
+    unsupported["chargingOnly"] = json!(true);
+    let mut c = create("charging-create");
+    c["settings"] = unsupported.clone();
+    assert_eq!(
+        store.validate_command(&c).unwrap_err().code(),
+        "chargingUnsupported"
+    );
+    assert_eq!(store.execute(&c).unwrap()["code"], "chargingUnsupported");
+    assert!(store.workspace().unwrap()["projects"]
+        .as_array()
+        .unwrap()
+        .is_empty());
+    let defaults =
+        json!({"requestId":"charging-defaults","action":"updateDefaults","settings":unsupported});
+    assert_eq!(
+        store.execute(&defaults).unwrap()["code"],
+        "chargingUnsupported"
+    );
+
+    let created = store.execute(&create("supported")).unwrap();
+    let before = store.workspace().unwrap();
+    let mut update = command(
+        "charging-update",
+        "updateSettings",
+        created["projectId"].as_str().unwrap(),
+        0,
+    );
+    update["settings"] = defaults["settings"].clone();
+    assert_eq!(
+        store.execute(&update).unwrap()["code"],
+        "chargingUnsupported"
+    );
+    assert_eq!(store.workspace().unwrap(), before);
+}
+
+fn seed_events(root: &std::path::Path, count: usize) {
+    let mut conn = rusqlite::Connection::open(root.join("oc.teamEngine.p/state.sqlite3")).unwrap();
+    let tx = conn.transaction().unwrap();
+    {
+        let mut insert = tx.prepare("INSERT INTO events(data) VALUES(?1)").unwrap();
+        for _ in 0..count {
+            insert
+                .execute([r#"{"kind":"historical","action":"seed"}"#])
+                .unwrap();
+        }
+    }
+    tx.commit().unwrap();
+}
+
+#[test]
+fn event_retention_prunes_on_append_and_persists_explicit_cursor_gap() {
+    use oc_phone_engine::store::EVENT_RETENTION_LIMIT;
+    let root = storage();
+    let store = Store::open(root.path(), "p").unwrap();
+    seed_events(root.path(), EVENT_RETENTION_LIMIT);
+    store.execute(&create("create")).unwrap();
+    let window = store.event_window().unwrap();
+    assert_eq!(window["prunedThroughSeq"], 1);
+    assert_eq!(window["earliestAvailableSeq"], 2);
+    assert_eq!(window["latestSeq"], EVENT_RETENTION_LIMIT + 1);
+    assert_eq!(store.events(0, 100).unwrap_err().code(), "cursorExpired");
+    let retained = store.events(1, 1000).unwrap();
+    assert_eq!(retained[0]["seq"], 2);
+    let conn =
+        rusqlite::Connection::open(root.path().join("oc.teamEngine.p/state.sqlite3")).unwrap();
+    let count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM events", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(count, EVENT_RETENTION_LIMIT as i64);
+    drop(conn);
+    drop(store);
+    let store = Store::open(root.path(), "p").unwrap();
+    assert_eq!(store.event_window().unwrap(), window);
+    assert_eq!(store.events(0, 100).unwrap_err().code(), "cursorExpired");
+    assert_eq!(store.events(1, 1000).unwrap(), retained);
+    assert_eq!(
+        store.command_result(&create("create")).unwrap().unwrap()["accepted"],
+        true
+    );
+}
+
+#[test]
+fn event_retention_migrates_existing_large_logs_without_resetting_sequence() {
+    use oc_phone_engine::store::EVENT_RETENTION_LIMIT;
+    let root = storage();
+    let store = Store::open(root.path(), "p").unwrap();
+    seed_events(root.path(), EVENT_RETENTION_LIMIT + 11);
+    drop(store);
+    // Simulate a database from before bounded event retention was introduced.
+    let conn =
+        rusqlite::Connection::open(root.path().join("oc.teamEngine.p/state.sqlite3")).unwrap();
+    conn.execute_batch("DROP TABLE event_retention").unwrap();
+    drop(conn);
+    let store = Store::open(root.path(), "p").unwrap();
+    let window = store.event_window().unwrap();
+    assert_eq!(window["prunedThroughSeq"], 11);
+    assert_eq!(window["earliestAvailableSeq"], 12);
+    assert_eq!(window["latestSeq"], EVENT_RETENTION_LIMIT + 11);
+    assert_eq!(store.events(10, 100).unwrap_err().code(), "cursorExpired");
+    assert_eq!(store.events(11, 100).unwrap()[0]["seq"], 12);
+    store.execute(&create("next")).unwrap();
+    assert_eq!(
+        store.event_window().unwrap()["latestSeq"],
+        EVENT_RETENTION_LIMIT + 12
+    );
+    assert_eq!(store.event_window().unwrap()["prunedThroughSeq"], 12);
+}
 fn command(request: &str, action: &str, id: &str, revision: u64) -> Value {
     json!({"requestId":request,"action":action,"projectId":id,"expectedRevision":revision})
 }
