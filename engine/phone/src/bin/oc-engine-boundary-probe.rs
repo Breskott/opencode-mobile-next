@@ -226,6 +226,25 @@ fn check(root: &Path, worker: &Path, parent: i32) -> bool {
         );
         ok = false;
     }
+    // Real worker ref/file renames remain permitted; protected-source REFER
+    // denial must not be confused with blanket mutation failure.
+    let rename = std::fs::rename(
+        worker.join("positive-control"),
+        worker.join("renamed-control"),
+    )
+    .and_then(|_| {
+        std::fs::rename(
+            worker.join("renamed-control"),
+            worker.join("positive-control"),
+        )
+    });
+    if let Err(error) = rename {
+        println!(
+            "boundary-control:worker-rename:errno:{}",
+            error.raw_os_error().unwrap_or(0)
+        );
+        ok = false;
+    }
     ok
 }
 
