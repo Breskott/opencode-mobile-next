@@ -189,28 +189,39 @@ class BuiltinPhoneEngineStatus {
     this.execution = false,
     this.restartRequired = false,
     this.boundaryReason = 'boundary_unverified',
+    this.boundaryTier = 'none',
     this.boundaryGeneration,
     this.protectionRequired = false,
     this.unconfinedChildren = false,
   });
 
-  factory BuiltinPhoneEngineStatus.fromMap(Map<Object?, Object?> map) =>
-      BuiltinPhoneEngineStatus(
-        profileId: map['profileId'] is String ? map['profileId'] as String : '',
-        running: map['running'] == true,
-        port: map['port'] is num ? (map['port'] as num).toInt() : null,
-        boundary: map['boundary'] == true,
-        execution: map['execution'] == true,
-        restartRequired: map['restartRequired'] == true,
-        boundaryReason: map['boundaryReason'] is String
-            ? map['boundaryReason'] as String
-            : 'boundary_unverified',
-        boundaryGeneration: map['boundaryGeneration'] is String
-            ? map['boundaryGeneration'] as String
-            : null,
-        protectionRequired: map['protectionRequired'] == true,
-        unconfinedChildren: map['unconfinedChildren'] == true,
+  factory BuiltinPhoneEngineStatus.fromMap(Map<Object?, Object?> map) {
+    final tier = map['boundaryTier'];
+    if (map.containsKey('boundaryTier') &&
+        !{'none', 'landlock', 'proot'}.contains(tier)) {
+      throw const BuiltinLinuxException(
+        'Phone engine status is unavailable.',
+        code: 'engine_status_invalid',
       );
+    }
+    return BuiltinPhoneEngineStatus(
+      profileId: map['profileId'] is String ? map['profileId'] as String : '',
+      running: map['running'] == true,
+      port: map['port'] is num ? (map['port'] as num).toInt() : null,
+      boundary: map['boundary'] == true,
+      boundaryTier: tier as String? ?? 'none',
+      execution: map['execution'] == true,
+      restartRequired: map['restartRequired'] == true,
+      boundaryReason: map['boundaryReason'] is String
+          ? map['boundaryReason'] as String
+          : 'boundary_unverified',
+      boundaryGeneration: map['boundaryGeneration'] is String
+          ? map['boundaryGeneration'] as String
+          : null,
+      protectionRequired: map['protectionRequired'] == true,
+      unconfinedChildren: map['unconfinedChildren'] == true,
+    );
+  }
 
   final String profileId;
   final bool running;
@@ -219,6 +230,10 @@ class BuiltinPhoneEngineStatus {
   final bool execution;
   final bool restartRequired;
   final String boundaryReason;
+
+  /// `none`, `landlock`, or `proot`; no tier is inferred from flags in a
+  /// status response from an older native bridge.
+  final String boundaryTier;
   final String? boundaryGeneration;
   final bool protectionRequired;
 

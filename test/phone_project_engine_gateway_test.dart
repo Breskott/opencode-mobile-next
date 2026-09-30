@@ -77,6 +77,72 @@ Matcher safeError(String code) =>
     isA<PhoneEngineException>().having((e) => e.code, 'code', code);
 void main() {
   tearDown(KitRedact.clearKnownSecrets);
+  test('signed proot and landlock tiers preserve executable health flags', () {
+    for (final tier in ['proot', 'landlock']) {
+      final wire = health('p1', execution: true)..['boundaryTier'] = tier;
+      (wire['capabilities'] as Map)['boundaryTier'] = tier;
+      final parsed = PhoneEngineHealth.fromJson(wire, 'p1');
+      expect(parsed.boundaryTier, tier);
+      expect(parsed.boundary, isTrue);
+      expect(parsed.execution, isTrue);
+      expect(parsed.canExecute, isTrue);
+    }
+  });
+
+  test('unverified none tier keeps execution unavailable', () {
+    final wire = health('p1')..['boundaryTier'] = 'none';
+    (wire['capabilities'] as Map)['boundaryTier'] = 'none';
+    final parsed = PhoneEngineHealth.fromJson(wire, 'p1');
+    expect(parsed.boundaryTier, 'none');
+    expect(parsed.canExecute, isFalse);
+  });
+
+  test('legacy health keeps its flags when the optional tier is absent', () {
+    final parsed = PhoneEngineHealth.fromJson(
+      health('p1', execution: true),
+      'p1',
+    );
+    expect(parsed.boundaryTier, 'none');
+    expect(parsed.canExecute, isTrue);
+    expect(PhoneEngineHealth.fromJson(health('p1'), 'p1').canExecute, isFalse);
+  });
+
+  test('one reported tier is enough during an additive gateway transition', () {
+    for (final topLevel in [true, false]) {
+      final wire = health('p1', execution: true);
+      if (topLevel) {
+        wire['boundaryTier'] = 'proot';
+      } else {
+        (wire['capabilities'] as Map)['boundaryTier'] = 'proot';
+      }
+      expect(PhoneEngineHealth.fromJson(wire, 'p1').boundaryTier, 'proot');
+    }
+  });
+
+  test('health refuses unknown malformed and conflicting boundary tiers', () {
+    for (final bad in ['unsupported', '', null, 1, false]) {
+      for (final topLevel in [true, false]) {
+        final wire = health('p1', execution: true);
+        if (topLevel) {
+          wire['boundaryTier'] = bad;
+        } else {
+          (wire['capabilities'] as Map)['boundaryTier'] = bad;
+        }
+        expect(
+          () => PhoneEngineHealth.fromJson(wire, 'p1'),
+          throwsA(safeError('payloadInvalid')),
+        );
+      }
+    }
+    final conflicting = health('p1', execution: true)
+      ..['boundaryTier'] = 'landlock';
+    (conflicting['capabilities'] as Map)['boundaryTier'] = 'proot';
+    expect(
+      () => PhoneEngineHealth.fromJson(conflicting, 'p1'),
+      throwsA(safeError('payloadInvalid')),
+    );
+  });
+
   test(
     'expired activity cursor remains an explicit reset requirement',
     () async {

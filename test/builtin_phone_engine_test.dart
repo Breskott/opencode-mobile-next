@@ -36,6 +36,51 @@ void main() {
         .setMockMethodCallHandler(channel, null);
   });
 
+  test('native status exposes each recognized boundary tier', () {
+    for (final tier in ['none', 'landlock', 'proot']) {
+      final status = BuiltinPhoneEngineStatus.fromMap({
+        'profileId': 'phone-profile',
+        'boundaryTier': tier,
+        'boundary': tier != 'none',
+        'execution': tier != 'none',
+      });
+      expect(status.boundaryTier, tier);
+      expect(status.boundary, tier != 'none');
+      expect(status.execution, tier != 'none');
+    }
+  });
+
+  test('old native status keeps flags without inferring a tier', () {
+    final status = BuiltinPhoneEngineStatus.fromMap({
+      'profileId': 'phone-profile',
+      'boundary': true,
+      'execution': true,
+    });
+    expect(status.boundaryTier, 'none');
+    expect(status.boundary, isTrue);
+    expect(status.execution, isTrue);
+  });
+
+  test('native status rejects unknown or malformed boundary tiers safely', () {
+    for (final bad in ['unsupported', '', null, 1, false]) {
+      expect(
+        () => BuiltinPhoneEngineStatus.fromMap({
+          'profileId': 'phone-profile',
+          'boundaryTier': bad,
+        }),
+        throwsA(
+          isA<BuiltinLinuxException>()
+              .having((error) => error.code, 'code', 'engine_status_invalid')
+              .having(
+                (error) => error.message,
+                'message',
+                'Phone engine status is unavailable.',
+              ),
+        ),
+      );
+    }
+  });
+
   test(
     'native lifecycle keeps the server restart prerequisite visible',
     () async {

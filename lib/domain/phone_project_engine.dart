@@ -21,6 +21,7 @@ class PhoneEngineHealth {
     this.admission = 'unknown',
     this.chatAuthority = 'unknown',
     this.boundaryReason = '',
+    this.boundaryTier = 'none',
     this.restartRequired = false,
     this.globalAdmissionAuthority = false,
   });
@@ -30,6 +31,10 @@ class PhoneEngineHealth {
 
   /// Admission is separate from supported execution capability.
   final String admission, chatAuthority, boundaryReason;
+
+  /// Signed confinement kind. Older schema-1 engines omit the tier; `none`
+  /// then means unreported, while their existing execution flags remain valid.
+  final String boundaryTier;
   final bool restartRequired, globalAdmissionAuthority;
   bool get canExecute => execution && boundary && oc1Verified && !oc2;
 
@@ -58,8 +63,21 @@ class PhoneEngineHealth {
         ].any((k) => flags[k] is! bool)) {
       throw const PhoneEngineException('payloadInvalid');
     }
+    const tiers = {'none', 'landlock', 'proot'};
+    final topTier = value['boundaryTier'];
+    final capabilityTier = flags['boundaryTier'];
+    if ((value.containsKey('boundaryTier') && !tiers.contains(topTier)) ||
+        (flags.containsKey('boundaryTier') &&
+            !tiers.contains(capabilityTier)) ||
+        (value.containsKey('boundaryTier') &&
+            flags.containsKey('boundaryTier') &&
+            topTier != capabilityTier)) {
+      throw const PhoneEngineException('payloadInvalid');
+    }
+    final tier = (topTier ?? capabilityTier ?? 'none') as String;
     return PhoneEngineHealth(
       profileId: expectedProfile,
+      boundaryTier: tier,
       engineVersion: version,
       execution: flags['execution'] as bool,
       boundary: flags['boundary'] as bool,
