@@ -291,6 +291,9 @@ class BuiltinLinux(private val context: Context) {
         val worker = File(projectStorage.projects, ".phone-engine-proof-$id")
         projectStorage.prepare()
         check(protected.mkdirs() && worker.mkdir())
+        Os.chmod(fixture.absolutePath, 448)
+        Os.chmod(protected.absolutePath, 448)
+        PhoneEngineAttestation.write(File(fixture, ".native-proof-fixture"), id.toByteArray(Charsets.US_ASCII))
         val sentinel = File(protected, "sentinel")
         sentinel.writeText("proof-only-canonical-state")
         Os.chmod(sentinel.absolutePath, 384)
@@ -310,6 +313,27 @@ class BuiltinLinux(private val context: Context) {
             return process.exitValue() == 0
         }
         return try {
+            val preparation = ProcessBuilder(probe.absolutePath, "--prepare-git-fixture", protected.canonicalPath)
+                .redirectError(File("/dev/null")).apply { environment().clear() }.start()
+            preparation.outputStream.close()
+            if (!preparation.waitFor(30, TimeUnit.SECONDS)) {
+                stopTree(preparation)
+                throw PhoneEngineNative.Failure("proof_fixture_unavailable")
+            }
+            val prepared = preparation.inputStream.use { input ->
+                val bytes = ByteArray(128)
+                val n = input.read(bytes)
+                if (n < 0) "" else String(bytes, 0, n, Charsets.US_ASCII).trim()
+            }
+            if (preparation.exitValue() != 0 || !Regex("prepared-main:[0-9a-f]{40}").matches(prepared))
+                throw PhoneEngineNative.Failure("proof_fixture_unavailable")
+            val expectedMain = prepared.substringAfter(':')
+            val mainRef = File(protected, ".git/refs/heads/main")
+            val head = File(protected, ".git/HEAD")
+            val config = File(protected, ".git/config")
+            if (mainRef.readText().trim() != expectedMain || head.readText().trim() != "ref: refs/heads/main")
+                throw PhoneEngineNative.Failure("proof_fixture_unavailable")
+            val configHash = PhoneEngineAttestation.hash(config)
             val native = runProbe(protectedCommand(listOf(probe.absolutePath,
                 protected.absolutePath, worker.absolutePath, AndroidProcess.myPid().toString())))
             val escapedRoot = protected.absolutePath.replace("'", "'\"'\"'")
@@ -332,7 +356,8 @@ class BuiltinLinux(private val context: Context) {
                 if (printf 'attack' > '$escapedRoot/sentinel') 2>/dev/null; then exit 1; fi
                 if (printf 'attack' > '/proc/${AndroidProcess.myPid()}/root$escapedRoot/sentinel') 2>/dev/null; then exit 1; fi
                 if cat '/proc/${AndroidProcess.myPid()}/environ' >/dev/null 2>&1; then exit 1; fi
-                if git -c core.hooksPath=/dev/null -C '$escapedRoot' update-ref refs/heads/main HEAD >/dev/null 2>&1; then exit 1; fi
+                if git -c core.hooksPath=/dev/null -C '$escapedRoot' update-ref -d refs/heads/main $expectedMain >/dev/null 2>&1; then exit 1; fi
+                if git -c core.hooksPath=/dev/null --git-dir='$escapedRoot/.git' update-ref -d refs/heads/main $expectedMain >/dev/null 2>&1; then exit 1; fi
                 if git --git-dir='$escapedRoot/.git' config core.hooksPath /dev/null >/dev/null 2>&1; then exit 1; fi
                 if (printf 'attack' > '$escapedRoot/.git/refs/heads/main') 2>/dev/null; then exit 1; fi
             """.trimIndent()
@@ -342,7 +367,9 @@ class BuiltinLinux(private val context: Context) {
                 runProbe(prootCommand(listOf("/bin/sh", "-c", script)), prootEnvironment())
             } finally { protectedProot = wasProtected }
             val unchanged = sentinel.readText() == "proof-only-canonical-state" &&
-                (Os.lstat(sentinel.absolutePath).st_mode and 511) == 384
+                (Os.lstat(sentinel.absolutePath).st_mode and 511) == 384 &&
+                mainRef.readText().trim() == expectedMain && head.readText().trim() == "ref: refs/heads/main" &&
+                PhoneEngineAttestation.hash(config) == configHash
             mapOf("schemaVersion" to 1, "nativeAttacksDenied" to native,
                 "prootGitCompatible" to proot, "fixtureUnchanged" to unchanged,
                 "complete" to (native && proot && unchanged),

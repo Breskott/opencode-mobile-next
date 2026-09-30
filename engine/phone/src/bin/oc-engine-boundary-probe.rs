@@ -3,7 +3,86 @@
 //! succeeded; it is only one component of the full Android/proot proof.
 use std::ffi::CString;
 use std::os::unix::ffi::OsStrExt;
+use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
+
+fn prepare_git_fixture(root: &Path) -> Result<String, &'static str> {
+    if !root.is_absolute()
+        || root.file_name().and_then(|n| n.to_str()) != Some("protected")
+        || root.canonicalize().map_err(|_| "fixture-invalid")? != root
+    {
+        return Err("fixture-invalid");
+    }
+    let parent = root.parent().ok_or("fixture-invalid")?;
+    let generation = parent
+        .file_name()
+        .and_then(|n| n.to_str())
+        .and_then(|n| n.strip_prefix(".phone-engine-proof-"))
+        .ok_or("fixture-invalid")?;
+    if uuid::Uuid::parse_str(generation).is_err() {
+        return Err("fixture-invalid");
+    }
+    for (file, expected) in [
+        (parent.join(".native-proof-fixture"), generation.as_bytes()),
+        (
+            root.join("sentinel"),
+            b"proof-only-canonical-state".as_slice(),
+        ),
+    ] {
+        let meta = std::fs::symlink_metadata(&file).map_err(|_| "fixture-invalid")?;
+        if !meta.is_file()
+            || meta.uid() != unsafe { libc::geteuid() }
+            || meta.mode() & 0o077 != 0
+            || meta.len() > 128
+            || std::fs::read(file).map_err(|_| "fixture-invalid")? != expected
+        {
+            return Err("fixture-invalid");
+        }
+    }
+    let entries = std::fs::read_dir(root)
+        .map_err(|_| "fixture-invalid")?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| "fixture-invalid")?;
+    if entries.len() != 1 || entries[0].file_name() != "sentinel" {
+        return Err("fixture-not-empty");
+    }
+    let repo = git2::Repository::init_opts(
+        root,
+        git2::RepositoryInitOptions::new()
+            .initial_head("main")
+            .no_reinit(true),
+    )
+    .map_err(|_| "fixture-init-failed")?;
+    let mut index = repo.index().map_err(|_| "fixture-init-failed")?;
+    index
+        .add_path(Path::new("sentinel"))
+        .map_err(|_| "fixture-init-failed")?;
+    index.write().map_err(|_| "fixture-init-failed")?;
+    let tree_id = index.write_tree().map_err(|_| "fixture-init-failed")?;
+    let tree = repo.find_tree(tree_id).map_err(|_| "fixture-init-failed")?;
+    let signature = git2::Signature::new(
+        "boundary-proof",
+        "proof@invalid.example",
+        &git2::Time::new(0, 0),
+    )
+    .map_err(|_| "fixture-init-failed")?;
+    let main = repo
+        .commit(
+            Some("refs/heads/main"),
+            &signature,
+            &signature,
+            "isolated boundary proof",
+            &tree,
+            &[],
+        )
+        .map_err(|_| "fixture-init-failed")?;
+    repo.set_head("refs/heads/main")
+        .map_err(|_| "fixture-init-failed")?;
+    if repo.head().ok().and_then(|r| r.target()) != Some(main) {
+        return Err("fixture-init-failed");
+    }
+    Ok(main.to_string())
+}
 
 // Android libc omits this AArch64 name. asm-generic/unistd.h defines
 // __NR3264_truncate=45; bionic uses that 64-bit syscall on this target.
@@ -68,6 +147,35 @@ fn check(root: &Path, worker: &Path, parent: i32) -> bool {
         }
     }
     let canonical = path(&target);
+    // These files belong to a valid seeded Git repository prepared by the
+    // trusted parent. ENOENT is NEVER accepted as a main-protection proof.
+    for (id, file) in [
+        root.join(".git/refs/heads/main"),
+        root.join(".git/config"),
+        root.join(".git/HEAD"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let name = path(&file);
+        for (mode, flags) in [
+            libc::O_RDONLY,
+            libc::O_WRONLY,
+            libc::O_WRONLY | libc::O_TRUNC,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let fd =
+                unsafe { libc::syscall(libc::SYS_openat, libc::AT_FDCWD, name.as_ptr(), flags, 0) };
+            if !denied(&format!("canonical-git-{id}-{mode}"), fd) {
+                ok = false;
+                if fd >= 0 {
+                    unsafe { libc::close(fd as i32) };
+                }
+            }
+        }
+    }
     let escaped = path(&worker.join("stolen"));
     let attacks: &[&dyn Fn() -> libc::c_long] = &[
         &|| unsafe { libc::syscall(SYS_TRUNCATE, canonical.as_ptr(), 0) },
@@ -250,6 +358,24 @@ fn check(root: &Path, worker: &Path, parent: i32) -> bool {
 
 fn main() {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args
+        .first()
+        .is_some_and(|arg| arg == "--prepare-git-fixture")
+    {
+        if args.len() != 2 {
+            std::process::exit(64);
+        }
+        match prepare_git_fixture(&PathBuf::from(&args[1])) {
+            Ok(main) => {
+                println!("prepared-main:{main}");
+                return;
+            }
+            Err(code) => {
+                println!("boundary-control:{code}");
+                std::process::exit(1);
+            }
+        }
+    }
     if args.len() < 3 || args.len() > 4 {
         std::process::exit(64);
     }
