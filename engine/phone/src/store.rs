@@ -90,12 +90,26 @@ impl Store {
             .as_array_mut()
             .ok_or(StoreError("storageCorrupt"))?
         {
-            project["planningState"] = jobs
+            let planner = jobs
                 .iter()
                 .rev()
-                .find(|j| j["kind"] == "planner" && j["projectId"] == project["id"])
+                .find(|j| j["kind"] == "planner" && j["projectId"] == project["id"]);
+            project["planningState"] = planner
                 .map(|j| json!({"jobId":j["id"],"stage":j["stage"],"reason":j["reason"].as_str().unwrap_or(""),"updatedAt":j["updatedAt"]}))
                 .unwrap_or(Value::Null);
+            if let Some(planner) = planner {
+                if project["timeline"].is_null()
+                    || project["timeline"].as_array().is_some_and(Vec::is_empty)
+                {
+                    // Legacy checkpoints predate durable timeline rows. Project
+                    // their present state without inventing historical events.
+                    append_job_timeline(project, planner)?;
+                    project["timeline"][0]["id"] = json!(format!(
+                        "planner-checkpoint-{}",
+                        planner["id"].as_str().unwrap_or("")
+                    ));
+                }
+            }
         }
         Ok(workspace)
     }

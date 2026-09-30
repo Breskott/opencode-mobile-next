@@ -2,6 +2,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/team_project.dart';
 
 void main() {
+  test('server diagnostic reason is additive and does not change online', () {
+    final legacy = TeamServer.fromJson({'id': 'phone', 'online': false});
+    expect(legacy.reason, isEmpty);
+    expect(legacy.online, isFalse);
+    final observed = legacy.copyWith(reason: 'protocolUnverified');
+    expect(observed.online, isFalse);
+    final roundTrip = TeamServer.fromJson(observed.toJson());
+    expect(roundTrip.reason, 'protocolUnverified');
+    expect(roundTrip.online, isFalse);
+    final reachable = roundTrip.copyWith(online: true, reason: 'chatBusy');
+    expect(reachable.online, isTrue);
+    expect(reachable.reason, 'chatBusy');
+  });
+
   test('legacy project snapshots remain readable without planner metadata', () {
     final project = TeamProject.fromJson({
       'id': 'legacy',

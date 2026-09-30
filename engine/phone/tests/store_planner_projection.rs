@@ -179,3 +179,73 @@ fn timeline_is_bounded_and_never_echoes_unknown_reason_payload() {
         .to_string()
         .contains("provider-key-or-private-path"));
 }
+
+#[test]
+fn legacy_interrupted_planner_gets_a_stable_read_only_current_state_timeline() {
+    let root = storage();
+    let store = Store::open(root.path(), "p").unwrap();
+    let (_, job) = approved(&store);
+    store
+        .update_job(&job, "queued", &json!({"stage":"starting"}))
+        .unwrap();
+    store
+        .update_job(
+            &job,
+            "starting",
+            &json!({"stage":"interrupted","reason":"promptUncertain"}),
+        )
+        .unwrap();
+    let conn =
+        rusqlite::Connection::open(root.path().join("oc.teamEngine.p/state.sqlite3")).unwrap();
+    let mut legacy: Value = serde_json::from_str(
+        &conn
+            .query_row("SELECT data FROM workspace WHERE id=1", [], |r| {
+                r.get::<_, String>(0)
+            })
+            .unwrap(),
+    )
+    .unwrap();
+    legacy["projects"][0]["timeline"] = json!([]);
+    conn.execute(
+        "UPDATE workspace SET data=?1 WHERE id=1",
+        [legacy.to_string()],
+    )
+    .unwrap();
+    let events = store.events(0, 100).unwrap();
+    let before = project(&store);
+    assert_eq!(before["planningState"]["reason"], "promptUncertain");
+    let row = &before["timeline"][0];
+    assert_eq!(row["id"], format!("planner-checkpoint-{job}"));
+    assert_eq!(
+        row["text"],
+        "Planning was interrupted and needs review before resuming."
+    );
+    assert_eq!(row["at"], before["planningState"]["updatedAt"]);
+    for _ in 0..3 {
+        assert_eq!(project(&store), before);
+    }
+    store.recover().unwrap();
+    assert_eq!(project(&store), before);
+    assert_eq!(store.events(0, 100).unwrap(), events);
+    let unchanged: Value = serde_json::from_str(
+        &conn
+            .query_row("SELECT data FROM workspace WHERE id=1", [], |r| {
+                r.get::<_, String>(0)
+            })
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(unchanged, legacy);
+    drop(conn);
+    drop(store);
+    let store = Store::open(root.path(), "p").unwrap();
+    assert_eq!(project(&store), before);
+    // An actual new progress row replaces the read projection, not a duplicate
+    // or a fabricated historical interruption persisted by a GET request.
+    store
+        .update_job(&job, "interrupted", &json!({"reason":"sessionUnknown"}))
+        .unwrap();
+    let current = project(&store);
+    assert_eq!(current["timeline"].as_array().unwrap().len(), 1);
+    assert_ne!(current["timeline"][0]["id"], row["id"]);
+}

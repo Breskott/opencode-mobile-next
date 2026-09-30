@@ -9,6 +9,7 @@ class TeamServer {
     this.online = true,
     this.laneCap = 8,
     this.chatWaiting = false,
+    this.reason = '',
     this.memoryMb,
   });
   final String id;
@@ -17,6 +18,7 @@ class TeamServer {
   final bool online;
   final int laneCap;
   final bool chatWaiting;
+  final String reason;
   final double? memoryMb;
   TeamServer copyWith({
     String? id,
@@ -25,6 +27,7 @@ class TeamServer {
     bool? online,
     int? laneCap,
     bool? chatWaiting,
+    String? reason,
     double? memoryMb,
   }) => TeamServer(
     id: id ?? this.id,
@@ -33,6 +36,7 @@ class TeamServer {
     online: online ?? this.online,
     laneCap: laneCap ?? this.laneCap,
     chatWaiting: chatWaiting ?? this.chatWaiting,
+    reason: reason ?? this.reason,
     memoryMb: memoryMb ?? this.memoryMb,
   );
   Map<String, Object?> toJson() => {
@@ -42,6 +46,7 @@ class TeamServer {
     'online': online,
     'laneCap': laneCap,
     'chatWaiting': chatWaiting,
+    'reason': reason,
     'memoryMb': memoryMb,
   };
   factory TeamServer.fromJson(Map<String, dynamic> j) => TeamServer(
@@ -51,6 +56,7 @@ class TeamServer {
     online: j['online'] as bool? ?? true,
     laneCap: j['laneCap'] as int? ?? 8,
     chatWaiting: j['chatWaiting'] as bool? ?? false,
+    reason: j['reason'] as String? ?? '',
     memoryMb: (j['memoryMb'] as num?)?.toDouble(),
   );
 }
