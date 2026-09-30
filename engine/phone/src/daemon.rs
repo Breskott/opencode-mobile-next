@@ -1,5 +1,5 @@
 use crate::{
-    attestation::{self, AttestationExpectation, VerifiedBoundary},
+    attestation::{self, AttestationExpectation, BoundaryTier, VerifiedBoundary},
     chat::{ChatHeartbeat, ChatLedger},
     config::{Config, ServerCredentials},
     opencode::OpenCodeClient,
@@ -227,6 +227,7 @@ impl BoundaryAuthority {
             parent: unsafe { libc::getppid() },
             executable,
             receipt: VerifiedBoundary {
+                tier: BoundaryTier::Landlock,
                 generation: String::new(),
                 policy_sha256: String::new(),
                 receipt_sha256: String::new(),
@@ -237,13 +238,16 @@ impl BoundaryAuthority {
     }
 }
 fn boundary_verified(e: &Engine) -> bool {
+    boundary_tier(e).is_some()
+}
+fn boundary_tier(e: &Engine) -> Option<BoundaryTier> {
     e.boundary
         .as_ref()
         .and_then(|b| {
             b.expectation(&e.config)
                 .and_then(|expected| attestation::verify_current(&expected, &b.receipt).ok())
         })
-        .is_some()
+        .map(|receipt| receipt.tier)
 }
 fn execution_enabled(engine: &Engine) -> bool {
     !engine.deleting.load(std::sync::atomic::Ordering::SeqCst)
@@ -279,6 +283,8 @@ fn command_actions(e: &Engine) -> Vec<&'static str> {
     actions
 }
 async fn health(State(e): State<Shared>) -> Json<Value> {
+    let verified_tier = boundary_tier(&e);
+    let tier = verified_tier.map_or("none", BoundaryTier::as_str);
     let protocol = e.protocol.lock().map(|v| v.clone()).unwrap_or(json!({}));
     let ledger = e.chat.read().await;
     let admission = crate::admission::label(ledger.admission(
@@ -287,10 +293,10 @@ async fn health(State(e): State<Shared>) -> Json<Value> {
         &team_sessions(&e),
     ));
     Json(
-        json!({"schemaVersion":1,"engineVersion":env!("CARGO_PKG_VERSION"),"profileId":e.config.profile_id,
-        "capabilities":{"execution":execution_enabled(&e),"boundary":boundary_verified(&e),
+        json!({"schemaVersion":1,"engineVersion":env!("CARGO_PKG_VERSION"),"profileId":e.config.profile_id,"boundaryTier":tier,
+        "capabilities":{"execution":execution_enabled(&e),"boundary":verified_tier.is_some(),"boundaryTier":tier,
             "oc1Verified":protocol["pinnedVersion"] == true && protocol["openapiVerified"] == true,"oc2":false},
-        "commandActions":command_actions(&e),"boundaryReason":if boundary_verified(&e) {"boundary_attested"} else if e.boundary.is_some() {"attestation_rejected"} else {e.config.boundary.reason.as_str()},
+        "commandActions":command_actions(&e),"boundaryReason":if verified_tier.is_some() {"boundary_attested"} else if e.boundary.is_some() {"attestation_rejected"} else {e.config.boundary.reason.as_str()},
         "restartRequired":e.config.boundary.restart_required,
         "admission":admission,"chatAuthority":"phoneAppAndKnownDirectories","globalAdmissionAuthority":false,
         "boundaryGeneration":e.boundary.as_ref().map(|b|b.pins.generation.as_str()),"eventWindow":e.store.lock().ok().and_then(|store|store.event_window().ok()),"chargingTelemetry":false,"protocol":protocol}),
@@ -1664,17 +1670,15 @@ mod tests {
             config,
         })
     }
-    #[test]
-    fn exact_native_receipt_composes_driver_capability_and_replacement_closes_it() {
+    fn attested_fixture(path: &std::path::Path, tier: &str) -> Shared {
         use p256::{
             ecdsa::{signature::Signer, Signature, SigningKey},
             pkcs8::EncodePublicKey,
         };
         use sha2::{Digest, Sha256};
-        let temp = tempfile::tempdir().unwrap();
-        let mut shared = fixture(temp.path());
+        let mut shared = fixture(path);
         let e = Arc::get_mut(&mut shared).unwrap();
-        let binaries = temp.path().join("native");
+        let binaries = path.join("native");
         fs::create_dir(&binaries).unwrap();
         let executable = binaries.join("libaiteam_engine.so");
         for name in [
@@ -1690,13 +1694,14 @@ mod tests {
         fs::write(&key_file, public.as_bytes()).unwrap();
         let receipt_file = e.config.private_root.join("receipt.json");
         let generation = uuid::Uuid::new_v4().to_string();
-        let payload = serde_json::to_vec(&json!({"schemaVersion":1,"profileId":"profile","parentPid":e.parent_pid,
+        let payload = serde_json::to_vec(&json!({"schemaVersion":2,"tier":tier,"profileId":"profile","parentPid":e.parent_pid,
             "generation":generation,"bootId":attestation::boot_id().unwrap(),"kernelRelease":attestation::kernel_release().unwrap(),
             "policySha256":"a".repeat(64),"engineSha256":attestation::hash_file(&executable).unwrap(),
             "sandboxSha256":attestation::hash_file(&binaries.join("libaiteam_sandbox.so")).unwrap(),
             "probeSha256":attestation::hash_file(&binaries.join("libaiteam_boundary_probe.so")).unwrap(),
             "issuedAtElapsedMs":attestation::elapsed_ms().unwrap(),"protectedLaunchesRequired":true,
-            "controls":{"nativeAttacksDenied":true,"prootGitCompatible":true,"fixtureUnchanged":true,"complete":true}})).unwrap();
+            "controls":{"nativeAttacksDenied":tier == "landlock","prootGitCompatible":true,"fixtureUnchanged":true,"complete":true,
+                "canonicalPathsDenied":true,"daemonProcDenied":true,"fdHygiene":true,"parentInspectionDenied":true}})).unwrap();
         let signature: Signature = key.sign(&payload);
         fs::write(&receipt_file, &payload).unwrap();
         fs::write(
@@ -1716,6 +1721,7 @@ mod tests {
             parent: e.parent_pid,
             executable,
             receipt: VerifiedBoundary {
+                tier: BoundaryTier::Landlock,
                 generation: String::new(),
                 policy_sha256: String::new(),
                 receipt_sha256: String::new(),
@@ -1725,19 +1731,51 @@ mod tests {
             attestation::verify(&authority.expectation(&e.config).unwrap()).unwrap();
         e.boundary = Some(authority);
         *e.protocol.lock().unwrap() = json!({"pinnedVersion":true,"openapiVerified":true,"capabilities":{"executionDriver":true,"execution":false,"globalAdmissionAuthority":false}});
+        shared
+    }
+    #[test]
+    fn exact_native_receipt_composes_driver_capability_and_replacement_closes_it() {
+        let temp = tempfile::tempdir().unwrap();
+        let e = attested_fixture(temp.path(), "landlock");
         assert!(!e.config.boundary.verified);
-        assert!(execution_enabled(e));
-        assert!(command_actions(e).contains(&"createProject"));
-        assert!(command_actions(e).contains(&"promote"));
+        assert!(execution_enabled(&e));
+        assert!(command_actions(&e).contains(&"createProject"));
+        assert!(command_actions(&e).contains(&"promote"));
         e.deleting.store(true, std::sync::atomic::Ordering::SeqCst);
-        assert!(!execution_enabled(e));
-        assert!(!command_actions(e).contains(&"promote"));
+        assert!(!execution_enabled(&e));
+        assert!(!command_actions(&e).contains(&"promote"));
         e.deleting.store(false, std::sync::atomic::Ordering::SeqCst);
         // No permanently cached verified boolean may survive a receipt change.
-        fs::write(receipt_file, b"replacement").unwrap();
-        assert!(!execution_enabled(e));
-        assert!(!command_actions(e).contains(&"createProject"));
-        assert!(!command_actions(e).contains(&"promote"));
+        fs::write(
+            e.config.boundary.receipt_file.as_ref().unwrap(),
+            b"replacement",
+        )
+        .unwrap();
+        assert!(!execution_enabled(&e));
+        assert!(!command_actions(&e).contains(&"createProject"));
+        assert!(!command_actions(&e).contains(&"promote"));
+    }
+    #[tokio::test]
+    async fn health_reports_only_live_signed_boundary_tier_at_both_locations() {
+        for tier in ["landlock", "proot"] {
+            let temp = tempfile::tempdir().unwrap();
+            let e = attested_fixture(temp.path(), tier);
+            let value = health(State(e.clone())).await.0;
+            assert_eq!(value["boundaryTier"], tier);
+            assert_eq!(value["capabilities"]["boundaryTier"], tier);
+            assert_eq!(value["capabilities"]["boundary"], true);
+            assert_eq!(value["capabilities"]["execution"], true);
+            fs::write(
+                e.config.boundary.receipt_file.as_ref().unwrap(),
+                b"tampered",
+            )
+            .unwrap();
+            let value = health(State(e)).await.0;
+            assert_eq!(value["boundaryTier"], "none");
+            assert_eq!(value["capabilities"]["boundaryTier"], "none");
+            assert_eq!(value["capabilities"]["boundary"], false);
+            assert_eq!(value["capabilities"]["execution"], false);
+        }
     }
     #[tokio::test]
     async fn heartbeat_ack_waits_for_admission_and_stale_idle_cannot_overwrite_busy() {
@@ -1853,6 +1891,8 @@ mod tests {
             .unwrap();
         let value: Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(value["capabilities"]["execution"], false);
+        assert_eq!(value["boundaryTier"], "none");
+        assert_eq!(value["capabilities"]["boundaryTier"], "none");
         assert_eq!(value["profileId"], "profile");
         assert!(!value["commandActions"]
             .as_array()
