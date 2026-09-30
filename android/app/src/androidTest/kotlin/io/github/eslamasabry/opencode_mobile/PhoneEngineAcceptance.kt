@@ -52,6 +52,18 @@ class PhoneEngineAcceptance : Instrumentation() {
             passed = true
         } catch (failure: Refused) {
             emit("FAIL", currentStep, failure.safeCode)
+        } catch (failure: PhoneEngineNative.Failure) {
+            emit("FAIL", currentStep, failure.code)
+        } catch (failure: IllegalStateException) {
+            val allowed = setOf("preview_required", "idle_runtime_required", "idle_terminals_required",
+                "ubuntu_not_initialized", "git_not_initialized", "positive_write_failed", "positive_git_failed",
+                "diagnostic_controls_missing", "diagnostic_complete_inconsistent", "idle_processes_required",
+                "fixture_service_not_running", "fixture_service_not_stopped", "unsupported_kernel_activated_engine",
+                "production_boundary_not_verified", "unsupported_failure_code_invalid", "activation_timeout",
+                "unsupported_authority_enabled", "failed_activation_did_not_restore_server",
+                "fixture_service_uptime_missing", "identical_server_start_rotated_process",
+                "intentional_stop_was_resurrected", "kernel_probe_timeout", "kernel_probe_signalled_or_invalid")
+            emit("FAIL", currentStep, failure.message?.takeIf { it in allowed } ?: "acceptance_failed")
         } catch (_: Exception) {
             // Never forward exception text, model output, server output or auth.
             emit("FAIL", currentStep, "acceptance_failed")
@@ -72,6 +84,21 @@ class PhoneEngineAcceptance : Instrumentation() {
     private fun execute() {
         requireSafe(targetContext.packageName == "io.github.eslamasabry.opencode_mobile.preview", "preview_required")
         requireSafe(arguments.getString("isolatedQa") == "true", "isolated_qa_required")
+        if (arguments.getString("boundaryRegressions") == "true") {
+            currentStep = "device_boundary_regressions"
+            activity = startActivitySync(Intent(targetContext, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            val results = PhoneEngineDeviceBoundaryRegressions.run(targetContext,
+                bootstrap = arguments.getString("bootstrap") != "false") { stage ->
+                    currentStep = stage
+                    emit("START", stage)
+                }
+            results.forEach { (control, value) ->
+                sendStatus(0, Bundle().apply { putString("phoneEngineControl", "$control=$value") })
+            }
+            emit("PASS", currentStep, "verified")
+            return
+        }
         if (arguments.getString("nativeRegressions") == "true") {
             currentStep = "native_regressions"
             PhoneEngineNativeRegressions.run(targetContext)

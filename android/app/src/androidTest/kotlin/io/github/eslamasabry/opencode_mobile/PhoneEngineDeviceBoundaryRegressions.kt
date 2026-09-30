@@ -9,14 +9,14 @@ import java.util.concurrent.TimeUnit
 /** No models, credential reads, fake receipts, or authority from diagnostics. */
 internal object PhoneEngineDeviceBoundaryRegressions {
     private val controls = listOf(
-        "positiveWrite", "positiveGit", "directOpenDenied", "directStatDenied",
+        "positiveWrite", "positiveRead", "positiveGit", "positiveStat", "positiveReadlink", "positiveTracerIdentity", "workerAliasDenied", "fixtureUnchanged", "directOpenDenied", "directStatDenied",
         "directReadlinkDenied", "procSelfRootDenied", "procParentRootDenied",
         "parentEnvironDenied", "parentCmdlineDenied", "fdHygiene",
         "tracerEscapeDenied", "complete",
     )
 
     /** The preview activity must be foregrounded by its instrumentation runner. */
-    fun run(context: Context, bootstrap: Boolean = true): Map<String, Any?> {
+    fun run(context: Context, bootstrap: Boolean = true, onStage: (String) -> Unit = {}): Map<String, Any?> {
         check(context.packageName == "io.github.eslamasabry.opencode_mobile.preview") {
             "preview_required"
         }
@@ -24,10 +24,12 @@ internal object PhoneEngineDeviceBoundaryRegressions {
         check(linux.runningServices().isEmpty()) { "idle_runtime_required" }
         check(LocalTerminal.get(context).list().none { it.running }) { "idle_terminals_required" }
         if (!linux.installed) {
+            onStage("bootstrap_ubuntu")
             check(bootstrap) { "ubuntu_not_initialized" }
             // The pinned installer verifies its archive; deliberately discard logs.
             linux.install(log = {})
         }
+        onStage("bootstrap_git")
         val git = linux.run(if (bootstrap) """
             set -eu
             command -v git >/dev/null 2>&1 || {
@@ -39,7 +41,9 @@ internal object PhoneEngineDeviceBoundaryRegressions {
         """.trimIndent() else "command -v git >/dev/null 2>&1", 180)
         check(git.exitCode == 0) { "git_not_initialized" }
 
+        onStage("kernel_probe")
         val kernelExit = kernelProbe(context)
+        onStage("proot_controls")
         val diagnostic = linux.runProotViewBoundaryProbe()
         check(diagnostic["positiveWrite"] == true) { "positive_write_failed" }
         check(diagnostic["positiveGit"] == true) { "positive_git_failed" }
@@ -59,6 +63,7 @@ internal object PhoneEngineDeviceBoundaryRegressions {
         val script = "exec sleep 600"
         var ownsService = false
         try {
+            onStage("activation_rollback")
             check(linux.phoneEngineStatus(profile)["unconfinedChildren"] == false) {
                 "idle_processes_required"
             }
@@ -67,7 +72,7 @@ internal object PhoneEngineDeviceBoundaryRegressions {
             linux.startServer(script, 4097)
             ownsService = true
             waitUntil(5_000, "fixture_service_not_running") { linux.serverRunning }
-            linux.stopServer()
+            linux.stopServer(forPhoneEngineSetup = true)
             check(!linux.serverRunning) { "fixture_service_not_stopped" }
             var unsupported = false
             val started = SystemClock.elapsedRealtime()
@@ -99,11 +104,19 @@ internal object PhoneEngineDeviceBoundaryRegressions {
                 linux.startServer(script, 4097)
             }
             Thread.sleep(300)
+            onStage("idempotent_restart")
             val before = linux.serverUptimeMs ?: error("fixture_service_uptime_missing")
             linux.startServer(script, 4097)
             val after = linux.serverUptimeMs ?: error("fixture_service_uptime_missing")
             check(after >= before) { "identical_server_start_rotated_process" }
             result["serverRestartIdempotent"] = true
+            if (unsupported) {
+                linux.stopServer()
+                try { linux.startPhoneEngine(profile, 4098, null); error("unsupported_kernel_activated_engine") }
+                catch (failure: PhoneEngineNative.Failure) { check(failure.code == "boundary_unsupported") }
+                check(!linux.serverRunning) { "intentional_stop_was_resurrected" }
+                result["intentionalStopPreserved"] = true
+            }
             return result
         } finally {
             // Attempt every cleanup even if an earlier one fails. Never kill by

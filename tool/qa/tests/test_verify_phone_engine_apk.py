@@ -57,6 +57,24 @@ class PhoneEngineApkTest(unittest.TestCase):
         for abi, library, actual in results:
             self.assertEqual(actual, self.manifest["abis"][abi]["sha256"][library])
 
+    def test_consistent_stale_bundle_is_rejected_after_rust_source_changes(self):
+        source = self.root / "engine/phone"
+        (source / "src").mkdir(parents=True)
+        inputs = [source / "Cargo.toml", source / "Cargo.lock", source / "src/main.rs"]
+        for path in inputs:
+            path.write_text("original fixture")
+        digest = hashlib.sha256()
+        for path in inputs:
+            digest.update(str(path.relative_to(self.root)).encode() + b"\0" + path.read_bytes() + b"\0")
+        self.manifest["sourceSha256"] = digest.hexdigest()
+        data = json.dumps(self.manifest).encode()
+        self.write_apk(manifest_data=data)
+        CHECK.verify_source(data, self.root)
+        CHECK.verify_apk(self.apk, data)
+        inputs[-1].write_text("safe fork probe added, but ELFs not rebuilt")
+        with self.assertRaisesRegex(CHECK.VerificationError, "stale_engine_sources"):
+            CHECK.verify_source(data, self.root)
+
     def test_stripped_packaged_bytes_fail_even_when_staged_manifest_is_valid(self):
         payloads = dict(self.payloads)
         payloads["lib/x86_64/libaiteam_engine.so"] = b"AGP stripped fixture"

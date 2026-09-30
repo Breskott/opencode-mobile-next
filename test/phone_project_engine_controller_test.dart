@@ -173,6 +173,7 @@ void main() {
           'restart_required',
           'boundary_not_packaged',
           'boundary_unavailable',
+          'boundary_unsupported',
         ]) {
           TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
               .setMockMethodCallHandler(channel, (call) async {
@@ -201,7 +202,7 @@ void main() {
         }
         expect(
           calls.where((call) => call.method == 'startPhoneEngine'),
-          hasLength(3),
+          hasLength(4),
         );
         expect(
           calls.where((call) => call.method == 'phoneEngineCredentials'),

@@ -516,7 +516,7 @@ class MainActivity : FlutterActivity() {
             "stopServer" -> {
                 linux.requestServerStop()
                 inBackground {
-                    linux.stopServer()
+                    linux.stopServer(forPhoneEngineSetup = call.argument<Boolean>("phoneEngineSetup") == true)
                     null
                 }
             }

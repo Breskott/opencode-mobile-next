@@ -56,6 +56,15 @@ void main() {
     },
   );
 
+  test('only an engine setup stop requests native server rollback', () async {
+    await bridge.stopServer();
+    expect(calls.single.method, 'stopServer');
+    expect(calls.single.arguments, isNull);
+    calls.clear();
+    await bridge.stopServerForPhoneEngineSetup();
+    expect(calls.single.arguments, {'phoneEngineSetup': true});
+  });
+
   test(
     'unconfined child prerequisite survives stopped daemon status',
     () async {

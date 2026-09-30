@@ -390,6 +390,11 @@ class BuiltinLinux {
 
   Future<void> stopServer() => _invoke<void>('stopServer');
 
+  /// Setup alone may restore this stop if its following engine activation
+  /// fails. The existing deliberate-stop method never opts into rollback.
+  Future<void> stopServerForPhoneEngineSetup() =>
+      _invoke<void>('stopServer', {'phoneEngineSetup': true});
+
   Future<BuiltinPhoneEngineStatus> startPhoneEngine({
     required String profileId,
     int port = 4098,

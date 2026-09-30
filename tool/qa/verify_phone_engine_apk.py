@@ -53,6 +53,18 @@ def manifest_hashes(data):
     return result
 
 
+def verify_source(manifest_data, repo):
+    """A consistent manifest plus stale ELFs must not pass a release build."""
+    repo = Path(repo)
+    inputs = [repo / "engine/phone/Cargo.toml", repo / "engine/phone/Cargo.lock",
+              *sorted((repo / "engine/phone/src").rglob("*.rs"))]
+    digest = hashlib.sha256()
+    for path in inputs:
+        digest.update(str(path.relative_to(repo)).encode() + b"\0" + path.read_bytes() + b"\0")
+    if read_json(manifest_data).get("sourceSha256") != digest.hexdigest():
+        raise VerificationError("stale_engine_sources_rebuild_and_stage")
+
+
 def verify_apk(apk, manifest_data, selected_abis=None):
     expected = manifest_hashes(manifest_data)
     required_abis = set(expected) if selected_abis is None else set(selected_abis) & set(expected)
@@ -121,6 +133,7 @@ def packaged_outputs(directory, selected_abis=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--source-root", type=Path, help="Require the staged native bundle to match current Rust sources.")
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--apk", type=Path)
     source.add_argument("--apk-dir", type=Path)
@@ -128,6 +141,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         manifest_data = args.manifest.read_bytes()
+        if args.source_root:
+            verify_source(manifest_data, args.source_root)
         outputs = packaged_outputs(args.apk_dir, args.abi) if args.apk_dir else [(args.apk, args.abi)]
         for apk, abis in outputs:
             for abi, library, digest in verify_apk(apk, manifest_data, abis):

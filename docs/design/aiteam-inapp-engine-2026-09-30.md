@@ -241,3 +241,50 @@ The live acceptance wrapper and test-only preview runner are documented in
 4. Controller start drains its old heartbeat producer and gateway clients before native token rotation. Consumers rebind through the existing `onAttached` callback after the fresh credential handoff. Start is an explicit generation refresh: active engine jobs become interrupted checkpoints and resume by existing-session refetch; no prompt is automatically resent. Calling `attach()` remains the operation for reusing a healthy running engine without a restart/probe.
 
 No UI files are changed. On-device running-generation proof instrumentation is separate from host/Dart compile evidence; see the setup-contract QA README.
+
+### Codex device-E2E backend contract, 2026-09-30
+
+Finish line: packaged native executables match the attested hashes, unsupported
+Android confinement fails promptly with a typed code, and a failed setup restores
+only the OpenCode server stopped by that setup. Non-goal: UI edits, release
+delivery, legacy Gas City data migration, or authority from a proot path view.
+
+- Release `assembleRelease` now verifies actual APK bytes and the packaged
+  manifest. `libaiteam_*.so` retains its symbols; modifying/stripping any packaged
+  executable is a build failure, rather than a device-only failure.
+  It also requires `sourceSha256` to match current Cargo inputs and Rust source;
+  cherry-picking Rust code without rebuilding/staging the executables fails with
+  `stale_engine_sources_rebuild_and_stage`. Rebuild both ABIs with
+  `engine/phone/tool/build-android.sh --stage-android` before assembling the APK.
+- `--check-kernel` tests query/create/add/restrict in a disposable child with a
+  bounded wait. Inherited seccomp SIGSYS produces normal launcher exit 78.
+  Native activation reports `boundary_unsupported` before starting a daemon
+  when this prerequisite fails. No unsigned/configurable probe result enables
+  canonical import, lane admission, or promotion.
+- Additive setup call: **`await linux.stopServerForPhoneEngineSetup()`**.
+  Only the confirmed phone-team setup stop uses this flag. An ordinary
+  `stopServer()` clears the rollback ticket and remains an intentional stop.
+  Failed native activation restores the captured same-runtime script/port;
+  identical subsequent starts join the live process. The UI should still call
+  its existing restore/reconnect path on every failure, including failed server
+  start: native rollback cannot promise that the restored server passes HTTP
+  health, and it cannot restore a stop ticket lost with app-process death.
+- Before restarting OpenCode, the setup controller must gate on
+  **`health.boundary`**, rather than `health.canExecute`. Execution includes
+  verified OC1 protocol evidence and cannot be required while OC1 is stopped.
+  After restarting OC1, wait for `health.canExecute` using fresh health reads.
+  These are requests to the coordinator-owned setup controller, not UI edits
+  in this backend branch.
+- Legacy `BuiltinTeam` recovery is separate from `phoneEngine`. Healthy legacy
+  cities skip blocking registration; background store observation expires
+  after 60 seconds and is cancelable. This does not accelerate Dolt bootstrap
+  or migrate/deactivate legacy profiles.
+
+The proposed Landlock-free alternative is tested with an isolated private
+sentinel and actual controls inside proot: worker reads/writes/Git/stat/readlink,
+private direct paths and symlink aliases, `/proc` roots/environment/cmdline,
+inherited descriptors, and an exact owned tracer-kill escape. The diagnostic
+never signs a receipt or grants capabilities. A failed denial or escaped write
+means this device remains unsupported. Changing `/proc` binds alone cannot
+replace enforcement if a worker can detach from proot. Device results and
+artifact hashes are recorded in the E2E-fixes QA README.
