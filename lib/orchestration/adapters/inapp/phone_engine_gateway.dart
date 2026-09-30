@@ -548,6 +548,21 @@ String _planningCheckpointSummary(TeamPlanningState planning) {
     'promptUncertain' => 'promptUncertain',
     'modelUnavailable' => 'modelUnavailable',
     'modelInvalid' => 'modelInvalid',
+    'invalid_model' ||
+    'invalid_role' ||
+    'authentication_failed' ||
+    'transport_unavailable' ||
+    'cloneFailed' ||
+    'sessionCreateUncertain' ||
+    'permission_policy_unconfirmed' ||
+    'sessionUnknown' ||
+    'sessionUncertain' ||
+    'needsAnswer' ||
+    'structuredOutputInvalid' ||
+    'invalidPlan' ||
+    'planTaskTitleRequired' ||
+    'planPhaseInvalid' ||
+    'usageUncertain' => planning.reason,
     'restartNeedsReconciliation' => 'restartNeedsReconciliation',
     'pauseNeedsReconciliation' => 'pauseNeedsReconciliation',
     _ => '',

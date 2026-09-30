@@ -383,3 +383,14 @@ IDs block admission even without session metadata. Generation, directory,
 workspace and later-observation fences reject stale reads. No heartbeat or
 reconnect by itself establishes idle, and another client on another device
 remains the previously documented residual observation gap.
+
+Real-UI follow-up: the phone adapter presents native `needsPlanApproval` as
+`plan`, so the existing domain approval editor can submit the reviewed tasks,
+phases and unchanged command revision. Native engine status/checks remain
+unchanged. Unapproved active planning is presented as `running`, queued/unknown
+planning as `waiting`, interrupted/failed planning as `failed` (restart/pause
+reconciliation as `stalled`). Raw `planningState` remains available. A static
+current-checkpoint timeline row shows allowlisted failure codes; no provider
+error body is rendered. Task `checked` presents as `verified`, `needsFix` as
+`findings`, and `merging` as `running`, retaining raw durable engine evidence.
+This does not expose unsupported retry/use-as-task commands.

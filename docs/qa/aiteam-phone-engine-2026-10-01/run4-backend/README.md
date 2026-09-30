@@ -33,3 +33,34 @@ Root causes and fixes:
 - Native snapshots credentials before protected restart. Production preparation
   atomically matches the app-owned password first, eliminating stale rootfs
   credentials without logging or persisting credentials in diagnostics.
+
+Final host checkpoint: new chat-admission timer regressions 9 passed, bringing
+focused Dart total to 105 (six earlier files 96 plus new file 9). Initial
+attempts exposed harness fake-clock/Dio and pre-invariant timer disposal issues;
+those were corrected without weakening assertions. Final pinned analysis clean.
+The QA-only composition of integration 46f546c5 plus the backend (UI unchanged)
+also analyzes clean. Release compile completed in 3m43s. All six packaged native
+hashes and Rust source digest pass `verify_phone_engine_apk.py`; certificate is
+`1DE5BF08146F269BCD9EB5C2FFC94469CE4617D37806285955F978A62494D60C`.
+QA APK version2083 SHA256
+`9df5dccf899879ea6c360e0e43afaa726d11f4ae0c269c5421c042f17e8de6ec`.
+This is an emulator QA build using the existing debug signing configuration,
+not a published or delivered release. The exact original2083 remains available
+for restoration after the run.
+
+Real-UI device checkpoint (patched2083): after force-stop, first activation
+passed without Start again: stop42s, boundary3s, protected restart15s. Servers
+now says Reachable. A default-role project dispatched its planner to the
+server-selected `zai-coding-plan/glm-5.3-highspeed`; the provider returned APIError
+HTTP429. This is not a default-model dispatch pass-to-completion claim. The
+engine recorded `sessionFailed`; raw provider error text/credentials were not
+exported. Via Roles and agents UI, all three roles were then explicitly set to
+`zai-coding-plan/glm-5.3`. A fresh GLM project was created/spec-approved through
+UI. Its actual assistant record reports glm-5.3, finish=stop, no error; the
+engine published one task and `needsPlanApproval`. This revealed the next real
+UI contract mismatch: UI expects domain `plan` to offer approval. The adapter
+now translates the presentation while preserving native checks/revisions.
+Also found: UI requires authoritative merged queue items to offer Promote,
+while native durable merge receipts existed without queue projection. That
+projection is being completed before the final device run. Emulator stopped
+while rebuilding; lock remains owned until final cleanup.

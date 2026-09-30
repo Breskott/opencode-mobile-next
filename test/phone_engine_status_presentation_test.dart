@@ -142,6 +142,10 @@ void main() {
         'sessionFailed',
         'promptUncertain',
         'modelUnavailable',
+        'invalid_model',
+        'authentication_failed',
+        'sessionUnknown',
+        'structuredOutputInvalid',
         'untrusted private token path',
       ]) {
         final harness = client(
