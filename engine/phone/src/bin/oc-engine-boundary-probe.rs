@@ -18,7 +18,11 @@ fn denied(control: &str, value: libc::c_long) -> bool {
     } else {
         0
     };
-    let passed = value == -1 && matches!(errno, libc::EACCES | libc::EPERM);
+    // Landlock deliberately returns EXDEV when REFER/link rights would cross
+    // the allowed hierarchy. Other attacks still require permission denial.
+    let passed = value == -1
+        && (matches!(errno, libc::EACCES | libc::EPERM)
+            || (matches!(control, "link" | "rename") && errno == libc::EXDEV));
     if !passed {
         // Static control identifiers and numeric results only. Never print a
         // path, environment/argv value, sentinel contents or raw OS error.
@@ -168,7 +172,7 @@ fn check(root: &Path, worker: &Path, parent: i32) -> bool {
     }) {
         ok = false;
     }
-    for (id, entry) in ["environ", "mem", "fd/0", "ns/mnt"].into_iter().enumerate() {
+    for (id, entry) in ["environ", "mem", "fd/0"].into_iter().enumerate() {
         let name = path(&PathBuf::from(format!("/proc/{parent}/{entry}")));
         let fd = unsafe {
             libc::syscall(
@@ -185,6 +189,34 @@ fn check(root: &Path, worker: &Path, parent: i32) -> bool {
                 unsafe { libc::close(fd as i32) };
             }
         }
+    }
+    // A namespace handle identifies a public kernel object; it is not a
+    // credential or a data file. Acquiring it must NEVER grant authority to
+    // enter the parent's namespace. The seccomp policy denies every setns.
+    let namespace = path(&PathBuf::from(format!("/proc/{parent}/ns/mnt")));
+    let fd = unsafe {
+        libc::syscall(
+            libc::SYS_openat,
+            libc::AT_FDCWD,
+            namespace.as_ptr(),
+            libc::O_RDONLY | libc::O_CLOEXEC,
+            0,
+        )
+    };
+    if fd >= 0 {
+        if !denied("namespace-setns", unsafe {
+            libc::syscall(libc::SYS_setns, fd as i32, 0)
+        }) {
+            ok = false;
+        }
+        unsafe { libc::close(fd as i32) };
+    } else if !denied("namespace-open", fd) {
+        ok = false;
+    }
+    if !denied("namespace-unshare", unsafe {
+        libc::syscall(libc::SYS_unshare, libc::CLONE_NEWNS)
+    }) {
+        ok = false;
     }
     // Ordinary worker writes must still work. A blanket deny policy is not proof.
     if let Err(error) = std::fs::write(worker.join("positive-control"), b"worker") {

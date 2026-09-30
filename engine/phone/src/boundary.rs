@@ -222,6 +222,13 @@ fn deny_unmediated_syscalls() -> Result<(), BoundaryError> {
             libc::SYS_keyctl,
             libc::SYS_unshare,
             libc::SYS_setns,
+            428, // open_tree: acquisition of mount handles.
+            429, // move_mount
+            430, // fsopen
+            431, // fsconfig
+            432, // fsmount
+            433, // fspick
+            442, // mount_setattr
             452, // fchmodat2, not present in older libc headers.
         ];
         for nr in denied {
