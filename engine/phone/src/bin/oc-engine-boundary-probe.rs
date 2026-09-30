@@ -12,12 +12,19 @@ const SYS_TRUNCATE: libc::c_long = 45;
 #[cfg(not(all(target_os = "android", target_arch = "aarch64")))]
 const SYS_TRUNCATE: libc::c_long = libc::SYS_truncate;
 
-fn denied(value: libc::c_long) -> bool {
-    value == -1
-        && matches!(
-            std::io::Error::last_os_error().raw_os_error(),
-            Some(libc::EACCES | libc::EPERM)
-        )
+fn denied(control: &str, value: libc::c_long) -> bool {
+    let errno = if value == -1 {
+        std::io::Error::last_os_error().raw_os_error().unwrap_or(0)
+    } else {
+        0
+    };
+    let passed = value == -1 && matches!(errno, libc::EACCES | libc::EPERM);
+    if !passed {
+        // Static control identifiers and numeric results only. Never print a
+        // path, environment/argv value, sentinel contents or raw OS error.
+        println!("boundary-control:{control}:result:{value}:errno:{errno}");
+    }
+    passed
 }
 
 fn path(value: &Path) -> CString {
@@ -27,22 +34,28 @@ fn path(value: &Path) -> CString {
 fn check(root: &Path, worker: &Path, parent: i32) -> bool {
     let target = root.join("sentinel");
     let mut ok = true;
-    for candidate in [
+    for (candidate_id, candidate) in [
         target.clone(),
         root.join("../protected/sentinel"),
         PathBuf::from(format!("/proc/self/root{}", target.display())),
         PathBuf::from(format!("/proc/{parent}/root{}", target.display())),
         worker.join("protected-alias/sentinel"),
-    ] {
+    ]
+    .into_iter()
+    .enumerate()
+    {
         let name = path(&candidate);
-        for flags in [
+        for (flags_id, flags) in [
             libc::O_RDONLY,
             libc::O_WRONLY,
             libc::O_WRONLY | libc::O_TRUNC,
-        ] {
+        ]
+        .into_iter()
+        .enumerate()
+        {
             let fd =
                 unsafe { libc::syscall(libc::SYS_openat, libc::AT_FDCWD, name.as_ptr(), flags, 0) };
-            if !denied(fd) {
+            if !denied(&format!("open-{candidate_id}-{flags_id}"), fd) {
                 ok = false;
                 if fd >= 0 {
                     unsafe { libc::close(fd as i32) };
@@ -114,14 +127,28 @@ fn check(root: &Path, worker: &Path, parent: i32) -> bool {
         &|| unsafe { libc::syscall(libc::SYS_socket, libc::AF_UNIX, libc::SOCK_STREAM, 0) },
         &|| unsafe { libc::syscall(libc::SYS_io_uring_setup, 1, std::ptr::null::<u8>()) },
     ];
-    for attack in attacks {
-        if !denied(attack()) {
+    for (id, attack) in [
+        "truncate",
+        "rename",
+        "link",
+        "chmod",
+        "chown",
+        "utime",
+        "xattr",
+        "signal",
+        "unix-socket",
+        "io-uring",
+    ]
+    .into_iter()
+    .zip(attacks)
+    {
+        if !denied(id, attack()) {
             ok = false;
         }
     }
     // Parent is an isolated proof process outside the Landlock domain.
     let ptrace = unsafe { libc::ptrace(0x4206 as _, parent, 0, 0) };
-    if !denied(ptrace as libc::c_long) {
+    if !denied("ptrace", ptrace as libc::c_long) {
         ok = false;
         if ptrace == 0 {
             unsafe { libc::ptrace(libc::PTRACE_DETACH, parent, 0, 0) };
@@ -136,12 +163,12 @@ fn check(root: &Path, worker: &Path, parent: i32) -> bool {
         iov_base: std::ptr::null_mut(),
         iov_len: 1,
     };
-    if !denied(unsafe {
+    if !denied("process-vm-read", unsafe {
         libc::syscall(libc::SYS_process_vm_readv, parent, &local, 1, &remote, 1, 0)
     }) {
         ok = false;
     }
-    for entry in ["environ", "mem", "fd/0", "ns/mnt"] {
+    for (id, entry) in ["environ", "mem", "fd/0", "ns/mnt"].into_iter().enumerate() {
         let name = path(&PathBuf::from(format!("/proc/{parent}/{entry}")));
         let fd = unsafe {
             libc::syscall(
@@ -152,7 +179,7 @@ fn check(root: &Path, worker: &Path, parent: i32) -> bool {
                 0,
             )
         };
-        if !denied(fd) {
+        if !denied(&format!("parent-proc-{id}"), fd) {
             ok = false;
             if fd >= 0 {
                 unsafe { libc::close(fd as i32) };
@@ -160,7 +187,11 @@ fn check(root: &Path, worker: &Path, parent: i32) -> bool {
         }
     }
     // Ordinary worker writes must still work. A blanket deny policy is not proof.
-    if std::fs::write(worker.join("positive-control"), b"worker").is_err() {
+    if let Err(error) = std::fs::write(worker.join("positive-control"), b"worker") {
+        println!(
+            "boundary-control:worker-write:errno:{}",
+            error.raw_os_error().unwrap_or(0)
+        );
         ok = false;
     }
     ok
@@ -187,7 +218,11 @@ fn main() {
                 .status()
                 .ok()
         });
-        ok &= status.is_some_and(|s| s.success());
+        let descendant = status.is_some_and(|s| s.success());
+        if !descendant {
+            println!("boundary-control:descendant:failed");
+        }
+        ok &= descendant;
     }
     println!(
         "{}",
