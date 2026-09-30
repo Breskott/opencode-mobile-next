@@ -31,8 +31,11 @@ data because Android instrumentation restarts its target process. The stable
 app's server and data are outside this test's ownership.
 
 The bundle must contain the device's ABI (`x86_64` for emulator-5554 or
-`arm64-v8a` for a phone). An emulator without the required kernel confinement
-features reports a proof failure; the harness cannot weaken the boundary.
+`arm64-v8a` for a phone). The native proof prefers Landlock and uses the owner's
+approved `proot` path tier when Android blocks Landlock. It must prove the chosen
+tier on this exact packaged binary before execution. Proot is ptrace-based path
+translation, not a kernel boundary. A device that cannot prove either tier
+reports a typed failure; the harness never forges or bypasses the proof.
 
 ## Run
 

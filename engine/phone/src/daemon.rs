@@ -936,7 +936,7 @@ fn patch(e: &Engine, id: &str, stage: &str, value: Value) -> Result<Value, &'sta
         .lock()
         .map_err(|_| "storeUnavailable")?
         .update_job(id, stage, &value)
-        .map_err(|_| "jobChanged")
+        .map_err(|error| error.code())
 }
 async fn run_job(e: Shared, job: Value) -> Result<(), &'static str> {
     let result = task_pipeline(&e, &job).await;
@@ -1028,7 +1028,7 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     }
     stage_admitted(e, job).await?;
     let request = if planner {
-        format!("Plan the approved specification. Return only JSON {{spec: TeamSpec, phases: TeamPhase[], tasks: TeamTask[]}}. Every task needs roleId, repoId, criteria and dependsOn. Do not modify files. Input: {}",job)
+        planner_request(job)
     } else {
         format!("Implement this task on branch {}. Keep edits in this isolated clone. Commit completed changes to that task branch, without editing main or dev. Acceptance criteria: {}. Task: {}",work["branch"],job["criteria"],job["title"])
     };
@@ -1321,22 +1321,108 @@ fn normalized_usage(usage: &Value) -> Value {
     json!({"cost":usage["cost"].as_f64().filter(|n| n.is_finite() && *n >= 0.0),
            "tokens":usage["tokens"]["total"].as_u64()})
 }
+// Model-authored JSON must not silently overwrite an earlier finding/status.
+fn strict_json(text: &str) -> Result<Value, &'static str> {
+    struct StrictValue(Value);
+    impl<'de> serde::Deserialize<'de> for StrictValue {
+        fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+            struct Visitor;
+            impl<'de> serde::de::Visitor<'de> for Visitor {
+                type Value = StrictValue;
+                fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    f.write_str("JSON without duplicate object keys")
+                }
+                fn visit_bool<E: serde::de::Error>(self, v: bool) -> Result<Self::Value, E> {
+                    Ok(StrictValue(json!(v)))
+                }
+                fn visit_i64<E: serde::de::Error>(self, v: i64) -> Result<Self::Value, E> {
+                    Ok(StrictValue(json!(v)))
+                }
+                fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<Self::Value, E> {
+                    Ok(StrictValue(json!(v)))
+                }
+                fn visit_f64<E: serde::de::Error>(self, v: f64) -> Result<Self::Value, E> {
+                    serde_json::Number::from_f64(v)
+                        .map(|n| StrictValue(Value::Number(n)))
+                        .ok_or_else(|| E::custom("invalid number"))
+                }
+                fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                    Ok(StrictValue(json!(v)))
+                }
+                fn visit_unit<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+                    Ok(StrictValue(Value::Null))
+                }
+                fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                    self,
+                    mut a: A,
+                ) -> Result<Self::Value, A::Error> {
+                    let mut values = Vec::new();
+                    while let Some(value) = a.next_element::<StrictValue>()? {
+                        values.push(value.0);
+                    }
+                    Ok(StrictValue(Value::Array(values)))
+                }
+                fn visit_map<A: serde::de::MapAccess<'de>>(
+                    self,
+                    mut a: A,
+                ) -> Result<Self::Value, A::Error> {
+                    let mut map = serde_json::Map::new();
+                    while let Some(key) = a.next_key::<String>()? {
+                        if map.contains_key(&key) {
+                            return Err(serde::de::Error::custom("duplicate object key"));
+                        }
+                        map.insert(key, a.next_value::<StrictValue>()?.0);
+                    }
+                    Ok(StrictValue(Value::Object(map)))
+                }
+            }
+            d.deserialize_any(Visitor)
+        }
+    }
+    let mut parser = serde_json::Deserializer::from_str(text);
+    let value = <StrictValue as serde::Deserialize>::deserialize(&mut parser)
+        .map_err(|_| "structuredOutputInvalid")?;
+    parser.end().map_err(|_| "structuredOutputInvalid")?;
+    Ok(value.0)
+}
 pub fn structured_output(value: &Value) -> Result<Value, &'static str> {
     let text = value["text"].as_str().ok_or("structuredOutputInvalid")?;
     if text.len() > 1024 * 1024 {
         return Err("structuredOutputInvalid");
     }
     let text = text.trim();
-    let text = text
-        .strip_prefix("```json\n")
-        .and_then(|s| s.strip_suffix("```"))
-        .or_else(|| {
-            text.strip_prefix("```\n")
-                .and_then(|s| s.strip_suffix("```"))
-        })
-        .unwrap_or(text)
-        .trim();
-    serde_json::from_str(text).map_err(|_| "structuredOutputInvalid")
+    if let Ok(value) = strict_json(text) {
+        return Ok(value);
+    }
+    // A model may append explanatory prose to its explicitly fenced verdict.
+    // Accept exactly one JSON fence, never scan prose for an object or choose
+    // between multiple candidate verdicts. Schema/criteria validation follows.
+    let (before, fenced) = text.split_once("```").ok_or("structuredOutputInvalid")?;
+    let fenced = fenced
+        .strip_prefix("json\n")
+        .or_else(|| fenced.strip_prefix('\n'))
+        .ok_or("structuredOutputInvalid")?;
+    let (body, after) = fenced.split_once("```").ok_or("structuredOutputInvalid")?;
+    if after.contains("```")
+        || [before, after]
+            .iter()
+            .any(|prose| prose.contains(['{', '}', '[', ']']))
+    {
+        return Err("structuredOutputInvalid");
+    }
+    strict_json(body.trim())
+}
+pub fn planner_request(job: &Value) -> String {
+    let schema = json!({"type":"object","required":["spec","phases","tasks"],"properties":{
+        "spec":{"type":"object"},
+        "phases":{"type":"array","minItems":1,"items":{"type":"object","required":["id","title","milestoneId"]}},
+        "tasks":{"type":"array","minItems":1,"items":{"type":"object","required":["id","title","phaseId","roleId","repoId","serverId","criteria","dependsOn"],"properties":{
+            "roleId":{"enum":job["planningRoles"].as_array().map(|roles| roles.iter().map(|r| r["id"].clone()).collect::<Vec<_>>()).unwrap_or_default()},
+            "title":{"type":"string","minLength":1},"serverId":{"const":"phone"},"repoId":{"const":job["repoId"]},
+            "criteria":{"type":"array","minItems":1,"items":{"type":"string","minLength":1}},"dependsOn":{"type":"array","items":{"type":"string"}}
+        }}}
+    }});
+    format!("Plan the approved specification. Return only a JSON object conforming to this schema: {schema}. Copy spec from the approved input. Every task must have a nonempty title, reference an existing phase and configured worker role, and use the input repoId and phone server. Supply authored proposals only; omit runtime status, findings and usage. Do not modify files. Input: {job}")
 }
 pub fn validate_plan(value: &Value, repo: &str) -> Result<(), &'static str> {
     let tasks = value["tasks"].as_array().ok_or("planInvalid")?;
@@ -1349,6 +1435,9 @@ pub fn validate_plan(value: &Value, repo: &str) -> Result<(), &'static str> {
     }
     let mut ids = std::collections::HashSet::new();
     for t in tasks {
+        if t["title"].as_str().is_none_or(|s| s.trim().is_empty()) {
+            return Err("planTaskTitleRequired");
+        }
         let id = t["id"].as_str().ok_or("planInvalid")?;
         if !crate::config::valid_id(id)
             || !ids.insert(id)

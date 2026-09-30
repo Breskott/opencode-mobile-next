@@ -21,7 +21,7 @@ STAGES = ("project_created", "planner_completed", "plan_approved", "worker_compl
 # Frozen compile-time vocabulary shared with the test runner. Never print a
 # syntactically plausible but unknown server/native string (it may be a secret).
 SAFE_FAILURE_CODES = frozenset({
-    "acceptance_failed",
+    "acceptance_failed", "invalid_proot_object_link", "repository_object_hash_mismatch",
     'approveSpecFirst', 'authInvalid', 'authUnavailable', 'boundaryUnavailable',
     'boundary_proof_failed', 'canonical_ref_invalid', 'canonical_ref_missing', 'chargingUnsupported',
     'chatBusy', 'chat_status_unknown', 'checkInvalid', 'checkedCommitChanged',
@@ -45,7 +45,7 @@ SAFE_FAILURE_CODES = frozenset({
     'merge_conflict', 'merge_receipt_missing', 'missingCriteria', 'missingDependency',
     'missingProjectDetails', 'model_invalid', 'model_required', 'model_spend_required',
     'needsAnswer', 'needsReconciliation', 'other_service_running', 'overlapping_roots',
-    'person_chat_busy', 'person_terminal_running', 'planAlreadyRunning', 'planInvalid',
+    'person_chat_busy', 'person_terminal_running', 'planAlreadyRunning', 'planInvalid', 'planTaskTitleRequired', 'planPhaseInvalid',
     'plan_not_single_task', 'plan_scope_mismatch', 'planner_not_completed', 'private_state_invalid',
     'private_state_unavailable', 'profileDeleted', 'projectBusy', 'projectMissing',
     'projectNotFound', 'projectPaused', 'projectStopped', 'project_missing',
@@ -62,7 +62,7 @@ SAFE_FAILURE_CODES = frozenset({
     'serverConfigInvalid', 'serverCredentialsInvalid', 'serverCredentialsUnavailable', 'serverStopped',
     'server_auth_unavailable', 'server_status_stale', 'server_status_unknown', 'sessionAlreadyRecorded',
     'sessionCreateUncertain', 'sessionFailed', 'sessionUncertain', 'sessionUnknown',
-    'shared_repository_objects', 'sqlite_missing', 'sqlite_workspace_missing', 'stable_server_not_running',
+    'shared_repository_objects', 'sqlite_missing', 'sqlite_workspace_missing', 'sqlite_unscoped_store_present', 'stable_server_not_running',
     'stable_server_restore_failed', 'stable_server_restore_timeout', 'staleJobStage', 'staleRepositoryRefs',
     'staleRevision', 'stale_dev', 'stale_main', 'stale_task',
     'storageCorrupt', 'storageUnavailable', 'storeUnavailable', 'structuredOutputInvalid',

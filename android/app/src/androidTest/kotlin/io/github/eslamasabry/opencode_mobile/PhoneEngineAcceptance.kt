@@ -24,7 +24,7 @@ class PhoneEngineAcceptance : Instrumentation() {
     private companion object {
         // Compile-time public refusal vocabulary; never relay arbitrary response text.
         val SAFE_FAILURE_CODES = setOf(
-            "acceptance_failed",
+            "acceptance_failed", "invalid_proot_object_link", "repository_object_hash_mismatch",
             "approveSpecFirst", "authInvalid", "authUnavailable", "boundaryUnavailable",
             "boundary_proof_failed", "canonical_ref_invalid", "canonical_ref_missing", "chargingUnsupported",
             "chatBusy", "chat_status_unknown", "checkInvalid", "checkedCommitChanged",
@@ -48,7 +48,7 @@ class PhoneEngineAcceptance : Instrumentation() {
             "merge_conflict", "merge_receipt_missing", "missingCriteria", "missingDependency",
             "missingProjectDetails", "model_invalid", "model_required", "model_spend_required",
             "needsAnswer", "needsReconciliation", "other_service_running", "overlapping_roots",
-            "person_chat_busy", "person_terminal_running", "planAlreadyRunning", "planInvalid",
+            "person_chat_busy", "person_terminal_running", "planAlreadyRunning", "planInvalid", "planTaskTitleRequired", "planPhaseInvalid",
             "plan_not_single_task", "plan_scope_mismatch", "planner_not_completed", "private_state_invalid",
             "private_state_unavailable", "profileDeleted", "projectBusy", "projectMissing",
             "projectNotFound", "projectPaused", "projectStopped", "project_missing",
@@ -65,7 +65,7 @@ class PhoneEngineAcceptance : Instrumentation() {
             "serverConfigInvalid", "serverCredentialsInvalid", "serverCredentialsUnavailable", "serverStopped",
             "server_auth_unavailable", "server_status_stale", "server_status_unknown", "sessionAlreadyRecorded",
             "sessionCreateUncertain", "sessionFailed", "sessionUncertain", "sessionUnknown",
-            "shared_repository_objects", "sqlite_missing", "sqlite_workspace_missing", "stable_server_not_running",
+            "shared_repository_objects", "sqlite_missing", "sqlite_workspace_missing", "sqlite_unscoped_store_present", "stable_server_not_running",
             "stable_server_restore_failed", "stable_server_restore_timeout", "staleJobStage", "staleRepositoryRefs",
             "staleRevision", "stale_dev", "stale_main", "stale_task",
             "storageCorrupt", "storageUnavailable", "storeUnavailable", "structuredOutputInvalid",
@@ -279,6 +279,11 @@ class PhoneEngineAcceptance : Instrumentation() {
         val seed = readRef(File(host, ".git"), "main")
         personDirectories.add(guest)
         requireSafe(personDirectories.contains(guest), "directory_scope_unknown")
+        // Regression: use the actual per-profile store, not the obsolete
+        // data/state.sqlite3 spelling. Reading the real initial workspace is
+        // a positive control before any model dispatch or queue mutation.
+        requireSafe(!File(privateRoot, "data/state.sqlite3").exists(), "sqlite_unscoped_store_present")
+        requireSafe(persistedWorkspace().optInt("schemaVersion") == 1, "sqlite_workspace_missing")
         heartbeat() // Fresh authoritative status before any approved lane.
         heartbeatRunning.set(true)
         heartbeatThread = Thread({
@@ -579,14 +584,18 @@ class PhoneEngineAcceptance : Instrumentation() {
     @Synchronized private fun heartbeat() {
         val busy = linkedSetOf<String>()
         var known = true
+        var unknownReason = "chat_status_unknown"
         try {
             busy.addAll(scopedBusySessions(teamSessions()))
+        } catch (failure: Refused) {
+            known = false
+            unknownReason = safeFailure(failure.safeCode, "chat_status_unknown")
         } catch (_: Exception) { known = false }
         val response = engine("POST", "/v1/chatBusy", JSONObject().put("until", System.currentTimeMillis() + 25_000L)
             .put("sessionIds", JSONArray(busy.toList())).put("directories", JSONArray(personDirectories.toList()))
             .put("known", known).put("appInstance", instance).put("sequence", ++heartbeatSequence))
         requireSafe(response.status == 200 && response.body.optBoolean("accepted"), "heartbeat_refused")
-        requireSafe(known, "chat_status_unknown")
+        requireSafe(known, unknownReason)
     }
 
     private fun scopedBusySessions(team: Set<String>): Set<String> {
@@ -704,7 +713,7 @@ class PhoneEngineAcceptance : Instrumentation() {
     }
 
     private fun <T> database(block: (SQLiteDatabase) -> T): T {
-        val file = File(privateRoot, "data/state.sqlite3")
+        val file = File(privateRoot, "data/oc.teamEngine.$profile/state.sqlite3")
         requireSafe(regularPrivate(file), "sqlite_missing")
         return SQLiteDatabase.openDatabase(file.absolutePath, null, SQLiteDatabase.OPEN_READONLY or SQLiteDatabase.NO_LOCALIZED_COLLATORS)
             .use(block)

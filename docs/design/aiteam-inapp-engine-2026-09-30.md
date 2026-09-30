@@ -337,3 +337,11 @@ Primary UI mappings:
 | `chooseExecutionMode` / `chooseBudget` / `invalidPlacement` / `invalidSpec` | Correct the corresponding draft field. |
 
 The full static repository and store reason catalog is in [run 3 backend QA](../qa/aiteam-phone-engine-2026-09-30/run3-backend/README.md). The gateway change is additive; Claude owns plain-language UI mappings and Details.
+
+Committed phone repositories use proot's L2S hardlink emulation. The native snapshot now normalizes only exact loose/allowed pack object aliases through the original dirfd, bounded same-directory chains and explicit decoded object hash checks. This applies to both source import and worker collection. Arbitrary metadata links, config/refs/HEAD aliases and private/proc targets remain refused. Additive codes `invalid_proot_object_link` and `repository_object_hash_mismatch` distinguish an unsafe chain from corrupt object identity; `repository_too_large` also covers decoded-object limits (64 MiB per object, 2 GiB total, 200,000 objects/files).
+
+Planner proposals now require a nonempty task title (`planTaskTitleRequired`). The planner prompt provides the authored JSON schema explicitly; intake normalizes runtime defaults and checks role/repo/server/phase placement and dependency validity transactionally before publishing `needsPlanApproval`. A missing-title proposal rolls back without changing the workspace or job. This fixes the live GLM planner/approval contract mismatch.
+
+Phase intake also rejects malformed types, missing titles and duplicate IDs with `planPhaseInvalid`; it strips model runtime fields and forces `accepted:false`. The planner receives the configured implementation-role catalog and a role enum. Job update failures preserve their static store reason.
+
+Structured-output intake accepts raw JSON or exactly one explicit JSON/untagged fenced block with surrounding prose. Extra fences or object/array delimiters outside the block remain `structuredOutputInvalid`; schema, criterion matching, findings severity and no-waiver checks are unchanged. No prose is interpreted as a verdict.
