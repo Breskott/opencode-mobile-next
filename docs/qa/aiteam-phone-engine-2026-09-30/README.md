@@ -1,0 +1,20 @@
+# Phone project engine — first slice
+
+Finish line: a phone-resident native Rust daemon persists project commands and task stages, drives planner → worker → checker sessions on one pinned OC1 server using isolated worker clones, merges checked changes into private canonical dev, and permits confirmed expected-SHA promotion only through the authenticated API and a proven filesystem boundary.
+
+Non-goal: UI changes, OC2 execution, multi-host migration, signing, publishing, unbounded Android lifetime, or per-session CPU/IO priority claims.
+
+Owner has deferred tests. Tests and proof harnesses are implemented for later execution; no test/analyzer/device pass is claimed. Build/format checks will be recorded separately. All artifacts use Storage, not /tmp.
+
+## Ownership and frozen contracts
+
+- Store slice owns `engine/phone/src/store.rs`, `scheduler.rs`, store tests and its QA README.
+- Git slice owns `engine/phone/src/repository.rs`, git proof tests and its QA README.
+- Native slice owns both halves of the builtin MethodChannel, Kotlin lifecycle/launcher, `engine/phone/src/bin/oc-engine-sandbox.rs`, boundary proof and its QA README.
+- Coordinator owns Cargo/package/build integration, daemon HTTP/reconcile/OpenCode driver, Dart gateway adapter/domain contract and integration README. No UI is edited. Each execution slice has its own Storage worktree and local `[skip ci]` commits.
+
+Store interface: `Store::open(root: &Path, profile: &str) -> Result<Store, StoreError>`; `workspace() -> Result<Value, StoreError>`; `execute(&Value) -> Result<Value, StoreError>` matching `TeamProjectCommand` and `TeamCommandResult`; `events(after: i64, limit: usize) -> Result<Vec<Value>, StoreError>`; `delete_profile() -> Result<(), StoreError>`; `jobs() -> Result<Vec<Value>, StoreError>`; `update_job(id: &str, expected_stage: &str, patch: &Value) -> Result<Value, StoreError>`; `recover() -> Result<(), StoreError>`. StoreError has public `code() -> &str`, no raw SQL/path/payload exposure. State uses `oc.teamEngine.<profile>` subdirectory and transactionally persists idempotent commands, project revisions, job stages, usage, receipts and event metadata. Running stages recover as `interrupted`, never automatically resubmitted. Jobs hold task/project/repo ids, role/model, criteria, dependency ids, stage, directory, session ids and expected commits.
+
+Repository interface: `RepositoryAuthority::new(private_root: PathBuf, worker_root: PathBuf) -> Result<Self, RepoError>`; `import_repo(repo_id: &str, source: &Path) -> Result<Value, RepoError>`; `prepare_worker(repo_id: &str, task_id: &str) -> Result<Value, RepoError>`; `collect_worker(repo_id: &str, task_id: &str, expected_dev: &str) -> Result<Value, RepoError>`; `merge_dev(repo_id: &str, task_id: &str, expected_dev: &str, expected_task: &str) -> Result<Value, RepoError>`; `promote(repo_id: &str, expected_dev: &str, expected_main: &str, confirmed: bool, request_id: &str) -> Result<Value, RepoError>`; `refs(repo_id: &str) -> Result<Value, RepoError>`. RepoError exposes only `code() -> &str`. Canonical roots must never overlap worker roots; untrusted paths/symlinks/local origins cannot reach protected state. libgit2 only, no shell git in daemon. Mutations return before/after refs; promotion is idempotent, binds exact dev/main and is crash-reconcilable. No force refs or force pushes. Worker hooks are defense in depth, not authority.
+
+HTTP contract v1: every endpoint requires Bearer auth; loopback bind only; `GET /v1/health`, `GET /v1/workspace`, `POST /v1/commands` (TeamProjectCommand JSON), `GET /v1/events?after=<seq>&limit=<n>` (metadata array), `DELETE /v1/profile`. Health contains schemaVersion=1, engineVersion, profileId, capabilities (execution/boundary/oc1Verified/oc2) and commandActions array. Responses never contain tokens, provider credentials, SQL/native errors or raw server output. Missing proof => execution unavailable. `close()` releases app resources without stopping daemon; `deleteLocalData()` drains client writes and calls durable engine deletion. No command auto-retry after ambiguous transport failure.

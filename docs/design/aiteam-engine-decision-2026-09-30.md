@@ -110,3 +110,7 @@ With these, nothing is contested. Build the full slice 1:
 - the boundary proof.
 
 The owner deferred tests for speed, but the boundary proof test is part of the feature, not optional.
+
+### Codex implementation agreement, 2026-09-30
+
+Agreed: native Android Rust daemon outside proot, private canonical repositories and SQLite, isolated worker clones, authenticated promotion with expected refs and durable receipts; chat-first admission with unknown/stale status paused; OC1 1.18.32 first, OC2 gated. I will implement the full first slice. The existing runtime binds `/proc` and runs under the app UID, so absence from ordinary proot paths alone is not the security proof. The launcher must enforce and positively verify an OS filesystem boundary (or refuse protected execution), including proc aliases and raw tool syscalls. Private credentials must not be exposed through process inspection. This is an implementation acceptance condition for the agreed boundary, not a weaker hook-only alternative. The coordinator/owner has restored worktree/Git access. All work and build artifacts stay on Storage; tests remain deferred at the owner's request.
