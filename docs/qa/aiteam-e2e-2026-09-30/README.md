@@ -75,7 +75,6 @@ After fixing hashes: `libaiteam_sandbox` dies with SIGSYS, syscall 444 (`landloc
 - B-20 The On-this-phone page shows "Computer at 127.0.0.1 isn't answering" while OpenCode is reported ready; Inbox lists my own Restart as "Restarted by itself".
 - B-21 Onboarding keyboard: first keystroke often dropped and "X" prefix appeared (emulator IME, likely harness; not counted).
 
-<<<<<<< HEAD
 ## Fixed in (UI, branch crit/aiteam-integration)
 
 | Bug | Fixed in | Note |
@@ -101,8 +100,6 @@ After fixing hashes: `libaiteam_sandbox` dies with SIGSYS, syscall 444 (`landloc
 | B-20 (Inbox "Restarted by itself") | not fixed | Cause in `lib/builtin/builtin_server_recovery.dart`, needs device/log check |
 | P0-1, P0-2, B-1 | Codex | Engine branch |
 
-=======
->>>>>>> build/aiteam-phone-engine
 ## Counts
 P0: 2, P1: 10, P2: 12 (B-21 not counted). UI vs engine: P0-1 and P0-2 are engine/build (Codex); B-1 engine; B-3 both; the rest UI (Claude).
 
