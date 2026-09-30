@@ -3,9 +3,11 @@ use p256::ecdsa::{signature::Verifier, Signature, VerifyingKey};
 use p256::pkcs8::DecodePublicKey;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
+use std::collections::VecDeque;
 use std::io::Read;
-use std::os::unix::fs::OpenOptionsExt;
+use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AttestationError(pub &'static str);
@@ -184,31 +186,113 @@ pub fn elapsed_ms() -> Result<u64, AttestationError> {
     Ok((time.tv_sec as u64).saturating_mul(1000) + time.tv_nsec as u64 / 1_000_000)
 }
 
-pub fn hash_file(path: &Path) -> Result<String, AttestationError> {
-    let mut file = std::fs::OpenOptions::new()
-        .read(true)
-        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
-        .open(path)
-        .map_err(|_| AttestationError("attestationFileUnavailable"))?;
-    if !file
-        .metadata()
-        .map_err(|_| AttestationError("attestationFileUnavailable"))?
-        .is_file()
-    {
-        return Err(AttestationError("attestationFileUnavailable"));
-    }
-    let mut hash = Sha256::new();
-    let mut buffer = [0_u8; 65536];
-    loop {
-        let n = file
-            .read(&mut buffer)
+// The cache contains only file bytes, never accepted receipt authority. APK
+// libraries are immutable in normal operation; a metadata change forces a hash.
+const BINARY_HASH_CACHE_LIMIT: usize = 64;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct BinaryIdentity {
+    device: u64,
+    inode: u64,
+    size: u64,
+    modified_seconds: i64,
+    modified_nanoseconds: i64,
+    changed_seconds: i64,
+    changed_nanoseconds: i64,
+}
+
+impl BinaryIdentity {
+    fn from_file(file: &std::fs::File) -> Result<Self, AttestationError> {
+        let metadata = file
+            .metadata()
             .map_err(|_| AttestationError("attestationFileUnavailable"))?;
-        if n == 0 {
-            break;
+        if !metadata.is_file() {
+            return Err(AttestationError("attestationFileUnavailable"));
         }
-        hash.update(&buffer[..n]);
+        Ok(Self {
+            device: metadata.dev(),
+            inode: metadata.ino(),
+            size: metadata.len(),
+            modified_seconds: metadata.mtime(),
+            modified_nanoseconds: metadata.mtime_nsec(),
+            changed_seconds: metadata.ctime(),
+            changed_nanoseconds: metadata.ctime_nsec(),
+        })
     }
-    Ok(format!("{:x}", hash.finalize()))
+}
+
+#[derive(Default)]
+struct BinaryHashCache {
+    entries: VecDeque<(BinaryIdentity, String)>,
+    #[cfg(test)]
+    hash_reads: usize,
+}
+
+fn open_binary(path: &Path) -> Result<std::fs::File, AttestationError> {
+    std::fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC | libc::O_NONBLOCK)
+        .open(path)
+        .map_err(|_| AttestationError("attestationFileUnavailable"))
+}
+
+pub fn hash_file(path: &Path) -> Result<String, AttestationError> {
+    static CACHE: OnceLock<Mutex<BinaryHashCache>> = OnceLock::new();
+    let mut cache = CACHE
+        .get_or_init(|| Mutex::new(BinaryHashCache::default()))
+        .lock()
+        .map_err(|_| AttestationError("attestationFileUnavailable"))?;
+    hash_file_cached(path, &mut cache)
+}
+
+fn hash_file_cached(path: &Path, cache: &mut BinaryHashCache) -> Result<String, AttestationError> {
+    // Opening and inspecting the actual descriptor on every check prevents a
+    // removed/unreadable/symlinked path from borrowing a previously cached hash.
+    let mut file = open_binary(path)?;
+    let before = BinaryIdentity::from_file(&file)?;
+    let cached_index = cache.entries.iter().position(|(id, _)| *id == before);
+    let value = if let Some(index) = cached_index {
+        cache.entries[index].1.clone()
+    } else {
+        #[cfg(test)]
+        {
+            cache.hash_reads += 1;
+        }
+        let mut hash = Sha256::new();
+        let mut buffer = [0_u8; 65536];
+        loop {
+            let n = file
+                .read(&mut buffer)
+                .map_err(|_| AttestationError("attestationFileUnavailable"))?;
+            if n == 0 {
+                break;
+            }
+            hash.update(&buffer[..n]);
+        }
+        format!("{:x}", hash.finalize())
+    };
+    // Both a same-inode write during hashing and a path replacement invalidate
+    // this check. Failed guards never insert or return a cached result.
+    verify_binary_identity(&file, path, before)?;
+    if let Some(index) = cached_index {
+        cache.entries.remove(index);
+    }
+    cache.entries.push_front((before, value.clone()));
+    cache.entries.truncate(BINARY_HASH_CACHE_LIMIT);
+    Ok(value)
+}
+
+fn verify_binary_identity(
+    file: &std::fs::File,
+    path: &Path,
+    before: BinaryIdentity,
+) -> Result<(), AttestationError> {
+    let after = BinaryIdentity::from_file(file)?;
+    let current = BinaryIdentity::from_file(&open_binary(path)?)?;
+    if before != after || before != current {
+        return Err(AttestationError("attestationBinaryChanged"));
+    }
+    Ok(())
 }
 
 fn read_bounded(path: &Path, limit: usize) -> Result<Vec<u8>, AttestationError> {
@@ -242,4 +326,126 @@ fn hex(value: &str) -> bool {
         && value
             .bytes()
             .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+}
+
+#[cfg(test)]
+mod cache_tests {
+    use super::*;
+
+    fn directory() -> tempfile::TempDir {
+        let root = std::env::var_os("OC_PHONE_PROOF_ROOT")
+            .or_else(|| std::env::var_os("CARGO_TARGET_DIR"))
+            .map(PathBuf::from)
+            .unwrap_or_else(|| std::env::current_dir().unwrap().join("target"))
+            .join("attestation-cache-fixtures");
+        std::fs::create_dir_all(&root).unwrap();
+        tempfile::tempdir_in(root).unwrap()
+    }
+
+    #[test]
+    fn unchanged_binary_is_read_once_and_cache_is_bounded() {
+        let directory = directory();
+        let binary = directory.path().join("engine.so");
+        std::fs::write(&binary, b"binary").unwrap();
+        let mut cache = BinaryHashCache::default();
+        let first = hash_file_cached(&binary, &mut cache).unwrap();
+        for _ in 0..20 {
+            assert_eq!(hash_file_cached(&binary, &mut cache).unwrap(), first);
+        }
+        assert_eq!(
+            cache.hash_reads, 1,
+            "repeated checks must not re-read ELF bytes"
+        );
+        for index in 0..BINARY_HASH_CACHE_LIMIT + 3 {
+            let path = directory.path().join(format!("binary-{index}.so"));
+            std::fs::write(&path, index.to_le_bytes()).unwrap();
+            hash_file_cached(&path, &mut cache).unwrap();
+        }
+        assert_eq!(cache.entries.len(), BINARY_HASH_CACHE_LIMIT);
+        let reads = cache.hash_reads;
+        assert_eq!(hash_file_cached(&binary, &mut cache).unwrap(), first);
+        assert_eq!(cache.hash_reads, reads + 1, "evicted ELF must be re-hashed");
+    }
+
+    #[test]
+    fn replacement_and_same_size_timestamp_restored_write_invalidate_cache() {
+        let directory = directory();
+        let binary = directory.path().join("engine.so");
+        std::fs::write(&binary, b"binary").unwrap();
+        let mut cache = BinaryHashCache::default();
+        let original = hash_file_cached(&binary, &mut cache).unwrap();
+        let modified = std::fs::metadata(&binary).unwrap().modified().unwrap();
+        // Retaining length and mtime must not hide a same-inode write: ctime
+        // cannot be restored by an ordinary unprivileged application.
+        std::thread::sleep(std::time::Duration::from_millis(2));
+        std::fs::write(&binary, b"edited").unwrap();
+        std::fs::File::options()
+            .write(true)
+            .open(&binary)
+            .unwrap()
+            .set_times(std::fs::FileTimes::new().set_modified(modified))
+            .unwrap();
+        assert_ne!(hash_file_cached(&binary, &mut cache).unwrap(), original);
+        assert_eq!(cache.hash_reads, 2);
+        let replacement = directory.path().join("replacement.so");
+        std::fs::write(&replacement, b"binary").unwrap();
+        std::fs::rename(replacement, &binary).unwrap();
+        assert_eq!(hash_file_cached(&binary, &mut cache).unwrap(), original);
+        assert_eq!(cache.hash_reads, 3, "a different inode requires a new hash");
+    }
+
+    #[test]
+    fn same_descriptor_and_current_path_guards_detect_changes_during_read() {
+        let directory = directory();
+        let binary = directory.path().join("engine.so");
+        std::fs::write(&binary, b"binary").unwrap();
+        let file = open_binary(&binary).unwrap();
+        let before = BinaryIdentity::from_file(&file).unwrap();
+        assert!(verify_binary_identity(&file, &binary, before).is_ok());
+        std::fs::write(&binary, b"longer binary").unwrap();
+        assert_eq!(
+            verify_binary_identity(&file, &binary, before)
+                .unwrap_err()
+                .0,
+            "attestationBinaryChanged"
+        );
+        let before_replacement = BinaryIdentity::from_file(&file).unwrap();
+        let replacement = directory.path().join("replacement.so");
+        std::fs::write(&replacement, b"longer binary").unwrap();
+        std::fs::rename(replacement, &binary).unwrap();
+        assert_eq!(
+            verify_binary_identity(&file, &binary, before_replacement)
+                .unwrap_err()
+                .0,
+            "attestationBinaryChanged"
+        );
+    }
+
+    #[test]
+    fn removed_symlinked_and_nonregular_paths_cannot_borrow_cached_hash() {
+        let directory = directory();
+        let binary = directory.path().join("engine.so");
+        let target = directory.path().join("target.so");
+        std::fs::write(&binary, b"binary").unwrap();
+        std::fs::write(&target, b"binary").unwrap();
+        let mut cache = BinaryHashCache::default();
+        hash_file_cached(&binary, &mut cache).unwrap();
+        std::fs::remove_file(&binary).unwrap();
+        assert_eq!(
+            hash_file_cached(&binary, &mut cache).unwrap_err().0,
+            "attestationFileUnavailable"
+        );
+        std::os::unix::fs::symlink(&target, &binary).unwrap();
+        assert_eq!(
+            hash_file_cached(&binary, &mut cache).unwrap_err().0,
+            "attestationFileUnavailable"
+        );
+        std::fs::remove_file(&binary).unwrap();
+        std::fs::create_dir(&binary).unwrap();
+        assert_eq!(
+            hash_file_cached(&binary, &mut cache).unwrap_err().0,
+            "attestationFileUnavailable"
+        );
+        assert_eq!(cache.hash_reads, 1);
+    }
 }

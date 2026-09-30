@@ -118,7 +118,7 @@ before allowing human dispatch; an uncertain stop does not pretend safety.
 
 While the native app parent is alive, missing/expired/unknown heartbeat cannot
 fall back to an idle poll. Whole-app process death normally also terminates its
-native daemon through parent-death signaling. In lifetimes where the parent is
+native daemon through retained stdin-pipe EOF and graceful SIGTERM. In lifetimes where the parent is
 positively absent, fallback requires connected `/global/event` observations and
 strict `/session/status?directory=...` snapshots for every durable known person
 directory. Unknown process presence, directory, response or stream pauses.
@@ -174,13 +174,70 @@ and OS policy; timeout/stop does not promise an unbounded background worker.
 
 ## Local packaging and evidence
 
-`engine/phone/tool/build-android.sh --stage-android` builds the three ARM64 native
-executables with the pinned NDK, stages them in jniLibs, adds an Android asset
-manifest with SHA-256 hashes/source digest and bundles exact dependency notices.
-Native launch/proof verifies the packaged hashes. Android's existing legacy JNI
-packaging extracts the executables into nativeLibraryDir outside app-writable
-data. Other ABIs have no engine artifact and fail unavailable.
+`engine/phone/tool/build-android.sh --stage-android` builds all three native
+executables for ARM64 and x86_64 with the pinned NDK. Manifest schema 2 contains
+an `abis` object with each target, API and exact binary hashes, plus the shared
+source digest and dependency notices. Native verification selects the actual
+installed ELF architecture, checks all three files and rejects mixed bundles.
+Android's existing JNI packaging extracts them into nativeLibraryDir outside
+app-writable data. Other ABIs remain unavailable. An x86_64 build does not waive
+the real emulator kernel/proot boundary proof.
 
 See [slice QA](../qa/aiteam-phone-engine-2026-09-30/README.md) and the linked
 per-slice READMEs for commands and remaining device acceptance. Compiling/staging these
 artifacts is not device verification, APK signing, installation or release.
+
+## Startup and recovery follow-up
+
+The native `port` argument is now a compatibility hint. The child binds port 0
+and reports its actual port over its private stdout pipe, authenticated with
+HMAC-SHA256 over `oc-phone-engine-ready-v1\n<profile>\n<port>\n<nonce>`.
+Native sends no bearer token to TCP before verifying that child message.
+Always use `phoneEngineCredentials.baseUrl`; the app must not assume port 4098.
+The app holds child stdin open; EOF on stop or whole-process death triggers
+graceful engine shutdown. A short-lived channel thread exiting no longer stops
+the daemon. Trusted Android app-data aliases normalize to canonical paths;
+symlinks below app storage still refuse launch/import.
+
+Explicit `resumeTask`/`resumeProject` now refetch recorded dispatched or uncertain
+sessions. A completed worker continues to a new checker without resending its
+worker prompt. A provably undispatched abandoned clone can be recreated from
+current dev. Missing dispatch evidence or uncertain session creation remains
+blocked for review. This does not claim automatic recovery of every interrupted
+merge/fix/permission checkpoint. Usage-only updates advance workspace revision
+and a usage revision, while keeping the project command revision stable.
+
+The person-directory ledger excludes the entire team worker namespace before
+session-birth events can pollute it. Its bounded LRU protects busy/current scopes;
+unknown observations recover only through complete fresh scoped status evidence
+at the same observation revision with a continuously connected observer.
+
+Accepted commands retain their result when a later refresh fails. Older workspace
+snapshots are ignored. Ordinary profile edits preserve the existing engine
+Keystore token; explicit clearing/deletion has a separate operation. Closed
+gateway clients leave controller ownership, and failed deletion stays durably
+fenced and retryable.
+
+The checker is advisory model evidence. An agent capable of replacing its OC1
+server can falsify that server's responses; confirmation must still review the
+actual dev diff and expected refs. Canonical main is protected independently.
+The live acceptance wrapper and test-only preview runner are documented in
+[acceptance QA](../qa/aiteam-phone-engine-2026-09-30/acceptance/README.md).
+
+### Review closure: additive contract (2026-09-30)
+
+- Semantic create validation runs before importing Git; rejected commands remain durably replayable. Accepted `deleteProject` may add `cleanupPending: true` if attributable repository/worker cleanup needs retry. Replay of that same request retries cleanup while remaining accepted. Receipt audits are retained; collected repository IDs are retired and must not be reused.
+- `chargingOnly: true` is refused with `chargingUnsupported` until power telemetry is available. Health adds `chargingTelemetry: false`; existing charging-only projects pause honestly until edited.
+- `/v1/health` adds `eventWindow: {retentionLimit, prunedThroughSeq, earliestAvailableSeq, latestSeq}`. `/v1/events` retains its list shape, adding `type` as an alias of `kind`. The newest 10,000 metadata rows are retained. A cursor before the durable prune watermark returns HTTP 409 `{code: "cursorExpired", resetRequired: true, eventWindow: ...}`. Dart activity propagates safe `PhoneEngineException('cursorExpired')`; consumers must refresh the durable workspace and show an incomplete event-history interval instead of inferring that no work happened. Workspace/spec/promotion histories remain retained.
+- Checker findings remain advisory evidence for dev. A same-UID agent can replace the in-rootfs OC1 endpoint; main promotion still requires the person's confirmed expected-SHA request. The UI coordinator should present the dev diff at promotion.
+- Native deletion now invokes the verified packaged engine's `--erase-tree` helper for descriptor-anchored mode-000 cleanup after tracked processes stop. This is an internal native CLI, not an authenticated engine command or agent authority.
+- Both critical and all seven major paths have focused faulty-behavior controls; see the review-closure QA README. A5's startup global-lock delay remains pending a shared cancellation/admission fence. Completely damaged unscoped legacy receipts remain preserved/fail-closed until an operator quarantine path exists.
+
+### Setup flow additions for b645f086 (2026-09-30)
+
+1. `PhoneProjectEngineController.start()` preserves `BuiltinLinuxException.code` as `PhoneEngineException.code` (including `restart_required`, `boundary_not_packaged`, `boundary_unavailable`). A typed phone-engine failure also preserves its code. Unknown exceptions still map to `engineUnavailable`. Native message, details and exception causes are not retained in the public failure.
+2. Native `phoneEngineStatus` and Dart `BuiltinPhoneEngineStatus` add `unconfinedChildren: bool`: an app-wide inventory of live unconfined old servers/terminals/processes, independent of this profile's daemon `running` flag. It is available before start and after stop; older channel maps default the field to false for compatibility. Inventory failure remains an unavailable status, never guessed idle. Existing `restartRequired` and capability gates remain supported.
+3. Start now stops the tracked same-profile daemon before running a fresh boundary probe and issuing a new signed generation bound to the packaged binaries. A running daemon/old receipt no longer skips proof. Native start also refuses reusing its own live process and invokes the proof factory again. A different profile's active engine returns `engine_in_use` without being displaced. Unconfined children still block proof (`restart_required`/capabilities false); start never pretends that the skipped proof passed.
+4. Controller start drains its old heartbeat producer and gateway clients before native token rotation. Consumers rebind through the existing `onAttached` callback after the fresh credential handoff. Start is an explicit generation refresh: active engine jobs become interrupted checkpoints and resume by existing-session refetch; no prompt is automatically resent. Calling `attach()` remains the operation for reusing a healthy running engine without a restart/probe.
+
+No UI files are changed. On-device running-generation proof instrumentation is separate from host/Dart compile evidence; see the setup-contract QA README.

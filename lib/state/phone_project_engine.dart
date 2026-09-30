@@ -57,11 +57,12 @@ class BuiltinPhoneProjectEngineBridge implements PhoneProjectEngineBridge {
       _builtin.deletePhoneEngine(profileId);
 }
 
-typedef PhoneEngineGatewayBuilder = PhoneEngineGateway Function({
-  required String baseUrl,
-  required String profileId,
-  required String bearerToken,
-});
+typedef PhoneEngineGatewayBuilder =
+    PhoneEngineGateway Function({
+      required String baseUrl,
+      required String profileId,
+      required String bearerToken,
+    });
 
 /// An observation of this app's current reconciled connection, never global idle.
 class PhoneChatActivity {
@@ -176,10 +177,8 @@ class PhoneChatDispatchTracker {
 }
 
 typedef PhoneChatSource = PhoneChatActivity Function(String profileId);
-typedef PhoneChatRenewalScheduler = void Function() Function(
-  Duration period,
-  void Function() tick,
-);
+typedef PhoneChatRenewalScheduler =
+    void Function() Function(Duration period, void Function() tick);
 
 /// Serial, monotonic producer. A stopped Flutter client never fabricates idle.
 class PhoneChatHeartbeat {
@@ -333,6 +332,14 @@ class PhoneProjectEngineController {
   String _tombstone(String id) => 'oc.teamEngineDeleted.$id';
   bool _blocked(String id) =>
       _deleted.contains(id) || store.prefs.getBool(_tombstone(id)) == true;
+
+  /// Includes a first activation that has not persisted its credentials yet.
+  bool hasLifecycleOwnership(String profileId) =>
+      _tails.containsKey(profileId) ||
+      _gateways.containsKey(profileId) ||
+      _deletions.containsKey(profileId) ||
+      _blocked(profileId);
+
   ServerProfile _profile(String id) => store.profiles.firstWhere(
     (p) => p.id == id,
     orElse: () => throw const PhoneEngineException('profileMissing'),
@@ -375,6 +382,11 @@ class PhoneProjectEngineController {
       bearerToken: profile.teamEngineAuth,
     );
     (_gateways[profile.id] ??= {}).add(client);
+    client.addCloseListener(() {
+      final clients = _gateways[profile.id];
+      clients?.remove(client);
+      if (clients?.isEmpty ?? false) _gateways.remove(profile.id);
+    });
     return client;
   }
 
@@ -387,8 +399,24 @@ class PhoneProjectEngineController {
       throw const PhoneEngineException('endpointInvalid');
     }
     await _admissionStops[profileId];
+    // Start rotates native credentials. Drain old producers/clients before
+    // launch so an old heartbeat cannot retire the new daemon generation.
+    _admissionRequired.add(profileId);
+    await (_admissionStops[profileId] ??= _stopForAdmission(profileId)
+        .whenComplete(() {
+          _admissionStops.remove(profileId);
+        }));
+    final oldClients = _gateways.remove(profileId) ?? <PhoneEngineGateway>{};
+    for (final client in oldClients.toList()) {
+      await client.close();
+    }
     try {
       await bridge.start(profileId, port: port, notice: notice);
+    } on BuiltinLinuxException catch (error) {
+      // Native emits static codes. Never retain its message/details or cause.
+      throw PhoneEngineException(error.code ?? 'engineUnavailable');
+    } on PhoneEngineException {
+      rethrow;
     } catch (_) {
       throw const PhoneEngineException('engineUnavailable');
     }
@@ -672,16 +700,9 @@ class PhoneProjectEngineController {
       throw const PhoneEngineException('deleteFailed');
     }
     try {
-      await store.secure.delete(
-        key: '${ProfileStore.teamEngineAuthKey}$profileId',
-      );
+      await store.clearTeamEngineAuth(profileId);
     } catch (_) {
       throw const PhoneEngineException('deleteFailed');
-    }
-    for (final profile in store.profiles) {
-      if (profile.id == profileId) {
-        profile.teamEngineAuth = '';
-      }
     }
   }
 
@@ -699,10 +720,9 @@ class PhoneProjectEngineController {
           .toList(),
     );
     await Future.wait(_tails.values.toList());
-    for (final clients in _gateways.values) {
-      for (final client in clients) {
-        await client.close();
-      }
+    final clients = _gateways.values.expand((v) => v).toList();
+    for (final client in clients) {
+      await client.close();
     }
     _gateways.clear();
   }

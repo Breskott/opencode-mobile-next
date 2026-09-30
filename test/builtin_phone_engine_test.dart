@@ -57,6 +57,34 @@ void main() {
   );
 
   test(
+    'unconfined child prerequisite survives stopped daemon status',
+    () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            channel,
+            (call) async => {
+              'profileId': 'phone-profile',
+              'running': false,
+              'restartRequired': false,
+              'unconfinedChildren': true,
+              'boundary': false,
+              'execution': false,
+            },
+          );
+      final status = await bridge.phoneEngineStatus('phone-profile');
+      expect(status.running, isFalse);
+      expect(status.unconfinedChildren, isTrue);
+      expect(status.boundary, isFalse);
+      expect(
+        BuiltinPhoneEngineStatus.fromMap({
+          'profileId': 'old-native',
+        }).unconfinedChildren,
+        isFalse,
+      );
+    },
+  );
+
+  test(
     'credentials have a separate handoff and a redacted representation',
     () async {
       final credentials = await bridge.phoneEngineCredentials('phone-profile');

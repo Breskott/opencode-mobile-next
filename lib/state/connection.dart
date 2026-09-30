@@ -1316,10 +1316,14 @@ class ConnectionController extends ChangeNotifier {
   late final PhoneProjectEngineController phoneProjectEngine =
       PhoneProjectEngineController(
         store: store,
+        bridge: _phoneEngineBridge,
+        gatewayBuilder: _phoneEngineGatewayBuilder,
         onAttached: _phoneEngineAttached,
         chatSource: _phoneChatSnapshot,
         chatActive: _phoneChatEligible,
       );
+  final PhoneProjectEngineBridge? _phoneEngineBridge;
+  final PhoneEngineGatewayBuilder? _phoneEngineGatewayBuilder;
   String? _phoneChatOwner;
   bool _phoneChatStatusKnown = false;
   String? _phoneChatDispatchProfile;
@@ -1412,31 +1416,40 @@ class ConnectionController extends ChangeNotifier {
     OpenCodeApi transport,
     String sessionId,
   ) async {
-    if (_disposed ||
-        !identical(api, transport) ||
-        _connectedProfile?.id != owner.id) {
-      throw const PhoneEngineException('chatTransportRetired');
-    }
-    await phoneProjectEngine.preparePhoneAliasDispatch(owner.id);
-    if (_connectedProfile?.orchestration?.provider !=
-        OrchestrationProvider.phoneEngine) {
-      return;
-    }
-    if (!_phoneChatEligible(owner.id) || !identical(api, transport)) {
-      throw const PhoneEngineException('chatTransportRetired');
-    }
-    final generation = _generation;
-    _phoneChatDispatch.begin(sessionId, transport.directory);
-    notifyListeners();
     try {
-      await phoneProjectEngine.beforePersonDispatch(owner.id);
-      if (!_isCurrent(generation, transport) || !_phoneChatEligible(owner.id)) {
+      if (_disposed ||
+          !identical(api, transport) ||
+          _connectedProfile?.id != owner.id) {
         throw const PhoneEngineException('chatTransportRetired');
       }
-    } catch (_) {
-      // The callback failed before OpenCode transport could send anything.
-      _phoneChatDispatchSettled(sessionId, removeUnsent: true);
-      rethrow;
+      await phoneProjectEngine.preparePhoneAliasDispatch(owner.id);
+      if (_connectedProfile?.orchestration?.provider !=
+          OrchestrationProvider.phoneEngine) {
+        return;
+      }
+      if (!_phoneChatEligible(owner.id) || !identical(api, transport)) {
+        throw const PhoneEngineException('chatTransportRetired');
+      }
+      final generation = _generation;
+      _phoneChatDispatch.begin(sessionId, transport.directory);
+      notifyListeners();
+      try {
+        await phoneProjectEngine.beforePersonDispatch(owner.id);
+        if (!_isCurrent(generation, transport) ||
+            !_phoneChatEligible(owner.id)) {
+          throw const PhoneEngineException('chatTransportRetired');
+        }
+      } catch (_) {
+        // The callback failed before OpenCode transport could send anything.
+        _phoneChatDispatchSettled(sessionId, removeUnsent: true);
+        rethrow;
+      }
+    } on PhoneEngineException catch (error) {
+      throw ApiException(
+        error.code == 'chatTransportRetired'
+            ? 'The chat connection changed. Reconnect before sending.'
+            : 'AI Team could not pause safely. Stop AI Team before sending.',
+      );
     }
   }
 
@@ -1807,7 +1820,11 @@ class ConnectionController extends ChangeNotifier {
     DraftAttachmentVault? draftAttachmentVault,
     DraftAttachmentVault? stashAttachmentVault,
     PromptPhotoStore? promptPhotoStore,
-  }) : _monitorGatewayFactory = monitorGatewayFactory,
+    PhoneProjectEngineBridge? phoneEngineBridge,
+    PhoneEngineGatewayBuilder? phoneEngineGatewayBuilder,
+  }) : _phoneEngineBridge = phoneEngineBridge,
+       _phoneEngineGatewayBuilder = phoneEngineGatewayBuilder,
+       _monitorGatewayFactory = monitorGatewayFactory,
        _promptPhotoStore = promptPhotoStore,
        _draftAttachmentVault = draftAttachmentVault ?? DraftAttachmentVault(),
        _promptShelf = PromptShelfStore.withAttachmentFiles(
@@ -7294,6 +7311,8 @@ class ConnectionController extends ChangeNotifier {
         if (engineProfile?.orchestration?.provider ==
                 OrchestrationProvider.phoneEngine ||
             (engineProfile?.teamEngineAuth.isNotEmpty ?? false) ||
+            BuiltinLinux.managesServerUrl(engineProfile?.baseUrl) ||
+            phoneProjectEngine.hasLifecycleOwnership(profileId) ||
             store.prefs.getBool('oc.teamEngineDeleted.$profileId') == true) {
           try {
             await phoneProjectEngine.deleteProfile(profileId);
@@ -7773,10 +7792,17 @@ class ConnectionController extends ChangeNotifier {
     if (_disposed || _lifecycleSuspended) return null;
     final owner = _connectedProfile;
     if (owner != null && BuiltinLinux.managesServerUrl(owner.baseUrl)) {
-      await phoneProjectEngine.preparePhoneAliasDispatch(owner.id);
-      if (owner.flavor != ServerFlavor.v1 &&
-          owner.orchestration?.provider == OrchestrationProvider.phoneEngine) {
-        await phoneProjectEngine.suspendChatAdmission(owner.id);
+      try {
+        await phoneProjectEngine.preparePhoneAliasDispatch(owner.id);
+        if (owner.flavor != ServerFlavor.v1 &&
+            owner.orchestration?.provider ==
+                OrchestrationProvider.phoneEngine) {
+          await phoneProjectEngine.suspendChatAdmission(owner.id);
+        }
+      } on PhoneEngineException {
+        throw ApiException(
+          'AI Team could not pause safely. Stop AI Team before sending.',
+        );
       }
       if (_disposed ||
           _lifecycleSuspended ||

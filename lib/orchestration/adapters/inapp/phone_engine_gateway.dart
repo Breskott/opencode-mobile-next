@@ -72,6 +72,16 @@ class PhoneEngineGateway extends NullOrchestrationGateway
   final _snapshots = StreamController<TeamWorkspace>.broadcast();
   Timer? _pollTimer;
   bool _polling = false;
+  final Set<void Function()> _closeListeners = {};
+
+  /// Allows profile ownership to release clients when their caller closes them.
+  void addCloseListener(void Function() listener) {
+    if (_closed) {
+      listener();
+    } else {
+      _closeListeners.add(listener);
+    }
+  }
 
   @override
   bool get isClosed => _closed || _deleting;
@@ -179,6 +189,10 @@ class PhoneEngineGateway extends NullOrchestrationGateway
       }
       final status = response.statusCode ?? 0;
       if (status < 200 || status >= 300) {
+        final body = response.data;
+        if (status == 409 && body is Map && body['code'] == 'cursorExpired') {
+          throw const PhoneEngineException('cursorExpired');
+        }
         throw PhoneEngineException(
           status >= 300 && status < 400
               ? 'redirectRefused'
@@ -412,9 +426,17 @@ class PhoneEngineGateway extends NullOrchestrationGateway
   Future<void> _close() async {
     _closed = true;
     _pollTimer?.cancel();
-    await _drain();
-    await _snapshots.close();
-    _dio.close(force: true);
+    try {
+      await _drain();
+      await _snapshots.close();
+    } finally {
+      _dio.close(force: true);
+      final listeners = _closeListeners.toList();
+      _closeListeners.clear();
+      for (final listener in listeners) {
+        listener();
+      }
+    }
   }
 
   @override

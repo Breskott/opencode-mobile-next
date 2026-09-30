@@ -53,14 +53,40 @@ impl Config {
         if raw.len() > 65536 {
             return Err("configInvalid");
         }
-        let value: Self = serde_json::from_slice(&raw).map_err(|_| "configInvalid")?;
+        let mut value: Self = serde_json::from_slice(&raw).map_err(|_| "configInvalid")?;
+        value.normalize_paths()?;
         value.validate()?;
         Ok(value)
+    }
+    // Android supplies a trusted app-data path whose system-managed ancestors
+    // may be symlinks (/data/user/0). Resolve ONLY that trusted ancestor, then
+    // reject every symlink below it before normalizing configured paths.
+    fn normalize_paths(&mut self) -> Result<(), &'static str> {
+        let raw_base = self
+            .private_root
+            .parent()
+            .ok_or("configInvalid")?
+            .to_path_buf();
+        let base = fs::canonicalize(&raw_base).map_err(|_| "configInvalid")?;
+        let normalize = |path: &Path| normalize_below(&raw_base, &base, path);
+        self.private_root = normalize(&self.private_root)?;
+        self.worker_root = normalize(&self.worker_root)?;
+        self.auth_token_file = normalize(&self.auth_token_file)?;
+        self.oc1_credential_file = normalize(&self.oc1_credential_file)?;
+        for root in &mut self.source_roots {
+            root.host_root = normalize(&root.host_root)?;
+        }
+        if let Some(path) = &mut self.boundary.receipt_file {
+            *path = normalize(path)?;
+        }
+        if let Some(path) = &mut self.boundary.public_key_file {
+            *path = normalize(path)?;
+        }
+        Ok(())
     }
     pub fn validate(&self) -> Result<(), &'static str> {
         if self.schema_version != 1
             || !valid_id(&self.profile_id)
-            || self.port == 0
             || !self.private_root.is_absolute()
             || !self.worker_root.is_absolute()
             || !self.guest_worker_root.starts_with("/root/aiteam/work/")
@@ -123,13 +149,33 @@ impl Config {
                 let host_root = fs::canonicalize(&root.host_root).map_err(|_| "repoPathInvalid")?;
                 let result =
                     fs::canonicalize(host_root.join(relative)).map_err(|_| "repoPathInvalid")?;
-                if result.starts_with(&host_root) && !result.starts_with(&self.private_root) {
+                if result.starts_with(&host_root)
+                    && !result.starts_with(&self.private_root)
+                    && !result.starts_with(&self.worker_root)
+                {
                     return Ok(result);
                 }
             }
         }
         Err("repoPathInvalid")
     }
+}
+fn normalize_below(raw_base: &Path, base: &Path, path: &Path) -> Result<PathBuf, &'static str> {
+    let relative = path.strip_prefix(raw_base).map_err(|_| "boundaryInvalid")?;
+    let mut normalized = base.to_path_buf();
+    for part in relative.components() {
+        let std::path::Component::Normal(name) = part else {
+            return Err("configInvalid");
+        };
+        normalized.push(name);
+        match fs::symlink_metadata(&normalized) {
+            Ok(metadata) if metadata.file_type().is_symlink() => return Err("symlinkRefused"),
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(_) => return Err("configInvalid"),
+        }
+    }
+    Ok(normalized)
 }
 pub fn valid_id(id: &str) -> bool {
     !id.is_empty()
@@ -144,6 +190,89 @@ mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
 
+    #[test]
+    fn config_read_normalizes_alias_and_rejects_linked_credentials() {
+        use std::os::unix::fs::symlink;
+        let scratch = Path::new("/home/eslam/Storage/tmp/aiteam-phone-engine-tests");
+        fs::create_dir_all(scratch).unwrap();
+        let temp = tempfile::tempdir_in(scratch).unwrap();
+        let real = temp.path().join("data/data/app/files");
+        let private = real.join("private");
+        fs::create_dir_all(&private).unwrap();
+        let alias = temp.path().join("data/user0");
+        symlink(temp.path().join("data/data"), &alias).unwrap();
+        let raw_base = alias.join("app/files");
+        for name in ["auth.token", "credentials.json"] {
+            let file = private.join(name);
+            fs::write(&file, "fixture").unwrap();
+            fs::set_permissions(file, fs::Permissions::from_mode(0o600)).unwrap();
+        }
+        let value = serde_json::json!({"schemaVersion":1,"profileId":"profile",
+            "privateRoot":raw_base.join("private"),"workerRoot":raw_base.join("rootfs/work/new"),
+            "guestWorkerRoot":"/root/aiteam/work/profile","port":0,
+            "authTokenFile":raw_base.join("private/auth.token"),
+            "oc1CredentialFile":raw_base.join("private/credentials.json"),
+            "oc1BaseUrl":"http://127.0.0.1:4097","sourceRoots":[{"hostRoot":raw_base,"guestRoot":"/root/projects"}],
+            "boundary":{"verified":false,"reason":"boundary_unverified"}});
+        let path = private.join("native-config.json");
+        fs::write(&path, value.to_string()).unwrap();
+        let config = Config::read(&path).unwrap();
+        assert_eq!(config.private_root, fs::canonicalize(&private).unwrap());
+        assert_eq!(
+            config.worker_root,
+            fs::canonicalize(&real).unwrap().join("rootfs/work/new")
+        );
+        assert_eq!(
+            config.source_path("/root/projects/private").unwrap_err(),
+            "repoPathInvalid"
+        );
+        fs::remove_file(private.join("auth.token")).unwrap();
+        symlink(private.join("credentials.json"), private.join("auth.token")).unwrap();
+        assert!(matches!(Config::read(&path), Err("symlinkRefused")));
+    }
+
+    #[test]
+    fn trusted_android_style_ancestor_is_resolved_but_descendant_symlink_is_refused() {
+        use std::os::unix::fs::symlink;
+        let scratch = Path::new("/home/eslam/Storage/tmp/aiteam-phone-engine-tests");
+        fs::create_dir_all(scratch).unwrap();
+        let temp = tempfile::tempdir_in(scratch).unwrap();
+        let real = temp.path().join("data/data/app/files");
+        fs::create_dir_all(&real).unwrap();
+        let alias = temp.path().join("data/user0");
+        symlink(temp.path().join("data/data"), &alias).unwrap();
+        let raw_base = alias.join("app/files");
+        let canonical_base = fs::canonicalize(&raw_base).unwrap();
+        let resolved = normalize_below(
+            &raw_base,
+            &canonical_base,
+            &raw_base.join("rootfs/work/new"),
+        )
+        .unwrap();
+        assert_eq!(resolved, real.join("rootfs/work/new"));
+        fs::create_dir_all(real.join("rootfs")).unwrap();
+        symlink(temp.path(), real.join("rootfs/work")).unwrap();
+        assert_eq!(
+            normalize_below(
+                &raw_base,
+                &canonical_base,
+                &raw_base.join("rootfs/work/new")
+            )
+            .unwrap_err(),
+            "symlinkRefused"
+        );
+        symlink(temp.path(), real.join("private")).unwrap();
+        assert_eq!(
+            normalize_below(
+                &raw_base,
+                &canonical_base,
+                &raw_base.join("private/auth.token")
+            )
+            .unwrap_err(),
+            "symlinkRefused"
+        );
+        assert!(normalize_below(&raw_base, &canonical_base, &raw_base.join("../escape")).is_err());
+    }
     #[test]
     fn first_start_allows_missing_worker_root_but_never_a_boolean_proof() {
         let scratch = Path::new("/home/eslam/Storage/tmp/aiteam-phone-engine-tests");

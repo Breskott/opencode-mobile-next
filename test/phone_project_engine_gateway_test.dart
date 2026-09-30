@@ -78,6 +78,25 @@ Matcher safeError(String code) =>
 void main() {
   tearDown(KitRedact.clearKnownSecrets);
   test(
+    'expired activity cursor remains an explicit reset requirement',
+    () async {
+      final adapter = FakeEngineAdapter(
+        (request) async => jsonBody({
+          'code': 'cursorExpired',
+          'resetRequired': true,
+          'eventWindow': {'prunedThroughSeq': 50, 'earliestAvailableSeq': 51},
+        }, 409),
+      );
+      final client = gateway(adapter);
+      await expectLater(
+        client.activity(afterSeq: 1),
+        throwsA(safeError('cursorExpired')),
+      );
+      await client.close();
+    },
+  );
+
+  test(
     'refuses remote hosts, userinfo and credential newlines before network',
     () {
       for (final endpoint in [
@@ -149,40 +168,43 @@ void main() {
       );
     },
   );
-  test('unproven health permits workspace but rejects execution and unsupported commands', () async {
-    final adapter = FakeEngineAdapter(
-      (r) async => jsonBody(
-        r.path == '/v1/health'
-            ? health('p1', actions: ['promote'])
-            : workspace(),
-      ),
-    );
-    final client = gateway(adapter);
-    await client.probe();
-    expect(client.capabilities.projectLifecycle, isFalse);
-    expect(client.capabilities.projectPromotion, isFalse);
-    expect((await client.teamWorkspace()).simulated, isFalse);
-    expect(
-      (await client.executeProject(
-        const TeamProjectCommand(
-          requestId: 'r1',
-          action: TeamProjectAction.promote,
+  test(
+    'unproven health permits workspace but rejects execution and unsupported commands',
+    () async {
+      final adapter = FakeEngineAdapter(
+        (r) async => jsonBody(
+          r.path == '/v1/health'
+              ? health('p1', actions: ['promote'])
+              : workspace(),
         ),
-      )).code,
-      'boundaryUnverified',
-    );
-    expect(
-      (await client.executeProject(
-        const TeamProjectCommand(
-          requestId: 'r2',
-          action: TeamProjectAction.advance,
-        ),
-      )).code,
-      'unsupportedCommand',
-    );
-    expect(adapter.requests.where((r) => r.method == 'POST'), isEmpty);
-    await client.close();
-  });
+      );
+      final client = gateway(adapter);
+      await client.probe();
+      expect(client.capabilities.projectLifecycle, isFalse);
+      expect(client.capabilities.projectPromotion, isFalse);
+      expect((await client.teamWorkspace()).simulated, isFalse);
+      expect(
+        (await client.executeProject(
+          const TeamProjectCommand(
+            requestId: 'r1',
+            action: TeamProjectAction.promote,
+          ),
+        )).code,
+        'boundaryUnverified',
+      );
+      expect(
+        (await client.executeProject(
+          const TeamProjectCommand(
+            requestId: 'r2',
+            action: TeamProjectAction.advance,
+          ),
+        )).code,
+        'unsupportedCommand',
+      );
+      expect(adapter.requests.where((r) => r.method == 'POST'), isEmpty);
+      await client.close();
+    },
+  );
   test(
     'redacts commands before transmission and never retries ambiguous mutation',
     () async {
@@ -351,41 +373,44 @@ void main() {
       await client.close();
     },
   );
-  test('actual OC1 prompt, correlated prompt, shell and slash run the dispatch fence', () async {
-    final order = <String>[];
-    final api = OpenCodeApi(baseUrl: 'http://127.0.0.1:4097');
-    api.dio.httpClientAdapter = FakeEngineAdapter((r) async {
-      order.add('wire:${r.path}');
-      return r.path.endsWith('/command')
-          ? jsonBody({}, 503)
-          : jsonBody(null, 204);
-    });
-    api.beforeSessionDispatch = (id) async {
-      order.add('fence:$id');
-    };
-    api.sessionDispatchSettled = (id) {
-      order.add('settled:$id');
-    };
-    await api.promptAsync('s1', text: 'person prompt');
-    await api.promptWithMessageID(
-      's1',
-      messageID: api.createPromptMessageID(),
-      text: 'correlated',
-    );
-    await api.shell('s1', command: 'pwd', agent: 'build');
-    await expectLater(
-      api.slashCommand('s1', 'help', ''),
-      throwsA(isA<ApiException>()),
-    );
-    expect(order.where((v) => v.startsWith('fence:')), hasLength(4));
-    expect(order.where((v) => v.startsWith('settled:')), hasLength(4));
-    for (var i = 0; i < order.length; i += 3) {
-      expect(order[i], 'fence:s1');
-      expect(order[i + 1], startsWith('wire:'));
-      expect(order[i + 2], 'settled:s1');
-    }
-    api.close();
-  });
+  test(
+    'actual OC1 prompt, correlated prompt, shell and slash run the dispatch fence',
+    () async {
+      final order = <String>[];
+      final api = OpenCodeApi(baseUrl: 'http://127.0.0.1:4097');
+      api.dio.httpClientAdapter = FakeEngineAdapter((r) async {
+        order.add('wire:${r.path}');
+        return r.path.endsWith('/command')
+            ? jsonBody({}, 503)
+            : jsonBody(null, 204);
+      });
+      api.beforeSessionDispatch = (id) async {
+        order.add('fence:$id');
+      };
+      api.sessionDispatchSettled = (id) {
+        order.add('settled:$id');
+      };
+      await api.promptAsync('s1', text: 'person prompt');
+      await api.promptWithMessageID(
+        's1',
+        messageID: api.createPromptMessageID(),
+        text: 'correlated',
+      );
+      await api.shell('s1', command: 'pwd', agent: 'build');
+      await expectLater(
+        api.slashCommand('s1', 'help', ''),
+        throwsA(isA<ApiException>()),
+      );
+      expect(order.where((v) => v.startsWith('fence:')), hasLength(4));
+      expect(order.where((v) => v.startsWith('settled:')), hasLength(4));
+      for (var i = 0; i < order.length; i += 3) {
+        expect(order[i], 'fence:s1');
+        expect(order[i + 1], startsWith('wire:'));
+        expect(order[i + 2], 'settled:s1');
+      }
+      api.close();
+    },
+  );
   test(
     'a fence failure occurs before any OpenCode request or settlement callback',
     () async {

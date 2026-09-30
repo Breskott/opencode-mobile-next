@@ -33,6 +33,8 @@ impl From<rusqlite::Error> for StoreError {
 pub struct Store {
     conn: Mutex<Connection>,
 }
+/// Event cursors are bounded independently of command and project history.
+pub const EVENT_RETENTION_LIMIT: usize = 10_000;
 impl Store {
     pub fn open(root: &Path, profile: &str) -> Result<Self, StoreError> {
         if profile.is_empty()
@@ -61,8 +63,10 @@ impl Store {
         let mut conn = Connection::open(path).map_err(StoreError::from)?;
         conn.busy_timeout(std::time::Duration::from_secs(5))?;
         conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA secure_delete=ON; CREATE TABLE IF NOT EXISTS meta(id INTEGER PRIMARY KEY CHECK(id=1), deleted INTEGER NOT NULL DEFAULT 0); INSERT OR IGNORE INTO meta(id,deleted) VALUES(1,0); CREATE TABLE IF NOT EXISTS workspace(id INTEGER PRIMARY KEY CHECK(id=1), data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS commands(id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, result TEXT NOT NULL); CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL);")?;
+        conn.execute_batch("CREATE TABLE IF NOT EXISTS event_retention(id INTEGER PRIMARY KEY CHECK(id=1), pruned_through INTEGER NOT NULL DEFAULT 0); INSERT OR IGNORE INTO event_retention(id,pruned_through) VALUES(1,0);")?;
         let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
         alive(&tx)?;
+        prune_events(&tx)?;
         tx.execute(
             "INSERT OR IGNORE INTO workspace(id,data) VALUES(1,?1)",
             [initial_workspace().to_string()],
@@ -93,6 +97,14 @@ impl Store {
         }
         let conn = self.lock()?;
         alive(&conn)?;
+        let pruned: i64 = conn.query_row(
+            "SELECT pruned_through FROM event_retention WHERE id=1",
+            [],
+            |r| r.get(0),
+        )?;
+        if after < pruned {
+            return Err(StoreError("cursorExpired"));
+        }
         let mut stmt =
             conn.prepare("SELECT seq,data FROM events WHERE seq>?1 ORDER BY seq LIMIT ?2")?;
         let rows = stmt.query_map(params![after, limit as i64], |r| {
@@ -106,6 +118,39 @@ impl Store {
             out.push(value);
         }
         Ok(out)
+    }
+    /// Clients must disclose a digest gap and refetch workspace after cursor expiry.
+    pub fn event_window(&self) -> Result<Value, StoreError> {
+        let conn = self.lock()?;
+        alive(&conn)?;
+        let pruned: i64 = conn.query_row(
+            "SELECT pruned_through FROM event_retention WHERE id=1",
+            [],
+            |r| r.get(0),
+        )?;
+        let (earliest, latest): (Option<i64>, Option<i64>) =
+            conn.query_row("SELECT MIN(seq),MAX(seq) FROM events", [], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })?;
+        Ok(
+            json!({"retentionLimit":EVENT_RETENTION_LIMIT,"prunedThroughSeq":pruned,"earliestAvailableSeq":earliest,"latestSeq":latest.unwrap_or(pruned)}),
+        )
+    }
+    /// Mutation-free semantic preflight before any repository import side effects.
+    /// Replay remains command_result's responsibility, and execute rechecks current state.
+    pub fn validate_command(&self, command: &Value) -> Result<(), StoreError> {
+        if !command.is_object() || command.to_string().len() > 1_048_576 {
+            return Err(StoreError("invalidCommand"));
+        }
+        if required_str(command, "requestId", "invalidRequestId")?.len() > 128 {
+            return Err(StoreError("invalidRequestId"));
+        }
+        let conn = self.lock()?;
+        alive(&conn)?;
+        let mut workspace = load_workspace(&conn)?;
+        let mut jobs = load_jobs(&conn)?;
+        apply_command(&mut workspace, &mut jobs, command)?;
+        Ok(())
     }
     pub fn execute(&self, command: &Value) -> Result<Value, StoreError> {
         self.execute_command(command, None)
@@ -258,6 +303,7 @@ impl Store {
             "criterionResults",
             "repoReceipt",
             "sessionUsage",
+            "promptDispatch",
         ];
         let fields = patch.as_object().ok_or(StoreError("invalidJobPatch"))?;
         if fields.keys().any(|k| !allowed.contains(&k.as_str()))
@@ -295,6 +341,14 @@ impl Store {
         if !valid_transition(expected_stage, stage) {
             return Err(StoreError("invalidJobTransition"));
         }
+        let usage_only = stage == expected_stage
+            && fields
+                .keys()
+                .all(|key| matches!(key.as_str(), "stage" | "usage" | "sessionUsage"))
+            && (fields.contains_key("usage") || fields.contains_key("sessionUsage"));
+        if stage == "interrupted" && expected_stage != "interrupted" {
+            checkpoint_interruption(&mut j, expected_stage);
+        }
         if (p["status"] == "paused" || p["status"] == "pausedBudget")
             && stage != expected_stage
             && !matches!(stage, "interrupted" | "paused" | "stopped")
@@ -314,7 +368,27 @@ impl Store {
             ) {
                 continue;
             }
-            if key == "sessionIds" {
+            if key == "promptDispatch" {
+                let dispatches = value.as_object().ok_or(StoreError("invalidJobPatch"))?;
+                for (role, state) in dispatches {
+                    if !["planner", "worker", "checker"].contains(&role.as_str())
+                        || j["sessionIds"][role]
+                            .as_str()
+                            .or_else(|| patch["sessionIds"][role].as_str())
+                            .is_none()
+                        || !matches!(state.as_str(), Some("dispatching" | "dispatched"))
+                    {
+                        return Err(StoreError("invalidJobPatch"));
+                    }
+                    if j["promptDispatch"][role] == "dispatched" && state != "dispatched" {
+                        return Err(StoreError("promptAlreadyDispatched"));
+                    }
+                    if j["promptDispatch"].is_null() {
+                        j["promptDispatch"] = json!({});
+                    }
+                    j["promptDispatch"][role] = state.clone();
+                }
+            } else if key == "sessionIds" {
                 let sessions = value.as_object().ok_or(StoreError("invalidJobPatch"))?;
                 for (role, session) in sessions {
                     if !["planner", "worker", "checker"].contains(&role.as_str())
@@ -431,7 +505,9 @@ impl Store {
                 }
             }
             task["status"] = json!(task_status(stage));
-            task["changedAt"] = json!(now());
+            if !usage_only {
+                task["changedAt"] = json!(now());
+            }
             if let Some(reason) = patch.get("reason") {
                 task["reason"] = reason.clone();
             }
@@ -443,14 +519,21 @@ impl Store {
         j["stage"] = json!(stage);
         j["updatedAt"] = json!(now());
         jobs[index] = j.clone();
-        increment_project(p);
+        if !usage_only {
+            increment_project(p);
+        }
+        if fields.contains_key("usage") || fields.contains_key("sessionUsage") {
+            p["usageRevision"] = json!(p["usageRevision"].as_u64().unwrap_or(0) + 1);
+            jobs[index]["usageRevision"] = json!(j["usageRevision"].as_u64().unwrap_or(0) + 1);
+            j = jobs[index].clone();
+        }
         w["revision"] = json!(w["revision"].as_u64().unwrap_or(0) + 1);
         aggregate_usage(&mut w, &jobs);
         persist(&tx, &w, &jobs)?;
         event(
             &tx,
-            "job",
-            stage,
+            if usage_only { "usage" } else { "job" },
+            if usage_only { "sessionUsage" } else { stage },
             j["projectId"].as_str().unwrap_or(""),
             j["taskId"].as_str().unwrap_or(""),
             w["projects"][pi]["revision"].as_u64().unwrap_or(0),
@@ -534,6 +617,8 @@ impl Store {
         let mut changed = HashSet::new();
         for j in &mut jobs {
             if crate::scheduler::active_stage(j["stage"].as_str().unwrap_or("")) {
+                let stage = j["stage"].as_str().unwrap_or("").to_owned();
+                checkpoint_interruption(j, &stage);
                 j["stage"] = json!("interrupted");
                 j["reason"] = json!("restartNeedsReconciliation");
                 j["updatedAt"] = json!(now());
@@ -650,6 +735,24 @@ fn event(
     revision: u64,
 ) -> Result<(), StoreError> {
     conn.execute("INSERT INTO events(data) VALUES(?1)",[json!({"kind":kind,"action":action,"projectId":project,"taskId":task,"revision":revision,"at":now()}).to_string()])?;
+    prune_events(conn)?;
+    Ok(())
+}
+fn prune_events(conn: &Connection) -> Result<(), StoreError> {
+    let cutoff: Option<i64> = conn
+        .query_row(
+            "SELECT seq FROM events ORDER BY seq DESC LIMIT 1 OFFSET ?1",
+            [EVENT_RETENTION_LIMIT as i64],
+            |r| r.get(0),
+        )
+        .optional()?;
+    if let Some(cutoff) = cutoff {
+        conn.execute(
+            "UPDATE event_retention SET pruned_through=MAX(pruned_through,?1) WHERE id=1",
+            [cutoff],
+        )?;
+        conn.execute("DELETE FROM events WHERE seq<=?1", [cutoff])?;
+    }
     Ok(())
 }
 fn now() -> String {
@@ -734,6 +837,9 @@ fn normalize_spec(spec: &Value) -> Result<Value, StoreError> {
     Ok(out)
 }
 fn validate_settings(s: &Value) -> Result<(), StoreError> {
+    if s["chargingOnly"] == true {
+        return Err(StoreError("chargingUnsupported"));
+    }
     if !matches!(s["mode"].as_str(), Some("single" | "parallel"))
         || !matches!(s["maxLanes"].as_u64(), Some(1..=32))
     {
@@ -1199,12 +1305,11 @@ fn apply_command(
                         if p["status"] == "stopped" {
                             return Err(StoreError("projectStopped"));
                         }
-                        // Interrupted sessions remain interrupted and require driver reconciliation.
-                        for j in jobs
-                            .iter_mut()
-                            .filter(|j| j["projectId"] == id && j["stage"] == "paused")
-                        {
-                            j["stage"] = json!("queued");
+                        for j in jobs.iter_mut().filter(|j| {
+                            j["projectId"] == id
+                                && matches!(j["stage"].as_str(), Some("paused" | "interrupted"))
+                        }) {
+                            resume_job_checkpoint(j)?;
                         }
                         p["status"] = json!(if p["planApproved"] == true {
                             "running"
@@ -1240,13 +1345,14 @@ fn apply_command(
                         match action {
                             "pauseTask" => pause_job(j),
                             "resumeTask" => {
-                                if j["stage"] == "interrupted" {
-                                    return Err(StoreError("needsReconciliation"));
+                                resume_job_checkpoint(j)?;
+                                if p["status"] == "interrupted" {
+                                    p["status"] = json!(if p["planApproved"] == true {
+                                        "running"
+                                    } else {
+                                        "planning"
+                                    });
                                 }
-                                if j["stage"] != "paused" {
-                                    return Err(StoreError("taskNotPaused"));
-                                }
-                                j["stage"] = json!("queued");
                             }
                             _ => {
                                 if c["confirmed"] != true {
@@ -1276,9 +1382,90 @@ fn pause_job(j: &mut Value) {
     if j["stage"] == "queued" {
         j["stage"] = json!("paused");
     } else if crate::scheduler::active_stage(j["stage"].as_str().unwrap_or("")) {
+        let stage = j["stage"].as_str().unwrap_or("").to_owned();
+        checkpoint_interruption(j, &stage);
         j["stage"] = json!("interrupted");
         j["reason"] = json!("pauseNeedsReconciliation");
     }
+}
+fn checkpoint_interruption(j: &mut Value, stage: &str) {
+    // Repeated process deaths while reconciling must retain the original stage.
+    if stage != "resuming" {
+        j["resumeStage"] = json!(stage);
+    }
+}
+fn resume_job_checkpoint(j: &mut Value) -> Result<(), StoreError> {
+    if !matches!(j["stage"].as_str(), Some("paused" | "interrupted")) {
+        return Err(StoreError("taskNotPaused"));
+    }
+    let sessions = j["sessionIds"]
+        .as_object()
+        .ok_or(StoreError("needsReconciliation"))?;
+    let dispatches = j.get("promptDispatch").and_then(Value::as_object);
+    if j.get("promptDispatch")
+        .is_some_and(|v| !v.is_null() && !v.is_object())
+    {
+        return Err(StoreError("needsReconciliation"));
+    }
+    if sessions.is_empty() {
+        // No recorded session is safe only before dispatch, and never after an
+        // uncertain session creation (an unrecorded session may already exist).
+        let safe_stage = j["stage"] == "paused"
+            || matches!(
+                j["resumeStage"].as_str(),
+                Some("queued" | "starting" | "preparing")
+            );
+        if !safe_stage
+            || dispatches.is_some_and(|d| !d.is_empty())
+            || matches!(
+                j["reason"].as_str(),
+                Some("promptUncertain" | "sessionCreateUncertain")
+            )
+        {
+            return Err(StoreError("needsReconciliation"));
+        }
+        j["stage"] = json!("queued");
+    } else {
+        let role = if sessions.contains_key("checker") {
+            "checker"
+        } else if j["kind"] == "planner" {
+            "planner"
+        } else {
+            "worker"
+        };
+        if sessions
+            .get(role)
+            .and_then(Value::as_str)
+            .filter(|s| !s.is_empty())
+            .is_none()
+            || j["directory"].as_str().filter(|s| !s.is_empty()).is_none()
+            || !matches!(
+                j["resumeStage"].as_str(),
+                Some(
+                    "starting"
+                        | "planning"
+                        | "running"
+                        | "working"
+                        | "checking"
+                        | "mergeReady"
+                        | "merging"
+                        | "submitting"
+                )
+            )
+            || !dispatches
+                .and_then(|d| d.get(role))
+                .is_some_and(|state| matches!(state.as_str(), Some("dispatching" | "dispatched")))
+            || (role == "checker" && j["taskCommit"].as_str().filter(|s| !s.is_empty()).is_none())
+        {
+            return Err(StoreError("needsReconciliation"));
+        }
+        // The daemon observes this exact session; resuming never calls prompt
+        // again, including when its acknowledgment was lost.
+        j["stage"] = json!("resuming");
+    }
+    j["reason"] = json!("");
+    j["updatedAt"] = json!(now());
+    Ok(())
 }
 fn sync_task_stages(p: &mut Value, jobs: &[Value]) {
     let id = p["id"].clone();

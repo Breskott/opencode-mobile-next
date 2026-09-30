@@ -9,14 +9,18 @@ import tomllib
 
 repo = pathlib.Path(__file__).resolve().parents[3]
 output = pathlib.Path(sys.argv[1])
-tree = subprocess.check_output([
+targets = sys.argv[2:] or ['aarch64-linux-android', 'x86_64-linux-android']
+if any(target not in {'aarch64-linux-android', 'x86_64-linux-android'} for target in targets):
+    raise SystemExit('Unsupported Android notice target')
+# Union the exact target trees: architecture-specific dependencies must not be omitted.
+tree = '\n'.join(subprocess.check_output([
     'cargo', 'tree', '--manifest-path', str(repo / 'engine/phone/Cargo.toml'),
-    '--locked', '--offline', '--target', 'aarch64-linux-android',
+    '--locked', '--offline', '--target', target,
     '--edges', 'normal', '--prefix', 'none', '--format', '{p}',
-], text=True)
+], text=True) for target in targets)
 registry = pathlib.Path(os.environ.get('CARGO_HOME', pathlib.Path.home() / '.cargo')) / 'registry/src'
 sections = ['Phone engine Android dependency notices\n'
-            'Generated from the locked normal dependency tree; build-time macro dependencies may also appear.\n']
+            'Generated from the union of locked Android target normal dependency trees; build-time macro dependencies may also appear.\n']
 for name, version in sorted(set(re.findall(r'^([\w-]+) v([^\s]+)', tree, re.M))):
     if name == 'oc-phone-engine':
         continue
