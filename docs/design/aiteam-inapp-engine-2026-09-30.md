@@ -392,7 +392,7 @@ planning as `waiting`, interrupted/failed planning as `failed` (restart/pause
 reconciliation as `stalled`). Raw `planningState` remains available. A static
 current-checkpoint timeline row shows allowlisted failure codes; no provider
 error body is rendered. Task `checked` presents as `verified`, `needsFix` as
-`findings`, and `merging` as `running`, retaining raw durable engine evidence.
+`review`, and `merging` as `running`, retaining raw durable engine evidence.
 This does not expose unsupported retry/use-as-task commands.
 
 `mergeQueue` is now a read-only projection of completed task jobs and their
@@ -412,3 +412,17 @@ merged, every task has a bound checked merge item, all relevant repository
 main/dev refs agree, and each repository has an engine-authored confirmed
 promotion receipt for that current main SHA. Paused/stopped/failed states stay
 as authored; no receipt or completed state is synthesized or persisted by Dart.
+
+Run4 real-checker follow-up: all checker findings are unresolved engine review
+items; publication normalizes their status to `open`, because the checker cannot
+author a fix or waiver. A blocked checker publishes `checkerFindings`; legacy
+`needsFix` also presents as `review` with open findings and this fallback reason
+without rewriting stored evidence. Successful checks keep empty findings.
+Worker instructions now require actual executed acceptance commands, working
+directory, exit codes and observed results in committed
+`.aiteam-verification.md`. The read-only checker inspects that report and files;
+it does not execute shell/Python, infer that an unexecuted check passed, or put
+successful observations in findings. The report is model-authored inspectable
+evidence, not an execution attestation. Missing or inconclusive required
+evidence blocks merge. Canonical receipt and checker validation gates remain
+unchanged.
