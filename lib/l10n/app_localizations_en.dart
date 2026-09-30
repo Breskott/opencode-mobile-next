@@ -24652,7 +24652,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamProjectHome => 'AI Team';
 
   @override
-  String get teamProjectDemo => 'Demo · simulated project activity';
+  String get teamProjectDemo => 'Demo';
 
   @override
   String get teamProjectNew => 'New project';
@@ -24938,7 +24938,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamProjectEditorCostUnknown =>
-      'Host cost measurements are not available in this demo. Memory, battery use, heat and chat slowdown depend on the host and lane count.';
+      'Each lane is one sub-session, and your chat stays first. Cost is not measured in this demo; memory, battery and chat speed depend on the host.';
 
   @override
   String get teamProjectEditorCharging => 'Only while charging';
@@ -25070,8 +25070,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Changes could not be saved. Your edits are still here; try saving again.';
 
   @override
-  String get teamProjectEditorRequired =>
-      'Add a project name, goal and at least one repo.';
+  String get teamProjectEditorRequired => 'Add a goal and at least one repo.';
 
   @override
   String get teamProjectEditorChooseRoleServer =>
@@ -25270,12 +25269,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamProjectEditorApplyPlan => 'Apply updated plan';
 
   @override
-  String get teamProjectEditorContextFiles =>
-      'Context files (one path per line)';
+  String get teamProjectEditorContextFiles => 'Files to read first';
 
   @override
   String get teamProjectEditorContextFilesHelp =>
-      'These references are kept with the spec. The demo does not read or upload files.';
+      'Optional. One path per line. The team reads these before it plans. The demo does not read or upload files.';
 
   @override
   String get teamProjectEditorScreenOff => 'Keep working with the screen off';
@@ -25388,4 +25386,408 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamProjectEditorAskAgain => 'Ask again';
+
+  @override
+  String get teamProjectDemoChip => 'Demo';
+
+  @override
+  String teamProjectHeadlineMilestone(int current, int total, int working) {
+    return 'Milestone $current of $total · $working working';
+  }
+
+  @override
+  String teamProjectHeadlineDone(int total) {
+    return 'All $total milestones done';
+  }
+
+  @override
+  String teamProjectGoalStatus(
+    int version,
+    String age,
+    int milestones,
+    int repos,
+  ) {
+    return 'Spec v$version · approved $age · $milestones milestones · $repos repos';
+  }
+
+  @override
+  String teamProjectGoalStatusDraft(int version, int milestones, int repos) {
+    return 'Spec v$version · $milestones milestones · $repos repos';
+  }
+
+  @override
+  String get teamProjectOpenSpec => 'Open spec';
+
+  @override
+  String teamProjectRequestWhere(String role, String server) {
+    return '$role on $server';
+  }
+
+  @override
+  String teamProjectRequestBlocks(String role, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tasks after it wait too',
+      one: '1 task after it waits too',
+    );
+    return '$role waits; $_temp0';
+  }
+
+  @override
+  String teamProjectMilestoneTasks(int done, int total) {
+    return '$done of $total tasks';
+  }
+
+  @override
+  String teamProjectMilestoneWaits(int number) {
+    return 'Waits on $number';
+  }
+
+  @override
+  String get teamProjectMilestoneNoTasks => 'No tasks yet';
+
+  @override
+  String teamProjectLanesTitle(int busy, int total) {
+    return 'Lanes · $busy of $total busy';
+  }
+
+  @override
+  String get teamProjectLanesChange => 'Change';
+
+  @override
+  String teamProjectLaneRunning(String server, String elapsed) {
+    return '$server · $elapsed';
+  }
+
+  @override
+  String teamProjectLaneWaiting(String server) {
+    return '$server · waiting for a free lane';
+  }
+
+  @override
+  String teamProjectLaneTitle(String role, String task) {
+    return '$role · $task';
+  }
+
+  @override
+  String teamProjectLaneNoteParallel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lanes',
+      one: '1 lane',
+    );
+    return 'Parallel · $_temp0';
+  }
+
+  @override
+  String get teamProjectLaneNoteSingle => 'Single lane';
+
+  @override
+  String teamProjectLaneNoteDemo(String note) {
+    return '$note · figures are simulated';
+  }
+
+  @override
+  String teamProjectElapsedSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String teamProjectElapsedMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String teamProjectElapsedHours(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String teamProjectCostToday(String amount) {
+    return '$amount today';
+  }
+
+  @override
+  String teamProjectCostTodayOf(String amount, String limit) {
+    return '$amount of $limit today';
+  }
+
+  @override
+  String teamProjectCostTotal(String amount) {
+    return '$amount total';
+  }
+
+  @override
+  String teamProjectCostTotalOf(String amount, String limit) {
+    return '$amount of $limit total';
+  }
+
+  @override
+  String get teamProjectCostNoLimit => 'No limit set';
+
+  @override
+  String get teamProjectCostNotReported => 'Not reported yet';
+
+  @override
+  String teamProjectBoardSummary(int tasks, int milestones) {
+    String _temp0 = intl.Intl.pluralLogic(
+      tasks,
+      locale: localeName,
+      other: '$tasks tasks',
+      one: '1 task',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      milestones,
+      locale: localeName,
+      other: '$milestones milestones',
+      one: '1 milestone',
+    );
+    return '$_temp0 across $_temp1';
+  }
+
+  @override
+  String get teamProjectBoardEmpty => 'No tasks yet';
+
+  @override
+  String teamProjectTimelineSummary(int count, String age) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count events',
+      one: '1 event',
+    );
+    return '$_temp0 · latest $age';
+  }
+
+  @override
+  String get teamProjectTimelineEmpty => 'Nothing has happened yet';
+
+  @override
+  String teamProjectServersSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count servers',
+      one: '1 server',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamProjectSettingsSummaryParallel(int count) {
+    return 'Parallel · up to $count lanes';
+  }
+
+  @override
+  String get teamProjectSettingsSummarySingle => 'Single lane';
+
+  @override
+  String get teamProjectMenu => 'Project menu';
+
+  @override
+  String get teamProjectTaskMenu => 'Task menu';
+
+  @override
+  String teamProjectDecisionBy(String who, String age) {
+    return '$who · $age';
+  }
+
+  @override
+  String get teamProjectYou => 'You';
+
+  @override
+  String teamProjectPlanFor(int number) {
+    return 'Plan for milestone $number · waiting for you';
+  }
+
+  @override
+  String get teamProjectPlanForProject => 'Plan · waiting for you';
+
+  @override
+  String teamProjectPlanSummary(int phases, int tasks, int repos) {
+    String _temp0 = intl.Intl.pluralLogic(
+      phases,
+      locale: localeName,
+      other: '$phases phases',
+      one: '1 phase',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      tasks,
+      locale: localeName,
+      other: '$tasks tasks',
+      one: '1 task',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      repos,
+      locale: localeName,
+      other: '$repos repos',
+      one: '1 repo',
+    );
+    return '$_temp0 · $_temp1 · $_temp2';
+  }
+
+  @override
+  String teamProjectPlanPhase(int number, String title) {
+    return 'Phase $number · $title';
+  }
+
+  @override
+  String get teamProjectPlanReviewPoint => 'review point';
+
+  @override
+  String teamProjectPlanRepo(String name) {
+    return '$name repo';
+  }
+
+  @override
+  String teamProjectPlanAfter(int number) {
+    return 'after $number';
+  }
+
+  @override
+  String teamProjectPlanCriteria(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count criteria',
+      one: '1 criterion',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamProjectPlanWho(String role, String server) {
+    return '$role · $server';
+  }
+
+  @override
+  String teamProjectPlanMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '… $count more tasks',
+      one: '… 1 more task',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamProjectPlanEdit => 'Edit plan';
+
+  @override
+  String get teamProjectPlanAsk => 'Ask to change';
+
+  @override
+  String get teamProjectPromoteTitle => 'Promote dev → main';
+
+  @override
+  String teamProjectPromoteStatus(String repo) {
+    return '$repo repo · main is protected. Only you can promote.';
+  }
+
+  @override
+  String teamProjectPromoteMilestone(int number, String title) {
+    return 'Milestone $number · $title';
+  }
+
+  @override
+  String teamProjectPromoteMerged(int done, int total) {
+    return '$done of $total tasks merged';
+  }
+
+  @override
+  String teamProjectPromoteDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamProjectPromoteChecks => 'Checks after merge';
+
+  @override
+  String get teamProjectPromoteChecksPassed =>
+      'Every check passed after the last merge';
+
+  @override
+  String get teamProjectPromoteReview => 'Review';
+
+  @override
+  String teamProjectPromoteAccepted(int number) {
+    return 'You accepted milestone $number';
+  }
+
+  @override
+  String get teamProjectPromoteNoReview => 'No review was needed for this work';
+
+  @override
+  String teamProjectPromoteChanges(int commits) {
+    String _temp0 = intl.Intl.pluralLogic(
+      commits,
+      locale: localeName,
+      other: '$commits commits',
+      one: '1 commit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamProjectPromoteFiles(int files) {
+    String _temp0 = intl.Intl.pluralLogic(
+      files,
+      locale: localeName,
+      other: '$files files',
+      one: '1 file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamProjectPromoteSeeChanges => 'See changes';
+
+  @override
+  String get teamProjectPromoteNotYet => 'Not yet';
+
+  @override
+  String teamProjectFindingsTitle(String role, String summary) {
+    return 'Checked by $role · $summary';
+  }
+
+  @override
+  String get teamProjectEditorGoalLabel => 'What should the team achieve?';
+
+  @override
+  String get teamProjectEditorWhereRuns => 'Where it runs';
+
+  @override
+  String get teamProjectEditorMoreOptions => 'Optional details';
+
+  @override
+  String get teamProjectEditorNameHelp =>
+      'Optional. Leave empty to use the start of the goal.';
+
+  @override
+  String get teamProjectEditorBudgetHelp =>
+      'The team pauses when the day reaches it. Leave a total to cap the whole project.';
+
+  @override
+  String teamProjectFindingsCritical(int count) {
+    return '$count critical';
+  }
+
+  @override
+  String teamProjectFindingsMajor(int count) {
+    return '$count major';
+  }
+
+  @override
+  String teamProjectFindingsMinor(int count) {
+    return '$count minor';
+  }
 }

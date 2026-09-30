@@ -372,7 +372,7 @@ class _EditorState extends State<_Editor> {
   String? _creationError() {
     final settingsError = _settingsError();
     if (settingsError != null) return settingsError;
-    if (_value('goal').isEmpty || _value('name').isEmpty || _repos.isEmpty) {
+    if (_value('goal').isEmpty || _repos.isEmpty) {
       return _l.teamProjectEditorRequired;
     }
     if (widget.kind == _Kind.quick && (_roleId == null || _serverId == null)) {
@@ -416,7 +416,7 @@ class _EditorState extends State<_Editor> {
         action: action,
         projectId: widget.projectId,
         expectedRevision: _reviewedRevision,
-        name: _value('name'),
+        name: _creating ? _projectName() : _value('name'),
         text: text ?? _value('goal'),
         settings: _editedSettings(),
         spec: spec,
@@ -506,7 +506,7 @@ class _EditorState extends State<_Editor> {
       }
     }
     if (_creating) {
-      if (_value('goal').isEmpty || _value('name').isEmpty || _repos.isEmpty) {
+      if (_value('goal').isEmpty || _repos.isEmpty) {
         _change(() => _error = _l.teamProjectEditorRequired);
         return;
       }
@@ -564,6 +564,13 @@ class _EditorState extends State<_Editor> {
       );
       if (saved && mounted) _change(() => _role = null);
     }
+  }
+
+  String _projectName() {
+    final name = _value('name');
+    if (name.isNotEmpty) return name;
+    final goal = _value('goal').split('\n').first.trim();
+    return goal.length > 40 ? '${goal.substring(0, 40).trim()}…' : goal;
   }
 
   List<String> _lines(String value) => value
@@ -721,10 +728,7 @@ class _EditorState extends State<_Editor> {
   }
 
   List<Widget> _creation() => [
-    _field('name', _l.teamProjectEditorName),
-    _field('goal', _l.teamProjectEditorGoal, multiline: true),
-    _field('contextFiles', _l.teamProjectEditorContextFiles, multiline: true),
-    KitNotice(message: _l.teamProjectEditorContextFilesHelp),
+    _field('goal', _l.teamProjectEditorGoalLabel, multiline: true),
     KitSectionLabel.inline(_l.teamProjectEditorRepos),
     for (final r in _repos)
       KitRow(
@@ -743,7 +747,7 @@ class _EditorState extends State<_Editor> {
     _field('repoName', _l.teamProjectEditorRepoName),
     _field('repoPath', _l.teamProjectEditorRepoPath),
     _choice(
-      _l.teamProjectEditorServer,
+      _l.teamProjectEditorWhereRuns,
       {
         for (final s in _controller.snapshot?.servers ?? <TeamServer>[])
           s.id: s.name,
@@ -793,7 +797,7 @@ class _EditorState extends State<_Editor> {
       ),
     ],
   ];
-  List<Widget> _settingsFields() => [
+  List<Widget> _modeFields() => [
     _choice(
       _l.teamProjectEditorMode,
       {
@@ -817,6 +821,8 @@ class _EditorState extends State<_Editor> {
         _settings = _settings.copyWith(chargingOnly: v);
       }),
     ),
+  ];
+  List<Widget> _screenFields() => [
     KitSwitchRow(
       title: _l.teamProjectEditorScreenOff,
       value: _settings.keepWorkingScreenOff,
@@ -825,6 +831,8 @@ class _EditorState extends State<_Editor> {
       ),
     ),
     KitNotice(message: _l.teamProjectEditorScreenOffHelp),
+  ];
+  List<Widget> _reviewFields() => [
     _choice(
       _l.teamProjectEditorReview,
       {
@@ -834,6 +842,8 @@ class _EditorState extends State<_Editor> {
       _settings.reviewLevel,
       (v) => _change(() => _settings = _settings.copyWith(reviewLevel: v)),
     ),
+  ];
+  List<Widget> _budgetFields() => [
     _choice(
       _l.teamProjectEditorBudget,
       {
@@ -856,7 +866,10 @@ class _EditorState extends State<_Editor> {
         number: true,
         decimal: true,
       ),
+      KitNotice(message: _l.teamProjectEditorBudgetHelp),
     ],
+  ];
+  List<Widget> _limitFields() => [
     _field('tokens', _l.teamProjectEditorTaskTokens, number: true),
     KitSwitchRow(
       title: _l.teamProjectEditorAutoFix,
@@ -867,6 +880,33 @@ class _EditorState extends State<_Editor> {
     if (_settings.autoFix)
       _field('rounds', _l.teamProjectEditorMaxRounds, number: true),
   ];
+
+  /// Settings and defaults keep one flat order. A new project shows what it
+  /// must decide first (mode, review, budget) and folds the rest below.
+  List<Widget> _settingsFields() => _creating
+      ? [
+          ..._modeFields(),
+          ..._reviewFields(),
+          ..._budgetFields(),
+          KitSectionLabel.inline(_l.teamProjectEditorMoreOptions),
+          _field('name', _l.teamProjectEditorName),
+          KitNotice(message: _l.teamProjectEditorNameHelp),
+          _field(
+            'contextFiles',
+            _l.teamProjectEditorContextFiles,
+            multiline: true,
+          ),
+          KitNotice(message: _l.teamProjectEditorContextFilesHelp),
+          ..._screenFields(),
+          ..._limitFields(),
+        ]
+      : [
+          ..._modeFields(),
+          ..._screenFields(),
+          ..._reviewFields(),
+          ..._budgetFields(),
+          ..._limitFields(),
+        ];
   List<Widget> _specFields() => [
     KitNotice(message: _l.teamProjectEditorDraftApproval),
     _field('changeRequest', _l.teamProjectEditorChangeRequest, multiline: true),

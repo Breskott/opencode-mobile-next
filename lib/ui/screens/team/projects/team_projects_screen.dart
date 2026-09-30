@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../domain/relative_age.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../state/team_project_controller.dart';
+import '../../../app_iconography.dart';
 import '../../../kit/kit.dart';
 import 'team_project_conversation.dart';
 import 'team_project_editors.dart';
@@ -82,7 +83,9 @@ class _TeamProjectsScreenState extends State<TeamProjectsScreen> {
       return KitScreen.threePane(
         topBar: KitTopBar(
           title: l.teamProjectHome,
-          subtitle: c.snapshot?.simulated == true ? l.teamProjectDemo : null,
+          subtitle: c.snapshot?.simulated == true
+              ? l.teamProjectDemoChip
+              : null,
           actions: [
             KitAction(
               label: l.teamProjectEditorDefaults,
@@ -119,10 +122,14 @@ class _TeamProjectsScreenState extends State<TeamProjectsScreen> {
                 ),
               KitProjectRow(
                 title: p.name,
-                detail: p.budgetWarning ? l.teamProjectBudgetNear : null,
+                detail: p.budgetWarning
+                    ? l.teamProjectBudgetNear
+                    : p.usageReported
+                    ? _todayCost(l, p)
+                    : null,
                 status: c.errorCode == 'unavailable'
                     ? l.teamProjectTaskStale
-                    : _progress(l, p),
+                    : _headline(l, p),
                 state: c.errorCode == 'unavailable'
                     ? KitTeamState.stale
                     : _state(p.status),
@@ -215,6 +222,7 @@ class TeamProjectOverview extends StatelessWidget {
         );
       }
       final c = controller;
+      final stale = c.errorCode == 'unavailable';
       void task(TeamTask t) => onOpenTask != null
           ? onOpenTask!(t)
           : _openTask(context, c, p.id, t.id);
@@ -230,27 +238,93 @@ class TeamProjectOverview extends StatelessWidget {
           )
           .toList()
           .reversed;
+      final milestones = p.specDraft.milestones;
+      final current = milestones.indexWhere((m) => !m.accepted);
+      bool finished(TeamTask t) => t.status == 'merged' || t.status == 'done';
+      final busy = p.tasks.where((t) => t.status == 'running').toList();
+      final laneTotal = p.settings.mode == 'single' ? 1 : p.settings.maxLanes;
+      final asked = {
+        for (final r in p.requests.where((r) => !r.answered)) r.taskId,
+      };
+      final waiting = p.tasks
+          .where(
+            (t) =>
+                t.status == 'queued' &&
+                !asked.contains(t.id) &&
+                t.dependsOn.every(
+                  (id) => p.tasks.any((o) => o.id == id && finished(o)),
+                ),
+          )
+          .take(laneTotal > busy.length ? laneTotal - busy.length : 0)
+          .toList();
+      final decisions = p.timeline
+          .where((e) => e.kind == 'decision')
+          .toList()
+          .reversed
+          .take(3)
+          .toList();
+      final open = p.status != 'stopped' && p.status != 'done';
+      final menu = <KitMenuItem>[
+        if (open)
+          KitMenuItem(
+            label: p.status == 'paused'
+                ? l.teamProjectResume
+                : l.teamProjectPause,
+            onSelected: () => _command(
+              c,
+              p,
+              p.status == 'paused'
+                  ? TeamProjectAction.resumeProject
+                  : TeamProjectAction.pauseProject,
+            ),
+          ),
+        if (p.simulated && p.status == 'plan')
+          KitMenuItem(
+            label: l.teamProjectDemoPlanFailure,
+            onSelected: () =>
+                _command(c, p, TeamProjectAction.simulatePlanFailure),
+          ),
+        if (p.simulated)
+          KitMenuItem(
+            label: l.teamProjectAdvance,
+            onSelected: () => _command(c, p, TeamProjectAction.advance),
+          ),
+        KitMenuItem(
+          label: l.teamProjectStop,
+          destructive: true,
+          onSelected: () async {
+            if (await showKitConfirm(
+              context,
+              title: l.teamProjectStop,
+              body: l.teamProjectStopBody,
+              confirmLabel: l.teamProjectStop,
+              kind: KitConfirmKind.stop,
+            )) {
+              _command(c, p, TeamProjectAction.stopProject);
+            }
+          },
+        ),
+      ];
       return KitScreen(
-        topBar: embedded
-            ? null
-            : KitTopBar(
-                title: p.name,
-                subtitle: c.errorCode == 'unavailable'
-                    ? l.teamProjectTaskStale
-                    : _progress(l, p),
-                actions: [
-                  KitAction(
-                    label: l.teamProjectSpec,
-                    icon: Icons.description_outlined,
-                    onPressed: () => openTeamSpecEditor(context, c, p.id),
-                  ),
-                ],
-              ),
+        topBar: KitTopBar(
+          title: p.name,
+          subtitle: stale ? l.teamProjectTaskStale : _headline(l, p),
+          menu: menu,
+          menuLabel: l.teamProjectMenu,
+          actions: [
+            KitAction(
+              label: l.teamProjectSpec,
+              icon: Icons.description_outlined,
+              onPressed: () => openTeamSpecEditor(context, c, p.id),
+            ),
+          ],
+        ),
         body: ListView(
           padding: KitScreen.padding(context),
           children: [
-            if (embedded) KitText(p.name, role: KitTextRole.title),
             if (c.errorCode != null) _failure(context, c),
+            for (final r in p.requests.where((r) => !r.answered))
+              _needsYou(context, l, c, p, r),
             if (showDigest)
               KitDigest(
                 title: l.teamProjectDigest,
@@ -267,37 +341,27 @@ class TeamProjectOverview extends StatelessWidget {
                   ),
                 ],
               ),
-            for (final r in p.requests.where((r) => !r.answered))
-              KitPlanCard(
-                title: r.title,
-                status: l.teamProjectNeedsYou,
-                state: KitTeamState.needsYou,
-                actions: [
-                  KitAction(
-                    label: _requestLabel(l, r),
-                    onPressed: () => _answer(context, c, p, r),
-                  ),
-                ],
-              ),
             KitPlanCard(
               title: p.specDraft.goal,
-              status: _word(l, p.status),
-              summary: p.specDraft.constraints,
+              status: _goalStatus(context, l, p),
               actions: [
                 KitAction(
-                  label: l.teamProjectSpec,
+                  label: l.teamProjectOpenSpec,
                   onPressed: () => openTeamSpecEditor(context, c, p.id),
                 ),
-                KitAction(
-                  label: l.teamProjectPlan,
-                  onPressed: () => openTeamPlanEditor(context, c, p.id),
-                ),
+                if (p.status == 'plan' || p.status == 'planned')
+                  KitAction(
+                    label: l.teamProjectPlan,
+                    onPressed: () => openTeamPlanEditor(context, c, p.id),
+                  ),
               ],
             ),
-            KitSectionLabel.inline(l.teamProjectMilestones),
-            for (final m in p.specDraft.milestones)
+            if (milestones.isNotEmpty)
+              KitSectionLabel.inline(l.teamProjectMilestones),
+            for (var i = 0; i < milestones.length; i++)
               Builder(
                 builder: (context) {
+                  final m = milestones[i];
                   final phaseIds = p.phases
                       .where((ph) => ph.milestoneId == m.id)
                       .map((ph) => ph.id)
@@ -305,14 +369,14 @@ class TeamProjectOverview extends StatelessWidget {
                   final tasks = p.tasks
                       .where((t) => phaseIds.contains(t.phaseId))
                       .toList();
-                  final complete = tasks
-                      .where((t) => t.status == 'merged' || t.status == 'done')
-                      .length;
+                  final complete = tasks.where(finished).length;
+                  final started =
+                      i == current || tasks.any((t) => t.status != 'queued');
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       KitMilestoneRow(
-                        title: m.title,
+                        title: '${i + 1} ${m.title}',
                         state: m.accepted
                             ? KitTeamState.done
                             : tasks.any((t) => t.status == 'running')
@@ -320,10 +384,16 @@ class TeamProjectOverview extends StatelessWidget {
                             : KitTeamState.empty,
                         status: m.accepted
                             ? l.teamProjectDone
-                            : _progress(l, p.copyWith(tasks: tasks)),
-                        completed: complete,
-                        total: tasks.length,
-                        detail: m.criteria.join('\n'),
+                            : tasks.isEmpty
+                            ? l.teamProjectMilestoneNoTasks
+                            : started
+                            ? l.teamProjectMilestoneTasks(
+                                complete,
+                                tasks.length,
+                              )
+                            : l.teamProjectMilestoneWaits(i),
+                        completed: started && !m.accepted ? complete : null,
+                        total: started && !m.accepted ? tasks.length : null,
                         onPressed: () =>
                             _openBoard(context, c, p.id, milestone: m.id),
                       ),
@@ -347,53 +417,43 @@ class TeamProjectOverview extends StatelessWidget {
                   );
                 },
               ),
-            KitSectionLabel.inline(l.teamProjectLanes),
-            KitText(
-              l.teamProjectLaneCount(
-                p.tasks.where((t) => t.status == 'running').length,
-                p.settings.mode == 'single' ? 1 : p.settings.maxLanes,
-              ),
-              role: KitTextRole.secondary,
-            ),
-            for (final server in c.snapshot!.servers)
-              if (p.tasks.any((t) => t.serverId == server.id))
-                KitServerLane(
-                  title: server.name,
-                  status: c.errorCode == 'unavailable'
-                      ? l.teamProjectTaskStale
-                      : server.online
-                      ? l.teamProjectOnline
-                      : l.teamProjectOffline,
-                  state: c.errorCode == 'unavailable'
-                      ? KitTeamState.stale
-                      : server.online
-                      ? KitTeamState.running
-                      : KitTeamState.stale,
-                  items: [
-                    for (final t in p.tasks.where(
-                      (t) => t.serverId == server.id && t.status != 'merged',
-                    ))
-                      KitTeamItem(
-                        title: t.title,
-                        detail:
-                            '${_role(context, c, t.roleId)} · ${c.errorCode == 'unavailable' ? l.teamProjectTaskStale : _word(l, t.status)}',
-                        state: c.errorCode == 'unavailable'
-                            ? KitTeamState.stale
-                            : _state(t.status),
-                        onPressed: () => task(t),
-                      ),
-                  ],
+            if (busy.isNotEmpty || waiting.isNotEmpty) ...[
+              KitSectionLabel.inline(
+                l.teamProjectLanesTitle(busy.length, laneTotal),
+                trailing: KitButton.tertiary(
+                  label: l.teamProjectLanesChange,
+                  onPressed: () => openTeamProjectSettings(context, c, p.id),
                 ),
-            if (p.simulated)
-              KitText(l.teamProjectCostDemo, role: KitTextRole.caption),
+              ),
+              for (final t in [...busy, ...waiting])
+                KitRow(
+                  leading: KitStatusMark(
+                    state: t.status == 'running' && !stale
+                        ? KitMarkState.working
+                        : KitMarkState.waiting,
+                  ),
+                  title: l.teamProjectLaneTitle(
+                    _role(context, c, t.roleId),
+                    t.title,
+                  ),
+                  supporting: TextSpan(
+                    text: _laneLine(context, l, c, t, stale),
+                  ),
+                  trailing: const KitRowValue('', chevron: true),
+                  onTap: () => task(t),
+                ),
+              KitText(_laneNote(l, p, laneTotal), role: KitTextRole.caption),
+            ],
             for (final repo in p.repos)
-              if (p.mergeQueue.any((i) => i.repoId == repo.id))
+              if (p.mergeQueue.any(
+                (i) => i.repoId == repo.id && i.status != 'merged',
+              ))
                 KitMergeQueue(
                   title: '${l.teamProjectMerge} · ${repo.name}',
                   status: 'dev',
                   items: [
                     for (final i in p.mergeQueue.where(
-                      (i) => i.repoId == repo.id,
+                      (i) => i.repoId == repo.id && i.status != 'merged',
                     ))
                       KitTeamItem(
                         title:
@@ -416,101 +476,249 @@ class TeamProjectOverview extends StatelessWidget {
                     ),
                   ],
                 ),
-            KitSectionLabel.inline(l.teamProjectDecisions),
-            for (final e
-                in p.timeline
-                    .where((e) => e.kind == 'decision')
-                    .toList()
-                    .reversed
-                    .take(3))
-              KitRow(
-                title: e.text,
-                supporting: TextSpan(text: _age(context, e.at)),
-              ),
+            if (decisions.isNotEmpty) ...[
+              KitSectionLabel.inline(l.teamProjectDecisions),
+              for (final e in decisions)
+                KitRow(
+                  title: e.text,
+                  supporting: TextSpan(
+                    text: _who(context, l, c, e) == ''
+                        ? _age(context, e.at)
+                        : l.teamProjectDecisionBy(
+                            _who(context, l, c, e),
+                            _age(context, e.at),
+                          ),
+                  ),
+                ),
+            ],
             KitSectionLabel.inline(l.teamProjectCost),
             if (p.budgetWarning) KitNotice(message: l.teamProjectBudgetNear),
-            KitText(
-              l.teamProjectSpend(
-                p.usageReported
-                    ? p.spentToday.toStringAsFixed(2)
-                    : l.teamProjectUnknown,
-                p.settings.budget.daily?.toStringAsFixed(2) ??
-                    l.teamProjectNoLimit,
-                p.usageReported
-                    ? p.spent.toStringAsFixed(2)
-                    : l.teamProjectUnknown,
-                p.settings.budget.total?.toStringAsFixed(2) ??
-                    l.teamProjectNoLimit,
-              ),
+            KitRow(
+              leading: const KitIcon(AppIconography.usage),
+              title: _costLine(l, p),
+              trailing: const KitRowValue('', chevron: true),
+              onTap: () => openTeamProjectSettings(context, c, p.id),
             ),
             KitRow(
+              leading: const KitIcon(AppIconography.kanban),
               title: l.teamProjectBoard,
+              supporting: TextSpan(text: _boardSummary(l, p)),
+              trailing: const KitRowValue('', chevron: true),
               onTap: () => _openBoard(context, c, p.id),
             ),
             KitRow(
+              leading: const KitIcon(AppIconography.timeline),
               title: l.teamProjectTimeline,
+              supporting: TextSpan(text: _timelineSummary(context, l, p)),
+              trailing: const KitRowValue('', chevron: true),
               onTap: () => pushKitPage<void>(
                 context,
                 (_) => TeamProjectTimeline(controller: c, projectId: p.id),
               ),
             ),
             KitRow(
+              leading: const KitIcon(AppIconography.server),
               title: l.teamProjectServers,
+              supporting: TextSpan(
+                text: l.teamProjectServersSummary(
+                  {
+                    for (final r in p.repos) r.serverId,
+                    for (final t in p.tasks) t.serverId,
+                  }.where((id) => id.isNotEmpty).length,
+                ),
+              ),
+              trailing: const KitRowValue('', chevron: true),
               onTap: () => pushKitPage<void>(
                 context,
                 (_) => TeamProjectServers(controller: c, projectId: p.id),
               ),
             ),
             KitRow(
+              leading: const KitIcon(AppIconography.settings),
               title: l.teamProjectSettings,
+              supporting: TextSpan(
+                text: p.settings.mode == 'single'
+                    ? l.teamProjectSettingsSummarySingle
+                    : l.teamProjectSettingsSummaryParallel(p.settings.maxLanes),
+              ),
+              trailing: const KitRowValue('', chevron: true),
               onTap: () => openTeamProjectSettings(context, c, p.id),
-            ),
-            KitButton(
-              role: KitButtonRole.tertiary,
-              label: p.status == 'paused'
-                  ? l.teamProjectResume
-                  : l.teamProjectPause,
-              onPressed: () => _command(
-                c,
-                p,
-                p.status == 'paused'
-                    ? TeamProjectAction.resumeProject
-                    : TeamProjectAction.pauseProject,
-              ),
-            ),
-            if (p.simulated && p.status == 'plan')
-              KitButton(
-                role: KitButtonRole.tertiary,
-                label: l.teamProjectDemoPlanFailure,
-                onPressed: () =>
-                    _command(c, p, TeamProjectAction.simulatePlanFailure),
-              ),
-            if (p.simulated)
-              KitButton(
-                role: KitButtonRole.tertiary,
-                label: l.teamProjectAdvance,
-                onPressed: () => _command(c, p, TeamProjectAction.advance),
-              ),
-            KitButton(
-              role: KitButtonRole.tertiary,
-              label: l.teamProjectStop,
-              destructive: true,
-              onPressed: () async {
-                if (await showKitConfirm(
-                  context,
-                  title: l.teamProjectStop,
-                  body: l.teamProjectStopBody,
-                  confirmLabel: l.teamProjectStop,
-                  kind: KitConfirmKind.stop,
-                )) {
-                  _command(c, p, TeamProjectAction.stopProject);
-                }
-              },
             ),
           ],
         ),
       );
     },
+  );
+}
+
+Widget _needsYou(
+  BuildContext context,
+  AppLocalizations l,
+  TeamProjectController c,
+  TeamProject p,
+  TeamRequest r,
+) {
+  final t = p.tasks.where((t) => t.id == r.taskId).firstOrNull;
+  final role = t == null ? '' : _role(context, c, t.roleId);
+  final server = t == null
+      ? null
+      : c.snapshot?.servers.where((s) => s.id == t.serverId).firstOrNull;
+  final after = t == null
+      ? 0
+      : p.tasks.where((o) => o.dependsOn.contains(t.id)).length;
+  return KitPlanCard(
+    title: r.title,
+    status: [
+      l.teamProjectNeedsYou,
+      if (t != null && server != null)
+        l.teamProjectRequestWhere(role, server.name),
+    ].join(' · '),
+    state: KitTeamState.needsYou,
+    summary: t != null && after > 0
+        ? l.teamProjectRequestBlocks(role, after)
+        : null,
+    actions: [
+      KitAction(
+        label: _requestLabel(l, r),
+        onPressed: () => _answer(context, c, p, r),
+      ),
+    ],
+  );
+}
+
+String _money(double v) => v == v.roundToDouble()
+    ? '\$${v.toStringAsFixed(0)}'
+    : '\$${v.toStringAsFixed(2)}';
+
+String _costLine(AppLocalizations l, TeamProject p) {
+  if (!p.usageReported) return l.teamProjectCostNotReported;
+  final b = p.settings.budget;
+  final daily = b.unlimited ? null : b.daily;
+  final total = b.unlimited ? null : b.total;
+  final today = daily == null
+      ? l.teamProjectCostToday(_money(p.spentToday))
+      : l.teamProjectCostTodayOf(_money(p.spentToday), _money(daily));
+  final all = total == null
+      ? l.teamProjectCostTotal(_money(p.spent))
+      : l.teamProjectCostTotalOf(_money(p.spent), _money(total));
+  return [
+    today,
+    all,
+    if (daily == null && total == null) l.teamProjectNoLimit,
+  ].join(' · ');
+}
+
+String _todayCost(AppLocalizations l, TeamProject p) {
+  final b = p.settings.budget;
+  final daily = b.unlimited ? null : b.daily;
+  return daily == null
+      ? l.teamProjectCostToday(_money(p.spentToday))
+      : l.teamProjectCostTodayOf(_money(p.spentToday), _money(daily));
+}
+
+String _headline(AppLocalizations l, TeamProject p) {
+  if (p.status != 'running') return _word(l, p.status);
+  final ms = p.specDraft.milestones;
+  if (ms.isEmpty) return _progress(l, p);
+  final i = ms.indexWhere((m) => !m.accepted);
+  return i < 0
+      ? l.teamProjectHeadlineDone(ms.length)
+      : l.teamProjectHeadlineMilestone(
+          i + 1,
+          ms.length,
+          p.tasks.where((t) => t.status == 'running').length,
+        );
+}
+
+String _goalStatus(BuildContext context, AppLocalizations l, TeamProject p) {
+  final spec = p.specDraft;
+  final approved = p.specVersions.lastOrNull;
+  final at = DateTime.tryParse(approved?.approvedAt ?? '');
+  return at == null
+      ? l.teamProjectGoalStatusDraft(
+          spec.version,
+          spec.milestones.length,
+          p.repos.length,
+        )
+      : l.teamProjectGoalStatus(
+          spec.version,
+          _age(context, approved!.approvedAt),
+          spec.milestones.length,
+          p.repos.length,
+        );
+}
+
+String _elapsed(AppLocalizations l, String raw) {
+  final at = DateTime.tryParse(raw);
+  if (at == null) return '';
+  final d = DateTime.now().difference(at);
+  if (d.inMinutes < 1) {
+    return l.teamProjectElapsedSeconds(d.inSeconds < 0 ? 0 : d.inSeconds);
+  }
+  if (d.inHours < 1) return l.teamProjectElapsedMinutes(d.inMinutes);
+  return l.teamProjectElapsedHours(d.inHours, d.inMinutes % 60);
+}
+
+String _laneLine(
+  BuildContext context,
+  AppLocalizations l,
+  TeamProjectController c,
+  TeamTask t,
+  bool stale,
+) {
+  final server = c.snapshot?.servers
+      .where((s) => s.id == t.serverId)
+      .firstOrNull;
+  final name = server?.name ?? '';
+  if (stale) return '$name · ${l.teamProjectTaskStale}';
+  if (server != null && !server.online) {
+    return '$name · ${l.teamProjectOffline}';
+  }
+  return t.status == 'running'
+      ? l.teamProjectLaneRunning(name, _elapsed(l, t.changedAt))
+      : l.teamProjectLaneWaiting(name);
+}
+
+String _laneNote(AppLocalizations l, TeamProject p, int total) {
+  final note = p.settings.mode == 'single'
+      ? l.teamProjectLaneNoteSingle
+      : l.teamProjectLaneNoteParallel(total);
+  return p.simulated ? l.teamProjectLaneNoteDemo(note) : note;
+}
+
+String _who(
+  BuildContext context,
+  AppLocalizations l,
+  TeamProjectController c,
+  TeamTimelineEvent e,
+) {
+  if (e.actor == 'person') return l.teamProjectYou;
+  return c.snapshot?.roles.where((r) => r.id == e.actor).firstOrNull?.name ??
+      '';
+}
+
+String _boardSummary(AppLocalizations l, TeamProject p) {
+  if (p.tasks.isEmpty) return l.teamProjectBoardEmpty;
+  final withTasks = p.specDraft.milestones.where(
+    (m) => p.tasks.any(
+      (t) => p.phases.any((ph) => ph.id == t.phaseId && ph.milestoneId == m.id),
+    ),
+  );
+  return l.teamProjectBoardSummary(
+    p.tasks.length,
+    withTasks.isEmpty ? 1 : withTasks.length,
+  );
+}
+
+String _timelineSummary(
+  BuildContext context,
+  AppLocalizations l,
+  TeamProject p,
+) {
+  if (p.timeline.isEmpty) return l.teamProjectTimelineEmpty;
+  return l.teamProjectTimelineSummary(
+    p.timeline.length,
+    _age(context, p.timeline.last.at),
   );
 }
 

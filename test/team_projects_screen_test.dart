@@ -55,6 +55,14 @@ class _Gateway implements OrchestrationProjectGateway {
   Future<void> deleteLocalData() async {}
 }
 
+/// A running lane breathes forever, so the page never settles; let the route
+/// transition finish by time instead.
+Future<void> _settle(WidgetTester tester) async {
+  for (var i = 0; i < 8; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
   testWidgets('urgent projects lead and phone opens selected project', (
@@ -71,7 +79,7 @@ void main() {
       lessThan(tester.getTopLeft(find.text('Launch site')).dy),
     );
     await tester.tap(find.text('Launch site'));
-    await tester.pumpAndSettle();
+    await _settle(tester);
     expect(
       find.descendant(
         of: find.byType(TeamProjectOverview),
@@ -79,7 +87,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Accessible pages'), findsOneWidget);
+    expect(find.text('1 Accessible pages'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     c.dispose();
   });
@@ -123,7 +131,7 @@ void main() {
     pushKitPage<void>(context, (_) => TeamProjectsScreen(controller: c));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Launch site'));
-    await tester.pumpAndSettle();
+    await _settle(tester);
     expect(
       find.descendant(
         of: find.byType(TeamProjectOverview),

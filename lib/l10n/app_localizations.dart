@@ -38789,7 +38789,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectDemo.
   ///
   /// In en, this message translates to:
-  /// **'Demo · simulated project activity'**
+  /// **'Demo'**
   String get teamProjectDemo;
 
   /// No description provided for @teamProjectNew.
@@ -39334,7 +39334,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectEditorCostUnknown.
   ///
   /// In en, this message translates to:
-  /// **'Host cost measurements are not available in this demo. Memory, battery use, heat and chat slowdown depend on the host and lane count.'**
+  /// **'Each lane is one sub-session, and your chat stays first. Cost is not measured in this demo; memory, battery and chat speed depend on the host.'**
   String get teamProjectEditorCostUnknown;
 
   /// No description provided for @teamProjectEditorCharging.
@@ -39586,7 +39586,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectEditorRequired.
   ///
   /// In en, this message translates to:
-  /// **'Add a project name, goal and at least one repo.'**
+  /// **'Add a goal and at least one repo.'**
   String get teamProjectEditorRequired;
 
   /// No description provided for @teamProjectEditorChooseRoleServer.
@@ -39952,13 +39952,13 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectEditorContextFiles.
   ///
   /// In en, this message translates to:
-  /// **'Context files (one path per line)'**
+  /// **'Files to read first'**
   String get teamProjectEditorContextFiles;
 
   /// No description provided for @teamProjectEditorContextFilesHelp.
   ///
   /// In en, this message translates to:
-  /// **'These references are kept with the spec. The demo does not read or upload files.'**
+  /// **'Optional. One path per line. The team reads these before it plans. The demo does not read or upload files.'**
   String get teamProjectEditorContextFilesHelp;
 
   /// No description provided for @teamProjectEditorScreenOff.
@@ -40164,6 +40164,455 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask again'**
   String get teamProjectEditorAskAgain;
+
+  /// No description provided for @teamProjectDemoChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo'**
+  String get teamProjectDemoChip;
+
+  /// No description provided for @teamProjectHeadlineMilestone.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone {current} of {total} · {working} working'**
+  String teamProjectHeadlineMilestone(int current, int total, int working);
+
+  /// No description provided for @teamProjectHeadlineDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All {total} milestones done'**
+  String teamProjectHeadlineDone(int total);
+
+  /// No description provided for @teamProjectGoalStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Spec v{version} · approved {age} · {milestones} milestones · {repos} repos'**
+  String teamProjectGoalStatus(
+    int version,
+    String age,
+    int milestones,
+    int repos,
+  );
+
+  /// No description provided for @teamProjectGoalStatusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Spec v{version} · {milestones} milestones · {repos} repos'**
+  String teamProjectGoalStatusDraft(int version, int milestones, int repos);
+
+  /// No description provided for @teamProjectOpenSpec.
+  ///
+  /// In en, this message translates to:
+  /// **'Open spec'**
+  String get teamProjectOpenSpec;
+
+  /// No description provided for @teamProjectRequestWhere.
+  ///
+  /// In en, this message translates to:
+  /// **'{role} on {server}'**
+  String teamProjectRequestWhere(String role, String server);
+
+  /// No description provided for @teamProjectRequestBlocks.
+  ///
+  /// In en, this message translates to:
+  /// **'{role} waits; {count, plural, one{1 task after it waits too} other{{count} tasks after it wait too}}'**
+  String teamProjectRequestBlocks(String role, int count);
+
+  /// No description provided for @teamProjectMilestoneTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} tasks'**
+  String teamProjectMilestoneTasks(int done, int total);
+
+  /// No description provided for @teamProjectMilestoneWaits.
+  ///
+  /// In en, this message translates to:
+  /// **'Waits on {number}'**
+  String teamProjectMilestoneWaits(int number);
+
+  /// No description provided for @teamProjectMilestoneNoTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks yet'**
+  String get teamProjectMilestoneNoTasks;
+
+  /// No description provided for @teamProjectLanesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lanes · {busy} of {total} busy'**
+  String teamProjectLanesTitle(int busy, int total);
+
+  /// No description provided for @teamProjectLanesChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get teamProjectLanesChange;
+
+  /// No description provided for @teamProjectLaneRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} · {elapsed}'**
+  String teamProjectLaneRunning(String server, String elapsed);
+
+  /// No description provided for @teamProjectLaneWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} · waiting for a free lane'**
+  String teamProjectLaneWaiting(String server);
+
+  /// No description provided for @teamProjectLaneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{role} · {task}'**
+  String teamProjectLaneTitle(String role, String task);
+
+  /// No description provided for @teamProjectLaneNoteParallel.
+  ///
+  /// In en, this message translates to:
+  /// **'Parallel · {count, plural, one{1 lane} other{{count} lanes}}'**
+  String teamProjectLaneNoteParallel(int count);
+
+  /// No description provided for @teamProjectLaneNoteSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single lane'**
+  String get teamProjectLaneNoteSingle;
+
+  /// No description provided for @teamProjectLaneNoteDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'{note} · figures are simulated'**
+  String teamProjectLaneNoteDemo(String note);
+
+  /// No description provided for @teamProjectElapsedSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} s'**
+  String teamProjectElapsedSeconds(int count);
+
+  /// No description provided for @teamProjectElapsedMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min'**
+  String teamProjectElapsedMinutes(int count);
+
+  /// No description provided for @teamProjectElapsedHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String teamProjectElapsedHours(int hours, int minutes);
+
+  /// No description provided for @teamProjectCostToday.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} today'**
+  String teamProjectCostToday(String amount);
+
+  /// No description provided for @teamProjectCostTodayOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} of {limit} today'**
+  String teamProjectCostTodayOf(String amount, String limit);
+
+  /// No description provided for @teamProjectCostTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} total'**
+  String teamProjectCostTotal(String amount);
+
+  /// No description provided for @teamProjectCostTotalOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} of {limit} total'**
+  String teamProjectCostTotalOf(String amount, String limit);
+
+  /// No description provided for @teamProjectCostNoLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'No limit set'**
+  String get teamProjectCostNoLimit;
+
+  /// No description provided for @teamProjectCostNotReported.
+  ///
+  /// In en, this message translates to:
+  /// **'Not reported yet'**
+  String get teamProjectCostNotReported;
+
+  /// No description provided for @teamProjectBoardSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{tasks, plural, one{1 task} other{{tasks} tasks}} across {milestones, plural, one{1 milestone} other{{milestones} milestones}}'**
+  String teamProjectBoardSummary(int tasks, int milestones);
+
+  /// No description provided for @teamProjectBoardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks yet'**
+  String get teamProjectBoardEmpty;
+
+  /// No description provided for @teamProjectTimelineSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 event} other{{count} events}} · latest {age}'**
+  String teamProjectTimelineSummary(int count, String age);
+
+  /// No description provided for @teamProjectTimelineEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing has happened yet'**
+  String get teamProjectTimelineEmpty;
+
+  /// No description provided for @teamProjectServersSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 server} other{{count} servers}}'**
+  String teamProjectServersSummary(int count);
+
+  /// No description provided for @teamProjectSettingsSummaryParallel.
+  ///
+  /// In en, this message translates to:
+  /// **'Parallel · up to {count} lanes'**
+  String teamProjectSettingsSummaryParallel(int count);
+
+  /// No description provided for @teamProjectSettingsSummarySingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single lane'**
+  String get teamProjectSettingsSummarySingle;
+
+  /// No description provided for @teamProjectMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Project menu'**
+  String get teamProjectMenu;
+
+  /// No description provided for @teamProjectTaskMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Task menu'**
+  String get teamProjectTaskMenu;
+
+  /// No description provided for @teamProjectDecisionBy.
+  ///
+  /// In en, this message translates to:
+  /// **'{who} · {age}'**
+  String teamProjectDecisionBy(String who, String age);
+
+  /// No description provided for @teamProjectYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get teamProjectYou;
+
+  /// No description provided for @teamProjectPlanFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan for milestone {number} · waiting for you'**
+  String teamProjectPlanFor(int number);
+
+  /// No description provided for @teamProjectPlanForProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan · waiting for you'**
+  String get teamProjectPlanForProject;
+
+  /// No description provided for @teamProjectPlanSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{phases, plural, one{1 phase} other{{phases} phases}} · {tasks, plural, one{1 task} other{{tasks} tasks}} · {repos, plural, one{1 repo} other{{repos} repos}}'**
+  String teamProjectPlanSummary(int phases, int tasks, int repos);
+
+  /// No description provided for @teamProjectPlanPhase.
+  ///
+  /// In en, this message translates to:
+  /// **'Phase {number} · {title}'**
+  String teamProjectPlanPhase(int number, String title);
+
+  /// No description provided for @teamProjectPlanReviewPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'review point'**
+  String get teamProjectPlanReviewPoint;
+
+  /// No description provided for @teamProjectPlanRepo.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} repo'**
+  String teamProjectPlanRepo(String name);
+
+  /// No description provided for @teamProjectPlanAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'after {number}'**
+  String teamProjectPlanAfter(int number);
+
+  /// No description provided for @teamProjectPlanCriteria.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 criterion} other{{count} criteria}}'**
+  String teamProjectPlanCriteria(int count);
+
+  /// No description provided for @teamProjectPlanWho.
+  ///
+  /// In en, this message translates to:
+  /// **'{role} · {server}'**
+  String teamProjectPlanWho(String role, String server);
+
+  /// No description provided for @teamProjectPlanMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{… 1 more task} other{… {count} more tasks}}'**
+  String teamProjectPlanMore(int count);
+
+  /// No description provided for @teamProjectPlanEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit plan'**
+  String get teamProjectPlanEdit;
+
+  /// No description provided for @teamProjectPlanAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask to change'**
+  String get teamProjectPlanAsk;
+
+  /// No description provided for @teamProjectPromoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Promote dev → main'**
+  String get teamProjectPromoteTitle;
+
+  /// No description provided for @teamProjectPromoteStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'{repo} repo · main is protected. Only you can promote.'**
+  String teamProjectPromoteStatus(String repo);
+
+  /// No description provided for @teamProjectPromoteMilestone.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone {number} · {title}'**
+  String teamProjectPromoteMilestone(int number, String title);
+
+  /// No description provided for @teamProjectPromoteMerged.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} tasks merged'**
+  String teamProjectPromoteMerged(int done, int total);
+
+  /// No description provided for @teamProjectPromoteDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 day} other{{count} days}}'**
+  String teamProjectPromoteDays(int count);
+
+  /// No description provided for @teamProjectPromoteChecks.
+  ///
+  /// In en, this message translates to:
+  /// **'Checks after merge'**
+  String get teamProjectPromoteChecks;
+
+  /// No description provided for @teamProjectPromoteChecksPassed.
+  ///
+  /// In en, this message translates to:
+  /// **'Every check passed after the last merge'**
+  String get teamProjectPromoteChecksPassed;
+
+  /// No description provided for @teamProjectPromoteReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get teamProjectPromoteReview;
+
+  /// No description provided for @teamProjectPromoteAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'You accepted milestone {number}'**
+  String teamProjectPromoteAccepted(int number);
+
+  /// No description provided for @teamProjectPromoteNoReview.
+  ///
+  /// In en, this message translates to:
+  /// **'No review was needed for this work'**
+  String get teamProjectPromoteNoReview;
+
+  /// No description provided for @teamProjectPromoteChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'{commits, plural, one{1 commit} other{{commits} commits}}'**
+  String teamProjectPromoteChanges(int commits);
+
+  /// No description provided for @teamProjectPromoteFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{files, plural, one{1 file} other{{files} files}}'**
+  String teamProjectPromoteFiles(int files);
+
+  /// No description provided for @teamProjectPromoteSeeChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'See changes'**
+  String get teamProjectPromoteSeeChanges;
+
+  /// No description provided for @teamProjectPromoteNotYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not yet'**
+  String get teamProjectPromoteNotYet;
+
+  /// No description provided for @teamProjectFindingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked by {role} · {summary}'**
+  String teamProjectFindingsTitle(String role, String summary);
+
+  /// No description provided for @teamProjectEditorGoalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What should the team achieve?'**
+  String get teamProjectEditorGoalLabel;
+
+  /// No description provided for @teamProjectEditorWhereRuns.
+  ///
+  /// In en, this message translates to:
+  /// **'Where it runs'**
+  String get teamProjectEditorWhereRuns;
+
+  /// No description provided for @teamProjectEditorMoreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional details'**
+  String get teamProjectEditorMoreOptions;
+
+  /// No description provided for @teamProjectEditorNameHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Leave empty to use the start of the goal.'**
+  String get teamProjectEditorNameHelp;
+
+  /// No description provided for @teamProjectEditorBudgetHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The team pauses when the day reaches it. Leave a total to cap the whole project.'**
+  String get teamProjectEditorBudgetHelp;
+
+  /// No description provided for @teamProjectFindingsCritical.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} critical'**
+  String teamProjectFindingsCritical(int count);
+
+  /// No description provided for @teamProjectFindingsMajor.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} major'**
+  String teamProjectFindingsMajor(int count);
+
+  /// No description provided for @teamProjectFindingsMinor.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} minor'**
+  String teamProjectFindingsMinor(int count);
 }
 
 class _AppLocalizationsDelegate

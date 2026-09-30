@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:opencode_mobile/orchestration/adapters/fixture/project_fixture_gateway.dart';
 import 'package:opencode_mobile/state/team_project_controller.dart';
+import '../../team_project_fixture_test.dart' show MemoryPersistence;
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/projects/team_projects_screen.dart';
 import '../kit/kit_gallery.dart';
@@ -11,72 +13,99 @@ import 'package:opencode_mobile/ui/screens/team/projects/team_project_conversati
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import '../../../tool/capture/census/support/i1_team_core_world.dart';
 
-class _GalleryGateway implements OrchestrationProjectGateway {
-  @override
-  Future<TeamWorkspace> teamWorkspace() async => const TeamWorkspace(
-    servers: [
-      TeamServer(id: 'pc', name: 'Home PC'),
-      TeamServer(id: 'phone', name: 'This phone', phone: true),
-    ],
-    roles: [TeamProjectRole(id: 'frontend', name: 'Frontend')],
-    projects: [
-      TeamProject(
-        id: 'site',
-        name: 'Lumen launch site',
-        status: 'running',
-        settings: TeamProjectSettings(
-          mode: 'parallel',
-          maxLanes: 3,
-          budget: TeamBudget(chosen: true, daily: 10, total: 50),
-        ),
-        specDraft: TeamSpec(
-          goal: 'Launch the marketing site and its docs',
-          constraints: 'Accessible on phones and computers',
-          milestones: [
-            TeamMilestone(id: 'm1', title: 'Design tokens', accepted: true),
-            TeamMilestone(
-              id: 'm2',
-              title: 'Landing and pricing',
-              criteria: ['Readable at twice the text size'],
-            ),
-          ],
-        ),
-        phases: [
-          TeamPhase(
-            id: 'ph',
-            milestoneId: 'm2',
-            title: 'Build and check pages',
-          ),
-        ],
-        tasks: [
-          TeamTask(
-            id: 't',
-            title: 'Pricing table',
-            phaseId: 'ph',
-            roleId: 'frontend',
-            serverId: 'pc',
-            status: 'running',
-            criteria: ['Keyboard can reach each plan'],
-            messages: [
-              TeamMessage(
-                actor: 'frontend',
-                text: 'I am checking the pricing layout at larger text sizes.',
-              ),
+const _sceneTask = {
+  'plan': 't-data',
+  'findings': 't-table',
+  'promote': 't-layout',
+};
+
+const _diff =
+    'diff --git a/lib/a.dart b/lib/a.dart\n--- a/lib/a.dart\n+++ b/lib/a.dart\n'
+    '@@ -1 +1 @@\n-old\n+new\n'
+    'diff --git a/lib/b.dart b/lib/b.dart\n--- a/lib/b.dart\n+++ b/lib/b.dart\n'
+    '@@ -1 +1 @@\n-old\n+new\n';
+
+/// Reshapes the seeded demo project into the state each scene shows.
+TeamWorkspace _scene(TeamWorkspace w, String scene) {
+  final p = w.projects.first;
+  switch (scene) {
+    case 'plan':
+      return w.copyWith(
+        projects: [
+          p.copyWith(
+            status: 'plan',
+            planApproved: false,
+            requests: const [],
+            tasks: [
+              for (final t in p.tasks)
+                p.phases.any((f) => f.id == t.phaseId && f.milestoneId == 'm2')
+                    ? t.copyWith(status: 'queued', changedAt: '')
+                    : t,
             ],
           ),
         ],
-      ),
-    ],
-  );
-  @override
-  Stream<TeamWorkspace> watchTeamWorkspace() => const Stream.empty();
-  @override
-  Future<TeamCommandResult> executeProject(TeamProjectCommand command) async =>
-      const TeamCommandResult(accepted: true);
-  @override
-  Future<void> close() async {}
-  @override
-  Future<void> deleteLocalData() async {}
+      );
+    case 'findings':
+      return w.copyWith(
+        projects: [
+          p.copyWith(
+            tasks: [
+              for (final t in p.tasks)
+                t.id == 't-table'
+                    ? t.copyWith(
+                        status: 'findings',
+                        findings: const [
+                          TeamFinding(
+                            id: 'f1',
+                            severity: 'critical',
+                            text: 'Price rounds down at checkout',
+                            criterion: 'Criterion 2 · totals match the invoice',
+                          ),
+                          TeamFinding(
+                            id: 'f2',
+                            severity: 'major',
+                            text: 'Choice lost on restart',
+                            criterion: 'Criterion 2 · survives restart',
+                          ),
+                          TeamFinding(
+                            id: 'f3',
+                            severity: 'minor',
+                            text: 'No Arabic label on the switch',
+                            criterion: 'Criterion 4 · both languages',
+                          ),
+                        ],
+                      )
+                    : t,
+            ],
+          ),
+        ],
+      );
+    case 'promote':
+      final merged = [
+        for (final t in p.tasks) t.copyWith(status: 'merged', diff: _diff),
+      ];
+      return w.copyWith(
+        projects: [
+          p.copyWith(
+            requests: const [],
+            tasks: merged,
+            phases: [for (final f in p.phases) f.copyWith(accepted: true)],
+            mergeQueue: [
+              for (final t in merged.where((t) => t.repoId == 'site'))
+                TeamMergeItem(
+                  id: 'merge-${t.id}',
+                  taskId: t.id,
+                  repoId: 'site',
+                  status: 'merged',
+                  checksPassed: true,
+                ),
+            ],
+          ),
+        ],
+      );
+    default:
+      return w;
+  }
 }
 
 void main() {
@@ -98,73 +127,11 @@ void main() {
         testWidgets('project $scene ${kitGallerySize(size)} $light', (
           tester,
         ) async {
-          final c = TeamProjectController(_GalleryGateway());
+          final c = TeamProjectController(
+            ProjectFixtureGateway(persistence: MemoryPersistence()),
+          );
           await c.load();
-          final original = c.snapshot!.projects.first;
-          final task = original.tasks.first.copyWith(
-            repoId: 'site',
-            status: scene == 'findings'
-                ? 'findings'
-                : scene == 'promote'
-                ? 'merged'
-                : 'queued',
-            messages: const [],
-            findings: scene == 'findings'
-                ? const [
-                    TeamFinding(
-                      id: 'f1',
-                      severity: 'critical',
-                      text: 'Checkout can lose a draft',
-                      criterion: 'Keep entered values after a failed save',
-                    ),
-                    TeamFinding(
-                      id: 'f2',
-                      severity: 'major',
-                      text: 'Focus skips a plan',
-                      criterion: 'Keyboard can reach every plan',
-                    ),
-                    TeamFinding(
-                      id: 'f3',
-                      severity: 'minor',
-                      text: 'Button text needs clarification',
-                      criterion: 'Actions name their target',
-                    ),
-                  ]
-                : const [],
-          );
-          c.snapshot = c.snapshot!.copyWith(
-            projects: [
-              original.copyWith(
-                status: scene == 'plan' ? 'plan' : 'running',
-                planApproved: scene != 'plan',
-                phases: [
-                  for (final phase in original.phases)
-                    phase.copyWith(accepted: scene == 'promote'),
-                ],
-                mergeQueue: scene == 'promote'
-                    ? const [
-                        TeamMergeItem(
-                          id: 'merge',
-                          taskId: 't',
-                          repoId: 'site',
-                          status: 'merged',
-                          checksPassed: true,
-                        ),
-                      ]
-                    : const [],
-                repos: const [
-                  TeamRepo(
-                    id: 'site',
-                    name: 'Website',
-                    serverId: 'pc',
-                    devCommit: 'demo-dev',
-                    mainCommit: 'demo-main',
-                  ),
-                ],
-                tasks: scene == 'overview' ? original.tasks : [task],
-              ),
-            ],
-          );
+          c.snapshot = _scene(c.snapshot!, scene);
           final legacy = scene == 'before' ? (await teamController()).$1 : null;
           await kitGalleryShot(
             tester,
@@ -186,22 +153,36 @@ void main() {
                       size == const Size(412, 915)
                           ? TeamProjectOverview(
                               controller: c,
-                              projectId: 'site',
+                              projectId: 'demo-project',
                             )
                           : TeamProjectsScreen(controller: c),
                     _ => TeamProjectConversation(
                       controller: c,
-                      projectId: 'site',
-                      taskId: 't',
+                      projectId: 'demo-project',
+                      taskId: _sceneTask[scene]!,
                     ),
                   },
                 );
               }
             },
-            then: scene == 'findings'
+            then: scene == 'new'
                 ? (tester) async {
-                    await tester.ensureVisible(
-                      find.text('Verification findings'),
+                    await tester.enterText(
+                      find.descendant(
+                        of: find.byKey(const ValueKey('goal')),
+                        matching: find.byType(EditableText),
+                      ),
+                      'Launch the marketing site and its docs in Arabic and English.',
+                    );
+                    for (final label in ['Parallel agents', 'Set limits']) {
+                      await tester.ensureVisible(find.text(label));
+                      await tester.pumpAndSettle();
+                      await tester.tap(find.text(label).first);
+                      await tester.pumpAndSettle();
+                    }
+                    await tester.drag(
+                      find.byType(Scrollable).first,
+                      const Offset(0, 4000),
                     );
                     await tester.pumpAndSettle();
                   }
@@ -219,7 +200,9 @@ void main() {
     const Size(1280, 800),
   ]) {
     testWidgets('project large text ${kitGallerySize(size)}', (tester) async {
-      final c = TeamProjectController(_GalleryGateway());
+      final c = TeamProjectController(
+        ProjectFixtureGateway(persistence: MemoryPersistence()),
+      );
       await c.load();
       await kitGalleryShot(
         tester,
