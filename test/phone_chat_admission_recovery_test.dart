@@ -43,14 +43,23 @@ class _StatusApi extends OpenCodeApi {
 }
 
 class _Phone {
-  _Phone(this.connection, this.api, this.connect, this.heartbeats);
+  _Phone(this.tester, this.connection, this.api, this.connect, this.heartbeats);
+  final WidgetTester tester;
   final ConnectionController connection;
   final _StatusApi api;
   final Future<void> connect;
   final List<Map<String, dynamic>> heartbeats;
   Future<Map<String, dynamic>> heartbeat() async {
-    await connection.phoneProjectEngine.pushChatHeartbeat('phone', force: true);
-    return heartbeats.last;
+    // Drain fake-clock producers, then let Dio's response decoding finish on
+    // the real async loop. The polling/renewal timers still use tester.pump.
+    await tester.pump();
+    return (await tester.runAsync(() async {
+      await connection.phoneProjectEngine.pushChatHeartbeat(
+        'phone',
+        force: true,
+      );
+      return heartbeats.last;
+    }))!;
   }
 }
 
@@ -105,7 +114,6 @@ void main() {
   });
 
   Future<_Phone> boot(WidgetTester tester) async {
-    final store = ProfileStore(prefs: await SharedPreferences.getInstance());
     final profile = ServerProfile(
       id: 'phone',
       name: 'Phone',
@@ -116,7 +124,11 @@ void main() {
         url: 'http://127.0.0.1:42761',
       ),
     );
-    await store.upsert(profile);
+    final store = (await tester.runAsync(() async {
+      final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+      await store.upsert(profile);
+      return store;
+    }))!;
     final api = _StatusApi();
     final beats = <Map<String, dynamic>>[];
     final connection = ConnectionController(
@@ -154,15 +166,19 @@ void main() {
     connection.directory = '/root/projects/person';
     api.setLocation(directory: connection.directory);
     connection.status = StreamStatus.connected;
-    await connection.phoneProjectEngine.pushChatHeartbeat('phone', force: true);
-    final phone = _Phone(connection, api, connecting, beats);
+    final phone = _Phone(tester, connection, api, connecting, beats);
+    await phone.heartbeat();
     addTearDown(() async {
+      // Dispose first in the fake-clock zone so all periodic timers stop.
       connection.dispose();
-      if (!api.healthGate.isCompleted) {
-        api.healthGate.complete(Health(healthy: true, version: '1.18.32'));
-      }
-      await connecting;
-      await connection.phoneProjectEngine.close();
+      await tester.pump();
+      await tester.runAsync(() async {
+        if (!api.healthGate.isCompleted) {
+          api.healthGate.complete(Health(healthy: true, version: '1.18.32'));
+        }
+        await connecting;
+        await connection.phoneProjectEngine.close();
+      });
     });
     return phone;
   }
@@ -338,11 +354,15 @@ void main() {
         await release.future;
         return engine.jsonBody(null, 204);
       });
-      final prompt = phone.api.promptAsync(
-        'ses_human',
-        text: 'Help with this project',
-      );
-      await onWire.future;
+      await phone.heartbeat();
+      late final Future<void> prompt;
+      await tester.runAsync(() async {
+        prompt = phone.api.promptAsync(
+          'ses_human',
+          text: 'Help with this project',
+        );
+        await onWire.future;
+      });
       await phone.connection.reconcileBusySessionsForTesting();
       final before = await phone.heartbeat();
       expect(before['known'], isTrue);
@@ -357,7 +377,7 @@ void main() {
         greaterThan(before['sequence'] as int),
       );
       release.complete();
-      await prompt;
+      await tester.runAsync(() => prompt);
     },
   );
 }
