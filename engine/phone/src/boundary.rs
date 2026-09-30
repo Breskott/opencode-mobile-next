@@ -41,13 +41,125 @@ struct PathBeneath {
 
 pub fn kernel_abi() -> Result<i32, BoundaryError> {
     if !cfg!(any(target_arch = "aarch64", target_arch = "x86_64")) {
-        return Err(BoundaryError("unsupported_architecture"));
+        return Err(BoundaryError("boundary_unsupported"));
     }
-    let abi = unsafe { libc::syscall(CREATE_RULESET, std::ptr::null::<u8>(), 0, 1) };
+    // Android's inherited seccomp policy may kill the process instead of
+    // returning ENOSYS/EPERM. Query AND exercise all three Landlock syscalls in
+    // a disposable child before attempting any of them in the launcher. The
+    // child uses only async-signal-safe libc calls: this also works when the
+    // caller has other Rust/runtime threads holding allocator locks.
+    let mut pipe = [-1; 2];
+    if unsafe { libc::pipe2(pipe.as_mut_ptr(), libc::O_CLOEXEC | libc::O_NONBLOCK) } != 0 {
+        return Err(BoundaryError("boundary_unsupported"));
+    }
+    let pid = unsafe { libc::fork() };
+    if pid == 0 {
+        unsafe {
+            libc::close(pipe[0]);
+            // A deliberately disposable unsupported-kernel probe must not
+            // generate a core dump containing inherited app/engine memory.
+            let limit = libc::rlimit {
+                rlim_cur: 0,
+                rlim_max: 0,
+            };
+            if libc::setrlimit(libc::RLIMIT_CORE, &limit) != 0 {
+                libc::_exit(1);
+            }
+            let abi = probe_landlock_child();
+            let bytes = abi.to_ne_bytes();
+            let written = libc::write(pipe[1], bytes.as_ptr().cast(), bytes.len());
+            libc::_exit(if written == bytes.len() as isize {
+                0
+            } else {
+                1
+            });
+        }
+    }
+    unsafe { libc::close(pipe[1]) };
+    if pid < 0 {
+        unsafe { libc::close(pipe[0]) };
+        return Err(BoundaryError("boundary_unsupported"));
+    }
+    let completed = wait_probe(pid, std::time::Duration::from_secs(2));
+    let mut bytes = [0_u8; 4];
+    let count = unsafe { libc::read(pipe[0], bytes.as_mut_ptr().cast(), bytes.len()) };
+    unsafe { libc::close(pipe[0]) };
+    if !completed || count != bytes.len() as isize {
+        return Err(BoundaryError("boundary_unsupported"));
+    }
+    let abi = i32::from_ne_bytes(bytes);
     if abi < 6 {
-        return Err(BoundaryError("landlock_abi6_required"));
+        return Err(BoundaryError("boundary_unsupported"));
     }
-    Ok(abi as i32)
+    Ok(abi)
+}
+
+// No allocation, locks, filesystem helpers or Rust destructors after fork.
+unsafe fn probe_landlock_child() -> i32 {
+    let abi = libc::syscall(CREATE_RULESET, std::ptr::null::<u8>(), 0, 1);
+    if abi < 6 {
+        return 0;
+    }
+    let attr = Ruleset {
+        handled_access_fs: FS_ALL,
+        handled_access_net: 0,
+        scoped: SCOPE_SIGNAL_AND_ABSTRACT_SOCKET,
+    };
+    let ruleset = libc::syscall(CREATE_RULESET, &attr, std::mem::size_of::<Ruleset>(), 0) as i32;
+    if ruleset < 0 {
+        return 0;
+    }
+    let root = libc::open(c"/".as_ptr(), libc::O_PATH | libc::O_CLOEXEC);
+    if root < 0 {
+        libc::close(ruleset);
+        return 0;
+    }
+    // This temporary child grants itself read-only access to /, then exits;
+    // none of its policy state can grant authority to the launcher.
+    let beneath = PathBeneath {
+        allowed_access: FS_READ,
+        parent_fd: root,
+    };
+    let added = libc::syscall(ADD_RULE, ruleset, 1, &beneath, 0);
+    libc::close(root);
+    let restricted = added == 0
+        && libc::prctl(libc::PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == 0
+        && libc::syscall(RESTRICT_SELF, ruleset, 0) == 0;
+    libc::close(ruleset);
+    if restricted {
+        abi as i32
+    } else {
+        0
+    }
+}
+
+fn wait_probe(pid: libc::pid_t, timeout: std::time::Duration) -> bool {
+    let deadline = std::time::Instant::now() + timeout;
+    loop {
+        let mut status = 0;
+        let waited = unsafe { libc::waitpid(pid, &mut status, libc::WNOHANG) };
+        if waited == pid {
+            return libc::WIFEXITED(status) && libc::WEXITSTATUS(status) == 0;
+        }
+        if waited < 0 && std::io::Error::last_os_error().raw_os_error() != Some(libc::EINTR) {
+            return false;
+        }
+        if std::time::Instant::now() >= deadline {
+            // Exact owned child only. Always reap it; a stopped or hung probe
+            // must neither block startup indefinitely nor leave a zombie.
+            unsafe { libc::kill(pid, libc::SIGKILL) };
+            loop {
+                let waited = unsafe { libc::waitpid(pid, &mut status, 0) };
+                if waited >= 0
+                    || std::io::Error::last_os_error().raw_os_error() != Some(libc::EINTR)
+                {
+                    break;
+                }
+            }
+            return false;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(2));
+    }
 }
 
 /// Called by the daemon before secrets or worker-controlled input is read.
@@ -290,4 +402,35 @@ pub fn close_inherited_descriptors() -> Result<(), BoundaryError> {
         unsafe { libc::close(fd) };
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod kernel_probe_tests {
+    #[test]
+    fn stopped_probe_is_killed_and_reaped_at_the_deadline() {
+        let pid = unsafe { libc::fork() };
+        assert!(pid >= 0);
+        if pid == 0 {
+            unsafe {
+                // Stop forever: even a stopped child must not strand startup.
+                libc::raise(libc::SIGSTOP);
+                libc::_exit(1);
+            }
+        }
+        let start = std::time::Instant::now();
+        assert!(!super::wait_probe(
+            pid,
+            std::time::Duration::from_millis(20)
+        ));
+        assert!(start.elapsed() < std::time::Duration::from_secs(1));
+        let mut status = 0;
+        assert_eq!(
+            unsafe { libc::waitpid(pid, &mut status, libc::WNOHANG) },
+            -1
+        );
+        assert_eq!(
+            std::io::Error::last_os_error().raw_os_error(),
+            Some(libc::ECHILD)
+        );
+    }
 }

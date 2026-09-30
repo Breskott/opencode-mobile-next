@@ -45,6 +45,7 @@ class BuiltinTeam {
     Future<String?> Function(Uri url)? httpGet,
     this.pollInterval = const Duration(seconds: 1),
     this.agentsWait = const Duration(seconds: 45),
+    this.recoveryStoreTimeout = const Duration(seconds: 60),
     BuiltinTeamStartProgress? progress,
   }) : _linux = linux ?? BuiltinLinux(),
        _get = httpGet ?? _loopbackGet,
@@ -57,6 +58,10 @@ class BuiltinTeam {
   /// How long the last start step waits for the agents to be listed before
   /// it lets go (an empty list is not a failure).
   final Duration agentsWait;
+
+  /// Background recovery observes the legacy store for a bounded minute.
+  /// A slow database remains unavailable; an explicit start can wait longer.
+  final Duration recoveryStoreTimeout;
   final BuiltinTeamStartProgress _progress;
 
   /// Where the team is in coming up, for the AI Team page: the same steps
@@ -796,10 +801,13 @@ exit 0
     final gen = _progress.begin();
     try {
       await _manageScript('enable', enableScript);
+      _requireCurrent(gen, BuiltinTeamStage.starting);
       onStage?.call(BuiltinTeamStage.starting);
       _progress.enter(gen, BuiltinTeamStartStep.service);
       final linux = await _linux.status();
+      _requireCurrent(gen, BuiltinTeamStage.starting);
       if (!linux.serviceRunning(serviceName) || !await supervisorAnswers()) {
+        _requireCurrent(gen, BuiltinTeamStage.starting);
         await _linux.startService(
           serviceName,
           serviceScript,
@@ -815,11 +823,23 @@ exit 0
         gen: gen,
       );
       _progress.enter(gen, BuiltinTeamStartStep.store);
-      await _script(
-        BuiltinTeamStage.starting,
-        registerScript,
-        const Duration(minutes: 2),
-      );
+      _requireCurrent(gen, BuiltinTeamStage.starting);
+      // A live healthy city is already registered. Re-registering invokes a
+      // blocking CLI under proot even though the authoritative health is ready.
+      if (await _boundedProbe(
+            cityAnswers,
+            DateTime.now().add(const Duration(seconds: 5)),
+            gen,
+          ) !=
+          true) {
+        _requireCurrent(gen, BuiltinTeamStage.starting);
+        await _script(
+          BuiltinTeamStage.starting,
+          registerScript,
+          const Duration(minutes: 2),
+        );
+      }
+      _requireCurrent(gen, BuiltinTeamStage.starting);
       onStage?.call(BuiltinTeamStage.waiting);
       await _waitFor(
         BuiltinTeamStage.waiting,
@@ -884,7 +904,7 @@ exit 0
       await _waitFor(
         BuiltinTeamStage.waiting,
         cityAnswers,
-        const Duration(minutes: 6),
+        recoveryStoreTimeout,
         gen: gen,
       );
       _progress.enter(gen, BuiltinTeamStartStep.agents);
@@ -897,7 +917,10 @@ exit 0
 
   /// Temporarily stops the service. Recovery may restart it; use [turnOff]
   /// for a durable user choice.
-  Future<void> stop() => _exclusive(() => _linux.stopService(serviceName));
+  Future<void> stop() {
+    _progress.cancel();
+    return _exclusive(() => _linux.stopService(serviceName));
+  }
 
   /// Whether automatic recovery is disabled. Errors fail closed: callers must
   /// not interpret a failed marker read as permission to start the team.
@@ -921,7 +944,10 @@ exit 0
   /// The UI also clears each built-in profile's orchestration config through
   /// ProfileStore.upsert, then calls ConnectionController.syncOrchestration.
   /// The runtime marker prevents stale profile copies from restarting it.
-  Future<void> turnOff() => _exclusive(_turnOff);
+  Future<void> turnOff() {
+    _progress.cancel();
+    return _exclusive(_turnOff);
+  }
 
   Future<void> _turnOff() async {
     await _manageScript('disable', disableScript);
@@ -939,10 +965,13 @@ exit 0
   /// Projects survive. Team tasks/settings and phone-side bare origins under
   /// /root/aiteam do not; projects may retain an origin URL into that folder.
   /// No files are removed when disabling or stopping the service fails.
-  Future<void> remove() => _exclusive(() async {
-    await _turnOff();
-    await _manageScript('remove', AiTeamScripts.removeScript);
-  });
+  Future<void> remove() {
+    _progress.cancel();
+    return _exclusive(() async {
+      await _turnOff();
+      await _manageScript('remove', AiTeamScripts.removeScript);
+    });
+  }
 
   Future<void> _manageScript(String operation, String script) async {
     try {
@@ -1029,18 +1058,82 @@ exit 0
   /// list that stays empty is let go, not a failure; a stopped service is.
   Future<void> _waitAgents(int gen, Duration timeout) async {
     final deadline = DateTime.now().add(timeout);
-    while (!await agentsListed()) {
-      if (!_progress.isCurrent(gen)) return;
-      if (!(await _linux.status()).serviceRunning(serviceName)) {
+    while (true) {
+      _requireCurrent(gen, BuiltinTeamStage.waiting);
+      if (!DateTime.now().isBefore(deadline)) return;
+      final listed = await _boundedProbe(agentsListed, deadline, gen);
+      _requireCurrent(gen, BuiltinTeamStage.waiting);
+      if (listed == true) return;
+      // The optional agent list may stay empty, including at its deadline.
+      if (listed == null || !DateTime.now().isBefore(deadline)) return;
+      final running = await _boundedProbe(
+        () async => (await _linux.status()).serviceRunning(serviceName),
+        deadline,
+        gen,
+      );
+      _requireCurrent(gen, BuiltinTeamStage.waiting);
+      if (running == false) {
         throw BuiltinTeamException(
           BuiltinTeamStage.waiting,
           await _logTail(),
           exited: true,
         );
       }
-      if (DateTime.now().isAfter(deadline)) return;
       _progress.tick(gen);
-      await Future<void>.delayed(pollInterval);
+      await _boundedProbe(
+        () async {
+          await Future<void>.delayed(pollInterval);
+          return true;
+        },
+        deadline,
+        gen,
+      );
+    }
+  }
+
+  void _requireCurrent(int? gen, BuiltinTeamStage stage) {
+    if (gen != null && !_progress.isCurrent(gen)) {
+      throw BuiltinTeamException(stage, 'Startup canceled.', canceled: true);
+    }
+  }
+
+  /// Bound every awaited probe, not just the delay between probes. A hanging
+  /// health request must not outlive recovery, and Stop cancels observation
+  /// immediately without claiming the store became ready.
+  Future<bool?> _boundedProbe(
+    Future<bool> Function() probe,
+    DateTime deadline,
+    int? gen,
+  ) async {
+    final remaining = deadline.difference(DateTime.now());
+    if (remaining <= Duration.zero) return null;
+    final result = Completer<bool?>();
+    final timer = Timer(remaining, () {
+      if (!result.isCompleted) result.complete(null);
+    });
+    void changed() {
+      if (gen != null && !_progress.isCurrent(gen) && !result.isCompleted) {
+        result.complete(null);
+      }
+    }
+
+    if (gen != null) _progress.addListener(changed);
+    try {
+      changed();
+      if (!result.isCompleted) {
+        Future<bool>.sync(probe).then(
+          (answer) {
+            if (!result.isCompleted) result.complete(answer);
+          },
+          onError: (Object error, StackTrace stack) {
+            if (!result.isCompleted) result.completeError(error, stack);
+          },
+        );
+      }
+      return await result.future;
+    } finally {
+      timer.cancel();
+      if (gen != null) _progress.removeListener(changed);
     }
   }
 
@@ -1051,19 +1144,36 @@ exit 0
     int? gen,
   }) async {
     final deadline = DateTime.now().add(timeout);
-    while (!await ok()) {
-      if (gen != null) {
-        if (!_progress.isCurrent(gen)) return;
-        _progress.tick(gen);
+    while (true) {
+      _requireCurrent(gen, stage);
+      final answered = await _boundedProbe(ok, deadline, gen);
+      _requireCurrent(gen, stage);
+      if (answered == true) return;
+      if (!DateTime.now().isBefore(deadline)) {
+        throw BuiltinTeamException(
+          stage,
+          'The team did not answer before the startup deadline.',
+          timedOut: true,
+        );
       }
-      final running = (await _linux.status()).serviceRunning(serviceName);
-      if (!running) {
+      final running = await _boundedProbe(
+        () async => (await _linux.status()).serviceRunning(serviceName),
+        deadline,
+        gen,
+      );
+      _requireCurrent(gen, stage);
+      if (running == false && DateTime.now().isBefore(deadline)) {
         throw BuiltinTeamException(stage, await _logTail(), exited: true);
       }
-      if (DateTime.now().isAfter(deadline)) {
-        throw BuiltinTeamException(stage, await _logTail(), timedOut: true);
-      }
-      await Future<void>.delayed(pollInterval);
+      if (gen != null) _progress.tick(gen);
+      await _boundedProbe(
+        () async {
+          await Future<void>.delayed(pollInterval);
+          return true;
+        },
+        deadline,
+        gen,
+      );
     }
   }
 
@@ -1330,6 +1440,7 @@ class BuiltinTeamException implements Exception {
     this.detail, {
     this.exited = false,
     this.timedOut = false,
+    this.canceled = false,
   });
 
   final BuiltinTeamStage stage;
@@ -1342,6 +1453,9 @@ class BuiltinTeamException implements Exception {
 
   /// It did not answer in time.
   final bool timedOut;
+
+  /// Stop, turn-off or removal superseded this start before it became ready.
+  final bool canceled;
 
   @override
   String toString() => 'AI Team (${stage.name}): $detail';
