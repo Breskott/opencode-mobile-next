@@ -297,16 +297,69 @@ async fn health(State(e): State<Shared>) -> Json<Value> {
         "capabilities":{"execution":execution_enabled(&e),"boundary":verified_tier.is_some(),"boundaryTier":tier,
             "oc1Verified":protocol["pinnedVersion"] == true && protocol["openapiVerified"] == true,"oc2":false},
         "commandActions":command_actions(&e),"boundaryReason":if verified_tier.is_some() {"boundary_attested"} else if e.boundary.is_some() {"attestation_rejected"} else {e.config.boundary.reason.as_str()},
-        "restartRequired":e.config.boundary.restart_required,
+        "readinessReason":readiness_reason(&e),"restartRequired":e.config.boundary.restart_required,
         "admission":admission,"chatAuthority":"phoneAppAndKnownDirectories","globalAdmissionAuthority":false,
         "boundaryGeneration":e.boundary.as_ref().map(|b|b.pins.generation.as_str()),"eventWindow":e.store.lock().ok().and_then(|store|store.event_window().ok()),"chargingTelemetry":false,"protocol":protocol}),
     )
 }
+fn protocol_driver_ready(protocol: &Value) -> bool {
+    protocol["pinnedVersion"] == true
+        && protocol["openapiVerified"] == true
+        && protocol["capabilities"]["executionDriver"] == true
+}
+fn protocol_driver_reason(protocol: &Value) -> &str {
+    if protocol_driver_ready(protocol) {
+        ""
+    } else {
+        protocol["error"].as_str().unwrap_or("protocolUnverified")
+    }
+}
+fn readiness_reason(e: &Engine) -> String {
+    if boundary_tier(e).is_none() {
+        return "boundaryUnavailable".into();
+    }
+    e.protocol
+        .lock()
+        .map(|p| protocol_driver_reason(&p).to_owned())
+        .unwrap_or_else(|_| "protocolUnverified".into())
+}
+fn protocol_retry_delay(protocol: &Value) -> Duration {
+    Duration::from_secs(if protocol_driver_ready(protocol) {
+        30
+    } else {
+        2
+    })
+}
 async fn workspace(State(e): State<Shared>) -> Result<Json<Value>, ApiError> {
-    let s = e.store.lock().map_err(|_| internal("storeUnavailable"))?;
-    Ok(Json(
-        s.workspace().map_err(|_| internal("storeUnavailable"))?,
-    ))
+    let mut workspace = e
+        .store
+        .lock()
+        .map_err(|_| internal("storeUnavailable"))?
+        .workspace()
+        .map_err(|_| internal("storeUnavailable"))?;
+    let protocol = e.protocol.lock().map(|p| p.clone()).unwrap_or(json!({}));
+    let ledger = e.chat.read().await;
+    let admission = ledger.admission(
+        crate::admission::now_ms(),
+        crate::admission::app_alive(&e),
+        &team_sessions(&e),
+    );
+    if let Some(servers) = workspace["servers"].as_array_mut() {
+        for server in servers.iter_mut().filter(|s| s["id"] == "phone") {
+            server["online"] = json!(protocol_driver_ready(&protocol));
+            server["chatWaiting"] = json!(admission != crate::chat::ChatAdmission::Idle);
+            server["reason"] = json!(if !protocol_driver_ready(&protocol) {
+                protocol_driver_reason(&protocol)
+            } else {
+                match admission {
+                    crate::chat::ChatAdmission::Busy => "chatBusy",
+                    crate::chat::ChatAdmission::Idle => "",
+                    _ => "chatStatusUnknown",
+                }
+            });
+        }
+    }
+    Ok(Json(workspace))
 }
 #[derive(Deserialize)]
 struct EventQuery {
@@ -617,13 +670,12 @@ async fn reconcile(e: Shared) {
             }
         }
         if tokio::time::Instant::now() >= next_verify {
-            let protocol = e.server.verify().await.unwrap_or(
-                json!({"capabilities":{"execution":false},"blockers":["protocolUnverified"]}),
-            );
+            let protocol = e.server.verify().await.unwrap_or_else(|error| json!({"capabilities":{"executionDriver":false,"execution":false},"error":error.code(),"blockers":[error.code()]}));
+            let retry_delay = protocol_retry_delay(&protocol);
             if let Ok(mut value) = e.protocol.lock() {
                 *value = protocol;
             }
-            next_verify = tokio::time::Instant::now() + Duration::from_secs(30);
+            next_verify = tokio::time::Instant::now() + retry_delay;
         }
         crate::admission::reconcile_busy(&e).await;
         let jobs = e
@@ -641,12 +693,13 @@ async fn reconcile(e: Shared) {
                 continue;
             }
             if !execution_enabled(&e) {
-                if job["reason"] != "Protected execution is not verified" {
+                let reason = readiness_reason(&e);
+                if job["reason"] != reason {
                     if let Ok(s) = e.store.lock() {
                         let _ = s.update_job(
                             &id,
-                            "queued",
-                            &json!({"reason":"Protected execution is not verified"}),
+                            job["stage"].as_str().unwrap_or("queued"),
+                            &json!({"reason":reason}),
                         );
                     }
                 }
@@ -839,6 +892,10 @@ async fn admitted_prompt(
     checkpoint_role: &str,
     read_only: bool,
 ) -> Result<(), &'static str> {
+    crate::opencode::validate_model(model).map_err(|error| error.code())?;
+    if instructions.is_empty() || prompt.is_empty() {
+        return Err("invalid_role");
+    }
     loop {
         let ledger = e.chat.read().await;
         // Hold through actual HTTP dispatch, never while waiting for the person.
@@ -876,6 +933,9 @@ async fn admitted_prompt(
                             return Err("jobNotActive");
                         }
                         return Ok(());
+                    }
+                    Ok(Err(error)) if error.code() != "transport_uncertain" => {
+                        return Err(error.code())
                     }
                     _ => return Err("promptUncertain"),
                 }
@@ -972,6 +1032,19 @@ async fn run_job(e: Shared, job: Value) -> Result<(), &'static str> {
 }
 async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     let id = job["id"].as_str().ok_or("jobInvalid")?;
+    crate::opencode::validate_model(job["model"].as_str().ok_or("invalid_model")?)
+        .map_err(|error| error.code())?;
+    if job["instructions"].as_str().is_none_or(str::is_empty) {
+        return Err("invalid_role");
+    }
+    if job["kind"] != "planner" {
+        crate::opencode::validate_model(
+            job["checkerRole"]["model"]
+                .as_str()
+                .ok_or("checkerRoleMissing")?,
+        )
+        .map_err(|error| error.code())?;
+    }
     let task = job["taskId"]
         .as_str()
         .filter(|s| !s.is_empty())
@@ -1030,7 +1103,7 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     let request = if planner {
         planner_request(job)
     } else {
-        format!("Implement this task on branch {}. Keep edits in this isolated clone. Commit completed changes to that task branch, without editing main or dev. Acceptance criteria: {}. Task: {}",work["branch"],job["criteria"],job["title"])
+        worker_request(job, work["branch"].as_str().ok_or("repoInvalid")?)
     };
     admitted_prompt(
         e,
@@ -1092,7 +1165,7 @@ async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &
         let _ = e.server.abort(&directory, &checker).await;
         return Err("jobChanged");
     }
-    let check = format!("Read-only verification. Inspect committed task changes against every criterion {}. Return only JSON {{findings:[{{id,severity,criterion,location,text,status}}],criterionResults:[{{criterion,status}}]}}. status must be met/unmet/notApplicable, findings severity critical/major/minor. Do not modify files.",job["criteria"]);
+    let check = checker_request(job);
     stage_admitted(e, job).await?;
     admitted_prompt(
         e,
@@ -1412,6 +1485,68 @@ pub fn structured_output(value: &Value) -> Result<Value, &'static str> {
     }
     strict_json(body.trim())
 }
+/// Require durable evidence that a read-only checker can inspect without
+/// executing commands or inferring that a proposed test actually ran.
+pub fn worker_request(job: &Value, branch: &str) -> String {
+    format!(
+        "Implement this task on branch {branch}. Keep edits in this isolated clone. \
+         Commit completed changes to that task branch, without editing main or dev. \
+         Run the acceptance checks that are feasible and authorized for this task. \
+         Record the actual executed acceptance checks in .aiteam-verification.md and \
+         commit that task-verification report with your changes. For each original \
+         criterion, record the exact commands, working directory, exit codes, and \
+         observed results/output, or the concrete committed files inspected for a \
+         static criterion. Distinguish passed, failed, skipped, and not-run checks; \
+         explain any unavailable check. Never fabricate evidence, command execution, \
+         results, or a passing check. A proposed command is not an executed check. \
+         Do not include credentials or secrets in the report. The checker is read-only \
+         and cannot execute your checks; it needs this committed evidence. \
+         Acceptance criteria: {}. Task: {}",
+        job["criteria"], job["title"]
+    )
+}
+
+/// Keep criterion verdicts distinct from unresolved defects. Successful
+/// evidence must not become a finding: every finding intentionally blocks merge.
+pub fn checker_request(job: &Value) -> String {
+    let passed_example = json!({
+        "findings": [],
+        "criterionResults": [{"criterion": "<exact original criterion>", "status": "met"}]
+    });
+    let defect_example = json!({
+        "findings": [{"id": "finding-1", "severity": "major",
+            "criterion": "<exact original criterion>",
+            "location": ".aiteam-verification.md",
+            "text": "Required executed-check evidence is missing.", "status": "open"}],
+        "criterionResults": [{"criterion": "<exact original criterion>", "status": "unmet"}]
+    });
+    format!(
+        "Read-only verification. Inspect committed task changes and the committed \
+         .aiteam-verification.md task-verification report against every original \
+         acceptance criterion: {}. Use only read, glob, and grep tools. Do not modify \
+         files or run commands, tests, shell tools, or subagents. For a criterion \
+         requiring executed checks, establish what actually ran from the committed \
+         evidence, including the exact command, exit code, and observed result. \
+         Do not claim unexecuted checks passed or fabricate evidence. Missing, skipped, \
+         failed, or inconclusive required executed-check evidence means status unmet. \
+         For static criteria, inspect the committed files themselves. \
+         Return only one JSON object with findings and criterionResults arrays. \
+         criterionResults must contain exactly one entry for each original criterion, \
+         copying its criterion string exactly without rewriting, combining, or omitting it. \
+         Only criterionResults.status may be met, unmet, or notApplicable. \
+         findings contains actual unresolved defects only: each finding has id, severity \
+         (critical/major/minor), criterion (the exact affected original string), location, \
+         text, and status open. Do not include successful observations or successful \
+         acceptance evidence in findings. When all criteria pass and no defects remain, \
+         return findings as an empty array. Do not waive findings, declare them fixed, \
+         or use notApplicable to claim acceptance; any finding or any result other than \
+         met blocks merge. These are illustrative JSON examples, not your verdict; \
+         replace the placeholder with original criteria and assess each one: \
+         all-pass shape: {passed_example}; unresolved-defect shape: {defect_example}.",
+        job["criteria"]
+    )
+}
+
 pub fn planner_request(job: &Value) -> String {
     let schema = json!({"type":"object","required":["spec","phases","tasks"],"properties":{
         "spec":{"type":"object"},
@@ -1880,6 +2015,46 @@ mod tests {
         assert!(!command_actions(&e).contains(&"createProject"));
         assert!(!command_actions(&e).contains(&"promote"));
     }
+    #[test]
+    fn failed_protocol_probes_retry_before_the_setup_readiness_window() {
+        let failed =
+            json!({"error":"transport_unavailable","capabilities":{"executionDriver":false}});
+        assert_eq!(protocol_retry_delay(&failed), Duration::from_secs(2));
+        assert_eq!(protocol_driver_reason(&failed), "transport_unavailable");
+        let healthy = json!({"pinnedVersion":true,"openapiVerified":true,"capabilities":{"executionDriver":true}});
+        assert_eq!(protocol_retry_delay(&healthy), Duration::from_secs(30));
+        assert_eq!(protocol_driver_reason(&healthy), "");
+    }
+    #[tokio::test]
+    async fn workspace_reports_live_server_state_and_preserves_command_revision() {
+        let temp = tempfile::tempdir().unwrap();
+        let e = attested_fixture(temp.path(), "proot");
+        let before = e.store.lock().unwrap().workspace().unwrap();
+        let observed = workspace(State(e.clone())).await.unwrap().0;
+        assert_eq!(observed["servers"][0]["online"], true);
+        assert_eq!(e.store.lock().unwrap().workspace().unwrap(), before);
+        *e.protocol.lock().unwrap() =
+            json!({"error":"authentication_failed","capabilities":{"executionDriver":false}});
+        let observed = workspace(State(e.clone())).await.unwrap().0;
+        assert_eq!(observed["servers"][0]["online"], false);
+        assert_eq!(observed["servers"][0]["reason"], "authentication_failed");
+        assert_eq!(
+            health(State(e)).await.0["readinessReason"],
+            "authentication_failed"
+        );
+    }
+    #[tokio::test]
+    async fn invalid_model_is_local_before_any_worker_or_dispatch_checkpoint() {
+        let temp = tempfile::tempdir().unwrap();
+        let e = fixture(temp.path());
+        let job = json!({"id":"job-invalid-model","kind":"planner","model":"not-a-model-identity","instructions":"Plan only","repoId":"repo"});
+        assert_eq!(task_pipeline(&e, &job).await, Err("invalid_model"));
+        assert!(fs::read_dir(&e.config.worker_root)
+            .unwrap()
+            .next()
+            .is_none());
+        assert!(e.store.lock().unwrap().jobs().unwrap().is_empty());
+    }
     #[tokio::test]
     async fn health_reports_only_live_signed_boundary_tier_at_both_locations() {
         for tier in ["landlock", "proot"] {
@@ -2062,6 +2237,86 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         assert!(e.store.lock().unwrap().workspace().is_err());
     }
+    #[test]
+    fn checker_prompt_separates_criterion_status_from_defects_and_requires_evidence() {
+        let job = json!({"criteria":["Run cargo test --locked", "Keep README unchanged"]});
+        let request = checker_request(&job);
+        assert!(request.contains(&job["criteria"].to_string()));
+        for required in [
+            "exactly one entry for each original criterion",
+            "copying its criterion string exactly",
+            "Only criterionResults.status may be met, unmet, or notApplicable",
+            "actual unresolved defects only",
+            "status open",
+            "Do not include successful observations",
+            "findings as an empty array",
+            "Use only read, glob, and grep tools",
+            "Do not modify files or run commands",
+            "Do not claim unexecuted checks passed or fabricate evidence",
+            "required executed-check evidence means status unmet",
+            "Do not waive findings",
+            "any finding or any result other than met blocks merge",
+        ] {
+            assert!(
+                request.contains(required),
+                "missing checker policy: {required}"
+            );
+        }
+        let examples = request.split_once("all-pass shape: ").unwrap().1;
+        let (passed, defect) = examples.split_once("; unresolved-defect shape: ").unwrap();
+        let passed: Value = serde_json::from_str(passed).unwrap();
+        let defect: Value = serde_json::from_str(defect.strip_suffix('.').unwrap()).unwrap();
+        let criteria = json!(["<exact original criterion>"]);
+        assert_eq!(passed["findings"], json!([]));
+        assert_eq!(passed["criterionResults"][0]["status"], "met");
+        assert!(validate_check(&passed, &criteria).unwrap());
+        assert_eq!(defect["findings"][0]["status"], "open");
+        assert_eq!(defect["criterionResults"][0]["status"], "unmet");
+        assert!(!validate_check(&defect, &criteria).unwrap());
+    }
+
+    #[test]
+    fn worker_prompt_requires_committed_actual_acceptance_check_evidence() {
+        let job = json!({"criteria":["Run the smoke test"],"title":"Add greeting"});
+        let request = worker_request(&job, "task/greeting");
+        for required in [
+            "branch task/greeting",
+            "without editing main or dev",
+            ".aiteam-verification.md",
+            "commit that task-verification report with your changes",
+            "actual executed acceptance checks",
+            "exact commands, working directory, exit codes",
+            "observed results/output",
+            "passed, failed, skipped, and not-run checks",
+            "Never fabricate evidence",
+            "A proposed command is not an executed check",
+            "Do not include credentials or secrets",
+            "checker is read-only and cannot execute your checks",
+        ] {
+            assert!(
+                request.contains(required),
+                "missing worker policy: {required}"
+            );
+        }
+        assert!(request.contains(&job["criteria"].to_string()));
+        assert!(request.contains(&job["title"].to_string()));
+    }
+
+    #[test]
+    fn successful_observation_mislabeled_as_a_finding_still_blocks_merge() {
+        let value = json!({
+            "findings":[{"criterion":"Run checks", "severity":"minor",
+                "text":"All checks passed", "status":"met"}],
+            "criterionResults":[{"criterion":"Run checks", "status":"met"}]
+        });
+        assert!(!validate_check(&value, &json!(["Run checks"])).unwrap());
+        let no_findings = json!({
+            "findings":[],
+            "criterionResults":[{"criterion":"Run checks", "status":"notApplicable"}]
+        });
+        assert!(!validate_check(&no_findings, &json!(["Run checks"])).unwrap());
+    }
+
     #[test]
     fn checker_cannot_waive_findings_or_invent_token_totals() {
         let check = json!({"criterionResults":[{"criterion":"safe","status":"met"}],"findings":[{"criterion":"safe","text":"Unresolved","severity":"major","status":"ignored"}]});

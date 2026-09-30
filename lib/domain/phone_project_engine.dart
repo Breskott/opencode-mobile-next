@@ -20,17 +20,27 @@ class PhoneEngineHealth {
     required this.commandActions,
     this.admission = 'unknown',
     this.chatAuthority = 'unknown',
-    this.boundaryReason = '',
+    String boundaryReason = '',
+    this.readinessReason = '',
     this.boundaryTier = 'none',
     this.restartRequired = false,
     this.globalAdmissionAuthority = false,
-  });
+  }) : _boundaryReason = boundaryReason;
   final String profileId, engineVersion;
   final bool execution, boundary, oc1Verified, oc2;
   final Set<TeamProjectAction> commandActions;
 
   /// Admission is separate from supported execution capability.
-  final String admission, chatAuthority, boundaryReason;
+  final String admission, chatAuthority, readinessReason;
+  final String _boundaryReason;
+
+  /// Keep older setup callers from reporting a successful attestation as a
+  /// failed readiness reason while OC1 is restarting or unreachable.
+  String get boundaryReason =>
+      !canExecute && boundary && _boundaryReason == 'boundary_attested'
+      ? (readinessReason.isEmpty ? 'protocolUnverified' : readinessReason)
+      : _boundaryReason;
+  String get boundaryAttestationReason => _boundaryReason;
 
   /// Signed confinement kind. Older schema-1 engines omit the tier; `none`
   /// then means unreported, while their existing execution flags remain valid.
@@ -93,6 +103,9 @@ class PhoneEngineHealth {
       chatAuthority: value['chatAuthority'] is String
           ? value['chatAuthority'] as String
           : 'unknown',
+      readinessReason: value['readinessReason'] is String
+          ? value['readinessReason'] as String
+          : '',
       boundaryReason: value['boundaryReason'] is String
           ? value['boundaryReason'] as String
           : '',

@@ -76,6 +76,35 @@ PhoneEngineGateway gateway(
 Matcher safeError(String code) =>
     isA<PhoneEngineException>().having((e) => e.code, 'code', code);
 void main() {
+  test(
+    'successful boundary attestation is not a protocol readiness failure',
+    () {
+      for (final reason in [
+        '',
+        'authentication_failed',
+        'transport_unavailable',
+      ]) {
+        final health = PhoneEngineHealth(
+          profileId: 'phone',
+          engineVersion: 'test',
+          execution: false,
+          boundary: true,
+          oc1Verified: false,
+          oc2: false,
+          commandActions: const {},
+          boundaryReason: 'boundary_attested',
+          readinessReason: reason,
+        );
+        expect(health.boundaryAttestationReason, 'boundary_attested');
+        expect(
+          health.boundaryReason,
+          reason.isEmpty ? 'protocolUnverified' : reason,
+        );
+        expect(health.boundaryReason, isNot('boundary_attested'));
+      }
+    },
+  );
+
   tearDown(KitRedact.clearKnownSecrets);
   test('signed proot and landlock tiers preserve executable health flags', () {
     for (final tier in ['proot', 'landlock']) {

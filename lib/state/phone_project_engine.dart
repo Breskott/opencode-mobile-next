@@ -23,6 +23,24 @@ class BuiltinPhoneProjectEngineBridge implements PhoneProjectEngineBridge {
   BuiltinPhoneProjectEngineBridge([BuiltinLinux? builtin])
     : _builtin = builtin ?? BuiltinLinux();
   final BuiltinLinux _builtin;
+
+  /// Match the app-owned OC1 profile before native snapshots server auth.
+  /// The protected restart writes this same password; it must not strand the
+  /// already-started daemon with a stale rootfs copy.
+  Future<void> prepareServerAuthentication(ServerProfile profile) async {
+    if (!BuiltinLinux.managesServerUrl(profile.baseUrl) ||
+        profile.password.isEmpty) {
+      throw const PhoneEngineException('server_auth_unavailable');
+    }
+    final written = await _builtin.run(
+      BuiltinLinux.writePasswordScript(profile.password),
+      timeout: const Duration(seconds: 60),
+    );
+    if (!written.ok) {
+      throw const PhoneEngineException('server_credentials_write_failed');
+    }
+  }
+
   @override
   Future<void> start(
     String profileId, {
@@ -296,6 +314,7 @@ class PhoneProjectEngineController {
     PhoneProjectEngineBridge? bridge,
     PhoneEngineGatewayBuilder? gatewayBuilder,
     this.onAttached,
+    this.onReady,
     this.chatSource,
     this.chatSchedule,
     this.chatActive,
@@ -303,6 +322,10 @@ class PhoneProjectEngineController {
        _build = gatewayBuilder ?? _defaultBuild;
   final ProfileStore store;
   final void Function(String profileId)? onAttached;
+
+  /// One attach/start completion signal, after saved credentials and producer
+  /// ownership. A health poll alone never requests app transport recovery.
+  final void Function(String profileId)? onReady;
   final PhoneChatSource? chatSource;
   final bool Function(String profileId)? chatActive;
   final Set<String> _admissionSuspended = {};
@@ -411,6 +434,10 @@ class PhoneProjectEngineController {
       await client.close();
     }
     try {
+      final native = bridge;
+      if (native is BuiltinPhoneProjectEngineBridge) {
+        await native.prepareServerAuthentication(_profile(profileId));
+      }
       await bridge.start(profileId, port: port, notice: notice);
     } on BuiltinLinuxException catch (error) {
       // Native emits static codes. Never retain its message/details or cause.
@@ -466,10 +493,19 @@ class PhoneProjectEngineController {
         throw const PhoneEngineException('profileDeleted');
       }
       await stopChatHeartbeat(profileId, publishUnknown: false);
+      if (_closed) {
+        throw const PhoneEngineException('engineClosed');
+      }
+      if (_blocked(profileId)) {
+        throw const PhoneEngineException('profileDeleted');
+      }
       _admissionSuspended.remove(profileId);
       _admissionRequired.remove(profileId);
       startChatHeartbeat(profileId);
       onAttached?.call(profileId);
+      if (h.canExecute && !_closed && !_blocked(profileId)) {
+        onReady?.call(profileId);
+      }
       return h;
     } finally {
       await client.close();

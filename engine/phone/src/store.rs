@@ -84,7 +84,54 @@ impl Store {
     pub fn workspace(&self) -> Result<Value, StoreError> {
         let conn = self.lock()?;
         alive(&conn)?;
-        load_workspace(&conn)
+        let mut workspace = load_workspace(&conn)?;
+        let jobs = load_jobs(&conn)?;
+        for project in workspace["projects"]
+            .as_array_mut()
+            .ok_or(StoreError("storageCorrupt"))?
+        {
+            let project_id = project["id"].clone();
+            if let Some(tasks) = project["tasks"].as_array_mut() {
+                for task in tasks {
+                    if let Some(reason) = jobs
+                        .iter()
+                        .rev()
+                        .find(|job| {
+                            job["kind"] == "task"
+                                && job["projectId"] == project_id
+                                && job["taskId"] == task["id"]
+                        })
+                        .and_then(|job| job["reason"].as_str())
+                    {
+                        // Repair legacy stale presentation without rewriting a
+                        // checkpoint, its status, or the command revision.
+                        task["reason"] = json!(reason);
+                    }
+                }
+            }
+            project["mergeQueue"] = checked_merge_queue(project, &jobs);
+            let planner = jobs
+                .iter()
+                .rev()
+                .find(|j| j["kind"] == "planner" && j["projectId"] == project["id"]);
+            project["planningState"] = planner
+                .map(|j| json!({"jobId":j["id"],"stage":j["stage"],"reason":j["reason"].as_str().unwrap_or(""),"updatedAt":j["updatedAt"]}))
+                .unwrap_or(Value::Null);
+            if let Some(planner) = planner {
+                if project["timeline"].is_null()
+                    || project["timeline"].as_array().is_some_and(Vec::is_empty)
+                {
+                    // Legacy checkpoints predate durable timeline rows. Project
+                    // their present state without inventing historical events.
+                    append_job_timeline(project, planner)?;
+                    project["timeline"][0]["id"] = json!(format!(
+                        "planner-checkpoint-{}",
+                        planner["id"].as_str().unwrap_or("")
+                    ));
+                }
+            }
+        }
+        Ok(workspace)
     }
     pub fn jobs(&self) -> Result<Vec<Value>, StoreError> {
         let conn = self.lock()?;
@@ -250,12 +297,26 @@ impl Store {
         }
         let mut w = load_workspace(&tx)?;
         let mut jobs = load_jobs(&tx)?;
+        let previous_jobs = jobs.clone();
         let mut applied = command.clone();
         if let Some(repos) = imported_repos {
             applied["repos"] = repos.clone();
         }
         let result = match apply_command(&mut w, &mut jobs, &applied) {
             Ok((id, revision)) => {
+                for current in &jobs {
+                    let previous = previous_jobs.iter().find(|j| j["id"] == current["id"]);
+                    if previous.is_none_or(|old| {
+                        old["stage"] != current["stage"] || old["reason"] != current["reason"]
+                    }) {
+                        if let Some(project) = w["projects"]
+                            .as_array_mut()
+                            .and_then(|ps| ps.iter_mut().find(|p| p["id"] == current["projectId"]))
+                        {
+                            append_job_timeline(project, current)?;
+                        }
+                    }
+                }
                 persist(&tx, &w, &jobs)?;
                 event(
                     &tx,
@@ -324,6 +385,7 @@ impl Store {
             return Err(StoreError("staleJobStage"));
         }
         let mut j = jobs[index].clone();
+        let previous_reason = j["reason"].as_str().unwrap_or("").to_owned();
         let pi = w["projects"]
             .as_array()
             .ok_or(StoreError("storageCorrupt"))?
@@ -410,6 +472,39 @@ impl Store {
             } else {
                 j[key] = value.clone();
             }
+        }
+        let mut admission_reason_cleared = false;
+        if stage != expected_stage
+            && !fields.contains_key("reason")
+            && matches!(
+                stage,
+                "starting"
+                    | "running"
+                    | "checking"
+                    | "mergeReady"
+                    | "merging"
+                    | "completed"
+                    | "resuming"
+            )
+            && matches!(
+                j["reason"].as_str(),
+                Some(
+                    "chatBusy"
+                        | "chatStatusUnknown"
+                        | "chatStateUnknown"
+                        | "laneCap"
+                        | "dependencyPending"
+                        | "projectNotRunning"
+                        | "serverOffline"
+                        | "executionUnavailable"
+                        | "boundaryUnverified"
+                        | "protocolUnverified"
+                        | "Protected execution is not verified"
+                )
+            )
+        {
+            j["reason"] = json!("");
+            admission_reason_cleared = true;
         }
         if let Some(usage) = patch.get("usage").filter(|v| !v.is_null()) {
             update_usage(&mut j, usage)?;
@@ -498,7 +593,13 @@ impl Store {
                     if !task_fields.contains(&key.as_str()) {
                         return Err(StoreError("invalidTaskPatch"));
                     }
-                    task[key] = value.clone();
+                    if key == "findings" {
+                        let findings = open_checker_findings(value)?;
+                        task[key] = findings.clone();
+                        j[key] = findings;
+                    } else {
+                        task[key] = value.clone();
+                    }
                 }
             }
             for key in ["findings", "criterionResults"] {
@@ -506,15 +607,40 @@ impl Store {
                     if !value.is_array() {
                         return Err(StoreError("invalidTaskPatch"));
                     }
-                    task[key] = value.clone();
+                    let published = if key == "findings" {
+                        open_checker_findings(value)?
+                    } else {
+                        value.clone()
+                    };
+                    task[key] = published.clone();
+                    j[key] = published;
                 }
             }
             task["status"] = json!(task_status(stage));
             if !usage_only {
                 task["changedAt"] = json!(now());
             }
-            if let Some(reason) = patch.get("reason") {
+            if stage == "needsFix" {
+                let reason = patch["reason"]
+                    .as_str()
+                    .filter(|reason| !reason.is_empty())
+                    .or_else(|| {
+                        patch["task"]["reason"]
+                            .as_str()
+                            .filter(|reason| !reason.is_empty())
+                    })
+                    .unwrap_or("checkerFindings");
+                j["reason"] = json!(reason);
+                task["reason"] = json!(reason);
+            } else if let Some(reason) = patch.get("reason") {
                 task["reason"] = reason.clone();
+            } else if let Some(reason) = patch["task"]
+                .get("reason")
+                .filter(|reason| reason.is_string())
+            {
+                j["reason"] = reason.clone();
+            } else if admission_reason_cleared {
+                task["reason"] = j["reason"].clone();
             }
             if let Some(tokens) = j["usage"]["tokens"].as_u64() {
                 task["tokens"] = json!(tokens);
@@ -523,6 +649,11 @@ impl Store {
         }
         j["stage"] = json!(stage);
         j["updatedAt"] = json!(now());
+        if !usage_only
+            && (stage != expected_stage || j["reason"].as_str().unwrap_or("") != previous_reason)
+        {
+            append_job_timeline(p, &j)?;
+        }
         jobs[index] = j.clone();
         if !usage_only {
             increment_project(p);
@@ -640,6 +771,7 @@ impl Store {
                         t["reason"] = json!("restartNeedsReconciliation");
                     }
                     p["status"] = json!("interrupted");
+                    append_job_timeline(p, j)?;
                     changed.insert(id);
                 }
             }
@@ -716,6 +848,93 @@ fn load_jobs(conn: &Connection) -> Result<Vec<Value>, StoreError> {
         out.push(decode(&row?)?);
     }
     Ok(out)
+}
+fn checked_merge_queue(project: &Value, jobs: &[Value]) -> Value {
+    let Some(tasks) = project["tasks"].as_array() else {
+        return json!([]);
+    };
+    json!(jobs
+        .iter()
+        .filter(|job| job["projectId"] == project["id"] && job["kind"] == "task" && matches!(job["stage"].as_str(), Some("completed" | "merged")))
+        .filter_map(|job| {
+            let task = tasks.iter().find(|task| task["id"] == job["taskId"])?;
+            let evidence = checked_merge_evidence(project, job, task);
+            Some(json!({"id":format!("merge-{}",job["id"].as_str().unwrap_or("")),"taskId":task["id"],"repoId":task["repoId"],"status":if evidence.is_ok() {"merged"} else {"blocked"},"reason":evidence.err().unwrap_or(""),"checksPassed":evidence.is_ok()}))
+        })
+        .collect::<Vec<_>>())
+}
+fn checked_merge_evidence(project: &Value, job: &Value, task: &Value) -> Result<(), &'static str> {
+    if task["status"] != "merged" {
+        return Err("mergeNotCompleted");
+    }
+    if job["repoId"] != task["repoId"]
+        || job["serverId"] != task["serverId"]
+        || job["criteria"] != task["criteria"]
+        || !project["repos"].as_array().is_some_and(|repos| {
+            repos
+                .iter()
+                .any(|repo| repo["id"] == job["repoId"] && repo["serverId"] == job["serverId"])
+        })
+    {
+        return Err("mergeScopeInvalid");
+    }
+    // Older jobs kept checker snapshots only on the matched project task.
+    // Partial job evidence never falls back: both fields must be absent.
+    let source = if job.get("findings").is_none() && job.get("criterionResults").is_none() {
+        task
+    } else {
+        job
+    };
+    if crate::daemon::validate_check(source, &job["criteria"]) != Ok(true)
+        || crate::daemon::validate_check(task, &job["criteria"]) != Ok(true)
+    {
+        return Err("checksNotPassed");
+    }
+    let receipt = job
+        .get("repoReceipt")
+        .filter(|r| r.is_object())
+        .ok_or("mergeReceiptMissing")?;
+    if receipt["repoId"] != job["repoId"] || receipt["taskId"] != task["id"] {
+        return Err("mergeScopeInvalid");
+    }
+    for side in ["before", "after"] {
+        for key in ["devCommit", "mainCommit"] {
+            if receipt[side][key]
+                .as_str()
+                .is_none_or(|s| s.len() != 40 || !s.bytes().all(|b| b.is_ascii_hexdigit()))
+            {
+                return Err("mergeReceiptInvalid");
+            }
+        }
+    }
+    if job["taskCommit"]
+        .as_str()
+        .is_none_or(|s| s.len() != 40 || !s.bytes().all(|b| b.is_ascii_hexdigit()))
+        || receipt["taskCommit"] != job["taskCommit"]
+        || receipt["devCommit"] != receipt["after"]["devCommit"]
+        || receipt["mainCommit"] != receipt["after"]["mainCommit"]
+        || job["mergedCommit"] != receipt["after"]["devCommit"]
+        || receipt["before"]["mainCommit"] != receipt["after"]["mainCommit"]
+    {
+        return Err("mergeReceiptInvalid");
+    }
+    let bound = project["receipts"].as_array().is_some_and(|receipts| {
+        receipts.iter().any(|r| {
+            r["id"] == job["id"]
+                && r["kind"] == "merge"
+                && r["actor"] == "engine"
+                && r["repoId"] == job["repoId"]
+                && (r.get("taskId").is_none() || r["taskId"] == job["taskId"])
+                && r["beforeRefs"] == receipt["before"]
+                && r["afterRefs"] == receipt["after"]
+                && r["before"] == receipt["before"]["devCommit"]
+                && r["after"] == receipt["after"]["devCommit"]
+        })
+    });
+    if !bound {
+        return Err("mergeReceiptUnbound");
+    }
+    Ok(())
 }
 fn persist(conn: &Connection, w: &Value, jobs: &[Value]) -> Result<(), StoreError> {
     conn.execute("UPDATE workspace SET data=?1 WHERE id=1", [w.to_string()])?;
@@ -955,6 +1174,74 @@ fn job(w: &Value, p: &Value, task: Option<&Value>) -> Value {
         .cloned()
         .unwrap_or(json!({}));
     json!({"id":new_id("job"),"kind":if task.is_some(){"task"}else{"planner"},"projectId":p["id"],"taskId":task.map(|t|t["id"].clone()).unwrap_or(json!("")),"repoId":repo["id"],"serverId":repo["serverId"],"roleId":role_id,"model":role["model"].as_str().unwrap_or(""),"fallbackModel":role["fallbackModel"].as_str().unwrap_or(""),"instructions":role["instructions"].as_str().unwrap_or(""),"readOnly":task.is_none() || role["readOnly"]==true,"planningRoles":w["roles"].as_array().map(|roles| roles.iter().filter(|r| r["readOnly"] != true && r["id"] != "planner" && r["id"] != "checker").cloned().collect::<Vec<_>>()).unwrap_or_default(),"checkerRole":w["roles"].as_array().and_then(|roles| roles.iter().find(|role| role["id"]=="checker")).cloned().unwrap_or(json!({})),"title":task.map(|t|t["title"].clone()).unwrap_or(p["specDraft"]["goal"].clone()),"spec":p["specDraft"],"criteria":task.map(|t|t["criteria"].clone()).unwrap_or(json!([])),"dependsOn":task.map(|t|t["dependsOn"].clone()).unwrap_or(json!([])),"stage":"queued","directory":null,"sessionIds":{},"sessionUsage":{},"expectedDevCommit":repo["devCommit"].as_str().unwrap_or(""),"expectedMainCommit":repo["mainCommit"].as_str().unwrap_or(""),"usage":{"cost":null,"tokens":null},"createdAt":now(),"updatedAt":now()})
+}
+fn append_job_timeline(project: &mut Value, job: &Value) -> Result<(), StoreError> {
+    let planner = job["kind"] == "planner";
+    let subject = if planner { "Planning" } else { "Work" };
+    let stage = job["stage"].as_str().unwrap_or("");
+    let reason = job["reason"].as_str().unwrap_or("");
+    // Only canned application-authored wording enters timeline copy. The typed
+    // reason remains separate in planningState; no model, path or error text.
+    let suffix = if stage == "stopped" {
+        "is stopped."
+    } else if stage == "paused" {
+        "is paused."
+    } else if stage == "interrupted"
+        && !matches!(
+            reason,
+            "restartNeedsReconciliation" | "pauseNeedsReconciliation"
+        )
+    {
+        "was interrupted and needs review before resuming."
+    } else {
+        match reason {
+            "chatBusy" => "is waiting for your chat reply to finish.",
+            "chatStatusUnknown" | "chatStateUnknown" => "is waiting for chat status to be checked.",
+            "executionUnavailable"
+            | "boundaryUnverified"
+            | "Protected execution is not verified" => {
+                "is waiting for protected execution to be verified."
+            }
+            "protocolUnverified" | "serverOffline" => {
+                "is waiting for the phone server to be checked."
+            }
+            "laneCap" => "is waiting for a free lane.",
+            "dependencyPending" => "is waiting for another task to finish.",
+            "checkerFindings" => "has checker findings that need review.",
+            "restartNeedsReconciliation" => {
+                "was interrupted when the app stopped. Resume to check its existing session."
+            }
+            "pauseNeedsReconciliation" => "is paused. Resume to check its existing session.",
+            "" => match stage {
+                "queued" => "is queued.",
+                "starting" | "preparing" | "submitting" => "is starting.",
+                "running" | "working" | "planning" => "is running.",
+                "checking" => "is checking acceptance criteria.",
+                "collecting" | "merging" => "is preparing the dev merge.",
+                "completed" if planner => "finished. The plan is ready to review.",
+                "completed" | "merged" => "finished.",
+                "resuming" => "is checking its existing session before resuming.",
+                "paused" => "is paused.",
+                "stopped" => "is stopped.",
+                "interrupted" => "was interrupted and needs review before resuming.",
+                _ => "status changed.",
+            },
+            _ => "is waiting for an execution check.",
+        }
+    };
+    if project["timeline"].is_null() {
+        project["timeline"] = json!([]);
+    }
+    let timeline = project["timeline"]
+        .as_array_mut()
+        .ok_or(StoreError("storageCorrupt"))?;
+    timeline.push(json!({"id":new_id("timeline"),"kind":if planner {"planner"} else {"job"},"text":format!("{subject} {suffix}"),"actor":"engine","at":job["updatedAt"],"taskId":job["taskId"].as_str().unwrap_or("")}));
+    let truncated = timeline.len() > 500;
+    if truncated {
+        timeline.drain(..timeline.len() - 500);
+        project["timelineTruncated"] = json!(true);
+    }
+    Ok(())
 }
 fn validate_plan(w: &Value, p: &Value) -> Result<(), StoreError> {
     let tasks = p["tasks"]
@@ -1503,6 +1790,22 @@ fn sync_task_stages(p: &mut Value, jobs: &[Value]) {
         }
     }
 }
+// A checker reports evidence, never the owner's finding resolution state.
+// Preserve the complete authored finding except for that authority-bearing field.
+fn open_checker_findings(value: &Value) -> Result<Value, StoreError> {
+    let findings = value.as_array().ok_or(StoreError("invalidTaskPatch"))?;
+    let mut published = Vec::with_capacity(findings.len());
+    for finding in findings {
+        let mut finding = finding
+            .as_object()
+            .ok_or(StoreError("invalidTaskPatch"))?
+            .clone();
+        finding.insert("status".into(), json!("open"));
+        published.push(Value::Object(finding));
+    }
+    Ok(Value::Array(published))
+}
+
 fn task_status(stage: &str) -> &str {
     match stage {
         "starting" | "working" => "running",
@@ -1661,6 +1964,279 @@ fn apply_repo_receipt(
     } else {
         "devCommit"
     };
-    p["receipts"].as_array_mut().ok_or(StoreError("storageCorrupt"))?.push(json!({"id":binding["id"],"kind":kind,"repoId":repo_id,"before":receipt["before"][ref_key],"after":receipt["after"][ref_key],"at":now(),"actor":"engine","beforeRefs":receipt["before"],"afterRefs":receipt["after"]}));
+    p["receipts"].as_array_mut().ok_or(StoreError("storageCorrupt"))?.push(json!({"id":binding["id"],"kind":kind,"repoId":repo_id,"taskId":binding["taskId"].as_str().unwrap_or(""),"before":receipt["before"][ref_key],"after":receipt["after"][ref_key],"at":now(),"actor":"engine","beforeRefs":receipt["before"],"afterRefs":receipt["after"]}));
     Ok(())
+}
+
+#[cfg(test)]
+mod checker_publication_tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn storage() -> tempfile::TempDir {
+        let root = std::env::var_os("OC_ENGINE_TEST_ROOT")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from("/home/eslam/Storage/tmp/oc-phone-engine-tests"));
+        fs::create_dir_all(&root).unwrap();
+        tempfile::Builder::new()
+            .prefix("checker-publication-")
+            .tempdir_in(root)
+            .unwrap()
+    }
+
+    fn checking(store: &Store) -> String {
+        let create = json!({"requestId":"create","action":"createQuickTask","confirmed":true,
+            "name":"Finding publication","settings":{"mode":"single","maxLanes":1,"reviewLevel":"milestones","maxFixRounds":0,
+                "chargingOnly":false,"budget":{"chosen":true,"unlimited":true}},
+            "spec":{"goal":"Preserve findings","milestones":[{"id":"milestone","title":"Checked","criteria":["Behavior is verified"]}]},
+            "repos":[{"id":"repo","serverId":"phone","path":"/workspace/source","devCommit":"seed","mainCommit":"seed"}]});
+        assert_eq!(store.execute(&create).unwrap()["accepted"], true);
+        let id = store.jobs().unwrap()[0]["id"].as_str().unwrap().to_owned();
+        for (before, after) in [
+            ("queued", "starting"),
+            ("starting", "running"),
+            ("running", "checking"),
+        ] {
+            store
+                .update_job(&id, before, &json!({"stage":after}))
+                .unwrap();
+        }
+        id
+    }
+
+    #[test]
+    fn authored_finding_statuses_publish_open_on_job_and_task_after_restart() {
+        for status in ["met", "fixed", "ignored", "closed", "open"] {
+            for nested in [false, true] {
+                let root = storage();
+                let store = Store::open(root.path(), "p").unwrap();
+                let id = checking(&store);
+                let authored = json!({"id":"finding","status":status,"severity":"minor","criterion":"Behavior is verified",
+                    "location":"README.md:1","text":"Explanatory finding remains reviewable","extra":{"evidence":"Retain this"}});
+                let mut expected = authored.clone();
+                expected["status"] = json!("open");
+                let criteria = store.jobs().unwrap()[0]["criteria"].clone();
+                let results = json!([{"criterion":"Behavior is verified","status":"met","note":"Authored result"}]);
+                let mut patch = json!({"stage":"needsFix","criterionResults":results});
+                if nested {
+                    patch["task"] = json!({"findings":[authored]});
+                } else {
+                    patch["findings"] = json!([authored]);
+                }
+                let updated = store.update_job(&id, "checking", &patch).unwrap();
+                assert_eq!(updated["stage"], "needsFix");
+                assert_eq!(updated["findings"], json!([expected.clone()]));
+                assert_eq!(updated["reason"], "checkerFindings");
+                drop(store);
+                let store = Store::open(root.path(), "p").unwrap();
+                let job = store.jobs().unwrap()[0].clone();
+                let project = store.workspace().unwrap()["projects"][0].clone();
+                let task = &project["tasks"][0];
+                assert_eq!(job["stage"], "needsFix");
+                assert_eq!(task["status"], "needsFix");
+                assert_eq!(job["findings"], json!([expected.clone()]));
+                assert_eq!(task["findings"], json!([expected]));
+                assert_eq!(job["reason"], "checkerFindings");
+                assert_eq!(task["reason"], "checkerFindings");
+                assert_eq!(job["criteria"], criteria);
+                assert_eq!(task["criteria"], criteria);
+                assert_eq!(job["criterionResults"], results);
+                assert_eq!(task["criterionResults"], results);
+                assert_eq!(crate::daemon::validate_check(&job, &criteria), Ok(false));
+                assert!(project["timeline"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|event| event["text"] == "Work has checker findings that need review."));
+            }
+        }
+    }
+
+    #[test]
+    fn empty_successful_check_preserves_results_and_merge_ready_stage() {
+        let root = storage();
+        let store = Store::open(root.path(), "p").unwrap();
+        let id = checking(&store);
+        let results = json!([{"criterion":"Behavior is verified","status":"met"}]);
+        let updated = store
+            .update_job(
+                &id,
+                "checking",
+                &json!({"stage":"mergeReady","findings":[],"criterionResults":results}),
+            )
+            .unwrap();
+        assert_eq!(updated["stage"], "mergeReady");
+        assert_eq!(updated["findings"], json!([]));
+        assert_eq!(updated["criterionResults"], results);
+        assert_ne!(updated["reason"], "checkerFindings");
+        assert_eq!(
+            crate::daemon::validate_check(&updated, &updated["criteria"]),
+            Ok(true)
+        );
+        drop(store);
+        let store = Store::open(root.path(), "p").unwrap();
+        let task = store.workspace().unwrap()["projects"][0]["tasks"][0].clone();
+        assert_eq!(task["status"], "checked");
+        assert_eq!(task["findings"], json!([]));
+        assert_eq!(task["criterionResults"], results);
+        assert_ne!(task["reason"], "checkerFindings");
+    }
+
+    #[test]
+    fn needs_fix_keeps_explicit_reason_and_defaults_absent_or_empty_reason() {
+        for reason in [None, Some(""), Some("acceptanceUnmet")] {
+            let root = storage();
+            let store = Store::open(root.path(), "p").unwrap();
+            let id = checking(&store);
+            let mut patch = json!({"stage":"needsFix","findings":[],"criterionResults":[{"criterion":"Behavior is verified","status":"unmet"}]});
+            if let Some(reason) = reason {
+                patch["reason"] = json!(reason);
+            }
+            let updated = store.update_job(&id, "checking", &patch).unwrap();
+            let expected = reason
+                .filter(|reason| !reason.is_empty())
+                .unwrap_or("checkerFindings");
+            assert_eq!(updated["reason"], expected);
+            assert_eq!(
+                store.workspace().unwrap()["projects"][0]["tasks"][0]["reason"],
+                expected
+            );
+        }
+    }
+
+    fn seed_reason_checkpoint(store: &Store, stage: &str, reason: &str) -> String {
+        let id = checking(store);
+        let mut conn = store.lock().unwrap();
+        let tx = conn.transaction().unwrap();
+        let mut workspace = load_workspace(&tx).unwrap();
+        let mut jobs = load_jobs(&tx).unwrap();
+        jobs[0]["stage"] = json!(stage);
+        jobs[0]["reason"] = json!(reason);
+        workspace["projects"][0]["tasks"][0]["status"] = json!(task_status(stage));
+        workspace["projects"][0]["tasks"][0]["reason"] = json!(reason);
+        persist(&tx, &workspace, &jobs).unwrap();
+        tx.commit().unwrap();
+        id
+    }
+
+    #[test]
+    fn admission_reason_clear_reaches_task_without_clearing_blocked_or_usage_state() {
+        for (blocked_stage, admitted_stage) in [("queued", "starting"), ("starting", "running")] {
+            let root = storage();
+            let store = Store::open(root.path(), "p").unwrap();
+            let id = seed_reason_checkpoint(&store, blocked_stage, "chatStatusUnknown");
+            let before = store.jobs().unwrap()[0].clone();
+            let revision = store.workspace().unwrap()["projects"][0]["revision"].clone();
+            let usage = store
+                .update_job(
+                    &id,
+                    blocked_stage,
+                    &json!({"usage":{"cost":0.0,"tokens":3}}),
+                )
+                .unwrap();
+            assert_eq!(usage["reason"], "chatStatusUnknown");
+            assert_eq!(
+                store.workspace().unwrap()["projects"][0]["tasks"][0]["reason"],
+                "chatStatusUnknown"
+            );
+            assert_eq!(
+                store.workspace().unwrap()["projects"][0]["revision"],
+                revision
+            );
+            let blocked = store
+                .update_job(&id, blocked_stage, &json!({"stage":blocked_stage}))
+                .unwrap();
+            assert_eq!(blocked["reason"], "chatStatusUnknown");
+            let admitted = store
+                .update_job(&id, blocked_stage, &json!({"stage":admitted_stage}))
+                .unwrap();
+            assert_eq!(admitted["reason"], "");
+            let conn = store.lock().unwrap();
+            let raw = load_workspace(&conn).unwrap();
+            assert_eq!(raw["projects"][0]["tasks"][0]["reason"], "");
+            drop(conn);
+            for key in [
+                "sessionIds",
+                "promptDispatch",
+                "criteria",
+                "findings",
+                "criterionResults",
+            ] {
+                assert_eq!(admitted.get(key), before.get(key));
+            }
+            let interrupted = store
+                .update_job(
+                    &id,
+                    admitted_stage,
+                    &json!({"stage":"interrupted","reason":"sessionUnknown"}),
+                )
+                .unwrap();
+            assert_eq!(interrupted["reason"], "sessionUnknown");
+            assert_eq!(
+                store.workspace().unwrap()["projects"][0]["tasks"][0]["reason"],
+                "sessionUnknown"
+            );
+        }
+        let root = storage();
+        let store = Store::open(root.path(), "p").unwrap();
+        let id = seed_reason_checkpoint(&store, "queued", "chatStatusUnknown");
+        let updated = store
+            .update_job(
+                &id,
+                "queued",
+                &json!({"stage":"starting","task":{"reason":"needsOwnerReview"}}),
+            )
+            .unwrap();
+        assert_eq!(updated["reason"], "needsOwnerReview");
+        assert_eq!(
+            store.workspace().unwrap()["projects"][0]["tasks"][0]["reason"],
+            "needsOwnerReview"
+        );
+    }
+
+    #[test]
+    fn workspace_projects_latest_scoped_job_reason_without_writing_legacy_checkpoint() {
+        for reason in ["", "chatBusy"] {
+            let root = storage();
+            let store = Store::open(root.path(), "p").unwrap();
+            let id = seed_reason_checkpoint(&store, "running", "chatStatusUnknown");
+            let mut conn = store.lock().unwrap();
+            let tx = conn.transaction().unwrap();
+            let raw = load_workspace(&tx).unwrap();
+            let mut jobs = load_jobs(&tx).unwrap();
+            // Multiple rows use the same task scope. Latest inserted matching
+            // job wins; later unrelated rows must not affect the task.
+            let mut current = jobs[0].clone();
+            current["id"] = json!(format!("{id}-latest"));
+            current["reason"] = json!(reason);
+            jobs.push(current.clone());
+            for other_scope in ["projectId", "taskId"] {
+                let mut unrelated = current.clone();
+                unrelated["id"] = json!(format!("{id}-{other_scope}"));
+                unrelated[other_scope] = json!("unrelated");
+                unrelated["reason"] = json!("wrongScope");
+                jobs.push(unrelated);
+            }
+            persist(&tx, &raw, &jobs).unwrap();
+            tx.commit().unwrap();
+            let stored_jobs = load_jobs(&conn).unwrap();
+            drop(conn);
+            for _ in 0..3 {
+                let projected = store.workspace().unwrap();
+                assert_eq!(projected["projects"][0]["tasks"][0]["reason"], reason);
+                assert_eq!(
+                    projected["projects"][0]["tasks"][0]["status"],
+                    raw["projects"][0]["tasks"][0]["status"]
+                );
+                assert_eq!(projected["revision"], raw["revision"]);
+                assert_eq!(
+                    projected["projects"][0]["revision"],
+                    raw["projects"][0]["revision"]
+                );
+            }
+            let conn = store.lock().unwrap();
+            assert_eq!(load_workspace(&conn).unwrap(), raw);
+            assert_eq!(load_jobs(&conn).unwrap(), stored_jobs);
+        }
+    }
 }

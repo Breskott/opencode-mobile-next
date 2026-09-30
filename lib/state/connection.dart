@@ -901,7 +901,7 @@ class ConnectionController extends ChangeNotifier {
     }
     _status = value;
     if (value != StreamStatus.connected) {
-      _phoneChatStatusKnown = false;
+      _invalidatePhoneChatStatus();
     }
     _syncConnectionStatusClock();
     _syncPhoneChatHeartbeat();
@@ -1319,6 +1319,7 @@ class ConnectionController extends ChangeNotifier {
         bridge: _phoneEngineBridge,
         gatewayBuilder: _phoneEngineGatewayBuilder,
         onAttached: _phoneEngineAttached,
+        onReady: _phoneEngineReady,
         chatSource: _phoneChatSnapshot,
         chatActive: _phoneChatEligible,
       );
@@ -1326,6 +1327,12 @@ class ConnectionController extends ChangeNotifier {
   final PhoneEngineGatewayBuilder? _phoneEngineGatewayBuilder;
   String? _phoneChatOwner;
   bool _phoneChatStatusKnown = false;
+  int _phoneChatUnknownRevision = 0;
+  int _phoneChatStatusReadRevision = 0;
+  Stopwatch? _phoneChatObservationAge;
+  (String?, String?, String?)? _phoneChatObservationScope;
+  static const _phoneChatObservationLimit = Duration(seconds: 15);
+  static const _phoneChatPollTimeout = Duration(seconds: 4);
   String? _phoneChatDispatchProfile;
   final _phoneChatDispatch = PhoneChatDispatchTracker();
 
@@ -1375,6 +1382,11 @@ class ConnectionController extends ChangeNotifier {
         !_deletingReadProfiles.contains(id);
   }
 
+  void _invalidatePhoneChatStatus() {
+    _phoneChatStatusKnown = false;
+    _phoneChatUnknownRevision++;
+  }
+
   PhoneChatActivity _phoneChatSnapshot(String id) {
     if (!_phoneChatEligible(id)) {
       return const PhoneChatActivity();
@@ -1394,6 +1406,10 @@ class ConnectionController extends ChangeNotifier {
     return PhoneChatActivity(
       known:
           _phoneChatStatusKnown &&
+          _phoneChatObservationScope ==
+              (_connectedProfile?.id, directory, workspace) &&
+          _phoneChatObservationAge != null &&
+          _phoneChatObservationAge!.elapsed <= _phoneChatObservationLimit &&
           status == StreamStatus.connected &&
           !_lifecycleSuspended &&
           !locationLoading &&
@@ -1433,12 +1449,30 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
-  void _reconcilePhoneChat(Map<String, String>? statuses, int readEpoch) {
+  void _reconcilePhoneChat(
+    Map<String, String>? statuses,
+    int readEpoch, {
+    Stopwatch? observationAge,
+    int? unknownRevision,
+  }) {
+    final age = observationAge ?? (Stopwatch()..start());
     _phoneChatStatusKnown =
+        (unknownRevision == null ||
+            unknownRevision == _phoneChatUnknownRevision) &&
         statuses != null &&
+        statuses.length <= 1000 &&
+        statuses.keys.every(
+          (id) =>
+              id.isNotEmpty && id.length <= 256 && !id.contains(RegExp(r'\s')),
+        ) &&
         statuses.values.every(
           (s) => s == 'idle' || s == 'busy' || s == 'retry',
-        );
+        ) &&
+        age.elapsed <= _phoneChatObservationLimit;
+    _phoneChatObservationAge = _phoneChatStatusKnown ? age : null;
+    _phoneChatObservationScope = _phoneChatStatusKnown
+        ? (_connectedProfile?.id, directory, workspace)
+        : null;
     if (!_phoneChatStatusKnown) {
       return;
     }
@@ -1526,6 +1560,16 @@ class ConnectionController extends ChangeNotifier {
     // The sibling changed hands (or went away); screens showing its state
     // rebuild from here, as they do for every other controller change.
     if (!_disposed) notifyListeners();
+  }
+
+  void _phoneEngineReady(String profileId) {
+    if (_lifecycleSuspended || !_phoneChatEligible(profileId) || isConnected) {
+      return;
+    }
+    // Protected setup deliberately retires the old phone server. Recover a
+    // retained failed transport through the ordinary generation-fenced path;
+    // fresh status/SSE, not engine readiness, owns connection and chat truth.
+    unawaited(retryConnection().catchError((Object _) {}));
   }
 
   void _phoneEngineAttached(String profileId) {
@@ -3457,7 +3501,7 @@ class ConnectionController extends ChangeNotifier {
 
     void handleError(Object e) {
       if (!_isCurrentStream(generation, currentApi, stream)) return;
-      _phoneChatStatusKnown = false;
+      _invalidatePhoneChatStatus();
       _noteAuthFailure(e);
       lastError = e.toString();
       notifyListeners();
@@ -4141,7 +4185,7 @@ class ConnectionController extends ChangeNotifier {
               _markSessionAttentionActive(sid);
               break;
             default:
-              _phoneChatStatusKnown = false;
+              _invalidatePhoneChatStatus();
               break;
           }
           notifyListeners();
@@ -5993,6 +6037,9 @@ class ConnectionController extends ChangeNotifier {
       // Both reads describe this location independently. Attach the status
       // error handler immediately so even a failed/retired page cannot leave
       // an unhandled background error. SSE revisions still win below.
+      final chatObservationAge = Stopwatch()..start();
+      final chatUnknownRevision = _phoneChatUnknownRevision;
+      final chatStatusReadRevision = ++_phoneChatStatusReadRevision;
       final statusRead = () async {
         try {
           return (await currentApi.sessionStatuses(), null);
@@ -6036,7 +6083,11 @@ class ConnectionController extends ChangeNotifier {
       _mergeSessionPage(page, revision);
       sessionsMoreError = null;
       sessionsNeedReload = false;
-      if (statuses != null) {
+      final phoneStatusCurrent =
+          _connectedProfile == null ||
+          !_phoneChatEligible(_connectedProfile!.id) ||
+          chatStatusReadRevision == _phoneChatStatusReadRevision;
+      if (statuses != null && phoneStatusCurrent) {
         final statusIDs = {
           ...sessionsById.keys,
           ...busySessions,
@@ -6067,7 +6118,14 @@ class ConnectionController extends ChangeNotifier {
           }
         }
       }
-      _reconcilePhoneChat(statuses, chatReadEpoch);
+      if (phoneStatusCurrent) {
+        _reconcilePhoneChat(
+          statuses,
+          chatReadEpoch,
+          observationAge: chatObservationAge,
+          unknownRevision: chatUnknownRevision,
+        );
+      }
       sessionsLoading = false;
       sessionsError = statusError?.toString();
       if (statusError != null) _recordLocationError(sessionsError!);
@@ -6082,7 +6140,7 @@ class ConnectionController extends ChangeNotifier {
       )) {
         return;
       }
-      _phoneChatStatusKnown = false;
+      _invalidatePhoneChatStatus();
       sessionsLoading = false;
       sessionsError = error.toString();
       _recordLocationError(sessionsError!);
@@ -6305,10 +6363,23 @@ class ConnectionController extends ChangeNotifier {
   void enablePollingFallback() {
     if (_poll?.isActive ?? false) return;
     _poll = Timer.periodic(const Duration(seconds: 5), (_) {
+      final phoneAdmission =
+          _connectedProfile != null &&
+          _phoneChatEligible(_connectedProfile!.id) &&
+          status == StreamStatus.connected &&
+          !_lifecycleSuspended &&
+          !locationLoading &&
+          directory?.isNotEmpty == true;
+      if (phoneAdmission) {
+        // A lost status/page read while idle must not strand admission in
+        // UNKNOWN. Read status alone, independently of a slow session page.
+        unawaited(_refreshBusySessionStatuses());
+      }
       if (sessionsLoading || sessionsLoadingMore) return;
       if (shouldPoll) {
         unawaited(refreshSessions());
-      } else if (busySessions.isNotEmpty || _phoneChatDispatch.isNotEmpty) {
+      } else if (!phoneAdmission &&
+          (busySessions.isNotEmpty || _phoneChatDispatch.isNotEmpty)) {
         // An otherwise healthy SSE connection can still lose one terminal
         // event during a network handoff. Reconcile only active sessions so a
         // missed `idle` cannot leave the chat thinking forever.
@@ -6337,28 +6408,77 @@ class ConnectionController extends ChangeNotifier {
   Future<void> _reconcileBusySessionStatuses() async {
     final currentApi = api;
     final generation = _generation;
+    final scope = (
+      _connectedProfile?.id,
+      directory,
+      workspace,
+      locationRevision,
+    );
+    final phoneAdmission =
+        _connectedProfile != null &&
+        _phoneChatEligible(_connectedProfile!.id) &&
+        status == StreamStatus.connected &&
+        !_lifecycleSuspended &&
+        !locationLoading &&
+        directory?.isNotEmpty == true;
     final tracked = {
       for (final id in {...busySessions, ..._phoneChatDispatch.sessionIds})
         id: _sessionStatusRevisions[id] ?? 0,
     };
-    if (currentApi == null || tracked.isEmpty) return;
-
+    if (currentApi == null || (tracked.isEmpty && !phoneAdmission)) return;
+    bool current() =>
+        _isCurrent(generation, currentApi) &&
+        scope ==
+            (_connectedProfile?.id, directory, workspace, locationRevision) &&
+        currentApi.directory == directory &&
+        currentApi.workspace == workspace;
+    final statusRevision = _sessionRevision;
+    final chatUnknownRevision = _phoneChatUnknownRevision;
+    final chatStatusReadRevision = ++_phoneChatStatusReadRevision;
     final chatReadEpoch = _phoneChatDispatch.epoch;
+    final observationAge = Stopwatch()..start();
     Map<String, String> statuses;
     try {
-      statuses = await currentApi.sessionStatuses();
+      final read = currentApi.sessionStatuses();
+      statuses = phoneAdmission
+          ? await read.timeout(_phoneChatPollTimeout)
+          : await read;
     } catch (_) {
-      if (_isCurrent(generation, currentApi)) {
-        _phoneChatStatusKnown = false;
+      if (current()) {
+        _invalidatePhoneChatStatus();
         _syncPhoneChatHeartbeat();
       }
       return;
     }
-    if (!_isCurrent(generation, currentApi)) return;
-
-    _reconcilePhoneChat(statuses, chatReadEpoch);
-    _syncPhoneChatHeartbeat();
+    if (!current() ||
+        chatUnknownRevision != _phoneChatUnknownRevision ||
+        (phoneAdmission &&
+            chatStatusReadRevision != _phoneChatStatusReadRevision)) {
+      return;
+    }
+    _reconcilePhoneChat(
+      statuses,
+      chatReadEpoch,
+      observationAge: observationAge,
+      unknownRevision: chatUnknownRevision,
+    );
+    if (phoneAdmission && !_phoneChatStatusKnown) {
+      _syncPhoneChatHeartbeat();
+      return;
+    }
     var changed = false;
+    if (phoneAdmission) {
+      // A status-only poll may see a person session before any session page
+      // or SSE metadata. Its busy/retry ID must block admission immediately.
+      for (final entry in statuses.entries) {
+        if (entry.value != 'busy' && entry.value != 'retry') continue;
+        if ((_sessionStatusRevisions[entry.key] ?? 0) > statusRevision) {
+          continue;
+        }
+        changed = busySessions.add(entry.key) || changed;
+        _idleOnce.remove(entry.key);
+      }
+    }
     for (final entry in tracked.entries) {
       if ((_sessionStatusRevisions[entry.key] ?? 0) != entry.value) continue;
       final remoteStatus = statuses[entry.key] ?? 'idle';
@@ -6383,6 +6503,7 @@ class ConnectionController extends ChangeNotifier {
         unawaited(_refreshOneSession(entry.key));
       }
     }
+    _syncPhoneChatHeartbeat();
     if (changed) notifyListeners();
   }
 
@@ -10729,7 +10850,7 @@ class ConnectionController extends ChangeNotifier {
   }
 
   int _beginGeneration({bool preserveConnectionAttempt = false}) {
-    _phoneChatStatusKnown = false;
+    _invalidatePhoneChatStatus();
     if (!preserveConnectionAttempt) connectionAttemptRevision++;
     _generation += 1;
     connectionRevision = _generation;
@@ -10811,7 +10932,7 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _retireTransport() {
-    _phoneChatStatusKnown = false;
+    _invalidatePhoneChatStatus();
     _syncPhoneChatHeartbeat();
     elsewhereAttention.markStale();
     final policyListener = _streamPolicyChanged;
@@ -10837,7 +10958,7 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _clearLocationData() {
-    _phoneChatStatusKnown = false;
+    _invalidatePhoneChatStatus();
     if (_phoneChatDispatchProfile != _connectedProfile?.id) {
       _phoneChatDispatch.reset();
       _phoneChatDispatchProfile = _connectedProfile?.id;

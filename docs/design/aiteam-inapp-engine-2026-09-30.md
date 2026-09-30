@@ -345,3 +345,101 @@ Planner proposals now require a nonempty task title (`planTaskTitleRequired`). T
 Phase intake also rejects malformed types, missing titles and duplicate IDs with `planPhaseInvalid`; it strips model runtime fields and forces `accepted:false`. The planner receives the configured implementation-role catalog and a role enum. Job update failures preserve their static store reason.
 
 Structured-output intake accepts raw JSON or exactly one explicit JSON/untagged fenced block with surrounding prose. Extra fences or object/array delimiters outside the block remain `structuredOutputInvalid`; schema, criterion matching, findings severity and no-waiver checks are unchanged. No prose is interpreted as a verdict.
+
+## Run 4 additive planner and readiness contract (2026-10-01)
+
+An empty role `model` uses the authenticated OC1 server's default model: omit
+`model` from `prompt_async`, whose pinned schema requires only `parts`. An
+explicit selection remains `provider/model` and is validated before any clone,
+session or dispatch checkpoint. Local errors retain typed reasons; only a
+transport with an uncertain outcome becomes `promptUncertain`. Existing
+uncertain jobs are not resent automatically.
+
+Workspace reads now project each project's nullable `planningState` as
+`{jobId, stage, reason, updatedAt}` from the durable planner job. `timeline`
+contains bounded durable stage/reason events, with `timelineTruncated` when
+older events were omitted. Legacy interrupted planners with no timeline get a
+stable read-only checkpoint row. Consumers should show the planner stage and
+reason rather than the generic dependencies label while planning is pending.
+`TeamServer.reason` is an additive string. The phone server's `online`,
+`chatWaiting` and reason are derived live without changing the command revision.
+
+Health adds `readinessReason`: `protocolUnverified`, `transport_unavailable`,
+`authentication_failed`, or the static protocol verification code identify the
+unavailable protocol prerequisite. Server reasons additionally expose
+`chatBusy` and `chatStatusUnknown` for admission waits.
+A proven boundary's positive `boundary_attested` is not a readiness failure;
+Dart's legacy failure getter returns the protocol reason instead. Failed OC1
+verification retries after 2 seconds; healthy revalidation stays at 30 seconds.
+Before native snapshots OC1 credentials, production start writes the app-owned
+phone profile password through the existing atomic password writer. Missing or
+failed preparation returns `server_auth_unavailable` or
+`server_credentials_write_failed`.
+
+The authoritative managed-phone chat observation refreshes every 5 seconds,
+including idle/unknown states and pending session-page loads. Reads time out
+at 4 seconds; an observation older than 15 seconds is unknown. New busy/retry
+IDs block admission even without session metadata. Generation, directory,
+workspace and later-observation fences reject stale reads. No heartbeat or
+reconnect by itself establishes idle, and another client on another device
+remains the previously documented residual observation gap.
+
+Real-UI follow-up: the phone adapter presents native `needsPlanApproval` as
+`plan`, so the existing domain approval editor can submit the reviewed tasks,
+phases and unchanged command revision. Native engine status/checks remain
+unchanged. Unapproved active planning is presented as `running`, queued/unknown
+planning as `waiting`, interrupted/failed planning as `failed` (restart/pause
+reconciliation as `stalled`). Raw `planningState` remains available. A static
+current-checkpoint timeline row shows allowlisted failure codes; no provider
+error body is rendered. Task `checked` presents as `verified`, `needsFix` as
+`review`, and `merging` as `running`, retaining raw durable engine evidence.
+This does not expose unsupported retry/use-as-task commands.
+
+`mergeQueue` is now a read-only projection of completed task jobs and their
+checked dev-merge evidence. A stable `merge-<jobId>` item is `merged` with
+`checksPassed:true` only when the current task scope/criteria, original checker
+verdict, current checker results and scoped private/public merge receipts all
+match. New jobs retain checker snapshots; legacy jobs may use the matching task
+only if both job checker fields are absent and criteria are unchanged. Missing
+or invalid evidence produces `blocked` with a static reason (`mergeNotCompleted`,
+`mergeScopeInvalid`, `checksNotPassed`, `mergeReceiptMissing`,
+`mergeReceiptInvalid`, `mergeReceiptUnbound`). No command revision changes on
+reads. This makes actual canonical dev merges visible to the existing Promote
+control while keeping unproven completion blocked.
+
+The adapter presents a running project as `done` only after every task is
+merged, every task has a bound checked merge item, all relevant repository
+main/dev refs agree, and each repository has an engine-authored confirmed
+promotion receipt for that current main SHA. Paused/stopped/failed states stay
+as authored; no receipt or completed state is synthesized or persisted by Dart.
+
+Run4 real-checker follow-up: all checker findings are unresolved engine review
+items; publication normalizes their status to `open`, because the checker cannot
+author a fix or waiver. A blocked checker publishes `checkerFindings`; legacy
+`needsFix` also presents as `review` with open findings and this fallback reason
+without rewriting stored evidence. Successful checks keep empty findings.
+Worker instructions now require actual executed acceptance commands, working
+directory, exit codes and observed results in committed
+`.aiteam-verification.md`. The read-only checker inspects that report and files;
+it does not execute shell/Python, infer that an unexecuted check passed, or put
+successful observations in findings. The report is model-authored inspectable
+evidence, not an execution attestation. Missing or inconclusive required
+evidence blocks merge. Canonical receipt and checker validation gates remain
+unchanged.
+
+Execution-ready attachment adds an optional `onReady(profileId)` lifecycle
+callback after saved engine credentials and heartbeat ownership. Health polls
+and store-only attachment do not invoke it. ConnectionController reconnects
+only the same managed foreground phone profile when its chat transport is not
+connected, using the existing deduplicated and generation-fenced recovery.
+This replaces an event stream failed by the deliberate protected restart.
+Readiness never grants chat idle: admission stays unknown until fresh
+authenticated status and connection evidence arrive.
+
+
+Task wait reasons track the authoritative scoped job when admission changes.
+For legacy stored tasks, workspace reads project the latest matching task-job
+reason without rewriting task status, checkpoints or command revision. Clearing
+a job admission wait clears the displayed task wait; nested planner/tool waits
+retain their explicit typed reason. An old persisted `chatStatusUnknown` is not
+shown on an already completed task whose authoritative job has no wait reason.

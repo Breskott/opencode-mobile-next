@@ -265,7 +265,12 @@ class PhoneEngineGateway extends NullOrchestrationGateway
       throw const PhoneEngineException('payloadInvalid');
     }
     try {
-      return TeamWorkspace.fromJson(Map<String, dynamic>.from(raw));
+      final workspace = TeamWorkspace.fromJson(Map<String, dynamic>.from(raw));
+      return workspace.copyWith(
+        projects: List.unmodifiable(
+          workspace.projects.map(_presentPhoneProject),
+        ),
+      );
     } catch (_) {
       throw const PhoneEngineException('payloadInvalid');
     }
@@ -475,4 +480,169 @@ class PhoneEngineGateway extends NullOrchestrationGateway
     await close();
     _dio.close(force: true);
   }
+}
+
+// Translate phone wire states into the existing domain presentation vocabulary.
+// The engine remains authoritative for revisions, approval and retry admission.
+TeamProject _presentPhoneProject(TeamProject project) {
+  final planning = project.planningState;
+  var status = project.status;
+  if (status == 'running' && _hasCompletedPhonePromotion(project)) {
+    status = 'done';
+  }
+  if (status == 'needsPlanApproval') {
+    status = 'plan';
+  } else if (!project.planApproved &&
+      (status == 'planning' || status == 'interrupted')) {
+    status = switch (planning?.stage) {
+      'starting' ||
+      'planning' ||
+      'preparing' ||
+      'submitting' ||
+      'running' => 'running',
+      'failed' => 'failed',
+      'interrupted' => switch (planning?.reason) {
+        'restartNeedsReconciliation' || 'pauseNeedsReconciliation' => 'stalled',
+        _ => 'failed',
+      },
+      'paused' => 'paused',
+      'stopped' => 'stopped',
+      _ => 'waiting',
+    };
+  }
+  final summary =
+      !project.planApproved &&
+          planning != null &&
+          const ['failed', 'interrupted'].contains(planning.stage)
+      ? _planningCheckpointSummary(planning)
+      : null;
+  return project.copyWith(
+    status: status,
+    tasks: List.unmodifiable(
+      project.tasks.map((task) {
+        final needsFix = task.status == 'needsFix';
+        return task.copyWith(
+          status: switch (task.status) {
+            'checked' => 'verified',
+            'needsFix' => 'review',
+            'merging' => 'running',
+            _ => task.status,
+          },
+          reason: needsFix && task.reason.isEmpty
+              ? 'checkerFindings'
+              : task.reason,
+          // A checker proposal cannot close its own findings. Legacy phone
+          // checkpoints with findings remain blocked by native authority.
+          findings: needsFix
+              ? List.unmodifiable(
+                  task.findings.map(
+                    (finding) => finding.copyWith(status: 'open'),
+                  ),
+                )
+              : task.findings,
+        );
+      }),
+    ),
+    timeline: summary == null
+        ? project.timeline
+        : List.unmodifiable([
+            ...project.timeline,
+            TeamTimelineEvent(
+              id: 'phone-planning-checkpoint',
+              kind: 'planningCheckpoint',
+              actor: 'engine',
+              at: planning?.updatedAt ?? '',
+              text: summary,
+            ),
+          ]),
+  );
+}
+
+String _planningCheckpointSummary(TeamPlanningState planning) {
+  final reason = switch (planning.reason) {
+    'sessionFailed' => 'sessionFailed',
+    'promptUncertain' => 'promptUncertain',
+    'modelUnavailable' => 'modelUnavailable',
+    'modelInvalid' => 'modelInvalid',
+    'invalid_model' ||
+    'invalid_role' ||
+    'authentication_failed' ||
+    'transport_unavailable' ||
+    'cloneFailed' ||
+    'sessionCreateUncertain' ||
+    'permission_policy_unconfirmed' ||
+    'sessionUnknown' ||
+    'sessionUncertain' ||
+    'needsAnswer' ||
+    'structuredOutputInvalid' ||
+    'invalidPlan' ||
+    'planTaskTitleRequired' ||
+    'planPhaseInvalid' ||
+    'usageUncertain' => planning.reason,
+    'restartNeedsReconciliation' => 'restartNeedsReconciliation',
+    'pauseNeedsReconciliation' => 'pauseNeedsReconciliation',
+    _ => '',
+  };
+  if (reason.isEmpty) {
+    return 'Planning stopped and needs review.';
+  }
+  return planning.stage == 'failed'
+      ? 'Planning failed ($reason).'
+      : 'Planning needs review ($reason).';
+}
+
+// Presentation follows confirmed repository truth; no write or synthetic receipt.
+bool _hasCompletedPhonePromotion(TeamProject project) {
+  if (!project.planApproved ||
+      project.tasks.isEmpty ||
+      project.mergeQueue.isEmpty) {
+    return false;
+  }
+  final tasks = <String, TeamTask>{};
+  for (final task in project.tasks) {
+    if (task.id.isEmpty ||
+        tasks.containsKey(task.id) ||
+        task.repoId.isEmpty ||
+        task.status != 'merged' ||
+        task.findings.any((finding) => finding.status == 'open')) {
+      return false;
+    }
+    tasks[task.id] = task;
+  }
+  final covered = <String>{};
+  final mergeIds = <String>{};
+  for (final item in project.mergeQueue) {
+    final task = tasks[item.taskId];
+    if (item.id.isEmpty ||
+        !mergeIds.add(item.id) ||
+        !item.checksPassed ||
+        item.status != 'merged' ||
+        task == null ||
+        item.repoId != task.repoId) {
+      return false;
+    }
+    covered.add(task.id);
+  }
+  if (covered.length != tasks.length) return false;
+  for (final repoId in tasks.values.map((task) => task.repoId).toSet()) {
+    final repos = project.repos.where((repo) => repo.id == repoId).toList();
+    if (repos.length != 1) return false;
+    final repo = repos.single;
+    if (repo.devCommit.isEmpty || repo.devCommit != repo.mainCommit) {
+      return false;
+    }
+    if (!project.receipts.any(
+      (receipt) =>
+          receipt.id.isNotEmpty &&
+          receipt.kind == 'promote' &&
+          receipt.actor == 'engine' &&
+          receipt.repoId == repoId &&
+          receipt.before.isNotEmpty &&
+          receipt.before != receipt.after &&
+          receipt.after == repo.mainCommit,
+    )) {
+      return false;
+    }
+  }
+  return true;
 }
