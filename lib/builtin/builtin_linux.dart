@@ -189,6 +189,8 @@ class BuiltinPhoneEngineStatus {
     this.execution = false,
     this.restartRequired = false,
     this.boundaryReason = 'boundary_unverified',
+    this.boundaryGeneration,
+    this.protectionRequired = false,
   });
 
   factory BuiltinPhoneEngineStatus.fromMap(Map<Object?, Object?> map) =>
@@ -202,6 +204,10 @@ class BuiltinPhoneEngineStatus {
         boundaryReason: map['boundaryReason'] is String
             ? map['boundaryReason'] as String
             : 'boundary_unverified',
+        boundaryGeneration: map['boundaryGeneration'] is String
+            ? map['boundaryGeneration'] as String
+            : null,
+        protectionRequired: map['protectionRequired'] == true,
       );
 
   final String profileId;
@@ -211,6 +217,8 @@ class BuiltinPhoneEngineStatus {
   final bool execution;
   final bool restartRequired;
   final String boundaryReason;
+  final String? boundaryGeneration;
+  final bool protectionRequired;
 }
 
 /// Ephemeral channel handoff. Never persist this object or include it in logs.

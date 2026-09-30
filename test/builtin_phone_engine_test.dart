@@ -95,5 +95,30 @@ void main() {
     expect(status.boundary, isFalse);
     expect(status.execution, isFalse);
     expect(status.boundaryReason, 'boundary_unverified');
+    expect(status.boundaryGeneration, isNull);
+    expect(status.protectionRequired, isFalse);
   });
+
+  test(
+    'native attestation generation and persistent confinement remain visible',
+    () {
+      final status = BuiltinPhoneEngineStatus.fromMap({
+        'profileId': 'phone-profile',
+        'running': true,
+        'boundary': true,
+        'execution': false,
+        'protectionRequired': true,
+        'boundaryGeneration': 'd5c7d154-e9db-4b38-81f2-3dfe501d5076',
+        'boundaryReason': 'boundary_attested',
+      });
+      expect(status.boundary, isTrue);
+      expect(
+        status.execution,
+        isFalse,
+      ); // OC1 protocol readiness is independent.
+      expect(status.protectionRequired, isTrue);
+      expect(status.boundaryGeneration, 'd5c7d154-e9db-4b38-81f2-3dfe501d5076');
+      expect(status.boundaryReason, 'boundary_attested');
+    },
+  );
 }

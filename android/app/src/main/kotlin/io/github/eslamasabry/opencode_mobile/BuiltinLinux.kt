@@ -61,7 +61,61 @@ class BuiltinLinux(private val context: Context) {
     private val ready = File(home, "ubuntu.ready")
     private val nativeDir = context.applicationInfo.nativeLibraryDir
     private val phoneEngine = PhoneEngineNative(context)
-    @Volatile private var protectedProot = false
+    private val protectionMarker = File(context.filesDir, "oc.teamEngine.protection-required")
+    @Volatile private var protectedProot = markerPresent()
+    private val processConfinement = java.util.IdentityHashMap<Process, Boolean>()
+
+    // A corrupt/symlink marker still requires protection. Never fall back to
+    // legacy execution merely because marker bytes or a packaged ELF changed.
+    private fun markerPresent(): Boolean = try { Os.lstat(protectionMarker.absolutePath); true
+    } catch (e: ErrnoException) {
+        if (e.errno == OsConstants.ENOENT) false else throw e
+    }
+
+    val prootIsConfined: Boolean get() = protectedProot || markerPresent()
+
+    private fun hasUnconfinedChildren(): Boolean {
+        if (processes.any { it.isAlive && processConfinement[it] != true }) return true
+        val terminal = LocalTerminal.get(context)
+        if (terminal.hasUnconfinedSessions()) return true
+        val known = mutableSetOf(AndroidProcess.myPid())
+        for (process in processes.filter { it.isAlive }) {
+            val pid = pidOf(process) ?: return true
+            known.add(pid)
+            known.addAll(descendants(pid))
+        }
+        services[PHONE_ENGINE]?.process?.takeIf { it.isAlive }?.let {
+            known.add(pidOf(it) ?: return true)
+        }
+        for (session in terminal.list().filter { it.running }) {
+            known.add(session.pid)
+            known.addAll(descendants(session.pid))
+        }
+        // A surviving, untracked app-UID child is not silently trusted after
+        // app restart. Inventory failure is also an unavailable prerequisite.
+        val entries = File("/proc").listFiles() ?: return true
+        for (entry in entries) {
+            val pid = entry.name.toIntOrNull() ?: continue
+            if (pid in known) continue
+            val uid = try { Os.stat(entry.absolutePath).st_uid } catch (e: ErrnoException) {
+                if (e.errno == OsConstants.ENOENT) continue else return true
+            }
+            if (uid == AndroidProcess.myUid()) return true
+            // PR_SET_DUMPABLE=0 can make an app-UID /proc directory appear
+            // root-owned. Directory ownership alone cannot prove its UID.
+            if (uid == 0) {
+                val realUid = try {
+                    File(entry, "status").readLines().firstOrNull { it.startsWith("Uid:") }
+                        ?.substringAfter(':')?.trim()?.split(Regex("\\s+"))?.firstOrNull()?.toIntOrNull()
+                        ?: return true
+                } catch (e: java.io.FileNotFoundException) {
+                    if (!entry.exists()) continue else return true
+                } catch (_: Exception) { return true }
+                if (realUid == AndroidProcess.myUid()) return true
+            }
+        }
+        return false
+    }
 
     val installed: Boolean get() = ready.isFile
 
@@ -162,7 +216,7 @@ class BuiltinLinux(private val context: Context) {
                     redirectOutput(ProcessBuilder.Redirect.appendTo(log))
                 }
             }
-            .start().also { processes.add(it) }
+            .start().also { processes.add(it); processConfinement[it] = prootIsConfined }
     }
 
     /** proot's own path: the program a terminal session (LocalTerminal.kt) starts. */
@@ -200,14 +254,15 @@ class BuiltinLinux(private val context: Context) {
             "TERM=xterm-256color",
             "TMPDIR=/tmp",
         ) + program
-        return if (protectedProot) protectedCommand(command) else command
+        return if (prootIsConfined) protectedCommand(command) else command
     }
 
     /** The executable must match argv[0], including for the native PTY bridge. */
     val prootLaunchPath: String get() =
-        if (protectedProot) "$nativeDir/libaiteam_sandbox.so" else prootPath
+        if (prootIsConfined) "$nativeDir/libaiteam_sandbox.so" else prootPath
 
     private fun protectedCommand(command: List<String>): List<String> {
+        PhoneEngineNative.verifyBundle(context, "libaiteam_sandbox.so")
         val tmp = File(context.cacheDir, "proot-tmp").apply { mkdirs() }
         val policy = listOf(
             "$nativeDir/libaiteam_sandbox.so", "--read-only", nativeDir,
@@ -225,8 +280,7 @@ class BuiltinLinux(private val context: Context) {
     @Synchronized
     fun runPhoneEngineBoundaryProbe(): Map<String, Any?> {
         PhoneEngineNative.verifyBundle(context, "libaiteam_sandbox.so", "libaiteam_boundary_probe.so")
-        if (!installed || services.any { it.key != PHONE_ENGINE && it.value.process.isAlive } ||
-            processes.any { it.isAlive } || LocalTerminal.get(context).hasLiveSessions()) {
+        if (!installed || hasUnconfinedChildren()) {
             throw PhoneEngineNative.Failure("restart_required")
         }
         val probe = File(nativeDir, "libaiteam_boundary_probe.so")
@@ -335,14 +389,36 @@ class BuiltinLinux(private val context: Context) {
 
     @Synchronized
     fun phoneEngineStatus(profile: String): Map<String, Any?> = phoneEngine.status(profile) +
-        mapOf("restartRequired" to (serverRunning && !protectedProot))
+        mapOf("restartRequired" to hasUnconfinedChildren(), "protectionRequired" to markerPresent())
 
     @Synchronized
     fun phoneEngineCredentials(profile: String): Map<String, String> = phoneEngine.credentials(profile)
 
     @Synchronized
     fun startPhoneEngine(profile: String, port: Int, notice: String?): Map<String, Any?> {
-        val child = phoneEngine.start(profile, port, serverRunning && !protectedProot)
+        val alreadyRunning = phoneEngine.status(profile)["running"] == true
+        val blocked = hasUnconfinedChildren()
+        var reason = if (blocked) "restart_required" else "boundary_unverified"
+        val controls = if (!alreadyRunning && !blocked) try {
+            runPhoneEngineBoundaryProbe().also {
+                if (it["complete"] != true) reason = "boundary_proof_failed"
+            }
+        } catch (e: Exception) {
+            reason = if (e is PhoneEngineNative.Failure) e.code else "boundary_proof_unavailable"
+            null
+        } else null
+        val child = phoneEngine.start(profile, port, blocked, reason) { root ->
+            if (controls?.get("complete") != true || hasUnconfinedChildren()) null else {
+                // Persist before signing/launch. Every future run/service/PTY,
+                // including after app restart, is confined or refuses launch.
+                PhoneEngineAttestation.write(protectionMarker, "required-v1".toByteArray(Charsets.US_ASCII))
+                protectedProot = true
+                try {
+                    PhoneEngineAttestation(context).issue(profile, root, java.util.UUID.randomUUID().toString(),
+                        protectedCommand(emptyList()).dropLast(1), controls)
+                } catch (_: Exception) { throw PhoneEngineNative.Failure("boundary_signer_unavailable") }
+            }
+        }
         if (services[PHONE_ENGINE]?.process !== child) {
             services[PHONE_ENGINE] = Service(child, port, notice)
             recordRunning()
@@ -370,7 +446,7 @@ class BuiltinLinux(private val context: Context) {
         phoneEngine.stop(profile)
         if (services[PHONE_ENGINE]?.process?.isAlive != true) services.remove(PHONE_ENGINE)
         serviceSetChanged()
-        return phoneEngine.status(profile)
+        return phoneEngineStatus(profile)
     }
 
     @Synchronized
