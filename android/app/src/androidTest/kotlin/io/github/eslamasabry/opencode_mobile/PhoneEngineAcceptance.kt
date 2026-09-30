@@ -13,7 +13,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
-import java.net.ServerSocket
 import java.net.URL
 import java.net.URLEncoder
 import java.util.UUID
@@ -78,8 +77,9 @@ class PhoneEngineAcceptance : Instrumentation() {
         val model = arguments.getString("model") ?: throw Refused("model_required")
         requireSafe(model.length <= 256 && Regex("^[A-Za-z0-9_.:-]+/[A-Za-z0-9_./:-]+$").matches(model), "model_invalid")
         val timeout = arguments.getString("timeoutSeconds")?.toLongOrNull() ?: 900L
-        requireSafe(timeout in 60..3600, "timeout_invalid")
+        requireSafe(timeout in 30..3600, "timeout_invalid")
         deadline = SystemClock.elapsedRealtime() + timeout * 1000L
+        assertPackagedAbiParser()
 
         // Instrumentation deliberately runs only in disposable preview storage.
         // Foreground the real activity before invoking its native FGS controls.
@@ -102,8 +102,9 @@ class PhoneEngineAcceptance : Instrumentation() {
         LocalTerminal.get(targetContext).list().forEach { it.stop() }
         // Never stop services by PID pattern, or silently replace another engine.
         requireSafe(linux.runningServices().isEmpty(), "other_service_running")
-        val port = ServerSocket(0, 1, java.net.InetAddress.getByName("127.0.0.1")).use { it.localPort }
-        linux.startPhoneEngine(profile, port, "AI Team acceptance")
+        // Compatibility hint only; native startup gets the actual ephemeral
+        // address from the child and returns it through private credentials.
+        linux.startPhoneEngine(profile, 4098, "AI Team acceptance")
         engineStarted = true
         val auth = linux.phoneEngineCredentials(profile)
         engineBase = auth["baseUrl"] ?: throw Refused("engine_auth_unavailable")
@@ -126,6 +127,7 @@ class PhoneEngineAcceptance : Instrumentation() {
         """.trimIndent(), 4097)
         serverStarted = true
         waitUntil("protocol_not_verified") {
+            requireSafe(linux.serverRunning, "in_app_server_exited")
             val health = engine("GET", "/v1/health").body
             val capabilities = health.getJSONObject("capabilities")
             capabilities.optBoolean("boundary") && capabilities.optBoolean("execution") && capabilities.optBoolean("oc1Verified")
@@ -228,7 +230,7 @@ class PhoneEngineAcceptance : Instrumentation() {
         emit("PASS", currentStep)
 
         currentStep = "unconfirmed_promotion_refused"
-        val refused = engine("POST", "/v1/command", promotion(projectId, repoId, dev, seed, false, "refuse_${UUID.randomUUID()}"))
+        val refused = engine("POST", "/v1/commands", promotion(projectId, repoId, dev, seed, false, "refuse_${UUID.randomUUID()}"))
         requireSafe(refused.status == 409 && refused.body.optString("code") == "confirmationRequired" &&
             readRef(canonical, "main") == seed && project(projectId).getJSONArray("repos").getJSONObject(0).optString("mainCommit") == seed,
             "unconfirmed_promotion_allowed")
@@ -237,7 +239,7 @@ class PhoneEngineAcceptance : Instrumentation() {
         currentStep = "confirmed_promotion_receipt"
         val requestId = "promote_${UUID.randomUUID()}"
         val promotion = promotion(projectId, repoId, dev, seed, true, requestId)
-        val receipt = engine("POST", "/v1/command", promotion)
+        val receipt = engine("POST", "/v1/commands", promotion)
         requireSafe(receipt.status == 200 && receipt.body.optBoolean("accepted"), "confirmed_promotion_refused")
         requireSafe(readRef(canonical, "main") == dev && readRef(canonical, "dev") == dev, "promoted_refs_mismatch")
         val durableReceipt = File(privateRoot, "repos/receipts/$requestId.json")
@@ -249,7 +251,7 @@ class PhoneEngineAcceptance : Instrumentation() {
         val diskProject = persistedWorkspace().getJSONArray("projects").objects().single { it.optString("id") == projectId }
         requireSafe(diskProject.getJSONArray("receipts").objects().any { it.optString("id") == requestId &&
             it.optString("kind") == "promote" && it.optString("before") == seed && it.optString("after") == dev }, "sqlite_receipt_missing")
-        val replay = engine("POST", "/v1/command", promotion)
+        val replay = engine("POST", "/v1/commands", promotion)
         requireSafe(replay.status == 200 && replay.body.optBoolean("accepted") && replay.body.optBoolean("replayed") &&
             readRef(canonical, "main") == dev, "promotion_replay_failed")
         emit("PASS", currentStep)
@@ -292,7 +294,7 @@ class PhoneEngineAcceptance : Instrumentation() {
 
     private fun command(body: JSONObject): JSONObject {
         if (!body.has("requestId")) body.put("requestId", "request_${UUID.randomUUID()}")
-        val reply = engine("POST", "/v1/command", body)
+        val reply = engine("POST", "/v1/commands", body)
         requireSafe(reply.status == 200 && reply.body.optBoolean("accepted"), "engine_command_refused")
         return reply.body
     }
@@ -329,6 +331,7 @@ class PhoneEngineAcceptance : Instrumentation() {
 
     private fun scopedBusySessions(team: Set<String>): Set<String> {
         val busy = linkedSetOf<String>()
+        val started = SystemClock.elapsedRealtime()
         val health = request("http://127.0.0.1:4097", serverAuth, "GET", "/global/health")
         requireSafe(health.status == 200 && health.body.optBoolean("healthy") && health.body.optString("version") == "1.18.32", "server_status_unknown")
         for (directory in personDirectories) {
@@ -339,15 +342,69 @@ class PhoneEngineAcceptance : Instrumentation() {
             while (keys.hasNext()) {
                 val id = keys.next()
                 val value = status.body.getJSONObject(id)
-                requireSafe(id.isNotEmpty() && id.length <= 256 && !id.any(Char::isWhitespace), "server_status_unknown")
+                requireSafe(Regex("^ses[A-Za-z0-9_]{1,125}$").matches(id), "server_status_unknown")
+                validateStatus(value)
                 when (value.optString("type")) {
                     "idle" -> Unit
                     "busy", "retry" -> if (!team.contains(id)) busy.add(id)
                     else -> throw Refused("server_status_unknown")
                 }
             }
+            requireSafe(SystemClock.elapsedRealtime() - started <= 10_000L, "server_status_stale")
         }
         return busy
+    }
+
+    private fun validateStatus(value: JSONObject) {
+        when (value.optString("type")) {
+            "idle", "busy" -> requireSafe(value.length() == 1, "server_status_unknown")
+            "retry" -> {
+                fun unsigned(key: String): Boolean {
+                    val number = value.opt(key)
+                    return number is Int && number >= 0 || number is Long && number >= 0
+                }
+                requireSafe(unsigned("attempt") && unsigned("next") && value.opt("message") is String &&
+                    value.keys().asSequence().all { it in setOf("type", "attempt", "next", "message", "action") }, "server_status_unknown")
+                if (value.has("action")) {
+                    val action = value.optJSONObject("action") ?: throw Refused("server_status_unknown")
+                    requireSafe(listOf("reason", "provider", "title", "message", "label").all { action.opt(it) is String } &&
+                        action.keys().asSequence().all { it in setOf("reason", "provider", "title", "message", "label", "link") } &&
+                        (!action.has("link") || action.opt("link") is String), "server_status_unknown")
+                }
+            }
+            else -> throw Refused("server_status_unknown")
+        }
+    }
+
+    // Header fixtures exercise only the parser. They never replace installed
+    // ELF verification, native proof, engine state, or live model execution.
+    private fun assertPackagedAbiParser() {
+        fun header(machine: Int): ByteArray = ByteArray(64).apply {
+            this[0] = 0x7f
+            this[1] = 0x45
+            this[2] = 0x4c
+            this[3] = 0x46
+            this[4] = 2
+            this[5] = 1
+            this[6] = 1
+            this[16] = 3
+            this[18] = machine.toByte()
+            this[19] = (machine shr 8).toByte()
+            this[20] = 1
+            this[52] = 64
+        }
+        requireSafe(PhoneEngineNative.packagedAbi(header(183)) == "arm64-v8a" &&
+            PhoneEngineNative.packagedAbi(header(62)) == "x86_64", "elf_parser_positive_failed")
+        val invalid = mutableListOf(header(183).copyOf(63), header(1))
+        for ((offset, wrong) in listOf(0 to 0, 4 to 1, 5 to 2, 6 to 0, 16 to 2, 20 to 0, 21 to 1, 52 to 63)) {
+            invalid.add(header(183).apply { this[offset] = wrong.toByte() })
+        }
+        for (bytes in invalid) {
+            var refused = false
+            try { PhoneEngineNative.packagedAbi(bytes) }
+            catch (_: PhoneEngineNative.Failure) { refused = true }
+            requireSafe(refused, "elf_parser_negative_failed")
+        }
     }
 
     private fun learnPersonDirectories(root: File) {

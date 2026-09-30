@@ -33,7 +33,7 @@ io.github.eslamasabry.opencode_mobile.preview.test/io.github.eslamasabry.opencod
 ```
 
 Arguments are `server=http://127.0.0.1:4097`, `model=provider/model`,
-`timeoutSeconds=900` (60–3600), `isolatedQa=true`, and `allowModelSpend=true`.
+`timeoutSeconds=900` (30–3600), `isolatedQa=true`, and `allowModelSpend=true`.
 The runner uses an unrestricted budget only with that explicit model-spend
 acknowledgment. It admits exactly one proposed task and disables fix rounds.
 A real planner turn, worker turn and checker turn consume provider usage; the
@@ -67,7 +67,8 @@ workspace receipt, and replay idempotently with the identical request.
 While running, this test-only app process is the chat authority for its isolated
 profile. Every ten seconds it authenticates pinned server health and polls
 strict session-status maps for `/root`, `/root/projects`, and known project
-directories. Busy non-team sessions deny admission; failed or unknown status
+directories, with a ten-second maximum collection age and exact pinned status
+shapes. Busy non-team sessions deny admission; failed or unknown status
 sends `known=false`, and missed leases expire as unknown. Team IDs are read
 from the engine's real private SQLite jobs. No host-forged idle heartbeat is
 used. Chats from another client in an unobserved directory remain a scoped
@@ -99,4 +100,7 @@ device boundary probe is a FAIL; no host-only result enables device lanes.
 
 Compile checks and any live run are recorded by the integrating agent. The
 runner's implementation alone is not evidence of device acceptance or model
-completion.
+completion. Its initial parser checks use valid AArch64/x86_64 ELF64 PIE headers
+and reject truncated, malformed, unsupported-machine, ELF32, big-endian and
+non-PIE fixtures. These parser fixtures never substitute for installed bundle
+hash verification, signed native proof or live workflow execution.
