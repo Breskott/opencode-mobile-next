@@ -933,13 +933,18 @@ class ProfileStore {
     if (!await prefs.setString(_profilesKey, _encode(next))) {
       throw StateError('Could not save the server profile');
     }
+    var teamEngineAuth = profile.teamEngineAuth;
     try {
-      if (profile.teamEngineAuth.isEmpty) {
-        await secure.delete(key: '$teamEngineAuthKey${profile.id}');
+      if (teamEngineAuth.isEmpty) {
+        // Editors reconstruct profiles without the engine's private token.
+        // An ordinary metadata save must preserve the separate Keystore key.
+        teamEngineAuth =
+            await secure.read(key: '$teamEngineAuthKey${profile.id}') ?? '';
+        KitRedact.registerKnownSecret(teamEngineAuth);
       } else {
         await secure.write(
           key: '$teamEngineAuthKey${profile.id}',
-          value: profile.teamEngineAuth,
+          value: teamEngineAuth,
         );
       }
       if (profile.usesAgentSocket) {
@@ -971,7 +976,17 @@ class ProfileStore {
     }
     profile.requiresPasswordReentry = false;
     profile.requiresCodexTokenReentry = false;
+    profile.teamEngineAuth = teamEngineAuth;
     _cache = next;
+    _changes.changed();
+  }
+
+  /// Explicit credential removal; a normal profile edit leaves it untouched.
+  Future<void> clearTeamEngineAuth(String profileId) async {
+    await secure.delete(key: '$teamEngineAuthKey$profileId');
+    for (final profile in _cache) {
+      if (profile.id == profileId) profile.teamEngineAuth = '';
+    }
     _changes.changed();
   }
 

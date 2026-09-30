@@ -33,7 +33,7 @@ class TeamProjectController extends ChangeNotifier {
     _notify();
     _subscription ??= gateway.watchTeamWorkspace().listen(
       (value) {
-        snapshot = value;
+        _acceptSnapshot(value);
         _notify();
       },
       onError: (Object _) {
@@ -42,7 +42,7 @@ class TeamProjectController extends ChangeNotifier {
       },
     );
     try {
-      snapshot = await gateway.teamWorkspace();
+      _acceptSnapshot(await gateway.teamWorkspace());
     } catch (_) {
       errorCode = 'unavailable';
     }
@@ -60,17 +60,31 @@ class TeamProjectController extends ChangeNotifier {
     errorCode = null;
     _notify();
     try {
-      final result = await gateway.executeProject(command);
+      late final TeamCommandResult result;
+      try {
+        result = await gateway.executeProject(command);
+      } catch (_) {
+        errorCode = 'saveFailed';
+        return const TeamCommandResult(accepted: false, code: 'saveFailed');
+      }
       if (!result.accepted) errorCode = result.code;
-      snapshot = await gateway.teamWorkspace();
+      try {
+        _acceptSnapshot(await gateway.teamWorkspace());
+      } catch (_) {
+        // A committed command must stay accepted. A failed read means the
+        // workspace is unavailable, rather than inviting another create.
+        if (result.accepted) errorCode = 'unavailable';
+      }
       return result;
-    } catch (_) {
-      errorCode = 'saveFailed';
-      return const TeamCommandResult(accepted: false, code: 'saveFailed');
     } finally {
       busy = false;
       _notify();
     }
+  }
+
+  void _acceptSnapshot(TeamWorkspace value) {
+    if (_disposed || value.revision < (snapshot?.revision ?? 0)) return;
+    snapshot = value;
   }
 
   void _notify() {

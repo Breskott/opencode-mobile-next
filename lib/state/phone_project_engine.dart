@@ -57,11 +57,12 @@ class BuiltinPhoneProjectEngineBridge implements PhoneProjectEngineBridge {
       _builtin.deletePhoneEngine(profileId);
 }
 
-typedef PhoneEngineGatewayBuilder = PhoneEngineGateway Function({
-  required String baseUrl,
-  required String profileId,
-  required String bearerToken,
-});
+typedef PhoneEngineGatewayBuilder =
+    PhoneEngineGateway Function({
+      required String baseUrl,
+      required String profileId,
+      required String bearerToken,
+    });
 
 /// An observation of this app's current reconciled connection, never global idle.
 class PhoneChatActivity {
@@ -176,10 +177,8 @@ class PhoneChatDispatchTracker {
 }
 
 typedef PhoneChatSource = PhoneChatActivity Function(String profileId);
-typedef PhoneChatRenewalScheduler = void Function() Function(
-  Duration period,
-  void Function() tick,
-);
+typedef PhoneChatRenewalScheduler =
+    void Function() Function(Duration period, void Function() tick);
 
 /// Serial, monotonic producer. A stopped Flutter client never fabricates idle.
 class PhoneChatHeartbeat {
@@ -375,6 +374,11 @@ class PhoneProjectEngineController {
       bearerToken: profile.teamEngineAuth,
     );
     (_gateways[profile.id] ??= {}).add(client);
+    client.addCloseListener(() {
+      final clients = _gateways[profile.id];
+      clients?.remove(client);
+      if (clients?.isEmpty ?? false) _gateways.remove(profile.id);
+    });
     return client;
   }
 
@@ -672,16 +676,9 @@ class PhoneProjectEngineController {
       throw const PhoneEngineException('deleteFailed');
     }
     try {
-      await store.secure.delete(
-        key: '${ProfileStore.teamEngineAuthKey}$profileId',
-      );
+      await store.clearTeamEngineAuth(profileId);
     } catch (_) {
       throw const PhoneEngineException('deleteFailed');
-    }
-    for (final profile in store.profiles) {
-      if (profile.id == profileId) {
-        profile.teamEngineAuth = '';
-      }
     }
   }
 
@@ -699,10 +696,9 @@ class PhoneProjectEngineController {
           .toList(),
     );
     await Future.wait(_tails.values.toList());
-    for (final clients in _gateways.values) {
-      for (final client in clients) {
-        await client.close();
-      }
+    final clients = _gateways.values.expand((v) => v).toList();
+    for (final client in clients) {
+      await client.close();
     }
     _gateways.clear();
   }

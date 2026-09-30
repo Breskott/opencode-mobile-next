@@ -57,6 +57,21 @@ class ManualChatSchedule {
   }
 }
 
+class CountingGateway extends PhoneEngineGateway {
+  CountingGateway({
+    required super.baseUrl,
+    required super.profileId,
+    required super.bearerToken,
+    required super.adapter,
+  });
+  int closeCalls = 0;
+  @override
+  Future<void> close() {
+    closeCalls++;
+    return super.close();
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final secrets = <String, String>{};
@@ -223,6 +238,70 @@ void main() {
       );
     },
   );
+  test('ordinary phone profile edits retain Keystore engine auth', () async {
+    final engine = controller(NativeBridge(), []);
+    await engine.attach('phone');
+    final original = store.profiles.firstWhere((p) => p.id == 'phone');
+    final edited = ServerProfile(
+      id: original.id,
+      name: 'Renamed phone',
+      baseUrl: original.baseUrl,
+      orchestration: original.orchestration,
+    );
+    expect(edited.teamEngineAuth, isEmpty);
+    await store.upsert(edited);
+    expect(edited.teamEngineAuth, 'engine-private-token');
+    expect(secrets['oc.teamEngineAuth.phone'], 'engine-private-token');
+    final reloaded = ProfileStore(prefs: prefs);
+    await reloaded.load();
+    expect(
+      reloaded.profiles.firstWhere((p) => p.id == 'phone').teamEngineAuth,
+      'engine-private-token',
+    );
+    expect(
+      prefs.getString('oc.profiles'),
+      isNot(contains('engine-private-token')),
+    );
+    await store.clearTeamEngineAuth('phone');
+    expect(edited.teamEngineAuth, isEmpty);
+    expect(secrets.containsKey('oc.teamEngineAuth.phone'), isFalse);
+    await store.upsert(edited);
+    expect(edited.teamEngineAuth, isEmpty);
+    await engine.close();
+  });
+  test('closed probe and caller clients leave controller ownership', () async {
+    final created = <CountingGateway>[];
+    final engine = PhoneProjectEngineController(
+      store: store,
+      bridge: NativeBridge(),
+      gatewayBuilder:
+          ({required baseUrl, required profileId, required bearerToken}) {
+            final gateway = CountingGateway(
+              baseUrl: baseUrl,
+              profileId: profileId,
+              bearerToken: bearerToken,
+              adapter: fake.FakeEngineAdapter(
+                (_) async => fake.jsonBody(fake.health(profileId)),
+              ),
+            );
+            created.add(gateway);
+            return gateway;
+          },
+    );
+    await engine.attach('phone');
+    for (var i = 0; i < 20; i++) {
+      await engine.probe('phone');
+    }
+    final callerClient = engine.gateway(
+      store.profiles.firstWhere((p) => p.id == 'phone'),
+    );
+    await callerClient.close();
+    // Keep another client open, covering callback removal during owner close.
+    engine.gateway(store.profiles.firstWhere((p) => p.id == 'phone'));
+    await engine.close();
+    expect(created, hasLength(23));
+    expect(created.every((client) => client.closeCalls == 1), isTrue);
+  });
   test(
     'failed native deletion stays blocked, reports safe code, permits deletion retry',
     () async {
@@ -235,13 +314,24 @@ void main() {
         throwsA(fake.safeError('deleteFailed')),
       );
       expect(secrets.containsKey('oc.teamEngineAuth.phone'), isTrue);
+      expect(prefs.getBool('oc.teamEngineDeleted.phone'), isTrue);
       await expectLater(
         engine.probe('phone'),
         throwsA(fake.safeError('profileDeleted')),
       );
+      final restarted = controller(bridge, []);
+      await expectLater(
+        restarted.start('phone'),
+        throwsA(fake.safeError('profileDeleted')),
+      );
       bridge.failDelete = false;
-      await engine.deleteProfile('phone');
+      await restarted.deleteProfile('phone');
       expect(secrets.containsKey('oc.teamEngineAuth.phone'), isFalse);
+      expect(prefs.getBool('oc.teamEngineDeleted.phone'), isTrue);
+      await expectLater(
+        restarted.attach('phone'),
+        throwsA(fake.safeError('profileDeleted')),
+      );
     },
   );
   test(
