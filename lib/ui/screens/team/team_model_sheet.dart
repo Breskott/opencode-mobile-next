@@ -5,6 +5,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../../domain/model_name_order.dart';
 import '../../../domain/server_gateway.dart' show CatalogModel;
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
@@ -43,7 +44,7 @@ Future<TeamModelChoice?> showTeamModelSheet(
             if (model.enabled &&
                 teamModelSpec(model.providerID, model.id) != null)
               model,
-        ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        ]..sort((a, b) => compareModelNames(a.name, b.name));
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

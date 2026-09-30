@@ -1,3 +1,4 @@
+import '../domain/model_name_order.dart';
 import 'models.dart';
 import 'product_repository.dart';
 
@@ -126,7 +127,19 @@ List<CatalogModel> presentModels(
     });
   }
 
-  final orderedKeys = groups.keys.toList();
+  // Providers keep the order the catalog gave them; inside one provider the
+  // models read by family, then newest version first.
+  final byProvider = <String, List<String>>{};
+  for (final key in groups.keys) {
+    byProvider.putIfAbsent(key.split('\u0000').first, () => []).add(key);
+  }
+  final orderedKeys = [
+    for (final keys in byProvider.values)
+      ...keys..sort(
+        (a, b) =>
+            compareModelNames(groups[a]!.first.name, groups[b]!.first.name),
+      ),
+  ];
   if (selected != null) {
     final selectedGroup = presentProvider(selected.providerID).groupID;
     final selectedKey = '$selectedGroup\u0000${selected.modelID}';
