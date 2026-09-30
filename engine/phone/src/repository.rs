@@ -202,7 +202,11 @@ impl RepositoryAuthority {
             .or_else(|_| repo.head().and_then(|r| r.peel_to_commit()))?
             .id();
         // Import creates the engine-owned branch policy; worker/source branch names are not authority.
-        let initial_dev = repo
+        // Bare clone may materialize non-HEAD source branches as remote
+        // refs. Resolve the intended source dev from the sanitized snapshot,
+        // then validate its fetched object before establishing private refs.
+        let imported_source = Repository::open(&snapshot.0)?;
+        let initial_dev = imported_source
             .find_reference(DEV)
             .and_then(|r| r.peel_to_commit())
             .map(|c| c.id())

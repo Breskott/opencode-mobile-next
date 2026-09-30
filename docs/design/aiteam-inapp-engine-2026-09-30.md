@@ -223,3 +223,12 @@ server can falsify that server's responses; confirmation must still review the
 actual dev diff and expected refs. Canonical main is protected independently.
 The live acceptance wrapper and test-only preview runner are documented in
 [acceptance QA](../qa/aiteam-phone-engine-2026-09-30/acceptance/README.md).
+
+### Review closure: additive contract (2026-09-30)
+
+- Semantic create validation runs before importing Git; rejected commands remain durably replayable. Accepted `deleteProject` may add `cleanupPending: true` if attributable repository/worker cleanup needs retry. Replay of that same request retries cleanup while remaining accepted. Receipt audits are retained; collected repository IDs are retired and must not be reused.
+- `chargingOnly: true` is refused with `chargingUnsupported` until power telemetry is available. Health adds `chargingTelemetry: false`; existing charging-only projects pause honestly until edited.
+- `/v1/health` adds `eventWindow: {retentionLimit, prunedThroughSeq, earliestAvailableSeq, latestSeq}`. `/v1/events` retains its list shape, adding `type` as an alias of `kind`. The newest 10,000 metadata rows are retained. A cursor before the durable prune watermark returns HTTP 409 `{code: "cursorExpired", resetRequired: true, eventWindow: ...}`. Dart activity propagates safe `PhoneEngineException('cursorExpired')`; consumers must refresh the durable workspace and show an incomplete event-history interval instead of inferring that no work happened. Workspace/spec/promotion histories remain retained.
+- Checker findings remain advisory evidence for dev. A same-UID agent can replace the in-rootfs OC1 endpoint; main promotion still requires the person's confirmed expected-SHA request. The UI coordinator should present the dev diff at promotion.
+- Native deletion now invokes the verified packaged engine's `--erase-tree` helper for descriptor-anchored mode-000 cleanup after tracked processes stop. This is an internal native CLI, not an authenticated engine command or agent authority.
+- Both critical and all seven major paths have focused faulty-behavior controls; see the review-closure QA README. A5's startup global-lock delay remains pending a shared cancellation/admission fence. Completely damaged unscoped legacy receipts remain preserved/fail-closed until an operator quarantine path exists.

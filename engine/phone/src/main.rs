@@ -10,6 +10,16 @@ async fn main() {
         std::process::exit(1);
     }
     let args: Vec<String> = std::env::args().collect();
+    if args.len() == 3 && args[1] == "--erase-tree" {
+        // Native supplies an app-owned canonical child path after stopping
+        // tracked processes. Agent invocations retain their kernel confinement.
+        if oc_phone_engine::repository::erase_tree_no_links(Path::new(&args[2])).is_err() {
+            eprintln!("privateCleanupFailed");
+            std::process::exit(1);
+        }
+        return;
+    }
+
     if !matches!(args.len(), 3 | 9) || args[1] != "--config" {
         eprintln!("usage: oc-phone-engine --config <private-config-path>");
         std::process::exit(64);

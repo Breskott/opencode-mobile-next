@@ -293,7 +293,7 @@ async fn health(State(e): State<Shared>) -> Json<Value> {
         "commandActions":command_actions(&e),"boundaryReason":if boundary_verified(&e) {"boundary_attested"} else if e.boundary.is_some() {"attestation_rejected"} else {e.config.boundary.reason.as_str()},
         "restartRequired":e.config.boundary.restart_required,
         "admission":admission,"chatAuthority":"phoneAppAndKnownDirectories","globalAdmissionAuthority":false,
-        "boundaryGeneration":e.boundary.as_ref().map(|b|b.pins.generation.as_str()),"protocol":protocol}),
+        "boundaryGeneration":e.boundary.as_ref().map(|b|b.pins.generation.as_str()),"eventWindow":e.store.lock().ok().and_then(|store|store.event_window().ok()),"chargingTelemetry":false,"protocol":protocol}),
     )
 }
 async fn workspace(State(e): State<Shared>) -> Result<Json<Value>, ApiError> {
@@ -315,20 +315,34 @@ fn event_limit() -> usize {
 async fn events(
     State(e): State<Shared>,
     Query(q): Query<EventQuery>,
-) -> Result<Json<Value>, ApiError> {
+) -> Result<Response, ApiError> {
     if q.after < 0 || q.limit == 0 || q.limit > 500 {
         return Err(internal("queryInvalid"));
     }
     let s = e.store.lock().map_err(|_| internal("storeUnavailable"))?;
-    Ok(Json(json!(s
-        .events(q.after, q.limit)
-        .map_err(|_| internal("storeUnavailable"))?)))
+    match s.events(q.after, q.limit) {
+        Ok(mut items) => {
+            for item in &mut items {
+                item["type"] = item["kind"].clone();
+            }
+            Ok(Json(json!(items)).into_response())
+        }
+        Err(error) if error.code() == "cursorExpired" => Ok((
+            StatusCode::CONFLICT,
+            Json(json!({"code":"cursorExpired","resetRequired":true,
+                "eventWindow":s.event_window().map_err(|_|internal("storeUnavailable"))?})),
+        )
+            .into_response()),
+        Err(_) => Err(internal("storeUnavailable")),
+    }
 }
 async fn command(
     State(e): State<Shared>,
     input: Result<Json<Value>, axum::extract::rejection::JsonRejection>,
 ) -> Result<Json<Value>, ApiError> {
     let Json(mut c) = input.map_err(|_| internal("commandInvalid"))?;
+    // Serialize command-side imports and sweeps with starting reservations.
+    let _command_fence = e.lane_admission.lock().await;
     let action_value = c["action"]
         .as_str()
         .ok_or(internal("commandInvalid"))?
@@ -397,14 +411,27 @@ async fn command(
             json!({"accepted":false,"code":"unsupported","projectId":c["projectId"],"revision":0,"replayed":false}),
         ));
     }
-    if let Some(result) = e
-        .store
-        .lock()
-        .map_err(|_| internal("storeUnavailable"))?
-        .command_result(&c)
-        .map_err(|_| internal("requestIdReuse"))?
-    {
+    let previous_result = {
+        let store = e.store.lock().map_err(|_| internal("storeUnavailable"))?;
+        store
+            .command_result(&c)
+            .map_err(|_| internal("requestIdReuse"))?
+    };
+    if let Some(result) = previous_result {
+        let mut result = result;
+        if action == "deleteProject" && result["accepted"] == true {
+            result["cleanupPending"] = json!(collect_unused_repositories(&e).is_err());
+        }
         return Ok(Json(result));
+    }
+    {
+        let store = e.store.lock().map_err(|_| internal("storeUnavailable"))?;
+        if store.validate_command(&c).is_err() {
+            // Persist the rejection before touching canonical storage.
+            return Ok(Json(
+                store.execute(&c).map_err(|_| internal("commandRefused"))?,
+            ));
+        }
     }
     let mut imported = vec![];
     if matches!(action, "createProject" | "createQuickTask") {
@@ -413,33 +440,13 @@ async fn command(
         if !boundary_verified(&e) {
             return Err(internal("boundaryUnavailable"));
         }
-        let repos = c["repos"].as_array().ok_or(internal("reposRequired"))?;
-        if repos.is_empty() || repos.len() > 32 {
-            return Err(internal("reposRequired"));
-        }
-        for repo in repos {
-            let id = repo["id"].as_str().ok_or(internal("repoInvalid"))?;
-            let source = e
-                .config
-                .source_path(repo["path"].as_str().ok_or(internal("repoInvalid"))?)
-                .map_err(internal)?;
-            let refs = e
-                .repositories
-                .lock()
-                .map_err(|_| internal("repositoryUnavailable"))?
-                .import_repo_for_request(
-                    id,
-                    &source,
-                    c["requestId"]
-                        .as_str()
-                        .ok_or(internal("requestIdRequired"))?,
-                )
-                .map_err(|_| internal("importFailed"))?;
-            let mut edited = repo.clone();
-            edited["devCommit"] = refs["devCommit"].clone();
-            edited["mainCommit"] = refs["mainCommit"].clone();
-            imported.push(edited);
-        }
+        imported = match import_requested_repositories(&e, &c) {
+            Ok(value) => value,
+            Err(error) => {
+                let _ = collect_unused_repositories(&e);
+                return Err(error);
+            }
+        };
     }
     // Capture sessions before deleteProject removes its durable jobs.
     let interrupted_jobs = if matches!(
@@ -482,7 +489,64 @@ async fn command(
             }
         }
     }
+    let mut result = result;
+    if action == "deleteProject" && result["accepted"] == true
+        || matches!(action, "createProject" | "createQuickTask") && result["accepted"] != true
+    {
+        // A durable accepted delete stays accepted even if storage cleanup
+        // needs a retry; never invite a duplicate command after committing it.
+        result["cleanupPending"] = json!(collect_unused_repositories(&e).is_err());
+    }
     Ok(Json(result))
+}
+fn collect_unused_repositories(e: &Engine) -> Result<Value, ApiError> {
+    let store = e.store.lock().map_err(|_| internal("storeUnavailable"))?;
+    let workspace = store
+        .workspace()
+        .map_err(|_| internal("storeUnavailable"))?;
+    let retained: Vec<String> = workspace["projects"]
+        .as_array()
+        .ok_or(internal("storeUnavailable"))?
+        .iter()
+        .flat_map(|p| p["repos"].as_array().into_iter().flatten())
+        .filter_map(|r| r["id"].as_str().map(str::to_owned))
+        .collect();
+    e.repositories
+        .lock()
+        .map_err(|_| internal("repositoryUnavailable"))?
+        .collect_unreferenced_repositories(&retained)
+        .map_err(|_| internal("repositoryCleanupPending"))
+}
+fn import_requested_repositories(e: &Engine, c: &Value) -> Result<Vec<Value>, ApiError> {
+    let repos = c["repos"].as_array().ok_or(internal("reposRequired"))?;
+    if repos.is_empty() || repos.len() > 32 {
+        return Err(internal("reposRequired"));
+    }
+    let mut imported = Vec::new();
+    for repo in repos {
+        let id = repo["id"].as_str().ok_or(internal("repoInvalid"))?;
+        let source = e
+            .config
+            .source_path(repo["path"].as_str().ok_or(internal("repoInvalid"))?)
+            .map_err(internal)?;
+        let refs = e
+            .repositories
+            .lock()
+            .map_err(|_| internal("repositoryUnavailable"))?
+            .import_repo_for_request(
+                id,
+                &source,
+                c["requestId"]
+                    .as_str()
+                    .ok_or(internal("requestIdRequired"))?,
+            )
+            .map_err(|_| internal("importFailed"))?;
+        let mut edited = repo.clone();
+        edited["devCommit"] = refs["devCommit"].clone();
+        edited["mainCommit"] = refs["mainCommit"].clone();
+        imported.push(edited);
+    }
+    Ok(imported)
 }
 async fn delete_profile(State(e): State<Shared>) -> Result<Json<Value>, ApiError> {
     e.deleting.store(true, std::sync::atomic::Ordering::SeqCst);
@@ -1495,6 +1559,64 @@ mod tests {
             assert!(!undispatched_clone_allowed(&candidate));
         }
     }
+    #[tokio::test]
+    async fn rejected_create_is_durable_before_import_and_delete_sweeps_only_unreferenced_repo() {
+        let root = tempfile::tempdir().unwrap();
+        let e = fixture(root.path());
+        let settings = json!({"mode":"single","maxLanes":1,"reviewLevel":"milestones","maxFixRounds":2,"chargingOnly":false,"budget":{"chosen":false,"unlimited":true}});
+        let mut create = json!({"requestId":"bad-create","action":"createProject","name":"GC regression","settings":settings,
+            "spec":{"goal":"Verify deletion","milestones":[{"title":"GC","criteria":["Deleted repo removed"]}]},
+            "repos":[{"id":"repo","serverId":"phone","path":"/root/projects/source"}]});
+        let rejected = command(State(e.clone()), Ok(Json(create.clone())))
+            .await
+            .unwrap()
+            .0;
+        assert_eq!(rejected["accepted"], false);
+        assert_eq!(rejected["code"], "chooseBudget");
+        assert_eq!(
+            e.store
+                .lock()
+                .unwrap()
+                .command_result(&create)
+                .unwrap()
+                .unwrap()["replayed"],
+            true
+        );
+        assert_eq!(
+            fs::read_dir(e.config.private_root.join("repos/repos"))
+                .unwrap()
+                .count(),
+            0
+        );
+        let source = git2::Repository::init(root.path().join("source")).unwrap();
+        source.set_head("refs/heads/main").unwrap();
+        let tree_id = source.index().unwrap().write_tree().unwrap();
+        let tree = source.find_tree(tree_id).unwrap();
+        let signature = git2::Signature::now("Fixture", "fixture@localhost").unwrap();
+        source
+            .commit(Some("HEAD"), &signature, &signature, "Seed", &tree, &[])
+            .unwrap();
+        e.repositories
+            .lock()
+            .unwrap()
+            .import_repo("repo", source.workdir().unwrap())
+            .unwrap();
+        create["requestId"] = json!("valid-create");
+        create["settings"]["budget"]["chosen"] = json!(true);
+        let created = e.store.lock().unwrap().execute(&create).unwrap();
+        let id = created["projectId"].clone();
+        let delete = json!({"requestId":"delete-gc","action":"deleteProject","projectId":id,"expectedRevision":0,"confirmed":true});
+        let result = command(State(e.clone()), Ok(Json(delete.clone())))
+            .await
+            .unwrap()
+            .0;
+        assert_eq!(result["accepted"], true);
+        assert_eq!(result["cleanupPending"], false);
+        assert!(e.repositories.lock().unwrap().refs("repo").is_err());
+        let replay = command(State(e.clone()), Ok(Json(delete))).await.unwrap().0;
+        assert_eq!(replay["accepted"], true);
+        assert_eq!(replay["replayed"], true);
+    }
     fn fixture(path: &std::path::Path) -> Shared {
         let private = path.join("private");
         let worker = path.join("worker");
@@ -1745,7 +1867,10 @@ mod tests {
                     .header("Authorization", format!("Bearer {}", "a".repeat(64)))
                     .header("Content-Type", "application/json")
                     .body(Body::from(
-                        json!({"requestId":"create","action":"createProject"}).to_string(),
+                        json!({"requestId":"create","action":"createProject","name":"Valid protected create",
+                            "settings":{"mode":"single","maxLanes":1,"reviewLevel":"milestones","maxFixRounds":2,"chargingOnly":false,"budget":{"chosen":true,"unlimited":true}},
+                            "spec":{"goal":"Prove boundary","milestones":[{"title":"Protected","criteria":["No import before proof"]}]},
+                            "repos":[{"id":"repo","serverId":"phone","path":"/root/projects/source"}]}).to_string(),
                     ))
                     .unwrap(),
             )

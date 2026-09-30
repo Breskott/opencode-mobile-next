@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "method": "Restore each reported faulty behavior, execute its exact regression, require one runtime assertion failure, then restore bytes. Cargo mutations ran in a separate Storage source copy; Dart mutations were byte-restored in finally before final positive gates. No compilation failure is counted.",
+  "controls": [
+    {
+      "finding": "C1",
+      "regression": "actual_daemon_survives_launcher_thread_then_exits_on_app_pipe_eof",
+      "mutation": "    let args: Vec<String> =>     unsafe { libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGTERM, 0, 0, 0); }\n    let args: Vec<String>",
+      "exit": 101,
+      "expectedFailure": true
+    },
+    {
+      "finding": "C2",
+      "regression": "actual_daemon_boots_through_system_data_alias_but_refuses_descendant_link",
+      "mutation": "        value.normalize_paths()?; =>         // negative control: raw Android path\n",
+      "exit": 101,
+      "expectedFailure": true
+    },
+    {
+      "finding": "S1",
+      "regression": "occupied_legacy_port_never_receives_the_real_daemon_bearer",
+      "mutation": "([127, 0, 0, 1], engine.config.port) => ([127, 0, 0, 1], 4098)",
+      "exit": 101,
+      "expectedFailure": true
+    },
+    {
+      "finding": "R1",
+      "regression": "restarted_worker_resumes_only_its_recorded_uncertain_turn_and_keeps_checkpoint",
+      "mutation": "fn resume_job_checkpoint(j: &mut Value) -> Result<(), StoreError> { => fn resume_job_checkpoint(j: &mut Value) -> Result<(), StoreError> {\n    if j[\"stage\"] == \"interrupted\" { return Err(StoreError(\"needsReconciliation\")); }",
+      "exit": 101,
+      "expectedFailure": true
+    },
+    {
+      "finding": "R2",
+      "regression": "daemon::tests::accepted_async_turn_can_appear_after_first_idle_poll_without_resubmission",
+      "mutation": "Some(\"unknown\") if !seen_running && accepted_at.elapsed() < Duration::from_secs(30) => Some(\"unknown\") if false && !seen_running && accepted_at.elapsed() < Duration::from_secs(30)",
+      "exit": 101,
+      "expectedFailure": true
+    },
+    {
+      "finding": "R3",
+      "regression": "usage_changes_workspace_snapshot_without_invalidating_user_revision",
+      "mutation": "        if !usage_only {\n            increment_project(p);\n        } =>         increment_project(p);",
+      "exit": 101,
+      "expectedFailure": true
+    },
+    {
+      "finding": "R4-worker",
+      "regression": "chat::tests::worker_birth_races_never_fill_person_ledger",
+      "mutation": "if self.is_worker_directory(directory) { => if false && self.is_worker_directory(directory) {",
+      "exit": 101,
+      "expectedFailure": true
+    },
+    {
+      "finding": "R4-recover",
+      "regression": "chat::tests::malformed_observation_recovers_only_from_complete_fresh_connected_snapshot",
+      "mutation": "        self.observation_unknown = false; =>         // negative control: sticky unknown",
+      "exit": 101,
+      "expectedFailure": true
+    },
+    {
+      "finding": "D1",
+      "regression": "accepted command stays accepted when its refresh fails",
+      "mutation": "        if (result.accepted) errorCode = 'unavailable'; =>         if (result.accepted) { errorCode = 'saveFailed'; return const TeamCommandResult(accepted: false, code: 'saveFailed'); }",
+      "exit": 1,
+      "expectedFailure": true
+    },
+    {
+      "finding": "D2",
+      "regression": "ordinary phone profile edits retain Keystore engine auth",
+      "mutation": "        teamEngineAuth =\n            await secure.read(key: '$teamEngineAuthKey${profile.id}') ?? ''; =>         await secure.delete(key: '$teamEngineAuthKey${profile.id}');\n        teamEngineAuth = '';",
+      "exit": 1,
+      "expectedFailure": true
+    }
+  ]
+}

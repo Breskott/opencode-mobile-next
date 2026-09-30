@@ -189,6 +189,10 @@ class PhoneEngineGateway extends NullOrchestrationGateway
       }
       final status = response.statusCode ?? 0;
       if (status < 200 || status >= 300) {
+        final body = response.data;
+        if (status == 409 && body is Map && body['code'] == 'cursorExpired') {
+          throw const PhoneEngineException('cursorExpired');
+        }
         throw PhoneEngineException(
           status >= 300 && status < 400
               ? 'redirectRefused'

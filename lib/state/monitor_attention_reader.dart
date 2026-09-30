@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../orchestration/adapters/fixture/project_fixture_gateway.dart';
 import '../orchestration/adapters/inapp/phone_engine_gateway.dart';
-import '../domain/team_project_gateway.dart';
 import 'team_project_persistence.dart';
 
 import '../api/models.dart';
@@ -323,8 +322,9 @@ class MonitorAttentionReader {
               'interrupted',
               'needsYou',
               'waitingForYou',
-            }.contains(task.status))
+            }.contains(task.status)) {
           continue;
+        }
         final failed = task.status == 'failed';
         result.add(
           AttentionObservation(

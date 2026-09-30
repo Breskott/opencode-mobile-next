@@ -939,3 +939,21 @@ fn trusted_native_erase_handles_mode_zero_and_unlinks_symlinks_without_following
     );
     assert!(external.join("keep").exists());
 }
+
+#[test]
+fn source_dev_branch_is_preserved_when_source_head_remains_main() {
+    let f = Fixture::new();
+    let source = Repository::open(&f.source).unwrap();
+    let seed = source
+        .find_commit(Oid::from_str(&f.initial).unwrap())
+        .unwrap();
+    source.branch("dev", &seed, false).unwrap();
+    source.set_head("refs/heads/dev").unwrap();
+    let dev = commit(&f.source, "dev-work", "approved development base\n");
+    source.set_head("refs/heads/main").unwrap();
+    let imported = f.authority.import_repo("with-dev", &f.source).unwrap();
+    assert_eq!(imported["mainCommit"], f.initial);
+    assert_eq!(imported["devCommit"], dev.to_string());
+    let worker = f.authority.prepare_worker("with-dev", "task").unwrap();
+    assert_eq!(worker["devCommit"], dev.to_string());
+}

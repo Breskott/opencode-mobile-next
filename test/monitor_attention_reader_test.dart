@@ -16,7 +16,6 @@ import 'package:opencode_mobile/state/profiles.dart';
 
 import 'support/profile_monitor_fixture.dart';
 import 'package:opencode_mobile/orchestration/adapters/inapp/phone_engine_gateway.dart';
-import 'package:opencode_mobile/domain/team_project_gateway.dart';
 import 'phone_project_engine_gateway_test.dart' as phone;
 
 final at = DateTime.utc(2026, 9, 28);

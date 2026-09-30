@@ -1,3 +1,5 @@
+> Updated review gate and remaining limitations: [review closure](../review-closure/README.md). Counts and hashes below describe the earlier candidate.
+
 # x86_64 bundle and live acceptance handoff
 
 Finish line: the engine branch supplies matched ARM64/x86_64 native bundles and
