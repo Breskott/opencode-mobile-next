@@ -50,6 +50,7 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../domain/orchestration_gateway.dart';
+import '../orchestration/adapters/inapp/phone_engine_gateway.dart';
 import '../orchestration/adapters/fixture/fixture_gateway.dart';
 import '../orchestration/adapters/fixture/project_fixture_gateway.dart';
 import '../orchestration/adapters/gascity/gascity_gateway.dart';
@@ -87,15 +88,15 @@ typedef MutationKeyMinter = String Function();
 String mintMutationKey() => const Uuid().v4();
 
 /// Probes the host described by a config. Never throws.
-typedef OrchestrationProbe =
-    Future<ProbeVerdict> Function(OrchestrationConfig config);
+typedef OrchestrationProbe = Future<ProbeVerdict> Function(
+  OrchestrationConfig config,
+);
 
 /// Builds the adapter for a config once the probe [found] the host.
-typedef OrchestrationGatewayFactory =
-    FutureOr<OrchestrationGateway> Function(
-      OrchestrationConfig config,
-      ProbeFound found,
-    );
+typedef OrchestrationGatewayFactory = FutureOr<OrchestrationGateway> Function(
+  OrchestrationConfig config,
+  ProbeFound found,
+);
 
 /// Why the plugin has no usable host, in a form the UI can map to copy.
 enum OrchestrationErrorKind {
@@ -340,8 +341,19 @@ class OrchestrationController extends ChangeNotifier {
                    now: now,
                    tickInterval: const Duration(seconds: 8),
                  )
-               : defaultGatewayFactory(config, found)),
-       _probe = probe ?? defaultProbe,
+               : defaultGatewayFactory(
+                   config,
+                   found,
+                   profileId: profile.id,
+                   bearerToken: profile.teamEngineAuth,
+                 )),
+       _probe =
+           probe ??
+           ((config) => defaultProbe(
+             config,
+             profileId: profile.id,
+             bearerToken: profile.teamEngineAuth,
+           )),
        _now = now ?? DateTime.now,
        _mintKey = mintKey ?? mintMutationKey;
 
@@ -1976,12 +1988,17 @@ class OrchestrationController extends ChangeNotifier {
 
   /// Gas City: [GasCityProbe] on the config's URL and city. Fixture: found
   /// at once, the recordings answer for the host.
-  static Future<ProbeVerdict> defaultProbe(OrchestrationConfig config) {
+  static Future<ProbeVerdict> defaultProbe(
+    OrchestrationConfig config, {
+    String profileId = '',
+    String bearerToken = '',
+  }) {
     switch (config.provider) {
+      case OrchestrationProvider.phoneEngine:
+        return _probePhoneEngine(config, profileId, bearerToken);
       case OrchestrationProvider.gascity:
-        return GasCityProbe(
-          hostMode: config.hostMode,
-        ).probe(config.url, city: config.city.isEmpty ? null : config.city);
+        return GasCityProbe(hostMode: config.hostMode)
+            .probe(config.url, city: config.city.isEmpty ? null : config.city);
       case OrchestrationProvider.fixture:
         return Future.value(
           ProbeFound(
@@ -1996,6 +2013,32 @@ class OrchestrationController extends ChangeNotifier {
     }
   }
 
+  static Future<ProbeVerdict> _probePhoneEngine(
+    OrchestrationConfig config,
+    String profileId,
+    String bearerToken,
+  ) async {
+    PhoneEngineGateway? gateway;
+    try {
+      gateway = PhoneEngineGateway(
+        baseUrl: config.url,
+        profileId: profileId,
+        bearerToken: bearerToken,
+      );
+      final health = await gateway.probe();
+      return ProbeFound(
+        host: gateway.host,
+        version: health.engineVersion,
+        readOnly: !health.canExecute,
+        capabilities: gateway.capabilities,
+      );
+    } catch (_) {
+      return const ProbeUnreachable(error: 'Phone engine unavailable');
+    } finally {
+      await gateway?.close();
+    }
+  }
+
   /// [GasCityGateway] for Gas City (the city from the config, else the one
   /// the probe reported; the front's `supervisorUrl` with controls on when
   /// the probe found a front that allows this device to write);
@@ -2003,9 +2046,18 @@ class OrchestrationController extends ChangeNotifier {
   /// fixture.
   static OrchestrationGateway defaultGatewayFactory(
     OrchestrationConfig config,
-    ProbeFound found,
-  ) {
+    ProbeFound found, {
+    String profileId = '',
+    String bearerToken = '',
+  }) {
     switch (config.provider) {
+      case OrchestrationProvider.phoneEngine:
+        return PhoneEngineGateway(
+          baseUrl: config.url,
+          profileId: profileId,
+          bearerToken: bearerToken,
+          probedCapabilities: found.capabilities,
+        );
       case OrchestrationProvider.gascity:
         final front = found.front && found.identityAllowed;
         return GasCityGateway(

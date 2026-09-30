@@ -44,6 +44,7 @@ class LocalTerminal private constructor(private val context: Context) {
     inner class Session(
         val id: Int,
         val pid: Int,
+        val confined: Boolean,
         private val fd: Int,
         private val pty: ParcelFileDescriptor,
     ) {
@@ -206,7 +207,7 @@ class LocalTerminal private constructor(private val context: Context) {
                     .map { (key, value) -> "$key=$value" }
                 val pid = IntArray(1)
                 val fd = PtyAccess.createSubprocess(
-                    linux.prootPath,
+                    linux.prootLaunchPath,
                     context.filesDir.absolutePath,
                     argv.toTypedArray(),
                     env.toTypedArray(),
@@ -216,7 +217,7 @@ class LocalTerminal private constructor(private val context: Context) {
                     0,
                     0,
                 )
-                val session = Session(nextId++, pid[0], fd, ParcelFileDescriptor.adoptFd(fd))
+                val session = Session(nextId++, pid[0], linux.prootIsConfined, fd, ParcelFileDescriptor.adoptFd(fd))
                 sessions[session.id] = session
                 session.startThreads()
                 Log.i(TAG, "shell ${session.id} started as pid ${session.pid}")
@@ -230,6 +231,12 @@ class LocalTerminal private constructor(private val context: Context) {
 
     @Synchronized
     fun list(): List<Session> = sessions.values.toList()
+
+    @Synchronized
+    fun hasLiveSessions(): Boolean = sessions.values.any { it.running }
+
+    @Synchronized
+    fun hasUnconfinedSessions(): Boolean = sessions.values.any { it.running && !it.confined }
 
     /** Forgets a shell, stopping it first when it still runs. */
     fun remove(id: Int) {

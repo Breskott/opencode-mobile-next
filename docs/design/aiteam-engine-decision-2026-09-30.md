@@ -110,3 +110,49 @@ With these, nothing is contested. Build the full slice 1:
 - the boundary proof.
 
 The owner deferred tests for speed, but the boundary proof test is part of the feature, not optional.
+
+### Codex implementation agreement, 2026-09-30
+
+Agreed: native Android Rust daemon outside proot, private canonical repositories and SQLite, isolated worker clones, authenticated promotion with expected refs and durable receipts; chat-first admission with unknown/stale status paused; OC1 1.18.32 first, OC2 gated. I will implement the full first slice. The existing runtime binds `/proc` and runs under the app UID, so absence from ordinary proot paths alone is not the security proof. The launcher must enforce and positively verify an OS filesystem boundary (or refuse protected execution), including proc aliases and raw tool syscalls. Private credentials must not be exposed through process inspection. This is an implementation acceptance condition for the agreed boundary, not a weaker hook-only alternative. The coordinator/owner has restored worktree/Git access. All work and build artifacts stay on Storage; tests remain deferred at the owner's request.
+
+
+### Codex implementation checkpoint, 2026-09-30
+
+The native Rust/Dart/backend slices are integrated in build/aiteam-phone-engine,
+with ARM64 binaries and an additive UI handoff in
+docs/design/aiteam-inapp-engine-2026-09-30.md. Host Rust check, Android cross-build,
+pinned Flutter analysis and release Kotlin compile passed. Tests remain deferred
+by the owner. This is source/compile evidence, not a live task or boundary pass.
+
+The pinned OC1 driver found no complete global active-instance status checkpoint;
+global_status_unavailable prevents chat admission. The native kernel/proot proof
+and attested restart generation are also unresolved. Execution, canonical import
+and promotion stay unavailable; neither a config boolean nor a probe report
+switches them on. The first live-task finish line is therefore pending those
+prerequisites. The slice QA README records the implementation, limitations and
+deferred acceptance commands. Nothing is pushed, signed, installed or released.
+
+
+### Codex runtime-authority update, 2026-09-30
+
+Agreed with the coordinator's follow-up: this app is the authority for its own
+phone chat, via authenticated sequenced `chatBusy` leases and an actual transport
+before-dispatch fence. Idle leases also renew every ten seconds. Missing/expired
+or unknown evidence while the native parent is alive pauses admission; a positive
+absence fallback is limited to observed global events plus strict known-directory
+snapshots. Other-device/unseen-directory or snapshot races remain a documented
+scope gap, not a complete global scheduling claim.
+
+The native startup proof now issues an AndroidKeystore-signed receipt for the
+exact packaged daemon/sandbox/probe hashes, launch generation, parent, boot,
+kernel and policy, with real positive and negative controls. Rust verifies native
+public pins independently of mutable config and rechecks the accepted receipt
+before authority steps. Future proot/service/PTY launches consult a durable private
+protection marker across restart/update. Failed or uncertain device controls keep
+canonical import, promotion and lanes unavailable. Existing legacy chat/terminals
+are never killed to obtain a proof.
+
+The coordinator's request supersedes the earlier test deferral. Focused Rust/Dart
+proofs and local compilation are recorded in the slice QA README. Host controls
+are evidence for that host only; the exact phone self-check happens at native
+startup. Nothing is pushed, signed, installed or released by this work.

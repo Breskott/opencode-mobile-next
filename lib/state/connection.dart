@@ -56,6 +56,8 @@ import 'isolated_task_launch.dart';
 import 'model_library.dart';
 import 'offline_queue.dart';
 import 'orchestration.dart';
+import 'phone_project_engine.dart';
+import '../domain/phone_project_engine.dart';
 import '../domain/team_glance.dart';
 import 'team_glance.dart';
 import 'orchestration_store.dart';
@@ -898,7 +900,11 @@ class ConnectionController extends ChangeNotifier {
       _attentionTransportRevision++;
     }
     _status = value;
+    if (value != StreamStatus.connected) {
+      _phoneChatStatusKnown = false;
+    }
     _syncConnectionStatusClock();
+    _syncPhoneChatHeartbeat();
   }
 
   Timer? _connectionStatusTimer;
@@ -1305,6 +1311,144 @@ class ConnectionController extends ChangeNotifier {
   /// count (04-plugin-architecture §9).
   OrchestrationController? get orchestration => _orchestration;
   OrchestrationController? _orchestration;
+
+  /// Native phone team lifecycle; callable without an active server profile.
+  late final PhoneProjectEngineController phoneProjectEngine =
+      PhoneProjectEngineController(
+        store: store,
+        onAttached: _phoneEngineAttached,
+        chatSource: _phoneChatSnapshot,
+        chatActive: _phoneChatEligible,
+      );
+  String? _phoneChatOwner;
+  bool _phoneChatStatusKnown = false;
+  String? _phoneChatDispatchProfile;
+  final _phoneChatDispatch = PhoneChatDispatchTracker();
+
+  bool _phoneChatEligible(String id) {
+    final owner = _connectedProfile;
+    return !_disposed &&
+        !isIsolated &&
+        owner?.id == id &&
+        owner?.backend == ServerBackend.openCode &&
+        owner?.flavor == ServerFlavor.v1 &&
+        BuiltinLinux.managesServerUrl(owner?.baseUrl) &&
+        owner?.orchestration?.provider == OrchestrationProvider.phoneEngine &&
+        !_deletingReadProfiles.contains(id);
+  }
+
+  PhoneChatActivity _phoneChatSnapshot(String id) {
+    if (!_phoneChatEligible(id)) {
+      return const PhoneChatActivity();
+    }
+    final dirs = <String>{if (directory?.isNotEmpty == true) directory!};
+    final sessions = <String>{
+      ...busySessions,
+      ..._phoneChatDispatch.sessionIds,
+    };
+    dirs.addAll(_phoneChatDispatch.directories.where((d) => d.isNotEmpty));
+    for (final session in sessions) {
+      final where = sessionsById[session]?.directory;
+      if (where != null && where.isNotEmpty) {
+        dirs.add(where);
+      }
+    }
+    return PhoneChatActivity(
+      known:
+          _phoneChatStatusKnown &&
+          status == StreamStatus.connected &&
+          !_lifecycleSuspended &&
+          !locationLoading &&
+          directory?.isNotEmpty == true,
+      sessionIds: sessions.toList()..sort(),
+      directories: dirs.toList()..sort(),
+    );
+  }
+
+  void _syncPhoneChatHeartbeat() {
+    final id = _connectedProfile?.id;
+    final next = id != null && _phoneChatEligible(id) ? id : null;
+    if (_phoneChatOwner != next) {
+      final previous = _phoneChatOwner;
+      _phoneChatOwner = next;
+      if (previous != null) {
+        final switchingPhoneAlias =
+            !_disposed &&
+            id != null &&
+            id != previous &&
+            BuiltinLinux.managesServerUrl(_connectedProfile?.baseUrl);
+        if (switchingPhoneAlias) {
+          unawaited(
+            phoneProjectEngine
+                .suspendChatAdmission(previous)
+                .catchError((Object _) {}),
+          );
+        } else {
+          unawaited(phoneProjectEngine.stopChatHeartbeat(previous));
+        }
+      }
+    }
+    if (next != null) {
+      unawaited(
+        phoneProjectEngine.pushChatHeartbeat(next).catchError((Object _) {}),
+      );
+    }
+  }
+
+  void _reconcilePhoneChat(Map<String, String>? statuses, int readEpoch) {
+    _phoneChatStatusKnown =
+        statuses != null &&
+        statuses.values.every(
+          (s) => s == 'idle' || s == 'busy' || s == 'retry',
+        );
+    if (!_phoneChatStatusKnown) {
+      return;
+    }
+    _phoneChatDispatch.reconcile(statuses!, readEpoch, directory);
+  }
+
+  Future<void> _beforePhoneChatDispatch(
+    ServerProfile owner,
+    OpenCodeApi transport,
+    String sessionId,
+  ) async {
+    if (_disposed ||
+        !identical(api, transport) ||
+        _connectedProfile?.id != owner.id) {
+      throw const PhoneEngineException('chatTransportRetired');
+    }
+    await phoneProjectEngine.preparePhoneAliasDispatch(owner.id);
+    if (_connectedProfile?.orchestration?.provider !=
+        OrchestrationProvider.phoneEngine) {
+      return;
+    }
+    if (!_phoneChatEligible(owner.id) || !identical(api, transport)) {
+      throw const PhoneEngineException('chatTransportRetired');
+    }
+    final generation = _generation;
+    _phoneChatDispatch.begin(sessionId, transport.directory);
+    notifyListeners();
+    try {
+      await phoneProjectEngine.beforePersonDispatch(owner.id);
+      if (!_isCurrent(generation, transport) || !_phoneChatEligible(owner.id)) {
+        throw const PhoneEngineException('chatTransportRetired');
+      }
+    } catch (_) {
+      // The callback failed before OpenCode transport could send anything.
+      _phoneChatDispatchSettled(sessionId, removeUnsent: true);
+      rethrow;
+    }
+  }
+
+  void _phoneChatDispatchSettled(
+    String sessionId, {
+    bool removeUnsent = false,
+  }) {
+    _phoneChatDispatch.settled(sessionId, removeUnsent: removeUnsent);
+    // HTTP acceptance/error does not assert idle; the next fresh status read owns it.
+    notifyListeners();
+  }
+
   late final OrchestrationStore _orchestrationStore = OrchestrationStore(
     store.prefs,
     secure: store.secure,
@@ -1326,6 +1470,7 @@ class ConnectionController extends ChangeNotifier {
       for (final stored in store.profiles) {
         if (stored.id == connected.id) {
           connected.orchestration = stored.orchestration;
+          connected.teamEngineAuth = stored.teamEngineAuth;
           break;
         }
       }
@@ -1334,6 +1479,18 @@ class ConnectionController extends ChangeNotifier {
     // The sibling changed hands (or went away); screens showing its state
     // rebuild from here, as they do for every other controller change.
     if (!_disposed) notifyListeners();
+  }
+
+  void _phoneEngineAttached(String profileId) {
+    if (_disposed || _connectedProfile?.id != profileId) return;
+    // A native restart may rotate auth even when the nonsecret URL is unchanged.
+    final current = _orchestration;
+    if (current != null) {
+      current.removeListener(_orchestrationChanged);
+      current.dispose();
+      _orchestration = null;
+    }
+    syncOrchestration();
   }
 
   void _syncOrchestration(ServerProfile? selected) {
@@ -1357,6 +1514,12 @@ class ConnectionController extends ChangeNotifier {
       profile: selected,
       config: config,
       store: _orchestrationStore,
+      probe: config.provider == OrchestrationProvider.phoneEngine
+          ? (_) => phoneProjectEngine.orchestrationProbe(selected)
+          : null,
+      gatewayFactory: config.provider == OrchestrationProvider.phoneEngine
+          ? (_, _) => phoneProjectEngine.orchestrationGateway(selected)
+          : null,
     )..addListener(_orchestrationChanged);
     _orchestration = next;
     _teamAlerts = TeamAlertTracker(profileId: selected.id);
@@ -2165,6 +2328,13 @@ class ConnectionController extends ChangeNotifier {
     }
     if (profile.flavor == ServerFlavor.v2) return _v2GatewayFactory(profile);
     final v1Api = _apiFactory(profile);
+    if (BuiltinLinux.managesServerUrl(profile.baseUrl)) {
+      v1Api.beforeSessionDispatch = (id) =>
+          _beforePhoneChatDispatch(profile, v1Api, id);
+      v1Api.sessionDispatchSettled = (id) {
+        if (identical(api, v1Api)) _phoneChatDispatchSettled(id);
+      };
+    }
     return (gateway: v1Api, operations: _repositoryFactory(v1Api));
   }
 
@@ -3236,6 +3406,7 @@ class ConnectionController extends ChangeNotifier {
 
     void handleError(Object e) {
       if (!_isCurrentStream(generation, currentApi, stream)) return;
+      _phoneChatStatusKnown = false;
       _noteAuthFailure(e);
       lastError = e.toString();
       notifyListeners();
@@ -3892,6 +4063,9 @@ class ConnectionController extends ChangeNotifier {
           _markSessionChanged(sid);
           switch (sessionStatus) {
             case 'idle':
+              if (_phoneChatDispatch.contains(sid)) {
+                unawaited(_refreshBusySessionStatuses());
+              }
               busySessions.remove(sid);
               retryStates.remove(sid);
               _settleSessionAttention(sid, CodingAlertKind.complete);
@@ -3899,17 +4073,20 @@ class ConnectionController extends ChangeNotifier {
               _resumeDeferredProviderHeal();
               break;
             case 'busy':
+              _phoneChatDispatch.observeBusy(sid);
               busySessions.add(sid);
               retryStates.remove(sid);
               _markSessionAttentionActive(sid);
               break;
             case 'retry':
+              _phoneChatDispatch.observeBusy(sid);
               busySessions.add(sid);
               final retry = SessionRetryState.fromStatusJson(rawStatus);
               if (retry != null) retryStates[sid] = retry;
               _markSessionAttentionActive(sid);
               break;
             default:
+              _phoneChatStatusKnown = false;
               break;
           }
           notifyListeners();
@@ -3956,6 +4133,9 @@ class ConnectionController extends ChangeNotifier {
       case 'session.idle':
         final sid = props['sessionID']?.toString();
         if (sid != null) {
+          if (_phoneChatDispatch.contains(sid)) {
+            unawaited(_refreshBusySessionStatuses());
+          }
           _markSessionChanged(sid);
           busySessions.remove(sid);
           retryStates.remove(sid);
@@ -5746,6 +5926,7 @@ class ConnectionController extends ChangeNotifier {
     if (currentApi == null) return;
     final refreshGeneration = ++_sessionsRefreshGeneration;
     final revision = _sessionRevision;
+    final chatReadEpoch = _phoneChatDispatch.epoch;
     sessionsLoading = true;
     sessionsLoadingMore = false;
     sessionsError = null;
@@ -5828,6 +6009,7 @@ class ConnectionController extends ChangeNotifier {
           }
         }
       }
+      _reconcilePhoneChat(statuses, chatReadEpoch);
       sessionsLoading = false;
       sessionsError = statusError?.toString();
       if (statusError != null) _recordLocationError(sessionsError!);
@@ -5842,6 +6024,7 @@ class ConnectionController extends ChangeNotifier {
       )) {
         return;
       }
+      _phoneChatStatusKnown = false;
       sessionsLoading = false;
       sessionsError = error.toString();
       _recordLocationError(sessionsError!);
@@ -6066,7 +6249,7 @@ class ConnectionController extends ChangeNotifier {
       if (sessionsLoading || sessionsLoadingMore) return;
       if (shouldPoll) {
         unawaited(refreshSessions());
-      } else if (busySessions.isNotEmpty) {
+      } else if (busySessions.isNotEmpty || _phoneChatDispatch.isNotEmpty) {
         // An otherwise healthy SSE connection can still lose one terminal
         // event during a network handoff. Reconcile only active sessions so a
         // missed `idle` cannot leave the chat thinking forever.
@@ -6096,19 +6279,26 @@ class ConnectionController extends ChangeNotifier {
     final currentApi = api;
     final generation = _generation;
     final tracked = {
-      for (final id in busySessions) id: _sessionStatusRevisions[id] ?? 0,
+      for (final id in {...busySessions, ..._phoneChatDispatch.sessionIds})
+        id: _sessionStatusRevisions[id] ?? 0,
     };
     if (currentApi == null || tracked.isEmpty) return;
 
+    final chatReadEpoch = _phoneChatDispatch.epoch;
     Map<String, String> statuses;
     try {
       statuses = await currentApi.sessionStatuses();
     } catch (_) {
-      // SSE remains authoritative when this lightweight recovery check fails.
+      if (_isCurrent(generation, currentApi)) {
+        _phoneChatStatusKnown = false;
+        _syncPhoneChatHeartbeat();
+      }
       return;
     }
     if (!_isCurrent(generation, currentApi)) return;
 
+    _reconcilePhoneChat(statuses, chatReadEpoch);
+    _syncPhoneChatHeartbeat();
     var changed = false;
     for (final entry in tracked.entries) {
       if ((_sessionStatusRevisions[entry.key] ?? 0) != entry.value) continue;
@@ -7017,6 +7207,7 @@ class ConnectionController extends ChangeNotifier {
     final retainedKeys = {
       'oc.automaticActivity.$profileId',
       AutomationPolicyController.keyFor(profileId),
+      'oc.teamEngineDeleted.$profileId',
     };
     final failures = <String>[];
 
@@ -7097,6 +7288,19 @@ class ConnectionController extends ChangeNotifier {
           _savedPrompts = null;
         }
         await ConsentOwners.closeProfile(store.prefs, profileId);
+        final engineProfile = store.profiles
+            .where((p) => p.id == profileId)
+            .firstOrNull;
+        if (engineProfile?.orchestration?.provider ==
+                OrchestrationProvider.phoneEngine ||
+            (engineProfile?.teamEngineAuth.isNotEmpty ?? false) ||
+            store.prefs.getBool('oc.teamEngineDeleted.$profileId') == true) {
+          try {
+            await phoneProjectEngine.deleteProfile(profileId);
+          } catch (_) {
+            failures.add('phone team engine data');
+          }
+        }
         try {
           // The plugin's sibling stops first so no refetch can rewrite the
           // `oc.orchestration.<id>.` keys the scoped sweep below discovers.
@@ -7567,6 +7771,19 @@ class ConnectionController extends ChangeNotifier {
     // reload that follows a wake keeps running behind it.
     await (_lifecycleTransportReady ?? resume);
     if (_disposed || _lifecycleSuspended) return null;
+    final owner = _connectedProfile;
+    if (owner != null && BuiltinLinux.managesServerUrl(owner.baseUrl)) {
+      await phoneProjectEngine.preparePhoneAliasDispatch(owner.id);
+      if (owner.flavor != ServerFlavor.v1 &&
+          owner.orchestration?.provider == OrchestrationProvider.phoneEngine) {
+        await phoneProjectEngine.suspendChatAdmission(owner.id);
+      }
+      if (_disposed ||
+          _lifecycleSuspended ||
+          _connectedProfile?.id != owner.id) {
+        return null;
+      }
+    }
     return api;
   }
 
@@ -8798,6 +9015,7 @@ class ConnectionController extends ChangeNotifier {
   @override
   void notifyListeners() {
     _syncConnectionStatusClock();
+    _syncPhoneChatHeartbeat();
     super.notifyListeners();
     // Keep the Android home-screen widget's snapshot in step with session
     // truth; the writer itself skips unchanged payloads. Profile deletion
@@ -10442,6 +10660,7 @@ class ConnectionController extends ChangeNotifier {
   }
 
   int _beginGeneration({bool preserveConnectionAttempt = false}) {
+    _phoneChatStatusKnown = false;
     if (!preserveConnectionAttempt) connectionAttemptRevision++;
     _generation += 1;
     connectionRevision = _generation;
@@ -10523,6 +10742,8 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _retireTransport() {
+    _phoneChatStatusKnown = false;
+    _syncPhoneChatHeartbeat();
     elsewhereAttention.markStale();
     final policyListener = _streamPolicyChanged;
     if (policyListener != null) _streamPolicy?.removeListener(policyListener);
@@ -10547,6 +10768,12 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _clearLocationData() {
+    _phoneChatStatusKnown = false;
+    if (_phoneChatDispatchProfile != _connectedProfile?.id) {
+      _phoneChatDispatch.reset();
+      _phoneChatDispatchProfile = _connectedProfile?.id;
+    }
+    _phoneChatDispatch.epoch++;
     _attentionReads.clear();
     _attentionEvents.clear();
     _attentionReadRevisions.clear();
@@ -10664,6 +10891,7 @@ class ConnectionController extends ChangeNotifier {
     _orchestration?.removeListener(_orchestrationChanged);
     _orchestration?.dispose();
     _orchestration = null;
+    unawaited(phoneProjectEngine.close());
     // The histories are shared per profile and outlive this connection.
     for (final history in _watchedActivity) {
       history.removeListener(_automaticActivityChanged);

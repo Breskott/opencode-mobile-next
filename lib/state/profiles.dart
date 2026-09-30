@@ -6,6 +6,7 @@ import 'package:flutter/services.dart'
     show MissingPluginException, PlatformException;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../ui/kit/kit_redact.dart';
 
 import '../api/models.dart' show ModelRef;
@@ -45,12 +46,19 @@ enum OrchestrationProvider {
   gascity,
 
   /// The recorded fixture in `tool/qa/gascity_fixture` (tests and demos).
-  fixture;
+  fixture,
+
+  /// Native phone-resident durable project engine.
+  phoneEngine;
 
   /// Maps a stored name; unknown names fall back to [gascity] so an old
   /// profile never loses its host.
   static OrchestrationProvider fromName(Object? name) =>
-      name == fixture.name ? fixture : gascity;
+      name == phoneEngine.name
+      ? phoneEngine
+      : name == fixture.name
+      ? fixture
+      : gascity;
 }
 
 /// The kind of machine an AI Team host runs on, chosen by the person when
@@ -240,6 +248,9 @@ class ServerProfile {
   /// its own key and is intentionally excluded from profile JSON.
   String codexToken;
 
+  /// Phone engine bearer auth, runtime-only and never included in JSON.
+  String teamEngineAuth;
+
   /// Codex project directory stored as profile metadata, never as a secret.
   String codexDirectory;
 
@@ -267,6 +278,7 @@ class ServerProfile {
     this.password = '',
     this.requiresPasswordReentry = false,
     this.codexToken = '',
+    this.teamEngineAuth = '',
     this.codexDirectory = '',
     this.requiresCodexTokenReentry = false,
     this.flavor = ServerFlavor.v1,
@@ -695,6 +707,7 @@ class ProfileStore {
   static const _activeKey = 'oc.activeProfile';
   static const _passwordKey = 'pw.';
   static const _codexTokenKey = 'oc.codexToken.';
+  static const teamEngineAuthKey = 'oc.teamEngineAuth.';
   static const _modelKey = 'oc.model.'; // + profileId -> "providerID|modelID"
   static const _modelExplicitKey = 'oc.modelExplicit.'; // + profileId
   static const _agentKey = 'oc.agent.'; // + profileId
@@ -756,9 +769,12 @@ class ProfileStore {
               profile.requiresCodexTokenReentry);
       profile.password = '';
       profile.codexToken = '';
+      profile.teamEngineAuth = '';
     }
     bool ownsKey(String key) =>
-        key.startsWith(_passwordKey) || key.startsWith(_codexTokenKey);
+        key.startsWith(_passwordKey) ||
+        key.startsWith(_codexTokenKey) ||
+        key.startsWith(teamEngineAuthKey);
     try {
       final secrets = await secure.readAll();
       final owned = <String>[
@@ -850,6 +866,13 @@ class ProfileStore {
 
   Future<void> _restoreSecret(ServerProfile p) async {
     try {
+      p.teamEngineAuth =
+          await secure.read(key: '$teamEngineAuthKey${p.id}') ?? '';
+      KitRedact.registerKnownSecret(p.teamEngineAuth);
+    } catch (_) {
+      p.teamEngineAuth = '';
+    }
+    try {
       if (p.usesAgentSocket) {
         p.codexToken = await secure.read(key: '$_codexTokenKey${p.id}') ?? '';
         KitRedact.registerKnownSecret(p.codexToken);
@@ -898,6 +921,7 @@ class ProfileStore {
     // Register before persistence: a failing keyring may echo its input.
     KitRedact.registerKnownSecret(profile.password);
     KitRedact.registerKnownSecret(profile.codexToken);
+    KitRedact.registerKnownSecret(profile.teamEngineAuth);
     final previousRaw = prefs.getString(_profilesKey);
     final next = List<ServerProfile>.of(_cache);
     final i = _cache.indexWhere((p) => p.id == profile.id);
@@ -910,6 +934,14 @@ class ProfileStore {
       throw StateError('Could not save the server profile');
     }
     try {
+      if (profile.teamEngineAuth.isEmpty) {
+        await secure.delete(key: '$teamEngineAuthKey${profile.id}');
+      } else {
+        await secure.write(
+          key: '$teamEngineAuthKey${profile.id}',
+          value: profile.teamEngineAuth,
+        );
+      }
       if (profile.usesAgentSocket) {
         if (profile.codexToken.isEmpty) {
           await secure.delete(key: '$_codexTokenKey${profile.id}');
@@ -1062,6 +1094,7 @@ class ProfileStore {
     try {
       if (previousActive == id) await setActiveId(null);
       await secure.delete(key: secretKey);
+      await secure.delete(key: '$teamEngineAuthKey$id');
     } catch (error) {
       await _restoreProfiles(previousRaw);
       if (previousActive == id &&

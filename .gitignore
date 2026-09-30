@@ -57,3 +57,7 @@ app.*.map.json
 /*.apk
 test/**/failures/
 COMMIT_MSG.txt
+
+# Native phone-engine build outputs stay off the root disk.
+/engine/phone/target/
+/engine/phone/artifacts/
