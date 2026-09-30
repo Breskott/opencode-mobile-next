@@ -3013,6 +3013,7 @@ class _ChatScreenState extends State<ChatScreen>
       if (conversationSend && voiceSendCurrent()) {
         setState(() => _watchVoiceReply(pending));
       }
+      _conn.noteLocalTurn(widget.sessionID);
       final exactMessageID = pending.dispatchedMessageID;
       if (exactMessageID != null && actionApi is CorrelatedPromptGateway) {
         await (actionApi as CorrelatedPromptGateway).promptWithMessageID(
