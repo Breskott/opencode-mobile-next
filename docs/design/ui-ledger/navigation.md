@@ -961,6 +961,7 @@ graph LR
   team_merge_approve_sheet(["team-merge-approve-sheet"])
   team_merge_changes_sheet(["team-merge-changes-sheet"])
   team_merge_confirm_sheet(["team-merge-confirm-sheet"])
+  team_migration["team-migration"]
   team_phone_onboarding_failed["team-phone-onboarding-failed"]
   team_phone_onboarding_killed["team-phone-onboarding-killed"]
   team_phone_onboarding_offer["team-phone-onboarding-offer"]
@@ -1059,6 +1060,7 @@ graph LR
   team_project_overview --> team_project_settings
   team_project_overview --> team_project_conversation
   team_project_board --> team_project_conversation
+  team_migration --> team_projects
   gate_sheet --> work_sheet
   gate_sheet --> gate_sheet_confirm_sheet
   gate_sheet --> team_agent
@@ -1086,6 +1088,7 @@ graph LR
   gate_sheet --> chat_watching_live
   embedded_team_planning_card --> chat_watching_live
   settings --> team_settings
+  team_home --> team_migration
   team_phone_onboarding_offer --> team_phone_onboarding_steps
   team_agent -.-> embedded_product_states
   team_home -.-> embedded_product_states
@@ -1648,7 +1651,7 @@ graph LR
 | `team-project-settings` | sheet | 2 / 4 | `team-project-overview` / team-project-overview-settings | _none_ |
 | `team-project-roles` | sheet | 2 / 4 | `team-projects` / team-projects-roles | _none_ |
 | `team-project-defaults` | sheet | 2 / 4 | `team-projects` / team-projects-defaults | _none_ |
-| `team-projects` | screen | 1 / 3 | `team-project-demo` / team-project-demo-projects<br>`workspace` / workspace-project-strip<br>`team-intro` / team-intro-project-demo | team-projects-new -> `team-project-new`<br>team-projects-quick -> `team-project-quick`<br>team-projects-roles -> `team-project-roles`<br>team-projects-open -> `team-project-overview`<br>team-projects-defaults -> `team-project-defaults` |
+| `team-projects` | screen | 1 / 3 | `team-project-demo` / team-project-demo-projects<br>`workspace` / workspace-project-strip<br>`team-intro` / team-intro-project-demo<br>`team-migration` / team-migration-demo | team-projects-new -> `team-project-new`<br>team-projects-quick -> `team-project-quick`<br>team-projects-roles -> `team-project-roles`<br>team-projects-open -> `team-project-overview`<br>team-projects-defaults -> `team-project-defaults` |
 | `team-project-overview` | screen | 1 / 3 | `team-projects` / team-projects-open<br>`activity` / activity-project-decision | team-project-overview-spec -> `team-project-spec`<br>team-project-overview-plan -> `team-project-plan`<br>team-project-overview-board -> `team-project-board`<br>team-project-overview-timeline -> `team-project-timeline`<br>team-project-overview-servers -> `team-project-servers`<br>team-project-overview-settings -> `team-project-settings`<br>team-project-overview-task -> `team-project-conversation` |
 | `team-project-timeline` | screen | 2 / 4 | `team-project-overview` / team-project-overview-timeline | _none_ |
 | `team-project-servers` | screen | 2 / 4 | `team-project-overview` / team-project-overview-servers | _none_ |
@@ -1659,8 +1662,9 @@ graph LR
 | `team-task-details` | sheet | 2 / 4 | `team-conversation` / team-conversation-menu-details | team-task-details-step -> `work-sheet`<br>team-task-details-agent -> `team-agent` |
 | `team-agents` | screen | 2 / 4 | `team-settings` / team-home-runs-agents-row | team-agents-role-row -> `team-role`<br>team-agents-worker-row -> `chat`<br>team-agents-new-role -> `team-role`<br>-> `chat-watching-live` |
 | `team-board` | screen | 2 / 4 | `team-home` / team-home-board | team-board-add -> `start-run-sheet`<br>team-board-empty-add -> `start-run-sheet`<br>team-board-card -> `team-conversation`<br>team-board-card-moves -> `team-board-move-sheet`<br>team-board-card-long-press -> `team-board-move-sheet` |
-| `team-home` | screen | 1 / 3 | `settings`<br>`workspace` / workspace-team-card<br>`workspace` / workspace-team-door<br>`team-conversation` / team-conversation-team-page | team-home-start-run -> `start-run-sheet`<br>team-home-planning-card -> `embedded-team-planning-card`<br>team-home-board -> `team-board`<br>team-home-settings -> `team-settings`<br>team-home-runs-row -> `team-conversation`<br>team-home-needs-you-gate-row -> `gate-sheet`<br>team-home-needs-you-gate-receipt-chip -> `gate-sheet`<br>(embedded) -> `embedded-product-states`<br>(embedded) -> `embedded-team-planning-card`<br>(embedded) -> `embedded-team-phone-section`<br>-> `team-host-details-sheet` |
+| `team-home` | screen | 1 / 3 | `settings`<br>`workspace` / workspace-team-card<br>`workspace` / workspace-team-door<br>`team-conversation` / team-conversation-team-page | team-home-start-run -> `start-run-sheet`<br>team-home-planning-card -> `embedded-team-planning-card`<br>team-home-board -> `team-board`<br>team-home-settings -> `team-settings`<br>team-home-runs-row -> `team-conversation`<br>team-home-needs-you-gate-row -> `gate-sheet`<br>team-home-needs-you-gate-receipt-chip -> `gate-sheet`<br>team-home-refresh -> `team-migration`<br>(embedded) -> `embedded-product-states`<br>(embedded) -> `embedded-team-planning-card`<br>(embedded) -> `embedded-team-phone-section`<br>-> `team-host-details-sheet` |
 | `team-intro` | screen | 1 / 3 | `settings` / settings-ai-team<br>`team-intro` / team-intro-set-up<br>`tools-hub` / tools-hub-plugins | team-intro-set-up -> `team-intro`<br>team-intro-address -> `team-host-sheet`<br>team-intro-on-computer -> `team-host-guide-sheet`<br>team-intro-set-up-termux -> `termux-setup-installed`<br>team-intro-project-demo -> `team-projects` |
+| `team-migration` | screen | 2 / 4 | `team-home` / team-home-refresh | team-migration-demo -> `team-projects` |
 | `team-model-sheet` | sheet | unreachable | _none_ | _none_ |
 | `team-settings` | screen | 1 / 3 | `team-home` / team-home-settings<br>`settings` / settings-ai-team | team-home-change-address -> `team-host-sheet`<br>team-home-phone-controls -> `embedded-team-phone-section`<br>team-home-turn-off -> `team-turn-off-sheet`<br>team-home-host-row -> `team-host-details-sheet`<br>team-home-runs-agents-row -> `team-agents` |
 | `embedded-work-graph` | overlay | unreachable | _none_ | embedded-work-graph-node -> `work-sheet` |

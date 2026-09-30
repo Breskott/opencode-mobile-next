@@ -2617,6 +2617,72 @@
           "destructive": false
         }
       ]
+    },
+    {
+      "id": "team-migration",
+      "title": "AI Team has changed",
+      "kind": "screen",
+      "file": "lib/ui/screens/team/team_migration.dart",
+      "widget": "TeamMigrationScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "One screen for a phone whose old Gas City team stayed on after the update: says AI Team changed and the old team only takes quick tasks, and offers the switch, keeping the old team, or the project demo.",
+      "reachedFrom": [
+        {
+          "page": "team-home",
+          "element": "team-home-refresh"
+        }
+      ],
+      "gates": [
+        "TeamPage shows it in place of the old team's home until the person keeps the old team (oc.teamMigrationKept.<profileId>); the old team's menu reopens it"
+      ],
+      "elements": [
+        {
+          "id": "team-migration-switch",
+          "type": "button",
+          "label": "Switch to the new AI Team on this phone",
+          "key": "team-migration-switch",
+          "line": 1,
+          "action": "navigate",
+          "target": "team-phone-setup",
+          "targetWidget": null,
+          "effect": "Opens the phone's one-tap setup flow (PhoneTeamSetup.run).",
+          "gates": [
+            "an old (non-phone-engine) team is on and this phone has an in-app server"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-migration-keep",
+          "type": "button",
+          "label": "Keep the old team for now",
+          "key": "team-migration-keep",
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Remembers the choice for this server and shows the old team.",
+          "gates": [
+            "an old (non-phone-engine) team is on and this phone has an in-app server"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-migration-demo",
+          "type": "button",
+          "label": "Try AI Team demo",
+          "key": "team-migration-demo",
+          "line": 1,
+          "action": "navigate",
+          "target": "team-projects",
+          "targetWidget": null,
+          "effect": "Opens the isolated project demo so project screens stay reachable.",
+          "gates": [
+            "an old (non-phone-engine) team is on and this phone has an in-app server"
+          ],
+          "destructive": false
+        }
+      ]
     }
   ],
   "notPages": [
