@@ -26,6 +26,7 @@ import '../widgets/other_servers_panel.dart';
 import '../widgets/other_projects_panel.dart';
 import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../kit/kit.dart';
+import '../widgets/phone_team_setup_strip.dart';
 import '../widgets/team_project_strip.dart';
 import 'team/projects/team_projects_screen.dart';
 import '../kit/scenes/states_scenes.dart';
@@ -1056,6 +1057,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                       refreshing: false,
                     ),
                   ),
+              SliverToBoxAdapter(
+                child: PhoneTeamSetupStrip(connection: controller),
+              ),
               if (teamStrip != null) SliverToBoxAdapter(child: teamStrip),
               if (head.isNotEmpty)
                 SliverToBoxAdapter(child: KitAnimatedRows(children: head)),

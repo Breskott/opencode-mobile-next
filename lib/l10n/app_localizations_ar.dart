@@ -25911,4 +25911,135 @@ class AppLocalizationsAr extends AppLocalizations {
   String teamProjectFindingsMinor(int count) {
     return '$count minor';
   }
+
+  @override
+  String get phoneTeamSetupTitle => 'تشغيل فريق الذكاء الاصطناعي';
+
+  @override
+  String get phoneTeamStepReply => 'انتظر انتهاء ردّك الحالي';
+
+  @override
+  String get phoneTeamReplyWaiting => 'ينهي ردّك الحالي…';
+
+  @override
+  String get phoneTeamStepStop => 'إيقاف OpenCode وإغلاق الطرفيات';
+
+  @override
+  String get phoneTeamStepCheck => 'التحقق من أن الهاتف آمن للفريق';
+
+  @override
+  String get phoneTeamStepServer => 'تشغيل OpenCode من جديد بحماية';
+
+  @override
+  String get phoneTeamNotNeeded => 'غير مطلوب';
+
+  @override
+  String get phoneTeamStopTitle => 'إيقاف OpenCode لدقيقة؟';
+
+  @override
+  String get phoneTeamStopBody =>
+      'يوقف خادم OpenCode على هذا الهاتف لنحو دقيقة ثم يشغّله من جديد بحماية. تُغلق الطرفيات المفتوحة.';
+
+  @override
+  String get phoneTeamStopConfirm => 'أوقف وتابع';
+
+  @override
+  String get phoneTeamStopCancel => 'ليس الآن';
+
+  @override
+  String get phoneTeamStopWaiting => 'بانتظار ردّك';
+
+  @override
+  String get phoneTeamDoneTitle => 'فريق الذكاء الاصطناعي جاهز على هذا الهاتف';
+
+  @override
+  String get phoneTeamDoneBody => 'أعطه هدفًا فيخطط الفريق وينفذ ويراجع العمل.';
+
+  @override
+  String get phoneTeamFailUnsafeTitle => 'يبقى الفريق متوقفًا';
+
+  @override
+  String get phoneTeamFailUnsafeBody =>
+      'لا يستطيع هذا الهاتف فصل نسخة الفريق من شيفرتك عن الوكلاء، لذلك يبقى الفريق متوقفًا.';
+
+  @override
+  String get phoneTeamFailEngineTitle => 'لم يبدأ فريق الذكاء الاصطناعي';
+
+  @override
+  String get phoneTeamFailEngineBody =>
+      'لم يبدأ محرك الفريق على هذا الهاتف. لم يتغير أي شيء آخر.';
+
+  @override
+  String get phoneTeamFailStopTitle => 'لم يتوقف OpenCode';
+
+  @override
+  String get phoneTeamFailStopBody =>
+      'لم يُغلق OpenCode أو إحدى الطرفيات، فلا يمكن إجراء الفحص بأمان بعد.';
+
+  @override
+  String get phoneTeamFailServerTitle => 'لم يعد OpenCode';
+
+  @override
+  String get phoneTeamFailServerBody =>
+      'اجتاز هذا الهاتف الفحص لكن OpenCode لم يبدأ من جديد. ابدأ من جديد للإنهاء.';
+
+  @override
+  String get phoneTeamFailNotReadyTitle => 'ليس جاهزًا بعد';
+
+  @override
+  String get phoneTeamFailNotReadyBody =>
+      'عاد OpenCode لكن الفريق لا يستطيع بدء العمل بعد.';
+
+  @override
+  String get phoneTeamFailDeclinedTitle => 'لم يتغير شيء';
+
+  @override
+  String get phoneTeamFailDeclinedBody =>
+      'يبقى OpenCode كما هو، لذلك يبقى الفريق متوقفًا. ابدأ من جديد حين تكون مستعدًا لإعادة تشغيله.';
+
+  @override
+  String get phoneTeamFailNoServerTitle => 'جهّز OpenCode على هذا الهاتف أولًا';
+
+  @override
+  String get phoneTeamFailNoServerBody =>
+      'يعمل الفريق مع OpenCode على هذا الهاتف ولا يوجد واحد بعد.';
+
+  @override
+  String get phoneTeamReasonNotPackaged =>
+      'هذه النسخة من التطبيق لا تتضمن أدوات أمان الفريق.';
+
+  @override
+  String get phoneTeamDetails => 'التفاصيل';
+
+  @override
+  String get phoneTeamOffTitle => 'فريق الذكاء الاصطناعي متوقف على هذا الهاتف';
+
+  @override
+  String get phoneTeamOffBody =>
+      'يحتاج إلى فحص أمان سريع، مثلًا بعد تحديث التطبيق.';
+
+  @override
+  String get phoneTeamBlocked =>
+      'لا يستطيع الفريق بدء العمل قبل فحص هذا الهاتف.';
+
+  @override
+  String get phoneTeamStripChecking =>
+      'فحص فريق الذكاء الاصطناعي على هذا الهاتف';
+
+  @override
+  String get phoneTeamStripWaiting => 'يحتاج الفريق إلى إعادة تشغيل OpenCode';
+
+  @override
+  String get phoneTeamStripReview => 'افتح الفحص لتختار الوقت';
+
+  @override
+  String get phoneTeamStripFailed => 'تعذر تشغيل فريق الذكاء الاصطناعي';
+
+  @override
+  String phoneTeamStripStep(int step, int total) {
+    return 'الخطوة $step من $total';
+  }
+
+  @override
+  String get phoneTeamBlockedTitle => 'افحص الهاتف أولًا';
 }

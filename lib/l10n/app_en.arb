@@ -30554,5 +30554,169 @@
         "type": "int"
       }
     }
+  },
+  "phoneTeamSetupTitle": "Turn on AI Team",
+  "@phoneTeamSetupTitle": {
+    "description": "Top bar of the one-tap page that turns the AI Team on for this phone"
+  },
+  "phoneTeamStepReply": "Let your current reply finish",
+  "@phoneTeamStepReply": {
+    "description": "Step 1 of turning on AI Team on this phone"
+  },
+  "phoneTeamReplyWaiting": "Finishing your current reply…",
+  "@phoneTeamReplyWaiting": {
+    "description": "Under step 1 while a chat reply is still running"
+  },
+  "phoneTeamStepStop": "Stop OpenCode and close terminals",
+  "@phoneTeamStepStop": {
+    "description": "Step 2: the unprotected server and terminals stop, after the person says yes"
+  },
+  "phoneTeamStepCheck": "Checking this phone is safe for the team",
+  "@phoneTeamStepCheck": {
+    "description": "Step 3: the engine proves this phone keeps the team's copy of the code separate"
+  },
+  "phoneTeamStepServer": "Start OpenCode again, protected",
+  "@phoneTeamStepServer": {
+    "description": "Step 4: the server comes back confined, and the team is probed until it can work"
+  },
+  "phoneTeamNotNeeded": "Not needed",
+  "@phoneTeamNotNeeded": {
+    "description": "Under a step that was skipped because nothing needed doing"
+  },
+  "phoneTeamStopTitle": "Stop OpenCode for a minute?",
+  "@phoneTeamStopTitle": {
+    "description": "Question before stopping the OpenCode server on this phone"
+  },
+  "phoneTeamStopBody": "Stops the OpenCode server on this phone for about a minute, then starts it again protected. Open terminals close.",
+  "@phoneTeamStopBody": {
+    "description": "The one-line effect of stopping OpenCode to turn on AI Team"
+  },
+  "phoneTeamStopConfirm": "Stop and continue",
+  "@phoneTeamStopConfirm": {
+    "description": "Confirm button of the stop question"
+  },
+  "phoneTeamStopCancel": "Not now",
+  "@phoneTeamStopCancel": {
+    "description": "Cancel button of the stop question"
+  },
+  "phoneTeamStopWaiting": "Waiting for your answer",
+  "@phoneTeamStopWaiting": {
+    "description": "Under step 2 while the stop question is open"
+  },
+  "phoneTeamDoneTitle": "AI Team is ready on this phone",
+  "@phoneTeamDoneTitle": {
+    "description": "Headline once the team passed its check and OpenCode is back"
+  },
+  "phoneTeamDoneBody": "Give it a goal and the team plans, builds and checks the work.",
+  "@phoneTeamDoneBody": {
+    "description": "Under the ready headline"
+  },
+  "phoneTeamFailUnsafeTitle": "The team stays off",
+  "@phoneTeamFailUnsafeTitle": {
+    "description": "Failure headline: this phone could not prove the team safe"
+  },
+  "phoneTeamFailUnsafeBody": "This phone can't keep the team's copy of your code separate from the agents, so the team stays off.",
+  "@phoneTeamFailUnsafeBody": {
+    "description": "Failure: the safety check did not pass"
+  },
+  "phoneTeamFailEngineTitle": "AI Team didn't start",
+  "@phoneTeamFailEngineTitle": {
+    "description": "Failure headline: the engine did not start"
+  },
+  "phoneTeamFailEngineBody": "The team's engine didn't start on this phone. Nothing else was changed.",
+  "@phoneTeamFailEngineBody": {
+    "description": "Failure: the engine did not start or answer"
+  },
+  "phoneTeamFailStopTitle": "OpenCode didn't stop",
+  "@phoneTeamFailStopTitle": {
+    "description": "Failure headline: the server or a terminal did not stop"
+  },
+  "phoneTeamFailStopBody": "OpenCode or a terminal didn't close, so the check can't run safely yet.",
+  "@phoneTeamFailStopBody": {
+    "description": "Failure: stopping did not complete"
+  },
+  "phoneTeamFailServerTitle": "OpenCode didn't come back",
+  "@phoneTeamFailServerTitle": {
+    "description": "Failure headline: the server did not start again"
+  },
+  "phoneTeamFailServerBody": "This phone passed the check, but OpenCode didn't start again. Start again to finish.",
+  "@phoneTeamFailServerBody": {
+    "description": "Failure: the protected server did not start"
+  },
+  "phoneTeamFailNotReadyTitle": "Not ready yet",
+  "@phoneTeamFailNotReadyTitle": {
+    "description": "Failure headline: the engine still cannot run work"
+  },
+  "phoneTeamFailNotReadyBody": "OpenCode is back, but the team can't start work yet.",
+  "@phoneTeamFailNotReadyBody": {
+    "description": "Failure: the engine is not ready to run work"
+  },
+  "phoneTeamFailDeclinedTitle": "Nothing changed",
+  "@phoneTeamFailDeclinedTitle": {
+    "description": "Headline after the person chose not to stop OpenCode"
+  },
+  "phoneTeamFailDeclinedBody": "OpenCode stays as it is, so the team stays off. Start again when you're ready to restart it.",
+  "@phoneTeamFailDeclinedBody": {
+    "description": "After the person said not now to the stop question"
+  },
+  "phoneTeamFailNoServerTitle": "Set up OpenCode on this phone first",
+  "@phoneTeamFailNoServerTitle": {
+    "description": "Headline when there is no OpenCode on this phone"
+  },
+  "phoneTeamFailNoServerBody": "The team works with the OpenCode on this phone, and there isn't one yet.",
+  "@phoneTeamFailNoServerBody": {
+    "description": "Body when there is no OpenCode on this phone"
+  },
+  "phoneTeamReasonNotPackaged": "This copy of the app doesn't include the team's safety tools.",
+  "@phoneTeamReasonNotPackaged": {
+    "description": "Plain reason under the check step when the safety tools are missing"
+  },
+  "phoneTeamDetails": "Details",
+  "@phoneTeamDetails": {
+    "description": "Fold title for technical reasons under a failure"
+  },
+  "phoneTeamOffTitle": "AI Team is off on this phone",
+  "@phoneTeamOffTitle": {
+    "description": "Headline when the team was on but its engine is not answering"
+  },
+  "phoneTeamOffBody": "It needs a quick safety check, for example after an app update.",
+  "@phoneTeamOffBody": {
+    "description": "Body under the off headline"
+  },
+  "phoneTeamBlocked": "The team can't start work until this phone is checked.",
+  "@phoneTeamBlocked": {
+    "description": "One line shown in place of a work action while the engine cannot run work"
+  },
+  "phoneTeamStripChecking": "Checking AI Team on this phone",
+  "@phoneTeamStripChecking": {
+    "description": "Work strip row while the automatic check runs"
+  },
+  "phoneTeamStripWaiting": "AI Team needs to restart OpenCode",
+  "@phoneTeamStripWaiting": {
+    "description": "Work strip row when the automatic check waits for the person"
+  },
+  "phoneTeamStripReview": "Open the check to choose when",
+  "@phoneTeamStripReview": {
+    "description": "Supporting line of the waiting Work strip row"
+  },
+  "phoneTeamStripFailed": "AI Team couldn't turn on",
+  "@phoneTeamStripFailed": {
+    "description": "Work strip row after the automatic check failed"
+  },
+  "phoneTeamStripStep": "Step {step} of {total}",
+  "@phoneTeamStripStep": {
+    "description": "Supporting line of the running Work strip row",
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "phoneTeamBlockedTitle": "Check this phone first",
+  "@phoneTeamBlockedTitle": {
+    "description": "Question title when a work action waits for the phone check"
   }
 }

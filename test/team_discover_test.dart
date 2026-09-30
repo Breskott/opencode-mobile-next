@@ -8,6 +8,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:opencode_mobile/domain/phone_project_engine.dart';
+import 'package:opencode_mobile/state/phone_team_setup.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart';
 import 'package:opencode_mobile/builtin/setup/components.dart';
@@ -531,15 +533,14 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('OpenCode inside the app: Set it up is Add tools › AI Team '
-        'on the in-app host', (tester) async {
+    testWidgets('OpenCode inside the app: Turn on is the one-tap setup page '
+        'of the phone engine', (tester) async {
       debugPlatformCapabilities = const PlatformCapabilities.android();
       debugBuiltinTeam = _BuiltinTeam();
-      final hosts = <SetupHostKind>[];
-      debugTeamPhoneRunJob = (_, host, _) async => hosts.add(host);
-      addTearDown(() => debugTeamPhoneRunJob = null);
       final engine = FakeSetupEngine(registry: _teamRegistry);
       PhoneSetup.engine = engine;
+      PhoneTeamSetup.debugPorts = (_) => _WaitingPhone();
+      addTearDown(() => PhoneTeamSetup.debugPorts = null);
       _mockChannels();
       final controller = await _boot(_inApp());
       expect(teamServerKindOf(controller.profile!), TeamServerKind.inApp);
@@ -548,11 +549,8 @@ void main() {
       expect(find.text(_en.teamDiscoverNeedsPhone), findsOneWidget);
       await tester.tap(_key('team-intro-set-up'));
       await _settle(tester);
-      // Phone setup v2's Add tools, with AI Team switched on.
-      expect(_key('phone-setup-customize-sheet'), findsOneWidget);
-      await tester.tap(_key('phone-setup-customize-done'));
-      await _settle(tester);
-      expect(hosts, [SetupHostKind.builtin]);
+      expect(_key('phone-team-steps'), findsOneWidget);
+      expect(find.textContaining(_en.phoneTeamReplyWaiting), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
@@ -864,4 +862,30 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });
+}
+
+/// A phone with a reply still running: the setup page waits, changes nothing.
+class _WaitingPhone extends ChangeNotifier implements PhoneTeamSetupPorts {
+  @override
+  bool get hasServer => true;
+  @override
+  bool get wasOn => false;
+  @override
+  bool get replyRunning => true;
+  @override
+  Listenable get replyChanges => this;
+  @override
+  Future<PhoneTeamHostState> inspect() async => const PhoneTeamHostState();
+  @override
+  Future<void> stopServer() async {}
+  @override
+  Future<void> closeTerminals() async {}
+  @override
+  Future<PhoneEngineHealth> startEngine() => throw UnimplementedError();
+  @override
+  Future<PhoneEngineHealth> probeEngine() => throw UnimplementedError();
+  @override
+  Future<String?> startServer() async => null;
+  @override
+  Future<void> attach() async {}
 }

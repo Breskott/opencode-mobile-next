@@ -7,6 +7,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../domain/relative_age.dart';
 import '../../../../state/team_project_controller.dart';
 import '../../../kit/kit.dart';
+import 'team_execution_gate.dart';
 
 Future<void> openTeamNewProject(
   BuildContext context,
@@ -46,6 +47,30 @@ Future<void> _open(
   _Kind kind, [
   String projectId = '',
 ]) async {
+  final gate = TeamExecutionGate.of(controller);
+  final startsWork =
+      kind == _Kind.create ||
+      kind == _Kind.quick ||
+      (kind == _Kind.plan &&
+          controller.snapshot?.projects
+                  .where((p) => p.id == projectId)
+                  .firstOrNull
+                  ?.status ==
+              'plan');
+  if (gate != null && startsWork && !gate.permits(TeamExecutionNeed.lanes)) {
+    // Not a form that cannot be sent: the one line and the fix.
+    final l = lookupAppLocalizations(Localizations.localeOf(context));
+    if (await showKitConfirm(
+      context,
+      title: l.phoneTeamBlockedTitle,
+      body: l.phoneTeamBlocked,
+      confirmLabel: l.teamIntroTurnOnPhone,
+      cancelLabel: l.phoneTeamStopCancel,
+    )) {
+      if (context.mounted) await gate.setUp(context);
+    }
+    return;
+  }
   await showKitFramedSheet<void>(
     context,
     builder: (_) =>

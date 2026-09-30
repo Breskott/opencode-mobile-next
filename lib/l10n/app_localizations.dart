@@ -40613,6 +40613,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} minor'**
   String teamProjectFindingsMinor(int count);
+
+  /// Top bar of the one-tap page that turns the AI Team on for this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on AI Team'**
+  String get phoneTeamSetupTitle;
+
+  /// Step 1 of turning on AI Team on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Let your current reply finish'**
+  String get phoneTeamStepReply;
+
+  /// Under step 1 while a chat reply is still running
+  ///
+  /// In en, this message translates to:
+  /// **'Finishing your current reply…'**
+  String get phoneTeamReplyWaiting;
+
+  /// Step 2: the unprotected server and terminals stop, after the person says yes
+  ///
+  /// In en, this message translates to:
+  /// **'Stop OpenCode and close terminals'**
+  String get phoneTeamStepStop;
+
+  /// Step 3: the engine proves this phone keeps the team's copy of the code separate
+  ///
+  /// In en, this message translates to:
+  /// **'Checking this phone is safe for the team'**
+  String get phoneTeamStepCheck;
+
+  /// Step 4: the server comes back confined, and the team is probed until it can work
+  ///
+  /// In en, this message translates to:
+  /// **'Start OpenCode again, protected'**
+  String get phoneTeamStepServer;
+
+  /// Under a step that was skipped because nothing needed doing
+  ///
+  /// In en, this message translates to:
+  /// **'Not needed'**
+  String get phoneTeamNotNeeded;
+
+  /// Question before stopping the OpenCode server on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Stop OpenCode for a minute?'**
+  String get phoneTeamStopTitle;
+
+  /// The one-line effect of stopping OpenCode to turn on AI Team
+  ///
+  /// In en, this message translates to:
+  /// **'Stops the OpenCode server on this phone for about a minute, then starts it again protected. Open terminals close.'**
+  String get phoneTeamStopBody;
+
+  /// Confirm button of the stop question
+  ///
+  /// In en, this message translates to:
+  /// **'Stop and continue'**
+  String get phoneTeamStopConfirm;
+
+  /// Cancel button of the stop question
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get phoneTeamStopCancel;
+
+  /// Under step 2 while the stop question is open
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your answer'**
+  String get phoneTeamStopWaiting;
+
+  /// Headline once the team passed its check and OpenCode is back
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team is ready on this phone'**
+  String get phoneTeamDoneTitle;
+
+  /// Under the ready headline
+  ///
+  /// In en, this message translates to:
+  /// **'Give it a goal and the team plans, builds and checks the work.'**
+  String get phoneTeamDoneBody;
+
+  /// Failure headline: this phone could not prove the team safe
+  ///
+  /// In en, this message translates to:
+  /// **'The team stays off'**
+  String get phoneTeamFailUnsafeTitle;
+
+  /// Failure: the safety check did not pass
+  ///
+  /// In en, this message translates to:
+  /// **'This phone can\'t keep the team\'s copy of your code separate from the agents, so the team stays off.'**
+  String get phoneTeamFailUnsafeBody;
+
+  /// Failure headline: the engine did not start
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team didn\'t start'**
+  String get phoneTeamFailEngineTitle;
+
+  /// Failure: the engine did not start or answer
+  ///
+  /// In en, this message translates to:
+  /// **'The team\'s engine didn\'t start on this phone. Nothing else was changed.'**
+  String get phoneTeamFailEngineBody;
+
+  /// Failure headline: the server or a terminal did not stop
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode didn\'t stop'**
+  String get phoneTeamFailStopTitle;
+
+  /// Failure: stopping did not complete
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode or a terminal didn\'t close, so the check can\'t run safely yet.'**
+  String get phoneTeamFailStopBody;
+
+  /// Failure headline: the server did not start again
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode didn\'t come back'**
+  String get phoneTeamFailServerTitle;
+
+  /// Failure: the protected server did not start
+  ///
+  /// In en, this message translates to:
+  /// **'This phone passed the check, but OpenCode didn\'t start again. Start again to finish.'**
+  String get phoneTeamFailServerBody;
+
+  /// Failure headline: the engine still cannot run work
+  ///
+  /// In en, this message translates to:
+  /// **'Not ready yet'**
+  String get phoneTeamFailNotReadyTitle;
+
+  /// Failure: the engine is not ready to run work
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is back, but the team can\'t start work yet.'**
+  String get phoneTeamFailNotReadyBody;
+
+  /// Headline after the person chose not to stop OpenCode
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing changed'**
+  String get phoneTeamFailDeclinedTitle;
+
+  /// After the person said not now to the stop question
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode stays as it is, so the team stays off. Start again when you\'re ready to restart it.'**
+  String get phoneTeamFailDeclinedBody;
+
+  /// Headline when there is no OpenCode on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Set up OpenCode on this phone first'**
+  String get phoneTeamFailNoServerTitle;
+
+  /// Body when there is no OpenCode on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'The team works with the OpenCode on this phone, and there isn\'t one yet.'**
+  String get phoneTeamFailNoServerBody;
+
+  /// Plain reason under the check step when the safety tools are missing
+  ///
+  /// In en, this message translates to:
+  /// **'This copy of the app doesn\'t include the team\'s safety tools.'**
+  String get phoneTeamReasonNotPackaged;
+
+  /// Fold title for technical reasons under a failure
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get phoneTeamDetails;
+
+  /// Headline when the team was on but its engine is not answering
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team is off on this phone'**
+  String get phoneTeamOffTitle;
+
+  /// Body under the off headline
+  ///
+  /// In en, this message translates to:
+  /// **'It needs a quick safety check, for example after an app update.'**
+  String get phoneTeamOffBody;
+
+  /// One line shown in place of a work action while the engine cannot run work
+  ///
+  /// In en, this message translates to:
+  /// **'The team can\'t start work until this phone is checked.'**
+  String get phoneTeamBlocked;
+
+  /// Work strip row while the automatic check runs
+  ///
+  /// In en, this message translates to:
+  /// **'Checking AI Team on this phone'**
+  String get phoneTeamStripChecking;
+
+  /// Work strip row when the automatic check waits for the person
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team needs to restart OpenCode'**
+  String get phoneTeamStripWaiting;
+
+  /// Supporting line of the waiting Work strip row
+  ///
+  /// In en, this message translates to:
+  /// **'Open the check to choose when'**
+  String get phoneTeamStripReview;
+
+  /// Work strip row after the automatic check failed
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team couldn\'t turn on'**
+  String get phoneTeamStripFailed;
+
+  /// Supporting line of the running Work strip row
+  ///
+  /// In en, this message translates to:
+  /// **'Step {step} of {total}'**
+  String phoneTeamStripStep(int step, int total);
+
+  /// Question title when a work action waits for the phone check
+  ///
+  /// In en, this message translates to:
+  /// **'Check this phone first'**
+  String get phoneTeamBlockedTitle;
 }
 
 class _AppLocalizationsDelegate

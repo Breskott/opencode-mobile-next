@@ -25,6 +25,7 @@ import '../../../domain/orchestration_gateway.dart';
 import '../../../domain/server_gateway.dart' show CatalogModel;
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
+import '../../../state/profiles.dart' show OrchestrationProvider;
 import '../../../state/orchestration.dart';
 import '../../../state/team_model.dart';
 import '../../../state/team_roles.dart';
@@ -42,6 +43,7 @@ import '../../widgets/team_vocabulary.dart';
 import '../settings/plugins_screen.dart' show teamPhoneProfile;
 import 'team_agents_screen.dart';
 import 'team_model_sheet.dart';
+import 'team_phone_setup_screen.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -380,6 +382,20 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
               KitRowGroup(
                 key: const ValueKey('team-settings-how'),
                 children: [
+                  if (widget.connection != null &&
+                      controller.config.provider ==
+                          OrchestrationProvider.phoneEngine)
+                    KitRow(
+                      key: const ValueKey('team-settings-turn-on-phone'),
+                      leading: KitRow.icon(context, AppIconography.phone),
+                      title: l10n.teamIntroTurnOnPhone,
+                      supporting: TextSpan(text: l10n.phoneTeamOffBody),
+                      supportingMaxLines: 2,
+                      trailing: const KitChevron(),
+                      onTap: () => unawaited(
+                        openPhoneTeamSetup(context, widget.connection!),
+                      ),
+                    ),
                   if (owner != null && teamPhoneProfile(owner.profile))
                     KitRow(
                       key: const ValueKey('team-home-phone-controls'),

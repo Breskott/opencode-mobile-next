@@ -25790,4 +25790,136 @@ class AppLocalizationsEn extends AppLocalizations {
   String teamProjectFindingsMinor(int count) {
     return '$count minor';
   }
+
+  @override
+  String get phoneTeamSetupTitle => 'Turn on AI Team';
+
+  @override
+  String get phoneTeamStepReply => 'Let your current reply finish';
+
+  @override
+  String get phoneTeamReplyWaiting => 'Finishing your current reply…';
+
+  @override
+  String get phoneTeamStepStop => 'Stop OpenCode and close terminals';
+
+  @override
+  String get phoneTeamStepCheck => 'Checking this phone is safe for the team';
+
+  @override
+  String get phoneTeamStepServer => 'Start OpenCode again, protected';
+
+  @override
+  String get phoneTeamNotNeeded => 'Not needed';
+
+  @override
+  String get phoneTeamStopTitle => 'Stop OpenCode for a minute?';
+
+  @override
+  String get phoneTeamStopBody =>
+      'Stops the OpenCode server on this phone for about a minute, then starts it again protected. Open terminals close.';
+
+  @override
+  String get phoneTeamStopConfirm => 'Stop and continue';
+
+  @override
+  String get phoneTeamStopCancel => 'Not now';
+
+  @override
+  String get phoneTeamStopWaiting => 'Waiting for your answer';
+
+  @override
+  String get phoneTeamDoneTitle => 'AI Team is ready on this phone';
+
+  @override
+  String get phoneTeamDoneBody =>
+      'Give it a goal and the team plans, builds and checks the work.';
+
+  @override
+  String get phoneTeamFailUnsafeTitle => 'The team stays off';
+
+  @override
+  String get phoneTeamFailUnsafeBody =>
+      'This phone can\'t keep the team\'s copy of your code separate from the agents, so the team stays off.';
+
+  @override
+  String get phoneTeamFailEngineTitle => 'AI Team didn\'t start';
+
+  @override
+  String get phoneTeamFailEngineBody =>
+      'The team\'s engine didn\'t start on this phone. Nothing else was changed.';
+
+  @override
+  String get phoneTeamFailStopTitle => 'OpenCode didn\'t stop';
+
+  @override
+  String get phoneTeamFailStopBody =>
+      'OpenCode or a terminal didn\'t close, so the check can\'t run safely yet.';
+
+  @override
+  String get phoneTeamFailServerTitle => 'OpenCode didn\'t come back';
+
+  @override
+  String get phoneTeamFailServerBody =>
+      'This phone passed the check, but OpenCode didn\'t start again. Start again to finish.';
+
+  @override
+  String get phoneTeamFailNotReadyTitle => 'Not ready yet';
+
+  @override
+  String get phoneTeamFailNotReadyBody =>
+      'OpenCode is back, but the team can\'t start work yet.';
+
+  @override
+  String get phoneTeamFailDeclinedTitle => 'Nothing changed';
+
+  @override
+  String get phoneTeamFailDeclinedBody =>
+      'OpenCode stays as it is, so the team stays off. Start again when you\'re ready to restart it.';
+
+  @override
+  String get phoneTeamFailNoServerTitle =>
+      'Set up OpenCode on this phone first';
+
+  @override
+  String get phoneTeamFailNoServerBody =>
+      'The team works with the OpenCode on this phone, and there isn\'t one yet.';
+
+  @override
+  String get phoneTeamReasonNotPackaged =>
+      'This copy of the app doesn\'t include the team\'s safety tools.';
+
+  @override
+  String get phoneTeamDetails => 'Details';
+
+  @override
+  String get phoneTeamOffTitle => 'AI Team is off on this phone';
+
+  @override
+  String get phoneTeamOffBody =>
+      'It needs a quick safety check, for example after an app update.';
+
+  @override
+  String get phoneTeamBlocked =>
+      'The team can\'t start work until this phone is checked.';
+
+  @override
+  String get phoneTeamStripChecking => 'Checking AI Team on this phone';
+
+  @override
+  String get phoneTeamStripWaiting => 'AI Team needs to restart OpenCode';
+
+  @override
+  String get phoneTeamStripReview => 'Open the check to choose when';
+
+  @override
+  String get phoneTeamStripFailed => 'AI Team couldn\'t turn on';
+
+  @override
+  String phoneTeamStripStep(int step, int total) {
+    return 'Step $step of $total';
+  }
+
+  @override
+  String get phoneTeamBlockedTitle => 'Check this phone first';
 }

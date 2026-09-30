@@ -15,19 +15,27 @@
 /// route both land here.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
+import '../../../state/orchestration.dart' show OrchestrationPhase;
+import '../../../state/phone_team_setup.dart';
+import '../../../state/profiles.dart' show OrchestrationProvider;
 import '../../../state/team_project_demo.dart';
 import '../../../domain/orchestration_gateway.dart' show OrchestrationRun;
 import '../../../termux/team_runtime.dart';
 import '../../../voice/device.dart';
+import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../widgets/team_host_form.dart' show TeamHostProbe;
 import 'team_home_screen.dart';
 import 'projects/team_projects_screen.dart';
+import 'projects/team_execution_gate.dart';
 import 'team_intro_screen.dart';
+import 'team_phone_setup_screen.dart';
 import 'team_settings_screen.dart';
 
 /// Opens the AI Team page for the connected server. [onOpenRun] replaces
@@ -65,6 +73,11 @@ Future<void> openTeamSetup(
 }) {
   final profile = connection.profile;
   final team = connection.orchestration;
+  if (profile?.orchestration?.provider == OrchestrationProvider.phoneEngine) {
+    // The phone's own team: the page itself shows the team or how to turn
+    // it on, so the door is always the page.
+    return openTeamPage(context, connection);
+  }
   if (profile != null &&
       profile.orchestration != null &&
       team != null &&
@@ -87,6 +100,43 @@ Future<void> openTeamSetup(
     runtime: runtime,
     deviceProbe: deviceProbe,
   );
+}
+
+/// The phone's own team when it is on but not answering: one headline,
+/// one action, and the progress of a check that is already running.
+class _PhoneTeamOff extends StatelessWidget {
+  const _PhoneTeamOff({super.key, required this.connection});
+
+  final ConnectionController connection;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final flow = PhoneTeamSetup.of(connection, copy: l10n);
+    return ListenableBuilder(
+      listenable: flow,
+      builder: (context, _) => KitScreen(
+        topBar: KitTopBar(title: l10n.teamUiHomeTitle),
+        width: KitScreenWidth.reading,
+        body: KitStateView(
+          icon: flow.isRunning
+              ? AppIconography.waiting
+              : AppIconography.cloudOff,
+          tone: flow.isRunning ? AppStatusTone.progress : AppStatusTone.neutral,
+          title: flow.isRunning
+              ? l10n.phoneTeamStripChecking
+              : l10n.phoneTeamOffTitle,
+          body: flow.isRunning ? null : l10n.phoneTeamOffBody,
+          primary: KitAction(
+            key: const ValueKey('phone-team-off-turn-on'),
+            label: l10n.teamIntroTurnOnPhone,
+            icon: AppIconography.play,
+            onPressed: () => unawaited(openPhoneTeamSetup(context, connection)),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class TeamPage extends StatelessWidget {
@@ -129,7 +179,23 @@ class TeamPage extends StatelessWidget {
           team != null &&
           team.profileId == profile.id) {
         final projects = team.projectController;
+        final engine =
+            profile.orchestration!.provider ==
+            OrchestrationProvider.phoneEngine;
+        if (engine &&
+            (team.phase == OrchestrationPhase.failed ||
+                (team.phase == OrchestrationPhase.ready &&
+                    !(team.capabilities.projectLifecycle &&
+                        projects != null)))) {
+          // The phone's team is not answering (an app update stops it) or
+          // cannot run projects yet: say so and offer the one-tap setup.
+          return _PhoneTeamOff(
+            key: const ValueKey('team-page-phone-off'),
+            connection: connection,
+          );
+        }
         if (team.capabilities.projectLifecycle && projects != null) {
+          if (engine) TeamExecutionGate.bind(team, connection);
           return TeamProjectsScreen(
             key: ObjectKey(projects),
             controller: projects,

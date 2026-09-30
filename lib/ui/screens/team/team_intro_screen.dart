@@ -47,6 +47,7 @@ import '../../../voice/device.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import 'project_demo_screen.dart';
+import 'team_phone_setup_screen.dart';
 import '../../kit/scenes/team_discover_scenes.dart';
 import '../../widgets/team_discover.dart';
 import '../../widgets/team_discovery_card.dart' show TeamDiscovery;
@@ -212,6 +213,10 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
     ),
   );
 
+  /// "Turn on AI Team on this phone": the engine's one-tap setup page.
+  Future<void> _turnOnPhoneEngine() =>
+      _run(() => openPhoneTeamSetup(context, widget.controller));
+
   Future<void> _turnOn() => _run(() async {
     await _discovery?.turnOn();
   });
@@ -249,6 +254,17 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
       case null:
         break;
       case TeamServerKind.inApp:
+        // OpenCode inside this app: the team is the phone engine, turned
+        // on by the one-tap setup page (Finishing your reply, the safety
+        // check, OpenCode back protected).
+        if (_preflight?.supported ?? false) {
+          primary = KitAction(
+            key: const ValueKey('team-intro-set-up'),
+            label: l10n.teamIntroTurnOnPhone,
+            working: _busy,
+            onPressed: _busy ? null : _turnOnPhoneEngine,
+          );
+        }
       case TeamServerKind.termux:
         if (_preflight?.supported ?? false) {
           primary = KitAction(

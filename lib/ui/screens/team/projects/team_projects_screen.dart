@@ -5,6 +5,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../state/team_project_controller.dart';
 import '../../../app_iconography.dart';
 import '../../../kit/kit.dart';
+import 'team_execution_gate.dart';
 import 'team_project_conversation.dart';
 import 'team_project_editors.dart';
 
@@ -110,6 +111,7 @@ class _TeamProjectsScreenState extends State<TeamProjectsScreen> {
         list: ListView(
           padding: KitScreen.padding(context),
           children: [
+            TeamExecutionBlocked(controller: c),
             if (c.errorCode != null) _failure(context, c),
             if (projects.isEmpty && !c.loading)
               KitStateView(icon: Icons.work_outline, title: l.teamProjectEmpty),
@@ -177,18 +179,21 @@ class _TeamProjectsScreenState extends State<TeamProjectsScreen> {
                 icon: Icons.chat_bubble_outline,
                 title: l.teamProjectSelectTask,
               ),
-        bottom: KitActionBlock(
-          primary: KitAction(
-            label: l.teamProjectNew,
-            onPressed: () => openTeamNewProject(context, c),
-          ),
-          tertiary: [
-            KitAction(
-              label: l.teamProjectQuick,
-              onPressed: () => openTeamNewProject(context, c, quick: true),
-            ),
-          ],
-        ),
+        bottom: TeamExecutionGate.allows(c, TeamExecutionNeed.lanes)
+            ? KitActionBlock(
+                primary: KitAction(
+                  label: l.teamProjectNew,
+                  onPressed: () => openTeamNewProject(context, c),
+                ),
+                tertiary: [
+                  KitAction(
+                    label: l.teamProjectQuick,
+                    onPressed: () =>
+                        openTeamNewProject(context, c, quick: true),
+                  ),
+                ],
+              )
+            : null,
       );
     },
   );
@@ -265,7 +270,9 @@ class TeamProjectOverview extends StatelessWidget {
           .toList();
       final open = p.status != 'stopped' && p.status != 'done';
       final menu = <KitMenuItem>[
-        if (open)
+        if (open &&
+            (p.status != 'paused' ||
+                TeamExecutionGate.allows(c, TeamExecutionNeed.lanes)))
           KitMenuItem(
             label: p.status == 'paused'
                 ? l.teamProjectResume
@@ -322,6 +329,7 @@ class TeamProjectOverview extends StatelessWidget {
         body: ListView(
           padding: KitScreen.padding(context),
           children: [
+            if (!embedded) TeamExecutionBlocked(controller: c),
             if (c.errorCode != null) _failure(context, c),
             for (final r in p.requests.where((r) => !r.answered))
               _needsYou(context, l, c, p, r),
@@ -470,10 +478,14 @@ class TeamProjectOverview extends StatelessWidget {
                       ),
                   ],
                   actions: [
-                    KitAction(
-                      label: l.teamProjectMergeNext,
-                      onPressed: () => _merge(context, c, p, repo),
-                    ),
+                    if (TeamExecutionGate.allows(
+                      c,
+                      TeamExecutionNeed.mergeQueue,
+                    ))
+                      KitAction(
+                        label: l.teamProjectMergeNext,
+                        onPressed: () => _merge(context, c, p, repo),
+                      ),
                   ],
                 ),
             if (decisions.isNotEmpty) ...[
@@ -1209,6 +1221,7 @@ class TeamProjectServers extends StatelessWidget {
         body: ListView(
           padding: KitScreen.padding(context),
           children: [
+            TeamExecutionBlocked(controller: controller),
             if (controller.errorCode != null) _failure(context, controller),
             if (p.simulated)
               KitText(l.teamProjectCostDemo, role: KitTextRole.secondary),
@@ -1274,6 +1287,10 @@ class TeamProjectServers extends StatelessWidget {
               ),
               for (final t in p.tasks.where(
                 (t) =>
+                    TeamExecutionGate.allows(
+                      controller,
+                      TeamExecutionNeed.placement,
+                    ) &&
                     t.serverId == s.id &&
                     t.status != 'merged' &&
                     t.status != 'done',

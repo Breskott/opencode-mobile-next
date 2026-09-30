@@ -4,6 +4,7 @@ import '../../../../domain/relative_age.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../state/team_project_controller.dart';
 import '../../../kit/kit.dart';
+import 'team_execution_gate.dart';
 import 'team_project_editors.dart';
 
 /// Finish line: review, steer, verify and promote a task from its conversation.
@@ -96,6 +97,17 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
     disabledReason: c.busy ? l.teamProjectTaskWaiting : null,
   );
 
+  /// An action that needs the engine to run work: not drawn while it
+  /// cannot (one plain line above says why and carries the fix).
+  KitAction? _gated(
+    TeamExecutionNeed need,
+    String label,
+    VoidCallback callback, {
+    bool destructive = false,
+  }) => TeamExecutionGate.allows(c, need)
+      ? _action(label, callback, destructive: destructive)
+      : null;
+
   String _age(String value) {
     final at = DateTime.tryParse(value);
     return at == null
@@ -184,7 +196,8 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
         return [_action(l.teamProjectTaskAnswer, () => _answer(p, request))];
       case 'interrupted':
         return [
-          _action(
+          ?_gated(
+            TeamExecutionNeed.lanes,
             l.teamProjectTaskResume,
             () => _run(p, TeamProjectAction.resumeTask),
           ),
@@ -192,7 +205,8 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
       case 'stalled':
       case 'failed':
         return [
-          _action(
+          ?_gated(
+            TeamExecutionNeed.lanes,
             l.teamProjectTaskRestart,
             () => _run(p, TeamProjectAction.restartTask),
           ),
@@ -445,13 +459,15 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
       more: rest > 0 ? l.teamProjectPlanMore(rest) : null,
       primary: widget.embedded
           ? null
-          : _action(
+          : _gated(
+              TeamExecutionNeed.lanes,
               l.teamProjectTaskApprovePlan,
               () => _run(p, TeamProjectAction.approvePlan),
             ),
       actions: [
         if (widget.embedded)
-          _action(
+          ?_gated(
+            TeamExecutionNeed.lanes,
             l.teamProjectTaskApprovePlan,
             () => _run(p, TeamProjectAction.approvePlan),
           ),
@@ -543,10 +559,18 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
       ],
       primary: widget.embedded
           ? null
-          : _action(l.teamProjectTaskPromote, () => _promote(p, repo)),
+          : _gated(
+              TeamExecutionNeed.promotion,
+              l.teamProjectTaskPromote,
+              () => _promote(p, repo),
+            ),
       actions: [
         if (widget.embedded)
-          _action(l.teamProjectTaskPromote, () => _promote(p, repo)),
+          ?_gated(
+            TeamExecutionNeed.promotion,
+            l.teamProjectTaskPromote,
+            () => _promote(p, repo),
+          ),
         if (!widget.embedded)
           _action(
             l.teamProjectPromoteNotYet,
@@ -631,6 +655,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                         text:
                             '${l.teamProjectTaskStale} · ${_age(p.updatedAt)}',
                       ),
+                    if (!widget.embedded) TeamExecutionBlocked(controller: c),
                     if (c.errorCode != null)
                       KitStateView.error(
                         title: l.teamProjectTaskSaveFailed,
@@ -796,7 +821,8 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                         ],
                         primary: selected.isEmpty
                             ? null
-                            : _action(
+                            : _gated(
+                                TeamExecutionNeed.verification,
                                 l.teamProjectTaskFix,
                                 () => _run(
                                   p,
@@ -805,7 +831,8 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                                 ),
                               ),
                         actions: [
-                          _action(
+                          ?_gated(
+                            TeamExecutionNeed.verification,
                             l.teamProjectTaskRecheck,
                             () => _run(p, TeamProjectAction.recheckTask),
                           ),
@@ -827,7 +854,8 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                             ),
                         ],
                         actions: [
-                          _action(
+                          ?_gated(
+                            TeamExecutionNeed.mergeQueue,
                             l.teamProjectTaskMergeRun,
                             () => _merge(p, repo),
                           ),
@@ -862,17 +890,20 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                             () => _run(p, TeamProjectAction.pauseTask),
                           ),
                         if (t.status == 'paused')
-                          _action(
+                          ?_gated(
+                            TeamExecutionNeed.lanes,
                             l.teamProjectTaskResume,
                             () => _run(p, TeamProjectAction.resumeTask),
                           ),
                         if (t.status == 'failed' || t.status == 'stopped')
-                          _action(
+                          ?_gated(
+                            TeamExecutionNeed.lanes,
                             l.teamProjectTaskRestart,
                             () => _run(p, TeamProjectAction.restartTask),
                           ),
                         if (t.status == 'done')
-                          _action(
+                          ?_gated(
+                            TeamExecutionNeed.verification,
                             l.teamProjectTaskVerify,
                             () => _run(p, TeamProjectAction.verifyTask),
                           ),
