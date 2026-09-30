@@ -9,6 +9,7 @@ import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/domain/team_project_gateway.dart';
 import 'package:opencode_mobile/orchestration/adapters/inapp/phone_engine_gateway.dart';
 import 'package:opencode_mobile/ui/kit/kit_redact.dart';
+import 'package:opencode_mobile/state/team_project_controller.dart';
 
 class FakeEngineAdapter implements HttpClientAdapter {
   FakeEngineAdapter(this.answer);
@@ -271,6 +272,225 @@ void main() {
       await client.close();
     },
   );
+  test(
+    'non-success command responses preserve symbolic daemon refusal codes',
+    () async {
+      for (final status in [400, 401, 403, 409, 422, 500, 503]) {
+        for (final code in [
+          'importFailed',
+          'commandRefused',
+          'repoSourceMissing',
+          'repository_not_initialized',
+          'repository_git',
+          'unsafe_repository_metadata',
+          'repoPathInvalid',
+        ]) {
+          final adapter = FakeEngineAdapter(
+            (request) async => request.path == '/v1/health'
+                ? jsonBody(health('p1', actions: ['createProject']))
+                : jsonBody({
+                    'code': code,
+                    'error': 'private-provider-secret',
+                    'path': '/private/path',
+                  }, status),
+          );
+          final client = gateway(adapter);
+          final result = await client.executeProject(
+            const TeamProjectCommand(
+              requestId: 'same-reviewed-request',
+              action: TeamProjectAction.createProject,
+            ),
+          );
+          expect(result.accepted, isFalse);
+          expect(result.code, code);
+          expect(
+            adapter.requests.where((request) => request.method == 'POST'),
+            hasLength(1),
+          );
+          await client.close();
+        }
+      }
+    },
+  );
+
+  test(
+    'partial HTTP refusal receipts still preserve their safe typed code',
+    () async {
+      final adapter = FakeEngineAdapter(
+        (request) async => request.path == '/v1/health'
+            ? jsonBody(health('p1', actions: ['createProject']))
+            : jsonBody({'accepted': false, 'code': 'repoPathInvalid'}, 409),
+      );
+      final client = gateway(adapter);
+      final result = await client.executeProject(
+        const TeamProjectCommand(
+          requestId: 'one-create',
+          action: TeamProjectAction.createProject,
+        ),
+      );
+      expect(result.accepted, isFalse);
+      expect(result.code, 'repoPathInvalid');
+      await client.close();
+    },
+  );
+
+  test('health refusal remains typed before a command can be sent', () async {
+    final adapter = FakeEngineAdapter(
+      (_) async => jsonBody({'code': 'boundaryUnavailable'}, 409),
+    );
+    final client = gateway(adapter);
+    final result = await client.executeProject(
+      const TeamProjectCommand(
+        requestId: 'one-create',
+        action: TeamProjectAction.createProject,
+      ),
+    );
+    expect(result.accepted, isFalse);
+    expect(result.code, 'boundaryUnavailable');
+    expect(adapter.requests, hasLength(1));
+    expect(adapter.requests.single.method, 'GET');
+    await client.close();
+  });
+
+  test(
+    'complete HTTP refusal receipts retain revision project and replay metadata',
+    () async {
+      for (final status in [200, 409, 422]) {
+        final adapter = FakeEngineAdapter(
+          (request) async => request.path == '/v1/health'
+              ? jsonBody(health('p1', actions: ['createProject']))
+              : jsonBody({
+                  'accepted': false,
+                  'code': 'chooseBudget',
+                  'projectId': 'reviewed-project',
+                  'revision': 17,
+                  'replayed': true,
+                }, status),
+        );
+        final client = gateway(adapter);
+        final result = await client.executeProject(
+          const TeamProjectCommand(
+            requestId: 'one-create',
+            action: TeamProjectAction.createProject,
+          ),
+        );
+        expect(result.accepted, isFalse);
+        expect(result.code, 'chooseBudget');
+        expect(result.projectId, 'reviewed-project');
+        expect(result.revision, 17);
+        expect(result.replayed, isTrue);
+        await client.close();
+      }
+    },
+  );
+
+  test(
+    'malformed refusal codes never retain raw text or known credentials',
+    () async {
+      KitRedact.registerKnownSecret('AlphabeticPrivateCredential');
+      for (final bad in [
+        null,
+        5,
+        '',
+        'raw failure at /private/path',
+        'x' * 65,
+        'AlphabeticPrivateCredential',
+      ]) {
+        for (final status in [200, 409]) {
+          final adapter = FakeEngineAdapter(
+            (request) async => request.path == '/v1/health'
+                ? jsonBody(health('p1', actions: ['createProject']))
+                : jsonBody(
+                    status == 200
+                        ? {
+                            'accepted': false,
+                            'code': bad,
+                            'projectId': '',
+                            'revision': 0,
+                            'replayed': false,
+                          }
+                        : {'code': bad},
+                    status,
+                  ),
+          );
+          final client = gateway(adapter);
+          final result = await client.executeProject(
+            const TeamProjectCommand(
+              requestId: 'one-create',
+              action: TeamProjectAction.createProject,
+            ),
+          );
+          expect(result.accepted, isFalse);
+          expect(
+            result.code,
+            status == 200 ? 'payloadInvalid' : 'engineUnavailable',
+          );
+          await client.close();
+        }
+      }
+    },
+  );
+
+  test('redirect command refusal ignores the response body', () async {
+    final adapter = FakeEngineAdapter(
+      (request) async => request.path == '/v1/health'
+          ? jsonBody(health('p1', actions: ['createProject']))
+          : jsonBody({'code': 'importFailed'}, 302),
+    );
+    final client = gateway(adapter);
+    final result = await client.executeProject(
+      const TeamProjectCommand(
+        requestId: 'one-create',
+        action: TeamProjectAction.createProject,
+      ),
+    );
+    expect(result.accepted, isFalse);
+    expect(result.code, 'redirectRefused');
+    expect(
+      adapter.requests.where((request) => request.method == 'POST'),
+      hasLength(1),
+    );
+    await client.close();
+  });
+
+  test(
+    'accepted create stays accepted after a failed refresh without another POST',
+    () async {
+      final adapter = FakeEngineAdapter((request) async {
+        if (request.path == '/v1/health')
+          return jsonBody(health('p1', actions: ['createProject']));
+        if (request.method == 'POST')
+          return jsonBody({
+            'accepted': true,
+            'code': '',
+            'projectId': 'created',
+            'revision': 3,
+            'replayed': false,
+          });
+        return jsonBody({'code': 'storeUnavailable'}, 503);
+      });
+      final client = gateway(adapter);
+      final controller = TeamProjectController(client);
+      final result = await controller.execute(
+        const TeamProjectCommand(
+          requestId: 'same-reviewed-request',
+          action: TeamProjectAction.createProject,
+        ),
+      );
+      expect(result.accepted, isTrue);
+      expect(result.projectId, 'created');
+      expect(result.revision, 3);
+      expect(controller.errorCode, 'unavailable');
+      final posts = adapter.requests
+          .where((request) => request.method == 'POST')
+          .toList();
+      expect(posts, hasLength(1));
+      expect((posts.single.data as Map)['requestId'], 'same-reviewed-request');
+      controller.dispose();
+      await client.close();
+    },
+  );
+
   test(
     'redacts commands before transmission and never retries ambiguous mutation',
     () async {
