@@ -1,3 +1,5 @@
+> Latest critical/major review gate and bundle hashes: [review closure](review-closure/README.md). Earlier evidence below is historical.
+
 # Phone project engine — first slice
 
 Finish line: a phone-resident native Rust daemon persists project commands and task stages, drives planner → worker → checker sessions on one pinned OC1 server using isolated worker clones, merges checked changes into private canonical dev, and permits confirmed expected-SHA promotion only through the authenticated API and a proven filesystem boundary.

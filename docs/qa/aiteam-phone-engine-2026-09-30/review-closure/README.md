@@ -61,7 +61,7 @@ All heavy checks use `OC_TEST_SLOTS=1 tool/qa/machine_lock.sh`; native builds al
 - Pinned Dart format, `cargo fmt`, shell syntax and `git diff --check`: passed.
 - Pinned `flutter analyze`: clean.
 - Acceptance wrapper unit tests: **12 passed**.
-- Dual-ABI staging: source/bundle hashes recorded after the final build below.
+- Dual-ABI API-26 release build/staging: **passed**; all six staged ELF architecture/hash checks match the manifest and the clean committed Rust source digest.
 
 `adb devices` returned no attached device. Native regression mode and the live acceptance script therefore remain unexecuted on Android. On a compatible phone, the runtime self-check must pass for this exact bundle and OC1 1.18.32 protocol verification must pass before imports/lanes/promotion become available. A Linux kernel without Landlock ABI 6 remains honestly unavailable.
 
@@ -74,3 +74,18 @@ adb -s SERIAL shell am instrument -w -r \
 ```
 
 The full scratch task/promotion journey is documented in [x86-acceptance](../x86-acceptance/README.md) and uses `tool/qa/phone_engine_acceptance.sh`. It explicitly requires isolated QA and model-spend authorization; this change did not spend model credits.
+
+## Matched Android bundle
+
+Source revision: `e3b2bb8f152a2f9e553703b481fb7ac45e5c422a` (`sourceDirty=false` at build). Source digest: `becac7ee8ade2fc1f75cc3b202e7c2829329e1a1940dc0367c9c1766b08de3e0`.
+
+| ABI | File | SHA-256 |
+| --- | --- | --- |
+| arm64-v8a | libaiteam_engine.so | 9aa1cf6f8366b6d0e59621cecabb6a3b68ccec6260af36be454c07a06491f941 |
+| arm64-v8a | libaiteam_sandbox.so | 89fa57cbb268083782141dbc21e7adc6ac7394825b3a7d27fa2f3ab8cb6bdd82 |
+| arm64-v8a | libaiteam_boundary_probe.so | 66a6f1dbdf096f4f02a30740044441834c4a2ddbb7128992f5b76a3114588513 |
+| x86_64 | libaiteam_engine.so | 9e4efb7bf3fcadc8e1ea29f558e84c213f75dc9bcf479def3ccd998578493295 |
+| x86_64 | libaiteam_sandbox.so | 052e4914e38e8696ad2b9a0d0986b31291754dc58cc280e6c6e3d99cad326108 |
+| x86_64 | libaiteam_boundary_probe.so | 9e5d4b0763ca5a9197d6709296194410bdbd3ce8c517a9633f9a36cbc957bc75 |
+
+These are locally staged native libraries, not installed or signed APKs. Runtime receipt must be issued again for this exact bundle on the device.
