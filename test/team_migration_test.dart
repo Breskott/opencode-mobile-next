@@ -1,19 +1,12 @@
 // B-2 (E2E 2026-09-30): an old team that stays On after the update gets one
 // screen that says AI Team changed, with the switch, keeping the old team,
 // and a way into the project screens. Fakes only.
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/domain/phone_project_engine.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
-import 'package:opencode_mobile/orchestration/adapters/fixture/fixture_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
-import 'package:opencode_mobile/state/orchestration.dart';
-import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/phone_team_setup.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
@@ -21,16 +14,6 @@ import 'package:opencode_mobile/ui/screens/team/team_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final _en = lookupAppLocalizations(const Locale('en'));
-
-String _fixturePath() {
-  var dir = Directory.current;
-  for (var i = 0; i < 5; i++) {
-    final c = Directory('${dir.path}/tool/qa/gascity_fixture');
-    if (c.existsSync()) return c.path;
-    dir = dir.parent;
-  }
-  throw StateError('fixture not found');
-}
 
 class _Phone extends ChangeNotifier implements PhoneTeamSetupPorts {
   _Phone({this.server = true});
