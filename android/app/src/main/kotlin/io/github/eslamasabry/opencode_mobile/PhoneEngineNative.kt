@@ -1,6 +1,7 @@
 package io.github.eslamasabry.opencode_mobile
 
 import android.content.Context
+import android.os.Build
 import android.system.Os
 import android.system.OsConstants
 import org.json.JSONObject
@@ -306,28 +307,65 @@ internal class PhoneEngineNative(private val context: Context) {
     companion object {
         fun verifyBundle(context: Context, vararg names: String) {
             try {
+                if (names.isEmpty() || names.any { it !in BUNDLE_NAMES } || !android.os.Process.is64Bit()) {
+                    throw Failure("engine_bundle_invalid")
+                }
                 val manifest = context.assets.open("aiteam-engine-manifest.json").bufferedReader().use {
                     JSONObject(it.readText())
                 }
-                if (manifest.getInt("schemaVersion") != 1 || manifest.getString("target") != "aarch64-linux-android") {
-                    throw Failure("engine_bundle_invalid")
-                }
-                val hashes = manifest.getJSONObject("sha256")
-                for (name in names) {
-                    val expected = hashes.getString(name)
-                    if (!Regex("[0-9a-f]{64}").matches(expected)) throw Failure("engine_bundle_invalid")
+                // Android may advertise several ABIs, including translated
+                // ones. The installed ELF selects its own manifest entry;
+                // SUPPORTED_ABIS is a compatibility check, never the selector.
+                var abi: String? = null
+                val actualHashes = mutableMapOf<String, String>()
+                for (name in BUNDLE_NAMES) {
                     val file = File(context.applicationInfo.nativeLibraryDir, name)
-                    if (!OsConstants.S_ISREG(Os.lstat(file.absolutePath).st_mode)) throw Failure("engine_bundle_invalid")
-                    val digest = MessageDigest.getInstance("SHA-256")
-                    file.inputStream().use { input ->
+                    val fd = Os.open(file.absolutePath, OsConstants.O_RDONLY or
+                        OsConstants.O_NOFOLLOW or OsConstants.O_NONBLOCK or OsConstants.O_CLOEXEC, 0)
+                    try {
+                        if (!OsConstants.S_ISREG(Os.fstat(fd).st_mode)) throw Failure("engine_bundle_invalid")
+                        val header = ByteArray(64)
+                        var offset = 0
+                        while (offset < header.size) {
+                            val count = Os.read(fd, header, offset, header.size - offset)
+                            if (count <= 0) throw Failure("engine_bundle_invalid")
+                            offset += count
+                        }
+                        val actualAbi = packagedAbi(header)
+                        if (actualAbi !in Build.SUPPORTED_ABIS || (abi != null && abi != actualAbi)) {
+                            throw Failure("engine_bundle_invalid")
+                        }
+                        abi = actualAbi
+                        val digest = MessageDigest.getInstance("SHA-256")
+                        digest.update(header)
                         val buffer = ByteArray(65536)
                         while (true) {
-                            val size = input.read(buffer)
-                            if (size < 0) break
+                            val size = Os.read(fd, buffer, 0, buffer.size)
+                            if (size == 0) break
+                            if (size < 0) throw Failure("engine_bundle_invalid")
                             digest.update(buffer, 0, size)
                         }
+                        actualHashes[name] = digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
+                    } finally { Os.close(fd) }
+                }
+                val selectedAbi = abi ?: throw Failure("engine_bundle_invalid")
+                val entry = when (manifest.getInt("schemaVersion")) {
+                    1 -> {
+                        if (selectedAbi != "arm64-v8a") throw Failure("engine_bundle_invalid")
+                        manifest
                     }
-                    val actual = digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
+                    2 -> manifest.getJSONObject("abis").getJSONObject(selectedAbi)
+                    else -> throw Failure("engine_bundle_invalid")
+                }
+                val target = if (selectedAbi == "arm64-v8a") "aarch64-linux-android" else "x86_64-linux-android"
+                if (entry.getString("target") != target || entry.getInt("api") != 26) {
+                    throw Failure("engine_bundle_invalid")
+                }
+                val hashes = entry.getJSONObject("sha256")
+                for (name in BUNDLE_NAMES) {
+                    val expected = hashes.getString(name)
+                    if (!Regex("[0-9a-f]{64}").matches(expected)) throw Failure("engine_bundle_invalid")
+                    val actual = actualHashes.getValue(name)
                     if (!MessageDigest.isEqual(expected.toByteArray(Charsets.US_ASCII), actual.toByteArray(Charsets.US_ASCII))) {
                         throw Failure("engine_bundle_invalid")
                     }
@@ -335,6 +373,23 @@ internal class PhoneEngineNative(private val context: Context) {
             } catch (_: Exception) { throw Failure("engine_bundle_invalid") }
         }
 
+        /** Strict ELF64 little-endian PIE parser, independent of device preference order. */
+        internal fun packagedAbi(header: ByteArray): String {
+            fun byte(index: Int) = header[index].toInt() and 255
+            if (header.size != 64 || byte(0) != 0x7f || byte(1) != 0x45 || byte(2) != 0x4c ||
+                byte(3) != 0x46 || byte(4) != 2 || byte(5) != 1 || byte(6) != 1 ||
+                byte(16) != 3 || byte(17) != 0 || byte(20) != 1 ||
+                (21..23).any { byte(it) != 0 } || byte(52) != 64 || byte(53) != 0) {
+                throw Failure("engine_bundle_invalid")
+            }
+            return when (byte(18) or (byte(19) shl 8)) {
+                183 -> "arm64-v8a"
+                62 -> "x86_64"
+                else -> throw Failure("engine_bundle_invalid")
+            }
+        }
+
+        private val BUNDLE_NAMES = listOf("libaiteam_engine.so", "libaiteam_sandbox.so", "libaiteam_boundary_probe.so")
         private val PROFILE = Regex("^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$")
         private val TOKEN = Regex("^[a-f0-9]{64}$")
     }
