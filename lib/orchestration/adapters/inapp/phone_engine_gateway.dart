@@ -519,16 +519,29 @@ TeamProject _presentPhoneProject(TeamProject project) {
   return project.copyWith(
     status: status,
     tasks: List.unmodifiable(
-      project.tasks.map(
-        (task) => task.copyWith(
+      project.tasks.map((task) {
+        final needsFix = task.status == 'needsFix';
+        return task.copyWith(
           status: switch (task.status) {
             'checked' => 'verified',
-            'needsFix' => 'findings',
+            'needsFix' => 'review',
             'merging' => 'running',
             _ => task.status,
           },
-        ),
-      ),
+          reason: needsFix && task.reason.isEmpty
+              ? 'checkerFindings'
+              : task.reason,
+          // A checker proposal cannot close its own findings. Legacy phone
+          // checkpoints with findings remain blocked by native authority.
+          findings: needsFix
+              ? List.unmodifiable(
+                  task.findings.map(
+                    (finding) => finding.copyWith(status: 'open'),
+                  ),
+                )
+              : task.findings,
+        );
+      }),
     ),
     timeline: summary == null
         ? project.timeline

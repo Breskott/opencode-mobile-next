@@ -219,7 +219,7 @@ void main() {
       expect(project.tasks.map((task) => task.status), [
         'review',
         'verified',
-        'findings',
+        'review',
         'running',
         'merged',
       ]);
@@ -227,6 +227,76 @@ void main() {
       expect(project.receipts, isEmpty);
       expect(project.status, 'running');
       expect(project.planningState!.toJson(), planner.toJson());
+    },
+  );
+
+  test(
+    'legacy needsFix presents review and open findings without checker-authored closure',
+    () async {
+      final findings = [
+        for (final status in ['met', 'fixed', 'ignored', 'closed', 'open'])
+          TeamFinding(
+            id: status,
+            status: status,
+            text: 'Check this criterion',
+            criterion: 'Works',
+          ),
+      ];
+      const results = [TeamCriterionResult(criterion: 'Works', status: 'met')];
+      final blocked = task.copyWith(
+        status: 'needsFix',
+        findings: findings,
+        criterionResults: results,
+      );
+      final fulfilled = task.copyWith(
+        id: 'fulfilled',
+        status: 'merged',
+        findings: findings,
+        criterionResults: results,
+      );
+      final source = planned.copyWith(
+        status: 'running',
+        planApproved: true,
+        tasks: [blocked, fulfilled],
+      );
+      final project = (await client(
+        source,
+      ).gateway.teamWorkspace()).projects.single;
+      final review = project.tasks.first;
+      expect(review.status, 'review');
+      expect(review.reason, 'checkerFindings');
+      expect(
+        review.findings.map((finding) => finding.status),
+        everyElement('open'),
+      );
+      expect(
+        review.findings.map((finding) => finding.id),
+        findings.map((finding) => finding.id),
+      );
+      expect(
+        review.findings.map((finding) => finding.text),
+        findings.map((finding) => finding.text),
+      );
+      expect(
+        review.criterionResults.map((result) => result.toJson()),
+        results.map((result) => result.toJson()),
+      );
+      expect(project.revision, source.revision);
+      expect(project.tasks.last.toJson(), fulfilled.toJson());
+      expect(blocked.findings.map((finding) => finding.status), [
+        'met',
+        'fixed',
+        'ignored',
+        'closed',
+        'open',
+      ]);
+
+      final explicit = blocked.copyWith(reason: 'checkInvalid');
+      final preserved = (await client(
+        source.copyWith(tasks: [explicit]),
+      ).gateway.teamWorkspace()).projects.single.tasks.single;
+      expect(preserved.reason, 'checkInvalid');
+      expect(preserved.status, 'review');
     },
   );
 }

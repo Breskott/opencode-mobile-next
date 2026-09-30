@@ -20,13 +20,13 @@ Non-goal: changing UI, daemon command admission, planner resend/recovery policy,
 
 The adapter never emits `planFailed`: that UI state exposes `retryPlan`/`usePlanAsTask`, which the native engine does not implement. No polling read executes or resends a command.
 
-Native task `checked` means the daemon reached `mergeReady` after checker validation passed, so it presents as `verified`. `needsFix` presents as `findings`; `merging` presents as `running`. Native `review` and `merged` already match the domain. These mappings do not create or alter findings, criteria, queue items or receipts.
+Native task `checked` means the daemon reached `mergeReady` after checker validation passed, so it presents as `verified`. `needsFix` presents as `review` (the current board recognizes `review` but not `findings`); `merging` presents as `running`. Native `review` and `merged` already match the domain. On `needsFix` only, legacy checker-authored finding statuses such as `met`, `fixed`, `ignored` and `closed` present as `open`: the checker cannot author their closure, and the native authority blocks any returned findings. An empty task reason presents as static `checkerFindings`; an existing reason remains intact. Finding IDs/text/criteria and acceptance results are preserved, and findings on all other task states remain unchanged. These mappings do not invent queue items or receipts.
 
 For an unapproved terminal planner checkpoint, one derived current-checkpoint timeline row supplies static copy. Only known safe reason codes (`sessionFailed`, `promptUncertain`, `modelUnavailable`, `modelInvalid`, restart/pause reconciliation) are included in this canned copy; an unrecognized reason receives generic review wording. The original typed `planningState` remains unchanged. This is a current observation, not a fabricated durable historical event, and repeated reads do not append to the daemon log.
 
 ## Evidence and gate
 
-Six focused tests in `test/phone_engine_status_presentation_test.dart` cover completed planner -> visible plan -> unchanged reviewed approve command, quick task approval, active/terminal checkpoints, failed model/server reason presentation without writes, pause/stop preservation, and checker/merge vocabulary without invented receipt evidence.
+Seven focused tests in `test/phone_engine_status_presentation_test.dart` cover completed planner -> visible plan -> unchanged reviewed approve command, quick task approval, active/terminal checkpoints, failed model/server reason presentation without writes, pause/stop preservation, checker/merge vocabulary without invented receipt evidence, and legacy false-closed findings -> review/open/static reason while fulfilled findings remain intact.
 
 Pinned Dart formatting and `git diff --check` passed. No Flutter tests/analyzer/native/device processes launched by this worker. Coordinator must run the new test and existing `phone_project_engine_gateway_test.dart` under the serialized gate.
 
