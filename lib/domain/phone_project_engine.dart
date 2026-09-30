@@ -1,0 +1,64 @@
+import 'team_project_gateway.dart';
+
+/// Safe public failure: never retains a transport/native cause or payload.
+class PhoneEngineException implements Exception {
+  const PhoneEngineException(this.code);
+  final String code;
+  @override
+  String toString() => 'PhoneEngineException($code)';
+}
+
+/// Authenticated schema-1 identity and the exact commands implemented by daemon.
+class PhoneEngineHealth {
+  const PhoneEngineHealth({
+    required this.profileId,
+    required this.engineVersion,
+    required this.execution,
+    required this.boundary,
+    required this.oc1Verified,
+    required this.oc2,
+    required this.commandActions,
+  });
+  final String profileId, engineVersion;
+  final bool execution, boundary, oc1Verified, oc2;
+  final Set<TeamProjectAction> commandActions;
+  bool get canExecute => execution && boundary && oc1Verified && !oc2;
+
+  factory PhoneEngineHealth.fromJson(Object? value, String expectedProfile) {
+    if (value is! Map ||
+        value['schemaVersion'] is! int ||
+        value['schemaVersion'] != 1) {
+      throw const PhoneEngineException('schemaUnsupported');
+    }
+    if (value['profileId'] != expectedProfile) {
+      throw const PhoneEngineException('profileMismatch');
+    }
+    final flags = value['capabilities'];
+    final actions = value['commandActions'];
+    final version = value['engineVersion'];
+    if (flags is! Map ||
+        actions is! List ||
+        actions.any((v) => v is! String) ||
+        version is! String ||
+        version.isEmpty ||
+        [
+          'execution',
+          'boundary',
+          'oc1Verified',
+          'oc2',
+        ].any((k) => flags[k] is! bool)) {
+      throw const PhoneEngineException('payloadInvalid');
+    }
+    return PhoneEngineHealth(
+      profileId: expectedProfile,
+      engineVersion: version,
+      execution: flags['execution'] as bool,
+      boundary: flags['boundary'] as bool,
+      oc1Verified: flags['oc1Verified'] as bool,
+      oc2: flags['oc2'] as bool,
+      commandActions: Set.unmodifiable(
+        TeamProjectAction.values.where((a) => actions.contains(a.name)),
+      ),
+    );
+  }
+}

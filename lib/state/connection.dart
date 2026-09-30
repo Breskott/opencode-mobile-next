@@ -56,6 +56,7 @@ import 'isolated_task_launch.dart';
 import 'model_library.dart';
 import 'offline_queue.dart';
 import 'orchestration.dart';
+import 'phone_project_engine.dart';
 import '../domain/team_glance.dart';
 import 'team_glance.dart';
 import 'orchestration_store.dart';
@@ -270,13 +271,12 @@ typedef V2GatewayPairFactory =
       ServerProfile profile,
     );
 typedef LocalWakeLockEnsurer = Future<void> Function();
-typedef EventStreamFactory =
-    EventStream Function({
-      required OpenCodeApi api,
-      required void Function(EventEnvelope event) onEvent,
-      required void Function(StreamStatus status) onStatus,
-      void Function(Object error)? onError,
-    });
+typedef EventStreamFactory = EventStream Function({
+  required OpenCodeApi api,
+  required void Function(EventEnvelope event) onEvent,
+  required void Function(StreamStatus status) onStatus,
+  void Function(Object error)? onError,
+});
 
 /// A review belongs to one connection, session, and observed staged boundary.
 /// Reusing it after a remote stage/clear/commit is deliberately rejected.
@@ -1305,6 +1305,13 @@ class ConnectionController extends ChangeNotifier {
   /// count (04-plugin-architecture §9).
   OrchestrationController? get orchestration => _orchestration;
   OrchestrationController? _orchestration;
+
+  /// Native phone team lifecycle; callable without an active server profile.
+  late final PhoneProjectEngineController phoneProjectEngine =
+      PhoneProjectEngineController(
+        store: store,
+        onAttached: _phoneEngineAttached,
+      );
   late final OrchestrationStore _orchestrationStore = OrchestrationStore(
     store.prefs,
     secure: store.secure,
@@ -1326,6 +1333,7 @@ class ConnectionController extends ChangeNotifier {
       for (final stored in store.profiles) {
         if (stored.id == connected.id) {
           connected.orchestration = stored.orchestration;
+          connected.teamEngineAuth = stored.teamEngineAuth;
           break;
         }
       }
@@ -1334,6 +1342,18 @@ class ConnectionController extends ChangeNotifier {
     // The sibling changed hands (or went away); screens showing its state
     // rebuild from here, as they do for every other controller change.
     if (!_disposed) notifyListeners();
+  }
+
+  void _phoneEngineAttached(String profileId) {
+    if (_disposed || _connectedProfile?.id != profileId) return;
+    // A native restart may rotate auth even when the nonsecret URL is unchanged.
+    final current = _orchestration;
+    if (current != null) {
+      current.removeListener(_orchestrationChanged);
+      current.dispose();
+      _orchestration = null;
+    }
+    syncOrchestration();
   }
 
   void _syncOrchestration(ServerProfile? selected) {
@@ -1357,6 +1377,12 @@ class ConnectionController extends ChangeNotifier {
       profile: selected,
       config: config,
       store: _orchestrationStore,
+      probe: config.provider == OrchestrationProvider.phoneEngine
+          ? (_) => phoneProjectEngine.orchestrationProbe(selected)
+          : null,
+      gatewayFactory: config.provider == OrchestrationProvider.phoneEngine
+          ? (_, _) => phoneProjectEngine.orchestrationGateway(selected)
+          : null,
     )..addListener(_orchestrationChanged);
     _orchestration = next;
     _teamAlerts = TeamAlertTracker(profileId: selected.id);
@@ -6950,9 +6976,8 @@ class ConnectionController extends ChangeNotifier {
             policy.cancelDeletion();
             ConsentOwners.cancelDeletion(store.prefs, profileId);
             await SessionLinkBindings.cancelDeletion(store.prefs, profileId);
-            BuiltinServerOwner.forPreferences(
-              store.prefs,
-            ).cancelDeletion(profileId);
+            BuiltinServerOwner.forPreferences(store.prefs)
+                .cancelDeletion(profileId);
             _profileMonitor?.cancelDeletion(profileId);
             _quotaMonitor?.cancelDeletion(profileId);
             _pendingAuth.cancelDeletion(profileId);
@@ -7017,6 +7042,7 @@ class ConnectionController extends ChangeNotifier {
     final retainedKeys = {
       'oc.automaticActivity.$profileId',
       AutomationPolicyController.keyFor(profileId),
+      'oc.teamEngineDeleted.$profileId',
     };
     final failures = <String>[];
 
@@ -7085,9 +7111,8 @@ class ConnectionController extends ChangeNotifier {
         ]);
         // Keep the shared runtime owner through queue preflight failures.
         // Once preservation succeeds, prevent fallback to another profile.
-        await BuiltinServerOwner.forPreferences(
-          store.prefs,
-        ).clearProfile(profileId);
+        await BuiltinServerOwner.forPreferences(store.prefs)
+            .clearProfile(profileId);
         _promptShelfDeletionRevisions[profileId] =
             (_promptShelfDeletionRevisions[profileId] ?? 0) + 1;
         // Outstanding saved-prompt Undo handles refuse from here on; a deleted
@@ -7097,6 +7122,19 @@ class ConnectionController extends ChangeNotifier {
           _savedPrompts = null;
         }
         await ConsentOwners.closeProfile(store.prefs, profileId);
+        final engineProfile = store.profiles
+            .where((p) => p.id == profileId)
+            .firstOrNull;
+        if (engineProfile?.orchestration?.provider ==
+                OrchestrationProvider.phoneEngine ||
+            (engineProfile?.teamEngineAuth.isNotEmpty ?? false) ||
+            store.prefs.getBool('oc.teamEngineDeleted.$profileId') == true) {
+          try {
+            await phoneProjectEngine.deleteProfile(profileId);
+          } catch (_) {
+            failures.add('phone team engine data');
+          }
+        }
         try {
           // The plugin's sibling stops first so no refetch can rewrite the
           // `oc.orchestration.<id>.` keys the scoped sweep below discovers.
@@ -10664,6 +10702,7 @@ class ConnectionController extends ChangeNotifier {
     _orchestration?.removeListener(_orchestrationChanged);
     _orchestration?.dispose();
     _orchestration = null;
+    unawaited(phoneProjectEngine.close());
     // The histories are shared per profile and outlive this connection.
     for (final history in _watchedActivity) {
       history.removeListener(_automaticActivityChanged);
