@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -61,6 +62,13 @@ const _excluded = <String, String>{
   'add-agent': 'a form inside External agents',
   'profile-editor': 'a form inside Saved servers; owned by phase 3b',
   'pairing-scanner': 'a step of adding a server',
+  'team-project-overview':
+      'One selected project; opened from AI Team projects.',
+  'team-project-conversation':
+      'One project task; opened from its project or notification.',
+  'team-project-board': 'Task graph for one selected project.',
+  'team-project-timeline': 'Audit events for one selected project.',
+  'team-project-servers': 'Placement controls for one selected project.',
   'team-agent': 'one agent of one AI Team run',
   'chat-watching-live':
       'one AI Team agent whose conversation the server cannot read; '
@@ -576,7 +584,7 @@ void main() {
         scope,
         query,
       ).firstWhere((entry) => entry.id == id);
-      await entry.open(context, scope);
+      unawaited(entry.open(context, scope));
     }
 
     testWidgets(

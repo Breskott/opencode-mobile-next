@@ -662,6 +662,19 @@
             "disabled while _creating or a project folder must be chosen"
           ],
           "destructive": false
+        },
+        {
+          "id": "workspace-project-strip",
+          "type": "list-tile",
+          "label": "AI Team projects",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-projects",
+          "targetWidget": null,
+          "effect": "Shows current project progress and decisions; opens selected project.",
+          "gates": [],
+          "destructive": false
         }
       ]
     },

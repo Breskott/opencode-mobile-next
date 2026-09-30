@@ -3,6 +3,17 @@
 ///
 /// | Part | Standard |
 /// |---|---|
+/// | [KitDigest] | AI Team controlled presentation surface |
+/// | [KitFindingsCard] | AI Team controlled presentation surface |
+/// | [KitMergeQueue] | AI Team controlled presentation surface |
+/// | [KitMilestoneRow] | AI Team controlled presentation surface |
+/// | [KitPhaseCard] | AI Team controlled presentation surface |
+/// | [KitPlanCard] | AI Team controlled presentation surface |
+/// | [KitProjectRow] | AI Team controlled presentation surface |
+/// | [KitPromoteCard] | AI Team controlled presentation surface |
+/// | [KitServerLane] | AI Team controlled presentation surface |
+/// | [KitSpecBlock] | AI Team controlled presentation surface |
+/// | [KitTimelineDay] | AI Team controlled presentation surface |
 /// | [KitScreen] | §1 screen: header, one loading bar, body, pinned bottom |
 /// | [KitLayout], [KitWindow] | kit v2 §8.1 window classes: every part adapts to phone, tablet and PC |
 /// | [KitSheet], [showKitSheet], [showKitFramedSheet], [KitSheetHeight], [KitDraft] | kit v2 §1.1 the one sheet frame, a body that draws its own frame, its draft and unsaved-input guard |
@@ -38,7 +49,7 @@
 /// | [KitSurface] | kit v2 §4 the one solid box: a surface step fill, token shape and padding, optional hairline edge |
 /// | [KitDivider] | kit v2 the one separator: a pixel-snapped hairline, optionally inset to a row's words |
 /// | [KitIcon], [KitIconSize], [KitBrandMark] | kit v2 §9 the one way to draw a glyph at a designed size, and the open-portal mark |
-/// | [KitChip], [KitChipKind], [KitChipWrap] | kit v2 §4-§5 a small rounded label, always with a word, and its wrapping row |
+/// | [KitChip], [KitChipKind], [KitChipTone], [KitChipWrap] | kit v2 §4-§5 a small rounded label, always with a word, and its wrapping row |
 /// | [KitSegmented], [KitSegment] | kit v2 §1.6 one choice among 2–4 short, always-visible options |
 /// | [KitMenuItem], [KitMenuGroup], [showKitMenu], [KitMenuPanel] | kit v2 the one popup menu: groups (a named group gets a heading), checks, disabled reasons, destructive last |
 /// | [KitTerm], [showKitTerm] | K2 §1.20 a term that explains itself |
@@ -204,3 +215,16 @@ export 'chat/kit_find_mark.dart';
 export 'chat/kit_work_line.dart';
 export 'chat/kit_queued_message.dart';
 export 'kit_dialog.dart';
+
+export 'team/kit_digest.dart';
+export 'team/kit_findings_card.dart';
+export 'team/kit_merge_queue.dart';
+export 'team/kit_milestone_row.dart';
+export 'team/kit_phase_card.dart';
+export 'team/kit_plan_card.dart';
+export 'team/kit_project_row.dart';
+export 'team/kit_promote_card.dart';
+export 'team/kit_server_lane.dart';
+export 'team/kit_spec_block.dart';
+export 'team/kit_team_data.dart';
+export 'team/kit_timeline_day.dart';

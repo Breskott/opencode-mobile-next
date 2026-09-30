@@ -1710,7 +1710,11 @@ Map<String, Map<String, String>> kitManifestViolations(KitManifest manifest) {
     }
     final allowedFiles = part.kind == KitManifestKind.scene
         ? ['lib/ui/kit/scenes/$snake.dart']
-        : ['lib/ui/kit/$snake.dart', 'lib/ui/kit/chat/$snake.dart'];
+        : [
+            'lib/ui/kit/$snake.dart',
+            'lib/ui/kit/chat/$snake.dart',
+            'lib/ui/kit/team/$snake.dart',
+          ];
     if (!part.name.startsWith('Kit')) {
       out['name']![part.name] = 'not named Kit<Name> (${part.file})';
     } else if (!allowedFiles.contains(part.file) && !part.coLocated) {

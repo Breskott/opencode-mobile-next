@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -226,7 +227,9 @@ void main() {
       ).firstWhere((entry) => entry.id == 'inside-server-disconnect');
       expect(result.parent, _en.settingsHubThisServer);
 
-      await result.open(tester.element(find.byType(SettingsScreen)), scope);
+      unawaited(
+        result.open(tester.element(find.byType(SettingsScreen)), scope),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(ServerSettingsScreen), findsOneWidget);
       final row = _row('server-disconnect');
@@ -415,9 +418,11 @@ void main() {
       expect(result.parent, _en.aboutTitle, reason: query);
     }
     // The result opens About arrived at the row.
-    await searchEntries(_en, scope, 'tips')
-        .firstWhere((entry) => entry.id == 'settings-show-tips-again')
-        .open(tester.element(find.byType(SettingsScreen)), scope);
+    unawaited(
+      searchEntries(_en, scope, 'tips')
+          .firstWhere((entry) => entry.id == 'settings-show-tips-again')
+          .open(tester.element(find.byType(SettingsScreen)), scope),
+    );
     await tester.pumpAndSettle();
     expect(find.byType(AboutScreen), findsOneWidget);
     final row = _row('settings-show-tips-again');

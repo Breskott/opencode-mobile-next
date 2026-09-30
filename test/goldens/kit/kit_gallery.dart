@@ -25,6 +25,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
+import 'package:opencode_mobile/ui/kit/kit_screen.dart';
 
 import '../../../tool/capture/fixtures.dart'
     show captureTheme, loadCaptureFonts;
@@ -468,6 +469,25 @@ List<(String, String)> _readingOrderProblems(
   for (var i = 1; i < nodes.length; i++) {
     final (before, a) = nodes[i - 1];
     final (after, b) = nodes[i];
+    final beforePane = _adaptivePane(before);
+    final afterPane = _adaptivePane(after);
+    if (beforePane != null && afterPane != null && beforePane != afterPane) {
+      // Adaptive columns are traversed independently, from start to end.
+      // Starting at the top of the next column is not a reversed row.
+      final aPane = _globalRect(beforePane, view.devicePixelRatio);
+      final bPane = _globalRect(afterPane, view.devicePixelRatio);
+      final forward = direction == TextDirection.ltr
+          ? bPane.left >= aPane.right - slack
+          : bPane.right <= aPane.left + slack;
+      if (!forward) {
+        problems.add((
+          _text(after),
+          'adaptive panes go back towards the start: '
+              '${_describe(after, b)} after ${_describe(before, a)}',
+        ));
+      }
+      continue;
+    }
     final overlap = a.intersect(b);
     if (overlap.width > slack && overlap.height > slack) continue;
     final bool backwards = direction == TextDirection.ltr
@@ -492,6 +512,19 @@ List<(String, String)> _readingOrderProblems(
     }
   }
   return problems;
+}
+
+SemanticsNode? _adaptivePane(SemanticsNode node) {
+  for (
+    SemanticsNode? current = node;
+    current != null;
+    current = current.parent
+  ) {
+    if (current.identifier.startsWith(KitScreen.paneSemanticsPrefix)) {
+      return current;
+    }
+  }
+  return null;
 }
 
 String _text(SemanticsNode node) {

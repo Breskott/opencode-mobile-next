@@ -51,6 +51,7 @@ import 'package:uuid/uuid.dart';
 
 import '../domain/orchestration_gateway.dart';
 import '../orchestration/adapters/fixture/fixture_gateway.dart';
+import '../orchestration/adapters/fixture/project_fixture_gateway.dart';
 import '../orchestration/adapters/gascity/gascity_gateway.dart';
 import '../orchestration/adapters/gascity/gascity_mappers.dart'
     show mapStreamFrame;
@@ -61,6 +62,8 @@ import 'automation_policy.dart';
 import 'orchestration_store.dart';
 import 'profiles.dart';
 import 'team_worker_start.dart';
+import 'team_project_controller.dart';
+import 'team_project_persistence.dart';
 
 export '../orchestration/adapters/gascity/gascity_probe.dart'
     show
@@ -324,7 +327,20 @@ class OrchestrationController extends ChangeNotifier {
     this.mutationTimeout = const Duration(seconds: 60),
     this.cycleTick = const Duration(seconds: 30),
   }) : _store = store,
-       _gatewayFactory = gatewayFactory ?? defaultGatewayFactory,
+       _gatewayFactory =
+           gatewayFactory ??
+           ((config, found) =>
+               config.provider == OrchestrationProvider.fixture &&
+                   config.url == 'fixture://project-demo'
+               ? ProjectFixtureGateway(
+                   persistence: SharedPreferencesTeamProjectPersistence(
+                     store.prefs,
+                     profile.id,
+                   ),
+                   now: now,
+                   tickInterval: const Duration(seconds: 8),
+                 )
+               : defaultGatewayFactory(config, found)),
        _probe = probe ?? defaultProbe,
        _now = now ?? DateTime.now,
        _mintKey = mintKey ?? mintMutationKey;
@@ -355,6 +371,10 @@ class OrchestrationController extends ChangeNotifier {
   final MutationKeyMinter _mintKey;
 
   OrchestrationGateway? _gateway;
+  TeamProjectController? _projectController;
+
+  /// Project lifecycle support is optional; older engines keep their task UI.
+  TeamProjectController? get projectController => _projectController;
   OrchestrationSseClient? _sse;
   StreamSubscription<OrchestrationEvent>? _events;
   StreamSubscription<OrchestrationStreamStatus>? _status;
@@ -500,11 +520,16 @@ class OrchestrationController extends ChangeNotifier {
 
   /// Probes, builds the adapter, subscribes and refreshes every scope.
   /// Idempotent; a failed probe leaves [phase] failed and [lastError] set.
-  Future<void> start() async {
+  Future<void>? _starting;
+
+  Future<void> start() => _starting ??= _start();
+
+  Future<void> _start() async {
     if (_started || _disposed) return;
     _started = true;
     _cursor = _store.readCursor(profile.id);
     await _loadMutations();
+    if (_stoppedMeanwhile) return;
     _setPhase(OrchestrationPhase.probing);
 
     final ProbeVerdict verdict;
@@ -545,6 +570,18 @@ class OrchestrationController extends ChangeNotifier {
     _gateway = gateway;
     _capabilities = gateway.capabilities;
     _host = gateway.host ?? _host;
+    if (gateway is OrchestrationProjectGateway &&
+        _capabilities.projectLifecycle) {
+      final projects = TeamProjectController(
+        gateway as OrchestrationProjectGateway,
+        profileId: profile.id,
+        ownsGateway: false,
+        preferences: _store.prefs,
+      )..addListener(_notify);
+      _projectController = projects;
+      await projects.load();
+      if (_stoppedMeanwhile) return;
+    }
     _subscribe(gateway);
     _setPhase(OrchestrationPhase.ready);
     await refresh();
@@ -557,6 +594,7 @@ class OrchestrationController extends ChangeNotifier {
       return Future.value();
     }
     _started = false;
+    _starting = null;
     _lastError = null;
     return start();
   }
@@ -571,7 +609,11 @@ class OrchestrationController extends ChangeNotifier {
   }
 
   /// Closes the stream and the gateway and persists the cursor. Idempotent.
-  Future<void> stop() async {
+  Future<void>? _stopping;
+
+  Future<void> stop() => _stopping ??= _stop();
+
+  Future<void> _stop() async {
     if (_phase == OrchestrationPhase.stopped) return;
     _phase = OrchestrationPhase.stopped;
     _debounce?.cancel();
@@ -599,10 +641,16 @@ class OrchestrationController extends ChangeNotifier {
     }
     _cycleProbes.clear();
     _cycles.clear();
+    final projects = _projectController;
+    _projectController = null;
+    projects?.removeListener(_notify);
+    projects?.dispose();
+    await projects?.drainEditorDrafts();
     await _unsubscribe();
     final gateway = _gateway;
     _gateway = null;
     if (gateway != null) await gateway.close();
+    await _starting;
     _setStreamStatus(OrchestrationStreamStatus.closed);
     await _store.saveCursor(profile.id, _cursor);
     _notify();
@@ -633,9 +681,33 @@ class OrchestrationController extends ChangeNotifier {
   /// `oc.orchestration.<profileId>.` key and secret. Returns the keys the
   /// store refused to drop.
   Future<Set<String>> remove() async {
+    final failures = <String>{};
+    final projects = _projectController;
+    if (projects != null) {
+      try {
+        await projects.deleteLocalData();
+      } catch (_) {
+        failures.add('oc.teamWorkspace.${profile.id}');
+      }
+    }
     await stop();
     await _store.drain(profile.id);
-    return _store.sweep(profile.id);
+    for (final key in [
+      'oc.teamWorkspace.${profile.id}',
+      'oc.teamEditorDrafts.${profile.id}',
+    ]) {
+      try {
+        if (!await _store.prefs.remove(key)) {
+          failures.add(key);
+        } else {
+          failures.remove(key);
+        }
+      } catch (_) {
+        failures.add(key);
+      }
+    }
+    failures.addAll(await _store.sweep(profile.id));
+    return failures;
   }
 
   @override

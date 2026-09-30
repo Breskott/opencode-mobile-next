@@ -23,10 +23,14 @@ import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
+import '../theme_roles.dart' show readableOn;
 import 'kit_motion.dart';
 import 'kit_tappable.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
+
+/// Semantic severity for worded chips; neutral preserves the existing look.
+enum KitChipTone { neutral, attention, danger }
 
 /// The five kinds a [KitChip] can be (KitChip.md "Purpose").
 enum KitChipKind { plain, action, removable, count, summary }
@@ -42,13 +46,17 @@ enum KitChipKind { plain, action, removable, count, summary }
 /// now is not shown (STATE-8).
 class KitChip extends StatelessWidget {
   /// A fact that does nothing when tapped: "main", "3 agents".
-  const KitChip({super.key, required this.label, this.icon})
-    : kind = KitChipKind.plain,
-      onPressed = null,
-      onRemove = null,
-      count = null,
-      selected = null,
-      expanded = null;
+  const KitChip({
+    super.key,
+    required this.label,
+    this.icon,
+    this.tone = KitChipTone.neutral,
+  }) : kind = KitChipKind.plain,
+       onPressed = null,
+       onRemove = null,
+       count = null,
+       selected = null,
+       expanded = null;
 
   /// A tap target ("Open in terminal"). With [selected] non-null it is an
   /// on/off filter (replaces FilterChip): a check at the start when on,
@@ -60,6 +68,7 @@ class KitChip extends StatelessWidget {
   const KitChip.action({
     super.key,
     required this.label,
+    this.tone = KitChipTone.neutral,
     required VoidCallback this.onPressed,
     this.icon,
     this.selected,
@@ -74,6 +83,7 @@ class KitChip extends StatelessWidget {
   const KitChip.removable({
     super.key,
     required this.label,
+    this.tone = KitChipTone.neutral,
     required VoidCallback this.onRemove,
     this.icon,
     this.onPressed,
@@ -87,6 +97,7 @@ class KitChip extends StatelessWidget {
   const KitChip.count({
     super.key,
     required this.label,
+    this.tone = KitChipTone.neutral,
     required int this.count,
     this.onPressed,
     this.icon,
@@ -101,6 +112,7 @@ class KitChip extends StatelessWidget {
   const KitChip.summary({
     super.key,
     required this.label,
+    this.tone = KitChipTone.neutral,
     required VoidCallback this.onPressed,
     this.icon,
     this.expanded,
@@ -110,6 +122,7 @@ class KitChip extends StatelessWidget {
        selected = null;
 
   final KitChipKind kind;
+  final KitChipTone tone;
 
   /// The chip's words, from the caller's ARB (COPY-1). A name the person or
   /// the server chose is wrapped by the caller with `KitBidi.auto` (COPY-30).
@@ -139,11 +152,24 @@ class KitChip extends StatelessWidget {
     // (text1) where the States table calls for emphasis (action, removable,
     // summary and a count's number), KitTextTone.secondary (text2) otherwise
     // (plain, and a count's own label).
+    final semanticColor = switch (tone) {
+      KitChipTone.neutral => roles.text2,
+      KitChipTone.attention => roles.attention,
+      KitChipTone.danger => roles.danger,
+    };
+    final toneColor = tone == KitChipTone.neutral
+        ? semanticColor
+        : readableOn(
+            semanticColor,
+            [roles.surface2, roles.surface3],
+            4.7,
+            toward: roles.text1,
+          );
     final emphasized = KitText.styleOf(
       context,
       KitTextRole.secondary,
       tone: KitTextTone.primary,
-    );
+    ).copyWith(color: tone == KitChipTone.neutral ? roles.text1 : toneColor);
     final quiet = KitText.styleOf(
       context,
       KitTextRole.secondary,
@@ -164,9 +190,12 @@ class KitChip extends StatelessWidget {
       case KitChipKind.plain:
         return _ChipFrame(
           tokens: tokens,
-          span: TextSpan(text: label, style: quiet),
+          span: TextSpan(
+            text: label,
+            style: quiet.copyWith(color: toneColor),
+          ),
           textSemantics: label,
-          leading: icon == null ? null : startGlyph(icon!, roles.text2),
+          leading: icon == null ? null : startGlyph(icon!, toneColor),
           leadingExtent: icon == null ? 0 : glyphExtent,
         );
 
@@ -215,7 +244,12 @@ class KitChip extends StatelessWidget {
           tokens: tokens,
           span: TextSpan(text: label, style: emphasized),
           textSemantics: label,
-          leading: icon == null ? null : startGlyph(icon!, roles.text1),
+          leading: icon == null
+              ? null
+              : startGlyph(
+                  icon!,
+                  tone == KitChipTone.neutral ? roles.text1 : toneColor,
+                ),
           leadingExtent: icon == null ? 0 : glyphExtent,
           trailing: expanded == null
               ? null
@@ -257,7 +291,7 @@ class KitChip extends StatelessWidget {
               ),
             ],
           ),
-          leading: icon == null ? null : startGlyph(icon!, roles.text2),
+          leading: icon == null ? null : startGlyph(icon!, toneColor),
           leadingExtent: icon == null ? 0 : glyphExtent,
           onPressed: onPressed,
           semanticsLabel: '$label, $formatted',
@@ -269,7 +303,12 @@ class KitChip extends StatelessWidget {
           tokens: tokens,
           span: TextSpan(text: label, style: emphasized),
           textSemantics: label,
-          leading: icon == null ? null : startGlyph(icon!, roles.text1),
+          leading: icon == null
+              ? null
+              : startGlyph(
+                  icon!,
+                  tone == KitChipTone.neutral ? roles.text1 : toneColor,
+                ),
           leadingExtent: icon == null ? 0 : glyphExtent,
           trailing: endGlyph(
             Icon(

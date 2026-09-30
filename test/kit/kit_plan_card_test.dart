@@ -1,0 +1,25 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
+import 'team_kit_test_support.dart';
+
+void main() {
+  testWidgets('wraps at 360 dp with 2x text', (tester) async {
+    await pumpTeam(tester, teamSample('kit_plan_card'), scale: 2);
+    expect(tester.takeException(), isNull);
+    expect(find.text('Milestone 2'), findsOneWidget);
+  });
+  testWidgets('action is controlled by its caller', (tester) async {
+    var calls = 0;
+    await pumpTeam(tester, teamSample('kit_plan_card', action: () => calls++));
+    await tester.tap(find.text('Approve and start'));
+    await tester.pump();
+    expect(calls, 1);
+  });
+  testWidgets('last-known state suppresses mutations', (tester) async {
+    await pumpTeam(
+      tester,
+      teamSample('kit_plan_card', state: KitTeamState.stale),
+    );
+    expect(find.text('Approve and start'), findsNothing);
+  });
+}

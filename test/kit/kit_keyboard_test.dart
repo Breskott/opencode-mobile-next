@@ -11,6 +11,7 @@ import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 
 import 'kit_harness.dart';
+import 'team_kit_test_support.dart' show pumpTeam;
 
 const _pc = Size(1280, 800);
 
@@ -67,6 +68,31 @@ void main() {
     () => debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop(),
   );
   tearDown(() => debugPlatformCapabilities = null);
+
+  for (final milestone in [false, true]) {
+    testWidgets('team row activates with keyboard: $milestone', (tester) async {
+      var calls = 0;
+      await pumpTeam(
+        tester,
+        milestone
+            ? KitMilestoneRow(
+                title: 'Milestone',
+                status: 'Ready',
+                onPressed: () => calls++,
+              )
+            : KitProjectRow(
+                title: 'Project',
+                status: 'Ready',
+                onPressed: () => calls++,
+              ),
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(calls, 1);
+    });
+  }
 
   group('showKitConfirm', () {
     testWidgets('Esc cancels', (tester) async {

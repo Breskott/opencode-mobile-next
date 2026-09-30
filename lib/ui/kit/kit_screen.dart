@@ -64,6 +64,9 @@ enum KitScreenWidth {
 /// empty detail, twoPane selected, threePane (large). Empty and error are
 /// the body's `KitStateView`, not KitScreen's. No disabled.
 class KitScreen extends StatelessWidget {
+  /// Semantic boundary for independently traversed adaptive columns.
+  static const paneSemanticsPrefix = 'kit-screen-pane-';
+
   /// v1 parameters unchanged; every v2 parameter is optional.
   const KitScreen({
     super.key,
@@ -398,6 +401,7 @@ class KitScreen extends StatelessWidget {
             width: KitLayout.paneListWidth,
             child: Semantics(
               container: true,
+              identifier: '${paneSemanticsPrefix}list',
               child: _column(context, withBar: true),
             ),
           ),
@@ -406,6 +410,7 @@ class KitScreen extends StatelessWidget {
         Expanded(
           child: _Pane(
             key: detailPaneKey,
+            identifier: '${paneSemanticsPrefix}detail',
             child: _Centred(
               KitLayout.paneDetailMaxWidth,
               fill: true,
@@ -417,7 +422,11 @@ class KitScreen extends StatelessWidget {
           hairline,
           SizedBox(
             width: KitLayout.paneSideWidth,
-            child: _Pane(key: sidePaneKey, child: side),
+            child: _Pane(
+              key: sidePaneKey,
+              identifier: '${paneSemanticsPrefix}side',
+              child: side,
+            ),
           ),
         ],
       ],
@@ -439,13 +448,16 @@ class _KitScreenScope extends InheritedWidget {
 /// A detail or side pane: a semantics container, the pane scope, and its
 /// own one-of-each check.
 class _Pane extends StatelessWidget {
-  const _Pane({super.key, required this.child});
+  const _Pane({super.key, required this.child, required this.identifier});
+
+  final String identifier;
 
   final Widget child;
 
   @override
   Widget build(BuildContext context) => Semantics(
     container: true,
+    identifier: identifier,
     child: _KitScreenScope(pane: true, child: _KitScreenCheck(child: child)),
   );
 }

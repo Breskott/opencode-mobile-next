@@ -6,6 +6,8 @@ Group: screen. Unit `kit-KitScreen-v2` (wave 1, tier 1d; cut review C06 merges k
 
 The one screen frame. A page (a route) is `KitScreen(topBar: …)`: the ground, the top bar, the one status line, a pinned search, the one loading bar, the body, a pinned bottom primary lifted above the keyboard, and the bottom inset that floating parts use. A body inside the shell is `KitScreen` without a top bar. From expanded it can show two panes (list 296 · detail up to 700) and on large three (… · changes 340), with selection filling the detail instead of pushing a route.
 
+Adaptive panes expose separate semantic containers (`kit-screen-pane-list`, `kit-screen-pane-detail`, `kit-screen-pane-side`). Assistive traversal completes each column from top to bottom before moving to the next column in reading direction. The G5 checker validates column order and retains row-order checks within each pane.
+
 ## Replaces
 
 - `KitScreen` v1 (`lib/ui/kit/kit_screen.dart`, 59 lines: `body`, `header`, `loading`, `loadingLabel`, `bottom`; 18 call sites) — kept source-compatible (R11, KIT-43).

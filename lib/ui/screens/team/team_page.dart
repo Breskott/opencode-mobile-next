@@ -19,12 +19,14 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
+import '../../../state/team_project_demo.dart';
 import '../../../domain/orchestration_gateway.dart' show OrchestrationRun;
 import '../../../termux/team_runtime.dart';
 import '../../../voice/device.dart';
 import '../../kit/kit.dart';
 import '../../widgets/team_host_form.dart' show TeamHostProbe;
 import 'team_home_screen.dart';
+import 'projects/team_projects_screen.dart';
 import 'team_intro_screen.dart';
 import 'team_settings_screen.dart';
 
@@ -67,6 +69,9 @@ Future<void> openTeamSetup(
       profile.orchestration != null &&
       team != null &&
       team.profileId == profile.id) {
+    if (team.capabilities.projectLifecycle && team.projectController != null) {
+      return openTeamPage(context, connection);
+    }
     return openTeamSettings(
       context,
       controller: team,
@@ -123,6 +128,26 @@ class TeamPage extends StatelessWidget {
           profile.orchestration != null &&
           team != null &&
           team.profileId == profile.id) {
+        final projects = team.projectController;
+        if (team.capabilities.projectLifecycle && projects != null) {
+          return TeamProjectsScreen(
+            key: ObjectKey(projects),
+            controller: projects,
+            onLeaveDemo: () async {
+              try {
+                await leaveTeamProjectDemo(connection);
+              } catch (_) {
+                if (!context.mounted) return;
+                final copy = AppLocalizations.of(context);
+                await showKitAlert(
+                  context,
+                  title: copy.teamProjectOff,
+                  body: copy.teamProjectError,
+                );
+              }
+            },
+          );
+        }
         // A new controller (a changed address) is a new team: fresh state.
         return TeamHomeScreen(
           key: ObjectKey(team),

@@ -47,6 +47,16 @@ class KitSectionLabel extends StatelessWidget {
     this.textKey,
   });
 
+  /// Use inside a host that has already applied the page gutter.
+  const KitSectionLabel.inline(
+    this.text, {
+    super.key,
+    this.trailing,
+    this.explanation,
+    this.gapBefore,
+    this.textKey,
+  }) : margin = EdgeInsets.zero;
+
   /// The section's name, in sentence case.
   final String text;
 

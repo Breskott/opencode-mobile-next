@@ -2,6 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../orchestration/adapters/fixture/project_fixture_gateway.dart';
+import 'team_project_persistence.dart';
+
 import '../api/models.dart';
 import '../domain/attention_feed.dart';
 import '../domain/orchestration_gateway.dart';
@@ -21,12 +26,11 @@ class MonitorAttentionReader {
     DateTime Function()? now,
     this.timeout = const Duration(seconds: 8),
   }) : _probe = probe ?? OrchestrationController.defaultProbe,
-       _teamGatewayFactory =
-           teamGatewayFactory ?? OrchestrationController.defaultGatewayFactory,
+       _teamGatewayFactory = teamGatewayFactory,
        _now = now ?? DateTime.now;
 
   final OrchestrationProbe _probe;
-  final OrchestrationGatewayFactory _teamGatewayFactory;
+  final OrchestrationGatewayFactory? _teamGatewayFactory;
   final DateTime Function() _now;
   final Duration timeout;
   final _cursors = <String, ({String location, int offset})>{};
@@ -134,7 +138,26 @@ class MonitorAttentionReader {
         if (verdict is! ProbeFound) throw const _ReadExpired();
         // A late factory result still belongs to this reader and must close.
         final gateway = await call(() async {
-          final gateway = await _teamGatewayFactory(config, verdict);
+          final OrchestrationGateway gateway;
+          final factory = _teamGatewayFactory;
+          if (factory != null) {
+            gateway = await factory(config, verdict);
+          } else if (config.provider == OrchestrationProvider.fixture &&
+              config.url == 'fixture://project-demo') {
+            gateway = ProjectFixtureGateway(
+              persistence: SharedPreferencesTeamProjectPersistence(
+                await SharedPreferences.getInstance(),
+                profile.id,
+              ),
+              readOnly: true,
+              seedDemo: false,
+            );
+          } else {
+            gateway = OrchestrationController.defaultGatewayFactory(
+              config,
+              verdict,
+            );
+          }
           // Retain ownership before the outer post-await admission check.
           team = gateway;
           if (!allowed()) {

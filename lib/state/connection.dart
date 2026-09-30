@@ -7104,6 +7104,9 @@ class ConnectionController extends ChangeNotifier {
             await _orchestration!.stop();
           }
           await _orchestrationStore.drain(profileId);
+          // A project fixture may have finished its first durable write while
+          // stop drained it. Include every now-settled key in this sweep.
+          scopedKeys.addAll(store.profileScopedPreferenceKeys(profileId));
         } catch (_) {}
         final keptQueue = [
           for (final entry in _queue)

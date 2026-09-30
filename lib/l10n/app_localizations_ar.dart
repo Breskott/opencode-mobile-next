@@ -24768,4 +24768,745 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitComposerRailRetry => 'Retry';
+
+  @override
+  String get teamProjectHome => 'AI Team';
+
+  @override
+  String get teamProjectDemo => 'Demo · simulated project activity';
+
+  @override
+  String get teamProjectNew => 'New project';
+
+  @override
+  String get teamProjectQuick => 'Give a quick task';
+
+  @override
+  String get teamProjectSettings => 'Project settings';
+
+  @override
+  String get teamProjectRoles => 'Roles and agents';
+
+  @override
+  String get teamProjectEmpty => 'Give your team a goal to start a project.';
+
+  @override
+  String get teamProjectSelect => 'Select a project';
+
+  @override
+  String get teamProjectSelectTask =>
+      'Select a task to follow its conversation.';
+
+  @override
+  String get teamProjectLoad => 'Loading projects';
+
+  @override
+  String get teamProjectRetry => 'Retry';
+
+  @override
+  String get teamProjectError =>
+      'The project could not be updated. Your saved work is still available.';
+
+  @override
+  String get teamProjectSpec => 'Open spec';
+
+  @override
+  String get teamProjectPlan => 'Review plan';
+
+  @override
+  String get teamProjectBoard => 'Board';
+
+  @override
+  String get teamProjectGraph => 'Dependencies';
+
+  @override
+  String get teamProjectTimeline => 'Timeline';
+
+  @override
+  String get teamProjectServers => 'Servers';
+
+  @override
+  String get teamProjectMilestones => 'Milestones';
+
+  @override
+  String get teamProjectLanes => 'Lanes';
+
+  @override
+  String get teamProjectMerge => 'Merge queue';
+
+  @override
+  String get teamProjectCost => 'Cost';
+
+  @override
+  String get teamProjectDecisions => 'Recent decisions';
+
+  @override
+  String get teamProjectPause => 'Pause project';
+
+  @override
+  String get teamProjectResume => 'Resume project';
+
+  @override
+  String get teamProjectStop => 'Stop project';
+
+  @override
+  String get teamProjectStopBody =>
+      'Running tasks will stop. Their work and project history will be kept.';
+
+  @override
+  String get teamProjectAdvance => 'Advance demo';
+
+  @override
+  String get teamProjectDigest => 'Since you were away';
+
+  @override
+  String get teamProjectDigestRead => 'Mark as read';
+
+  @override
+  String get teamProjectAnswer => 'Answer';
+
+  @override
+  String get teamProjectAnswerLabel => 'Your answer';
+
+  @override
+  String get teamProjectAll => 'Everything';
+
+  @override
+  String get teamProjectMerges => 'Merges';
+
+  @override
+  String get teamProjectProblems => 'Problems';
+
+  @override
+  String get teamProjectMilestoneFilter => 'Milestone';
+
+  @override
+  String get teamProjectRepoFilter => 'Repo';
+
+  @override
+  String get teamProjectServerFilter => 'Server';
+
+  @override
+  String get teamProjectBacklog => 'Backlog';
+
+  @override
+  String get teamProjectReady => 'Ready';
+
+  @override
+  String get teamProjectWorking => 'Working';
+
+  @override
+  String get teamProjectReview => 'Review';
+
+  @override
+  String get teamProjectDone => 'Done';
+
+  @override
+  String get teamProjectNoTasks => 'No tasks in this view.';
+
+  @override
+  String get teamProjectMove => 'Move task';
+
+  @override
+  String get teamProjectMoveTo => 'Move to server';
+
+  @override
+  String get teamProjectHandoff => 'Hand-off note';
+
+  @override
+  String get teamProjectPaused => 'Paused';
+
+  @override
+  String get teamProjectStopped => 'Stopped';
+
+  @override
+  String get teamProjectFailed => 'Stopped unexpectedly';
+
+  @override
+  String get teamProjectStalled => 'No recent progress';
+
+  @override
+  String get teamProjectPlanning => 'Shaping the spec';
+
+  @override
+  String get teamProjectPlanWaiting => 'Plan ready to review';
+
+  @override
+  String get teamProjectNeedsYou => 'Needs your decision';
+
+  @override
+  String get teamProjectWaiting => 'Waiting for dependencies';
+
+  @override
+  String get teamProjectOnline => 'Reachable';
+
+  @override
+  String get teamProjectOffline => 'Not reachable · last known tasks';
+
+  @override
+  String get teamProjectNoLimit => 'No limit';
+
+  @override
+  String get teamProjectUnknown => 'Not reported';
+
+  @override
+  String get teamProjectAccept => 'Accept milestone';
+
+  @override
+  String get teamProjectMergeNext => 'Merge checked work into dev';
+
+  @override
+  String get teamProjectCostDemo =>
+      'Demo figures are simulated; device memory, battery, heat and chat slowdown have not been measured.';
+
+  @override
+  String teamProjectProgress(int done, int total, int working) {
+    return '$done of $total tasks complete · $working working';
+  }
+
+  @override
+  String teamProjectLaneCount(int busy, int total) {
+    return '$busy of $total lanes busy';
+  }
+
+  @override
+  String teamProjectSpend(
+    String today,
+    String daily,
+    String spent,
+    String total,
+  ) {
+    return 'Today: $today / $daily. Total: $spent / $total.';
+  }
+
+  @override
+  String get teamProjectEditorNewProject => 'New project';
+
+  @override
+  String get teamProjectEditorQuickTask => 'Quick task';
+
+  @override
+  String get teamProjectEditorSpec => 'Living spec';
+
+  @override
+  String get teamProjectEditorPlan => 'Review plan';
+
+  @override
+  String get teamProjectEditorSettings => 'Project settings';
+
+  @override
+  String get teamProjectEditorRoles => 'Roles and agents';
+
+  @override
+  String get teamProjectEditorStartPlanning => 'Start planning';
+
+  @override
+  String get teamProjectEditorStartTask => 'Start task';
+
+  @override
+  String get teamProjectEditorApproveSpec => 'Approve spec';
+
+  @override
+  String get teamProjectEditorApprovePlan => 'Approve and start';
+
+  @override
+  String get teamProjectEditorSave => 'Save changes';
+
+  @override
+  String get teamProjectEditorSaveDraft => 'Save draft';
+
+  @override
+  String get teamProjectEditorName => 'Project name';
+
+  @override
+  String get teamProjectEditorGoal => 'Goal';
+
+  @override
+  String get teamProjectEditorRepos => 'Repos';
+
+  @override
+  String get teamProjectEditorRepoName => 'Repo name';
+
+  @override
+  String get teamProjectEditorRepoPath => 'Repo folder';
+
+  @override
+  String get teamProjectEditorServer => 'Server';
+
+  @override
+  String get teamProjectEditorRemove => 'Remove';
+
+  @override
+  String get teamProjectEditorAddRepo => 'Add repo';
+
+  @override
+  String get teamProjectEditorRole => 'Role';
+
+  @override
+  String get teamProjectEditorPlanFirst => 'Plan first';
+
+  @override
+  String get teamProjectEditorMode => 'Execution mode';
+
+  @override
+  String get teamProjectEditorSingle => 'Single lane';
+
+  @override
+  String get teamProjectEditorParallel => 'Parallel agents';
+
+  @override
+  String get teamProjectEditorMaxLanes => 'Maximum lanes';
+
+  @override
+  String get teamProjectEditorCostUnknown =>
+      'Host cost measurements are not available in this demo. Memory, battery use, heat and chat slowdown depend on the host and lane count.';
+
+  @override
+  String get teamProjectEditorCharging => 'Only while charging';
+
+  @override
+  String get teamProjectEditorReview => 'Review level';
+
+  @override
+  String get teamProjectEditorMilestonesRisk => 'Milestones and risky points';
+
+  @override
+  String get teamProjectEditorEveryStep => 'Every step';
+
+  @override
+  String get teamProjectEditorBudget => 'Budget';
+
+  @override
+  String get teamProjectEditorSetLimits => 'Set limits';
+
+  @override
+  String get teamProjectEditorNoLimit => 'No limit';
+
+  @override
+  String get teamProjectEditorDailyBudget => 'Per day (USD)';
+
+  @override
+  String get teamProjectEditorTotalBudget => 'Total (USD)';
+
+  @override
+  String get teamProjectEditorTaskTokens => 'Token limit per task (optional)';
+
+  @override
+  String get teamProjectEditorAutoFix => 'Fix findings automatically';
+
+  @override
+  String get teamProjectEditorMaxRounds => 'Maximum fix rounds';
+
+  @override
+  String get teamProjectEditorConstraints => 'Constraints';
+
+  @override
+  String get teamProjectEditorDecisions => 'Decisions';
+
+  @override
+  String get teamProjectEditorOutOfScope => 'Out of scope';
+
+  @override
+  String get teamProjectEditorMilestones => 'Milestones';
+
+  @override
+  String get teamProjectEditorMilestoneTitle => 'Milestone title';
+
+  @override
+  String get teamProjectEditorCriteria => 'Acceptance criteria (one per line)';
+
+  @override
+  String get teamProjectEditorMoveUp => 'Move up';
+
+  @override
+  String get teamProjectEditorMoveDown => 'Move down';
+
+  @override
+  String get teamProjectEditorAddMilestone => 'Add milestone';
+
+  @override
+  String get teamProjectEditorHistory => 'Version history';
+
+  @override
+  String get teamProjectEditorVersion => 'Version';
+
+  @override
+  String get teamProjectEditorPlanHelp =>
+      'Review the tasks and their acceptance criteria. Changes here are included when you approve the plan.';
+
+  @override
+  String get teamProjectEditorRisky => 'Pause for review after this phase';
+
+  @override
+  String get teamProjectEditorTaskTitle => 'Task title';
+
+  @override
+  String get teamProjectEditorRepo => 'Repo';
+
+  @override
+  String get teamProjectEditorDependencies => 'Depends on';
+
+  @override
+  String get teamProjectEditorRemoveTask => 'Remove task';
+
+  @override
+  String get teamProjectEditorRemoteModel => 'The computer\'s model';
+
+  @override
+  String get teamProjectEditorAddRole => 'Add role';
+
+  @override
+  String get teamProjectEditorRoleName => 'Role name';
+
+  @override
+  String get teamProjectEditorInstructions => 'Instructions';
+
+  @override
+  String get teamProjectEditorModel => 'Model';
+
+  @override
+  String get teamProjectEditorFallback => 'Fallback model';
+
+  @override
+  String get teamProjectEditorAllRoles => 'All roles';
+
+  @override
+  String get teamProjectEditorChooseMode =>
+      'Choose Single lane or Parallel agents.';
+
+  @override
+  String get teamProjectEditorPositiveLanes =>
+      'Enter a lane limit from 1 to 32.';
+
+  @override
+  String get teamProjectEditorChooseBudget =>
+      'Set a budget or choose No limit.';
+
+  @override
+  String get teamProjectEditorPositiveBudget =>
+      'Enter a positive per-day limit and total limit.';
+
+  @override
+  String get teamProjectEditorSaveFailed =>
+      'Changes could not be saved. Your edits are still here; try saving again.';
+
+  @override
+  String get teamProjectEditorRequired =>
+      'Add a project name, goal and at least one repo.';
+
+  @override
+  String get teamProjectEditorChooseRoleServer =>
+      'Choose a role and a server for this task.';
+
+  @override
+  String get teamProjectEditorRepoRequired =>
+      'Choose a server and enter the repo name and folder.';
+
+  @override
+  String get teamProjectEditorSpecRequired =>
+      'Add a goal and at least one milestone with a title and acceptance criteria.';
+
+  @override
+  String get teamProjectEditorDraftFailed =>
+      'The draft could not be kept on this device. Keep this screen open and try saving again.';
+
+  @override
+  String get teamProjectEditorChangedElsewhere =>
+      'This project changed while you were editing. Close this sheet and review the latest project before approving changes.';
+
+  @override
+  String get teamProjectConversation => 'Task conversation';
+
+  @override
+  String get teamProjectTaskMissing => 'This task is no longer available';
+
+  @override
+  String get teamProjectRefreshTask => 'Refresh task';
+
+  @override
+  String get teamProjectTaskSaveFailed =>
+      'The change was not saved. Refresh and try again; your message is still here.';
+
+  @override
+  String get teamProjectTaskMessage => 'Message the team…';
+
+  @override
+  String get teamProjectTaskInstructions => 'Instructions from the team';
+
+  @override
+  String get teamProjectTaskPlan => 'Plan';
+
+  @override
+  String get teamProjectTaskApprovePlan => 'Approve and start';
+
+  @override
+  String get teamProjectTaskReview => 'Review required';
+
+  @override
+  String get teamProjectTaskAccepted => 'Accepted';
+
+  @override
+  String get teamProjectTaskAcceptPhase => 'Accept phase';
+
+  @override
+  String get teamProjectTaskFindings => 'Verification findings';
+
+  @override
+  String get teamProjectTaskFix => 'Fix selected';
+
+  @override
+  String get teamProjectTaskRecheck => 'Re-check task';
+
+  @override
+  String get teamProjectTaskIgnore => 'Ignore selected finding';
+
+  @override
+  String get teamProjectTaskIgnoreReason =>
+      'Why is this finding safe to ignore?';
+
+  @override
+  String get teamProjectTaskReasonRequired =>
+      'Enter a reason to keep with this decision.';
+
+  @override
+  String get teamProjectTaskCritical => 'Critical';
+
+  @override
+  String get teamProjectTaskMajor => 'Major';
+
+  @override
+  String get teamProjectTaskMinor => 'Minor';
+
+  @override
+  String get teamProjectTaskMerge => 'Merge queue to dev';
+
+  @override
+  String get teamProjectTaskMergeRun => 'Check and merge to dev';
+
+  @override
+  String get teamProjectTaskPromote => 'Promote dev to main';
+
+  @override
+  String get teamProjectTaskPromoteBody =>
+      'This updates protected main to the dev commit you reviewed. The engine will check both commits again before changing main.';
+
+  @override
+  String get teamProjectTaskPromotion => 'Protected branch';
+
+  @override
+  String get teamProjectTaskDiff => 'View changes';
+
+  @override
+  String get teamProjectTaskPause => 'Pause task';
+
+  @override
+  String get teamProjectTaskResume => 'Resume task';
+
+  @override
+  String get teamProjectTaskStop => 'Stop task';
+
+  @override
+  String get teamProjectTaskStopBody =>
+      'Stop this task and keep its conversation and changes for review.';
+
+  @override
+  String get teamProjectTaskRestart => 'Start task again';
+
+  @override
+  String get teamProjectTaskAnswer => 'Send answer';
+
+  @override
+  String get teamProjectTaskAnswerLabel => 'Your answer';
+
+  @override
+  String get teamProjectTaskRunning => 'Working';
+
+  @override
+  String get teamProjectTaskWaiting => 'Waiting';
+
+  @override
+  String get teamProjectTaskDone => 'Done';
+
+  @override
+  String get teamProjectTaskFailed => 'Task stopped before finishing';
+
+  @override
+  String get teamProjectTaskStale => 'Last known state';
+
+  @override
+  String get teamProjectTaskCollapse => 'Collapse all';
+
+  @override
+  String get teamProjectTaskWork => 'Work completed';
+
+  @override
+  String get teamProjectTaskEmpty =>
+      'The task is queued. Its replies and checks will appear here.';
+
+  @override
+  String get teamProjectTaskReceipt => 'Promotion receipt';
+
+  @override
+  String get teamProjectTaskVerify => 'Verify task';
+
+  @override
+  String get teamProjectTryDemo => 'Try AI Team demo';
+
+  @override
+  String get teamProjectLoadFailure =>
+      'The demo could not be opened. Your saved project data has been kept.';
+
+  @override
+  String get teamProjectInboxOpen => 'Review project decision';
+
+  @override
+  String get teamProjectDemoDisclosure =>
+      'Simulated projects. No agents run and no repositories change.';
+
+  @override
+  String get teamProjectOff => 'Leave demo';
+
+  @override
+  String get teamProjectEditorFixRoundsRange =>
+      'Enter a fix-round limit from 0 to 3.';
+
+  @override
+  String get teamProjectEditorPositiveTokens =>
+      'Enter a positive token limit or leave it empty.';
+
+  @override
+  String get teamProjectEditorReload => 'Reload latest project';
+
+  @override
+  String get teamProjectEditorDiscardDraft =>
+      'This replaces your unsaved edits with the latest project. Your saved project is kept.';
+
+  @override
+  String get teamProjectEditorRoleRequired => 'Enter a name for this role.';
+
+  @override
+  String get teamProjectEditorDefaults => 'New project defaults';
+
+  @override
+  String get teamProjectEditorApplyPlan => 'Apply updated plan';
+
+  @override
+  String get teamProjectEditorContextFiles =>
+      'Context files (one path per line)';
+
+  @override
+  String get teamProjectEditorContextFilesHelp =>
+      'These references are kept with the spec. The demo does not read or upload files.';
+
+  @override
+  String get teamProjectEditorScreenOff => 'Keep working with the screen off';
+
+  @override
+  String get teamProjectEditorScreenOffHelp =>
+      'This preference is saved for the project. Background work remains subject to the host and system limits.';
+
+  @override
+  String get teamProjectEditorDraftApproval =>
+      'Draft changes need your approval before they become the project spec.';
+
+  @override
+  String get teamProjectEditorChangeRequest =>
+      'What should the planner change?';
+
+  @override
+  String get teamProjectEditorAskChange => 'Ask to change';
+
+  @override
+  String get teamProjectEditorChangeRequired =>
+      'Add a goal and describe the change you want.';
+
+  @override
+  String get teamProjectTaskApprovedPlan => 'Approved plan';
+
+  @override
+  String get teamProjectTaskCriteria => 'Acceptance criteria';
+
+  @override
+  String get teamProjectTaskOpenFindings => 'Open findings';
+
+  @override
+  String get teamProjectTaskFindingsAddressed => 'Findings addressed';
+
+  @override
+  String get teamProjectMergeConfirmBody =>
+      'Checked task branches will merge into dev, followed by combined checks. Main stays unchanged.';
+
+  @override
+  String get teamProjectEditorDraftClearFailed =>
+      'Changes were saved, but the local draft could not be cleared. Close this sheet and review the project before trying again.';
+
+  @override
+  String get teamProjectRestartElsewhere => 'Start over elsewhere';
+
+  @override
+  String get teamProjectRestartElsewhereBody =>
+      'Start a new attempt on this server. The previous branch stays on its original server.';
+
+  @override
+  String get teamProjectWaitForServer => 'Wait for the original server';
+
+  @override
+  String get teamProjectBudgetNear =>
+      'Approaching your budget. New work pauses at your chosen limit.';
+
+  @override
+  String get teamProjectDemoPlanFailure => 'Demo: unreadable plan';
+
+  @override
+  String get teamProjectTaskReviewFindings => 'Select open findings';
+
+  @override
+  String get teamProjectTaskResolveAgent => 'Resolve with agent';
+
+  @override
+  String get teamProjectTaskResolveManually => 'I’ll resolve';
+
+  @override
+  String get teamProjectTaskRecheckResolution => 'Re-check resolution';
+
+  @override
+  String get teamProjectTaskVerificationResults => 'Verification results';
+
+  @override
+  String get teamProjectTaskCriterionMet => 'Met';
+
+  @override
+  String get teamProjectTaskCriterionUnmet => 'Unmet';
+
+  @override
+  String get teamProjectTaskCriterionNotApplicable => 'Not applicable';
+
+  @override
+  String get teamProjectTaskDemoConflict => 'Demo: create a conflict';
+
+  @override
+  String get teamProjectTaskDemoCommit => 'Demo: add a manual commit';
+
+  @override
+  String get teamProjectEditorNoOptions =>
+      'No options are available yet. Return to AI Team to add a server or role.';
+
+  @override
+  String get teamProjectEditorUnknownDate => 'Date unavailable';
+
+  @override
+  String get teamProjectEditorYou => 'You';
+
+  @override
+  String get teamProjectEditorApprovedBy => 'Approved by';
+
+  @override
+  String get teamProjectEditorPlanFailed =>
+      'The planner did not return a usable plan. Keep the goal as one task, or ask for a new plan.';
+
+  @override
+  String get teamProjectEditorUseAsTask => 'Use as one task';
+
+  @override
+  String get teamProjectEditorAskAgain => 'Ask again';
 }

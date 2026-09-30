@@ -38779,6 +38779,1391 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get kitComposerRailRetry;
+
+  /// No description provided for @teamProjectHome.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team'**
+  String get teamProjectHome;
+
+  /// No description provided for @teamProjectDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo · simulated project activity'**
+  String get teamProjectDemo;
+
+  /// No description provided for @teamProjectNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New project'**
+  String get teamProjectNew;
+
+  /// No description provided for @teamProjectQuick.
+  ///
+  /// In en, this message translates to:
+  /// **'Give a quick task'**
+  String get teamProjectQuick;
+
+  /// No description provided for @teamProjectSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Project settings'**
+  String get teamProjectSettings;
+
+  /// No description provided for @teamProjectRoles.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles and agents'**
+  String get teamProjectRoles;
+
+  /// No description provided for @teamProjectEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Give your team a goal to start a project.'**
+  String get teamProjectEmpty;
+
+  /// No description provided for @teamProjectSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a project'**
+  String get teamProjectSelect;
+
+  /// No description provided for @teamProjectSelectTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a task to follow its conversation.'**
+  String get teamProjectSelectTask;
+
+  /// No description provided for @teamProjectLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading projects'**
+  String get teamProjectLoad;
+
+  /// No description provided for @teamProjectRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get teamProjectRetry;
+
+  /// No description provided for @teamProjectError.
+  ///
+  /// In en, this message translates to:
+  /// **'The project could not be updated. Your saved work is still available.'**
+  String get teamProjectError;
+
+  /// No description provided for @teamProjectSpec.
+  ///
+  /// In en, this message translates to:
+  /// **'Open spec'**
+  String get teamProjectSpec;
+
+  /// No description provided for @teamProjectPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Review plan'**
+  String get teamProjectPlan;
+
+  /// No description provided for @teamProjectBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Board'**
+  String get teamProjectBoard;
+
+  /// No description provided for @teamProjectGraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Dependencies'**
+  String get teamProjectGraph;
+
+  /// No description provided for @teamProjectTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get teamProjectTimeline;
+
+  /// No description provided for @teamProjectServers.
+  ///
+  /// In en, this message translates to:
+  /// **'Servers'**
+  String get teamProjectServers;
+
+  /// No description provided for @teamProjectMilestones.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestones'**
+  String get teamProjectMilestones;
+
+  /// No description provided for @teamProjectLanes.
+  ///
+  /// In en, this message translates to:
+  /// **'Lanes'**
+  String get teamProjectLanes;
+
+  /// No description provided for @teamProjectMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge queue'**
+  String get teamProjectMerge;
+
+  /// No description provided for @teamProjectCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get teamProjectCost;
+
+  /// No description provided for @teamProjectDecisions.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent decisions'**
+  String get teamProjectDecisions;
+
+  /// No description provided for @teamProjectPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause project'**
+  String get teamProjectPause;
+
+  /// No description provided for @teamProjectResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume project'**
+  String get teamProjectResume;
+
+  /// No description provided for @teamProjectStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop project'**
+  String get teamProjectStop;
+
+  /// No description provided for @teamProjectStopBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Running tasks will stop. Their work and project history will be kept.'**
+  String get teamProjectStopBody;
+
+  /// No description provided for @teamProjectAdvance.
+  ///
+  /// In en, this message translates to:
+  /// **'Advance demo'**
+  String get teamProjectAdvance;
+
+  /// No description provided for @teamProjectDigest.
+  ///
+  /// In en, this message translates to:
+  /// **'Since you were away'**
+  String get teamProjectDigest;
+
+  /// No description provided for @teamProjectDigestRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as read'**
+  String get teamProjectDigestRead;
+
+  /// No description provided for @teamProjectAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer'**
+  String get teamProjectAnswer;
+
+  /// No description provided for @teamProjectAnswerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer'**
+  String get teamProjectAnswerLabel;
+
+  /// No description provided for @teamProjectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything'**
+  String get teamProjectAll;
+
+  /// No description provided for @teamProjectMerges.
+  ///
+  /// In en, this message translates to:
+  /// **'Merges'**
+  String get teamProjectMerges;
+
+  /// No description provided for @teamProjectProblems.
+  ///
+  /// In en, this message translates to:
+  /// **'Problems'**
+  String get teamProjectProblems;
+
+  /// No description provided for @teamProjectMilestoneFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone'**
+  String get teamProjectMilestoneFilter;
+
+  /// No description provided for @teamProjectRepoFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Repo'**
+  String get teamProjectRepoFilter;
+
+  /// No description provided for @teamProjectServerFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get teamProjectServerFilter;
+
+  /// No description provided for @teamProjectBacklog.
+  ///
+  /// In en, this message translates to:
+  /// **'Backlog'**
+  String get teamProjectBacklog;
+
+  /// No description provided for @teamProjectReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get teamProjectReady;
+
+  /// No description provided for @teamProjectWorking.
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get teamProjectWorking;
+
+  /// No description provided for @teamProjectReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get teamProjectReview;
+
+  /// No description provided for @teamProjectDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get teamProjectDone;
+
+  /// No description provided for @teamProjectNoTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks in this view.'**
+  String get teamProjectNoTasks;
+
+  /// No description provided for @teamProjectMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Move task'**
+  String get teamProjectMove;
+
+  /// No description provided for @teamProjectMoveTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to server'**
+  String get teamProjectMoveTo;
+
+  /// No description provided for @teamProjectHandoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand-off note'**
+  String get teamProjectHandoff;
+
+  /// No description provided for @teamProjectPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get teamProjectPaused;
+
+  /// No description provided for @teamProjectStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get teamProjectStopped;
+
+  /// No description provided for @teamProjectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped unexpectedly'**
+  String get teamProjectFailed;
+
+  /// No description provided for @teamProjectStalled.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent progress'**
+  String get teamProjectStalled;
+
+  /// No description provided for @teamProjectPlanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Shaping the spec'**
+  String get teamProjectPlanning;
+
+  /// No description provided for @teamProjectPlanWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan ready to review'**
+  String get teamProjectPlanWaiting;
+
+  /// No description provided for @teamProjectNeedsYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs your decision'**
+  String get teamProjectNeedsYou;
+
+  /// No description provided for @teamProjectWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for dependencies'**
+  String get teamProjectWaiting;
+
+  /// No description provided for @teamProjectOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Reachable'**
+  String get teamProjectOnline;
+
+  /// No description provided for @teamProjectOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Not reachable · last known tasks'**
+  String get teamProjectOffline;
+
+  /// No description provided for @teamProjectNoLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'No limit'**
+  String get teamProjectNoLimit;
+
+  /// No description provided for @teamProjectUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Not reported'**
+  String get teamProjectUnknown;
+
+  /// No description provided for @teamProjectAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept milestone'**
+  String get teamProjectAccept;
+
+  /// No description provided for @teamProjectMergeNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge checked work into dev'**
+  String get teamProjectMergeNext;
+
+  /// No description provided for @teamProjectCostDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo figures are simulated; device memory, battery, heat and chat slowdown have not been measured.'**
+  String get teamProjectCostDemo;
+
+  /// No description provided for @teamProjectProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} tasks complete · {working} working'**
+  String teamProjectProgress(int done, int total, int working);
+
+  /// No description provided for @teamProjectLaneCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{busy} of {total} lanes busy'**
+  String teamProjectLaneCount(int busy, int total);
+
+  /// No description provided for @teamProjectSpend.
+  ///
+  /// In en, this message translates to:
+  /// **'Today: {today} / {daily}. Total: {spent} / {total}.'**
+  String teamProjectSpend(
+    String today,
+    String daily,
+    String spent,
+    String total,
+  );
+
+  /// No description provided for @teamProjectEditorNewProject.
+  ///
+  /// In en, this message translates to:
+  /// **'New project'**
+  String get teamProjectEditorNewProject;
+
+  /// No description provided for @teamProjectEditorQuickTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick task'**
+  String get teamProjectEditorQuickTask;
+
+  /// No description provided for @teamProjectEditorSpec.
+  ///
+  /// In en, this message translates to:
+  /// **'Living spec'**
+  String get teamProjectEditorSpec;
+
+  /// No description provided for @teamProjectEditorPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Review plan'**
+  String get teamProjectEditorPlan;
+
+  /// No description provided for @teamProjectEditorSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Project settings'**
+  String get teamProjectEditorSettings;
+
+  /// No description provided for @teamProjectEditorRoles.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles and agents'**
+  String get teamProjectEditorRoles;
+
+  /// No description provided for @teamProjectEditorStartPlanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Start planning'**
+  String get teamProjectEditorStartPlanning;
+
+  /// No description provided for @teamProjectEditorStartTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Start task'**
+  String get teamProjectEditorStartTask;
+
+  /// No description provided for @teamProjectEditorApproveSpec.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve spec'**
+  String get teamProjectEditorApproveSpec;
+
+  /// No description provided for @teamProjectEditorApprovePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve and start'**
+  String get teamProjectEditorApprovePlan;
+
+  /// No description provided for @teamProjectEditorSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get teamProjectEditorSave;
+
+  /// No description provided for @teamProjectEditorSaveDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Save draft'**
+  String get teamProjectEditorSaveDraft;
+
+  /// No description provided for @teamProjectEditorName.
+  ///
+  /// In en, this message translates to:
+  /// **'Project name'**
+  String get teamProjectEditorName;
+
+  /// No description provided for @teamProjectEditorGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get teamProjectEditorGoal;
+
+  /// No description provided for @teamProjectEditorRepos.
+  ///
+  /// In en, this message translates to:
+  /// **'Repos'**
+  String get teamProjectEditorRepos;
+
+  /// No description provided for @teamProjectEditorRepoName.
+  ///
+  /// In en, this message translates to:
+  /// **'Repo name'**
+  String get teamProjectEditorRepoName;
+
+  /// No description provided for @teamProjectEditorRepoPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Repo folder'**
+  String get teamProjectEditorRepoPath;
+
+  /// No description provided for @teamProjectEditorServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get teamProjectEditorServer;
+
+  /// No description provided for @teamProjectEditorRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get teamProjectEditorRemove;
+
+  /// No description provided for @teamProjectEditorAddRepo.
+  ///
+  /// In en, this message translates to:
+  /// **'Add repo'**
+  String get teamProjectEditorAddRepo;
+
+  /// No description provided for @teamProjectEditorRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get teamProjectEditorRole;
+
+  /// No description provided for @teamProjectEditorPlanFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan first'**
+  String get teamProjectEditorPlanFirst;
+
+  /// No description provided for @teamProjectEditorMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Execution mode'**
+  String get teamProjectEditorMode;
+
+  /// No description provided for @teamProjectEditorSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single lane'**
+  String get teamProjectEditorSingle;
+
+  /// No description provided for @teamProjectEditorParallel.
+  ///
+  /// In en, this message translates to:
+  /// **'Parallel agents'**
+  String get teamProjectEditorParallel;
+
+  /// No description provided for @teamProjectEditorMaxLanes.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum lanes'**
+  String get teamProjectEditorMaxLanes;
+
+  /// No description provided for @teamProjectEditorCostUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Host cost measurements are not available in this demo. Memory, battery use, heat and chat slowdown depend on the host and lane count.'**
+  String get teamProjectEditorCostUnknown;
+
+  /// No description provided for @teamProjectEditorCharging.
+  ///
+  /// In en, this message translates to:
+  /// **'Only while charging'**
+  String get teamProjectEditorCharging;
+
+  /// No description provided for @teamProjectEditorReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review level'**
+  String get teamProjectEditorReview;
+
+  /// No description provided for @teamProjectEditorMilestonesRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestones and risky points'**
+  String get teamProjectEditorMilestonesRisk;
+
+  /// No description provided for @teamProjectEditorEveryStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Every step'**
+  String get teamProjectEditorEveryStep;
+
+  /// No description provided for @teamProjectEditorBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get teamProjectEditorBudget;
+
+  /// No description provided for @teamProjectEditorSetLimits.
+  ///
+  /// In en, this message translates to:
+  /// **'Set limits'**
+  String get teamProjectEditorSetLimits;
+
+  /// No description provided for @teamProjectEditorNoLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'No limit'**
+  String get teamProjectEditorNoLimit;
+
+  /// No description provided for @teamProjectEditorDailyBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Per day (USD)'**
+  String get teamProjectEditorDailyBudget;
+
+  /// No description provided for @teamProjectEditorTotalBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Total (USD)'**
+  String get teamProjectEditorTotalBudget;
+
+  /// No description provided for @teamProjectEditorTaskTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Token limit per task (optional)'**
+  String get teamProjectEditorTaskTokens;
+
+  /// No description provided for @teamProjectEditorAutoFix.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix findings automatically'**
+  String get teamProjectEditorAutoFix;
+
+  /// No description provided for @teamProjectEditorMaxRounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum fix rounds'**
+  String get teamProjectEditorMaxRounds;
+
+  /// No description provided for @teamProjectEditorConstraints.
+  ///
+  /// In en, this message translates to:
+  /// **'Constraints'**
+  String get teamProjectEditorConstraints;
+
+  /// No description provided for @teamProjectEditorDecisions.
+  ///
+  /// In en, this message translates to:
+  /// **'Decisions'**
+  String get teamProjectEditorDecisions;
+
+  /// No description provided for @teamProjectEditorOutOfScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of scope'**
+  String get teamProjectEditorOutOfScope;
+
+  /// No description provided for @teamProjectEditorMilestones.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestones'**
+  String get teamProjectEditorMilestones;
+
+  /// No description provided for @teamProjectEditorMilestoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone title'**
+  String get teamProjectEditorMilestoneTitle;
+
+  /// No description provided for @teamProjectEditorCriteria.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceptance criteria (one per line)'**
+  String get teamProjectEditorCriteria;
+
+  /// No description provided for @teamProjectEditorMoveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get teamProjectEditorMoveUp;
+
+  /// No description provided for @teamProjectEditorMoveDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move down'**
+  String get teamProjectEditorMoveDown;
+
+  /// No description provided for @teamProjectEditorAddMilestone.
+  ///
+  /// In en, this message translates to:
+  /// **'Add milestone'**
+  String get teamProjectEditorAddMilestone;
+
+  /// No description provided for @teamProjectEditorHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Version history'**
+  String get teamProjectEditorHistory;
+
+  /// No description provided for @teamProjectEditorVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get teamProjectEditorVersion;
+
+  /// No description provided for @teamProjectEditorPlanHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the tasks and their acceptance criteria. Changes here are included when you approve the plan.'**
+  String get teamProjectEditorPlanHelp;
+
+  /// No description provided for @teamProjectEditorRisky.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause for review after this phase'**
+  String get teamProjectEditorRisky;
+
+  /// No description provided for @teamProjectEditorTaskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Task title'**
+  String get teamProjectEditorTaskTitle;
+
+  /// No description provided for @teamProjectEditorRepo.
+  ///
+  /// In en, this message translates to:
+  /// **'Repo'**
+  String get teamProjectEditorRepo;
+
+  /// No description provided for @teamProjectEditorDependencies.
+  ///
+  /// In en, this message translates to:
+  /// **'Depends on'**
+  String get teamProjectEditorDependencies;
+
+  /// No description provided for @teamProjectEditorRemoveTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove task'**
+  String get teamProjectEditorRemoveTask;
+
+  /// No description provided for @teamProjectEditorRemoteModel.
+  ///
+  /// In en, this message translates to:
+  /// **'The computer\'s model'**
+  String get teamProjectEditorRemoteModel;
+
+  /// No description provided for @teamProjectEditorAddRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Add role'**
+  String get teamProjectEditorAddRole;
+
+  /// No description provided for @teamProjectEditorRoleName.
+  ///
+  /// In en, this message translates to:
+  /// **'Role name'**
+  String get teamProjectEditorRoleName;
+
+  /// No description provided for @teamProjectEditorInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get teamProjectEditorInstructions;
+
+  /// No description provided for @teamProjectEditorModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get teamProjectEditorModel;
+
+  /// No description provided for @teamProjectEditorFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Fallback model'**
+  String get teamProjectEditorFallback;
+
+  /// No description provided for @teamProjectEditorAllRoles.
+  ///
+  /// In en, this message translates to:
+  /// **'All roles'**
+  String get teamProjectEditorAllRoles;
+
+  /// No description provided for @teamProjectEditorChooseMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Single lane or Parallel agents.'**
+  String get teamProjectEditorChooseMode;
+
+  /// No description provided for @teamProjectEditorPositiveLanes.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a lane limit from 1 to 32.'**
+  String get teamProjectEditorPositiveLanes;
+
+  /// No description provided for @teamProjectEditorChooseBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a budget or choose No limit.'**
+  String get teamProjectEditorChooseBudget;
+
+  /// No description provided for @teamProjectEditorPositiveBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a positive per-day limit and total limit.'**
+  String get teamProjectEditorPositiveBudget;
+
+  /// No description provided for @teamProjectEditorSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes could not be saved. Your edits are still here; try saving again.'**
+  String get teamProjectEditorSaveFailed;
+
+  /// No description provided for @teamProjectEditorRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a project name, goal and at least one repo.'**
+  String get teamProjectEditorRequired;
+
+  /// No description provided for @teamProjectEditorChooseRoleServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a role and a server for this task.'**
+  String get teamProjectEditorChooseRoleServer;
+
+  /// No description provided for @teamProjectEditorRepoRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a server and enter the repo name and folder.'**
+  String get teamProjectEditorRepoRequired;
+
+  /// No description provided for @teamProjectEditorSpecRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a goal and at least one milestone with a title and acceptance criteria.'**
+  String get teamProjectEditorSpecRequired;
+
+  /// No description provided for @teamProjectEditorDraftFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The draft could not be kept on this device. Keep this screen open and try saving again.'**
+  String get teamProjectEditorDraftFailed;
+
+  /// No description provided for @teamProjectEditorChangedElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'This project changed while you were editing. Close this sheet and review the latest project before approving changes.'**
+  String get teamProjectEditorChangedElsewhere;
+
+  /// No description provided for @teamProjectConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Task conversation'**
+  String get teamProjectConversation;
+
+  /// No description provided for @teamProjectTaskMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'This task is no longer available'**
+  String get teamProjectTaskMissing;
+
+  /// No description provided for @teamProjectRefreshTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh task'**
+  String get teamProjectRefreshTask;
+
+  /// No description provided for @teamProjectTaskSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The change was not saved. Refresh and try again; your message is still here.'**
+  String get teamProjectTaskSaveFailed;
+
+  /// No description provided for @teamProjectTaskMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Message the team…'**
+  String get teamProjectTaskMessage;
+
+  /// No description provided for @teamProjectTaskInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions from the team'**
+  String get teamProjectTaskInstructions;
+
+  /// No description provided for @teamProjectTaskPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get teamProjectTaskPlan;
+
+  /// No description provided for @teamProjectTaskApprovePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve and start'**
+  String get teamProjectTaskApprovePlan;
+
+  /// No description provided for @teamProjectTaskReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review required'**
+  String get teamProjectTaskReview;
+
+  /// No description provided for @teamProjectTaskAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get teamProjectTaskAccepted;
+
+  /// No description provided for @teamProjectTaskAcceptPhase.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept phase'**
+  String get teamProjectTaskAcceptPhase;
+
+  /// No description provided for @teamProjectTaskFindings.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification findings'**
+  String get teamProjectTaskFindings;
+
+  /// No description provided for @teamProjectTaskFix.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix selected'**
+  String get teamProjectTaskFix;
+
+  /// No description provided for @teamProjectTaskRecheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-check task'**
+  String get teamProjectTaskRecheck;
+
+  /// No description provided for @teamProjectTaskIgnore.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignore selected finding'**
+  String get teamProjectTaskIgnore;
+
+  /// No description provided for @teamProjectTaskIgnoreReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Why is this finding safe to ignore?'**
+  String get teamProjectTaskIgnoreReason;
+
+  /// No description provided for @teamProjectTaskReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a reason to keep with this decision.'**
+  String get teamProjectTaskReasonRequired;
+
+  /// No description provided for @teamProjectTaskCritical.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get teamProjectTaskCritical;
+
+  /// No description provided for @teamProjectTaskMajor.
+  ///
+  /// In en, this message translates to:
+  /// **'Major'**
+  String get teamProjectTaskMajor;
+
+  /// No description provided for @teamProjectTaskMinor.
+  ///
+  /// In en, this message translates to:
+  /// **'Minor'**
+  String get teamProjectTaskMinor;
+
+  /// No description provided for @teamProjectTaskMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge queue to dev'**
+  String get teamProjectTaskMerge;
+
+  /// No description provided for @teamProjectTaskMergeRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Check and merge to dev'**
+  String get teamProjectTaskMergeRun;
+
+  /// No description provided for @teamProjectTaskPromote.
+  ///
+  /// In en, this message translates to:
+  /// **'Promote dev to main'**
+  String get teamProjectTaskPromote;
+
+  /// No description provided for @teamProjectTaskPromoteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This updates protected main to the dev commit you reviewed. The engine will check both commits again before changing main.'**
+  String get teamProjectTaskPromoteBody;
+
+  /// No description provided for @teamProjectTaskPromotion.
+  ///
+  /// In en, this message translates to:
+  /// **'Protected branch'**
+  String get teamProjectTaskPromotion;
+
+  /// No description provided for @teamProjectTaskDiff.
+  ///
+  /// In en, this message translates to:
+  /// **'View changes'**
+  String get teamProjectTaskDiff;
+
+  /// No description provided for @teamProjectTaskPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause task'**
+  String get teamProjectTaskPause;
+
+  /// No description provided for @teamProjectTaskResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume task'**
+  String get teamProjectTaskResume;
+
+  /// No description provided for @teamProjectTaskStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop task'**
+  String get teamProjectTaskStop;
+
+  /// No description provided for @teamProjectTaskStopBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop this task and keep its conversation and changes for review.'**
+  String get teamProjectTaskStopBody;
+
+  /// No description provided for @teamProjectTaskRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start task again'**
+  String get teamProjectTaskRestart;
+
+  /// No description provided for @teamProjectTaskAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Send answer'**
+  String get teamProjectTaskAnswer;
+
+  /// No description provided for @teamProjectTaskAnswerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer'**
+  String get teamProjectTaskAnswerLabel;
+
+  /// No description provided for @teamProjectTaskRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get teamProjectTaskRunning;
+
+  /// No description provided for @teamProjectTaskWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get teamProjectTaskWaiting;
+
+  /// No description provided for @teamProjectTaskDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get teamProjectTaskDone;
+
+  /// No description provided for @teamProjectTaskFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Task stopped before finishing'**
+  String get teamProjectTaskFailed;
+
+  /// No description provided for @teamProjectTaskStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Last known state'**
+  String get teamProjectTaskStale;
+
+  /// No description provided for @teamProjectTaskCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse all'**
+  String get teamProjectTaskCollapse;
+
+  /// No description provided for @teamProjectTaskWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Work completed'**
+  String get teamProjectTaskWork;
+
+  /// No description provided for @teamProjectTaskEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The task is queued. Its replies and checks will appear here.'**
+  String get teamProjectTaskEmpty;
+
+  /// No description provided for @teamProjectTaskReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Promotion receipt'**
+  String get teamProjectTaskReceipt;
+
+  /// No description provided for @teamProjectTaskVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify task'**
+  String get teamProjectTaskVerify;
+
+  /// No description provided for @teamProjectTryDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Try AI Team demo'**
+  String get teamProjectTryDemo;
+
+  /// No description provided for @teamProjectLoadFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'The demo could not be opened. Your saved project data has been kept.'**
+  String get teamProjectLoadFailure;
+
+  /// No description provided for @teamProjectInboxOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Review project decision'**
+  String get teamProjectInboxOpen;
+
+  /// No description provided for @teamProjectDemoDisclosure.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated projects. No agents run and no repositories change.'**
+  String get teamProjectDemoDisclosure;
+
+  /// No description provided for @teamProjectOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave demo'**
+  String get teamProjectOff;
+
+  /// No description provided for @teamProjectEditorFixRoundsRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a fix-round limit from 0 to 3.'**
+  String get teamProjectEditorFixRoundsRange;
+
+  /// No description provided for @teamProjectEditorPositiveTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a positive token limit or leave it empty.'**
+  String get teamProjectEditorPositiveTokens;
+
+  /// No description provided for @teamProjectEditorReload.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload latest project'**
+  String get teamProjectEditorReload;
+
+  /// No description provided for @teamProjectEditorDiscardDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'This replaces your unsaved edits with the latest project. Your saved project is kept.'**
+  String get teamProjectEditorDiscardDraft;
+
+  /// No description provided for @teamProjectEditorRoleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name for this role.'**
+  String get teamProjectEditorRoleRequired;
+
+  /// No description provided for @teamProjectEditorDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'New project defaults'**
+  String get teamProjectEditorDefaults;
+
+  /// No description provided for @teamProjectEditorApplyPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply updated plan'**
+  String get teamProjectEditorApplyPlan;
+
+  /// No description provided for @teamProjectEditorContextFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Context files (one path per line)'**
+  String get teamProjectEditorContextFiles;
+
+  /// No description provided for @teamProjectEditorContextFilesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'These references are kept with the spec. The demo does not read or upload files.'**
+  String get teamProjectEditorContextFilesHelp;
+
+  /// No description provided for @teamProjectEditorScreenOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep working with the screen off'**
+  String get teamProjectEditorScreenOff;
+
+  /// No description provided for @teamProjectEditorScreenOffHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'This preference is saved for the project. Background work remains subject to the host and system limits.'**
+  String get teamProjectEditorScreenOffHelp;
+
+  /// No description provided for @teamProjectEditorDraftApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft changes need your approval before they become the project spec.'**
+  String get teamProjectEditorDraftApproval;
+
+  /// No description provided for @teamProjectEditorChangeRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'What should the planner change?'**
+  String get teamProjectEditorChangeRequest;
+
+  /// No description provided for @teamProjectEditorAskChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask to change'**
+  String get teamProjectEditorAskChange;
+
+  /// No description provided for @teamProjectEditorChangeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a goal and describe the change you want.'**
+  String get teamProjectEditorChangeRequired;
+
+  /// No description provided for @teamProjectTaskApprovedPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved plan'**
+  String get teamProjectTaskApprovedPlan;
+
+  /// No description provided for @teamProjectTaskCriteria.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceptance criteria'**
+  String get teamProjectTaskCriteria;
+
+  /// No description provided for @teamProjectTaskOpenFindings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open findings'**
+  String get teamProjectTaskOpenFindings;
+
+  /// No description provided for @teamProjectTaskFindingsAddressed.
+  ///
+  /// In en, this message translates to:
+  /// **'Findings addressed'**
+  String get teamProjectTaskFindingsAddressed;
+
+  /// No description provided for @teamProjectMergeConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked task branches will merge into dev, followed by combined checks. Main stays unchanged.'**
+  String get teamProjectMergeConfirmBody;
+
+  /// No description provided for @teamProjectEditorDraftClearFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes were saved, but the local draft could not be cleared. Close this sheet and review the project before trying again.'**
+  String get teamProjectEditorDraftClearFailed;
+
+  /// No description provided for @teamProjectRestartElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Start over elsewhere'**
+  String get teamProjectRestartElsewhere;
+
+  /// No description provided for @teamProjectRestartElsewhereBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new attempt on this server. The previous branch stays on its original server.'**
+  String get teamProjectRestartElsewhereBody;
+
+  /// No description provided for @teamProjectWaitForServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait for the original server'**
+  String get teamProjectWaitForServer;
+
+  /// No description provided for @teamProjectBudgetNear.
+  ///
+  /// In en, this message translates to:
+  /// **'Approaching your budget. New work pauses at your chosen limit.'**
+  String get teamProjectBudgetNear;
+
+  /// No description provided for @teamProjectDemoPlanFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo: unreadable plan'**
+  String get teamProjectDemoPlanFailure;
+
+  /// No description provided for @teamProjectTaskReviewFindings.
+  ///
+  /// In en, this message translates to:
+  /// **'Select open findings'**
+  String get teamProjectTaskReviewFindings;
+
+  /// No description provided for @teamProjectTaskResolveAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolve with agent'**
+  String get teamProjectTaskResolveAgent;
+
+  /// No description provided for @teamProjectTaskResolveManually.
+  ///
+  /// In en, this message translates to:
+  /// **'I’ll resolve'**
+  String get teamProjectTaskResolveManually;
+
+  /// No description provided for @teamProjectTaskRecheckResolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-check resolution'**
+  String get teamProjectTaskRecheckResolution;
+
+  /// No description provided for @teamProjectTaskVerificationResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification results'**
+  String get teamProjectTaskVerificationResults;
+
+  /// No description provided for @teamProjectTaskCriterionMet.
+  ///
+  /// In en, this message translates to:
+  /// **'Met'**
+  String get teamProjectTaskCriterionMet;
+
+  /// No description provided for @teamProjectTaskCriterionUnmet.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmet'**
+  String get teamProjectTaskCriterionUnmet;
+
+  /// No description provided for @teamProjectTaskCriterionNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not applicable'**
+  String get teamProjectTaskCriterionNotApplicable;
+
+  /// No description provided for @teamProjectTaskDemoConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo: create a conflict'**
+  String get teamProjectTaskDemoConflict;
+
+  /// No description provided for @teamProjectTaskDemoCommit.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo: add a manual commit'**
+  String get teamProjectTaskDemoCommit;
+
+  /// No description provided for @teamProjectEditorNoOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'No options are available yet. Return to AI Team to add a server or role.'**
+  String get teamProjectEditorNoOptions;
+
+  /// No description provided for @teamProjectEditorUnknownDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date unavailable'**
+  String get teamProjectEditorUnknownDate;
+
+  /// No description provided for @teamProjectEditorYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get teamProjectEditorYou;
+
+  /// No description provided for @teamProjectEditorApprovedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved by'**
+  String get teamProjectEditorApprovedBy;
+
+  /// No description provided for @teamProjectEditorPlanFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The planner did not return a usable plan. Keep the goal as one task, or ask for a new plan.'**
+  String get teamProjectEditorPlanFailed;
+
+  /// No description provided for @teamProjectEditorUseAsTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Use as one task'**
+  String get teamProjectEditorUseAsTask;
+
+  /// No description provided for @teamProjectEditorAskAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask again'**
+  String get teamProjectEditorAskAgain;
 }
 
 class _AppLocalizationsDelegate

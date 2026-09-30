@@ -67,6 +67,7 @@ import 'ui/screens/home_screen.dart';
 import 'ui/screens/servers_screen.dart';
 import 'ui/screens/chat_screen.dart';
 import 'ui/screens/activity_screen.dart';
+import 'ui/screens/team/project_destination.dart';
 import 'ui/screens/team_conversation/team_conversation.dart'
     show TeamConversation;
 import 'ui/screens/this_phone_screen.dart';
@@ -1275,6 +1276,20 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   /// profile without the plugin gets the plain Activity list.
   void _pushTeamDestination(NavigatorState navigator, TeamLink link) {
     final team = _controller.orchestration;
+    if (team != null &&
+        team.capabilities.projectLifecycle &&
+        team.projectController != null) {
+      navigator.push(
+        KitPageRoute<void>(
+          builder: (_) => teamProjectDestination(
+            team,
+            requestId: link.kind == TeamLinkKind.gate ? link.id : null,
+            taskId: link.kind == TeamLinkKind.run ? link.id : null,
+          ),
+        ),
+      );
+      return;
+    }
     switch (link.kind) {
       case TeamLinkKind.gate:
         navigator.push(

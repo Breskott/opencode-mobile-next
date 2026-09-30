@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:opencode_mobile/orchestration/adapters/fixture/project_fixture_gateway.dart';
+import 'package:opencode_mobile/state/team_project_persistence.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/domain/attention_feed.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
@@ -103,6 +106,41 @@ MonitorGatewayPair _pair(_Messages gateway) =>
     (gateway: gateway, operations: MonitorTestOperations());
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  test(
+    'project demo monitor reads saved decisions without mutating recovery',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final persistence = SharedPreferencesTeamProjectPersistence(
+        prefs,
+        'server',
+      );
+      final fixture = ProjectFixtureGateway(persistence: persistence);
+      final saved = await fixture.teamWorkspace();
+      await fixture.close();
+      final before = await persistence.read();
+      final p = profile()
+        ..orchestration = const OrchestrationConfig(
+          provider: OrchestrationProvider.fixture,
+          url: 'fixture://project-demo',
+        );
+      final reader = MonitorAttentionReader();
+      final details = await reader.read(
+        p,
+        _pair(_Messages()),
+        [],
+        {},
+        () => true,
+      );
+      reader.dispose();
+      expect(saved.projects, isNotEmpty);
+      expect(details.teamComplete, isTrue);
+      expect(details.items, isNotEmpty);
+      expect(await persistence.read(), before);
+    },
+  );
+
   test('capped team inventory stays partial', () async {
     final team = _Team()
       ..pending = [

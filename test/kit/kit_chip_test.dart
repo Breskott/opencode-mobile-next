@@ -152,6 +152,28 @@ bool _near(Color a, Color b) =>
     ((a.b - b.b) * 255).abs() <= 2;
 
 void main() {
+  testWidgets('severity tones remain distinct and readable in both themes', (
+    tester,
+  ) async {
+    for (final light in [false, true]) {
+      final colors = <Color>[];
+      for (final tone in KitChipTone.values) {
+        await _pump(
+          tester,
+          KitChip(label: 'Severity', tone: tone),
+          light: light,
+        );
+        final text = tester.widget<Text>(find.text('Severity'));
+        final ink = text.textSpan!.style!.color!;
+        final context = tester.element(find.byType(KitChip));
+        final fill = KitTokens.of(context).roles.surface3;
+        expect(contrastRatio(ink, fill), greaterThanOrEqualTo(4.5));
+        colors.add(ink);
+      }
+      expect(colors.toSet(), hasLength(3));
+    }
+  });
+
   kitMotionStillTests(
     'KitChipWrap',
     builds: {

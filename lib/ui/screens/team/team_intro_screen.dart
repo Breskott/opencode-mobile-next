@@ -40,11 +40,13 @@ import '../../../builtin/setup/preflight.dart';
 import '../../../builtin/setup/setup_contract.dart' show setupToolsChanged;
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
+import '../../../state/team_project_demo.dart';
 import '../../../state/profiles.dart';
 import '../../../termux/team_runtime.dart';
 import '../../../voice/device.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
+import 'project_demo_screen.dart';
 import '../../kit/scenes/team_discover_scenes.dart';
 import '../../widgets/team_discover.dart';
 import '../../widgets/team_discovery_card.dart' show TeamDiscovery;
@@ -281,7 +283,31 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
           onPressed: _busy ? null : _enterAddress,
         );
     }
-    final actions = KitActionBlock(primary: primary, secondary: secondary);
+    final actions = KitActionBlock(
+      primary: primary,
+      secondary: secondary,
+      tertiary: [
+        KitAction(
+          key: const ValueKey('team-try-project-demo'),
+          label: l10n.teamProjectTryDemo,
+          onPressed: _busy
+              ? null
+              : () => _run(() async {
+                  final enabled = await enableTeamProjectDemo(
+                    widget.controller,
+                  );
+                  if (!enabled && context.mounted) {
+                    await pushKitPage<void>(
+                      context,
+                      (_) => TeamProjectDemoScreen(
+                        preferences: widget.controller.store.prefs,
+                      ),
+                    );
+                  }
+                }),
+        ),
+      ],
+    );
     final inset = EdgeInsetsDirectional.symmetric(
       horizontal: tokens.gutter,
       vertical: tokens.space2,
