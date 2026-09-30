@@ -6,7 +6,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/phone_project_engine.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
-import 'package:opencode_mobile/domain/team_project_gateway.dart';
 import 'package:opencode_mobile/orchestration/adapters/inapp/phone_engine_gateway.dart';
 import 'package:opencode_mobile/ui/kit/kit_redact.dart';
 import 'package:opencode_mobile/state/team_project_controller.dart';
@@ -457,9 +456,10 @@ void main() {
     'accepted create stays accepted after a failed refresh without another POST',
     () async {
       final adapter = FakeEngineAdapter((request) async {
-        if (request.path == '/v1/health')
+        if (request.path == '/v1/health') {
           return jsonBody(health('p1', actions: ['createProject']));
-        if (request.method == 'POST')
+        }
+        if (request.method == 'POST') {
           return jsonBody({
             'accepted': true,
             'code': '',
@@ -467,6 +467,7 @@ void main() {
             'revision': 3,
             'replayed': false,
           });
+        }
         return jsonBody({'code': 'storeUnavailable'}, 503);
       });
       final client = gateway(adapter);
