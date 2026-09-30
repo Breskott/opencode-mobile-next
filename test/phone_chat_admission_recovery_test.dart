@@ -118,7 +118,9 @@ class _Phone {
       ),
     );
     for (var i = 0; i < 100 && !done; i++) {
-      await tester.pump();
+      // Dio may schedule a zero-delay event as well as microtasks. Advancing
+      // one millisecond drains both; the bounded loop advances at most 100ms.
+      await tester.pump(const Duration(milliseconds: 1));
     }
     if (!done) {
       throw StateError('The fake-clock async operation did not drain');
