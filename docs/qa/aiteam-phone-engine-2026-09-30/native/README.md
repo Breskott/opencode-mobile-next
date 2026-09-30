@@ -1,5 +1,10 @@
 # Native lifetime and boundary slice
 
+> Historical worker-slice record. The runtime authority/heartbeat follow-up and
+> executed integration checks supersede the unavailable/deferred conclusions
+> below; see [current integrated QA](../README.md).
+
+
 Finish line: the native Rust daemon survives UI closure under the existing foreground service, uses private per-profile state and credentials, stops and deletes honestly, and exposes a reproducible OS boundary harness with execution unavailable until complete evidence exists.
 
 Non-goal: UI, release/signing/publishing, Cargo/build tooling, OC2, per-worker processes, charging telemetry, or a claim that proot is a security sandbox.

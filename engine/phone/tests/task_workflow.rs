@@ -62,12 +62,12 @@ fn checked_clone_merges_only_to_dev_then_expected_promotion_receipt_survives_res
     let authority = RepositoryAuthority::new(private.clone(), workers.clone()).unwrap();
     let imported = authority.import_repo("repo", &source).unwrap();
     let store = Store::open(&temporary.path().join("state"), "profile").unwrap();
-    let settings = json!({"mode":"single","maxLanes":1,"budget":{"chosen":true,"unlimited":true}});
+    let settings = json!({"mode":"single","maxLanes":1,"reviewLevel":"milestones","maxFixRounds":2,"budget":{"chosen":true,"unlimited":true}});
     let create = json!({"requestId":"create","action":"createProject","name":"Feature","settings":settings,
         "repos":[{"id":"repo","name":"Repo","serverId":"phone","path":"/root/projects/repo","devCommit":imported["devCommit"],"mainCommit":imported["mainCommit"]}],
         "spec":{"goal":"Implement feature","milestones":[{"id":"m","title":"Feature","criteria":["result is after"]}]}});
     let created = store.execute(&create).unwrap();
-    assert_eq!(created["accepted"], true);
+    assert_eq!(created["accepted"], true, "{created}");
     let pid = created["projectId"].as_str().unwrap();
     command(&store, pid, "approveSpec", json!({"confirmed":true}));
     let planner = store

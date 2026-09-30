@@ -1,4 +1,6 @@
 use crate::{
+    attestation::{self, AttestationExpectation, VerifiedBoundary},
+    chat::{ChatHeartbeat, ChatLedger},
     config::{Config, ServerCredentials},
     opencode::OpenCodeClient,
     repository::RepositoryAuthority,
@@ -28,6 +30,11 @@ pub struct Engine {
     pub server: OpenCodeClient,
     token: Vec<u8>,
     protocol: Mutex<Value>,
+    pub(crate) chat: tokio::sync::RwLock<ChatLedger>,
+    pub(crate) observer_connected: Mutex<bool>,
+    pub(crate) parent_pid: i32,
+    lane_admission: tokio::sync::Mutex<()>,
+    boundary: Option<BoundaryAuthority>,
 }
 type Shared = Arc<Engine>;
 #[derive(Debug)]
@@ -41,7 +48,7 @@ fn internal(code: &'static str) -> ApiError {
     ApiError(StatusCode::CONFLICT, code)
 }
 
-pub async fn serve(config: Config) -> Result<(), &'static str> {
+pub async fn serve(config: Config, pins: Option<LaunchPins>) -> Result<(), &'static str> {
     let token = fs::read_to_string(&config.auth_token_file).map_err(|_| "authUnavailable")?;
     let token = token.trim().as_bytes().to_vec();
     if token.len() != 64 || !token.iter().all(u8::is_ascii_hexdigit) {
@@ -64,7 +71,14 @@ pub async fn serve(config: Config) -> Result<(), &'static str> {
         config.worker_root.clone(),
     )
     .map_err(|_| "repositoryUnavailable")?;
+    let boundary = BoundaryAuthority::start(&config, pins);
+    let chat = crate::admission::load_directories(&config);
     let engine = Arc::new(Engine {
+        boundary,
+        lane_admission: tokio::sync::Mutex::new(()),
+        chat: tokio::sync::RwLock::new(chat),
+        observer_connected: Mutex::new(false),
+        parent_pid: unsafe { libc::getppid() },
         config,
         store: Mutex::new(store),
         repositories: Mutex::new(repositories),
@@ -80,10 +94,12 @@ pub async fn serve(config: Config) -> Result<(), &'static str> {
         .map_err(|_| "listenUnavailable")?;
     let task_engine = engine.clone();
     let background = tokio::spawn(async move { reconcile(task_engine).await });
+    let observer = tokio::spawn(crate::admission::observe(engine.clone()));
     let result = axum::serve(listener, router(engine.clone()))
         .with_graceful_shutdown(shutdown())
         .await;
     background.abort();
+    observer.abort();
     // On graceful shutdown, mark unfinished operations interrupted durably.
     // A hard process death is recovered by the same reconcile on next startup.
     if let Ok(store) = engine.store.lock() {
@@ -108,6 +124,7 @@ pub fn router(engine: Shared) -> Router {
         .route("/v1/health", get(health))
         .route("/v1/workspace", get(workspace))
         .route("/v1/commands", post(command))
+        .route("/v1/chatBusy", post(chat_busy))
         .route("/v1/events", get(events))
         .route("/v1/profile", delete(delete_profile))
         .route_layer(middleware::from_fn_with_state(engine.clone(), authorize))
@@ -156,21 +173,91 @@ const STORE_ACTIONS: &[&str] = &[
     "deleteRole",
     "updateServer",
 ];
+pub struct LaunchPins {
+    pub trusted_public_key_sha256: String,
+    pub generation: String,
+    pub policy_sha256: String,
+}
+struct BoundaryAuthority {
+    pins: LaunchPins,
+    parent: i32,
+    executable: std::path::PathBuf,
+    receipt: VerifiedBoundary,
+}
+impl BoundaryAuthority {
+    fn expectation<'a>(&'a self, config: &'a Config) -> Option<AttestationExpectation<'a>> {
+        if config.boundary.generation.as_deref() != Some(&self.pins.generation) {
+            return None;
+        }
+        let receipt_file = config.boundary.receipt_file.as_deref()?;
+        let public_key_file = config.boundary.public_key_file.as_deref()?;
+        for file in [receipt_file, public_key_file] {
+            if !file.is_absolute() || !file.starts_with(&config.private_root) {
+                return None;
+            }
+        }
+        Some(AttestationExpectation {
+            receipt_file,
+            public_key_file,
+            profile_id: &config.profile_id,
+            generation: &self.pins.generation,
+            trusted_public_key_sha256: &self.pins.trusted_public_key_sha256,
+            expected_parent_pid: self.parent,
+            executable_path: &self.executable,
+            expected_policy_sha256: &self.pins.policy_sha256,
+        })
+    }
+    fn start(config: &Config, pins: Option<LaunchPins>) -> Option<Self> {
+        let pins = pins?;
+        let executable = std::env::current_exe().ok()?;
+        let mut authority = Self {
+            pins,
+            parent: unsafe { libc::getppid() },
+            executable,
+            receipt: VerifiedBoundary {
+                generation: String::new(),
+                policy_sha256: String::new(),
+                receipt_sha256: String::new(),
+            },
+        };
+        authority.receipt = attestation::verify(&authority.expectation(config)?).ok()?;
+        Some(authority)
+    }
+}
+fn boundary_verified(e: &Engine) -> bool {
+    e.boundary
+        .as_ref()
+        .and_then(|b| {
+            b.expectation(&e.config)
+                .and_then(|expected| attestation::verify_current(&expected, &b.receipt).ok())
+        })
+        .is_some()
+}
 fn execution_enabled(engine: &Engine) -> bool {
-    engine.config.boundary.verified
-        && engine
-            .protocol
-            .lock()
-            .ok()
-            .and_then(|p| p["capabilities"]["execution"].as_bool())
-            .unwrap_or(false)
+    boundary_verified(engine)
+        && engine.protocol.lock().ok().is_some_and(|p| {
+            p["capabilities"]["executionDriver"] == true
+                && p["pinnedVersion"] == true
+                && p["openapiVerified"] == true
+        })
+}
+async fn chat_busy(
+    State(e): State<Shared>,
+    input: Result<Json<ChatHeartbeat>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<Value>, ApiError> {
+    let Json(heartbeat) = input.map_err(|_| internal("heartbeatInvalid"))?;
+    Ok(Json(
+        crate::admission::accept(&e, heartbeat)
+            .await
+            .map_err(internal)?,
+    ))
 }
 fn command_actions(e: &Engine) -> Vec<&'static str> {
     let mut actions: Vec<_> = STORE_ACTIONS
         .iter()
         .copied()
         .filter(|action| {
-            e.config.boundary.verified || !matches!(*action, "createProject" | "createQuickTask")
+            boundary_verified(e) || !matches!(*action, "createProject" | "createQuickTask")
         })
         .collect();
     if execution_enabled(e) {
@@ -180,12 +267,20 @@ fn command_actions(e: &Engine) -> Vec<&'static str> {
 }
 async fn health(State(e): State<Shared>) -> Json<Value> {
     let protocol = e.protocol.lock().map(|v| v.clone()).unwrap_or(json!({}));
+    let ledger = e.chat.read().await;
+    let admission = crate::admission::label(ledger.admission(
+        crate::admission::now_ms(),
+        crate::admission::app_alive(&e),
+        &team_sessions(&e),
+    ));
     Json(
         json!({"schemaVersion":1,"engineVersion":env!("CARGO_PKG_VERSION"),"profileId":e.config.profile_id,
-        "capabilities":{"execution":execution_enabled(&e),"boundary":e.config.boundary.verified,
+        "capabilities":{"execution":execution_enabled(&e),"boundary":boundary_verified(&e),
             "oc1Verified":protocol["pinnedVersion"] == true && protocol["openapiVerified"] == true,"oc2":false},
-        "commandActions":command_actions(&e),"boundaryReason":e.config.boundary.reason,
-        "restartRequired":e.config.boundary.restart_required,"protocol":protocol}),
+        "commandActions":command_actions(&e),"boundaryReason":if boundary_verified(&e) {"boundary_attested"} else if e.boundary.is_some() {"attestation_rejected"} else {e.config.boundary.reason.as_str()},
+        "restartRequired":e.config.boundary.restart_required,
+        "admission":admission,"chatAuthority":"phoneAppAndKnownDirectories","globalAdmissionAuthority":false,
+        "boundaryGeneration":e.boundary.as_ref().map(|b|b.pins.generation.as_str()),"protocol":protocol}),
     )
 }
 async fn workspace(State(e): State<Shared>) -> Result<Json<Value>, ApiError> {
@@ -302,7 +397,7 @@ async fn command(
     if matches!(action, "createProject" | "createQuickTask") {
         // Never put canonical Git authority beside an unconfined legacy
         // server. Disabled scheduling alone cannot protect raw refs on disk.
-        if !e.config.boundary.verified {
+        if !boundary_verified(&e) {
             return Err(internal("boundaryUnavailable"));
         }
         let repos = c["repos"].as_array().ok_or(internal("reposRequired"))?;
@@ -429,6 +524,7 @@ async fn reconcile(e: Shared) {
             }
             next_verify = tokio::time::Instant::now() + Duration::from_secs(30);
         }
+        crate::admission::reconcile_busy(&e).await;
         let jobs = e
             .store
             .lock()
@@ -455,10 +551,27 @@ async fn reconcile(e: Shared) {
                 }
                 continue;
             }
-            let team_ids = team_sessions(&e);
-            if !e.server.chat_admission(&team_ids).await.unwrap_or(false) {
+            let ledger = e.chat.read().await;
+            if !crate::admission::idle(&e, &ledger).await.unwrap_or(false) {
+                let reason = if ledger.admission(
+                    crate::admission::now_ms(),
+                    crate::admission::app_alive(&e),
+                    &team_sessions(&e),
+                ) == crate::chat::ChatAdmission::Busy
+                {
+                    "chatBusy"
+                } else {
+                    "chatStatusUnknown"
+                };
+                drop(ledger);
+                if job["reason"] != reason && job["stage"] == "queued" {
+                    if let Ok(store) = e.store.lock() {
+                        let _ = store.update_job(&id, "queued", &json!({"reason":reason}));
+                    }
+                }
                 continue;
             }
+            drop(ledger);
             // The native proof and protocol admission prerequisites are checked
             // again at every stage. No SSE event is treated as completion.
             active.insert(id.clone());
@@ -470,7 +583,7 @@ async fn reconcile(e: Shared) {
         }
     }
 }
-fn team_sessions(e: &Engine) -> Vec<String> {
+pub(crate) fn team_sessions(e: &Engine) -> Vec<String> {
     e.store
         .lock()
         .ok()
@@ -490,11 +603,41 @@ async fn stage_admitted(e: &Engine, requested: &Value) -> Result<(), &'static st
     if !execution_enabled(e) {
         return Err("executionUnavailable");
     }
-    let idle = e
-        .server
-        .chat_admission(&team_sessions(e))
-        .await
-        .map_err(|_| "chatStatusUnknown")?;
+    loop {
+        let ledger = e.chat.read().await;
+        let result = stage_admitted_with_ledger(e, requested, &ledger).await;
+        drop(ledger);
+        if !matches!(result, Err("chatBusy" | "chatStatusUnknown")) {
+            return result;
+        }
+        // Keep the durable checkpoint. Waiting for the person's reply must not
+        // resubmit the worker or turn an already finished worker into an error.
+        tokio::time::sleep(Duration::from_secs(2)).await;
+    }
+}
+async fn stage_admitted_with_ledger(
+    e: &Engine,
+    requested: &Value,
+    ledger: &ChatLedger,
+) -> Result<(), &'static str> {
+    if !execution_enabled(e) {
+        return Err("executionUnavailable");
+    }
+    {
+        let store = e.store.lock().map_err(|_| "storeUnavailable")?;
+        let jobs = store.jobs().map_err(|_| "storeUnavailable")?;
+        let current = jobs
+            .iter()
+            .find(|j| j["id"] == requested["id"])
+            .ok_or("jobMissing")?;
+        if matches!(
+            current["stage"].as_str(),
+            Some("paused" | "stopped" | "interrupted" | "failed")
+        ) {
+            return Err("jobNotActive");
+        }
+    }
+    let idle = crate::admission::idle(e, ledger).await?;
     let store = e.store.lock().map_err(|_| "storeUnavailable")?;
     let state = store.workspace().map_err(|_| "storeUnavailable")?;
     let jobs = store.jobs().map_err(|_| "storeUnavailable")?;
@@ -579,6 +722,46 @@ async fn stage_admitted(e: &Engine, requested: &Value) -> Result<(), &'static st
         }
     }
 }
+#[allow(clippy::too_many_arguments)]
+async fn admitted_prompt(
+    e: &Engine,
+    job: &Value,
+    directory: &str,
+    session: &str,
+    role: &str,
+    model: &str,
+    instructions: &str,
+    prompt: &str,
+    read_only: bool,
+) -> Result<(), &'static str> {
+    loop {
+        let ledger = e.chat.read().await;
+        // Hold through actual HTTP dispatch, never while waiting for the person.
+        match stage_admitted_with_ledger(e, job, &ledger).await {
+            Err("chatBusy" | "chatStatusUnknown") => {
+                drop(ledger);
+                tokio::time::sleep(Duration::from_secs(2)).await;
+            }
+            Err(code) => return Err(code),
+            Ok(()) => {
+                return e
+                    .server
+                    .prompt(
+                        directory,
+                        session,
+                        role,
+                        model,
+                        instructions,
+                        prompt,
+                        read_only,
+                    )
+                    .await
+                    .map(|_| ())
+                    .map_err(|_| "promptUncertain")
+            }
+        }
+    }
+}
 fn utc_day() -> String {
     #[cfg(unix)]
     {
@@ -619,7 +802,18 @@ async fn run_job(e: Shared, job: Value) -> Result<(), &'static str> {
             if let Ok(jobs) = s.jobs() {
                 if let Some(current) = jobs.iter().find(|j| j["id"] == id) {
                     let stage = current["stage"].as_str().unwrap_or("unknown");
-                    if !matches!(stage, "completed" | "stopped" | "paused") {
+                    if stage == "queued"
+                        && matches!(
+                            reason,
+                            "laneCap"
+                                | "dependencyPending"
+                                | "projectNotRunning"
+                                | "chatBusy"
+                                | "chatStatusUnknown"
+                        )
+                    {
+                        let _ = s.update_job(id, stage, &json!({"reason":reason}));
+                    } else if !matches!(stage, "completed" | "stopped" | "paused") {
                         let _ = s.update_job(
                             id,
                             stage,
@@ -643,7 +837,13 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     if job["stage"] == "resuming" {
         return resume_job(e, job).await;
     }
-    patch(e, id, "queued", json!({"stage":"starting"}))?;
+    {
+        // The durable starting reservation and cap check are one serialized
+        // admission. Concurrent queued futures cannot both take the last lane.
+        let _reservation = e.lane_admission.lock().await;
+        stage_admitted(e, job).await?;
+        patch(e, id, "queued", json!({"stage":"starting"}))?;
+    }
     let work = e
         .repositories
         .lock()
@@ -682,18 +882,18 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     } else {
         format!("Implement this task on branch {}. Keep edits in this isolated clone. Commit completed changes to that task branch, without editing main or dev. Acceptance criteria: {}. Task: {}",work["branch"],job["criteria"],job["title"])
     };
-    e.server
-        .prompt(
-            &directory,
-            &session,
-            role,
-            model,
-            instructions,
-            &request,
-            planner || job["readOnly"] == true,
-        )
-        .await
-        .map_err(|_| "promptUncertain")?;
+    admitted_prompt(
+        e,
+        job,
+        &directory,
+        &session,
+        role,
+        model,
+        instructions,
+        &request,
+        planner || job["readOnly"] == true,
+    )
+    .await?;
     let output = await_completion(e, id, role, &directory, &session).await?;
     if planner {
         let plan = structured_output(&output)?;
@@ -723,22 +923,22 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     )?;
     let check = format!("Read-only verification. Inspect committed task changes against every criterion {}. Return only JSON {{findings:[{{id,severity,criterion,location,text,status}}],criterionResults:[{{criterion,status}}]}}. status must be met/unmet/notApplicable, findings severity critical/major/minor. Do not modify files.",job["criteria"]);
     stage_admitted(e, job).await?;
-    e.server
-        .prompt(
-            &directory,
-            &checker,
-            "checker",
-            job["checkerRole"]["model"]
-                .as_str()
-                .ok_or("checkerRoleMissing")?,
-            job["checkerRole"]["instructions"]
-                .as_str()
-                .ok_or("checkerRoleMissing")?,
-            &check,
-            true,
-        )
-        .await
-        .map_err(|_| "checkUncertain")?;
+    admitted_prompt(
+        e,
+        job,
+        &directory,
+        &checker,
+        "checker",
+        job["checkerRole"]["model"]
+            .as_str()
+            .ok_or("checkerRoleMissing")?,
+        job["checkerRole"]["instructions"]
+            .as_str()
+            .ok_or("checkerRoleMissing")?,
+        &check,
+        true,
+    )
+    .await?;
     let checked = await_completion(e, id, "checker", &directory, &checker).await?;
     let verification = structured_output(&checked)?;
     let passed = validate_check(&verification, &job["criteria"])?;
@@ -781,6 +981,9 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     Ok(())
 }
 fn current_dev(e: &Engine, repo: &str) -> Result<String, &'static str> {
+    if !boundary_verified(e) {
+        return Err("boundaryUnavailable");
+    }
     let refs = e
         .repositories
         .lock()
@@ -808,6 +1011,9 @@ async fn resume_job(e: &Engine, job: &Value) -> Result<(), &'static str> {
         .as_str()
         .ok_or("recoveryNeedsReview")?;
     let observed = await_completion(e, id, role, directory, session).await?;
+    if !boundary_verified(e) {
+        return Err("boundaryUnavailable");
+    }
     if role == "planner" {
         let plan = structured_output(&observed)?;
         validate_plan(&plan, job["repoId"].as_str().ok_or("repoInvalid")?)?;
@@ -1038,6 +1244,9 @@ mod tests {
                 verified: false,
                 reason: "boundary_unverified".into(),
                 restart_required: false,
+                receipt_file: None,
+                public_key_file: None,
+                generation: None,
             },
         };
         Arc::new(Engine {
@@ -1053,8 +1262,155 @@ mod tests {
             .unwrap(),
             token: vec![b'a'; 64],
             protocol: Mutex::new(json!({})),
+            boundary: None,
+            lane_admission: tokio::sync::Mutex::new(()),
+            chat: tokio::sync::RwLock::new(ChatLedger::default()),
+            observer_connected: Mutex::new(false),
+            parent_pid: unsafe { libc::getppid() },
             config,
         })
+    }
+    #[test]
+    fn exact_native_receipt_composes_driver_capability_and_replacement_closes_it() {
+        use p256::{
+            ecdsa::{signature::Signer, Signature, SigningKey},
+            pkcs8::EncodePublicKey,
+        };
+        use sha2::{Digest, Sha256};
+        let temp = tempfile::tempdir().unwrap();
+        let mut shared = fixture(temp.path());
+        let e = Arc::get_mut(&mut shared).unwrap();
+        let binaries = temp.path().join("native");
+        fs::create_dir(&binaries).unwrap();
+        let executable = binaries.join("libaiteam_engine.so");
+        for name in [
+            "libaiteam_engine.so",
+            "libaiteam_sandbox.so",
+            "libaiteam_boundary_probe.so",
+        ] {
+            fs::write(binaries.join(name), name).unwrap();
+        }
+        let key = SigningKey::from_bytes((&[9u8; 32]).into()).unwrap();
+        let public = key.verifying_key().to_public_key_der().unwrap();
+        let key_file = e.config.private_root.join("public.der");
+        fs::write(&key_file, public.as_bytes()).unwrap();
+        let receipt_file = e.config.private_root.join("receipt.json");
+        let generation = uuid::Uuid::new_v4().to_string();
+        let payload = serde_json::to_vec(&json!({"schemaVersion":1,"profileId":"profile","parentPid":e.parent_pid,
+            "generation":generation,"bootId":attestation::boot_id().unwrap(),"kernelRelease":attestation::kernel_release().unwrap(),
+            "policySha256":"a".repeat(64),"engineSha256":attestation::hash_file(&executable).unwrap(),
+            "sandboxSha256":attestation::hash_file(&binaries.join("libaiteam_sandbox.so")).unwrap(),
+            "probeSha256":attestation::hash_file(&binaries.join("libaiteam_boundary_probe.so")).unwrap(),
+            "issuedAtElapsedMs":attestation::elapsed_ms().unwrap(),"protectedLaunchesRequired":true,
+            "controls":{"nativeAttacksDenied":true,"prootGitCompatible":true,"fixtureUnchanged":true,"complete":true}})).unwrap();
+        let signature: Signature = key.sign(&payload);
+        fs::write(&receipt_file, &payload).unwrap();
+        fs::write(
+            attestation::signature_path(&receipt_file),
+            signature.to_der().as_bytes(),
+        )
+        .unwrap();
+        e.config.boundary.receipt_file = Some(receipt_file.clone());
+        e.config.boundary.public_key_file = Some(key_file);
+        e.config.boundary.generation = Some(generation.clone());
+        let mut authority = BoundaryAuthority {
+            pins: LaunchPins {
+                trusted_public_key_sha256: format!("{:x}", Sha256::digest(public.as_bytes())),
+                generation,
+                policy_sha256: "a".repeat(64),
+            },
+            parent: e.parent_pid,
+            executable,
+            receipt: VerifiedBoundary {
+                generation: String::new(),
+                policy_sha256: String::new(),
+                receipt_sha256: String::new(),
+            },
+        };
+        authority.receipt =
+            attestation::verify(&authority.expectation(&e.config).unwrap()).unwrap();
+        e.boundary = Some(authority);
+        *e.protocol.lock().unwrap() = json!({"pinnedVersion":true,"openapiVerified":true,"capabilities":{"executionDriver":true,"execution":false,"globalAdmissionAuthority":false}});
+        assert!(!e.config.boundary.verified);
+        assert!(execution_enabled(e));
+        assert!(command_actions(e).contains(&"createProject"));
+        assert!(command_actions(e).contains(&"promote"));
+        // No permanently cached verified boolean may survive a receipt change.
+        fs::write(receipt_file, b"replacement").unwrap();
+        assert!(!execution_enabled(e));
+        assert!(!command_actions(e).contains(&"createProject"));
+        assert!(!command_actions(e).contains(&"promote"));
+    }
+    #[tokio::test]
+    async fn heartbeat_ack_waits_for_admission_and_stale_idle_cannot_overwrite_busy() {
+        let temp = tempfile::tempdir().unwrap();
+        let e = fixture(temp.path());
+        let admitted = e.chat.read().await;
+        let owned = e.clone();
+        let now = crate::admission::now_ms();
+        let pending = tokio::spawn(async move {
+            crate::admission::accept(
+                &owned,
+                ChatHeartbeat {
+                    until: now + 30_000,
+                    session_ids: vec!["person".into()],
+                    directories: vec!["/root/person".into()],
+                    known: true,
+                    app_instance: "app".into(),
+                    sequence: 2,
+                },
+            )
+            .await
+        });
+        tokio::task::yield_now().await;
+        assert!(
+            !pending.is_finished(),
+            "human acknowledgment must await the admitted team dispatch"
+        );
+        drop(admitted);
+        assert_eq!(pending.await.unwrap().unwrap()["admission"], "busy");
+        assert_eq!(
+            crate::admission::accept(
+                &e,
+                ChatHeartbeat {
+                    until: now + 30_000,
+                    session_ids: vec![],
+                    directories: vec!["/root/person".into()],
+                    known: true,
+                    app_instance: "app".into(),
+                    sequence: 1,
+                }
+            )
+            .await
+            .unwrap_err(),
+            "heartbeatStale"
+        );
+        let ledger = e.chat.read().await;
+        assert!(!crate::admission::idle(&e, &ledger).await.unwrap());
+        drop(ledger);
+        let reloaded = crate::admission::load_directories(&e.config);
+        assert_eq!(reloaded.directories(), vec!["/root/person".to_string()]);
+        assert_eq!(
+            reloaded.admission(now, Some(true), &[]),
+            crate::chat::ChatAdmission::Unknown
+        );
+        e.store.lock().unwrap().delete_profile().unwrap();
+        assert_eq!(
+            crate::admission::accept(
+                &e,
+                ChatHeartbeat {
+                    until: now + 30_000,
+                    session_ids: vec![],
+                    directories: vec![],
+                    known: true,
+                    app_instance: "app".into(),
+                    sequence: 3,
+                }
+            )
+            .await
+            .unwrap_err(),
+            "profileDeleted"
+        );
     }
     #[tokio::test]
     async fn all_routes_require_bearer_and_workspace_deletion_is_durable() {
@@ -1066,6 +1422,7 @@ mod tests {
             ("GET", "/v1/workspace"),
             ("GET", "/v1/events"),
             ("POST", "/v1/commands"),
+            ("POST", "/v1/chatBusy"),
             ("DELETE", "/v1/profile"),
         ] {
             let response = app

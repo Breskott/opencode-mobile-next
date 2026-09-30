@@ -226,6 +226,12 @@ impl RepositoryAuthority {
                 Some(&mut fetch_options),
                 None,
             )?;
+        // libgit2 may create FETCH_HEAD even with update_fetchhead(false).
+        // Transport metadata must never expose the private canonical path.
+        let fetch_head = worker.path().join("FETCH_HEAD");
+        if fetch_head.exists() {
+            fs::remove_file(fetch_head)?;
+        }
         let branch = task_branch(task_id);
         worker.reference(
             &format!("refs/heads/{branch}"),

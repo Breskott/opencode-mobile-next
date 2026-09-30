@@ -1,5 +1,10 @@
 # Phone engine Dart gateway
 
+> Historical worker-slice record. The runtime authority/heartbeat follow-up and
+> executed integration checks supersede the unavailable/deferred conclusions
+> below; see [current integrated QA](../aiteam-phone-engine-2026-09-30/README.md).
+
+
 Finish line: a saved phone engine profile reconnects through authenticated loopback health to the existing TeamProjectController, polls durable workspace snapshots, and profile deletion drains app writes before native durable deletion including inactive profiles.
 
 Non-goal: UI edits, native implementation, execution proof, provider configuration, signing, publication or test execution.

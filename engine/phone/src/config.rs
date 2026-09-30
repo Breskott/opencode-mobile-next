@@ -33,6 +33,12 @@ pub struct Boundary {
     pub reason: String,
     #[serde(default)]
     pub restart_required: bool,
+    #[serde(default)]
+    pub receipt_file: Option<PathBuf>,
+    #[serde(default)]
+    pub public_key_file: Option<PathBuf>,
+    #[serde(default)]
+    pub generation: Option<String>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -100,7 +106,7 @@ impl Config {
         if self.oc1_base_url != "http://127.0.0.1:4097" {
             return Err("serverNotLoopback");
         }
-        // The current native proof contract has no attested running generation.
+        // Only native-parent-pinned signed receipts confer protected authority.
         // A mutable boolean alone must never switch protected execution on.
         if self.boundary.verified {
             return Err("boundaryProofRequired");
@@ -166,6 +172,9 @@ mod tests {
                 verified: false,
                 reason: "boundary_unverified".into(),
                 restart_required: false,
+                receipt_file: None,
+                public_key_file: None,
+                generation: None,
             },
         };
         assert!(config.validate().is_ok());

@@ -21,7 +21,7 @@ async fn main() {
         std::process::exit(1);
     }
     let args: Vec<String> = std::env::args().collect();
-    if args.len() != 3 || args[1] != "--config" {
+    if !matches!(args.len(), 3 | 9) || args[1] != "--config" {
         eprintln!("usage: oc-phone-engine --config <private-config-path>");
         std::process::exit(64);
     }
@@ -32,7 +32,23 @@ async fn main() {
             std::process::exit(1);
         }
     };
-    if let Err(code) = daemon::serve(config).await {
+    let pins = if args.len() == 9
+        && args[3] == "--trusted-public-key-sha256"
+        && args[5] == "--native-generation"
+        && args[7] == "--policy-sha256"
+    {
+        Some(daemon::LaunchPins {
+            trusted_public_key_sha256: args[4].clone(),
+            generation: args[6].clone(),
+            policy_sha256: args[8].clone(),
+        })
+    } else if args.len() == 3 {
+        None
+    } else {
+        eprintln!("nativePinsInvalid");
+        std::process::exit(64);
+    };
+    if let Err(code) = daemon::serve(config, pins).await {
         eprintln!("{code}");
         std::process::exit(1);
     }

@@ -1,4 +1,4 @@
-//! Deferred by owner. Run on Storage with the coordinator's machine lock.
+//! Run on Storage with the coordinator's machine lock; host proof is not Android evidence.
 use std::os::unix::fs::{symlink, PermissionsExt};
 use std::process::Command;
 
@@ -90,7 +90,7 @@ fn unsupported_or_unproven_kernel_never_executes_a_tool() {
 }
 
 #[test]
-#[ignore = "OS boundary proof requires Landlock ABI6; owner deferred execution"]
+#[ignore = "OS boundary proof requires Landlock ABI6; explicitly run on a capable kernel"]
 fn raw_syscalls_proc_aliases_metadata_and_descendants_cannot_reach_private_state() {
     let temp = fixture();
     let protected = git_fixture(temp.path());

@@ -7,28 +7,27 @@ extra ACP process, UI edit or `main.dart` change is part of this branch.
 
 ## Current availability
 
-The store, scheduler, authenticated API, session pipeline, canonical Git
-authority, native lifecycle, Dart adapter and deferred proof harnesses are
-implemented. **Protected project execution is unavailable.** This is backend
-groundwork, not a completed live task journey.
+The coordinator's app-authority and device-self-check decision supersedes the
+old complete-global-idle prerequisite. The backend implements protected store,
+queue, session driver, isolated worker clones and canonical Git authority. It
+conditionally enables canonical import, lanes and confirmed promotion **on this
+phone** after the exact native bundle passes all isolated startup controls and
+Rust verifies its native-parent-pinned Keystore receipt. A configuration boolean
+cannot confer authority. Failure leaves those capabilities unavailable.
 
-Two prerequisites remain:
+Every new native daemon generation runs native filesystem/process attacks and
+real proot/Git positive and negative controls, checks the fixture, signs the
+receipt and establishes durable confinement of future server/service/PTY launches.
+App updates change packaged hashes and require a fresh proof. An existing
+unconfined server/terminal or uncertain process inventory requires an explicit
+owner stop/restart; the engine does not kill the person's chat. Unsupported
+kernel, Android proc policy or proot compatibility remains a real blocker.
 
-1. OC1 1.18.32 does not expose a complete active-directory execution/status
-   checkpoint. Session inventory and volatile global SSE cannot prove all
-   non-team sessions idle. `global_status_unavailable` pauses admission.
-2. The exact Android kernel/proot/Git boundary proof has not run. Landlock ABI 6
-   and seccomp compatibility remain unverified. A caller-supplied persisted
-   `verified=true` is rejected, even after a probe reports success. A future
-   native attestation/generation contract must bind the proof to every proot
-   execution entry point and preserve enforcement across restart.
-
-Both gates must be resolved before enabling a real lane or promotion. Canonical
-repo import is also refused until boundary verification; otherwise an existing
-unconfined chat server could reach raw canonical refs despite scheduling being
-disabled. Current health therefore omits `createProject`, `createQuickTask` and
-`promote`. Readiness must never be inferred from a running process or a passing
-compile check. OC2 execution is unavailable.
+App-authoritative chat admission is separate from supported execution capability:
+fresh known idle permits a new team prompt; busy or missing/stale/unknown evidence
+pauses admission. No in-process model priority or complete multi-device global
+status is claimed. OC2 execution remains unavailable. Live phone acceptance and a
+real provider-backed task remain separate from local test/build results.
 
 ## UI connection calls
 
@@ -65,9 +64,9 @@ are outside this first backend slice and remain unadvertised.
 
 The UI should explain unavailable readiness and allow retry/probe. A legacy
 server or terminal cannot silently be killed to change protection mode.
-`restartRequired` identifies that prerequisite in native status. Protected
-server restart is a separate explicit setup operation; it never clears the
-proof/admission gates by itself. Claude owns the presentation and localized copy.
+`restartRequired` identifies that prerequisite in native status. After a successful proof, ordinary built-in server and terminal launches
+automatically consult the persistent protection marker. A server restart alone
+does not clear a failed proof or stale chat admission. Claude owns the presentation and localized copy.
 
 ## HTTP and durable commands
 
@@ -78,6 +77,7 @@ Every route requires Bearer auth and binds numeric `127.0.0.1` only:
 | `GET /v1/health` | schemaVersion=1, profileId, engineVersion, capabilities, exact commandActions, safe protocol/boundary reasons |
 | `GET /v1/workspace` | schemaVersion=1, revision, simulated=false, typed TeamWorkspace |
 | `POST /v1/commands` | existing TeamProjectCommand JSON → TeamCommandResult |
+| `POST /v1/chatBusy` | authenticated app heartbeat; bounded lease, generation and sequence; acknowledged before human dispatch |
 | `GET /v1/events?after=0&limit=100` | durable ordered metadata events, not raw prompts/tool output |
 | `DELETE /v1/profile` | durable tombstone → deleted=true; native owner subsequently stops/sweeps |
 
@@ -101,6 +101,49 @@ expectedDevCommit, expectedMainCommit and requestId. Only the native authority
 updates canonical main and persists an expected-SHA receipt. Hooks in worker
 clones are defense in depth. A hook override cannot establish access to the
 canonical repository. No generic shell/ref-write API exists.
+
+## Chat authority and native receipt additions
+
+The additive heartbeat body is `{until: unixMillis, sessionIds: string[],
+directories: string[], known: bool, appInstance: string, sequence: int}`. Leases
+are at most 30 seconds; the adapter renews every 10 seconds while idle **and**
+busy and sends changes immediately. Idle also needs renewal: silence is unknown.
+The app controller combines its current-directory session-status reconciliation,
+connected live event stream and exact dispatch latch. The handwritten OC1
+transport invokes an awaited before-dispatch callback for prompt, correlated
+prompt, shell and slash-command, so this protection does not depend on a UI edit.
+The engine serializes the heartbeat acknowledgment with actual team HTTP prompt
+admission. Failure to deliver busy evidence stops only the tracked phone engine
+before allowing human dispatch; an uncertain stop does not pretend safety.
+
+While the native app parent is alive, missing/expired/unknown heartbeat cannot
+fall back to an idle poll. Whole-app process death normally also terminates its
+native daemon through parent-death signaling. In lifetimes where the parent is
+positively absent, fallback requires connected `/global/event` observations and
+strict `/session/status?directory=...` snapshots for every durable known person
+directory. Unknown process presence, directory, response or stream pauses.
+SSE busy observations veto admission even during a fresh idle app lease; a
+complete idle refetch cannot overwrite a newer busy event. SSE reconnect/silence
+never proves idle or turn completion. Known directories persist privately;
+heartbeat leases never survive daemon restart as fresh authority.
+
+Residual scope: another client/device may start a reply in an unobserved directory
+or race after a snapshot. OC1 supplies no atomic global inventory/admission lock.
+This implementation protects this app's own turns and conservatively observes
+known directories; it cannot promise global priority across unrelated clients.
+Additive `PhoneEngineHealth` fields expose `boundaryReason`, `restartRequired`,
+`admission`, `chatAuthority` and `globalAdmissionAuthority`; older payloads default
+to unknown admission. The health response therefore reports `chatAuthority=phoneAppAndKnownDirectories`,
+`globalAdmissionAuthority=false`, and separate `admission` state.
+
+Native config adds `boundary.receiptFile`, `publicKeyFile`, `generation`; `verified`
+remains false. The parent separately supplies public key/policy hashes and the
+launch generation in actual daemon argv. Exact signed receipt bytes bind profile,
+parent PID, boot/kernel, policy, all three packaged binary hashes, complete controls
+and monotonic issuance. Rust verifies freshness on startup, then revalidates the
+accepted receipt digest and current invariants before every authority step.
+A replaced receipt or binary closes capabilities immediately. See
+[runtime receipt contract](../qa/aiteam-phone-engine-2026-09-30/native/runtime-attestation.md).
 
 ## Recovery, budgets and deletion
 
@@ -139,5 +182,5 @@ packaging extracts the executables into nativeLibraryDir outside app-writable
 data. Other ABIs have no engine artifact and fail unavailable.
 
 See [slice QA](../qa/aiteam-phone-engine-2026-09-30/README.md) and the linked
-per-slice READMEs for commands and deferred acceptance. Compiling/staging these
+per-slice READMEs for commands and remaining device acceptance. Compiling/staging these
 artifacts is not device verification, APK signing, installation or release.

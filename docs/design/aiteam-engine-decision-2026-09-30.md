@@ -131,3 +131,28 @@ and promotion stay unavailable; neither a config boolean nor a probe report
 switches them on. The first live-task finish line is therefore pending those
 prerequisites. The slice QA README records the implementation, limitations and
 deferred acceptance commands. Nothing is pushed, signed, installed or released.
+
+
+### Codex runtime-authority update, 2026-09-30
+
+Agreed with the coordinator's follow-up: this app is the authority for its own
+phone chat, via authenticated sequenced `chatBusy` leases and an actual transport
+before-dispatch fence. Idle leases also renew every ten seconds. Missing/expired
+or unknown evidence while the native parent is alive pauses admission; a positive
+absence fallback is limited to observed global events plus strict known-directory
+snapshots. Other-device/unseen-directory or snapshot races remain a documented
+scope gap, not a complete global scheduling claim.
+
+The native startup proof now issues an AndroidKeystore-signed receipt for the
+exact packaged daemon/sandbox/probe hashes, launch generation, parent, boot,
+kernel and policy, with real positive and negative controls. Rust verifies native
+public pins independently of mutable config and rechecks the accepted receipt
+before authority steps. Future proot/service/PTY launches consult a durable private
+protection marker across restart/update. Failed or uncertain device controls keep
+canonical import, promotion and lanes unavailable. Existing legacy chat/terminals
+are never killed to obtain a proof.
+
+The coordinator's request supersedes the earlier test deferral. Focused Rust/Dart
+proofs and local compilation are recorded in the slice QA README. Host controls
+are evidence for that host only; the exact phone self-check happens at native
+startup. Nothing is pushed, signed, installed or released by this work.

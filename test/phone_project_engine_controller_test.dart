@@ -223,24 +223,27 @@ void main() {
       );
     },
   );
-  test('failed native deletion stays blocked, reports safe code, permits deletion retry', () async {
-    final bridge = NativeBridge()..failDelete = true;
-    final calls = <String>[];
-    final engine = controller(bridge, calls);
-    await engine.attach('phone');
-    await expectLater(
-      engine.deleteProfile('phone'),
-      throwsA(fake.safeError('deleteFailed')),
-    );
-    expect(secrets.containsKey('oc.teamEngineAuth.phone'), isTrue);
-    await expectLater(
-      engine.probe('phone'),
-      throwsA(fake.safeError('profileDeleted')),
-    );
-    bridge.failDelete = false;
-    await engine.deleteProfile('phone');
-    expect(secrets.containsKey('oc.teamEngineAuth.phone'), isFalse);
-  });
+  test(
+    'failed native deletion stays blocked, reports safe code, permits deletion retry',
+    () async {
+      final bridge = NativeBridge()..failDelete = true;
+      final calls = <String>[];
+      final engine = controller(bridge, calls);
+      await engine.attach('phone');
+      await expectLater(
+        engine.deleteProfile('phone'),
+        throwsA(fake.safeError('deleteFailed')),
+      );
+      expect(secrets.containsKey('oc.teamEngineAuth.phone'), isTrue);
+      await expectLater(
+        engine.probe('phone'),
+        throwsA(fake.safeError('profileDeleted')),
+      );
+      bridge.failDelete = false;
+      await engine.deleteProfile('phone');
+      expect(secrets.containsKey('oc.teamEngineAuth.phone'), isFalse);
+    },
+  );
   test(
     'attach running during deletion cannot resurrect profile config or auth',
     () async {
@@ -420,21 +423,26 @@ void main() {
       expect(tracker.sessionIds, isEmpty);
     },
   );
-  test('concurrent dispatch remains busy until every request settles and fresh idle', () {
-    final tracker = PhoneChatDispatchTracker();
-    tracker.begin('person', '/chat');
-    tracker.begin('person', '/chat');
-    tracker.settled('person');
-    tracker.reconcile({}, tracker.epoch, '/chat');
-    expect(tracker.sessionIds, ['person']);
-    tracker.settled('person');
-    tracker.reconcile({}, tracker.epoch, '/chat');
-    expect(tracker.sessionIds, ['person']); // Async start is still unobserved.
-    tracker.reconcile({'person': 'busy'}, tracker.epoch, '/chat');
-    expect(tracker.sessionIds, ['person']);
-    tracker.reconcile({}, tracker.epoch, '/chat');
-    expect(tracker.sessionIds, isEmpty);
-  });
+  test(
+    'concurrent dispatch remains busy until every request settles and fresh idle',
+    () {
+      final tracker = PhoneChatDispatchTracker();
+      tracker.begin('person', '/chat');
+      tracker.begin('person', '/chat');
+      tracker.settled('person');
+      tracker.reconcile({}, tracker.epoch, '/chat');
+      expect(tracker.sessionIds, ['person']);
+      tracker.settled('person');
+      tracker.reconcile({}, tracker.epoch, '/chat');
+      expect(tracker.sessionIds, [
+        'person',
+      ]); // Async start is still unobserved.
+      tracker.reconcile({'person': 'busy'}, tracker.epoch, '/chat');
+      expect(tracker.sessionIds, ['person']);
+      tracker.reconcile({}, tracker.epoch, '/chat');
+      expect(tracker.sessionIds, isEmpty);
+    },
+  );
   test(
     'failed heartbeat safely stops only engine; failed stop remains retryable',
     () async {
@@ -456,11 +464,12 @@ void main() {
                   profileId: profileId,
                   bearerToken: bearerToken,
                   adapter: fake.FakeEngineAdapter((r) async {
-                    if (r.path == '/v1/chatBusy')
+                    if (r.path == '/v1/chatBusy') {
                       throw DioException(
                         requestOptions: r,
                         message: 'unsafe auth detail',
                       );
+                    }
                     return fake.jsonBody(fake.health(profileId));
                   }),
                 ),
@@ -481,25 +490,28 @@ void main() {
       await engine.close();
     },
   );
-  test('another phone alias cannot dispatch until previous engine stop is confirmed', () async {
-    final profile = store.profiles.firstWhere((p) => p.id == 'phone');
-    profile.orchestration = const OrchestrationConfig(
-      provider: OrchestrationProvider.phoneEngine,
-      url: 'http://127.0.0.1:4098',
-      hostMode: OrchestrationHostMode.phone,
-    );
-    await store.upsert(profile);
-    final bridge = NativeBridge()..failStop = true;
-    final engine = controller(bridge, []);
-    await expectLater(
-      engine.preparePhoneAliasDispatch('another-alias'),
-      throwsA(fake.safeError('engineStopFailed')),
-    );
-    bridge.failStop = false;
-    await engine.preparePhoneAliasDispatch('another-alias');
-    expect(bridge.calls, ['stop:phone', 'stop:phone']);
-    await engine.close();
-  });
+  test(
+    'another phone alias cannot dispatch until previous engine stop is confirmed',
+    () async {
+      final profile = store.profiles.firstWhere((p) => p.id == 'phone');
+      profile.orchestration = const OrchestrationConfig(
+        provider: OrchestrationProvider.phoneEngine,
+        url: 'http://127.0.0.1:4098',
+        hostMode: OrchestrationHostMode.phone,
+      );
+      await store.upsert(profile);
+      final bridge = NativeBridge()..failStop = true;
+      final engine = controller(bridge, []);
+      await expectLater(
+        engine.preparePhoneAliasDispatch('another-alias'),
+        throwsA(fake.safeError('engineStopFailed')),
+      );
+      bridge.failStop = false;
+      await engine.preparePhoneAliasDispatch('another-alias');
+      expect(bridge.calls, ['stop:phone', 'stop:phone']);
+      await engine.close();
+    },
+  );
   test(
     'deletion drains heartbeat and cancels renewal before durable native erase',
     () async {

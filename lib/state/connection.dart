@@ -272,12 +272,13 @@ typedef V2GatewayPairFactory =
       ServerProfile profile,
     );
 typedef LocalWakeLockEnsurer = Future<void> Function();
-typedef EventStreamFactory = EventStream Function({
-  required OpenCodeApi api,
-  required void Function(EventEnvelope event) onEvent,
-  required void Function(StreamStatus status) onStatus,
-  void Function(Object error)? onError,
-});
+typedef EventStreamFactory =
+    EventStream Function({
+      required OpenCodeApi api,
+      required void Function(EventEnvelope event) onEvent,
+      required void Function(StreamStatus status) onStatus,
+      void Function(Object error)? onError,
+    });
 
 /// A review belongs to one connection, session, and observed staged boundary.
 /// Reusing it after a remote stage/clear/commit is deliberately rejected.
@@ -7139,8 +7140,9 @@ class ConnectionController extends ChangeNotifier {
             policy.cancelDeletion();
             ConsentOwners.cancelDeletion(store.prefs, profileId);
             await SessionLinkBindings.cancelDeletion(store.prefs, profileId);
-            BuiltinServerOwner.forPreferences(store.prefs)
-                .cancelDeletion(profileId);
+            BuiltinServerOwner.forPreferences(
+              store.prefs,
+            ).cancelDeletion(profileId);
             _profileMonitor?.cancelDeletion(profileId);
             _quotaMonitor?.cancelDeletion(profileId);
             _pendingAuth.cancelDeletion(profileId);
@@ -7274,8 +7276,9 @@ class ConnectionController extends ChangeNotifier {
         ]);
         // Keep the shared runtime owner through queue preflight failures.
         // Once preservation succeeds, prevent fallback to another profile.
-        await BuiltinServerOwner.forPreferences(store.prefs)
-            .clearProfile(profileId);
+        await BuiltinServerOwner.forPreferences(
+          store.prefs,
+        ).clearProfile(profileId);
         _promptShelfDeletionRevisions[profileId] =
             (_promptShelfDeletionRevisions[profileId] ?? 0) + 1;
         // Outstanding saved-prompt Undo handles refuse from here on; a deleted
@@ -7775,8 +7778,11 @@ class ConnectionController extends ChangeNotifier {
           owner.orchestration?.provider == OrchestrationProvider.phoneEngine) {
         await phoneProjectEngine.suspendChatAdmission(owner.id);
       }
-      if (_disposed || _lifecycleSuspended || _connectedProfile?.id != owner.id)
+      if (_disposed ||
+          _lifecycleSuspended ||
+          _connectedProfile?.id != owner.id) {
         return null;
+      }
     }
     return api;
   }
@@ -9009,6 +9015,7 @@ class ConnectionController extends ChangeNotifier {
   @override
   void notifyListeners() {
     _syncConnectionStatusClock();
+    _syncPhoneChatHeartbeat();
     super.notifyListeners();
     // Keep the Android home-screen widget's snapshot in step with session
     // truth; the writer itself skips unchanged payloads. Profile deletion
@@ -10865,12 +10872,6 @@ class ConnectionController extends ChangeNotifier {
     }();
     _activeProfileWrite = write;
     return write;
-  }
-
-  @override
-  void notifyListeners() {
-    _syncPhoneChatHeartbeat();
-    super.notifyListeners();
   }
 
   @override

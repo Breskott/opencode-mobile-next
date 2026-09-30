@@ -81,7 +81,7 @@ internal class PhoneEngineAttestation(private val context: Context) {
         }
         fun write(file: File, bytes: ByteArray) {
             val temporary = File(file.parentFile, ".${file.name}.new")
-            try { Os.unlink(temporary.absolutePath) } catch (e: android.system.ErrnoException) {
+            try { Os.remove(temporary.absolutePath) } catch (e: android.system.ErrnoException) {
                 if (e.errno != OsConstants.ENOENT) throw e
             }
             val fd = Os.open(temporary.absolutePath, OsConstants.O_WRONLY or OsConstants.O_CREAT or

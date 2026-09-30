@@ -18,10 +18,19 @@ class PhoneEngineHealth {
     required this.oc1Verified,
     required this.oc2,
     required this.commandActions,
+    this.admission = 'unknown',
+    this.chatAuthority = 'unknown',
+    this.boundaryReason = '',
+    this.restartRequired = false,
+    this.globalAdmissionAuthority = false,
   });
   final String profileId, engineVersion;
   final bool execution, boundary, oc1Verified, oc2;
   final Set<TeamProjectAction> commandActions;
+
+  /// Admission is separate from supported execution capability.
+  final String admission, chatAuthority, boundaryReason;
+  final bool restartRequired, globalAdmissionAuthority;
   bool get canExecute => execution && boundary && oc1Verified && !oc2;
 
   factory PhoneEngineHealth.fromJson(Object? value, String expectedProfile) {
@@ -56,6 +65,21 @@ class PhoneEngineHealth {
       boundary: flags['boundary'] as bool,
       oc1Verified: flags['oc1Verified'] as bool,
       oc2: flags['oc2'] as bool,
+      admission: switch (value['admission']) {
+        'idle' ||
+        'busy' ||
+        'unknown' ||
+        'observing' => value['admission'] as String,
+        _ => 'unknown',
+      },
+      chatAuthority: value['chatAuthority'] is String
+          ? value['chatAuthority'] as String
+          : 'unknown',
+      boundaryReason: value['boundaryReason'] is String
+          ? value['boundaryReason'] as String
+          : '',
+      restartRequired: value['restartRequired'] == true,
+      globalAdmissionAuthority: value['globalAdmissionAuthority'] == true,
       commandActions: Set.unmodifiable(
         TeamProjectAction.values.where((a) => actions.contains(a.name)),
       ),
