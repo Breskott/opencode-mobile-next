@@ -859,6 +859,33 @@ class TeamTimelineEvent {
       );
 }
 
+/// Latest durable planner checkpoint, separate from project workflow status.
+class TeamPlanningState {
+  const TeamPlanningState({
+    this.jobId = '',
+    this.stage = '',
+    this.reason = '',
+    this.updatedAt = '',
+  });
+  final String jobId;
+  final String stage;
+  final String reason;
+  final String updatedAt;
+  Map<String, Object?> toJson() => {
+    'jobId': jobId,
+    'stage': stage,
+    'reason': reason,
+    'updatedAt': updatedAt,
+  };
+  factory TeamPlanningState.fromJson(Map<String, dynamic> j) =>
+      TeamPlanningState(
+        jobId: j['jobId'] as String? ?? '',
+        stage: j['stage'] as String? ?? '',
+        reason: j['reason'] as String? ?? '',
+        updatedAt: j['updatedAt'] as String? ?? '',
+      );
+}
+
 class TeamProject {
   const TeamProject({
     this.budgetWarning = false,
@@ -876,6 +903,8 @@ class TeamProject {
     this.mergeQueue = const [],
     this.receipts = const [],
     this.timeline = const [],
+    this.planningState,
+    this.timelineTruncated = false,
     this.spent = 0,
     this.spentToday = 0,
     this.spendDay = '',
@@ -901,6 +930,8 @@ class TeamProject {
   final List<TeamMergeItem> mergeQueue;
   final List<TeamProjectReceipt> receipts;
   final List<TeamTimelineEvent> timeline;
+  final TeamPlanningState? planningState;
+  final bool timelineTruncated;
   final double spent;
   final double spentToday;
   final String spendDay;
@@ -926,6 +957,8 @@ class TeamProject {
     List<TeamMergeItem>? mergeQueue,
     List<TeamProjectReceipt>? receipts,
     List<TeamTimelineEvent>? timeline,
+    TeamPlanningState? planningState,
+    bool? timelineTruncated,
     double? spent,
     double? spentToday,
     String? spendDay,
@@ -951,6 +984,8 @@ class TeamProject {
     mergeQueue: mergeQueue ?? this.mergeQueue,
     receipts: receipts ?? this.receipts,
     timeline: timeline ?? this.timeline,
+    planningState: planningState ?? this.planningState,
+    timelineTruncated: timelineTruncated ?? this.timelineTruncated,
     spent: spent ?? this.spent,
     spentToday: spentToday ?? this.spentToday,
     spendDay: spendDay ?? this.spendDay,
@@ -977,6 +1012,8 @@ class TeamProject {
     'mergeQueue': mergeQueue.map((v) => v.toJson()).toList(),
     'receipts': receipts.map((v) => v.toJson()).toList(),
     'timeline': timeline.map((v) => v.toJson()).toList(),
+    'planningState': planningState?.toJson(),
+    'timelineTruncated': timelineTruncated,
     'spent': spent,
     'spentToday': spentToday,
     'spendDay': spendDay,
@@ -1039,6 +1076,12 @@ class TeamProject {
         (v) => TeamTimelineEvent.fromJson(Map<String, dynamic>.from(v as Map)),
       ),
     ),
+    planningState: j['planningState'] == null
+        ? null
+        : TeamPlanningState.fromJson(
+            Map<String, dynamic>.from(j['planningState'] as Map),
+          ),
+    timelineTruncated: j['timelineTruncated'] as bool? ?? false,
     spent: (j['spent'] as num?)?.toDouble() ?? 0,
     spentToday: (j['spentToday'] as num?)?.toDouble() ?? 0,
     spendDay: j['spendDay'] as String? ?? '',

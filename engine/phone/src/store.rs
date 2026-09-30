@@ -84,7 +84,20 @@ impl Store {
     pub fn workspace(&self) -> Result<Value, StoreError> {
         let conn = self.lock()?;
         alive(&conn)?;
-        load_workspace(&conn)
+        let mut workspace = load_workspace(&conn)?;
+        let jobs = load_jobs(&conn)?;
+        for project in workspace["projects"]
+            .as_array_mut()
+            .ok_or(StoreError("storageCorrupt"))?
+        {
+            project["planningState"] = jobs
+                .iter()
+                .rev()
+                .find(|j| j["kind"] == "planner" && j["projectId"] == project["id"])
+                .map(|j| json!({"jobId":j["id"],"stage":j["stage"],"reason":j["reason"].as_str().unwrap_or(""),"updatedAt":j["updatedAt"]}))
+                .unwrap_or(Value::Null);
+        }
+        Ok(workspace)
     }
     pub fn jobs(&self) -> Result<Vec<Value>, StoreError> {
         let conn = self.lock()?;
@@ -250,12 +263,26 @@ impl Store {
         }
         let mut w = load_workspace(&tx)?;
         let mut jobs = load_jobs(&tx)?;
+        let previous_jobs = jobs.clone();
         let mut applied = command.clone();
         if let Some(repos) = imported_repos {
             applied["repos"] = repos.clone();
         }
         let result = match apply_command(&mut w, &mut jobs, &applied) {
             Ok((id, revision)) => {
+                for current in &jobs {
+                    let previous = previous_jobs.iter().find(|j| j["id"] == current["id"]);
+                    if previous.is_none_or(|old| {
+                        old["stage"] != current["stage"] || old["reason"] != current["reason"]
+                    }) {
+                        if let Some(project) = w["projects"]
+                            .as_array_mut()
+                            .and_then(|ps| ps.iter_mut().find(|p| p["id"] == current["projectId"]))
+                        {
+                            append_job_timeline(project, current)?;
+                        }
+                    }
+                }
                 persist(&tx, &w, &jobs)?;
                 event(
                     &tx,
@@ -324,6 +351,7 @@ impl Store {
             return Err(StoreError("staleJobStage"));
         }
         let mut j = jobs[index].clone();
+        let previous_reason = j["reason"].as_str().unwrap_or("").to_owned();
         let pi = w["projects"]
             .as_array()
             .ok_or(StoreError("storageCorrupt"))?
@@ -410,6 +438,37 @@ impl Store {
             } else {
                 j[key] = value.clone();
             }
+        }
+        if stage != expected_stage
+            && !fields.contains_key("reason")
+            && matches!(
+                stage,
+                "starting"
+                    | "running"
+                    | "checking"
+                    | "mergeReady"
+                    | "merging"
+                    | "completed"
+                    | "resuming"
+            )
+            && matches!(
+                j["reason"].as_str(),
+                Some(
+                    "chatBusy"
+                        | "chatStatusUnknown"
+                        | "chatStateUnknown"
+                        | "laneCap"
+                        | "dependencyPending"
+                        | "projectNotRunning"
+                        | "serverOffline"
+                        | "executionUnavailable"
+                        | "boundaryUnverified"
+                        | "protocolUnverified"
+                        | "Protected execution is not verified"
+                )
+            )
+        {
+            j["reason"] = json!("");
         }
         if let Some(usage) = patch.get("usage").filter(|v| !v.is_null()) {
             update_usage(&mut j, usage)?;
@@ -523,6 +582,11 @@ impl Store {
         }
         j["stage"] = json!(stage);
         j["updatedAt"] = json!(now());
+        if !usage_only
+            && (stage != expected_stage || j["reason"].as_str().unwrap_or("") != previous_reason)
+        {
+            append_job_timeline(p, &j)?;
+        }
         jobs[index] = j.clone();
         if !usage_only {
             increment_project(p);
@@ -640,6 +704,7 @@ impl Store {
                         t["reason"] = json!("restartNeedsReconciliation");
                     }
                     p["status"] = json!("interrupted");
+                    append_job_timeline(p, j)?;
                     changed.insert(id);
                 }
             }
@@ -955,6 +1020,73 @@ fn job(w: &Value, p: &Value, task: Option<&Value>) -> Value {
         .cloned()
         .unwrap_or(json!({}));
     json!({"id":new_id("job"),"kind":if task.is_some(){"task"}else{"planner"},"projectId":p["id"],"taskId":task.map(|t|t["id"].clone()).unwrap_or(json!("")),"repoId":repo["id"],"serverId":repo["serverId"],"roleId":role_id,"model":role["model"].as_str().unwrap_or(""),"fallbackModel":role["fallbackModel"].as_str().unwrap_or(""),"instructions":role["instructions"].as_str().unwrap_or(""),"readOnly":task.is_none() || role["readOnly"]==true,"planningRoles":w["roles"].as_array().map(|roles| roles.iter().filter(|r| r["readOnly"] != true && r["id"] != "planner" && r["id"] != "checker").cloned().collect::<Vec<_>>()).unwrap_or_default(),"checkerRole":w["roles"].as_array().and_then(|roles| roles.iter().find(|role| role["id"]=="checker")).cloned().unwrap_or(json!({})),"title":task.map(|t|t["title"].clone()).unwrap_or(p["specDraft"]["goal"].clone()),"spec":p["specDraft"],"criteria":task.map(|t|t["criteria"].clone()).unwrap_or(json!([])),"dependsOn":task.map(|t|t["dependsOn"].clone()).unwrap_or(json!([])),"stage":"queued","directory":null,"sessionIds":{},"sessionUsage":{},"expectedDevCommit":repo["devCommit"].as_str().unwrap_or(""),"expectedMainCommit":repo["mainCommit"].as_str().unwrap_or(""),"usage":{"cost":null,"tokens":null},"createdAt":now(),"updatedAt":now()})
+}
+fn append_job_timeline(project: &mut Value, job: &Value) -> Result<(), StoreError> {
+    let planner = job["kind"] == "planner";
+    let subject = if planner { "Planning" } else { "Work" };
+    let stage = job["stage"].as_str().unwrap_or("");
+    let reason = job["reason"].as_str().unwrap_or("");
+    // Only canned application-authored wording enters timeline copy. The typed
+    // reason remains separate in planningState; no model, path or error text.
+    let suffix = if stage == "stopped" {
+        "is stopped."
+    } else if stage == "paused" {
+        "is paused."
+    } else if stage == "interrupted"
+        && !matches!(
+            reason,
+            "restartNeedsReconciliation" | "pauseNeedsReconciliation"
+        )
+    {
+        "was interrupted and needs review before resuming."
+    } else {
+        match reason {
+            "chatBusy" => "is waiting for your chat reply to finish.",
+            "chatStatusUnknown" | "chatStateUnknown" => "is waiting for chat status to be checked.",
+            "executionUnavailable"
+            | "boundaryUnverified"
+            | "Protected execution is not verified" => {
+                "is waiting for protected execution to be verified."
+            }
+            "protocolUnverified" | "serverOffline" => {
+                "is waiting for the phone server to be checked."
+            }
+            "laneCap" => "is waiting for a free lane.",
+            "dependencyPending" => "is waiting for another task to finish.",
+            "restartNeedsReconciliation" => {
+                "was interrupted when the app stopped. Resume to check its existing session."
+            }
+            "pauseNeedsReconciliation" => "is paused. Resume to check its existing session.",
+            "" => match stage {
+                "queued" => "is queued.",
+                "starting" | "preparing" | "submitting" => "is starting.",
+                "running" | "working" | "planning" => "is running.",
+                "checking" => "is checking acceptance criteria.",
+                "collecting" | "merging" => "is preparing the dev merge.",
+                "completed" if planner => "finished. The plan is ready to review.",
+                "completed" | "merged" => "finished.",
+                "resuming" => "is checking its existing session before resuming.",
+                "paused" => "is paused.",
+                "stopped" => "is stopped.",
+                "interrupted" => "was interrupted and needs review before resuming.",
+                _ => "status changed.",
+            },
+            _ => "is waiting for an execution check.",
+        }
+    };
+    if project["timeline"].is_null() {
+        project["timeline"] = json!([]);
+    }
+    let timeline = project["timeline"]
+        .as_array_mut()
+        .ok_or(StoreError("storageCorrupt"))?;
+    timeline.push(json!({"id":new_id("timeline"),"kind":if planner {"planner"} else {"job"},"text":format!("{subject} {suffix}"),"actor":"engine","at":job["updatedAt"],"taskId":job["taskId"].as_str().unwrap_or("")}));
+    let truncated = timeline.len() > 500;
+    if truncated {
+        timeline.drain(..timeline.len() - 500);
+        project["timelineTruncated"] = json!(true);
+    }
+    Ok(())
 }
 fn validate_plan(w: &Value, p: &Value) -> Result<(), StoreError> {
     let tasks = p["tasks"]
