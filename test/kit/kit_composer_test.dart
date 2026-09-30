@@ -256,7 +256,8 @@ void main() {
     expect(send.left - stop.right, greaterThanOrEqualTo(8));
   });
 
-  testWidgets('Stop is a text1 circle with a ground square; no danger', (
+  // Owner decision (critique 2026-09-29): Stop is always red.
+  testWidgets('Stop is a text1 circle with a red (danger) square', (
     tester,
   ) async {
     final h = _host('');
@@ -272,22 +273,7 @@ void main() {
         matching: find.byType(DecoratedBox),
       ),
     );
-    expect((square.decoration as BoxDecoration).color, roles.ground);
-    for (final box in tester.widgetList<DecoratedBox>(
-      find.descendant(
-        of: find.byType(KitComposer),
-        matching: find.byType(DecoratedBox),
-      ),
-    )) {
-      final d = box.decoration;
-      final color = d is BoxDecoration
-          ? d.color
-          : d is ShapeDecoration
-          ? d.color
-          : null;
-      expect(color, isNot(roles.danger));
-      expect(color, isNot(roles.dangerFill));
-    }
+    expect((square.decoration as BoxDecoration).color, roles.danger);
   });
 
   group('delivery', () {
