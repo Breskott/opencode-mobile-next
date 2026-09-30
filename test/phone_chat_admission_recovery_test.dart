@@ -136,11 +136,36 @@ class _Phone {
     );
     return heartbeats.last;
   }
+
+  Future<void> close() async {
+    connection.dispose();
+    if (!api.healthGate.isCompleted) {
+      api.healthGate.complete(Health(healthy: true, version: '1.18.32'));
+    }
+    await settle(connect);
+    await settle(connection.phoneProjectEngine.close());
+  }
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final secrets = <String, String>{};
+  final phones = <_Phone>[];
+  void phoneTest(String name, Future<void> Function(WidgetTester) body) {
+    testWidgets(name, (tester) async {
+      try {
+        await body(tester);
+      } finally {
+        // Flutter verifies periodic timers before addTearDown callbacks run.
+        // Drain/dispose fixture ownership inside the test body instead.
+        for (final phone in phones.reversed) {
+          await phone.close();
+        }
+        phones.clear();
+      }
+    });
+  }
+
   setUp(() {
     addTearDown(AutomaticActivityController.resetShared);
     addTearDown(AutomationPolicyController.resetShared);
@@ -230,20 +255,12 @@ void main() {
     api.setLocation(directory: connection.directory);
     connection.status = StreamStatus.connected;
     final phone = _Phone(tester, connection, api, connecting, beats);
+    phones.add(phone);
     await phone.heartbeat();
-    addTearDown(() async {
-      // Dispose first in the fake-clock zone so all periodic timers stop.
-      connection.dispose();
-      if (!api.healthGate.isCompleted) {
-        api.healthGate.complete(Health(healthy: true, version: '1.18.32'));
-      }
-      await phone.settle(connecting);
-      await phone.settle(connection.phoneProjectEngine.close());
-    });
     return phone;
   }
 
-  testWidgets('idle UNKNOWN recovers on the managed phone polling lane', (
+  phoneTest('idle UNKNOWN recovers on the managed phone polling lane', (
     tester,
   ) async {
     final phone = await boot(tester);
@@ -262,30 +279,29 @@ void main() {
     expect((await phone.heartbeat())['known'], isTrue);
   });
 
-  testWidgets(
-    'fresh busy and retry IDs without metadata block idle admission',
-    (tester) async {
-      final phone = await boot(tester);
-      phone.api.statuses = {
-        'ses_unknown_person': 'busy',
-        'ses_unknown_retry': 'retry',
-      };
-      await phone.connection.reconcileBusySessionsForTesting();
-      final beat = await phone.heartbeat();
-      expect(beat['known'], isTrue);
-      expect(
-        beat['sessionIds'],
-        containsAll(['ses_unknown_person', 'ses_unknown_retry']),
-      );
-      expect(phone.connection.sessionsById, isEmpty);
-      expect(
-        phone.connection.busySessions,
-        containsAll(['ses_unknown_person', 'ses_unknown_retry']),
-      );
-    },
-  );
+  phoneTest('fresh busy and retry IDs without metadata block idle admission', (
+    tester,
+  ) async {
+    final phone = await boot(tester);
+    phone.api.statuses = {
+      'ses_unknown_person': 'busy',
+      'ses_unknown_retry': 'retry',
+    };
+    await phone.connection.reconcileBusySessionsForTesting();
+    final beat = await phone.heartbeat();
+    expect(beat['known'], isTrue);
+    expect(
+      beat['sessionIds'],
+      containsAll(['ses_unknown_person', 'ses_unknown_retry']),
+    );
+    expect(phone.connection.sessionsById, isEmpty);
+    expect(
+      phone.connection.busySessions,
+      containsAll(['ses_unknown_person', 'ses_unknown_retry']),
+    );
+  });
 
-  testWidgets(
+  phoneTest(
     'unknown phone status is refreshed even while session page loading is pending',
     (tester) async {
       final phone = await boot(tester);
@@ -298,32 +314,31 @@ void main() {
     },
   );
 
-  testWidgets(
-    'directory and transport scope changes reject late status reads',
-    (tester) async {
-      final phone = await boot(tester);
-      final gate = phone.api.statusGate = Completer<Map<String, String>>();
-      final reading = phone.connection.reconcileBusySessionsForTesting();
-      phone.connection.directory = '/root/projects/other';
-      phone.api.setLocation(directory: phone.connection.directory);
-      gate.complete({'ses_old_directory': 'busy'});
-      await reading;
-      expect(phone.connection.busySessions, isEmpty);
-      expect((await phone.heartbeat())['known'], isFalse);
-      phone.api.statusGate = null;
-      await phone.connection.reconcileBusySessionsForTesting();
-      expect((await phone.heartbeat())['known'], isTrue);
-      final old = phone.api.statusGate = Completer<Map<String, String>>();
-      final retired = phone.connection.reconcileBusySessionsForTesting();
-      phone.connection.suspendForLifecycle();
-      old.complete({'ses_old_generation': 'busy'});
-      await retired;
-      expect(phone.connection.busySessions, isEmpty);
-      expect((await phone.heartbeat())['known'], isFalse);
-    },
-  );
+  phoneTest('directory and transport scope changes reject late status reads', (
+    tester,
+  ) async {
+    final phone = await boot(tester);
+    final gate = phone.api.statusGate = Completer<Map<String, String>>();
+    final reading = phone.connection.reconcileBusySessionsForTesting();
+    phone.connection.directory = '/root/projects/other';
+    phone.api.setLocation(directory: phone.connection.directory);
+    gate.complete({'ses_old_directory': 'busy'});
+    await reading;
+    expect(phone.connection.busySessions, isEmpty);
+    expect((await phone.heartbeat())['known'], isFalse);
+    phone.api.statusGate = null;
+    await phone.connection.reconcileBusySessionsForTesting();
+    expect((await phone.heartbeat())['known'], isTrue);
+    final old = phone.api.statusGate = Completer<Map<String, String>>();
+    final retired = phone.connection.reconcileBusySessionsForTesting();
+    phone.connection.suspendForLifecycle();
+    old.complete({'ses_old_generation': 'busy'});
+    await retired;
+    expect(phone.connection.busySessions, isEmpty);
+    expect((await phone.heartbeat())['known'], isFalse);
+  });
 
-  testWidgets('a delayed session page cannot overwrite a newer busy poll', (
+  phoneTest('a delayed session page cannot overwrite a newer busy poll', (
     tester,
   ) async {
     final phone = await boot(tester);
@@ -338,9 +353,7 @@ void main() {
     expect(phone.heartbeats.last['sessionIds'], contains('ses_new_person'));
   });
 
-  testWidgets('newer SSE UNKNOWN fences a pending idle snapshot', (
-    tester,
-  ) async {
+  phoneTest('newer SSE UNKNOWN fences a pending idle snapshot', (tester) async {
     final phone = await boot(tester);
     final gate = phone.api.statusGate = Completer<Map<String, String>>();
     final reading = phone.connection.reconcileBusySessionsForTesting();
@@ -358,7 +371,7 @@ void main() {
     expect((await phone.heartbeat())['known'], isFalse);
   });
 
-  testWidgets('newer busy SSE evidence wins over an older idle snapshot', (
+  phoneTest('newer busy SSE evidence wins over an older idle snapshot', (
     tester,
   ) async {
     final phone = await boot(tester);
@@ -381,7 +394,7 @@ void main() {
     );
   });
 
-  testWidgets('status timeout and malformed snapshots remain UNKNOWN', (
+  phoneTest('status timeout and malformed snapshots remain UNKNOWN', (
     tester,
   ) async {
     final phone = await boot(tester);
@@ -400,7 +413,7 @@ void main() {
     expect((await phone.heartbeat())['known'], isTrue);
   });
 
-  testWidgets(
+  phoneTest(
     'pending real chat dispatch keeps fresh busy heartbeats during polling',
     (tester) async {
       final phone = await boot(tester);
