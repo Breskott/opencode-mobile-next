@@ -420,4 +420,35 @@ void main() {
       api.close();
     },
   );
+  test(
+    'heartbeat HTTP success without affirmative accepted body is not an ACK',
+    () async {
+      final now = DateTime.utc(2026, 9, 30);
+      for (final response in [
+        <String, dynamic>{},
+        {'accepted': false},
+        {'accepted': 'true'},
+      ]) {
+        final client = PhoneEngineGateway(
+          baseUrl: 'http://127.0.0.1:4098',
+          profileId: 'phone',
+          bearerToken: 'fake-private-token',
+          now: () => now,
+          adapter: FakeEngineAdapter((_) async => jsonBody(response)),
+        );
+        await expectLater(
+          client.sendChatBusy(
+            until: now.millisecondsSinceEpoch + 30000,
+            sessionIds: ['person'],
+            directories: ['/chat'],
+            known: true,
+            appInstance: 'app-1',
+            sequence: 1,
+          ),
+          throwsA(safeError('chatAdmissionUnavailable')),
+        );
+        await client.close();
+      }
+    },
+  );
 }

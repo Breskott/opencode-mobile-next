@@ -414,6 +414,9 @@ void main() {
       tracker.reconcile({}, tracker.epoch, '/another');
       expect(tracker.sessionIds, ['person']);
       tracker.reconcile({}, tracker.epoch, '/chat');
+      expect(tracker.sessionIds, ['person']);
+      tracker.observeBusy('person');
+      tracker.reconcile({}, tracker.epoch, '/chat');
       expect(tracker.sessionIds, isEmpty);
     },
   );
@@ -425,13 +428,10 @@ void main() {
     tracker.reconcile({}, tracker.epoch, '/chat');
     expect(tracker.sessionIds, ['person']);
     tracker.settled('person');
+    tracker.reconcile({}, tracker.epoch, '/chat');
+    expect(tracker.sessionIds, ['person']); // Async start is still unobserved.
     tracker.reconcile({'person': 'busy'}, tracker.epoch, '/chat');
     expect(tracker.sessionIds, ['person']);
-    tracker.reconcile({}, tracker.epoch, '/chat');
-    expect(tracker.sessionIds, [
-      'person',
-    ]); // Accepted async prompt may not have started yet.
-    tracker.observeBusy('person');
     tracker.reconcile({}, tracker.epoch, '/chat');
     expect(tracker.sessionIds, isEmpty);
   });
@@ -526,10 +526,14 @@ void main() {
                       await release.future;
                       order.add('heartbeat');
                     }
-                    if (r.method == 'DELETE') order.add('delete');
+                    if (r.method == 'DELETE') {
+                      order.add('delete');
+                    }
                     return fake.jsonBody(
                       r.path == '/v1/health'
                           ? fake.health(profileId)
+                          : r.path == '/v1/chatBusy'
+                          ? {'accepted': true}
                           : {'deleted': true},
                     );
                   }),
@@ -550,6 +554,23 @@ void main() {
       await engine.pushChatHeartbeat('phone');
       expect(order.length, count);
       await engine.close();
+    },
+  );
+  test(
+    'older busy while overlapping dispatch is pending cannot prove its start',
+    () {
+      final tracker = PhoneChatDispatchTracker();
+      tracker.begin('person', '/chat');
+      tracker.begin('person', '/chat');
+      tracker.observeBusy('person');
+      tracker.settled('person');
+      tracker.observeBusy('person');
+      tracker.settled('person');
+      tracker.reconcile({}, tracker.epoch, '/chat');
+      expect(tracker.sessionIds, ['person']);
+      tracker.reconcile({'person': 'retry'}, tracker.epoch, '/chat');
+      tracker.reconcile({}, tracker.epoch, '/chat');
+      expect(tracker.sessionIds, isEmpty);
     },
   );
   test('unsent later prompt cannot clear an older uncertain turn latch', () {

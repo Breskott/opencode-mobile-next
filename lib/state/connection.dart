@@ -899,7 +899,9 @@ class ConnectionController extends ChangeNotifier {
       _attentionTransportRevision++;
     }
     _status = value;
-    if (value != StreamStatus.connected) _phoneChatStatusKnown = false;
+    if (value != StreamStatus.connected) {
+      _phoneChatStatusKnown = false;
+    }
     _syncConnectionStatusClock();
     _syncPhoneChatHeartbeat();
   }

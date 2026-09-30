@@ -122,7 +122,9 @@ class PhoneChatDispatchTracker {
         pending: pending,
         settledEpoch: ++epoch,
         directory: turn.directory,
-        started: turn.started,
+        // An overlapping request can observe the earlier turn still busy.
+        // Require a new busy observation after this batch settles.
+        started: turn.started && !turn.retained,
         retained: turn.retained,
       );
     }
