@@ -90,7 +90,7 @@ The QA APK certificate matches original APK 2082 / local release certificate `1D
 
 ## Final live result (completed 2026-10-01 Asia/Dubai)
 
-The exact final staged/parser bundle passed on OC_API35. Actual assistant message records for all three owned sessions confirm **zai-coding-plan/glm-5.3**; planner and task job rows are durably `completed`. The worker/checker sessions are distinct. No provider key, engine token, session text or existing person-project data was exported. QA profile: `qa_4792c7ec4fda466c8ff51b71d78ec456`.
+The exact final staged/parser bundle passed on OC_API35. Actual assistant message records for all three owned sessions confirm **zai-coding-plan/glm-5.3**; planner and task job rows are durably `completed`. The worker/checker sessions are distinct. No provider key, engine token or existing person-project data was exported. A bounded part of the owned failed QA checker response was inspected during diagnosis; no response text was saved in the committed evidence. QA profile: `qa_4792c7ec4fda466c8ff51b71d78ec456`.
 
 | Step | Result | Evidence |
 | --- | --- | --- |
