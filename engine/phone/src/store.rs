@@ -258,6 +258,7 @@ impl Store {
             "criterionResults",
             "repoReceipt",
             "sessionUsage",
+            "promptDispatch",
         ];
         let fields = patch.as_object().ok_or(StoreError("invalidJobPatch"))?;
         if fields.keys().any(|k| !allowed.contains(&k.as_str()))
@@ -295,6 +296,14 @@ impl Store {
         if !valid_transition(expected_stage, stage) {
             return Err(StoreError("invalidJobTransition"));
         }
+        let usage_only = stage == expected_stage
+            && fields
+                .keys()
+                .all(|key| matches!(key.as_str(), "stage" | "usage" | "sessionUsage"))
+            && (fields.contains_key("usage") || fields.contains_key("sessionUsage"));
+        if stage == "interrupted" && expected_stage != "interrupted" {
+            checkpoint_interruption(&mut j, expected_stage);
+        }
         if (p["status"] == "paused" || p["status"] == "pausedBudget")
             && stage != expected_stage
             && !matches!(stage, "interrupted" | "paused" | "stopped")
@@ -314,7 +323,27 @@ impl Store {
             ) {
                 continue;
             }
-            if key == "sessionIds" {
+            if key == "promptDispatch" {
+                let dispatches = value.as_object().ok_or(StoreError("invalidJobPatch"))?;
+                for (role, state) in dispatches {
+                    if !["planner", "worker", "checker"].contains(&role.as_str())
+                        || j["sessionIds"][role]
+                            .as_str()
+                            .or_else(|| patch["sessionIds"][role].as_str())
+                            .is_none()
+                        || !matches!(state.as_str(), Some("dispatching" | "dispatched"))
+                    {
+                        return Err(StoreError("invalidJobPatch"));
+                    }
+                    if j["promptDispatch"][role] == "dispatched" && state != "dispatched" {
+                        return Err(StoreError("promptAlreadyDispatched"));
+                    }
+                    if j["promptDispatch"].is_null() {
+                        j["promptDispatch"] = json!({});
+                    }
+                    j["promptDispatch"][role] = state.clone();
+                }
+            } else if key == "sessionIds" {
                 let sessions = value.as_object().ok_or(StoreError("invalidJobPatch"))?;
                 for (role, session) in sessions {
                     if !["planner", "worker", "checker"].contains(&role.as_str())
@@ -431,7 +460,9 @@ impl Store {
                 }
             }
             task["status"] = json!(task_status(stage));
-            task["changedAt"] = json!(now());
+            if !usage_only {
+                task["changedAt"] = json!(now());
+            }
             if let Some(reason) = patch.get("reason") {
                 task["reason"] = reason.clone();
             }
@@ -443,14 +474,21 @@ impl Store {
         j["stage"] = json!(stage);
         j["updatedAt"] = json!(now());
         jobs[index] = j.clone();
-        increment_project(p);
+        if !usage_only {
+            increment_project(p);
+        }
+        if fields.contains_key("usage") || fields.contains_key("sessionUsage") {
+            p["usageRevision"] = json!(p["usageRevision"].as_u64().unwrap_or(0) + 1);
+            jobs[index]["usageRevision"] = json!(j["usageRevision"].as_u64().unwrap_or(0) + 1);
+            j = jobs[index].clone();
+        }
         w["revision"] = json!(w["revision"].as_u64().unwrap_or(0) + 1);
         aggregate_usage(&mut w, &jobs);
         persist(&tx, &w, &jobs)?;
         event(
             &tx,
-            "job",
-            stage,
+            if usage_only { "usage" } else { "job" },
+            if usage_only { "sessionUsage" } else { stage },
             j["projectId"].as_str().unwrap_or(""),
             j["taskId"].as_str().unwrap_or(""),
             w["projects"][pi]["revision"].as_u64().unwrap_or(0),
@@ -534,6 +572,8 @@ impl Store {
         let mut changed = HashSet::new();
         for j in &mut jobs {
             if crate::scheduler::active_stage(j["stage"].as_str().unwrap_or("")) {
+                let stage = j["stage"].as_str().unwrap_or("").to_owned();
+                checkpoint_interruption(j, &stage);
                 j["stage"] = json!("interrupted");
                 j["reason"] = json!("restartNeedsReconciliation");
                 j["updatedAt"] = json!(now());
@@ -1199,12 +1239,11 @@ fn apply_command(
                         if p["status"] == "stopped" {
                             return Err(StoreError("projectStopped"));
                         }
-                        // Interrupted sessions remain interrupted and require driver reconciliation.
-                        for j in jobs
-                            .iter_mut()
-                            .filter(|j| j["projectId"] == id && j["stage"] == "paused")
-                        {
-                            j["stage"] = json!("queued");
+                        for j in jobs.iter_mut().filter(|j| {
+                            j["projectId"] == id
+                                && matches!(j["stage"].as_str(), Some("paused" | "interrupted"))
+                        }) {
+                            resume_job_checkpoint(j)?;
                         }
                         p["status"] = json!(if p["planApproved"] == true {
                             "running"
@@ -1240,13 +1279,14 @@ fn apply_command(
                         match action {
                             "pauseTask" => pause_job(j),
                             "resumeTask" => {
-                                if j["stage"] == "interrupted" {
-                                    return Err(StoreError("needsReconciliation"));
+                                resume_job_checkpoint(j)?;
+                                if p["status"] == "interrupted" {
+                                    p["status"] = json!(if p["planApproved"] == true {
+                                        "running"
+                                    } else {
+                                        "planning"
+                                    });
                                 }
-                                if j["stage"] != "paused" {
-                                    return Err(StoreError("taskNotPaused"));
-                                }
-                                j["stage"] = json!("queued");
                             }
                             _ => {
                                 if c["confirmed"] != true {
@@ -1276,9 +1316,90 @@ fn pause_job(j: &mut Value) {
     if j["stage"] == "queued" {
         j["stage"] = json!("paused");
     } else if crate::scheduler::active_stage(j["stage"].as_str().unwrap_or("")) {
+        let stage = j["stage"].as_str().unwrap_or("").to_owned();
+        checkpoint_interruption(j, &stage);
         j["stage"] = json!("interrupted");
         j["reason"] = json!("pauseNeedsReconciliation");
     }
+}
+fn checkpoint_interruption(j: &mut Value, stage: &str) {
+    // Repeated process deaths while reconciling must retain the original stage.
+    if stage != "resuming" {
+        j["resumeStage"] = json!(stage);
+    }
+}
+fn resume_job_checkpoint(j: &mut Value) -> Result<(), StoreError> {
+    if !matches!(j["stage"].as_str(), Some("paused" | "interrupted")) {
+        return Err(StoreError("taskNotPaused"));
+    }
+    let sessions = j["sessionIds"]
+        .as_object()
+        .ok_or(StoreError("needsReconciliation"))?;
+    let dispatches = j.get("promptDispatch").and_then(Value::as_object);
+    if j.get("promptDispatch")
+        .is_some_and(|v| !v.is_null() && !v.is_object())
+    {
+        return Err(StoreError("needsReconciliation"));
+    }
+    if sessions.is_empty() {
+        // No recorded session is safe only before dispatch, and never after an
+        // uncertain session creation (an unrecorded session may already exist).
+        let safe_stage = j["stage"] == "paused"
+            || matches!(
+                j["resumeStage"].as_str(),
+                Some("queued" | "starting" | "preparing")
+            );
+        if !safe_stage
+            || dispatches.is_some_and(|d| !d.is_empty())
+            || matches!(
+                j["reason"].as_str(),
+                Some("promptUncertain" | "sessionCreateUncertain")
+            )
+        {
+            return Err(StoreError("needsReconciliation"));
+        }
+        j["stage"] = json!("queued");
+    } else {
+        let role = if sessions.contains_key("checker") {
+            "checker"
+        } else if j["kind"] == "planner" {
+            "planner"
+        } else {
+            "worker"
+        };
+        if sessions
+            .get(role)
+            .and_then(Value::as_str)
+            .filter(|s| !s.is_empty())
+            .is_none()
+            || j["directory"].as_str().filter(|s| !s.is_empty()).is_none()
+            || !matches!(
+                j["resumeStage"].as_str(),
+                Some(
+                    "starting"
+                        | "planning"
+                        | "running"
+                        | "working"
+                        | "checking"
+                        | "mergeReady"
+                        | "merging"
+                        | "submitting"
+                )
+            )
+            || !dispatches
+                .and_then(|d| d.get(role))
+                .is_some_and(|state| matches!(state.as_str(), Some("dispatching" | "dispatched")))
+            || (role == "checker" && j["taskCommit"].as_str().filter(|s| !s.is_empty()).is_none())
+        {
+            return Err(StoreError("needsReconciliation"));
+        }
+        // The daemon observes this exact session; resuming never calls prompt
+        // again, including when its acknowledgment was lost.
+        j["stage"] = json!("resuming");
+    }
+    j["reason"] = json!("");
+    j["updatedAt"] = json!(now());
+    Ok(())
 }
 fn sync_task_stages(p: &mut Value, jobs: &[Value]) {
     let id = p["id"].clone();

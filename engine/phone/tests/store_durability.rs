@@ -22,6 +22,37 @@ fn create(request: &str) -> Value {
 fn command(request: &str, action: &str, id: &str, revision: u64) -> Value {
     json!({"requestId":request,"action":action,"projectId":id,"expectedRevision":revision})
 }
+fn current_command(store: &Store, request: &str, action: &str, id: &str) -> Value {
+    let w = store.workspace().unwrap();
+    let p = w["projects"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["id"] == id)
+        .unwrap();
+    command(request, action, id, p["revision"].as_u64().unwrap())
+}
+fn prepared_task(store: &Store) -> (String, String) {
+    let (project, _) = prepared(store);
+    assert_eq!(
+        store
+            .execute(&current_command(store, "plan", "approvePlan", &project))
+            .unwrap()["accepted"],
+        true
+    );
+    let task = store
+        .jobs()
+        .unwrap()
+        .into_iter()
+        .find(|j| j["kind"] == "task")
+        .unwrap();
+    (project, task["id"].as_str().unwrap().to_owned())
+}
+fn resume_task(store: &Store, request: &str, project: &str) -> Value {
+    let mut c = current_command(store, request, "resumeTask", project);
+    c["targetId"] = json!("task");
+    store.execute(&c).unwrap()
+}
 fn prepared(store: &Store) -> (String, String) {
     let created = store.execute(&create("create")).unwrap();
     let id = created["projectId"].as_str().unwrap().to_owned();
@@ -448,4 +479,278 @@ fn session_snapshots_sum_once_and_a_new_session_keeps_unknown_usage_unknown() {
         .unwrap();
     assert_eq!(known["usage"]["cost"], 0.75);
     assert_eq!(known["usage"]["tokens"], 30);
+}
+
+#[test]
+fn restarted_worker_resumes_only_its_recorded_uncertain_turn_and_keeps_checkpoint() {
+    let root = storage();
+    let store = Store::open(root.path(), "p").unwrap();
+    let (project, job) = prepared_task(&store);
+    store
+        .update_job(&job, "queued", &json!({"stage":"starting"}))
+        .unwrap();
+    store.update_job(&job, "starting", &json!({"stage":"running","directory":"/root/work/task","sessionIds":{"worker":"original-worker"}})).unwrap();
+    store
+        .update_job(
+            &job,
+            "running",
+            &json!({"promptDispatch":{"worker":"dispatching"}}),
+        )
+        .unwrap();
+    drop(store);
+    let store = Store::open(root.path(), "p").unwrap();
+    store.recover().unwrap();
+    assert_eq!(store.jobs().unwrap()[1]["resumeStage"], "running");
+    // Merely reopening never grants admission: a user command is required.
+    assert_eq!(store.jobs().unwrap()[1]["stage"], "interrupted");
+    assert_eq!(resume_task(&store, "resume", &project)["accepted"], true);
+    let resumed = store.jobs().unwrap()[1].clone();
+    assert_eq!(resumed["stage"], "resuming");
+    assert_eq!(resumed["sessionIds"]["worker"], "original-worker");
+    assert_eq!(resumed["promptDispatch"]["worker"], "dispatching");
+    assert_eq!(resumed["directory"], "/root/work/task");
+    assert_eq!(
+        store.workspace().unwrap()["projects"][0]["status"],
+        "running"
+    );
+    drop(store);
+    let store = Store::open(root.path(), "p").unwrap();
+    store.recover().unwrap();
+    assert_eq!(store.jobs().unwrap()[1]["resumeStage"], "running");
+    assert_eq!(
+        resume_task(&store, "resume-again", &project)["accepted"],
+        true
+    );
+    assert_eq!(
+        store.jobs().unwrap()[1]["sessionIds"],
+        resumed["sessionIds"]
+    );
+}
+
+#[test]
+fn explicit_project_resume_reconciles_checker_without_replacing_its_turn() {
+    let root = storage();
+    let store = Store::open(root.path(), "p").unwrap();
+    let (project, job) = prepared_task(&store);
+    store
+        .update_job(&job, "queued", &json!({"stage":"starting"}))
+        .unwrap();
+    store.update_job(&job, "starting", &json!({"stage":"running","directory":"/root/work/task","sessionIds":{"worker":"worker"}})).unwrap();
+    store
+        .update_job(
+            &job,
+            "running",
+            &json!({"promptDispatch":{"worker":"dispatched"}}),
+        )
+        .unwrap();
+    store.update_job(&job, "running", &json!({"stage":"checking","sessionIds":{"checker":"checker"},"taskCommit":"checked-commit"})).unwrap();
+    store
+        .update_job(
+            &job,
+            "checking",
+            &json!({"promptDispatch":{"checker":"dispatched"}}),
+        )
+        .unwrap();
+    assert_eq!(
+        store
+            .execute(&current_command(&store, "pause", "pauseProject", &project))
+            .unwrap()["accepted"],
+        true
+    );
+    let paused = store.jobs().unwrap()[1].clone();
+    assert_eq!(paused["resumeStage"], "checking");
+    assert_eq!(
+        store
+            .execute(&current_command(
+                &store,
+                "resume-project",
+                "resumeProject",
+                &project
+            ))
+            .unwrap()["accepted"],
+        true
+    );
+    let resumed = store.jobs().unwrap()[1].clone();
+    assert_eq!(resumed["stage"], "resuming");
+    assert_eq!(resumed["taskCommit"], "checked-commit");
+    assert_eq!(resumed["sessionIds"], paused["sessionIds"]);
+    assert_eq!(resumed["promptDispatch"], paused["promptDispatch"]);
+}
+
+#[test]
+fn undispatched_restart_can_requeue_but_uncertain_session_or_prompt_cannot() {
+    for reason in [
+        None,
+        Some("sessionCreateUncertain"),
+        Some("promptUncertain"),
+    ] {
+        let root = storage();
+        let store = Store::open(root.path(), "p").unwrap();
+        let (project, job) = prepared_task(&store);
+        store
+            .update_job(&job, "queued", &json!({"stage":"starting"}))
+            .unwrap();
+        if let Some(reason) = reason {
+            store
+                .update_job(
+                    &job,
+                    "starting",
+                    &json!({"stage":"interrupted","reason":reason}),
+                )
+                .unwrap();
+        } else {
+            store.recover().unwrap();
+        }
+        let before = store.jobs().unwrap();
+        let result = resume_task(&store, "resume", &project);
+        if reason.is_some() {
+            assert_eq!(result["code"], "needsReconciliation");
+            assert_eq!(store.jobs().unwrap(), before);
+        } else {
+            assert_eq!(result["accepted"], true);
+            let resumed = store.jobs().unwrap()[1].clone();
+            assert_eq!(resumed["stage"], "queued");
+            assert_eq!(resumed["sessionIds"], json!({}));
+            assert!(resumed["promptDispatch"].is_null());
+        }
+    }
+}
+
+#[test]
+fn missing_dispatch_checkpoint_and_missing_checker_commit_fail_closed() {
+    for checker in [false, true] {
+        let root = storage();
+        let store = Store::open(root.path(), "p").unwrap();
+        let (project, job) = prepared_task(&store);
+        store
+            .update_job(&job, "queued", &json!({"stage":"starting"}))
+            .unwrap();
+        store.update_job(&job, "starting", &json!({"stage":"running","directory":"/root/work/task","sessionIds":{"worker":"worker"}})).unwrap();
+        if checker {
+            store
+                .update_job(
+                    &job,
+                    "running",
+                    &json!({"stage":"checking","sessionIds":{"checker":"checker"}}),
+                )
+                .unwrap();
+            store
+                .update_job(
+                    &job,
+                    "checking",
+                    &json!({"promptDispatch":{"checker":"dispatched"}}),
+                )
+                .unwrap();
+        }
+        store.recover().unwrap();
+        let before = store.workspace().unwrap();
+        let jobs = store.jobs().unwrap();
+        assert_eq!(
+            resume_task(&store, "resume", &project)["code"],
+            "needsReconciliation"
+        );
+        assert_eq!(store.workspace().unwrap(), before);
+        assert_eq!(store.jobs().unwrap(), jobs);
+    }
+}
+
+#[test]
+fn prompt_acknowledgment_is_monotonic_and_durable() {
+    let root = storage();
+    let store = Store::open(root.path(), "p").unwrap();
+    let (_, job) = prepared_task(&store);
+    store
+        .update_job(
+            &job,
+            "queued",
+            &json!({"stage":"starting","sessionIds":{"worker":"worker"}}),
+        )
+        .unwrap();
+    store
+        .update_job(
+            &job,
+            "starting",
+            &json!({"promptDispatch":{"worker":"dispatching"}}),
+        )
+        .unwrap();
+    store
+        .update_job(
+            &job,
+            "starting",
+            &json!({"promptDispatch":{"worker":"dispatched"}}),
+        )
+        .unwrap();
+    assert_eq!(
+        store
+            .update_job(
+                &job,
+                "starting",
+                &json!({"promptDispatch":{"worker":"dispatching"}})
+            )
+            .unwrap_err()
+            .code(),
+        "promptAlreadyDispatched"
+    );
+    drop(store);
+    assert_eq!(
+        Store::open(root.path(), "p").unwrap().jobs().unwrap()[1]["promptDispatch"]["worker"],
+        "dispatched"
+    );
+}
+
+#[test]
+fn usage_changes_workspace_snapshot_without_invalidating_user_revision() {
+    let root = storage();
+    let store = Store::open(root.path(), "p").unwrap();
+    let (project, job) = prepared_task(&store);
+    store
+        .update_job(
+            &job,
+            "queued",
+            &json!({"stage":"starting","sessionIds":{"worker":"worker"}}),
+        )
+        .unwrap();
+    let before = store.workspace().unwrap();
+    let pause = current_command(&store, "pause", "pauseProject", &project);
+    let old_events = store.events(0, 100).unwrap();
+    for tokens in 1..=3 {
+        store
+            .update_job(
+                &job,
+                "starting",
+                &json!({"sessionUsage":{"worker":{"tokens":tokens,"cost":null}}}),
+            )
+            .unwrap();
+    }
+    let after = store.workspace().unwrap();
+    assert_eq!(
+        after["projects"][0]["revision"],
+        before["projects"][0]["revision"]
+    );
+    assert!(after["revision"].as_u64().unwrap() > before["revision"].as_u64().unwrap());
+    assert_eq!(after["projects"][0]["usageRevision"], 3);
+    assert_eq!(after["projects"][0]["usageReported"], false);
+    assert_eq!(after["projects"][0]["tasks"][0]["tokens"], 3);
+    assert_eq!(store.jobs().unwrap()[1]["usage"]["cost"], Value::Null);
+    let ticks = store
+        .events(old_events.last().unwrap()["seq"].as_i64().unwrap(), 100)
+        .unwrap();
+    assert_eq!(ticks.len(), 3);
+    assert!(ticks.iter().all(|e| e["kind"] == "usage"
+        && e["action"] == "sessionUsage"
+        && e["revision"] == before["projects"][0]["revision"]));
+    drop(store);
+    let store = Store::open(root.path(), "p").unwrap();
+    assert_eq!(
+        store.workspace().unwrap()["projects"][0]["usageRevision"],
+        3
+    );
+    // The exact user revision obtained before three ticks is still valid.
+    assert_eq!(store.execute(&pause).unwrap()["accepted"], true);
+    assert!(
+        store.workspace().unwrap()["projects"][0]["revision"]
+            .as_u64()
+            .unwrap()
+            > before["projects"][0]["revision"].as_u64().unwrap()
+    );
 }
