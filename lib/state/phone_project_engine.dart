@@ -314,6 +314,7 @@ class PhoneProjectEngineController {
     PhoneProjectEngineBridge? bridge,
     PhoneEngineGatewayBuilder? gatewayBuilder,
     this.onAttached,
+    this.onReady,
     this.chatSource,
     this.chatSchedule,
     this.chatActive,
@@ -321,6 +322,10 @@ class PhoneProjectEngineController {
        _build = gatewayBuilder ?? _defaultBuild;
   final ProfileStore store;
   final void Function(String profileId)? onAttached;
+
+  /// One attach/start completion signal, after saved credentials and producer
+  /// ownership. A health poll alone never requests app transport recovery.
+  final void Function(String profileId)? onReady;
   final PhoneChatSource? chatSource;
   final bool Function(String profileId)? chatActive;
   final Set<String> _admissionSuspended = {};
@@ -488,10 +493,19 @@ class PhoneProjectEngineController {
         throw const PhoneEngineException('profileDeleted');
       }
       await stopChatHeartbeat(profileId, publishUnknown: false);
+      if (_closed) {
+        throw const PhoneEngineException('engineClosed');
+      }
+      if (_blocked(profileId)) {
+        throw const PhoneEngineException('profileDeleted');
+      }
       _admissionSuspended.remove(profileId);
       _admissionRequired.remove(profileId);
       startChatHeartbeat(profileId);
       onAttached?.call(profileId);
+      if (h.canExecute && !_closed && !_blocked(profileId)) {
+        onReady?.call(profileId);
+      }
       return h;
     } finally {
       await client.close();

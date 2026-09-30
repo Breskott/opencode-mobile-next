@@ -1319,6 +1319,7 @@ class ConnectionController extends ChangeNotifier {
         bridge: _phoneEngineBridge,
         gatewayBuilder: _phoneEngineGatewayBuilder,
         onAttached: _phoneEngineAttached,
+        onReady: _phoneEngineReady,
         chatSource: _phoneChatSnapshot,
         chatActive: _phoneChatEligible,
       );
@@ -1525,6 +1526,16 @@ class ConnectionController extends ChangeNotifier {
     // The sibling changed hands (or went away); screens showing its state
     // rebuild from here, as they do for every other controller change.
     if (!_disposed) notifyListeners();
+  }
+
+  void _phoneEngineReady(String profileId) {
+    if (_lifecycleSuspended || !_phoneChatEligible(profileId) || isConnected) {
+      return;
+    }
+    // Protected setup deliberately retires the old phone server. Recover a
+    // retained failed transport through the ordinary generation-fenced path;
+    // fresh status/SSE, not engine readiness, owns connection and chat truth.
+    unawaited(retryConnection().catchError((Object _) {}));
   }
 
   void _phoneEngineAttached(String profileId) {
