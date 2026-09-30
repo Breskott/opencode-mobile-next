@@ -19,7 +19,9 @@ class PhoneEngineGateway extends NullOrchestrationGateway
     HttpClientAdapter? adapter,
     this.pollInterval = const Duration(seconds: 3),
     Duration timeout = const Duration(seconds: 15),
-  }) : _health = health {
+    DateTime Function()? now,
+  }) : _health = health,
+       _now = now ?? DateTime.now {
     final uri = Uri.tryParse(baseUrl);
     if (uri == null ||
         !uri.hasAuthority ||
@@ -56,6 +58,7 @@ class PhoneEngineGateway extends NullOrchestrationGateway
     if (adapter != null) _dio.httpClientAdapter = adapter;
   }
   final String profileId;
+  final DateTime Function() _now;
   final OrchestrationCapabilities? probedCapabilities;
   late final String _bearerToken;
   final Duration pollInterval;
@@ -331,6 +334,45 @@ class PhoneEngineGateway extends NullOrchestrationGateway
           replayed: raw['replayed'] as bool,
         );
       });
+
+  /// Observation lease, separate from executable project commands. Never retried.
+  Future<void> sendChatBusy({
+    required int until,
+    required List<String> sessionIds,
+    required List<String> directories,
+    required bool known,
+    required String appInstance,
+    required int sequence,
+  }) => _track(() async {
+    final now = _now().millisecondsSinceEpoch;
+    if (until <= now ||
+        until > now + 30000 ||
+        sequence < 0 ||
+        !RegExp(r'^[A-Za-z0-9_-]{1,128}$').hasMatch(appInstance) ||
+        sessionIds.length > 256 ||
+        directories.length > 256 ||
+        [
+          ...sessionIds,
+          ...directories,
+        ].any((s) => s.isEmpty || s.length > 4096)) {
+      throw const PhoneEngineException('payloadInvalid');
+    }
+    final result = await _request(
+      'POST',
+      '/v1/chatBusy',
+      data: {
+        'until': until,
+        'sessionIds': sessionIds.map(KitRedact.text).toList(),
+        'directories': directories.map(KitRedact.text).toList(),
+        'known': known,
+        'appInstance': appInstance,
+        'sequence': sequence,
+      },
+    );
+    if (result is! Map || result['accepted'] != true) {
+      throw const PhoneEngineException('chatAdmissionUnavailable');
+    }
+  });
 
   /// Metadata only; never forwards provider payloads, text or credentials.
   @override

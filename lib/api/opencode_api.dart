@@ -29,6 +29,11 @@ class OpenCodeApi
   String? _workspace;
   bool _closed = false;
 
+  /// Optional app-owned admission fence at the exact person dispatch seam.
+  /// The controller scopes these to its current phone transport only.
+  Future<void> Function(String sessionID)? beforeSessionDispatch;
+  void Function(String sessionID)? sessionDispatchSettled;
+
   Dio get dio => _dio;
   @override
   String? get directory => _directory;
@@ -446,8 +451,13 @@ class OpenCodeApi
         directory: _directory,
         workspace: _workspace,
       );
+      if (response.data == null) {
+        throw ApiException(
+          'Get session status failed: invalid status response',
+        );
+      }
       return _sessionStatusesFromJson({
-        for (final entry in (response.data ?? const {}).entries)
+        for (final entry in response.data!.entries)
           entry.key: entry.value.toJson(),
       });
     } on sdk.OpenCodeApiException catch (e) {
@@ -461,14 +471,17 @@ class OpenCodeApi
   }
 
   Map<String, String> _sessionStatusesFromJson(Object? data) {
-    final out = <String, String>{};
-    if (data is Map) {
-      data.forEach((k, v) {
-        out[k.toString()] = v is Map
-            ? ((v['type'] ?? 'idle')).toString()
-            : 'idle';
-      });
+    if (data is! Map) {
+      throw ApiException('Get session status failed: invalid status response');
     }
+    final out = <String, String>{};
+    data.forEach((k, v) {
+      final kind = v is Map ? v['type'] : v;
+      // Missing/malformed truth cannot establish idle admission.
+      out[k.toString()] = const {'idle', 'busy', 'retry'}.contains(kind)
+          ? kind as String
+          : 'unknown';
+    });
     return out;
   }
 
@@ -577,9 +590,8 @@ class OpenCodeApi
     for (final link in (headers.value('link') ?? '').split(',')) {
       if (!RegExp(r'rel="?next"?').hasMatch(link)) continue;
       final match = RegExp(r'<([^>]+)>').firstMatch(link);
-      final next = Uri.tryParse(
-        match?.group(1) ?? '',
-      )?.queryParameters['before'];
+      final next = Uri.tryParse(match?.group(1) ?? '')
+          ?.queryParameters['before'];
       if (next != null && next.isNotEmpty) return next;
     }
     return null;
@@ -681,6 +693,7 @@ class OpenCodeApi
     List<PromptAttachment> attachments = const [],
     List<PromptAgentMention> agentMentions = const [],
   }) async {
+    await beforeSessionDispatch?.call(sessionID);
     try {
       await sdkClient.getSessionApi().sessionPromptAsync(
         sessionID: sessionID,
@@ -721,6 +734,8 @@ class OpenCodeApi
       _failGenerated(e, 'Send prompt');
     } on DioException catch (e) {
       _fail(e, 'Send prompt');
+    } finally {
+      sessionDispatchSettled?.call(sessionID);
     }
   }
 
@@ -732,6 +747,7 @@ class OpenCodeApi
     ModelRef? model,
     String? variant,
   }) async {
+    await beforeSessionDispatch?.call(sessionID);
     try {
       // The generated SessionShellRequest currently omits OpenCode's thinking
       // variant. Keep this compatibility request until that wire field exists
@@ -748,6 +764,8 @@ class OpenCodeApi
       );
     } on DioException catch (e) {
       _fail(e, 'Run command');
+    } finally {
+      sessionDispatchSettled?.call(sessionID);
     }
   }
 
@@ -759,6 +777,7 @@ class OpenCodeApi
     ModelRef? model,
     String? variant,
   }) async {
+    await beforeSessionDispatch?.call(sessionID);
     try {
       await sdkClient.getSessionApi().sessionCommand(
         sessionID: sessionID,
@@ -775,6 +794,8 @@ class OpenCodeApi
       _failGenerated(e, 'Run /command');
     } on DioException catch (e) {
       _fail(e, 'Run /command');
+    } finally {
+      sessionDispatchSettled?.call(sessionID);
     }
   }
 

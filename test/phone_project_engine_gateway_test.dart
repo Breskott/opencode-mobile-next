@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/phone_project_engine.dart';
+import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/domain/team_project_gateway.dart';
 import 'package:opencode_mobile/orchestration/adapters/inapp/phone_engine_gateway.dart';
 import 'package:opencode_mobile/ui/kit/kit_redact.dart';
@@ -148,43 +149,40 @@ void main() {
       );
     },
   );
-  test(
-    'unproven health permits workspace but rejects execution and unsupported commands',
-    () async {
-      final adapter = FakeEngineAdapter(
-        (r) async => jsonBody(
-          r.path == '/v1/health'
-              ? health('p1', actions: ['promote'])
-              : workspace(),
+  test('unproven health permits workspace but rejects execution and unsupported commands', () async {
+    final adapter = FakeEngineAdapter(
+      (r) async => jsonBody(
+        r.path == '/v1/health'
+            ? health('p1', actions: ['promote'])
+            : workspace(),
+      ),
+    );
+    final client = gateway(adapter);
+    await client.probe();
+    expect(client.capabilities.projectLifecycle, isFalse);
+    expect(client.capabilities.projectPromotion, isFalse);
+    expect((await client.teamWorkspace()).simulated, isFalse);
+    expect(
+      (await client.executeProject(
+        const TeamProjectCommand(
+          requestId: 'r1',
+          action: TeamProjectAction.promote,
         ),
-      );
-      final client = gateway(adapter);
-      await client.probe();
-      expect(client.capabilities.projectLifecycle, isFalse);
-      expect(client.capabilities.projectPromotion, isFalse);
-      expect((await client.teamWorkspace()).simulated, isFalse);
-      expect(
-        (await client.executeProject(
-          const TeamProjectCommand(
-            requestId: 'r1',
-            action: TeamProjectAction.promote,
-          ),
-        )).code,
-        'boundaryUnverified',
-      );
-      expect(
-        (await client.executeProject(
-          const TeamProjectCommand(
-            requestId: 'r2',
-            action: TeamProjectAction.advance,
-          ),
-        )).code,
-        'unsupportedCommand',
-      );
-      expect(adapter.requests.where((r) => r.method == 'POST'), isEmpty);
-      await client.close();
-    },
-  );
+      )).code,
+      'boundaryUnverified',
+    );
+    expect(
+      (await client.executeProject(
+        const TeamProjectCommand(
+          requestId: 'r2',
+          action: TeamProjectAction.advance,
+        ),
+      )).code,
+      'unsupportedCommand',
+    );
+    expect(adapter.requests.where((r) => r.method == 'POST'), isEmpty);
+    await client.close();
+  });
   test(
     'redacts commands before transmission and never retries ambiguous mutation',
     () async {
@@ -302,6 +300,124 @@ void main() {
       await error.future;
       await subscription.cancel();
       await client.close();
+    },
+  );
+  test(
+    'chat heartbeat carries authentication and bounded observation-only body',
+    () async {
+      final now = DateTime.now();
+      final adapter = FakeEngineAdapter(
+        (_) async => jsonBody({'accepted': true}),
+      );
+      final client = PhoneEngineGateway(
+        baseUrl: 'http://127.0.0.1:4098',
+        profileId: 'p1',
+        bearerToken: 'local-engine-secret',
+        adapter: adapter,
+        now: () => now,
+      );
+      await client.sendChatBusy(
+        until: now.millisecondsSinceEpoch + 30000,
+        sessionIds: ['person-1'],
+        directories: ['/root/projects/chat'],
+        known: true,
+        appInstance: 'app-1',
+        sequence: 3,
+      );
+      final request = adapter.requests.single;
+      expect(request.path, '/v1/chatBusy');
+      expect(request.headers['Authorization'], 'Bearer local-engine-secret');
+      expect(request.followRedirects, isFalse);
+      expect(request.data, {
+        'until': now.millisecondsSinceEpoch + 30000,
+        'sessionIds': ['person-1'],
+        'directories': ['/root/projects/chat'],
+        'known': true,
+        'appInstance': 'app-1',
+        'sequence': 3,
+      });
+      await expectLater(
+        client.sendChatBusy(
+          until: now.millisecondsSinceEpoch + 30001,
+          sessionIds: [],
+          directories: [],
+          known: true,
+          appInstance: 'app-1',
+          sequence: 4,
+        ),
+        throwsA(safeError('payloadInvalid')),
+      );
+      expect(adapter.requests, hasLength(1));
+      await client.close();
+    },
+  );
+  test('actual OC1 prompt, correlated prompt, shell and slash run the dispatch fence', () async {
+    final order = <String>[];
+    final api = OpenCodeApi(baseUrl: 'http://127.0.0.1:4097');
+    api.dio.httpClientAdapter = FakeEngineAdapter((r) async {
+      order.add('wire:${r.path}');
+      return r.path.endsWith('/command')
+          ? jsonBody({}, 503)
+          : jsonBody(null, 204);
+    });
+    api.beforeSessionDispatch = (id) async {
+      order.add('fence:$id');
+    };
+    api.sessionDispatchSettled = (id) {
+      order.add('settled:$id');
+    };
+    await api.promptAsync('s1', text: 'person prompt');
+    await api.promptWithMessageID(
+      's1',
+      messageID: api.createPromptMessageID(),
+      text: 'correlated',
+    );
+    await api.shell('s1', command: 'pwd', agent: 'build');
+    await expectLater(
+      api.slashCommand('s1', 'help', ''),
+      throwsA(isA<ApiException>()),
+    );
+    expect(order.where((v) => v.startsWith('fence:')), hasLength(4));
+    expect(order.where((v) => v.startsWith('settled:')), hasLength(4));
+    for (var i = 0; i < order.length; i += 3) {
+      expect(order[i], 'fence:s1');
+      expect(order[i + 1], startsWith('wire:'));
+      expect(order[i + 2], 'settled:s1');
+    }
+    api.close();
+  });
+  test(
+    'a fence failure occurs before any OpenCode request or settlement callback',
+    () async {
+      final adapter = FakeEngineAdapter((_) async => jsonBody(null, 204));
+      final api = OpenCodeApi(baseUrl: 'http://127.0.0.1:4097');
+      api.dio.httpClientAdapter = adapter;
+      var settled = false;
+      api.beforeSessionDispatch = (_) async {
+        throw const PhoneEngineException('engineStopFailed');
+      };
+      api.sessionDispatchSettled = (_) {
+        settled = true;
+      };
+      await expectLater(
+        api.promptAsync('s1', text: 'not dispatched'),
+        throwsA(safeError('engineStopFailed')),
+      );
+      expect(adapter.requests, isEmpty);
+      expect(settled, isFalse);
+      api.close();
+    },
+  );
+  test(
+    'malformed OC1 status cannot become a synthetic idle admission',
+    () async {
+      final api = OpenCodeApi(baseUrl: 'http://127.0.0.1:4097');
+      api.dio.httpClientAdapter = FakeEngineAdapter(
+        (_) async => jsonBody({'person': {}}),
+      );
+      final statuses = await api.sessionStatuses();
+      expect(statuses['person'], 'unknown');
+      api.close();
     },
   );
 }

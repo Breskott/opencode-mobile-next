@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/state/phone_project_engine.dart';
@@ -13,6 +14,7 @@ import 'phone_project_engine_gateway_test.dart' as fake;
 class NativeBridge implements PhoneProjectEngineBridge {
   final calls = <String>[];
   bool failDelete = false;
+  bool failStop = false;
   final Completer<void>? attachGate;
   NativeBridge({this.attachGate});
   @override
@@ -31,9 +33,27 @@ class NativeBridge implements PhoneProjectEngineBridge {
   }
 
   @override
+  Future<void> stop(String id) async {
+    calls.add('stop:$id');
+    if (failStop) throw StateError('unsafe stop details');
+  }
+
+  @override
   Future<void> delete(String id) async {
     calls.add('delete:$id');
     if (failDelete) throw StateError('unsafe native details');
+  }
+}
+
+class ManualChatSchedule {
+  void Function()? tick;
+  bool cancelled = false;
+  void Function() schedule(Duration period, void Function() callback) {
+    expect(period, const Duration(seconds: 10));
+    tick = callback;
+    return () {
+      cancelled = true;
+    };
   }
 }
 
@@ -238,4 +258,310 @@ void main() {
       expect(store.profiles.first.orchestration, isNull);
     },
   );
+  test(
+    'idle, busy and unknown renew every ten seconds; shutdown sends unknown',
+    () async {
+      var now = DateTime.now();
+      final scheduler = ManualChatSchedule();
+      var activity = const PhoneChatActivity(
+        known: true,
+        directories: ['/chat'],
+      );
+      final bodies = <Map<String, dynamic>>[];
+      final client = PhoneEngineGateway(
+        baseUrl: 'http://127.0.0.1:4098',
+        profileId: 'phone',
+        bearerToken: 'engine-private-token',
+        now: () => now,
+        adapter: fake.FakeEngineAdapter((r) async {
+          bodies.add(Map<String, dynamic>.from(r.data as Map));
+          return fake.jsonBody({'accepted': true});
+        }),
+      );
+      final heartbeat = PhoneChatHeartbeat(
+        gateway: client,
+        source: () => activity,
+        now: () => now,
+        schedule: scheduler.schedule,
+        appInstance: 'app-test',
+      );
+      heartbeat.start();
+      await heartbeat.push();
+      expect(bodies.single['known'], isTrue);
+      expect(bodies.single['sessionIds'], isEmpty);
+      final firstExpiry = bodies.single['until'] as int;
+      now = now.add(const Duration(seconds: 10));
+      scheduler.tick!();
+      await heartbeat.push();
+      expect(bodies.last['until'], firstExpiry + 10000);
+      activity = const PhoneChatActivity(
+        known: true,
+        sessionIds: ['human'],
+        directories: ['/chat'],
+      );
+      await heartbeat.push();
+      expect(bodies.last['sessionIds'], ['human']);
+      now = now.add(const Duration(seconds: 10));
+      scheduler.tick!();
+      await heartbeat.push();
+      expect(bodies.last['sessionIds'], ['human']);
+      activity = const PhoneChatActivity();
+      await heartbeat.push();
+      expect(bodies.last['known'], isFalse);
+      await heartbeat.stop();
+      expect(scheduler.cancelled, isTrue);
+      expect(bodies.last['known'], isFalse);
+      expect(client.isClosed, isTrue);
+      final count = bodies.length;
+      scheduler.tick!();
+      await heartbeat.push();
+      expect(bodies.length, count);
+      expect(
+        bodies.map((b) => b['sequence']),
+        orderedEquals([1, 2, 3, 4, 5, 6]),
+      );
+    },
+  );
+  test('expired queued observation cannot renew an old idle lease', () async {
+    var now = DateTime.now();
+    final entered = Completer<void>();
+    final release = Completer<void>();
+    final bodies = <Map<String, dynamic>>[];
+    final client = PhoneEngineGateway(
+      baseUrl: 'http://127.0.0.1:4098',
+      profileId: 'phone',
+      bearerToken: 'engine-private-token',
+      now: () => now,
+      adapter: fake.FakeEngineAdapter((r) async {
+        bodies.add(Map<String, dynamic>.from(r.data as Map));
+        if (bodies.length == 1) {
+          entered.complete();
+          await release.future;
+        }
+        return fake.jsonBody({'accepted': true});
+      }),
+    );
+    final heartbeat = PhoneChatHeartbeat(
+      gateway: client,
+      source: () =>
+          const PhoneChatActivity(known: true, directories: ['/chat']),
+      now: () => now,
+    );
+    final first = heartbeat.push(force: true);
+    await entered.future;
+    final stale = heartbeat.push(force: true, requireDelivery: true);
+    now = now.add(const Duration(seconds: 31));
+    release.complete();
+    await first;
+    await expectLater(stale, throwsA(fake.safeError('chatLeaseExpired')));
+    expect(bodies, hasLength(1));
+    await heartbeat.stop(publishUnknown: false);
+  });
+  test(
+    'pre-dispatch lease is delivered despite newer coalesced observations',
+    () async {
+      final now = DateTime.now();
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      final sequences = <int>[];
+      final client = PhoneEngineGateway(
+        baseUrl: 'http://127.0.0.1:4098',
+        profileId: 'phone',
+        bearerToken: 'engine-private-token',
+        now: () => now,
+        adapter: fake.FakeEngineAdapter((r) async {
+          sequences.add((r.data as Map)['sequence'] as int);
+          if (sequences.length == 1) {
+            entered.complete();
+            await release.future;
+          }
+          return fake.jsonBody({'accepted': true});
+        }),
+      );
+      final heartbeat = PhoneChatHeartbeat(
+        gateway: client,
+        source: () => const PhoneChatActivity(
+          known: true,
+          sessionIds: ['human'],
+          directories: ['/chat'],
+        ),
+        now: () => now,
+      );
+      final first = heartbeat.push(force: true);
+      await entered.future;
+      final fence = heartbeat.push(force: true, requireDelivery: true);
+      final latest = heartbeat.push(force: true);
+      release.complete();
+      await first;
+      await fence;
+      await latest;
+      expect(sequences, [1, 2, 3]);
+      await heartbeat.stop(publishUnknown: false);
+    },
+  );
+  test(
+    'stale idle before dispatch or before settlement never clears turn latch',
+    () {
+      final tracker = PhoneChatDispatchTracker();
+      final before = tracker.epoch;
+      tracker.begin('person', '/chat');
+      tracker.reconcile({}, before, '/chat');
+      expect(tracker.sessionIds, ['person']);
+      final during = tracker.epoch;
+      tracker.settled('person');
+      tracker.reconcile({}, during, '/chat');
+      expect(tracker.sessionIds, ['person']);
+      tracker.reconcile({}, tracker.epoch, '/another');
+      expect(tracker.sessionIds, ['person']);
+      tracker.reconcile({}, tracker.epoch, '/chat');
+      expect(tracker.sessionIds, isEmpty);
+    },
+  );
+  test('concurrent dispatch remains busy until every request settles and fresh idle', () {
+    final tracker = PhoneChatDispatchTracker();
+    tracker.begin('person', '/chat');
+    tracker.begin('person', '/chat');
+    tracker.settled('person');
+    tracker.reconcile({}, tracker.epoch, '/chat');
+    expect(tracker.sessionIds, ['person']);
+    tracker.settled('person');
+    tracker.reconcile({'person': 'busy'}, tracker.epoch, '/chat');
+    expect(tracker.sessionIds, ['person']);
+    tracker.reconcile({}, tracker.epoch, '/chat');
+    expect(tracker.sessionIds, [
+      'person',
+    ]); // Accepted async prompt may not have started yet.
+    tracker.observeBusy('person');
+    tracker.reconcile({}, tracker.epoch, '/chat');
+    expect(tracker.sessionIds, isEmpty);
+  });
+  test(
+    'failed heartbeat safely stops only engine; failed stop remains retryable',
+    () async {
+      final bridge = NativeBridge();
+      final scheduler = ManualChatSchedule();
+      final engine = PhoneProjectEngineController(
+        store: store,
+        bridge: bridge,
+        chatSource: (_) => const PhoneChatActivity(
+          known: true,
+          sessionIds: ['human'],
+          directories: ['/chat'],
+        ),
+        chatSchedule: scheduler.schedule,
+        gatewayBuilder:
+            ({required baseUrl, required profileId, required bearerToken}) =>
+                PhoneEngineGateway(
+                  baseUrl: baseUrl,
+                  profileId: profileId,
+                  bearerToken: bearerToken,
+                  adapter: fake.FakeEngineAdapter((r) async {
+                    if (r.path == '/v1/chatBusy')
+                      throw DioException(
+                        requestOptions: r,
+                        message: 'unsafe auth detail',
+                      );
+                    return fake.jsonBody(fake.health(profileId));
+                  }),
+                ),
+      );
+      await engine.attach('phone');
+      bridge.failStop = true;
+      await expectLater(
+        engine.beforePersonDispatch('phone'),
+        throwsA(fake.safeError('engineStopFailed')),
+      );
+      bridge.failStop = false;
+      await engine.beforePersonDispatch('phone');
+      expect(bridge.calls.where((c) => c == 'stop:phone'), hasLength(2));
+      final count = bridge.calls.length;
+      await engine.beforePersonDispatch('phone');
+      expect(bridge.calls.length, count);
+      expect(scheduler.cancelled, isTrue);
+      await engine.close();
+    },
+  );
+  test('another phone alias cannot dispatch until previous engine stop is confirmed', () async {
+    final profile = store.profiles.firstWhere((p) => p.id == 'phone');
+    profile.orchestration = const OrchestrationConfig(
+      provider: OrchestrationProvider.phoneEngine,
+      url: 'http://127.0.0.1:4098',
+      hostMode: OrchestrationHostMode.phone,
+    );
+    await store.upsert(profile);
+    final bridge = NativeBridge()..failStop = true;
+    final engine = controller(bridge, []);
+    await expectLater(
+      engine.preparePhoneAliasDispatch('another-alias'),
+      throwsA(fake.safeError('engineStopFailed')),
+    );
+    bridge.failStop = false;
+    await engine.preparePhoneAliasDispatch('another-alias');
+    expect(bridge.calls, ['stop:phone', 'stop:phone']);
+    await engine.close();
+  });
+  test(
+    'deletion drains heartbeat and cancels renewal before durable native erase',
+    () async {
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      final scheduler = ManualChatSchedule();
+      final bridge = NativeBridge();
+      final order = <String>[];
+      final engine = PhoneProjectEngineController(
+        store: store,
+        bridge: bridge,
+        chatSource: (_) =>
+            const PhoneChatActivity(known: true, directories: ['/chat']),
+        chatSchedule: scheduler.schedule,
+        gatewayBuilder:
+            ({required baseUrl, required profileId, required bearerToken}) =>
+                PhoneEngineGateway(
+                  baseUrl: baseUrl,
+                  profileId: profileId,
+                  bearerToken: bearerToken,
+                  adapter: fake.FakeEngineAdapter((r) async {
+                    if (r.path == '/v1/chatBusy') {
+                      entered.complete();
+                      await release.future;
+                      order.add('heartbeat');
+                    }
+                    if (r.method == 'DELETE') order.add('delete');
+                    return fake.jsonBody(
+                      r.path == '/v1/health'
+                          ? fake.health(profileId)
+                          : {'deleted': true},
+                    );
+                  }),
+                ),
+      );
+      await engine.attach('phone');
+      await entered.future;
+      final deletion = engine.deleteProfile('phone');
+      await Future<void>.delayed(Duration.zero);
+      expect(order, isEmpty);
+      expect(scheduler.cancelled, isTrue);
+      release.complete();
+      await deletion;
+      expect(order, ['heartbeat', 'delete']);
+      expect(bridge.calls.last, 'delete:phone');
+      final count = order.length;
+      scheduler.tick!();
+      await engine.pushChatHeartbeat('phone');
+      expect(order.length, count);
+      await engine.close();
+    },
+  );
+  test('unsent later prompt cannot clear an older uncertain turn latch', () {
+    final tracker = PhoneChatDispatchTracker();
+    tracker.begin('person', '/chat');
+    tracker.settled('person');
+    tracker.begin('person', '/chat');
+    tracker.settled('person', removeUnsent: true);
+    tracker.reconcile({}, tracker.epoch, '/chat');
+    expect(tracker.sessionIds, ['person']);
+    tracker.observeBusy('person');
+    tracker.reconcile({}, tracker.epoch, '/chat');
+    expect(tracker.sessionIds, isEmpty);
+  });
 }
