@@ -24937,8 +24937,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamProjectEditorMaxLanes => 'Maximum lanes';
 
   @override
-  String get teamProjectEditorCostUnknown =>
-      'Each lane is one sub-session, and your chat stays first. Cost is not measured in this demo; memory, battery and chat speed depend on the host.';
+  String teamProjectEditorCostMeasured(String host, String memory) {
+    return 'On $host: about $memory MB of memory per lane, measured. Battery and chat speed are not measured yet.';
+  }
+
+  @override
+  String teamProjectEditorCostNotMeasured(String host) {
+    return 'Not measured on $host yet. Your chat stays first.';
+  }
+
+  @override
+  String get teamProjectEditorCostNoHost =>
+      'Choose where the work runs to see what a lane costs there.';
+
+  @override
+  String get teamProjectEditorThisPhone => 'this phone';
+
+  @override
+  String get teamProjectEditorGoalRequired => 'Add a goal.';
+
+  @override
+  String get teamProjectEditorRepoMissing => 'Add at least one repo.';
+
+  @override
+  String get teamProjectEditorRepoIncomplete =>
+      'Finish the repo: a name, a folder and where it runs.';
+
+  @override
+  String get teamProjectEditorNoFallback => 'No fallback model';
+
+  @override
+  String get teamProjectEditorNoFallbackHint =>
+      'The work waits for the main model instead of switching.';
+
+  @override
+  String get teamProjectEditorReadOnlyRole =>
+      'Read-only: this agent can read the project but not change it.';
+
+  @override
+  String get teamProjectEditorReadOnlyShort => 'Read-only';
 
   @override
   String get teamProjectEditorCharging => 'Only while charging';
@@ -25014,7 +25051,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Review the tasks and their acceptance criteria. Changes here are included when you approve the plan.';
 
   @override
-  String get teamProjectEditorRisky => 'Pause for review after this phase';
+  String get teamProjectEditorRisky => 'Review gate · risky';
 
   @override
   String get teamProjectEditorTaskTitle => 'Task title';
@@ -25063,7 +25100,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamProjectEditorPositiveBudget =>
-      'Enter a positive per-day limit and total limit.';
+      'Enter a limit per day and a total limit, each above zero.';
 
   @override
   String get teamProjectEditorSaveFailed =>
@@ -25634,7 +25671,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamProjectPlanReviewPoint => 'review point';
+  String get teamProjectPlanReviewPoint => 'Review gate · risky';
 
   @override
   String teamProjectPlanRepo(String name) {
@@ -25678,6 +25715,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamProjectPlanAsk => 'Ask to change';
+
+  @override
+  String get teamProjectPlanNotYet => 'Not yet';
+
+  @override
+  String teamProjectPlanServerTitle(String task) {
+    return 'Run \"$task\" on';
+  }
+
+  @override
+  String get teamProjectPlanServerFixed =>
+      'Each task runs on the computer it was planned for. This team cannot move tasks to another computer yet.';
+
+  @override
+  String teamProjectMergeEffectDev(String repo, int tasks) {
+    String _temp0 = intl.Intl.pluralLogic(
+      tasks,
+      locale: localeName,
+      other: '$tasks checked tasks',
+      one: '1 checked task',
+    );
+    return '$_temp0 from $repo will be merged into dev.';
+  }
+
+  @override
+  String get teamProjectMergeEffectMain => 'Main is not touched.';
+
+  @override
+  String teamProjectReceiptMerged(String repo) {
+    return 'Merged into dev · $repo';
+  }
+
+  @override
+  String teamProjectReceiptPromoted(String repo) {
+    return 'Promoted to main · $repo';
+  }
+
+  @override
+  String teamProjectTimelineRepeated(String text, int count) {
+    return '$text · $count times';
+  }
 
   @override
   String get teamProjectPromoteTitle => 'Promote dev → main';
@@ -25774,7 +25852,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamProjectEditorBudgetHelp =>
-      'The team pauses when the day reaches it. Leave a total to cap the whole project.';
+      'The team pauses when the day or the whole project reaches its limit.';
 
   @override
   String teamProjectFindingsCritical(int count) {
@@ -25847,7 +25925,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneTeamFailEngineBody =>
-      'The team\'s engine didn\'t start on this phone. Nothing else was changed.';
+      'The team\'s engine didn\'t start on this phone.';
 
   @override
   String get phoneTeamFailStopTitle => 'OpenCode didn\'t stop';
@@ -25890,6 +25968,39 @@ class AppLocalizationsEn extends AppLocalizations {
       'This copy of the app doesn\'t include the team\'s safety tools.';
 
   @override
+  String get phoneTeamStateBackOn => 'OpenCode is back on.';
+
+  @override
+  String get phoneTeamStateStillOff =>
+      'OpenCode is still off. Start again, or restart it from This phone.';
+
+  @override
+  String get phoneTeamStateNotStopped => 'OpenCode was not stopped.';
+
+  @override
+  String get phoneTeamStateTerminalsClosed => 'Open terminals were closed.';
+
+  @override
+  String get phoneTeamWhyUnsafe =>
+      'The check that keeps the team\'s copy of your code separate from the agents did not pass.';
+
+  @override
+  String get phoneTeamWhyEngine =>
+      'The team\'s engine stopped or did not answer while it was starting.';
+
+  @override
+  String get phoneTeamWhyStop =>
+      'OpenCode or a terminal did not close when asked.';
+
+  @override
+  String get phoneTeamWhyServer =>
+      'OpenCode did not answer after it was started again.';
+
+  @override
+  String get phoneTeamWhyNotReady =>
+      'The team\'s engine answered but said it cannot run work yet.';
+
+  @override
   String get phoneTeamDetails => 'Details';
 
   @override
@@ -25922,4 +26033,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneTeamBlockedTitle => 'Check this phone first';
+
+  @override
+  String get teamMigrationTitle => 'AI Team has changed';
+
+  @override
+  String get teamMigrationBody =>
+      'The new AI Team plans whole projects and runs them on this phone. Your old team keeps working, but it only takes quick tasks: it cannot plan projects. Switching asks before it stops anything.';
+
+  @override
+  String get teamMigrationSwitch => 'Switch to the new AI Team on this phone';
+
+  @override
+  String get teamMigrationKeep => 'Keep the old team for now';
+
+  @override
+  String get teamMigrationMenu => 'What\'s new in AI Team';
+
+  @override
+  String get teamProjectPages => 'Project pages';
+
+  @override
+  String get teamProjectMergeReady => 'Ready to merge';
+
+  @override
+  String get teamProjectMergeChecking => 'Waiting for its checks';
 }

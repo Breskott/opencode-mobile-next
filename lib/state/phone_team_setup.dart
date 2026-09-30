@@ -62,6 +62,18 @@ enum PhoneTeamSetupProblem {
   noServer,
 }
 
+/// What became of the person's OpenCode when a run ended without the team.
+enum PhoneTeamServerState {
+  /// The run never stopped it.
+  untouched,
+
+  /// The run stopped it and started it again: it is on.
+  backOn,
+
+  /// The run stopped it and could not start it again: it is off.
+  stillOff,
+}
+
 /// What the phone is running right now.
 class PhoneTeamHostState {
   const PhoneTeamHostState({
@@ -101,6 +113,11 @@ abstract interface class PhoneTeamSetupPorts {
 
   /// Reads the engine again into the app's team (capabilities refresh).
   Future<void> attach();
+
+  /// Puts OpenCode back after a run that stopped it and failed: does
+  /// nothing when it already answers, else starts it like the Restart
+  /// control and reconnects the app. True when OpenCode is on.
+  Future<bool> restoreServer();
 }
 
 /// The real phone: the same controls This phone uses, nothing reimplemented.
@@ -142,7 +159,7 @@ class BuiltinPhoneTeamSetupPorts implements PhoneTeamSetupPorts {
       (_profile?.teamEngineAuth.isNotEmpty ?? false);
 
   @override
-  bool get replyRunning => connection.busySessions.isNotEmpty;
+  bool get replyRunning => connection.replyInFlight;
 
   @override
   Listenable get replyChanges => connection;
@@ -203,6 +220,21 @@ class BuiltinPhoneTeamSetupPorts implements PhoneTeamSetupPorts {
   }
 
   @override
+  Future<bool> restoreServer() async {
+    final profile = _profile;
+    if (profile == null) return false;
+    var running = false;
+    try {
+      running = (await linux.status()).serverRunning;
+    } on BuiltinLinuxException {
+      // Unknown: start it; the starter is safe when it already runs.
+    }
+    if (!running && await starter.start(profile) != null) return false;
+    await connection.retryConnection();
+    return true;
+  }
+
+  @override
   Future<void> attach() async {
     await connection.phoneProjectEngine.attach(_id);
     connection.syncOrchestration();
@@ -235,6 +267,10 @@ class PhoneTeamSetupController extends ChangeNotifier {
   bool _automatic = false;
   bool _stopped = false;
   bool _disposed = false;
+  bool _serverStopped = false;
+  bool _terminalsClosed = false;
+  int _hostTerminals = 0;
+  PhoneTeamServerState _serverState = PhoneTeamServerState.untouched;
   final Map<PhoneTeamSetupStep, DateTime> _began = {};
   final Map<PhoneTeamSetupStep, Duration> _took = {};
   final Set<PhoneTeamSetupStep> _skipped = {};
@@ -246,6 +282,12 @@ class PhoneTeamSetupController extends ChangeNotifier {
   PhoneTeamSetupStep? get step => _step;
   PhoneTeamSetupStep? get failedStep => _failedStep;
   PhoneEngineHealth? get health => _health;
+
+  /// What became of OpenCode, for a run that ended in failure.
+  PhoneTeamServerState get serverState => _serverState;
+
+  /// Whether the run closed the person's terminals.
+  bool get terminalsClosed => _terminalsClosed;
 
   /// Safe technical text for Details; never a raw exception.
   String? get details => _details;
@@ -334,6 +376,36 @@ class PhoneTeamSetupController extends ChangeNotifier {
     _took.clear();
     _skipped.clear();
     _stopped = false;
+    _serverStopped = false;
+    _terminalsClosed = false;
+    _hostTerminals = 0;
+    _serverState = PhoneTeamServerState.untouched;
+  }
+
+  /// Ends the run in failure, first putting OpenCode back if this run
+  /// stopped it, so the person is never left with it off and Work blank.
+  Future<void> _failWith(
+    PhoneTeamSetupProblem problem,
+    PhoneTeamSetupStep step,
+    String details,
+  ) async {
+    if (_serverStopped) {
+      if (problem == PhoneTeamSetupProblem.serverStart) {
+        // It just failed to start; say so instead of waiting for it again.
+        _serverState = PhoneTeamServerState.stillOff;
+      } else {
+        var on = false;
+        try {
+          on = await ports.restoreServer();
+        } catch (_) {
+          on = false;
+        }
+        _serverState = on
+            ? PhoneTeamServerState.backOn
+            : PhoneTeamServerState.stillOff;
+      }
+    }
+    _fail(problem, step, details);
   }
 
   Future<void> _waitForReply() async {
@@ -368,10 +440,12 @@ class PhoneTeamSetupController extends ChangeNotifier {
     _phase = PhoneTeamSetupPhase.running;
     _emit();
     try {
+      _serverStopped = true;
       await ports.stopServer();
       await ports.closeTerminals();
+      _terminalsClosed = _hostTerminals > 0;
     } catch (_) {
-      _fail(
+      await _failWith(
         PhoneTeamSetupProblem.stopFailed,
         PhoneTeamSetupStep.stop,
         'stopFailed',
@@ -387,7 +461,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
     _emit();
     try {
       if (!ports.hasServer) {
-        _fail(
+        await _failWith(
           PhoneTeamSetupProblem.noServer,
           PhoneTeamSetupStep.reply,
           'noServerProfile',
@@ -402,6 +476,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
 
       // b) The unprotected server and terminals: only with a yes.
       final host = await ports.inspect();
+      _hostTerminals = host.terminals;
       var stopped = false;
       if (host.needsStop) {
         if (!await _stopForProtection()) return;
@@ -424,7 +499,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
       }
       _health = health;
       if (!health.canExecute) {
-        _fail(
+        await _failWith(
           PhoneTeamSetupProblem.unsafe,
           PhoneTeamSetupStep.check,
           health.boundaryReason.isEmpty
@@ -439,7 +514,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
       _begin(PhoneTeamSetupStep.server);
       final failure = await ports.startServer();
       if (failure != null) {
-        _fail(
+        await _failWith(
           PhoneTeamSetupProblem.serverStart,
           PhoneTeamSetupStep.server,
           failure,
@@ -458,7 +533,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
       }
       _health = last ?? _health;
       if (last == null || !last.canExecute) {
-        _fail(
+        await _failWith(
           PhoneTeamSetupProblem.notReady,
           PhoneTeamSetupStep.server,
           last == null
@@ -475,13 +550,13 @@ class PhoneTeamSetupController extends ChangeNotifier {
       _phase = PhoneTeamSetupPhase.done;
       _emit();
     } on PhoneEngineException catch (e) {
-      _fail(
+      await _failWith(
         PhoneTeamSetupProblem.engine,
         _step ?? PhoneTeamSetupStep.check,
         e.code,
       );
     } catch (_) {
-      _fail(
+      await _failWith(
         PhoneTeamSetupProblem.engine,
         _step ?? PhoneTeamSetupStep.check,
         'unexpected',

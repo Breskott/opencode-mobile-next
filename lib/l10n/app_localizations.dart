@@ -39331,11 +39331,71 @@ abstract class AppLocalizations {
   /// **'Maximum lanes'**
   String get teamProjectEditorMaxLanes;
 
-  /// No description provided for @teamProjectEditorCostUnknown.
+  /// Cost line in the New project sheet, from a measured host
   ///
   /// In en, this message translates to:
-  /// **'Each lane is one sub-session, and your chat stays first. Cost is not measured in this demo; memory, battery and chat speed depend on the host.'**
-  String get teamProjectEditorCostUnknown;
+  /// **'On {host}: about {memory} MB of memory per lane, measured. Battery and chat speed are not measured yet.'**
+  String teamProjectEditorCostMeasured(String host, String memory);
+
+  /// Cost line when the chosen host has no measurement
+  ///
+  /// In en, this message translates to:
+  /// **'Not measured on {host} yet. Your chat stays first.'**
+  String teamProjectEditorCostNotMeasured(String host);
+
+  /// No description provided for @teamProjectEditorCostNoHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where the work runs to see what a lane costs there.'**
+  String get teamProjectEditorCostNoHost;
+
+  /// No description provided for @teamProjectEditorThisPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'this phone'**
+  String get teamProjectEditorThisPhone;
+
+  /// No description provided for @teamProjectEditorGoalRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a goal.'**
+  String get teamProjectEditorGoalRequired;
+
+  /// No description provided for @teamProjectEditorRepoMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one repo.'**
+  String get teamProjectEditorRepoMissing;
+
+  /// No description provided for @teamProjectEditorRepoIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish the repo: a name, a folder and where it runs.'**
+  String get teamProjectEditorRepoIncomplete;
+
+  /// No description provided for @teamProjectEditorNoFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'No fallback model'**
+  String get teamProjectEditorNoFallback;
+
+  /// No description provided for @teamProjectEditorNoFallbackHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The work waits for the main model instead of switching.'**
+  String get teamProjectEditorNoFallbackHint;
+
+  /// No description provided for @teamProjectEditorReadOnlyRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only: this agent can read the project but not change it.'**
+  String get teamProjectEditorReadOnlyRole;
+
+  /// No description provided for @teamProjectEditorReadOnlyShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only'**
+  String get teamProjectEditorReadOnlyShort;
 
   /// No description provided for @teamProjectEditorCharging.
   ///
@@ -39484,7 +39544,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectEditorRisky.
   ///
   /// In en, this message translates to:
-  /// **'Pause for review after this phase'**
+  /// **'Review gate · risky'**
   String get teamProjectEditorRisky;
 
   /// No description provided for @teamProjectEditorTaskTitle.
@@ -39574,7 +39634,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectEditorPositiveBudget.
   ///
   /// In en, this message translates to:
-  /// **'Enter a positive per-day limit and total limit.'**
+  /// **'Enter a limit per day and a total limit, each above zero.'**
   String get teamProjectEditorPositiveBudget;
 
   /// No description provided for @teamProjectEditorSaveFailed.
@@ -40431,7 +40491,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectPlanReviewPoint.
   ///
   /// In en, this message translates to:
-  /// **'review point'**
+  /// **'Review gate · risky'**
   String get teamProjectPlanReviewPoint;
 
   /// No description provided for @teamProjectPlanRepo.
@@ -40475,6 +40535,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask to change'**
   String get teamProjectPlanAsk;
+
+  /// No description provided for @teamProjectPlanNotYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not yet'**
+  String get teamProjectPlanNotYet;
+
+  /// No description provided for @teamProjectPlanServerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Run \"{task}\" on'**
+  String teamProjectPlanServerTitle(String task);
+
+  /// No description provided for @teamProjectPlanServerFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Each task runs on the computer it was planned for. This team cannot move tasks to another computer yet.'**
+  String get teamProjectPlanServerFixed;
+
+  /// No description provided for @teamProjectMergeEffectDev.
+  ///
+  /// In en, this message translates to:
+  /// **'{tasks, plural, one{1 checked task} other{{tasks} checked tasks}} from {repo} will be merged into dev.'**
+  String teamProjectMergeEffectDev(String repo, int tasks);
+
+  /// No description provided for @teamProjectMergeEffectMain.
+  ///
+  /// In en, this message translates to:
+  /// **'Main is not touched.'**
+  String get teamProjectMergeEffectMain;
+
+  /// No description provided for @teamProjectReceiptMerged.
+  ///
+  /// In en, this message translates to:
+  /// **'Merged into dev · {repo}'**
+  String teamProjectReceiptMerged(String repo);
+
+  /// No description provided for @teamProjectReceiptPromoted.
+  ///
+  /// In en, this message translates to:
+  /// **'Promoted to main · {repo}'**
+  String teamProjectReceiptPromoted(String repo);
+
+  /// No description provided for @teamProjectTimelineRepeated.
+  ///
+  /// In en, this message translates to:
+  /// **'{text} · {count} times'**
+  String teamProjectTimelineRepeated(String text, int count);
 
   /// No description provided for @teamProjectPromoteTitle.
   ///
@@ -40593,7 +40701,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectEditorBudgetHelp.
   ///
   /// In en, this message translates to:
-  /// **'The team pauses when the day reaches it. Leave a total to cap the whole project.'**
+  /// **'The team pauses when the day or the whole project reaches its limit.'**
   String get teamProjectEditorBudgetHelp;
 
   /// No description provided for @teamProjectFindingsCritical.
@@ -40719,7 +40827,7 @@ abstract class AppLocalizations {
   /// Failure: the engine did not start or answer
   ///
   /// In en, this message translates to:
-  /// **'The team\'s engine didn\'t start on this phone. Nothing else was changed.'**
+  /// **'The team\'s engine didn\'t start on this phone.'**
   String get phoneTeamFailEngineBody;
 
   /// Failure headline: the server or a terminal did not stop
@@ -40788,6 +40896,60 @@ abstract class AppLocalizations {
   /// **'This copy of the app doesn\'t include the team\'s safety tools.'**
   String get phoneTeamReasonNotPackaged;
 
+  /// Failure page: OpenCode was stopped for the check and is running again
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is back on.'**
+  String get phoneTeamStateBackOn;
+
+  /// Failure page: OpenCode was stopped and could not be started again
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is still off. Start again, or restart it from This phone.'**
+  String get phoneTeamStateStillOff;
+
+  /// Failure page: the run ended before it stopped OpenCode
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode was not stopped.'**
+  String get phoneTeamStateNotStopped;
+
+  /// Failure page: the run closed the person's terminals
+  ///
+  /// In en, this message translates to:
+  /// **'Open terminals were closed.'**
+  String get phoneTeamStateTerminalsClosed;
+
+  /// Details: plain sentence before the code, safety check failed
+  ///
+  /// In en, this message translates to:
+  /// **'The check that keeps the team\'s copy of your code separate from the agents did not pass.'**
+  String get phoneTeamWhyUnsafe;
+
+  /// Details: plain sentence before the code, engine failed
+  ///
+  /// In en, this message translates to:
+  /// **'The team\'s engine stopped or did not answer while it was starting.'**
+  String get phoneTeamWhyEngine;
+
+  /// Details: plain sentence before the code, stop failed
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode or a terminal did not close when asked.'**
+  String get phoneTeamWhyStop;
+
+  /// Details: plain sentence before the code, server did not start
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode did not answer after it was started again.'**
+  String get phoneTeamWhyServer;
+
+  /// Details: plain sentence before the code, engine not ready
+  ///
+  /// In en, this message translates to:
+  /// **'The team\'s engine answered but said it cannot run work yet.'**
+  String get phoneTeamWhyNotReady;
+
   /// Fold title for technical reasons under a failure
   ///
   /// In en, this message translates to:
@@ -40847,6 +41009,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check this phone first'**
   String get phoneTeamBlockedTitle;
+
+  /// No description provided for @teamMigrationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team has changed'**
+  String get teamMigrationTitle;
+
+  /// No description provided for @teamMigrationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The new AI Team plans whole projects and runs them on this phone. Your old team keeps working, but it only takes quick tasks: it cannot plan projects. Switching asks before it stops anything.'**
+  String get teamMigrationBody;
+
+  /// No description provided for @teamMigrationSwitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to the new AI Team on this phone'**
+  String get teamMigrationSwitch;
+
+  /// No description provided for @teamMigrationKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the old team for now'**
+  String get teamMigrationKeep;
+
+  /// No description provided for @teamMigrationMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s new in AI Team'**
+  String get teamMigrationMenu;
+
+  /// No description provided for @teamProjectPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Project pages'**
+  String get teamProjectPages;
+
+  /// No description provided for @teamProjectMergeReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to merge'**
+  String get teamProjectMergeReady;
+
+  /// No description provided for @teamProjectMergeChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for its checks'**
+  String get teamProjectMergeChecking;
 }
 
 class _AppLocalizationsDelegate

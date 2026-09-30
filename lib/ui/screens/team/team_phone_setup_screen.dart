@@ -45,7 +45,54 @@ Future<void> openPhoneTeamSetup(
 );
 
 /// The plain title and body of a failure; its technical text is Details.
+/// With [flow] the body also says exactly what state the phone is in:
+/// whether OpenCode is on again and whether terminals were closed.
 ({String title, String body}) phoneTeamProblemCopy(
+  AppLocalizations l,
+  PhoneTeamSetupProblem problem, [
+  PhoneTeamSetupController? flow,
+]) {
+  final base = _problemCopy(l, problem);
+  if (flow == null) return base;
+  final state = <String>[
+    if (const {
+      PhoneTeamSetupProblem.unsafe,
+      PhoneTeamSetupProblem.engine,
+      PhoneTeamSetupProblem.stopFailed,
+    }.contains(problem))
+      switch (flow.serverState) {
+        PhoneTeamServerState.backOn => l.phoneTeamStateBackOn,
+        PhoneTeamServerState.stillOff => l.phoneTeamStateStillOff,
+        PhoneTeamServerState.untouched => l.phoneTeamStateNotStopped,
+      },
+    if (flow.terminalsClosed &&
+        problem != PhoneTeamSetupProblem.declined &&
+        problem != PhoneTeamSetupProblem.noServer)
+      l.phoneTeamStateTerminalsClosed,
+  ];
+  if (state.isEmpty) return base;
+  return (title: base.title, body: '${base.body} ${state.join(' ')}');
+}
+
+/// Details: one plain sentence, then the technical code.
+String? phoneTeamDetailsText(
+  AppLocalizations l,
+  PhoneTeamSetupProblem problem,
+  String? code,
+) {
+  if (code == null || code.isEmpty) return null;
+  final sentence = switch (problem) {
+    PhoneTeamSetupProblem.unsafe => l.phoneTeamWhyUnsafe,
+    PhoneTeamSetupProblem.engine => l.phoneTeamWhyEngine,
+    PhoneTeamSetupProblem.stopFailed => l.phoneTeamWhyStop,
+    PhoneTeamSetupProblem.serverStart => l.phoneTeamWhyServer,
+    PhoneTeamSetupProblem.notReady => l.phoneTeamWhyNotReady,
+    PhoneTeamSetupProblem.declined || PhoneTeamSetupProblem.noServer => null,
+  };
+  return sentence == null ? code : '$sentence\n$code';
+}
+
+({String title, String body}) _problemCopy(
   AppLocalizations l,
   PhoneTeamSetupProblem problem,
 ) => switch (problem) {
@@ -276,7 +323,7 @@ class _TeamPhoneSetupScreenState extends State<TeamPhoneSetupScreen> {
         );
       case PhoneTeamSetupPhase.failed:
         final problem = _flow.problem ?? PhoneTeamSetupProblem.engine;
-        final copy = phoneTeamProblemCopy(l, problem);
+        final copy = phoneTeamProblemCopy(l, problem, _flow);
         final calm =
             problem == PhoneTeamSetupProblem.declined ||
             problem == PhoneTeamSetupProblem.noServer;
@@ -296,7 +343,7 @@ class _TeamPhoneSetupScreenState extends State<TeamPhoneSetupScreen> {
                   icon: AppIconography.play,
                   onPressed: () => unawaited(_flow.run()),
                 ),
-          details: details == null || details.isEmpty || calm ? null : details,
+          details: calm ? null : phoneTeamDetailsText(l, problem, details),
         );
       case PhoneTeamSetupPhase.idle:
       case PhoneTeamSetupPhase.running:

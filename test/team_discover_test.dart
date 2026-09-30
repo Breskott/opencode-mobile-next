@@ -887,5 +887,7 @@ class _WaitingPhone extends ChangeNotifier implements PhoneTeamSetupPorts {
   @override
   Future<String?> startServer() async => null;
   @override
+  Future<bool> restoreServer() async => true;
+  @override
   Future<void> attach() async {}
 }

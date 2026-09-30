@@ -25058,8 +25058,45 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamProjectEditorMaxLanes => 'Maximum lanes';
 
   @override
-  String get teamProjectEditorCostUnknown =>
-      'Each lane is one sub-session, and your chat stays first. Cost is not measured in this demo; memory, battery and chat speed depend on the host.';
+  String teamProjectEditorCostMeasured(String host, String memory) {
+    return 'على $host: نحو $memory ميغابايت من الذاكرة لكل مسار، مقيسة. البطارية وسرعة المحادثة لم تُقَس بعد.';
+  }
+
+  @override
+  String teamProjectEditorCostNotMeasured(String host) {
+    return 'لم تُقَس على $host بعد. محادثتك تبقى أولًا.';
+  }
+
+  @override
+  String get teamProjectEditorCostNoHost =>
+      'اختر مكان تشغيل العمل لترى كلفة المسار هناك.';
+
+  @override
+  String get teamProjectEditorThisPhone => 'هذا الهاتف';
+
+  @override
+  String get teamProjectEditorGoalRequired => 'أضف هدفًا.';
+
+  @override
+  String get teamProjectEditorRepoMissing => 'أضف مستودعًا واحدًا على الأقل.';
+
+  @override
+  String get teamProjectEditorRepoIncomplete =>
+      'أكمل المستودع: اسم ومجلد ومكان التشغيل.';
+
+  @override
+  String get teamProjectEditorNoFallback => 'بلا نموذج احتياطي';
+
+  @override
+  String get teamProjectEditorNoFallbackHint =>
+      'ينتظر العمل النموذج الأساسي بدل التبديل.';
+
+  @override
+  String get teamProjectEditorReadOnlyRole =>
+      'للقراءة فقط: يقرأ هذا الوكيل المشروع ولا يغيّره.';
+
+  @override
+  String get teamProjectEditorReadOnlyShort => 'للقراءة فقط';
 
   @override
   String get teamProjectEditorCharging => 'Only while charging';
@@ -25135,7 +25172,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'Review the tasks and their acceptance criteria. Changes here are included when you approve the plan.';
 
   @override
-  String get teamProjectEditorRisky => 'Pause for review after this phase';
+  String get teamProjectEditorRisky => 'نقطة مراجعة · محفوفة بالمخاطر';
 
   @override
   String get teamProjectEditorTaskTitle => 'Task title';
@@ -25184,7 +25221,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamProjectEditorPositiveBudget =>
-      'Enter a positive per-day limit and total limit.';
+      'Enter a limit per day and a total limit, each above zero.';
 
   @override
   String get teamProjectEditorSaveFailed =>
@@ -25755,7 +25792,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get teamProjectPlanReviewPoint => 'review point';
+  String get teamProjectPlanReviewPoint => 'نقطة مراجعة · محفوفة بالمخاطر';
 
   @override
   String teamProjectPlanRepo(String name) {
@@ -25799,6 +25836,47 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamProjectPlanAsk => 'Ask to change';
+
+  @override
+  String get teamProjectPlanNotYet => 'ليس الآن';
+
+  @override
+  String teamProjectPlanServerTitle(String task) {
+    return 'تشغيل «$task» على';
+  }
+
+  @override
+  String get teamProjectPlanServerFixed =>
+      'كل مهمة تعمل على الجهاز الذي خُطط لها عليه. هذا الفريق لا يستطيع نقل المهام إلى جهاز آخر بعد.';
+
+  @override
+  String teamProjectMergeEffectDev(String repo, int tasks) {
+    String _temp0 = intl.Intl.pluralLogic(
+      tasks,
+      locale: localeName,
+      other: '$tasks مهام مفحوصة',
+      one: 'مهمة مفحوصة واحدة',
+    );
+    return '$_temp0 من $repo ستُدمج في dev.';
+  }
+
+  @override
+  String get teamProjectMergeEffectMain => 'لن يتغير main.';
+
+  @override
+  String teamProjectReceiptMerged(String repo) {
+    return 'دُمج في dev · $repo';
+  }
+
+  @override
+  String teamProjectReceiptPromoted(String repo) {
+    return 'رُقّي إلى main · $repo';
+  }
+
+  @override
+  String teamProjectTimelineRepeated(String text, int count) {
+    return '$text · $count مرات';
+  }
 
   @override
   String get teamProjectPromoteTitle => 'Promote dev → main';
@@ -25895,7 +25973,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamProjectEditorBudgetHelp =>
-      'The team pauses when the day reaches it. Leave a total to cap the whole project.';
+      'The team pauses when the day or the whole project reaches its limit.';
 
   @override
   String teamProjectFindingsCritical(int count) {
@@ -25966,8 +26044,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get phoneTeamFailEngineTitle => 'لم يبدأ فريق الذكاء الاصطناعي';
 
   @override
-  String get phoneTeamFailEngineBody =>
-      'لم يبدأ محرك الفريق على هذا الهاتف. لم يتغير أي شيء آخر.';
+  String get phoneTeamFailEngineBody => 'لم يبدأ محرك الفريق على هذا الهاتف.';
 
   @override
   String get phoneTeamFailStopTitle => 'لم يتوقف OpenCode';
@@ -26009,6 +26086,37 @@ class AppLocalizationsAr extends AppLocalizations {
       'هذه النسخة من التطبيق لا تتضمن أدوات أمان الفريق.';
 
   @override
+  String get phoneTeamStateBackOn => 'عاد OpenCode للعمل.';
+
+  @override
+  String get phoneTeamStateStillOff =>
+      'ما زال OpenCode متوقفًا. ابدأ مجددًا أو أعد تشغيله من هذا الهاتف.';
+
+  @override
+  String get phoneTeamStateNotStopped => 'لم يتم إيقاف OpenCode.';
+
+  @override
+  String get phoneTeamStateTerminalsClosed => 'أُغلقت الطرفيات المفتوحة.';
+
+  @override
+  String get phoneTeamWhyUnsafe =>
+      'لم ينجح الفحص الذي يفصل نسخة الفريق من شيفرتك عن الوكلاء.';
+
+  @override
+  String get phoneTeamWhyEngine => 'توقف محرك الفريق أو لم يستجب أثناء بدئه.';
+
+  @override
+  String get phoneTeamWhyStop =>
+      'لم يُغلق OpenCode أو إحدى الطرفيات عند الطلب.';
+
+  @override
+  String get phoneTeamWhyServer => 'لم يستجب OpenCode بعد تشغيله مجددًا.';
+
+  @override
+  String get phoneTeamWhyNotReady =>
+      'استجاب محرك الفريق لكنه قال إنه لا يستطيع تشغيل العمل بعد.';
+
+  @override
   String get phoneTeamDetails => 'التفاصيل';
 
   @override
@@ -26042,4 +26150,30 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get phoneTeamBlockedTitle => 'افحص الهاتف أولًا';
+
+  @override
+  String get teamMigrationTitle => 'تغيّر فريق الذكاء الاصطناعي';
+
+  @override
+  String get teamMigrationBody =>
+      'الفريق الجديد يخطط لمشاريع كاملة وينفذها على هذا الهاتف. فريقك القديم يعمل كما هو، لكنه يقبل المهام السريعة فقط ولا يخطط للمشاريع. التبديل يسألك قبل إيقاف أي شيء.';
+
+  @override
+  String get teamMigrationSwitch =>
+      'التبديل إلى فريق الذكاء الاصطناعي الجديد على هذا الهاتف';
+
+  @override
+  String get teamMigrationKeep => 'إبقاء الفريق القديم حاليًا';
+
+  @override
+  String get teamMigrationMenu => 'ما الجديد في فريق الذكاء الاصطناعي';
+
+  @override
+  String get teamProjectPages => 'صفحات المشروع';
+
+  @override
+  String get teamProjectMergeReady => 'جاهز للدمج';
+
+  @override
+  String get teamProjectMergeChecking => 'بانتظار فحوصاته';
 }

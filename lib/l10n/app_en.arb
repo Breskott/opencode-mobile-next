@@ -29949,7 +29949,36 @@
   "teamProjectEditorSingle": "Single lane",
   "teamProjectEditorParallel": "Parallel agents",
   "teamProjectEditorMaxLanes": "Maximum lanes",
-  "teamProjectEditorCostUnknown": "Each lane is one sub-session, and your chat stays first. Cost is not measured in this demo; memory, battery and chat speed depend on the host.",
+  "teamProjectEditorCostMeasured": "On {host}: about {memory} MB of memory per lane, measured. Battery and chat speed are not measured yet.",
+  "@teamProjectEditorCostMeasured": {
+    "description": "Cost line in the New project sheet, from a measured host",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      },
+      "memory": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectEditorCostNotMeasured": "Not measured on {host} yet. Your chat stays first.",
+  "@teamProjectEditorCostNotMeasured": {
+    "description": "Cost line when the chosen host has no measurement",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectEditorCostNoHost": "Choose where the work runs to see what a lane costs there.",
+  "teamProjectEditorThisPhone": "this phone",
+  "teamProjectEditorGoalRequired": "Add a goal.",
+  "teamProjectEditorRepoMissing": "Add at least one repo.",
+  "teamProjectEditorRepoIncomplete": "Finish the repo: a name, a folder and where it runs.",
+  "teamProjectEditorNoFallback": "No fallback model",
+  "teamProjectEditorNoFallbackHint": "The work waits for the main model instead of switching.",
+  "teamProjectEditorReadOnlyRole": "Read-only: this agent can read the project but not change it.",
+  "teamProjectEditorReadOnlyShort": "Read-only",
   "teamProjectEditorCharging": "Only while charging",
   "teamProjectEditorReview": "Review level",
   "teamProjectEditorMilestonesRisk": "Milestones and risky points",
@@ -29974,7 +30003,7 @@
   "teamProjectEditorHistory": "Version history",
   "teamProjectEditorVersion": "Version",
   "teamProjectEditorPlanHelp": "Review the tasks and their acceptance criteria. Changes here are included when you approve the plan.",
-  "teamProjectEditorRisky": "Pause for review after this phase",
+  "teamProjectEditorRisky": "Review gate · risky",
   "teamProjectEditorTaskTitle": "Task title",
   "teamProjectEditorRepo": "Repo",
   "teamProjectEditorDependencies": "Depends on",
@@ -29989,7 +30018,7 @@
   "teamProjectEditorChooseMode": "Choose Single lane or Parallel agents.",
   "teamProjectEditorPositiveLanes": "Enter a lane limit from 1 to 32.",
   "teamProjectEditorChooseBudget": "Set a budget or choose No limit.",
-  "teamProjectEditorPositiveBudget": "Enter a positive per-day limit and total limit.",
+  "teamProjectEditorPositiveBudget": "Enter a limit per day and a total limit, each above zero.",
   "teamProjectEditorSaveFailed": "Changes could not be saved. Your edits are still here; try saving again.",
   "teamProjectEditorRequired": "Add a goal and at least one repo.",
   "teamProjectEditorChooseRoleServer": "Choose a role and a server for this task.",
@@ -30400,7 +30429,7 @@
       }
     }
   },
-  "teamProjectPlanReviewPoint": "review point",
+  "teamProjectPlanReviewPoint": "Review gate · risky",
   "teamProjectPlanRepo": "{name} repo",
   "@teamProjectPlanRepo": {
     "placeholders": {
@@ -30446,6 +30475,55 @@
   },
   "teamProjectPlanEdit": "Edit plan",
   "teamProjectPlanAsk": "Ask to change",
+  "teamProjectPlanNotYet": "Not yet",
+  "teamProjectPlanServerTitle": "Run \"{task}\" on",
+  "@teamProjectPlanServerTitle": {
+    "placeholders": {
+      "task": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectPlanServerFixed": "Each task runs on the computer it was planned for. This team cannot move tasks to another computer yet.",
+  "teamProjectMergeEffectDev": "{tasks, plural, one{1 checked task} other{{tasks} checked tasks}} from {repo} will be merged into dev.",
+  "@teamProjectMergeEffectDev": {
+    "placeholders": {
+      "repo": {
+        "type": "String"
+      },
+      "tasks": {
+        "type": "int"
+      }
+    }
+  },
+  "teamProjectMergeEffectMain": "Main is not touched.",
+  "teamProjectReceiptMerged": "Merged into dev · {repo}",
+  "@teamProjectReceiptMerged": {
+    "placeholders": {
+      "repo": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectReceiptPromoted": "Promoted to main · {repo}",
+  "@teamProjectReceiptPromoted": {
+    "placeholders": {
+      "repo": {
+        "type": "String"
+      }
+    }
+  },
+  "teamProjectTimelineRepeated": "{text} · {count} times",
+  "@teamProjectTimelineRepeated": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "teamProjectPromoteTitle": "Promote dev → main",
   "teamProjectPromoteStatus": "{repo} repo · main is protected. Only you can promote.",
   "@teamProjectPromoteStatus": {
@@ -30530,7 +30608,7 @@
   "teamProjectEditorWhereRuns": "Where it runs",
   "teamProjectEditorMoreOptions": "Optional details",
   "teamProjectEditorNameHelp": "Optional. Leave empty to use the start of the goal.",
-  "teamProjectEditorBudgetHelp": "The team pauses when the day reaches it. Leave a total to cap the whole project.",
+  "teamProjectEditorBudgetHelp": "The team pauses when the day or the whole project reaches its limit.",
   "teamProjectFindingsCritical": "{count} critical",
   "@teamProjectFindingsCritical": {
     "placeholders": {
@@ -30623,7 +30701,7 @@
   "@phoneTeamFailEngineTitle": {
     "description": "Failure headline: the engine did not start"
   },
-  "phoneTeamFailEngineBody": "The team's engine didn't start on this phone. Nothing else was changed.",
+  "phoneTeamFailEngineBody": "The team's engine didn't start on this phone.",
   "@phoneTeamFailEngineBody": {
     "description": "Failure: the engine did not start or answer"
   },
@@ -30670,6 +30748,42 @@
   "phoneTeamReasonNotPackaged": "This copy of the app doesn't include the team's safety tools.",
   "@phoneTeamReasonNotPackaged": {
     "description": "Plain reason under the check step when the safety tools are missing"
+  },
+  "phoneTeamStateBackOn": "OpenCode is back on.",
+  "@phoneTeamStateBackOn": {
+    "description": "Failure page: OpenCode was stopped for the check and is running again"
+  },
+  "phoneTeamStateStillOff": "OpenCode is still off. Start again, or restart it from This phone.",
+  "@phoneTeamStateStillOff": {
+    "description": "Failure page: OpenCode was stopped and could not be started again"
+  },
+  "phoneTeamStateNotStopped": "OpenCode was not stopped.",
+  "@phoneTeamStateNotStopped": {
+    "description": "Failure page: the run ended before it stopped OpenCode"
+  },
+  "phoneTeamStateTerminalsClosed": "Open terminals were closed.",
+  "@phoneTeamStateTerminalsClosed": {
+    "description": "Failure page: the run closed the person's terminals"
+  },
+  "phoneTeamWhyUnsafe": "The check that keeps the team's copy of your code separate from the agents did not pass.",
+  "@phoneTeamWhyUnsafe": {
+    "description": "Details: plain sentence before the code, safety check failed"
+  },
+  "phoneTeamWhyEngine": "The team's engine stopped or did not answer while it was starting.",
+  "@phoneTeamWhyEngine": {
+    "description": "Details: plain sentence before the code, engine failed"
+  },
+  "phoneTeamWhyStop": "OpenCode or a terminal did not close when asked.",
+  "@phoneTeamWhyStop": {
+    "description": "Details: plain sentence before the code, stop failed"
+  },
+  "phoneTeamWhyServer": "OpenCode did not answer after it was started again.",
+  "@phoneTeamWhyServer": {
+    "description": "Details: plain sentence before the code, server did not start"
+  },
+  "phoneTeamWhyNotReady": "The team's engine answered but said it cannot run work yet.",
+  "@phoneTeamWhyNotReady": {
+    "description": "Details: plain sentence before the code, engine not ready"
   },
   "phoneTeamDetails": "Details",
   "@phoneTeamDetails": {
@@ -30718,5 +30832,13 @@
   "phoneTeamBlockedTitle": "Check this phone first",
   "@phoneTeamBlockedTitle": {
     "description": "Question title when a work action waits for the phone check"
-  }
+  },
+  "teamMigrationTitle": "AI Team has changed",
+  "teamMigrationBody": "The new AI Team plans whole projects and runs them on this phone. Your old team keeps working, but it only takes quick tasks: it cannot plan projects. Switching asks before it stops anything.",
+  "teamMigrationSwitch": "Switch to the new AI Team on this phone",
+  "teamMigrationKeep": "Keep the old team for now",
+  "teamMigrationMenu": "What's new in AI Team",
+  "teamProjectPages": "Project pages",
+  "teamProjectMergeReady": "Ready to merge",
+  "teamProjectMergeChecking": "Waiting for its checks"
 }

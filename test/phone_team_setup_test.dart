@@ -46,6 +46,7 @@ class _Phone extends ChangeNotifier implements PhoneTeamSetupPorts {
   PhoneEngineHealth started = _health();
   PhoneEngineHealth probed = _health();
   String? serverFailure;
+  bool restoreResult = true;
   bool on = false;
   bool server = true;
   final calls = <String>[];
@@ -95,6 +96,12 @@ class _Phone extends ChangeNotifier implements PhoneTeamSetupPorts {
   Future<String?> startServer() async {
     calls.add('startServer');
     return serverFailure;
+  }
+
+  @override
+  Future<bool> restoreServer() async {
+    calls.add('restoreServer');
+    return restoreResult;
   }
 
   @override
@@ -275,6 +282,48 @@ void main() {
       expect(phone.calls, isNot(contains('startServer')));
     });
 
+    test(
+      'B-3: a failure after the stop puts OpenCode back, once, and says so',
+      () async {
+        final phone = _Phone()
+          ..host = const PhoneTeamHostState(serverRunning: true, terminals: 1)
+          ..started = _health(boundary: false, reason: 'boundary_proof_failed');
+        final flow = _flow(phone);
+        final run = flow.run();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        flow.answer(true);
+        await run;
+        expect(flow.phase, PhoneTeamSetupPhase.failed);
+        expect(flow.serverState, PhoneTeamServerState.backOn);
+        expect(flow.terminalsClosed, isTrue);
+        expect(phone.calls.where((c) => c == 'restoreServer'), hasLength(1));
+        expect(phone.calls.indexOf('restoreServer'), greaterThan(2));
+
+        phone.restoreResult = false;
+        phone.started = _health(boundary: false, reason: 'x');
+        final again = _flow(phone);
+        final second = again.run();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        again.answer(true);
+        await second;
+        expect(again.serverState, PhoneTeamServerState.stillOff);
+      },
+    );
+
+    test(
+      'B-3: a failure that never stopped OpenCode restores nothing',
+      () async {
+        final phone = _Phone()
+          ..started = _health(boundary: false, reason: 'boundary_proof_failed');
+        final flow = _flow(phone);
+        await flow.run();
+        expect(flow.serverState, PhoneTeamServerState.untouched);
+        expect(phone.calls, isNot(contains('restoreServer')));
+      },
+    );
+
     test('OpenCode that does not come back is its own failure', () async {
       final phone = _Phone()..serverFailure = 'timedOut';
       final flow = _flow(phone);
@@ -377,12 +426,18 @@ void main() {
       );
       await _settle(tester);
       expect(find.text(_en.phoneTeamFailUnsafeTitle), findsOneWidget);
-      expect(find.text(_en.phoneTeamFailUnsafeBody), findsOneWidget);
+      // B-4: the body says exactly what state OpenCode is in; nothing was
+      // stopped here, and it never claims "nothing else was changed".
+      expect(find.textContaining(_en.phoneTeamFailUnsafeBody), findsOneWidget);
+      expect(find.textContaining(_en.phoneTeamStateNotStopped), findsOneWidget);
+      expect(find.textContaining('Nothing else was changed'), findsNothing);
       // The code is not plain copy; it is behind Details.
       expect(find.text('boundary_proof_failed'), findsNothing);
       expect(find.text(_en.phoneTeamStepCheck), findsOneWidget);
       await tester.tap(find.text('Details'));
       await _settle(tester);
+      // Details: one plain sentence, then the code.
+      expect(find.textContaining(_en.phoneTeamWhyUnsafe), findsOneWidget);
       expect(find.textContaining('boundary_proof_failed'), findsOneWidget);
 
       // Start again runs it afresh and can succeed.
@@ -390,6 +445,34 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('phone-team-start-again')));
       await _settle(tester);
       expect(find.text(_en.phoneTeamDoneTitle), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('B-3/B-4: after a stop, the failure says OpenCode is back on', (
+      tester,
+    ) async {
+      _size(tester);
+      final connection = await _connection();
+      final phone = _Phone()
+        ..host = const PhoneTeamHostState(serverRunning: true, terminals: 1)
+        ..started = _health(boundary: false, reason: 'engine_bundle_invalid');
+      await tester.pumpWidget(
+        _app(
+          TeamPhoneSetupScreen(
+            connection: connection,
+            controller: _flow(phone),
+          ),
+        ),
+      );
+      await _settle(tester);
+      await tester.tap(find.byKey(const ValueKey('phone-team-stop-confirm')));
+      await _settle(tester);
+      expect(find.textContaining(_en.phoneTeamStateBackOn), findsOneWidget);
+      expect(
+        find.textContaining(_en.phoneTeamStateTerminalsClosed),
+        findsOneWidget,
+      );
+      expect(phone.calls, contains('restoreServer'));
       await tester.pumpWidget(const SizedBox.shrink());
     });
 

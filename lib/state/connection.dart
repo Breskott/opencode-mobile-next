@@ -1329,6 +1329,31 @@ class ConnectionController extends ChangeNotifier {
   String? _phoneChatDispatchProfile;
   final _phoneChatDispatch = PhoneChatDispatchTracker();
 
+  /// A chat reply is on the wire: busy on the server, or a prompt sent that
+  /// the server has not reported busy yet. The same signal the chat uses to
+  /// keep its stop button, so nothing that must not cut a reply short can
+  /// miss the first seconds of one.
+  bool get replyInFlight =>
+      busySessions.isNotEmpty ||
+      _phoneChatDispatch.isNotEmpty ||
+      _openTurns.values.any(
+        (at) => DateTime.now().difference(at) < _openTurnGrace,
+      );
+
+  /// Sessions with a prompt just sent (by this phone's chat, or seen as a
+  /// new user message on the live stream) that the server has not yet
+  /// reported busy. It bridges the first seconds of a reply, which a busy
+  /// status alone can miss; a session going idle closes it and it never
+  /// outlives [_openTurnGrace], so a lost event cannot hold a flow forever.
+  final Map<String, DateTime> _openTurns = {};
+  static const _openTurnGrace = Duration(minutes: 3);
+
+  /// The chat just put a prompt for [sessionId] on the wire.
+  void noteLocalTurn(String sessionId) {
+    if (sessionId.isEmpty) return;
+    _openTurns[sessionId] = DateTime.now();
+  }
+
   bool _phoneChatEligible(String id) {
     final owner = _connectedProfile;
     return !_disposed &&
@@ -3947,6 +3972,9 @@ class ConnectionController extends ChangeNotifier {
         final info = props['info'];
         if (info is Map<String, dynamic>) {
           final msg = MessageInfo.fromJson(info);
+          if (msg.role == 'user' && !_openTurns.containsKey(msg.sessionID)) {
+            _openTurns[msg.sessionID] = DateTime.now();
+          }
           if (msg.role == 'assistant') {
             _markSessionChanged(msg.sessionID);
             final working =
@@ -4084,6 +4112,7 @@ class ConnectionController extends ChangeNotifier {
                 unawaited(_refreshBusySessionStatuses());
               }
               busySessions.remove(sid);
+              _openTurns.remove(sid);
               retryStates.remove(sid);
               _settleSessionAttention(sid, CodingAlertKind.complete);
               unawaited(_refreshOneSession(sid));
@@ -4127,6 +4156,7 @@ class ConnectionController extends ChangeNotifier {
           }
           _markSessionChanged(sid);
           busySessions.remove(sid);
+          _openTurns.remove(sid);
           retryStates.remove(sid);
           if (!stopped) _settleSessionAttention(sid, CodingAlertKind.error);
           _resumeDeferredProviderHeal();
@@ -4155,6 +4185,7 @@ class ConnectionController extends ChangeNotifier {
           }
           _markSessionChanged(sid);
           busySessions.remove(sid);
+          _openTurns.remove(sid);
           retryStates.remove(sid);
           _settleSessionAttention(sid, CodingAlertKind.complete);
           unawaited(_refreshOneSession(sid));
@@ -6012,6 +6043,7 @@ class ConnectionController extends ChangeNotifier {
             }
           } else {
             busySessions.remove(id);
+            _openTurns.remove(id);
             _settleSessionAttention(id, CodingAlertKind.complete);
           }
           if (statuses[id] == 'retry') {
@@ -6062,6 +6094,7 @@ class ConnectionController extends ChangeNotifier {
     _sessionInventoryIDs.remove(id);
     _forgetSessionModel(id);
     busySessions.remove(id);
+    _openTurns.remove(id);
     retryStates.remove(id);
     _dismissSessionCodingAlerts(id);
     permissions.removeWhere((_, value) => value.sessionID == id);
@@ -6332,6 +6365,7 @@ class ConnectionController extends ChangeNotifier {
       if (_idleOnce.add(entry.key)) continue;
       _idleOnce.remove(entry.key);
       final removed = busySessions.remove(entry.key);
+      _openTurns.remove(entry.key);
       changed = retryStates.remove(entry.key) != null || changed;
       changed = removed || changed;
       if (removed) {
@@ -10840,6 +10874,7 @@ class ConnectionController extends ChangeNotifier {
     sessionModels = {};
     _modelLibrary = const ModelLibrary();
     busySessions = {};
+    _openTurns.clear();
     observedCompletedMessageIDs.clear();
     retryStates = {};
     permissions = {};
