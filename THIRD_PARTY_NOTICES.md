@@ -24,6 +24,21 @@ table says so with a dash rather than inventing an owner.
 
 ## Bundled components
 
+### Phone project engine
+
+The ARM64 phone engine, confinement launcher and isolated boundary probe are
+built from `engine/phone/` and its committed `Cargo.lock`. The packaged Android
+asset `aiteam-engine-manifest.json` records executable SHA-256 hashes and an exact
+Rust source digest; native launch verifies the executable hashes. Rebuild with
+`engine/phone/tool/build-android.sh --stage-android` using the pinned NDK.
+
+The complete locked Android normal-dependency notices, including Rust standard
+library attribution, libgit2's GPL v2 text with linking exception and vendored
+notices, and SQLite's public-domain dedication, are bundled in
+[`LICENSES/Rust-Phone-Engine.txt`](LICENSES/Rust-Phone-Engine.txt). The generator
+reads the exact local Cargo package sources; these are separate from the Dart
+package inventory below. Execution is gated independently of packaging.
+
 ### Phosphor icon artwork
 
 The regular, duotone and fill icon fonts are copied unchanged from the official

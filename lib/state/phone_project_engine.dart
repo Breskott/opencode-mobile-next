@@ -45,11 +45,12 @@ class BuiltinPhoneProjectEngineBridge implements PhoneProjectEngineBridge {
       _builtin.deletePhoneEngine(profileId);
 }
 
-typedef PhoneEngineGatewayBuilder = PhoneEngineGateway Function({
-  required String baseUrl,
-  required String profileId,
-  required String bearerToken,
-});
+typedef PhoneEngineGatewayBuilder =
+    PhoneEngineGateway Function({
+      required String baseUrl,
+      required String profileId,
+      required String bearerToken,
+    });
 
 /// Profile-owned lifecycle, including inactive profiles. Never auto-starts daemon.
 class PhoneProjectEngineController {
@@ -86,13 +87,17 @@ class PhoneProjectEngineController {
     orElse: () => throw const PhoneEngineException('profileMissing'),
   );
   Future<T> _serial<T>(String id, Future<T> Function() action) {
-    if (_closed)
+    if (_closed) {
       return Future.error(const PhoneEngineException('engineClosed'));
-    if (_blocked(id))
+    }
+    if (_blocked(id)) {
       return Future.error(const PhoneEngineException('profileDeleted'));
+    }
     final next = (_tails[id] ?? Future<void>.value()).then((_) async {
       if (_blocked(id)) throw const PhoneEngineException('profileDeleted');
-      return action();
+      {
+        return action();
+      }
     });
     _tails[id] = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
     return next;
@@ -100,11 +105,14 @@ class PhoneProjectEngineController {
 
   PhoneEngineGateway gateway(ServerProfile profile) {
     if (_closed) throw const PhoneEngineException('engineClosed');
-    if (_blocked(profile.id))
+    if (_blocked(profile.id)) {
       throw const PhoneEngineException('profileDeleted');
+    }
     final config = profile.orchestration;
     if (config?.provider != OrchestrationProvider.phoneEngine) {
-      throw const PhoneEngineException('engineUnavailable');
+      {
+        throw const PhoneEngineException('engineUnavailable');
+      }
     }
     final client = _build(
       baseUrl: config!.url,
@@ -120,8 +128,9 @@ class PhoneProjectEngineController {
     int port = 4098,
     String? notice,
   }) => _serial(profileId, () async {
-    if (port < 1 || port > 65535)
+    if (port < 1 || port > 65535) {
       throw const PhoneEngineException('endpointInvalid');
+    }
     try {
       await bridge.start(profileId, port: port, notice: notice);
     } catch (_) {
@@ -148,8 +157,9 @@ class PhoneProjectEngineController {
     try {
       final h = await client.probe();
       if (_closed) throw const PhoneEngineException('engineClosed');
-      if (_blocked(profileId))
+      if (_blocked(profileId)) {
         throw const PhoneEngineException('profileDeleted');
+      }
       final previousConfig = profile.orchestration;
       final previousAuth = profile.teamEngineAuth;
       profile.teamEngineAuth = credentials.bearerToken;
@@ -166,8 +176,9 @@ class PhoneProjectEngineController {
         profile.teamEngineAuth = previousAuth;
         throw const PhoneEngineException('authSaveFailed');
       }
-      if (_blocked(profileId))
+      if (_blocked(profileId)) {
         throw const PhoneEngineException('profileDeleted');
+      }
       onAttached?.call(profileId);
       return h;
     } finally {
@@ -228,7 +239,9 @@ class PhoneProjectEngineController {
 
   Future<void> _delete(String profileId) async {
     if (!await store.prefs.setBool(_tombstone(profileId), true)) {
-      throw const PhoneEngineException('deleteFailed');
+      {
+        throw const PhoneEngineException('deleteFailed');
+      }
     }
     await _tails[profileId];
     final clients = _gateways.remove(profileId) ?? <PhoneEngineGateway>{};

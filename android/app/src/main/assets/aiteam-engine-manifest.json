@@ -1,0 +1,15 @@
+{
+  "rustcVersion": "rustc 1.92.0 (ded5c06cf 2025-12-08)",
+  "ndkVersion": "28.2.13676358",
+  "sourceSha256": "7637348bbbe225d200343b21a6efd14b8d6db93dce84b3a5c9fedebfb59d648e",
+  "schemaVersion": 1,
+  "target": "aarch64-linux-android",
+  "api": 26,
+  "sourceRevision": "ca5e682f9597a789cab91178ab89642b53aad9da",
+  "sourceDirty": true,
+  "sha256": {
+    "libaiteam_sandbox.so": "91868b5b141e79bd2c8f8c9fc7d2838bcd9895b9e323e463007445916637ceaa",
+    "libaiteam_engine.so": "91df642b6e4fa85a29262fd51f5ec89ee82df7e3d725bfd69ced04df1221cdd9",
+    "libaiteam_boundary_probe.so": "bd2e13d3e2260ccc53cba5434c6d087fe75bba5669d11bf4c1c1e23664e97f97"
+  }
+}

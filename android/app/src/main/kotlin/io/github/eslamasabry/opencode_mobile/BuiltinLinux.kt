@@ -224,6 +224,7 @@ class BuiltinLinux(private val context: Context) {
     /** Isolated acceptance harness; it never grants execution authority. */
     @Synchronized
     fun runPhoneEngineBoundaryProbe(): Map<String, Any?> {
+        PhoneEngineNative.verifyBundle(context, "libaiteam_sandbox.so", "libaiteam_boundary_probe.so")
         if (!installed || services.any { it.key != PHONE_ENGINE && it.value.process.isAlive } ||
             processes.any { it.isAlive } || LocalTerminal.get(context).hasLiveSessions()) {
             throw PhoneEngineNative.Failure("restart_required")
@@ -306,6 +307,7 @@ class BuiltinLinux(private val context: Context) {
 
     @Synchronized
     fun startProtectedPhoneServer(profile: String, script: String, port: Int) {
+        PhoneEngineNative.verifyBundle(context, "libaiteam_sandbox.so")
         phoneEngine.status(profile) // Validates the profile, without reading auth.
         if (serverRunning || services.any { it.key != PHONE_ENGINE && it.value.process.isAlive } ||
             processes.any { it.isAlive } || LocalTerminal.get(context).hasLiveSessions()) {

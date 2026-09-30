@@ -93,7 +93,7 @@ impl RepositoryAuthority {
         }
         secure_create_dir(&private_root)?;
         secure_create_dir(&worker_root)?;
-        for name in ["repos", "workers", "receipts", "staging"] {
+        for name in ["repos", "workers", "receipts", "staging", "imports"] {
             secure_create_dir(&private_root.join(name))?;
         }
         Ok(Self {
@@ -103,6 +103,24 @@ impl RepositoryAuthority {
     }
 
     pub fn import_repo(&self, repo_id: &str, source: &Path) -> Result<Value> {
+        self.import_bound(repo_id, source, None)
+    }
+
+    /// Recover import completed before the command's SQLite commit. Bind the
+    /// authored request, not just the source path or caller-selected repo id.
+    pub fn import_repo_for_request(
+        &self,
+        repo_id: &str,
+        source: &Path,
+        request: &str,
+    ) -> Result<Value> {
+        if request.is_empty() || request.len() > 128 {
+            return Err(RepoError("invalid_request"));
+        }
+        self.import_bound(repo_id, source, Some(request))
+    }
+
+    fn import_bound(&self, repo_id: &str, source: &Path, request: Option<&str>) -> Result<Value> {
         valid_id(repo_id)?;
         let _lock = self.lock()?;
         let source = absolute(source)?;
@@ -114,8 +132,22 @@ impl RepositoryAuthority {
             return Err(RepoError("unsafe_source"));
         }
         let target = self.repo_path(repo_id);
+        let binding_path = self
+            .private_root
+            .join("imports")
+            .join(format!("{repo_id}.json"));
+        let binding = json!({"repoId":repo_id,"source":source,"requestId":request});
         if target.exists() {
+            if request.is_some() && read_json::<Value>(&binding_path)? == binding {
+                return self.refs_unlocked(repo_id);
+            }
             return Err(RepoError("repository_exists"));
+        }
+        if request.is_some() {
+            if binding_path.exists() && read_json::<Value>(&binding_path)? != binding {
+                return Err(RepoError("import_binding_mismatch"));
+            }
+            atomic_json(&binding_path, &binding)?;
         }
         let snapshot = self.snapshot(&source, true)?;
         let staged = self

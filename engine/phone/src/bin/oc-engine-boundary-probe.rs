@@ -5,6 +5,13 @@ use std::ffi::CString;
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
+// Android libc omits this AArch64 name. asm-generic/unistd.h defines
+// __NR3264_truncate=45; bionic uses that 64-bit syscall on this target.
+#[cfg(all(target_os = "android", target_arch = "aarch64"))]
+const SYS_TRUNCATE: libc::c_long = 45;
+#[cfg(not(all(target_os = "android", target_arch = "aarch64")))]
+const SYS_TRUNCATE: libc::c_long = libc::SYS_truncate;
+
 fn denied(value: libc::c_long) -> bool {
     value == -1
         && matches!(
@@ -46,7 +53,7 @@ fn check(root: &Path, worker: &Path, parent: i32) -> bool {
     let canonical = path(&target);
     let escaped = path(&worker.join("stolen"));
     let attacks: &[&dyn Fn() -> libc::c_long] = &[
-        &|| unsafe { libc::syscall(libc::SYS_truncate, canonical.as_ptr(), 0) },
+        &|| unsafe { libc::syscall(SYS_TRUNCATE, canonical.as_ptr(), 0) },
         &|| unsafe {
             libc::syscall(
                 libc::SYS_renameat,
@@ -113,7 +120,7 @@ fn check(root: &Path, worker: &Path, parent: i32) -> bool {
         }
     }
     // Parent is an isolated proof process outside the Landlock domain.
-    let ptrace = unsafe { libc::ptrace(libc::PTRACE_SEIZE, parent, 0, 0) };
+    let ptrace = unsafe { libc::ptrace(0x4206 as _, parent, 0, 0) };
     if !denied(ptrace as libc::c_long) {
         ok = false;
         if ptrace == 0 {

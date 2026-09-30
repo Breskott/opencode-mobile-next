@@ -1,5 +1,4 @@
-#[path = "../boundary.rs"]
-mod boundary;
+use oc_phone_engine::boundary;
 
 use boundary::{BoundaryError, Rule};
 use std::os::unix::process::CommandExt;

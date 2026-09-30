@@ -619,3 +619,22 @@ fn network_import_origin_is_removed_and_local_import_origin_refuses() {
     );
     assert!(!f.private.join("repos/unsafe-import.git").exists());
 }
+
+#[test]
+fn import_replay_binds_the_authored_request_across_restart() {
+    let f = Fixture::new();
+    let first = f
+        .authority
+        .import_repo_for_request("other", &f.source, "create-request")
+        .unwrap();
+    let replay = f
+        .restart()
+        .import_repo_for_request("other", &f.source, "create-request")
+        .unwrap();
+    assert_eq!(first["mainCommit"], replay["mainCommit"]);
+    assert_eq!(first["devCommit"], replay["devCommit"]);
+    assert!(f
+        .authority
+        .import_repo_for_request("other", &f.source, "different-request")
+        .is_err());
+}

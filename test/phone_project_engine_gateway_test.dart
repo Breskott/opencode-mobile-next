@@ -81,6 +81,7 @@ void main() {
     () {
       for (final endpoint in [
         'http://100.64.0.1:4098',
+        'http://localhost:4098',
         'https://example.org',
         'http://user:pass@127.0.0.1:4098',
         'http://127.0.0.1:4098?token=secret',
@@ -147,47 +148,51 @@ void main() {
       );
     },
   );
-  test('unproven health permits workspace but rejects execution and unsupported commands', () async {
-    final adapter = FakeEngineAdapter(
-      (r) async => jsonBody(
-        r.path == '/v1/health'
-            ? health('p1', actions: ['promote'])
-            : workspace(),
-      ),
-    );
-    final client = gateway(adapter);
-    await client.probe();
-    expect(client.capabilities.projectLifecycle, isTrue);
-    expect(client.capabilities.projectPromotion, isFalse);
-    expect((await client.teamWorkspace()).simulated, isFalse);
-    expect(
-      (await client.executeProject(
-        const TeamProjectCommand(
-          requestId: 'r1',
-          action: TeamProjectAction.promote,
+  test(
+    'unproven health permits workspace but rejects execution and unsupported commands',
+    () async {
+      final adapter = FakeEngineAdapter(
+        (r) async => jsonBody(
+          r.path == '/v1/health'
+              ? health('p1', actions: ['promote'])
+              : workspace(),
         ),
-      )).code,
-      'boundaryUnverified',
-    );
-    expect(
-      (await client.executeProject(
-        const TeamProjectCommand(
-          requestId: 'r2',
-          action: TeamProjectAction.advance,
-        ),
-      )).code,
-      'unsupportedCommand',
-    );
-    expect(adapter.requests.where((r) => r.method == 'POST'), isEmpty);
-    await client.close();
-  });
+      );
+      final client = gateway(adapter);
+      await client.probe();
+      expect(client.capabilities.projectLifecycle, isFalse);
+      expect(client.capabilities.projectPromotion, isFalse);
+      expect((await client.teamWorkspace()).simulated, isFalse);
+      expect(
+        (await client.executeProject(
+          const TeamProjectCommand(
+            requestId: 'r1',
+            action: TeamProjectAction.promote,
+          ),
+        )).code,
+        'boundaryUnverified',
+      );
+      expect(
+        (await client.executeProject(
+          const TeamProjectCommand(
+            requestId: 'r2',
+            action: TeamProjectAction.advance,
+          ),
+        )).code,
+        'unsupportedCommand',
+      );
+      expect(adapter.requests.where((r) => r.method == 'POST'), isEmpty);
+      await client.close();
+    },
+  );
   test(
     'redacts commands before transmission and never retries ambiguous mutation',
     () async {
       KitRedact.registerKnownSecret('private-provider-secret');
       final adapter = FakeEngineAdapter((r) async {
-        if (r.path == '/v1/health')
+        if (r.path == '/v1/health') {
           return jsonBody(health('p1', actions: ['createProject']));
+        }
         throw DioException(
           requestOptions: r,
           message: 'local-engine-secret private-provider-secret',
@@ -231,8 +236,9 @@ void main() {
       final release = Completer<void>();
       final order = <String>[];
       final adapter = FakeEngineAdapter((r) async {
-        if (r.path == '/v1/health')
+        if (r.path == '/v1/health') {
           return jsonBody(health('p1', actions: ['createProject']));
+        }
         if (r.method == 'POST') {
           entered.complete();
           await release.future;
@@ -276,7 +282,9 @@ void main() {
       final adapter = FakeEngineAdapter((r) async {
         if (r.path == '/v1/health') return jsonBody(health('p1'));
         if (fail) return jsonBody({}, 503);
-        return jsonBody(workspace());
+        {
+          return jsonBody(workspace());
+        }
       });
       final client = gateway(adapter, poll: const Duration(milliseconds: 10));
       final first = Completer<TeamWorkspace>();

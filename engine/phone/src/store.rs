@@ -354,6 +354,27 @@ impl Store {
                 j["sessionUsage"][role] = session["usage"].clone();
             }
         }
+        if patch.get("sessionUsage").is_some()
+            || (patch.get("sessionIds").is_some() && patch.get("usage").is_none())
+        {
+            // Cumulative snapshots are summed once per recorded session. A new
+            // session with unknown usage must not reuse the previous role's total.
+            let roles: Vec<_> = j["sessionIds"]
+                .as_object()
+                .ok_or(StoreError("invalidUsage"))?
+                .keys()
+                .cloned()
+                .collect();
+            let cost: Option<f64> = roles
+                .iter()
+                .map(|role| j["sessionUsage"][role]["cost"].as_f64())
+                .sum();
+            let tokens = roles.iter().try_fold(0u64, |sum, role| {
+                sum.checked_add(j["sessionUsage"][role]["tokens"].as_u64()?)
+            });
+            j["usage"]["cost"] = json!(cost.filter(|n| n.is_finite()));
+            j["usage"]["tokens"] = json!(tokens);
+        }
         if let Some(receipt) = patch.get("repoReceipt") {
             if j["kind"] != "task" || stage != "completed" {
                 return Err(StoreError("invalidRepositoryReceipt"));
@@ -805,7 +826,7 @@ fn job(w: &Value, p: &Value, task: Option<&Value>) -> Value {
         .or_else(|| p["repos"].as_array().and_then(|rs| rs.first()))
         .cloned()
         .unwrap_or(json!({}));
-    json!({"id":new_id("job"),"kind":if task.is_some(){"task"}else{"planner"},"projectId":p["id"],"taskId":task.map(|t|t["id"].clone()).unwrap_or(json!("")),"repoId":repo["id"],"serverId":repo["serverId"],"roleId":role_id,"model":role["model"].as_str().unwrap_or(""),"fallbackModel":role["fallbackModel"].as_str().unwrap_or(""),"instructions":role["instructions"].as_str().unwrap_or(""),"readOnly":task.is_none() || role["readOnly"]==true,"title":task.map(|t|t["title"].clone()).unwrap_or(p["specDraft"]["goal"].clone()),"spec":p["specDraft"],"criteria":task.map(|t|t["criteria"].clone()).unwrap_or(json!([])),"dependsOn":task.map(|t|t["dependsOn"].clone()).unwrap_or(json!([])),"stage":"queued","directory":null,"sessionIds":{},"sessionUsage":{},"expectedDevCommit":repo["devCommit"].as_str().unwrap_or(""),"expectedMainCommit":repo["mainCommit"].as_str().unwrap_or(""),"usage":{"cost":null,"tokens":null},"createdAt":now(),"updatedAt":now()})
+    json!({"id":new_id("job"),"kind":if task.is_some(){"task"}else{"planner"},"projectId":p["id"],"taskId":task.map(|t|t["id"].clone()).unwrap_or(json!("")),"repoId":repo["id"],"serverId":repo["serverId"],"roleId":role_id,"model":role["model"].as_str().unwrap_or(""),"fallbackModel":role["fallbackModel"].as_str().unwrap_or(""),"instructions":role["instructions"].as_str().unwrap_or(""),"readOnly":task.is_none() || role["readOnly"]==true,"checkerRole":w["roles"].as_array().and_then(|roles| roles.iter().find(|role| role["id"]=="checker")).cloned().unwrap_or(json!({})),"title":task.map(|t|t["title"].clone()).unwrap_or(p["specDraft"]["goal"].clone()),"spec":p["specDraft"],"criteria":task.map(|t|t["criteria"].clone()).unwrap_or(json!([])),"dependsOn":task.map(|t|t["dependsOn"].clone()).unwrap_or(json!([])),"stage":"queued","directory":null,"sessionIds":{},"sessionUsage":{},"expectedDevCommit":repo["devCommit"].as_str().unwrap_or(""),"expectedMainCommit":repo["mainCommit"].as_str().unwrap_or(""),"usage":{"cost":null,"tokens":null},"createdAt":now(),"updatedAt":now()})
 }
 fn validate_plan(w: &Value, p: &Value) -> Result<(), StoreError> {
     let tasks = p["tasks"]

@@ -114,3 +114,20 @@ The owner deferred tests for speed, but the boundary proof test is part of the f
 ### Codex implementation agreement, 2026-09-30
 
 Agreed: native Android Rust daemon outside proot, private canonical repositories and SQLite, isolated worker clones, authenticated promotion with expected refs and durable receipts; chat-first admission with unknown/stale status paused; OC1 1.18.32 first, OC2 gated. I will implement the full first slice. The existing runtime binds `/proc` and runs under the app UID, so absence from ordinary proot paths alone is not the security proof. The launcher must enforce and positively verify an OS filesystem boundary (or refuse protected execution), including proc aliases and raw tool syscalls. Private credentials must not be exposed through process inspection. This is an implementation acceptance condition for the agreed boundary, not a weaker hook-only alternative. The coordinator/owner has restored worktree/Git access. All work and build artifacts stay on Storage; tests remain deferred at the owner's request.
+
+
+### Codex implementation checkpoint, 2026-09-30
+
+The native Rust/Dart/backend slices are integrated in build/aiteam-phone-engine,
+with ARM64 binaries and an additive UI handoff in
+docs/design/aiteam-inapp-engine-2026-09-30.md. Host Rust check, Android cross-build,
+pinned Flutter analysis and release Kotlin compile passed. Tests remain deferred
+by the owner. This is source/compile evidence, not a live task or boundary pass.
+
+The pinned OC1 driver found no complete global active-instance status checkpoint;
+global_status_unavailable prevents chat admission. The native kernel/proot proof
+and attested restart generation are also unresolved. Execution, canonical import
+and promotion stay unavailable; neither a config boolean nor a probe report
+switches them on. The first live-task finish line is therefore pending those
+prerequisites. The slice QA README records the implementation, limitations and
+deferred acceptance commands. Nothing is pushed, signed, installed or released.

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 
-import '../../../domain/loopback_host.dart';
 import '../../../domain/orchestration_gateway.dart';
 import '../../../domain/phone_project_engine.dart';
 import '../../../ui/kit/kit_redact.dart';
@@ -25,7 +24,7 @@ class PhoneEngineGateway extends NullOrchestrationGateway
     if (uri == null ||
         !uri.hasAuthority ||
         uri.scheme != 'http' ||
-        !isLoopbackHost(uri.host) ||
+        !(uri.host == '127.0.0.1' || uri.host == '::1') ||
         uri.userInfo.isNotEmpty ||
         uri.hasQuery ||
         uri.hasFragment ||
@@ -99,7 +98,11 @@ class PhoneEngineGateway extends NullOrchestrationGateway
     return OrchestrationCapabilities(
       projects: true,
       phoneHost: true,
-      projectLifecycle: true,
+      projectLifecycle: all([
+        TeamProjectAction.createProject,
+        TeamProjectAction.createQuickTask,
+        TeamProjectAction.deleteProject,
+      ]),
       livingSpec: all([
         TeamProjectAction.saveSpecDraft,
         TeamProjectAction.approveSpec,
@@ -126,8 +129,9 @@ class PhoneEngineGateway extends NullOrchestrationGateway
   }
 
   Future<T> _track<T>(Future<T> Function() action) {
-    if (isClosed)
+    if (isClosed) {
       return Future.error(const PhoneEngineException('engineClosed'));
+    }
     final future = Future<T>.sync(action);
     final settled = future.then<void>(
       (_) {},
@@ -202,12 +206,10 @@ class PhoneEngineGateway extends NullOrchestrationGateway
 
   @override
   Future<TeamWorkspace> teamWorkspace() => _track(() async {
-    if (_health == null) {
-      _health = PhoneEngineHealth.fromJson(
-        await _request('GET', '/v1/health'),
-        profileId,
-      );
-    }
+    _health ??= PhoneEngineHealth.fromJson(
+      await _request('GET', '/v1/health'),
+      profileId,
+    );
     final raw = await _request('GET', '/v1/workspace');
     if (raw is! Map ||
         raw['schemaVersion'] is! int ||
@@ -228,8 +230,9 @@ class PhoneEngineGateway extends NullOrchestrationGateway
 
   @override
   Stream<TeamWorkspace> watchTeamWorkspace() {
-    if (isClosed)
+    if (isClosed) {
       return Stream.error(const PhoneEngineException('engineClosed'));
+    }
     _pollTimer ??= Timer.periodic(pollInterval, (_) => unawaited(_poll()));
     // No mutation/event replay: the authoritative snapshot is refetched.
     return _snapshots.stream;
@@ -242,8 +245,9 @@ class PhoneEngineGateway extends NullOrchestrationGateway
       final snapshot = await teamWorkspace();
       if (!isClosed) _snapshots.add(snapshot);
     } catch (_) {
-      if (!isClosed)
+      if (!isClosed) {
         _snapshots.addError(const PhoneEngineException('engineUnavailable'));
+      }
     } finally {
       _polling = false;
     }
@@ -315,7 +319,9 @@ class PhoneEngineGateway extends NullOrchestrationGateway
         }
         final code = raw['code'] as String;
         if (!RegExp(r'^[A-Za-z][A-Za-z0-9_]{0,63}$|^$').hasMatch(code)) {
-          throw const PhoneEngineException('payloadInvalid');
+          {
+            throw const PhoneEngineException('payloadInvalid');
+          }
         }
         return TeamCommandResult(
           accepted: raw['accepted'] as bool,
@@ -339,7 +345,9 @@ class PhoneEngineGateway extends NullOrchestrationGateway
         final result = <ActivityEvent>[];
         for (final item in raw) {
           if (item is! Map || item['seq'] is! int || item['type'] is! String) {
-            throw const PhoneEngineException('payloadInvalid');
+            {
+              throw const PhoneEngineException('payloadInvalid');
+            }
           }
           result.add(
             ActivityEvent(
@@ -375,7 +383,9 @@ class PhoneEngineGateway extends NullOrchestrationGateway
     PhoneEngineHealth.fromJson(await _request('GET', '/v1/health'), profileId);
     final result = await _request('DELETE', '/v1/profile');
     if (result is! Map || result['deleted'] != true) {
-      throw const PhoneEngineException('payloadInvalid');
+      {
+        throw const PhoneEngineException('payloadInvalid');
+      }
     }
     await close();
     _dio.close(force: true);

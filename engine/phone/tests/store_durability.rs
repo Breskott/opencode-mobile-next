@@ -416,3 +416,36 @@ fn per_session_usage_is_cumulative_and_remains_unknown_without_cost_evidence() {
         "session"
     );
 }
+
+#[test]
+fn session_snapshots_sum_once_and_a_new_session_keeps_unknown_usage_unknown() {
+    let root = storage();
+    let store = Store::open(root.path(), "p").unwrap();
+    let id = store.execute(&create("create")).unwrap()["projectId"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    store
+        .execute(&command("spec", "approveSpec", &id, 0))
+        .unwrap();
+    let job = store.jobs().unwrap()[0]["id"].as_str().unwrap().to_owned();
+    let snapshot = json!({"sessionIds":{"planner":"planner"},"sessionUsage":{"planner":{"cost":0.25,"tokens":10}}});
+    let first = store.update_job(&job, "queued", &snapshot).unwrap();
+    let second = store.update_job(&job, "queued", &snapshot).unwrap();
+    assert_eq!(first["usage"], second["usage"]);
+    assert_eq!(second["usage"]["cost"], 0.25);
+    assert_eq!(second["usage"]["tokens"], 10);
+    let unknown = store
+        .update_job(&job, "queued", &json!({"sessionIds":{"checker":"checker"}}))
+        .unwrap();
+    assert_eq!(unknown["usage"]["cost"], Value::Null);
+    let known = store
+        .update_job(
+            &job,
+            "queued",
+            &json!({"sessionUsage":{"checker":{"cost":0.50,"tokens":20}}}),
+        )
+        .unwrap();
+    assert_eq!(known["usage"]["cost"], 0.75);
+    assert_eq!(known["usage"]["tokens"], 30);
+}

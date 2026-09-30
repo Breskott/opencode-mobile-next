@@ -9,6 +9,7 @@ import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.SecureRandom
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
 /** Native executable and credentials stay outside the proot filesystem. */
@@ -46,6 +47,7 @@ internal class PhoneEngineNative(private val context: Context) {
         if (deletionMarker(profile).exists()) delete(profile)
         val executable = File(context.applicationInfo.nativeLibraryDir, "libaiteam_engine.so")
         if (!executable.isFile || !executable.canExecute()) throw Failure("engine_not_packaged")
+        verifyBundle(context, "libaiteam_engine.so")
         val root = privateRoot(profile, create = true)
         val tokenFile = File(root, "auth.token")
         if (!tokenFile.exists()) {
@@ -244,8 +246,11 @@ internal class PhoneEngineNative(private val context: Context) {
 
     private fun syncDirectory(directory: File) {
         val fd = Os.open(directory.absolutePath, OsConstants.O_RDONLY or
-            OsConstants.O_DIRECTORY or OsConstants.O_NOFOLLOW, 0)
-        try { Os.fsync(fd) } finally { Os.close(fd) }
+            OsConstants.O_NOFOLLOW or OsConstants.O_NONBLOCK or OsConstants.O_CLOEXEC, 0)
+        try {
+            if (!OsConstants.S_ISDIR(Os.fstat(fd).st_mode)) throw Failure("private_state_unavailable")
+            Os.fsync(fd)
+        } finally { Os.close(fd) }
     }
 
     private fun eraseNoLinks(file: File) {
@@ -272,6 +277,37 @@ internal class PhoneEngineNative(private val context: Context) {
     }
 
     companion object {
+        fun verifyBundle(context: Context, vararg names: String) {
+            try {
+                val manifest = context.assets.open("aiteam-engine-manifest.json").bufferedReader().use {
+                    JSONObject(it.readText())
+                }
+                if (manifest.getInt("schemaVersion") != 1 || manifest.getString("target") != "aarch64-linux-android") {
+                    throw Failure("engine_bundle_invalid")
+                }
+                val hashes = manifest.getJSONObject("sha256")
+                for (name in names) {
+                    val expected = hashes.getString(name)
+                    if (!Regex("[0-9a-f]{64}").matches(expected)) throw Failure("engine_bundle_invalid")
+                    val file = File(context.applicationInfo.nativeLibraryDir, name)
+                    if (!OsConstants.S_ISREG(Os.lstat(file.absolutePath).st_mode)) throw Failure("engine_bundle_invalid")
+                    val digest = MessageDigest.getInstance("SHA-256")
+                    file.inputStream().use { input ->
+                        val buffer = ByteArray(65536)
+                        while (true) {
+                            val size = input.read(buffer)
+                            if (size < 0) break
+                            digest.update(buffer, 0, size)
+                        }
+                    }
+                    val actual = digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
+                    if (!MessageDigest.isEqual(expected.toByteArray(Charsets.US_ASCII), actual.toByteArray(Charsets.US_ASCII))) {
+                        throw Failure("engine_bundle_invalid")
+                    }
+                }
+            } catch (_: Exception) { throw Failure("engine_bundle_invalid") }
+        }
+
         private val PROFILE = Regex("^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$")
         private val TOKEN = Regex("^[a-f0-9]{64}$")
     }

@@ -385,7 +385,7 @@ class BuiltinLinux {
     await _invoke<Map<Object?, Object?>>('startPhoneEngine', {
           'profileId': profileId,
           'port': port,
-          if (notice != null) 'notice': notice,
+          'notice': ?notice,
         }) ??
         const {},
   );
