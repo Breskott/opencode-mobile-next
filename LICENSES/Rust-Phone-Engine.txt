@@ -1,5 +1,5 @@
 Phone engine Android dependency notices
-Generated from the locked normal dependency tree; build-time macro dependencies may also appear.
+Generated from the union of locked Android target normal dependency trees; build-time macro dependencies may also appear.
 
 
 ==== atomic-waker 1.1.2 (Apache-2.0 OR MIT) ====

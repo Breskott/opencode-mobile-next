@@ -31,6 +31,7 @@ Executed against the integrated source on this branch:
 | Pinned `flutter analyze --no-pub` | Clean |
 | Host acceptance wrapper tests | 12 passed |
 | `:app:compileReleaseKotlin :app:compileReleaseAndroidTestKotlin -PocPreview=true`, JDK 17 | Passed; existing toolchain warnings remain |
+| Dual Android release cross-build/stage, NDK 28.2.13676358, API 26 | Passed for all three binaries on both ABIs; exact source/binary/ELF verification passed |
 | Rust formatting, shell syntax and Git whitespace | Passed |
 | Device, real provider task and separate UI journey | Pending; adb lists no attached device, including emulator-5554 |
 | Full Flutter suite, APK signing/install, push/CI/release | Not performed |
@@ -77,6 +78,12 @@ actual dev diff and expected refs independently of its verdict.
 
 The coordinator-supplied review file is retained unchanged; this follow-up does
 not rewrite its findings or claim device verification from host tests.
+
+The final bundle was built from Rust source at `e78817f6`, exact source SHA-256
+`c50c1f14e4ce49284cb0c3a31e3300bd5e0070dc1b19ba201de8402e335de2fa`.
+Manifest `sourceDirty=true` reflects the pending artifact update, not a mismatch.
+The staged x86_64 daemon is 5,314,488 bytes; sandbox is 386,176 bytes and probe
+is 1,209,832 bytes. Full per-file hashes are in the packaged schema 2 manifest.
 
 ## Run the real acceptance
 

@@ -118,7 +118,7 @@ before allowing human dispatch; an uncertain stop does not pretend safety.
 
 While the native app parent is alive, missing/expired/unknown heartbeat cannot
 fall back to an idle poll. Whole-app process death normally also terminates its
-native daemon through parent-death signaling. In lifetimes where the parent is
+native daemon through retained stdin-pipe EOF and graceful SIGTERM. In lifetimes where the parent is
 positively absent, fallback requires connected `/global/event` observations and
 strict `/session/status?directory=...` snapshots for every durable known person
 directory. Unknown process presence, directory, response or stream pauses.
