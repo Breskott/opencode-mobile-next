@@ -1012,11 +1012,7 @@ fn check_ancestors(path: &Path) -> Result<()> {
     Ok(())
 }
 fn secure_create_dir(path: &Path) -> Result<()> {
-    absolute(path)?;
-    let mut current = open_directory(Path::new("/"))?;
-    for part in path.components().skip(1) {
-        current = mkdir_child(&current, part.as_os_str(), false)?;
-    }
+    let current = traverse_directory(path, true)?;
     if unsafe { libc::fchmod(current.as_raw_fd(), 0o700) } != 0 {
         return Err(RepoError("repository_io"));
     }
@@ -1247,12 +1243,19 @@ fn open_child(parent: i32, name: &OsStr) -> Result<OwnedFd> {
     Ok(unsafe { OwnedFd::from_raw_fd(fd) })
 }
 fn open_directory(path: &Path) -> Result<OwnedFd> {
+    traverse_directory(path, false)
+}
+
+/// Search-only system ancestors (notably Android /data) need not be readable.
+/// Every component remains pinned and NOFOLLOW; only the final app-owned
+/// directory is reopened readably for readdir/fsync and returned to callers.
+fn traverse_directory(path: &Path, create: bool) -> Result<OwnedFd> {
     absolute(path)?;
     let root = CString::new("/").unwrap();
     let fd = unsafe {
         libc::open(
             root.as_ptr(),
-            libc::O_RDONLY | libc::O_DIRECTORY | libc::O_CLOEXEC,
+            libc::O_PATH | libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC,
         )
     };
     if fd < 0 {
@@ -1260,12 +1263,41 @@ fn open_directory(path: &Path) -> Result<OwnedFd> {
     }
     let mut current = unsafe { OwnedFd::from_raw_fd(fd) };
     for part in path.components().skip(1) {
-        current = open_child(current.as_raw_fd(), part.as_os_str())?;
-        if !is_directory(&current)? {
+        let name =
+            CString::new(part.as_os_str().as_bytes()).map_err(|_| RepoError("invalid_path"))?;
+        let flags = libc::O_PATH | libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC;
+        let mut fd = unsafe { libc::openat(current.as_raw_fd(), name.as_ptr(), flags) };
+        let mut created = false;
+        if fd < 0
+            && create
+            && std::io::Error::last_os_error().kind() == std::io::ErrorKind::NotFound
+        {
+            if unsafe { libc::mkdirat(current.as_raw_fd(), name.as_ptr(), 0o700) } != 0 {
+                if std::io::Error::last_os_error().kind() != std::io::ErrorKind::AlreadyExists {
+                    return Err(RepoError("repository_io"));
+                }
+            } else {
+                created = true;
+            }
+            fd = unsafe { libc::openat(current.as_raw_fd(), name.as_ptr(), flags) };
+        }
+        if fd < 0 {
             return Err(RepoError("unsafe_repository_path"));
         }
+        let child = unsafe { OwnedFd::from_raw_fd(fd) };
+        if created {
+            // New managed directories and their parent entries are durable;
+            // existing search-only system ancestors are never read or changed.
+            sync_fd(&open_child(child.as_raw_fd(), OsStr::new("."))?)?;
+            sync_fd(&open_child(current.as_raw_fd(), OsStr::new("."))?)?;
+        }
+        current = child;
     }
-    Ok(current)
+    let leaf = open_child(current.as_raw_fd(), OsStr::new("."))?;
+    if !is_directory(&leaf)? {
+        return Err(RepoError("unsafe_repository_path"));
+    }
+    Ok(leaf)
 }
 fn stat(fd: &OwnedFd) -> Result<libc::stat> {
     let mut value = std::mem::MaybeUninit::uninit();
