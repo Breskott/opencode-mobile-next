@@ -6,6 +6,7 @@ import '../../../../state/team_project_controller.dart';
 import '../../../app_iconography.dart';
 import '../../../kit/kit.dart';
 import 'team_execution_gate.dart';
+import 'team_merge_flow.dart';
 import 'team_project_conversation.dart';
 import 'team_project_editors.dart';
 
@@ -472,7 +473,7 @@ class TeamProjectOverview extends StatelessWidget {
                             repo.name,
                         detail: i.reason.isNotEmpty
                             ? i.reason
-                            : _word(l, i.status),
+                            : _mergeWord(l, i),
                         state: _state(i.status),
                         onPressed: () => _openTask(context, c, p.id, i.taskId),
                       ),
@@ -484,10 +485,41 @@ class TeamProjectOverview extends StatelessWidget {
                     ))
                       KitAction(
                         label: l.teamProjectMergeNext,
-                        onPressed: () => _merge(context, c, p, repo),
+                        onPressed: () =>
+                            confirmAndMergeToDev(context, c, p, repo),
                       ),
                   ],
                 ),
+            for (final repo in p.repos) ...[
+              for (final item in teamReceiptItems(
+                context,
+                p,
+                repo,
+                age: (at) => _age(context, at),
+              ))
+                KitRow(
+                  title: item.title,
+                  supporting: TextSpan(text: item.detail),
+                  trailing: KitRowValue(item.meta ?? ''),
+                ),
+              if (teamCanPromote(p, repo) &&
+                  TeamExecutionGate.allows(c, TeamExecutionNeed.promotion))
+                KitPromoteCard(
+                  title: l.teamProjectPromoteTitle,
+                  status: l.teamProjectPromoteStatus(repo.name),
+                  state: KitTeamState.needsYou,
+                  items: [
+                    KitTeamItem(
+                      title: repo.name,
+                      detail: teamCommitChange(repo.mainCommit, repo.devCommit),
+                    ),
+                  ],
+                  primary: KitAction(
+                    label: l.teamProjectTaskPromote,
+                    onPressed: () => confirmAndPromote(context, c, p, repo),
+                  ),
+                ),
+            ],
             if (decisions.isNotEmpty) ...[
               KitSectionLabel.inline(l.teamProjectDecisions),
               for (final e in decisions)
@@ -503,14 +535,7 @@ class TeamProjectOverview extends StatelessWidget {
                   ),
                 ),
             ],
-            KitSectionLabel.inline(l.teamProjectCost),
-            if (p.budgetWarning) KitNotice(message: l.teamProjectBudgetNear),
-            KitRow(
-              leading: const KitIcon(AppIconography.usage),
-              title: _costLine(l, p),
-              trailing: const KitRowValue('', chevron: true),
-              onTap: () => openTeamProjectSettings(context, c, p.id),
-            ),
+            KitSectionLabel.inline(l.teamProjectPages),
             KitRow(
               leading: const KitIcon(AppIconography.kanban),
               title: l.teamProjectBoard,
@@ -553,6 +578,14 @@ class TeamProjectOverview extends StatelessWidget {
                     ? l.teamProjectSettingsSummarySingle
                     : l.teamProjectSettingsSummaryParallel(p.settings.maxLanes),
               ),
+              trailing: const KitRowValue('', chevron: true),
+              onTap: () => openTeamProjectSettings(context, c, p.id),
+            ),
+            KitSectionLabel.inline(l.teamProjectCost),
+            if (p.budgetWarning) KitNotice(message: l.teamProjectBudgetNear),
+            KitRow(
+              leading: const KitIcon(AppIconography.usage),
+              title: _costLine(l, p),
               trailing: const KitRowValue('', chevron: true),
               onTap: () => openTeamProjectSettings(context, c, p.id),
             ),
@@ -783,33 +816,6 @@ Future<TeamCommandResult> _command(
     confirmed: confirmed,
   ),
 );
-Future<void> _merge(
-  BuildContext context,
-  TeamProjectController c,
-  TeamProject p,
-  TeamRepo repo,
-) async {
-  final l = lookupAppLocalizations(Localizations.localeOf(context));
-  final reviewed = p;
-  var confirmed = false;
-  if (p.settings.reviewLevel == 'everyStep') {
-    confirmed = await showKitConfirm(
-      context,
-      title: l.teamProjectMergeNext,
-      body: l.teamProjectMergeConfirmBody,
-      confirmLabel: l.teamProjectMergeNext,
-    );
-    if (!confirmed) return;
-  }
-  await _command(
-    c,
-    reviewed,
-    TeamProjectAction.processMergeQueue,
-    targetId: repo.id,
-    confirmed: confirmed,
-  );
-}
-
 Future<void> _answer(
   BuildContext context,
   TeamProjectController c,
@@ -929,6 +935,26 @@ KitTeamState _state(String value) => switch (value) {
   'done' || 'merged' || 'passed' => KitTeamState.done,
   _ => KitTeamState.empty,
 };
+
+/// Header rows sit on the page's one gutter, like the list rows below.
+Widget _gutter(BuildContext context, Widget child) => Padding(
+  padding: EdgeInsetsDirectional.symmetric(
+    horizontal: KitTokens.of(context).gutter,
+  ),
+  child: child,
+);
+
+int _lanesHere(TeamProject p, int serverCap) {
+  if (p.settings.mode == 'single') return 1;
+  return serverCap < p.settings.maxLanes ? serverCap : p.settings.maxLanes;
+}
+
+/// What a merge-queue row says when it has no reason of its own: a queued
+/// item is waiting for its turn (or its checks), never for dependencies.
+String _mergeWord(AppLocalizations l, TeamMergeItem i) => i.status == 'queued'
+    ? (i.checksPassed ? l.teamProjectMergeReady : l.teamProjectMergeChecking)
+    : _word(l, i.status);
+
 String _word(AppLocalizations l, String value) => switch (value) {
   'running' => l.teamProjectWorking,
   'failed' || 'conflict' => l.teamProjectFailed,
@@ -960,7 +986,7 @@ class TeamProjectBoard extends StatefulWidget {
 class _TeamProjectBoardState extends State<TeamProjectBoard> {
   String? _milestone, _repo, _server;
   bool _graph = false;
-  int _column = 0;
+  int? _column;
   @override
   void initState() {
     super.initState();
@@ -1016,14 +1042,17 @@ class _TeamProjectBoardState extends State<TeamProjectBoard> {
       return KitScreen(
         topBar: KitTopBar(title: l.teamProjectBoard, subtitle: p.name),
         header: [
-          KitSegmented<bool>(
-            segments: [
-              KitSegment(value: false, label: l.teamProjectBoard),
-              KitSegment(value: true, label: l.teamProjectGraph),
-            ],
-            selected: _graph,
-            onChanged: (value) => setState(() => _graph = value),
-            semanticsLabel: l.teamProjectBoard,
+          _gutter(
+            context,
+            KitSegmented<bool>(
+              segments: [
+                KitSegment(value: false, label: l.teamProjectBoard),
+                KitSegment(value: true, label: l.teamProjectGraph),
+              ],
+              selected: _graph,
+              onChanged: (value) => setState(() => _graph = value),
+              semanticsLabel: l.teamProjectBoard,
+            ),
           ),
           KitPickerRow<String>(
             title: l.teamProjectMilestoneFilter,
@@ -1085,7 +1114,15 @@ class _TeamProjectBoardState extends State<TeamProjectBoard> {
                       count: tasks.where((t) => column(t) == i).length,
                     ),
                 ],
-                selected: _column,
+                // Opens where the work is, not on an empty Backlog.
+                selected:
+                    _column ??
+                    () {
+                      for (var i = 0; i < columns.length; i++) {
+                        if (tasks.any((t) => column(t) == i)) return i;
+                      }
+                      return 0;
+                    }(),
                 onSelected: (value) => setState(() => _column = value),
                 laneBuilder: (context, i) => KitBoardLane(
                   cards: [
@@ -1149,16 +1186,19 @@ class _TeamProjectTimelineState extends State<TeamProjectTimeline> {
       return KitScreen(
         topBar: KitTopBar(title: l.teamProjectTimeline, subtitle: p?.name),
         header: [
-          KitSegmented<String>(
-            segments: [
-              KitSegment(value: '', label: l.teamProjectAll),
-              KitSegment(value: 'decision', label: l.teamProjectDecisions),
-              KitSegment(value: 'merge', label: l.teamProjectMerges),
-              KitSegment(value: 'problem', label: l.teamProjectProblems),
-            ],
-            selected: _filter,
-            onChanged: (v) => setState(() => _filter = v),
-            semanticsLabel: l.teamProjectTimeline,
+          _gutter(
+            context,
+            KitSegmented<String>(
+              segments: [
+                KitSegment(value: '', label: l.teamProjectAll),
+                KitSegment(value: 'decision', label: l.teamProjectDecisions),
+                KitSegment(value: 'merge', label: l.teamProjectMerges),
+                KitSegment(value: 'problem', label: l.teamProjectProblems),
+              ],
+              selected: _filter,
+              onChanged: (v) => setState(() => _filter = v),
+              semanticsLabel: l.teamProjectTimeline,
+            ),
           ),
         ],
         body: ListView(
@@ -1171,18 +1211,27 @@ class _TeamProjectTimelineState extends State<TeamProjectTimeline> {
                 title: day.key,
                 status: p?.simulated == true ? l.teamProjectDemo : '',
                 items: [
-                  for (final e in day.value)
+                  for (final group in _foldRepeats(day.value))
                     KitTeamItem(
-                      title: e.text,
-                      detail: _role(context, widget.controller, e.actor),
-                      meta: _age(context, e.at),
-                      onPressed: e.taskId.isEmpty
+                      title: group.count > 1
+                          ? l.teamProjectTimelineRepeated(
+                              group.first.text,
+                              group.count,
+                            )
+                          : group.first.text,
+                      detail: _role(
+                        context,
+                        widget.controller,
+                        group.first.actor,
+                      ),
+                      meta: _age(context, group.first.at),
+                      onPressed: group.first.taskId.isEmpty
                           ? null
                           : () => _openTask(
                               context,
                               widget.controller,
                               widget.projectId,
-                              e.taskId,
+                              group.first.taskId,
                             ),
                     ),
                 ],
@@ -1242,7 +1291,8 @@ class TeamProjectServers extends StatelessWidget {
                   p.tasks
                       .where((t) => t.serverId == s.id && t.status == 'running')
                       .length,
-                  s.laneCap,
+                  // The project's own limit applies on this server too.
+                  _lanesHere(p, s.laneCap),
                 ),
                 items: [
                   for (final t in p.tasks.where((t) => t.serverId == s.id))
@@ -1352,4 +1402,28 @@ class TeamProjectServers extends StatelessWidget {
       );
     },
   );
+}
+
+class _Repeat {
+  _Repeat(this.first) : count = 1;
+  final TeamTimelineEvent first;
+  int count;
+}
+
+/// Newest-first events with back-to-back rows of identical words and task
+/// folded into one row that says how many there were.
+List<_Repeat> _foldRepeats(List<TeamTimelineEvent> events) {
+  final out = <_Repeat>[];
+  for (final e in events) {
+    final last = out.lastOrNull;
+    if (last != null &&
+        last.first.text == e.text &&
+        last.first.taskId == e.taskId &&
+        last.first.actor == e.actor) {
+      last.count++;
+    } else {
+      out.add(_Repeat(e));
+    }
+  }
+  return out;
 }
