@@ -64,3 +64,10 @@ Also found: UI requires authoritative merged queue items to offer Promote,
 while native durable merge receipts existed without queue projection. That
 projection is being completed before the final device run. Emulator stopped
 while rebuilding; lock remains owned until final cleanup.
+
+Second host checkpoint: Rust170 passed including normally ignored device-
+boundary host controls, new merge projection regressions and 14 negative
+mutations. Domain status/approval and completion projection tests pass (39
+focused gateway tests, including 6 new completion tests with more than25
+negative cases). Analysis clean. The queue proof derives from exact scoped
+receipts and matching checker criteria; no stage alone grants passed checks.

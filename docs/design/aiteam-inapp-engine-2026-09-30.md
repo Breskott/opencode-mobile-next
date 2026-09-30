@@ -394,3 +394,21 @@ current-checkpoint timeline row shows allowlisted failure codes; no provider
 error body is rendered. Task `checked` presents as `verified`, `needsFix` as
 `findings`, and `merging` as `running`, retaining raw durable engine evidence.
 This does not expose unsupported retry/use-as-task commands.
+
+`mergeQueue` is now a read-only projection of completed task jobs and their
+checked dev-merge evidence. A stable `merge-<jobId>` item is `merged` with
+`checksPassed:true` only when the current task scope/criteria, original checker
+verdict, current checker results and scoped private/public merge receipts all
+match. New jobs retain checker snapshots; legacy jobs may use the matching task
+only if both job checker fields are absent and criteria are unchanged. Missing
+or invalid evidence produces `blocked` with a static reason (`mergeNotCompleted`,
+`mergeScopeInvalid`, `checksNotPassed`, `mergeReceiptMissing`,
+`mergeReceiptInvalid`, `mergeReceiptUnbound`). No command revision changes on
+reads. This makes actual canonical dev merges visible to the existing Promote
+control while keeping unproven completion blocked.
+
+The adapter presents a running project as `done` only after every task is
+merged, every task has a bound checked merge item, all relevant repository
+main/dev refs agree, and each repository has an engine-authored confirmed
+promotion receipt for that current main SHA. Paused/stopped/failed states stay
+as authored; no receipt or completed state is synthesized or persisted by Dart.

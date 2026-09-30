@@ -487,6 +487,9 @@ class PhoneEngineGateway extends NullOrchestrationGateway
 TeamProject _presentPhoneProject(TeamProject project) {
   final planning = project.planningState;
   var status = project.status;
+  if (status == 'running' && _hasCompletedPhonePromotion(project)) {
+    status = 'done';
+  }
   if (status == 'needsPlanApproval') {
     status = 'plan';
   } else if (!project.planApproved &&
@@ -573,4 +576,60 @@ String _planningCheckpointSummary(TeamPlanningState planning) {
   return planning.stage == 'failed'
       ? 'Planning failed ($reason).'
       : 'Planning needs review ($reason).';
+}
+
+// Presentation follows confirmed repository truth; no write or synthetic receipt.
+bool _hasCompletedPhonePromotion(TeamProject project) {
+  if (!project.planApproved ||
+      project.tasks.isEmpty ||
+      project.mergeQueue.isEmpty) {
+    return false;
+  }
+  final tasks = <String, TeamTask>{};
+  for (final task in project.tasks) {
+    if (task.id.isEmpty ||
+        tasks.containsKey(task.id) ||
+        task.repoId.isEmpty ||
+        task.status != 'merged' ||
+        task.findings.any((finding) => finding.status == 'open')) {
+      return false;
+    }
+    tasks[task.id] = task;
+  }
+  final covered = <String>{};
+  final mergeIds = <String>{};
+  for (final item in project.mergeQueue) {
+    final task = tasks[item.taskId];
+    if (item.id.isEmpty ||
+        !mergeIds.add(item.id) ||
+        !item.checksPassed ||
+        item.status != 'merged' ||
+        task == null ||
+        item.repoId != task.repoId) {
+      return false;
+    }
+    covered.add(task.id);
+  }
+  if (covered.length != tasks.length) return false;
+  for (final repoId in tasks.values.map((task) => task.repoId).toSet()) {
+    final repos = project.repos.where((repo) => repo.id == repoId).toList();
+    if (repos.length != 1) return false;
+    final repo = repos.single;
+    if (repo.devCommit.isEmpty || repo.devCommit != repo.mainCommit) {
+      return false;
+    }
+    if (!project.receipts.any(
+      (receipt) =>
+          receipt.id.isNotEmpty &&
+          receipt.kind == 'promote' &&
+          receipt.actor == 'engine' &&
+          receipt.repoId == repoId &&
+          receipt.before.isNotEmpty &&
+          receipt.before != receipt.after &&
+          receipt.after == repo.mainCommit,
+    )) {
+      return false;
+    }
+  }
+  return true;
 }
