@@ -7,7 +7,17 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../domain/relative_age.dart';
 import '../../../../state/team_project_controller.dart';
 import '../../../kit/kit.dart';
+import '../team_model_sheet.dart';
 import 'team_execution_gate.dart';
+
+/// Opens the team's model sheet for a role; [fallback] picks the fallback
+/// model. Null means the sheet was dismissed.
+typedef TeamRolesModelPicker =
+    Future<TeamModelChoice?> Function(
+      BuildContext context, {
+      required String? current,
+      required bool fallback,
+    });
 
 Future<void> openTeamNewProject(
   BuildContext context,
@@ -31,8 +41,9 @@ Future<void> openTeamProjectSettings(
 ) => _open(context, controller, _Kind.settings, projectId);
 Future<void> openTeamRoles(
   BuildContext context,
-  TeamProjectController controller,
-) => _open(context, controller, _Kind.roles);
+  TeamProjectController controller, {
+  TeamRolesModelPicker? modelPicker,
+}) => _open(context, controller, _Kind.roles, '', modelPicker);
 
 Future<void> openTeamDefaults(
   BuildContext context,
@@ -46,6 +57,7 @@ Future<void> _open(
   TeamProjectController controller,
   _Kind kind, [
   String projectId = '',
+  TeamRolesModelPicker? modelPicker,
 ]) async {
   final gate = TeamExecutionGate.of(controller);
   final startsWork =
@@ -73,9 +85,36 @@ Future<void> _open(
   }
   await showKitFramedSheet<void>(
     context,
-    builder: (_) =>
-        _Editor(controller: controller, kind: kind, projectId: projectId),
+    builder: (_) => _Editor(
+      controller: controller,
+      kind: kind,
+      projectId: projectId,
+      modelPicker: modelPicker ?? _gatePicker(controller),
+    ),
   );
+}
+
+/// The phone's model catalog, when the page that owns the team bound one;
+/// the simulated demo has no catalog and keeps typed names.
+TeamRolesModelPicker? _gatePicker(TeamProjectController controller) {
+  final connection = TeamExecutionGate.of(controller)?.connection;
+  if (connection == null) return null;
+  return (context, {required current, required fallback}) {
+    final l = lookupAppLocalizations(Localizations.localeOf(context));
+    unawaited(connection.refreshCatalog());
+    return showTeamModelSheet(
+      context,
+      connection: connection,
+      current: current,
+      title: fallback ? l.teamProjectEditorFallback : l.teamProjectEditorModel,
+      defaultTitle: fallback
+          ? l.teamProjectEditorNoFallback
+          : l.teamRoleModelSheetDefault,
+      defaultHint: fallback
+          ? l.teamProjectEditorNoFallbackHint
+          : l.teamRoleModelSheetDefaultHint,
+    );
+  };
 }
 
 /// Keeps the KitField draft contract while delegating every persistent
@@ -126,10 +165,12 @@ class _Editor extends StatefulWidget {
     required this.controller,
     required this.kind,
     required this.projectId,
+    this.modelPicker,
   });
   final TeamProjectController controller;
   final _Kind kind;
   final String projectId;
+  final TeamRolesModelPicker? modelPicker;
   @override
   State<_Editor> createState() => _EditorState();
 }
@@ -397,8 +438,15 @@ class _EditorState extends State<_Editor> {
   String? _creationError() {
     final settingsError = _settingsError();
     if (settingsError != null) return settingsError;
-    if (_value('goal').isEmpty || _repos.isEmpty) {
-      return _l.teamProjectEditorRequired;
+    final noGoal = _value('goal').isEmpty;
+    if (noGoal || _allRepos().isEmpty) {
+      if (noGoal && _allRepos().isEmpty && !_repoTyped) {
+        return _l.teamProjectEditorRequired;
+      }
+      if (noGoal) return _l.teamProjectEditorGoalRequired;
+      return _repoTyped
+          ? _l.teamProjectEditorRepoIncomplete
+          : _l.teamProjectEditorRepoMissing;
     }
     if (widget.kind == _Kind.quick && (_roleId == null || _serverId == null)) {
       return _l.teamProjectEditorChooseRoleServer;
@@ -406,13 +454,35 @@ class _EditorState extends State<_Editor> {
     return null;
   }
 
+  /// A repo the person typed but has not added yet. It counts once it has a
+  /// name, a folder and a place to run, so "Add repo" is optional for the
+  /// first one.
+  bool get _repoTyped =>
+      _value('repoName').isNotEmpty || _value('repoPath').isNotEmpty;
+  TeamRepo? _pendingRepo() {
+    if (_serverId == null ||
+        _value('repoName').isEmpty ||
+        _value('repoPath').isEmpty) {
+      return null;
+    }
+    return TeamRepo(
+      id: _pendingRepoId ??= _newId(),
+      name: _value('repoName'),
+      path: _value('repoPath'),
+      serverId: _serverId!,
+    );
+  }
+
+  String? _pendingRepoId;
+  List<TeamRepo> _allRepos() => [..._repos, ?_pendingRepo()];
+
   void _updateCharging() {
     if (_chargingTouched) return;
     final phone =
         _controller.snapshot?.servers.any(
           (s) =>
               s.phone &&
-              (_serverId == s.id || _repos.any((r) => r.serverId == s.id)),
+              (_serverId == s.id || _allRepos().any((r) => r.serverId == s.id)),
         ) ??
         false;
     _settings = _settings.copyWith(
@@ -447,7 +517,7 @@ class _EditorState extends State<_Editor> {
         spec: spec,
         tasks: tasks,
         phases: phases,
-        repos: _repos,
+        repos: _allRepos(),
         roleId: _roleId ?? '',
         serverId: _serverId ?? '',
         role: role,
@@ -531,13 +601,9 @@ class _EditorState extends State<_Editor> {
       }
     }
     if (_creating) {
-      if (_value('goal').isEmpty || _repos.isEmpty) {
-        _change(() => _error = _l.teamProjectEditorRequired);
-        return;
-      }
-      if (widget.kind == _Kind.quick &&
-          (_roleId == null || _serverId == null)) {
-        _change(() => _error = _l.teamProjectEditorChooseRoleServer);
+      final error = _creationError();
+      if (error != null) {
+        _change(() => _error = error);
         return;
       }
       await _send(
@@ -690,6 +756,10 @@ class _EditorState extends State<_Editor> {
       _Kind.defaults => _l.teamProjectEditorDefaults,
     };
     final creationError = _creating ? _creationError() : null;
+    // At large text the hint under the pinned button would eat the form, so
+    // it moves to the end of the scrolling form instead (still shown once).
+    final large = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
+    final inlineReason = large && creationError != null;
     return KitSheet(
       title: title,
       handle: false,
@@ -718,7 +788,7 @@ class _EditorState extends State<_Editor> {
                   _working || _restoring || _complete || creationError != null
                   ? null
                   : _save,
-              disabledReason: creationError,
+              disabledReason: inlineReason ? null : creationError,
               working: _working,
             ),
       secondary: widget.kind == _Kind.spec
@@ -746,6 +816,7 @@ class _EditorState extends State<_Editor> {
             if (widget.kind == _Kind.spec) ..._specFields(),
             if (widget.kind == _Kind.plan) ..._planFields(),
             if (widget.kind == _Kind.roles) ..._roleFields(),
+            if (inlineReason) KitNotice(message: creationError),
           ],
         ],
       ),
@@ -801,6 +872,7 @@ class _EditorState extends State<_Editor> {
         );
         _text('repoName').clear();
         _text('repoPath').clear();
+        _pendingRepoId = null;
         _error = null;
         _updateCharging();
       });
@@ -822,6 +894,22 @@ class _EditorState extends State<_Editor> {
       ),
     ],
   ];
+
+  /// The host that will run the work: the chosen one, else where the first
+  /// repo lives. Only measured numbers are shown; with none, it says so.
+  String _costLine() {
+    final servers = _controller.snapshot?.servers ?? const <TeamServer>[];
+    final id = _serverId ?? _allRepos().firstOrNull?.serverId;
+    final host = servers.where((s) => s.id == id).firstOrNull;
+    if (host == null) return _l.teamProjectEditorCostNoHost;
+    final name = host.phone ? _l.teamProjectEditorThisPhone : host.name;
+    final memory = host.memoryMb;
+    if (memory == null || memory <= 0) {
+      return _l.teamProjectEditorCostNotMeasured(name);
+    }
+    return _l.teamProjectEditorCostMeasured(name, memory.round().toString());
+  }
+
   List<Widget> _modeFields() => [
     _choice(
       _l.teamProjectEditorMode,
@@ -837,7 +925,7 @@ class _EditorState extends State<_Editor> {
     ),
     if (_settings.mode == 'parallel')
       _field('lanes', _l.teamProjectEditorMaxLanes, number: true),
-    KitNotice(message: _l.teamProjectEditorCostUnknown),
+    KitNotice(message: _costLine()),
     KitSwitchRow(
       title: _l.teamProjectEditorCharging,
       value: _settings.chargingOnly,
@@ -1161,6 +1249,35 @@ class _EditorState extends State<_Editor> {
       ],
     ],
   ];
+
+  /// The model the same way Team settings picks it, from the phone's
+  /// models; typed only where there is no catalog (the demo).
+  Widget _modelField(String key, String label, {required bool fallback}) {
+    final picker = widget.modelPicker;
+    if (picker == null) return _field(key, label);
+    final current = _value(key);
+    return KitRow(
+      key: ValueKey(key),
+      title: label,
+      supporting: TextSpan(
+        text: current.isNotEmpty
+            ? current
+            : fallback
+            ? _l.teamProjectEditorNoFallback
+            : _l.teamRoleModelSheetDefault,
+      ),
+      onTap: () async {
+        final choice = await picker(
+          context,
+          current: current.isEmpty ? null : current,
+          fallback: fallback,
+        );
+        if (choice == null || !mounted) return;
+        _change(() => _text(key).text = choice.spec ?? '');
+      },
+    );
+  }
+
   void _editRole(TeamProjectRole role) => _change(() {
     _role = role;
     _text('roleName').text = role.name;
@@ -1173,7 +1290,12 @@ class _EditorState extends State<_Editor> {
       for (final role in _controller.snapshot?.roles ?? <TeamProjectRole>[])
         KitRow(
           title: role.name,
-          supporting: TextSpan(text: role.model),
+          supporting: TextSpan(
+            text: [
+              role.model,
+              if (role.readOnly) _l.teamProjectEditorReadOnlyShort,
+            ].where((t) => t.isNotEmpty).join(' · '),
+          ),
           onTap: () => _editRole(role),
         ),
       _button(
@@ -1187,8 +1309,9 @@ class _EditorState extends State<_Editor> {
         _l.teamProjectEditorInstructions,
         multiline: true,
       ),
-      _field('roleModel', _l.teamProjectEditorModel),
-      _field('roleFallback', _l.teamProjectEditorFallback),
+      if (_role!.readOnly) KitNotice(message: _l.teamProjectEditorReadOnlyRole),
+      _modelField('roleModel', _l.teamProjectEditorModel, fallback: false),
+      _modelField('roleFallback', _l.teamProjectEditorFallback, fallback: true),
       for (final p in _controller.snapshot?.projects ?? <TeamProject>[])
         for (final t in p.tasks.where((t) => t.roleId == _role!.id))
           KitRow(
