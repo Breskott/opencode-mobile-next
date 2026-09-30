@@ -27,11 +27,22 @@ internal class PhoneEngineNative(private val context: Context) {
     private var process: Process? = null
     private var restartRequired = false
     private var verifiedBoundary = false
+    private var boundaryTier = "none"
     private var executionAvailable = false
     private var boundaryReason = "boundary_unverified"
     private var boundaryGeneration: String? = null
 
     fun stopTracked() { activeProfile?.let { stop(it) } }
+
+    internal fun processId(): Int? {
+        val child = process?.takeIf { it.isAlive } ?: return null
+        val pid = try { child.pid() } catch (_: Throwable) {
+            try {
+                child.javaClass.getDeclaredField("pid").run { isAccessible = true; getInt(child).toLong() }
+            } catch (_: Throwable) { return null }
+        }
+        return pid.takeIf { it in 2..Int.MAX_VALUE.toLong() }?.toInt()
+    }
 
     fun status(profile: String): Map<String, Any?> {
         validateProfile(profile)
@@ -39,6 +50,7 @@ internal class PhoneEngineNative(private val context: Context) {
         return mapOf(
             "running" to running, "profileId" to profile,
             "port" to if (running) activePort else null,
+            "boundaryTier" to if (running && verifiedBoundary) boundaryTier else "none",
             "boundary" to (running && verifiedBoundary), "execution" to (running && executionAvailable),
             "restartRequired" to (running && restartRequired),
             "boundaryReason" to boundaryReason, "boundaryGeneration" to if (running) boundaryGeneration else null,
@@ -65,10 +77,6 @@ internal class PhoneEngineNative(private val context: Context) {
         verifyBundle(context, "libaiteam_engine.so")
         val root = privateRoot(profile, create = true)
         var fallbackReason = reason
-        val proof = try { proofFactory(root) } catch (failure: Failure) {
-            fallbackReason = failure.code
-            null
-        }
         val tokenFile = File(root, "auth.token")
         // A credential observed during a previous unconfined generation must
         // not authorize the freshly protected generation.
@@ -79,15 +87,21 @@ internal class PhoneEngineNative(private val context: Context) {
         if (!TOKEN.matches(token)) throw Failure("private_state_invalid")
         val source = File(filesRoot, "linux/ubuntu/root/.oc-builtin/server.password")
         val credentials = File(root, "oc1-credentials.json")
-        // A missing server password is an unavailable execution prerequisite,
-        // while the durable store can still run. Never keep an obsolete copy.
+        // The current daemon requires genuine OC1 credentials even in store
+        // mode. Refuse before proof/signing or child launch; never invent auth.
         if (regularNoLinks(source)) {
-            val password = readPrivate(source)
-            if (password.length !in 1..4096) throw Failure("server_auth_unavailable")
+            val password = requiredServerPassword(source)
             writePrivate(credentials, JSONObject().put("username", "opencode")
                 .put("password", password).toString())
-        } else if (credentials.exists() && !credentials.delete()) {
-            throw Failure("private_state_unavailable")
+        } else {
+            try { Os.remove(credentials.absolutePath) } catch (error: android.system.ErrnoException) {
+                if (error.errno != OsConstants.ENOENT) throw Failure("private_state_unavailable")
+            }
+            throw Failure("server_auth_unavailable")
+        }
+        val proof = try { proofFactory(root) } catch (failure: Failure) {
+            fallbackReason = failure.code
+            null
         }
         val config = File(root, "native-config.json")
         val workerRoot = safePath("linux/ubuntu/root/aiteam/work/$profile")
@@ -128,13 +142,15 @@ internal class PhoneEngineNative(private val context: Context) {
         process = child
         restartRequired = serverRunning
         verifiedBoundary = false
+        boundaryTier = "none"
         executionAvailable = false
         boundaryGeneration = proof?.generation
         boundaryReason = if (proof != null) "attestation_pending" else fallbackReason
         try {
             val (actualPort, health) = authenticatedStartup(child, token, profile)
             activePort = actualPort
-            verifiedBoundary = proof != null && health.optJSONObject("capabilities")?.optBoolean("boundary") == true
+            boundaryTier = healthBoundaryTier(health, proof != null)
+            verifiedBoundary = boundaryTier != "none"
             executionAvailable = verifiedBoundary && health.optJSONObject("capabilities")?.optBoolean("execution") == true
             if (proof != null) boundaryReason = if (verifiedBoundary) "boundary_attested" else "attestation_rejected"
         } catch (failure: Failure) {
@@ -172,6 +188,7 @@ internal class PhoneEngineNative(private val context: Context) {
         activePort = null
         restartRequired = false
         verifiedBoundary = false
+        boundaryTier = "none"
         executionAvailable = false
         boundaryGeneration = null
     }
@@ -231,6 +248,14 @@ internal class PhoneEngineNative(private val context: Context) {
             val port = task.get(10, TimeUnit.SECONDS)
             if (!child.isAlive) throw Failure("engine_start_failed")
             return port
+        } catch (failure: Failure) {
+            task.cancel(true)
+            throw failure
+        } catch (error: java.util.concurrent.ExecutionException) {
+            task.cancel(true)
+            val cause = error.cause
+            if (cause is Failure) throw cause
+            throw Failure("engine_ready_invalid")
         } catch (_: Exception) {
             task.cancel(true)
             throw Failure("engine_ready_invalid")
@@ -306,6 +331,13 @@ internal class PhoneEngineNative(private val context: Context) {
         }
         OsConstants.S_ISREG(Os.lstat(file.absolutePath).st_mode)
     } catch (_: Exception) { false }
+
+    internal fun requiredServerPassword(source: File): String {
+        if (!regularNoLinks(source)) throw Failure("server_auth_unavailable")
+        val password = readPrivate(source)
+        if (password.length !in 1..4096) throw Failure("server_auth_unavailable")
+        return password
+    }
 
     private fun readPrivate(file: File): String {
         if (!regularNoLinks(file)) throw Failure("private_state_invalid")
@@ -406,10 +438,37 @@ internal class PhoneEngineNative(private val context: Context) {
     }
 
     companion object {
+        private val STARTUP_ERRORS = setOf(
+            "engineInspectionProtectionUnavailable", "engineFdHygieneUnavailable", "engineRuntimeUnavailable",
+            "nativeArgumentsInvalid", "nativePinsInvalid", "configUnavailable", "configInvalid",
+            "boundaryInvalid", "serverNotLoopback", "boundaryProofRequired", "credentialsUnavailable",
+            "credentialsUnsafe", "credentialsInvalid", "server_auth_unavailable", "authUnavailable",
+            "authInvalid", "serverCredentialsUnavailable", "serverCredentialsInvalid", "serverConfigInvalid",
+            "storeUnavailable", "recoveryFailed", "repositoryUnavailable", "listenUnavailable",
+            "startupInvalid", "startupPipeUnavailable", "serverStopped", "prootProofSubjectUnavailable",
+            "privateCleanupFailed", "engine_start_failed",
+        )
+
+        internal fun healthBoundaryTier(health: JSONObject, proofPresent: Boolean): String {
+            if (!proofPresent) return "none"
+            val capabilities = health.optJSONObject("capabilities") ?: return "none"
+            val tier = health.optString("boundaryTier", "none")
+            if (tier !in setOf("landlock", "proot") ||
+                capabilities.optString("boundaryTier", "none") != tier ||
+                !capabilities.optBoolean("boundary")) return "none"
+            return tier
+        }
+
         internal fun verifiedReadyPort(line: String, token: String, profile: String): Int {
             try {
                 if (line.toByteArray(Charsets.UTF_8).size > 1024 || !TOKEN.matches(token)) throw Failure("engine_ready_invalid")
                 val ready = JSONObject(line)
+                if (ready.has("startupError")) {
+                    if (ready.length() != 2 || ready.getInt("schemaVersion") != 1 ||
+                        ready.getString("startupError") !in STARTUP_ERRORS) throw Failure("engine_ready_invalid")
+                    // This private-pipe failure grants no authority and opens no socket.
+                    throw Failure(ready.getString("startupError"))
+                }
                 val nonce = ready.getString("nonce")
                 val port = ready.getInt("port")
                 val signature = ready.getString("mac")
@@ -427,6 +486,7 @@ internal class PhoneEngineNative(private val context: Context) {
                     throw Failure("engine_ready_invalid")
                 }
                 return port
+            } catch (failure: Failure) { throw failure
             } catch (_: Exception) { throw Failure("engine_ready_invalid") }
         }
 
