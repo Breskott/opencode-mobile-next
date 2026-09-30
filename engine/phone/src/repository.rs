@@ -16,6 +16,7 @@ const MAIN: &str = "refs/heads/main";
 const DEV: &str = "refs/heads/dev";
 const MAX_SNAPSHOT_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 const MAX_SNAPSHOT_FILES: usize = 200_000;
+const MAX_DECODED_OBJECT_BYTES: usize = 64 * 1024 * 1024;
 
 #[derive(Debug)]
 pub struct RepoError(&'static str);
@@ -820,12 +821,12 @@ impl RepositoryAuthority {
     }
     fn snapshot(&self, source: &Path, importing: bool) -> Result<Snapshot> {
         let source_fd = open_directory(source)?;
-        let git_fd = match open_child(source_fd.as_raw_fd(), OsStr::new(".git")) {
+        let (git_fd, git_root) = match open_child(source_fd.as_raw_fd(), OsStr::new(".git")) {
             Ok(fd) => {
                 if !is_directory(&fd)? {
                     return Err(RepoError("linked_repository"));
                 }
-                fd
+                (fd, source.join(".git"))
             }
             Err(_) => {
                 // Bare repositories have HEAD + objects at their root.
@@ -833,7 +834,7 @@ impl RepositoryAuthority {
                 if is_directory(&head)? {
                     return Err(RepoError("invalid_repository"));
                 }
-                source_fd
+                (source_fd, source.to_path_buf())
             }
         };
         let path = self
@@ -843,7 +844,14 @@ impl RepositoryAuthority {
         secure_create_dir(&path)?;
         let snapshot = Snapshot(path);
         let mut budget = (0u64, 0usize);
-        copy_directory(&git_fd, &snapshot.0, &mut budget, 0)?;
+        copy_directory(
+            &git_fd,
+            &snapshot.0,
+            &mut budget,
+            0,
+            &git_root,
+            Path::new(""),
+        )?;
         // Never allow libgit2 config includes/alternates to read daemon-private files.
         for forbidden in [
             "objects/info/alternates",
@@ -890,6 +898,7 @@ impl RepositoryAuthority {
         if snapshot.0.join("hooks").exists() {
             fs::remove_dir_all(snapshot.0.join("hooks"))?;
         }
+        validate_snapshot_objects(&snapshot.0)?;
         Ok(snapshot)
     }
 }
@@ -1328,11 +1337,223 @@ fn stat(fd: &OwnedFd) -> Result<libc::stat> {
 fn is_directory(fd: &OwnedFd) -> Result<bool> {
     Ok(stat(fd)?.st_mode & libc::S_IFMT == libc::S_IFDIR)
 }
+
+#[derive(Clone, Copy)]
+enum ProotObjectKind {
+    Loose,
+    Pack,
+}
+
+fn lower_hex(bytes: &[u8]) -> bool {
+    bytes
+        .iter()
+        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(b))
+}
+
+fn proot_object_container(relative: &Path) -> Option<ProotObjectKind> {
+    let mut parts = relative.components();
+    if parts.next()?.as_os_str() != OsStr::new("objects") {
+        return None;
+    }
+    let name = parts.next()?.as_os_str().as_bytes();
+    if parts.next().is_some() {
+        return None;
+    }
+    if name.len() == 2 && lower_hex(name) {
+        Some(ProotObjectKind::Loose)
+    } else if name == b"pack" {
+        Some(ProotObjectKind::Pack)
+    } else {
+        None
+    }
+}
+
+fn logical_object_name(name: &[u8], kind: ProotObjectKind) -> bool {
+    match kind {
+        ProotObjectKind::Loose => name.len() == 38 && lower_hex(name),
+        ProotObjectKind::Pack => {
+            name.starts_with(b"pack-")
+                && name.len() > 45
+                && lower_hex(&name[5..45])
+                && [b".pack".as_slice(), b".idx", b".rev", b".bitmap"].contains(&&name[45..])
+        }
+    }
+}
+
+fn proot_backing_name(name: &[u8], kind: ProotObjectKind) -> bool {
+    let prefix: &[u8] = match kind {
+        ProotObjectKind::Loose => b".l2s.tmp_obj_",
+        ProotObjectKind::Pack => b".l2s.tmp_pack_",
+    };
+    let Some(tail) = name.strip_prefix(prefix) else {
+        return false;
+    };
+    if name.len() > 128 {
+        return false;
+    }
+    let mut pieces = tail.split(|b| *b == b'.');
+    let stem = pieces.next().unwrap_or_default();
+    // Termux's first backing name has mkstemp's alphanumeric suffix followed
+    // by its four-digit link counter. Later aliases append .NNNN counters.
+    if stem.len() < 10
+        || !stem.iter().all(u8::is_ascii_alphanumeric)
+        || !stem[stem.len() - 4..].iter().all(u8::is_ascii_digit)
+    {
+        return false;
+    }
+    let counters: Vec<_> = pieces.collect();
+    counters.len() <= 7
+        && counters
+            .iter()
+            .all(|s| s.len() == 4 && s.iter().all(u8::is_ascii_digit))
+}
+
+fn proot_scratch_name(name: &[u8], kind: ProotObjectKind) -> bool {
+    let prefix: &[u8] = match kind {
+        ProotObjectKind::Loose => b"tmp_obj_",
+        ProotObjectKind::Pack => b"tmp_pack_",
+    };
+    proot_backing_name(name, kind)
+        || name.strip_prefix(prefix).is_some_and(|s| {
+            s.len() >= 6 && s.len() <= 80 && s.iter().all(u8::is_ascii_alphanumeric)
+        })
+}
+
+fn trusted_android_alias(path: &Path) -> PathBuf {
+    // Only Android's system-managed app-data alias is normalized lexically.
+    // No canonicalize/stat of attacker-supplied link targets is permitted.
+    path.strip_prefix("/data/user/0")
+        .map(|tail| Path::new("/data/data").join(tail))
+        .unwrap_or_else(|_| path.to_path_buf())
+}
+
+fn open_proot_object(
+    parent: &OwnedFd,
+    logical: &OsStr,
+    expected_parent: &Path,
+    kind: ProotObjectKind,
+) -> Result<OwnedFd> {
+    let mut name = logical.to_os_string();
+    let mut visited = HashSet::new();
+    let mut hops = 0;
+    loop {
+        if !visited.insert(name.clone()) {
+            return Err(RepoError("invalid_proot_object_link"));
+        }
+        let before = child_stat(parent, &name)?.ok_or(RepoError("repository_changed"))?;
+        match before.st_mode & libc::S_IFMT {
+            libc::S_IFLNK => {
+                if hops == 8 {
+                    return Err(RepoError("invalid_proot_object_link"));
+                }
+                hops += 1;
+                let cname = CString::new(name.as_bytes())
+                    .map_err(|_| RepoError("invalid_proot_object_link"))?;
+                let mut text = [0u8; 4097];
+                let length = unsafe {
+                    libc::readlinkat(
+                        parent.as_raw_fd(),
+                        cname.as_ptr(),
+                        text.as_mut_ptr().cast(),
+                        text.len(),
+                    )
+                };
+                if length <= 0 || length > 4096 {
+                    return Err(RepoError("invalid_proot_object_link"));
+                }
+                let text = &text[..length as usize];
+                // Reject lexical traversal and repeated separators before Path
+                // normalizes them. All accepted targets are absolute siblings.
+                if text.first() != Some(&b'/')
+                    || text
+                        .split(|b| *b == b'/')
+                        .skip(1)
+                        .any(|s| s.is_empty() || s == b"." || s == b"..")
+                {
+                    return Err(RepoError("invalid_proot_object_link"));
+                }
+                let target = Path::new(OsStr::from_bytes(text));
+                if target.parent().is_none_or(|p| {
+                    trusted_android_alias(p) != trusted_android_alias(expected_parent)
+                }) {
+                    return Err(RepoError("invalid_proot_object_link"));
+                }
+                let sibling = target
+                    .file_name()
+                    .filter(|s| proot_backing_name(s.as_bytes(), kind))
+                    .ok_or(RepoError("invalid_proot_object_link"))?;
+                // Discard the target parent. Even a concurrent namespace graft
+                // cannot redirect this pinned directory descriptor elsewhere.
+                name = sibling.to_os_string();
+            }
+            libc::S_IFREG => {
+                let fd = open_child(parent.as_raw_fd(), &name)
+                    .map_err(|_| RepoError("invalid_proot_object_link"))?;
+                let after = stat(&fd)?;
+                if after.st_mode & libc::S_IFMT != libc::S_IFREG
+                    || after.st_nlink != 1
+                    || after.st_dev != before.st_dev
+                    || after.st_ino != before.st_ino
+                {
+                    return Err(RepoError("invalid_proot_object_link"));
+                }
+                return Ok(fd);
+            }
+            _ => return Err(RepoError("invalid_proot_object_link")),
+        }
+    }
+}
+
+fn validate_snapshot_objects(path: &Path) -> Result<()> {
+    let repository = Repository::open_bare(path)?;
+    let odb = repository.odb()?;
+    let mut ids = Vec::new();
+    let mut too_many = false;
+    let enumerated = odb.foreach(|id| {
+        if ids.len() >= MAX_SNAPSHOT_FILES {
+            too_many = true;
+            return false;
+        }
+        ids.push(*id);
+        true
+    });
+    if too_many {
+        return Err(RepoError("repository_too_large"));
+    }
+    enumerated.map_err(|_| RepoError("repository_object_hash_mismatch"))?;
+    let mut decoded = 0u64;
+    for id in ids {
+        let (size, kind) = odb
+            .read_header(id)
+            .map_err(|_| RepoError("repository_object_hash_mismatch"))?;
+        decoded = decoded
+            .checked_add(size as u64)
+            .ok_or(RepoError("repository_too_large"))?;
+        if size > MAX_DECODED_OBJECT_BYTES || decoded > MAX_SNAPSHOT_BYTES {
+            return Err(RepoError("repository_too_large"));
+        }
+        let object = odb
+            .read(id)
+            .map_err(|_| RepoError("repository_object_hash_mismatch"))?;
+        if object.data().len() != size
+            || object.kind() != kind
+            || Oid::hash_object(kind, object.data())
+                .map_err(|_| RepoError("repository_object_hash_mismatch"))?
+                != id
+        {
+            return Err(RepoError("repository_object_hash_mismatch"));
+        }
+    }
+    Ok(())
+}
+
 fn copy_directory(
     source: &OwnedFd,
     destination: &Path,
     budget: &mut (u64, usize),
     depth: usize,
+    git_root: &Path,
+    relative: &Path,
 ) -> Result<()> {
     if depth > 128 {
         return Err(RepoError("repository_too_large"));
@@ -1371,13 +1592,35 @@ fn copy_directory(
             return Err(RepoError("repository_too_large"));
         }
         let name = OsStr::from_bytes(name);
-        let child = open_child(source.as_raw_fd(), name)?;
+        let object_kind = proot_object_container(relative);
+        if object_kind.is_some_and(|kind| proot_scratch_name(name.as_bytes(), kind)) {
+            // These are backing/temporary aliases, never logical Git objects.
+            // Do not open them: unused malicious scratch entries cannot grant
+            // the privileged reader authority over any target.
+            continue;
+        }
+        let observed = child_stat(source, name)?.ok_or(RepoError("repository_changed"))?;
+        let child = if observed.st_mode & libc::S_IFMT == libc::S_IFLNK {
+            let kind = object_kind
+                .filter(|kind| logical_object_name(name.as_bytes(), *kind))
+                .ok_or(RepoError("unsafe_repository_path"))?;
+            open_proot_object(source, name, &git_root.join(relative), kind)?
+        } else {
+            open_child(source.as_raw_fd(), name)?
+        };
         let metadata = stat(&child)?;
         let output = destination.join(name);
         match metadata.st_mode & libc::S_IFMT {
             libc::S_IFDIR => {
                 fs::create_dir(&output)?;
-                copy_directory(&child, &output, budget, depth + 1)?;
+                copy_directory(
+                    &child,
+                    &output,
+                    budget,
+                    depth + 1,
+                    git_root,
+                    &relative.join(name),
+                )?;
             }
             libc::S_IFREG => {
                 if metadata.st_nlink != 1 {
@@ -1401,6 +1644,19 @@ fn copy_directory(
                     .open(output)?;
                 let bytes = std::io::copy(&mut input, &mut out)?;
                 if bytes != metadata.st_size as u64 {
+                    return Err(RepoError("repository_changed"));
+                }
+                let after = input.get_ref().metadata()?;
+                use std::os::unix::fs::MetadataExt;
+                if after.dev() != metadata.st_dev as u64
+                    || after.ino() != metadata.st_ino as u64
+                    || after.len() != metadata.st_size as u64
+                    || after.nlink() != 1
+                    || after.mtime() != metadata.st_mtime as i64
+                    || after.ctime() != metadata.st_ctime as i64
+                    || after.mtime_nsec() != metadata.st_mtime_nsec as i64
+                    || after.ctime_nsec() != metadata.st_ctime_nsec as i64
+                {
                     return Err(RepoError("repository_changed"));
                 }
             }
