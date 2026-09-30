@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../ui/kit/kit_redact.dart';
 import 'package:flutter/foundation.dart';
-import '../domain/phone_project_engine.dart' show PhoneEngineException;
 import '../domain/team_project_gateway.dart';
+import '../domain/phone_project_engine.dart';
 export '../domain/team_project_gateway.dart';
 
 class TeamProjectController extends ChangeNotifier {
@@ -64,13 +64,23 @@ class TeamProjectController extends ChangeNotifier {
       late final TeamCommandResult result;
       try {
         result = await gateway.executeProject(command);
-      } catch (error) {
-        // The adapter's safe public code (never a cause or payload) says why.
-        final code = error is PhoneEngineException && error.code.isNotEmpty
+      } on PhoneEngineException catch (error) {
+        // Typed engine refusals are already safe protocol codes. Keep them
+        // available to the UI even when a health/lifecycle preflight failed.
+        final code =
+            RegExp(r'^[A-Za-z][A-Za-z0-9_]{0,63}$').hasMatch(error.code) &&
+                KitRedact.text(error.code) == error.code
             ? error.code
             : 'saveFailed';
         errorCode = code;
-        return TeamCommandResult(accepted: false, code: code);
+        return TeamCommandResult(
+          accepted: false,
+          code: code,
+          projectId: command.projectId,
+        );
+      } catch (_) {
+        errorCode = 'saveFailed';
+        return const TeamCommandResult(accepted: false, code: 'saveFailed');
       }
       if (!result.accepted) errorCode = result.code;
       try {

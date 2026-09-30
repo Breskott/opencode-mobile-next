@@ -1,0 +1,15 @@
+PASS preflight x86_64
+PASS engine_start_proof
+PASS project_created
+PASS scratch_repo
+PASS planner_completed
+PASS plan_approved
+PASS approved_plan
+PASS worker_completed
+PASS checker_completed
+PASS dev_merged
+PASS checked_dev_merge
+PASS unconfirmed_promotion_refused
+PASS confirmed_promotion_receipt
+PASS stable_server_restored
+PASS acceptance

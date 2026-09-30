@@ -1,0 +1,4 @@
+planner: completed
+worker/checker task: completed
+Distinct planner/worker/checker sessions: 3
+Actual assistant message provider/model: zai-coding-plan/glm-5.3

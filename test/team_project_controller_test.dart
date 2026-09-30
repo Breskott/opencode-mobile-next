@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/state/team_project_controller.dart';
+import 'package:opencode_mobile/domain/phone_project_engine.dart';
+import 'package:opencode_mobile/ui/kit/kit_redact.dart';
 import 'package:opencode_mobile/orchestration/adapters/fixture/project_fixture_gateway.dart';
 import 'team_project_fixture_test.dart' show MemoryPersistence;
 
@@ -16,6 +18,7 @@ class ControlledProjectGateway implements OrchestrationProjectGateway {
     revision: 1,
   );
   int commands = 0;
+  Object? commandFailure;
   @override
   Future<TeamWorkspace> teamWorkspace() => read();
   @override
@@ -23,6 +26,8 @@ class ControlledProjectGateway implements OrchestrationProjectGateway {
   @override
   Future<TeamCommandResult> executeProject(TeamProjectCommand command) async {
     commands++;
+    final failure = commandFailure;
+    if (failure != null) throw failure;
     return result;
   }
 
@@ -38,6 +43,49 @@ void main() {
     requestId: 'one-create',
     action: TeamProjectAction.createProject,
   );
+  test('typed engine refusals survive a thrown gateway failure', () async {
+    for (final code in [
+      'importFailed',
+      'repoSourceMissing',
+      'boundaryUnavailable',
+      'transportUncertain',
+    ]) {
+      final gateway = ControlledProjectGateway()
+        ..commandFailure = PhoneEngineException(code);
+      final controller = TeamProjectController(gateway);
+      final result = await controller.execute(create);
+      expect(result.accepted, isFalse);
+      expect(result.code, code);
+      expect(controller.errorCode, code);
+      expect(gateway.commands, 1);
+      expect(controller.busy, isFalse);
+      controller.dispose();
+    }
+  });
+
+  test(
+    'untyped or malformed failures stay generic without retaining secrets',
+    () async {
+      KitRedact.registerKnownSecret('AlphabeticPrivateCredential');
+      addTearDown(KitRedact.clearKnownSecrets);
+      for (final failure in [
+        StateError('unsafe provider cause'),
+        const PhoneEngineException('raw /private/path'),
+        const PhoneEngineException('AlphabeticPrivateCredential'),
+        PhoneEngineException('x' * 65),
+      ]) {
+        final gateway = ControlledProjectGateway()..commandFailure = failure;
+        final controller = TeamProjectController(gateway);
+        final result = await controller.execute(create);
+        expect(result.accepted, isFalse);
+        expect(result.code, 'saveFailed');
+        expect(controller.errorCode, 'saveFailed');
+        expect(gateway.commands, 1);
+        controller.dispose();
+      }
+    },
+  );
+
   test('accepted command stays accepted when its refresh fails', () async {
     final gateway = ControlledProjectGateway();
     final controller = TeamProjectController(gateway);

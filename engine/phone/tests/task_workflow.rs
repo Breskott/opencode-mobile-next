@@ -192,3 +192,55 @@ fn incomplete_or_unmet_verification_cannot_authorize_merge() {
     assert!(!validate_check(&json!({"findings":[],"criterionResults":[{"criterion":"A","status":"met"},{"criterion":"B","status":"unmet"}]}),&criteria).unwrap());
     assert!(validate_check(&json!({"findings":[],"criterionResults":[{"criterion":"A","status":"met"},{"criterion":"A","status":"met"}]}),&criteria).is_err());
 }
+
+#[test]
+fn planner_contract_requires_title_before_approval() {
+    let job = json!({"repoId":"repo","planningRoles":[{"id":"worker","instructions":"Implement approved changes"}]});
+    let prompt = oc_phone_engine::daemon::planner_request(&job);
+    assert!(prompt.contains("nonempty title"));
+    assert!(prompt.contains("\"roleId\":{\"enum\":[\"worker\"]}"));
+    assert!(prompt.contains("\"required\":[\"id\",\"title\",\"phaseId\""));
+    let mut plan = json!({"spec":{},"phases":[{"id":"phase"}],"tasks":[{"id":"task","roleId":"worker","repoId":"repo","criteria":["Works"],"dependsOn":[]}]});
+    assert_eq!(validate_plan(&plan, "repo"), Err("planTaskTitleRequired"));
+    plan["tasks"][0]["title"] = json!(" ");
+    assert_eq!(validate_plan(&plan, "repo"), Err("planTaskTitleRequired"));
+    plan["tasks"][0]["title"] = json!("Build the feature");
+    assert!(validate_plan(&plan, "repo").is_ok());
+}
+
+#[test]
+fn single_fenced_verdict_with_explanation_is_parsed_without_guessing() {
+    use oc_phone_engine::daemon::structured_output;
+    let verdict = json!({"findings":[],"criterionResults":[{"criterion":"Works","status":"met"}]});
+    let text =
+        format!("```json\n{verdict}\n```\nVerification basis: inspected the committed task file.");
+    let parsed = structured_output(&json!({"text":text})).unwrap();
+    assert_eq!(parsed, verdict);
+    assert!(validate_check(&parsed, &json!(["Works"])).unwrap());
+    assert!(validate_check(&parsed, &json!(["Different criterion"])).is_err());
+    for text in [
+        format!("```json\n{verdict}\n```\n```json\n{verdict}\n```"),
+        format!("```json\n{verdict}\n```\n{{\"otherVerdict\":true}}"),
+        "Done! No JSON verdict.".to_owned(),
+        "```json\n{invalid}\n```".to_owned(),
+        format!("```javascript\n{verdict}\n```"),
+    ] {
+        assert!(structured_output(&json!({"text":text})).is_err());
+    }
+}
+
+#[test]
+fn conflicting_duplicate_verdict_keys_are_refused_at_every_depth() {
+    use oc_phone_engine::daemon::structured_output;
+    for text in [
+        r#"{"findings":[{"severity":"major"}],"findings":[],"criterionResults":[]}"#,
+        r#"{"findings":[],"criterionResults":[{"criterion":"Works","status":"unmet","status":"met"}]}"#,
+        r#"{"status":"unmet","\u0073tatus":"met"}"#,
+    ] {
+        assert!(structured_output(&json!({"text":text})).is_err());
+        assert!(structured_output(
+            &json!({"text":format!("```json\n{text}\n```\nVerification basis: done.")})
+        )
+        .is_err());
+    }
+}

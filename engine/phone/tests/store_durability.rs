@@ -240,7 +240,7 @@ fn prepared(store: &Store) -> (String, String) {
             &json!({"stage":"running","sessionIds":{"planner":"session-plan"}}),
         )
         .unwrap();
-    store.update_job(&planner,"running",&json!({"stage":"completed","plan":{"phases":[{"id":"phase"}],"tasks":[{"id":"task","title":"Implementation","phaseId":"phase","roleId":"worker","repoId":"repo","serverId":"phone","criteria":["Behavior is verified"],"dependsOn":[],"status":"queued"}]}})).unwrap();
+    store.update_job(&planner,"running",&json!({"stage":"completed","plan":{"phases":[{"id":"phase","title":"Build"}],"tasks":[{"id":"task","title":"Implementation","phaseId":"phase","roleId":"worker","repoId":"repo","serverId":"phone","criteria":["Behavior is verified"],"dependsOn":[],"status":"queued"}]}})).unwrap();
     (id, planner)
 }
 
@@ -303,6 +303,71 @@ fn semantic_failure_rolls_back_all_proposed_plan_and_jobs() {
     assert_eq!(store.workspace().unwrap(), before);
     assert_eq!(store.jobs().unwrap(), jobs);
 }
+#[test]
+fn invalid_planner_proposal_rolls_back_before_publishing_approval() {
+    let root = storage();
+    let store = Store::open(root.path(), "p").unwrap();
+    let created = store.execute(&create("create")).unwrap();
+    let id = created["projectId"].as_str().unwrap();
+    store
+        .execute(&command("spec", "approveSpec", id, 0))
+        .unwrap();
+    let job = store.jobs().unwrap()[0]["id"].as_str().unwrap().to_owned();
+    store
+        .update_job(&job, "queued", &json!({"stage":"starting"}))
+        .unwrap();
+    store
+        .update_job(&job, "starting", &json!({"stage":"running"}))
+        .unwrap();
+    let before = store.workspace().unwrap();
+    let jobs = store.jobs().unwrap();
+    let mut plan = json!({"phases":[{"id":"phase","title":"Build"}],"tasks":[{"id":"task","phaseId":"phase","roleId":"worker","repoId":"repo","serverId":"phone","criteria":["Behavior is verified"],"dependsOn":[]}]});
+    assert_eq!(
+        store
+            .update_job(&job, "running", &json!({"stage":"completed","plan":plan}))
+            .unwrap_err()
+            .code(),
+        "planTaskTitleRequired"
+    );
+    assert_eq!(store.workspace().unwrap(), before);
+    assert_eq!(store.jobs().unwrap(), jobs);
+    plan["tasks"][0]["title"] = json!("Implementation");
+    for invalid in [
+        json!([{"id":"phase","title":42}]),
+        json!([{"id":"phase","title":"Build","risky":"true"}]),
+        json!([{"id":"phase","title":"Build"},42]),
+        json!([{"id":"phase","title":"Build"},{"id":"phase","title":"Duplicate"}]),
+    ] {
+        plan["phases"] = invalid;
+        assert_eq!(
+            store
+                .update_job(&job, "running", &json!({"stage":"completed","plan":plan}))
+                .unwrap_err()
+                .code(),
+            "planPhaseInvalid"
+        );
+        assert_eq!(store.workspace().unwrap(), before);
+        assert_eq!(store.jobs().unwrap(), jobs);
+    }
+    plan["phases"] =
+        json!([{"id":"phase","title":"Build","accepted":true,"extra":"model runtime"}]);
+
+    store
+        .update_job(&job, "running", &json!({"stage":"completed","plan":plan}))
+        .unwrap();
+    let w = store.workspace().unwrap();
+    assert_eq!(w["projects"][0]["tasks"][0]["status"], "queued");
+    assert_eq!(w["projects"][0]["tasks"][0]["findings"], json!([]));
+    assert_eq!(w["projects"][0]["phases"][0]["accepted"], false);
+    assert!(w["projects"][0]["phases"][0].get("extra").is_none());
+    assert_eq!(
+        store
+            .execute(&current_command(&store, "plan", "approvePlan", id))
+            .unwrap()["accepted"],
+        true
+    );
+}
+
 #[test]
 fn planner_proposal_requires_approval_before_task_queue_is_created() {
     let root = storage();

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "sourceSha256": "fde8905c88fe445245e200dabfb1fdcbd672908b8f29e795408d8ebb4ab37738",
-  "sourceRevision": "44a9c2dc6dece824edb2308fc7f1c9653e34be3e",
+  "sourceSha256": "73e9c30022a2624ec4d49c64ec8c54773312b99e5b1a14fc1ce3818e3c542315",
+  "sourceRevision": "517cdcc45ff36e6392f51ad863b1b2deb7ec9622",
   "sourceDirty": true,
   "rustcVersion": "rustc 1.92.0 (ded5c06cf 2025-12-08)",
   "ndkVersion": "28.2.13676358",
@@ -10,8 +10,8 @@
       "target": "aarch64-linux-android",
       "api": 26,
       "sha256": {
-        "libaiteam_engine.so": "a7f1ef1acc025f695a0c9d0520c8d2730d5daab38fa1728b9acefa6056184180",
-        "libaiteam_sandbox.so": "4debcf79ae5a47b0dc583e0f0a6283fffdc22f4b0974a453322e1adf856a4632",
+        "libaiteam_engine.so": "9fa48a6f0c9fdc4819679e108b95d43315a4ec240820bf46aafa64c4937c3edd",
+        "libaiteam_sandbox.so": "aa0dbb276e30f654eba48a75c580b0ac3bf1125306b944e3e455208e78cf7277",
         "libaiteam_boundary_probe.so": "66a6f1dbdf096f4f02a30740044441834c4a2ddbb7128992f5b76a3114588513"
       }
     },
@@ -19,8 +19,8 @@
       "target": "x86_64-linux-android",
       "api": 26,
       "sha256": {
-        "libaiteam_engine.so": "c4bd431ed42f676d11fc930924f5e7bdb59ab636c4af9b5560b5793673cbdc39",
-        "libaiteam_sandbox.so": "637e3199f2914e61971c2e01f8f50732f135f120fbf6745bd3ffd906ffc43fd1",
+        "libaiteam_engine.so": "31239b3fe7aea7a2402ded7a25bcd66396c61ddcd801f2add46a09cd52f2b6a0",
+        "libaiteam_sandbox.so": "f6acbae80479f901535cdae5c2c7cec51107d1b5fde0beebd0ef6c37ba7e90e6",
         "libaiteam_boundary_probe.so": "9e5d4b0763ca5a9197d6709296194410bdbd3ce8c517a9633f9a36cbc957bc75"
       }
     }

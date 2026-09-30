@@ -14,7 +14,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoreError(&'static str);
 impl StoreError {
-    pub fn code(&self) -> &str {
+    pub fn code(&self) -> &'static str {
         self.0
     }
 }
@@ -330,6 +330,7 @@ impl Store {
             .iter()
             .position(|p| p["id"] == j["projectId"])
             .ok_or(StoreError("projectNotFound"))?;
+        let plan_catalog = json!({"roles":w["roles"],"servers":w["servers"]});
         let p = &mut w["projects"][pi];
         if p["status"] == "stopped" {
             return Err(StoreError("projectStopped"));
@@ -464,8 +465,12 @@ impl Store {
                 let tasks = plan["tasks"].as_array().ok_or(StoreError("invalidPlan"))?;
                 let phases = plan["phases"].as_array().ok_or(StoreError("invalidPlan"))?;
                 // The model supplies proposals only. Approval and queue creation remain commands.
-                p["tasks"] = json!(tasks);
-                p["phases"] = json!(phases);
+                p["tasks"] = json!(tasks
+                    .iter()
+                    .map(normalize_task)
+                    .collect::<Result<Vec<_>, _>>()?);
+                p["phases"] = json!(normalize_phases(phases)?);
+                validate_plan(&plan_catalog, p)?;
                 p["planApproved"] = json!(false);
                 p["status"] = json!("needsPlanApproval");
             }
@@ -872,9 +877,26 @@ fn validate_settings(s: &Value) -> Result<(), StoreError> {
     }
     Ok(())
 }
+fn normalize_phases(phases: &[Value]) -> Result<Vec<Value>, StoreError> {
+    if phases.is_empty() || phases.len() > 1000 {
+        return Err(StoreError("planPhaseInvalid"));
+    }
+    let mut ids = HashSet::new();
+    phases.iter().map(|phase| {
+        let id = required_str(phase, "id", "planPhaseInvalid")?;
+        if !crate::config::valid_id(id) || !ids.insert(id) { return Err(StoreError("planPhaseInvalid")); }
+        let title = required_str(phase, "title", "planPhaseInvalid")?;
+        let milestone = phase.get("milestoneId").map(|v| v.as_str().ok_or(StoreError("planPhaseInvalid"))).transpose()?.unwrap_or("");
+        let risky = phase.get("risky").map(|v| v.as_bool().ok_or(StoreError("planPhaseInvalid"))).transpose()?.unwrap_or(false);
+        Ok(json!({"id":id,"title":title,"milestoneId":milestone,"risky":risky,"accepted":false}))
+    }).collect()
+}
 fn normalize_task(t: &Value) -> Result<Value, StoreError> {
     required_str(t, "id", "invalidPlan")?;
-    required_str(t, "title", "invalidPlan")?;
+    required_str(t, "title", "planTaskTitleRequired")?;
+    for key in ["phaseId", "roleId", "repoId", "serverId"] {
+        required_str(t, key, "invalidPlan")?;
+    }
     if t["status"].as_str().unwrap_or("queued") != "queued"
         || t["steps"].as_u64().unwrap_or(0) != 0
         || t["tokens"].as_u64().unwrap_or(0) != 0
@@ -932,7 +954,7 @@ fn job(w: &Value, p: &Value, task: Option<&Value>) -> Value {
         .or_else(|| p["repos"].as_array().and_then(|rs| rs.first()))
         .cloned()
         .unwrap_or(json!({}));
-    json!({"id":new_id("job"),"kind":if task.is_some(){"task"}else{"planner"},"projectId":p["id"],"taskId":task.map(|t|t["id"].clone()).unwrap_or(json!("")),"repoId":repo["id"],"serverId":repo["serverId"],"roleId":role_id,"model":role["model"].as_str().unwrap_or(""),"fallbackModel":role["fallbackModel"].as_str().unwrap_or(""),"instructions":role["instructions"].as_str().unwrap_or(""),"readOnly":task.is_none() || role["readOnly"]==true,"checkerRole":w["roles"].as_array().and_then(|roles| roles.iter().find(|role| role["id"]=="checker")).cloned().unwrap_or(json!({})),"title":task.map(|t|t["title"].clone()).unwrap_or(p["specDraft"]["goal"].clone()),"spec":p["specDraft"],"criteria":task.map(|t|t["criteria"].clone()).unwrap_or(json!([])),"dependsOn":task.map(|t|t["dependsOn"].clone()).unwrap_or(json!([])),"stage":"queued","directory":null,"sessionIds":{},"sessionUsage":{},"expectedDevCommit":repo["devCommit"].as_str().unwrap_or(""),"expectedMainCommit":repo["mainCommit"].as_str().unwrap_or(""),"usage":{"cost":null,"tokens":null},"createdAt":now(),"updatedAt":now()})
+    json!({"id":new_id("job"),"kind":if task.is_some(){"task"}else{"planner"},"projectId":p["id"],"taskId":task.map(|t|t["id"].clone()).unwrap_or(json!("")),"repoId":repo["id"],"serverId":repo["serverId"],"roleId":role_id,"model":role["model"].as_str().unwrap_or(""),"fallbackModel":role["fallbackModel"].as_str().unwrap_or(""),"instructions":role["instructions"].as_str().unwrap_or(""),"readOnly":task.is_none() || role["readOnly"]==true,"planningRoles":w["roles"].as_array().map(|roles| roles.iter().filter(|r| r["readOnly"] != true && r["id"] != "planner" && r["id"] != "checker").cloned().collect::<Vec<_>>()).unwrap_or_default(),"checkerRole":w["roles"].as_array().and_then(|roles| roles.iter().find(|role| role["id"]=="checker")).cloned().unwrap_or(json!({})),"title":task.map(|t|t["title"].clone()).unwrap_or(p["specDraft"]["goal"].clone()),"spec":p["specDraft"],"criteria":task.map(|t|t["criteria"].clone()).unwrap_or(json!([])),"dependsOn":task.map(|t|t["dependsOn"].clone()).unwrap_or(json!([])),"stage":"queued","directory":null,"sessionIds":{},"sessionUsage":{},"expectedDevCommit":repo["devCommit"].as_str().unwrap_or(""),"expectedMainCommit":repo["mainCommit"].as_str().unwrap_or(""),"usage":{"cost":null,"tokens":null},"createdAt":now(),"updatedAt":now()})
 }
 fn validate_plan(w: &Value, p: &Value) -> Result<(), StoreError> {
     let tasks = p["tasks"]
@@ -1267,7 +1289,9 @@ fn apply_command(
                             if !phases.is_array() {
                                 return Err(StoreError("invalidPlan"));
                             }
-                            p["phases"] = phases.clone();
+                            p["phases"] = json!(normalize_phases(
+                                phases.as_array().ok_or(StoreError("planPhaseInvalid"))?
+                            )?);
                         }
                         validate_plan(w, &p)?;
                         if jobs.iter().any(|j| {

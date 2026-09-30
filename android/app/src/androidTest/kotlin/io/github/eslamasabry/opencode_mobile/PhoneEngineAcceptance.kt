@@ -21,6 +21,64 @@ import java.util.concurrent.atomic.AtomicBoolean
 /** Test APK only: no public app command, host credential export, or fake proof. */
 class PhoneEngineAcceptance : Instrumentation() {
     private class Refused(val safeCode: String) : Exception()
+    private companion object {
+        // Compile-time public refusal vocabulary; never relay arbitrary response text.
+        val SAFE_FAILURE_CODES = setOf(
+            "acceptance_failed", "invalid_proot_object_link", "repository_object_hash_mismatch",
+            "approveSpecFirst", "authInvalid", "authUnavailable", "boundaryUnavailable",
+            "boundary_proof_failed", "canonical_ref_invalid", "canonical_ref_missing", "chargingUnsupported",
+            "chatBusy", "chat_status_unknown", "checkInvalid", "checkedCommitChanged",
+            "checkerMustBeReadOnly", "checkerRoleMissing", "chooseBudget", "chooseExecutionMode",
+            "clockUnknown", "collectFailed", "committed_criterion_mismatch", "confirmationRequired",
+            "confirmation_required", "confirmed_promotion_refused", "cursorExpired", "dependencyCycle",
+            "dev_merge_mismatch", "directory_scope_unknown", "divergent_import", "durable_receipt_missing",
+            "elf_parser_negative_failed", "engine_auth_unavailable", "engine_bundle_invalid", "engine_command_refused",
+            "engine_delete_failed", "engine_health_invalid", "engine_in_use", "engine_not_packaged",
+            "engine_not_running", "engine_ready_invalid", "engine_start_failed", "engine_stop_failed",
+            "executionUnavailable", "heartbeat_refused", "import_binding_mismatch", "in_app_server_exited",
+            "in_app_server_required", "invalidCommand", "invalidCursor", "invalidFixRounds",
+            "invalidJob", "invalidJobPatch", "invalidJobTransition", "invalidPlacement",
+            "invalidPlan", "invalidProfile", "invalidRepositoryReceipt", "invalidRequestId",
+            "invalidReviewLevel", "invalidRole", "invalidSpec", "invalidTaskPatch",
+            "invalidUsage", "invalid_commit", "invalid_id", "invalid_path",
+            "invalid_port", "invalid_profile", "invalid_receipt", "invalid_repository",
+            "invalid_request", "jobChanged", "jobInvalid", "jobMissing",
+            "jobNotActive", "jobNotFound", "job_stage_evidence_missing", "label",
+            "legacy_receipt_scope_unknown", "linked_repository", "listenUnavailable", "mergeRefused",
+            "merge_conflict", "merge_receipt_missing", "missingCriteria", "missingDependency",
+            "missingProjectDetails", "model_invalid", "model_required", "model_spend_required",
+            "needsAnswer", "needsReconciliation", "other_service_running", "overlapping_roots",
+            "person_chat_busy", "person_terminal_running", "planAlreadyRunning", "planInvalid", "planTaskTitleRequired", "planPhaseInvalid",
+            "plan_not_single_task", "plan_scope_mismatch", "planner_not_completed", "private_state_invalid",
+            "private_state_unavailable", "profileDeleted", "projectBusy", "projectMissing",
+            "projectNotFound", "projectPaused", "projectStopped", "project_missing",
+            "promoted_refs_mismatch", "promotion_not_fast_forward", "promotion_recovery_required", "promotion_superseded",
+            "promptAlreadyDispatched", "promptUncertain", "protocol_not_verified", "qa_job_failed",
+            "qa_job_interrupted", "qa_job_needs_fix", "qa_job_paused", "qa_job_stopped",
+            "qa_project_needs_fix", "qa_project_paused_budget", "quickTaskNeedsOneRepo", "receipt_encoding",
+            "recoveryFailed", "recoveryNeedsReview", "repoInvalid", "repoNotFound",
+            "repositoryUnavailable", "repository_busy", "repository_changed", "repository_empty",
+            "repository_exists", "repository_git", "repository_io", "repository_retired",
+            "repository_too_large", "repository_unavailable", "reproofRegression", "requestIdReuse",
+            "request_id_conflict", "request_timeout", "response_limit", "roleInUse",
+            "roleNotFound", "scratch_exists", "scratch_git_failed", "scratch_import_mismatch",
+            "serverConfigInvalid", "serverCredentialsInvalid", "serverCredentialsUnavailable", "serverStopped",
+            "server_auth_unavailable", "server_status_stale", "server_status_unknown", "sessionAlreadyRecorded",
+            "sessionCreateUncertain", "sessionFailed", "sessionUncertain", "sessionUnknown",
+            "shared_repository_objects", "sqlite_missing", "sqlite_workspace_missing", "sqlite_unscoped_store_present", "stable_server_not_running",
+            "stable_server_restore_failed", "stable_server_restore_timeout", "staleJobStage", "staleRepositoryRefs",
+            "staleRevision", "stale_dev", "stale_main", "stale_task",
+            "storageCorrupt", "storageUnavailable", "storeUnavailable", "structuredOutputInvalid",
+            "symbolic_ref_refused", "symlink_refused", "taskAlreadyDone", "taskIdAlreadyUsed",
+            "taskNotFound", "taskNotPaused", "task_changed", "task_job_missing",
+            "task_not_descendant", "task_not_merged", "task_rewritten", "task_sessions_not_proved",
+            "timeout_invalid", "ubuntu_not_initialized", "unconfirmed_promotion_allowed", "unsafeStoragePath",
+            "unsafe_repository_config", "unsafe_repository_metadata", "unsafe_repository_path", "unsafe_source",
+            "unsafe_task_tree", "unsupportedAction", "unsupportedServer", "usageRegression",
+            "usageUncertain", "workerCloneFailed", "worker_binding_mismatch", "worker_exists",
+            "worker_reset_refused", "workspace_unavailable"
+        )
+    }
     private lateinit var arguments: Bundle
     private lateinit var linux: BuiltinLinux
     private lateinit var privateRoot: File
@@ -34,8 +92,11 @@ class PhoneEngineAcceptance : Instrumentation() {
     private var activity: Activity? = null
     private var engineStarted = false
     private var serverStarted = false
+    private var stableQa = false
+    private var stableServerStopped = false
     private var currentStep = "engine_start_proof"
     private var deadline = 0L
+    private var statusWaitDeadline = 0L
     private val criterion = "The repository root contains PHONE_ENGINE_QA.txt with exactly phone-engine-live-acceptance followed by a newline, committed on the task branch; no other tracked file is changed."
     private val personDirectories = linkedSetOf<String>()
 
@@ -78,8 +139,24 @@ class PhoneEngineAcceptance : Instrumentation() {
             heartbeatThread?.interrupt()
             heartbeatThread?.join(1200)
             if (::linux.isInitialized) {
-                if (serverStarted) try { linux.stopServer() } catch (_: Exception) { }
-                if (engineStarted) try { linux.stopPhoneEngine(profile) } catch (_: Exception) { }
+                if (!stableQa && serverStarted) try { linux.stopServer() } catch (_: Exception) { passed = false }
+                if (engineStarted) try { linux.stopPhoneEngine(profile) } catch (_: Exception) { passed = false }
+                if (stableQa && stableServerStopped) {
+                    try {
+                        if (!linux.serverRunning) startAcceptanceServer()
+                        val restoreDeadline = SystemClock.elapsedRealtime() + 30_000L
+                        var restored = false
+                        while (!restored && SystemClock.elapsedRealtime() < restoreDeadline) {
+                            restored = try { scopedBusySessions(emptySet()); true } catch (_: Exception) { false }
+                            if (!restored) Thread.sleep(500)
+                        }
+                        requireSafe(restored, "stable_server_restore_failed")
+                        sendStatus(0, Bundle().apply { putString("phoneEngineCleanup", "PASS stable_server_restored") })
+                    } catch (_: Exception) {
+                        passed = false
+                        sendStatus(0, Bundle().apply { putString("phoneEngineCleanup", "FAIL stable_server_restore_failed") })
+                    }
+                }
             }
             activity?.let { try { runOnMainSync { it.finish() } } catch (_: Exception) { } }
             finish(if (passed) Activity.RESULT_OK else Activity.RESULT_CANCELED,
@@ -88,8 +165,14 @@ class PhoneEngineAcceptance : Instrumentation() {
     }
 
     private fun execute() {
-        requireSafe(targetContext.packageName == "io.github.eslamasabry.opencode_mobile.preview", "preview_required")
-        requireSafe(arguments.getString("isolatedQa") == "true", "isolated_qa_required")
+        stableQa = targetContext.packageName == "io.github.eslamasabry.opencode_mobile" &&
+            arguments.getString("stableAppQa") == "true"
+        val previewQa = targetContext.packageName == "io.github.eslamasabry.opencode_mobile.preview" &&
+            arguments.getString("isolatedQa") == "true"
+        requireSafe((stableQa || previewQa) && !(arguments.getString("stableAppQa") == "true" &&
+            arguments.getString("isolatedQa") == "true"), "explicit_target_qa_required")
+        if (stableQa) requireSafe(listOf("boundaryRegressions", "nativeRegressions", "reproofRegression")
+            .none { arguments.getString(it) == "true" }, "stable_regression_refused")
         if (arguments.getString("boundaryRegressions") == "true") {
             currentStep = "device_boundary_regressions"
             activity = startActivitySync(Intent(targetContext, MainActivity::class.java)
@@ -126,7 +209,8 @@ class PhoneEngineAcceptance : Instrumentation() {
         deadline = SystemClock.elapsedRealtime() + timeout * 1000L
         assertPackagedAbiParser()
 
-        // Instrumentation deliberately runs only in disposable preview storage.
+        // Stable testing uses only a new QA engine profile and scratch repository.
+        // It never resets app data or edits the person's projects/configuration.
         // Foreground the real activity before invoking its native FGS controls.
         activity = startActivitySync(Intent(targetContext, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -140,11 +224,16 @@ class PhoneEngineAcceptance : Instrumentation() {
         learnPersonDirectories(File(targetContext.filesDir, "projects"))
         personDirectories.add("/root")
         personDirectories.add("/root/projects")
-        if (linux.runningServices().contains(BuiltinLinux.SERVER)) {
+        if (stableQa) {
+            awaitExistingStableServer()
+        }
+        val services = linux.runningServices()
+        if (services.contains(BuiltinLinux.SERVER)) {
             requireSafe(scopedBusySessions(emptySet()).isEmpty(), "person_chat_busy")
         }
+        if (stableQa) stableServerStopped = true
         linux.stopServer()
-        LocalTerminal.get(targetContext).list().forEach { it.stop() }
+        if (!stableQa) LocalTerminal.get(targetContext).list().forEach { it.stop() }
         // Never stop services by PID pattern, or silently replace another engine.
         requireSafe(linux.runningServices().isEmpty(), "other_service_running")
         // Compatibility hint only; native startup gets the actual ephemeral
@@ -158,18 +247,7 @@ class PhoneEngineAcceptance : Instrumentation() {
         requireSafe(engine("GET", "/v1/health").body.getJSONObject("capabilities").getBoolean("boundary"), "boundary_proof_failed")
         // Same OC1 command/auth contract as BuiltinLinux.serverScript. The
         // optional phone context hint has no bearing on server authentication.
-        linux.startServer("""
-            set -eu
-            mkdir -p /root/projects
-            cd /root/projects
-            [ -s /root/.oc-builtin/server.password ] || exit 78
-            password=${'$'}(cat /root/.oc-builtin/server.password)
-            export OPENCODE_SERVER_USERNAME=opencode
-            export OPENCODE_SERVER_PASSWORD="${'$'}password"
-            export OPENCODE_PASSWORD="${'$'}password"
-            unset password
-            exec opencode serve --hostname 127.0.0.1 --port 4097
-        """.trimIndent(), 4097)
+        startAcceptanceServer()
         serverStarted = true
         waitUntil("protocol_not_verified") {
             requireSafe(linux.serverRunning, "in_app_server_exited")
@@ -201,6 +279,11 @@ class PhoneEngineAcceptance : Instrumentation() {
         val seed = readRef(File(host, ".git"), "main")
         personDirectories.add(guest)
         requireSafe(personDirectories.contains(guest), "directory_scope_unknown")
+        // Regression: use the actual per-profile store, not the obsolete
+        // data/state.sqlite3 spelling. Reading the real initial workspace is
+        // a positive control before any model dispatch or queue mutation.
+        requireSafe(!File(privateRoot, "data/state.sqlite3").exists(), "sqlite_unscoped_store_present")
+        requireSafe(persistedWorkspace().optInt("schemaVersion") == 1, "sqlite_workspace_missing")
         heartbeat() // Fresh authoritative status before any approved lane.
         heartbeatRunning.set(true)
         heartbeatThread = Thread({
@@ -234,12 +317,19 @@ class PhoneEngineAcceptance : Instrumentation() {
         val projectId = created.getString("projectId")
         val canonical = File(privateRoot, "repos/repos/$repoId.git")
         requireSafe(readRef(canonical, "main") == seed && readRef(canonical, "dev") == seed, "scratch_import_mismatch")
+        trace("project_created")
         emit("PASS", currentStep)
 
         currentStep = "approved_plan"
         commandFor(projectId, "approveSpec", JSONObject().put("confirmed", true))
-        waitUntil("planner_not_completed") { project(projectId).optString("status") == "needsPlanApproval" }
+        waitUntil("planner_not_completed") {
+            val current = project(projectId)
+            assertOwnQaJobNotFailed(projectId, "", current)
+            current.optString("status") == "needsPlanApproval"
+        }
         val proposed = project(projectId)
+        proveJobStages(projectId, "", listOf("running", "completed"))
+        trace("planner_completed")
         val tasks = proposed.getJSONArray("tasks")
         val phases = proposed.getJSONArray("phases")
         requireSafe(tasks.length() == 1 && phases.length() == 1, "plan_not_single_task")
@@ -250,11 +340,36 @@ class PhoneEngineAcceptance : Instrumentation() {
             task.getJSONArray("criteria").length() == 1 && task.getJSONArray("criteria").getString(0) == criterion &&
             phases.getJSONObject(0).optString("id") == "phase_qa", "plan_scope_mismatch")
         commandFor(projectId, "approvePlan", JSONObject().put("confirmed", true))
+        trace("plan_approved")
         emit("PASS", currentStep)
 
         currentStep = "checked_dev_merge"
-        waitUntil("task_not_merged") { project(projectId).getJSONArray("tasks").getJSONObject(0).optString("status") == "merged" }
+        waitUntil("task_not_merged") {
+            val current = project(projectId)
+            assertOwnQaJobNotFailed(projectId, "task_qa", current)
+            current.getJSONArray("tasks").getJSONObject(0).optString("status") == "merged"
+        }
         val checked = project(projectId)
+        proveJobStages(projectId, "task_qa", listOf("running", "checking", "mergeReady", "merging", "completed"))
+        val completedJob = database { db ->
+            db.rawQuery("SELECT data FROM jobs", null).use { rows ->
+                val matching = mutableListOf<JSONObject>()
+                while (rows.moveToNext()) {
+                    val job = JSONObject(rows.getString(0))
+                    if (job.optString("projectId") == projectId && job.optString("taskId") == "task_qa") matching.add(job)
+                }
+                requireSafe(matching.size == 1, "task_job_missing")
+                matching.single()
+            }
+        }
+        requireSafe(completedJob.optString("stage") == "completed" &&
+            completedJob.getJSONObject("sessionIds").optString("worker").isNotEmpty() &&
+            completedJob.getJSONObject("sessionIds").optString("checker").isNotEmpty() &&
+            completedJob.getJSONObject("sessionIds").optString("worker") != completedJob.getJSONObject("sessionIds").optString("checker") &&
+            completedJob.getJSONObject("promptDispatch").optString("worker") == "dispatched" &&
+            completedJob.getJSONObject("promptDispatch").optString("checker") == "dispatched", "task_sessions_not_proved")
+        trace("worker_completed")
+        trace("checker_completed")
         val checkedTask = checked.getJSONArray("tasks").getJSONObject(0)
         requireSafe(checkedTask.getJSONArray("findings").length() == 0 &&
             checkedTask.getJSONArray("criterionResults").length() == 1 &&
@@ -272,6 +387,7 @@ class PhoneEngineAcceptance : Instrumentation() {
         """.trimIndent(), 30)
         requireSafe(taskDirectory.isDirectory && checkGit.exitCode == 0, "committed_criterion_mismatch")
         requireSafe(checked.getJSONArray("receipts").objects().any { it.optString("kind") == "merge" && it.optString("after") == dev }, "merge_receipt_missing")
+        trace("dev_merged")
         emit("PASS", currentStep)
 
         currentStep = "unconfirmed_promotion_refused"
@@ -304,13 +420,82 @@ class PhoneEngineAcceptance : Instrumentation() {
 
     private data class Reply(val status: Int, val body: JSONObject)
 
+    private fun awaitExistingStableServer() {
+        // Instrumentation restarts the app process. Flutter/native restore is
+        // asynchronous; observe its existing server for at most 90 seconds.
+        // This wait never starts, stops or adopts an unknown server/process.
+        statusWaitDeadline = minOf(deadline, SystemClock.elapsedRealtime() + 90_000L)
+        try {
+            while (SystemClock.elapsedRealtime() < statusWaitDeadline) {
+                val services = linux.runningServices()
+                requireSafe(services.all { it == BuiltinLinux.SERVER }, "other_service_running")
+                requireSafe(LocalTerminal.get(targetContext).list().none { it.running }, "person_terminal_running")
+                if (services.contains(BuiltinLinux.SERVER) && linux.serverRunning) {
+                    val busy = try { scopedBusySessions(emptySet()) } catch (_: Exception) { null }
+                    if (busy != null) {
+                        requireSafe(busy.isEmpty(), "person_chat_busy")
+                        return
+                    }
+                }
+                val remaining = statusWaitDeadline - SystemClock.elapsedRealtime()
+                if (remaining > 0L) Thread.sleep(minOf(500L, remaining))
+            }
+            throw Refused("stable_server_restore_timeout")
+        } finally { statusWaitDeadline = 0L }
+    }
+
+    private fun startAcceptanceServer() {
+        linux.startServer("""
+            set -eu
+            mkdir -p /root/projects
+            cd /root/projects
+            [ -s /root/.oc-builtin/server.password ] || exit 78
+            password=${'$'}(cat /root/.oc-builtin/server.password)
+            export OPENCODE_SERVER_USERNAME=opencode
+            export OPENCODE_SERVER_PASSWORD="${'$'}password"
+            export OPENCODE_PASSWORD="${'$'}password"
+            unset password
+            exec opencode serve --hostname 127.0.0.1 --port 4097
+        """.trimIndent(), 4097)
+    }
+
+    // Durable ordered transitions prove the real sessions even if a short stage
+    // completes between polls. No session/model response text leaves the app.
+    private fun proveJobStages(projectId: String, taskId: String, expected: List<String>) {
+        val actions = database { db ->
+            val actions = mutableListOf<String>()
+            db.rawQuery("SELECT data FROM events ORDER BY seq", null).use { rows ->
+                while (rows.moveToNext()) {
+                    val event = JSONObject(rows.getString(0))
+                    if (event.optString("kind") == "job" && event.optString("projectId") == projectId &&
+                        event.optString("taskId") == taskId) actions.add(event.optString("action"))
+                }
+            }
+            actions
+        }
+        var index = 0
+        for (action in actions) if (index < expected.size && action == expected[index]) index++
+        requireSafe(index == expected.size, "job_stage_evidence_missing")
+    }
+
+    private fun trace(stage: String) = sendStatus(0, Bundle().apply {
+        putString("phoneEngineStage", "PASS $stage")
+    })
+
     private fun request(base: String, auth: String, method: String, path: String, body: JSONObject? = null): Reply {
         val connection = URL(base + path).openConnection() as HttpURLConnection
         try {
+            val requestDeadline = minOf(SystemClock.elapsedRealtime() + 8000L,
+                statusWaitDeadline.takeIf { it > 0L } ?: Long.MAX_VALUE)
+            fun remaining(): Int {
+                val remaining = requestDeadline - SystemClock.elapsedRealtime()
+                requireSafe(remaining > 0L, "request_timeout")
+                return remaining.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            }
             connection.requestMethod = method
             connection.instanceFollowRedirects = false
-            connection.connectTimeout = 3000
-            connection.readTimeout = 5000
+            connection.connectTimeout = minOf(3000, remaining())
+            connection.readTimeout = minOf(5000, remaining())
             connection.setRequestProperty("Authorization", auth)
             if (body != null) {
                 connection.doOutput = true
@@ -323,6 +508,7 @@ class PhoneEngineAcceptance : Instrumentation() {
                 val output = java.io.ByteArrayOutputStream()
                 val buffer = ByteArray(4096)
                 while (output.size() <= 1_048_576) {
+                    connection.readTimeout = minOf(5000, remaining())
                     val read = it.read(buffer, 0, minOf(buffer.size, 1_048_577 - output.size()))
                     if (read < 0) break
                     output.write(buffer, 0, read)
@@ -340,8 +526,42 @@ class PhoneEngineAcceptance : Instrumentation() {
     private fun command(body: JSONObject): JSONObject {
         if (!body.has("requestId")) body.put("requestId", "request_${UUID.randomUUID()}")
         val reply = engine("POST", "/v1/commands", body)
-        requireSafe(reply.status == 200 && reply.body.optBoolean("accepted"), "engine_command_refused")
+        if (reply.status != 200 || !reply.body.optBoolean("accepted")) {
+            throw Refused(safeFailure(reply.body.optString("code"), "engine_command_refused"))
+        }
         return reply.body
+    }
+
+    private fun safeFailure(code: String?, fallback: String): String =
+        code?.takeIf { it in SAFE_FAILURE_CODES } ?: fallback
+
+    private fun assertOwnQaJobNotFailed(projectId: String, taskId: String, project: JSONObject) {
+        // This database belongs only to the random QA profile. Inspect stage and
+        // reason vocabulary, never provider output, findings text or other profiles.
+        database { db ->
+            db.rawQuery("SELECT data FROM jobs", null).use { rows ->
+                while (rows.moveToNext()) {
+                    val job = JSONObject(rows.getString(0))
+                    if (job.optString("projectId") != projectId || job.optString("taskId") != taskId) continue
+                    val fallback = when (job.optString("stage")) {
+                        "failed" -> "qa_job_failed"
+                        "interrupted" -> "qa_job_interrupted"
+                        "needsFix" -> "qa_job_needs_fix"
+                        "paused" -> "qa_job_paused"
+                        "stopped" -> "qa_job_stopped"
+                        else -> null
+                    }
+                    if (fallback != null) throw Refused(safeFailure(job.optString("reason"), fallback))
+                }
+            }
+        }
+        if (project.optString("status") == "needsFix") throw Refused("qa_project_needs_fix")
+        if (project.optString("status") == "pausedBudget") throw Refused("qa_project_paused_budget")
+        if (taskId.isNotEmpty()) project.getJSONArray("tasks").objects()
+            .singleOrNull { it.optString("id") == taskId }?.let { task ->
+                if (task.optString("status") == "needsFix")
+                    throw Refused(safeFailure(task.optString("reason"), "qa_job_needs_fix"))
+            }
     }
 
     private fun commandFor(projectId: String, action: String, body: JSONObject): JSONObject =
@@ -364,14 +584,18 @@ class PhoneEngineAcceptance : Instrumentation() {
     @Synchronized private fun heartbeat() {
         val busy = linkedSetOf<String>()
         var known = true
+        var unknownReason = "chat_status_unknown"
         try {
             busy.addAll(scopedBusySessions(teamSessions()))
+        } catch (failure: Refused) {
+            known = false
+            unknownReason = safeFailure(failure.safeCode, "chat_status_unknown")
         } catch (_: Exception) { known = false }
         val response = engine("POST", "/v1/chatBusy", JSONObject().put("until", System.currentTimeMillis() + 25_000L)
             .put("sessionIds", JSONArray(busy.toList())).put("directories", JSONArray(personDirectories.toList()))
             .put("known", known).put("appInstance", instance).put("sequence", ++heartbeatSequence))
         requireSafe(response.status == 200 && response.body.optBoolean("accepted"), "heartbeat_refused")
-        requireSafe(known, "chat_status_unknown")
+        requireSafe(known, unknownReason)
     }
 
     private fun scopedBusySessions(team: Set<String>): Set<String> {
@@ -489,7 +713,7 @@ class PhoneEngineAcceptance : Instrumentation() {
     }
 
     private fun <T> database(block: (SQLiteDatabase) -> T): T {
-        val file = File(privateRoot, "data/state.sqlite3")
+        val file = File(privateRoot, "data/oc.teamEngine.$profile/state.sqlite3")
         requireSafe(regularPrivate(file), "sqlite_missing")
         return SQLiteDatabase.openDatabase(file.absolutePath, null, SQLiteDatabase.OPEN_READONLY or SQLiteDatabase.NO_LOCALIZED_COLLATORS)
             .use(block)

@@ -155,6 +155,16 @@ class PhoneEngineGateway extends NullOrchestrationGateway
     return future;
   }
 
+  static String? _refusalCode(Object? value, {bool allowEmpty = false}) {
+    if (value is! String ||
+        !(allowEmpty && value.isEmpty ||
+            RegExp(r'^[A-Za-z][A-Za-z0-9_]{0,63}$').hasMatch(value)) ||
+        KitRedact.text(value) != value) {
+      return null;
+    }
+    return value;
+  }
+
   Future<Object?> _request(
     String method,
     String path, {
@@ -190,8 +200,24 @@ class PhoneEngineGateway extends NullOrchestrationGateway
       final status = response.statusCode ?? 0;
       if (status < 200 || status >= 300) {
         final body = response.data;
-        if (status == 409 && body is Map && body['code'] == 'cursorExpired') {
-          throw const PhoneEngineException('cursorExpired');
+        // Redirect bodies are not an engine refusal and never authorize
+        // another endpoint. Every other authenticated refusal retains only
+        // its bounded symbolic code, never server text or credential payloads.
+        if (!(status >= 300 && status < 400) && body is Map) {
+          final code = _refusalCode(body['code']);
+          if (code != null) {
+            if (method == 'POST' &&
+                path == '/v1/commands' &&
+                body['accepted'] == false &&
+                body['projectId'] is String &&
+                body['revision'] is int &&
+                body['replayed'] is bool) {
+              // Some adapters use a refusal HTTP status with the complete
+              // command receipt. Preserve its reviewed metadata as well.
+              return body;
+            }
+            throw PhoneEngineException(code);
+          }
         }
         throw PhoneEngineException(
           status >= 300 && status < 400
@@ -287,66 +313,61 @@ class PhoneEngineGateway extends NullOrchestrationGateway
   @override
   Future<TeamCommandResult> executeProject(TeamProjectCommand command) =>
       _track(() async {
-        final h = await probe();
-        if (!h.commandActions.contains(command.action)) {
-          return const TeamCommandResult(
-            accepted: false,
-            code: 'unsupportedCommand',
-          );
-        }
-        if (_executionActions.contains(command.action) && !h.canExecute) {
-          return TeamCommandResult(
-            accepted: false,
-            code: !h.boundary
-                ? 'boundaryUnverified'
-                : !h.oc1Verified || h.oc2
-                ? 'protocolUnverified'
-                : 'engineUnavailable',
-          );
-        }
-        Object? safe(Object? v) => switch (v) {
-          String s => KitRedact.text(s),
-          List items => items.map(safe).toList(),
-          Map items => items.map((k, v) => MapEntry(k, safe(v))),
-          _ => v,
-        };
-        Object? raw;
         try {
-          raw = await _request(
+          final h = await probe();
+          if (!h.commandActions.contains(command.action)) {
+            return const TeamCommandResult(
+              accepted: false,
+              code: 'unsupportedCommand',
+            );
+          }
+          if (_executionActions.contains(command.action) && !h.canExecute) {
+            return TeamCommandResult(
+              accepted: false,
+              code: !h.boundary
+                  ? 'boundaryUnverified'
+                  : !h.oc1Verified || h.oc2
+                  ? 'protocolUnverified'
+                  : 'engineUnavailable',
+            );
+          }
+          Object? safe(Object? v) => switch (v) {
+            String s => KitRedact.text(s),
+            List items => items.map(safe).toList(),
+            Map items => items.map((k, v) => MapEntry(k, safe(v))),
+            _ => v,
+          };
+          final raw = await _request(
             'POST',
             '/v1/commands',
             data: safe(command.toJson()),
           );
-        } on PhoneEngineException catch (error) {
-          if (error.code == 'transportUncertain') {
-            return const TeamCommandResult(
-              accepted: false,
-              code: 'transportUncertain',
-            );
-          }
-          rethrow;
-        }
-        if (raw is! Map ||
-            raw['accepted'] is! bool ||
-            raw['code'] is! String ||
-            raw['projectId'] is! String ||
-            raw['revision'] is! int ||
-            raw['replayed'] is! bool) {
-          throw const PhoneEngineException('payloadInvalid');
-        }
-        final code = raw['code'] as String;
-        if (!RegExp(r'^[A-Za-z][A-Za-z0-9_]{0,63}$|^$').hasMatch(code)) {
-          {
+          if (raw is! Map ||
+              raw['accepted'] is! bool ||
+              raw['code'] is! String ||
+              raw['projectId'] is! String ||
+              raw['revision'] is! int ||
+              raw['replayed'] is! bool) {
             throw const PhoneEngineException('payloadInvalid');
           }
+          final code = raw['code'] as String;
+          if (_refusalCode(code, allowEmpty: raw['accepted'] == true) == null) {
+            throw const PhoneEngineException('payloadInvalid');
+          }
+          return TeamCommandResult(
+            accepted: raw['accepted'] as bool,
+            code: code,
+            projectId: raw['projectId'] as String,
+            revision: raw['revision'] as int,
+            replayed: raw['replayed'] as bool,
+          );
+        } on PhoneEngineException catch (error) {
+          return TeamCommandResult(
+            accepted: false,
+            code: error.code,
+            projectId: command.projectId,
+          );
         }
-        return TeamCommandResult(
-          accepted: raw['accepted'] as bool,
-          code: code,
-          projectId: raw['projectId'] as String,
-          revision: raw['revision'] as int,
-          replayed: raw['replayed'] as bool,
-        );
       });
 
   /// Observation lease, separate from executable project commands. Never retried.

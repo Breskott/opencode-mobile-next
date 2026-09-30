@@ -312,3 +312,36 @@ wait for fresh `health.canExecute`. Requiring `canExecute` while OC1 is stopped
 is circular. Missing real OC1 auth now reports `server_auth_unavailable` before
 signing or starting; the durable store is not advertised as runnable without
 that execution prerequisite. No fabricated credentials are installed.
+
+
+## Additive command refusal contract (run 3 repair)
+
+Authenticated HTTP command failures return only `{"code": "<static symbolic reason>"}` (409 for semantic refusals). Dart preserves that code in `TeamCommandResult.code`; it never carries raw exceptions, response bodies, Git paths or credentials into UI errors. HTTP 2xx `accepted:false` keeps the existing typed receipt. Redirects remain `redirectRefused`, missing authentication is `authenticationRequired`, and a write with unknown transport outcome is `transportUncertain` (never automatically resend).
+
+Creation imports committed Git history into the private canonical repo; an unborn repository is refused as `repository_empty`. Commit the intended seed in the source, then retry. Failed imports that published no canonical or worker authority no longer retire the editor's repository ID. Published/deleted canonical repository IDs remain permanently retired. Old retirement markers are not automatically resurrected because their history is ambiguous; use a fresh repo ID/form.
+
+Primary UI mappings:
+
+| Code | Meaning |
+| --- | --- |
+| `repository_empty` | Source Git repository has no initial commit. |
+| `repoPathInvalid` | Folder does not resolve inside the phone's permitted projects root. |
+| `repository_retired` | This engine repository ID was retired; create a fresh project/repo ID. |
+| `repository_exists` / `import_binding_mismatch` | Existing import belongs to another request; do not overwrite it. |
+| `repository_io` / `repository_git` | Repository could not be read or imported; raw OS/Git errors are withheld. |
+| `unsafe_repository_metadata` / `unsafe_repository_config` / `shared_repository_objects` / `symlink_refused` / `unsafe_repository_path` | Source metadata fails isolation checks; symlinks/alternates/config includes are never followed into private storage. |
+| `divergent_import` | Source dev is not descended from source main. |
+| `staleRevision` / `stale_dev` / `stale_main` | Reviewed project/ref changed; refresh and review again. |
+| `confirmationRequired` | Promotion requires explicit app confirmation and reviewed SHAs. |
+| `boundaryUnavailable` / `executionUnavailable` | Phone protection/execution proof is unavailable. |
+| `chooseExecutionMode` / `chooseBudget` / `invalidPlacement` / `invalidSpec` | Correct the corresponding draft field. |
+
+The full static repository and store reason catalog is in [run 3 backend QA](../qa/aiteam-phone-engine-2026-09-30/run3-backend/README.md). The gateway change is additive; Claude owns plain-language UI mappings and Details.
+
+Committed phone repositories use proot's L2S hardlink emulation. The native snapshot now normalizes only exact loose/allowed pack object aliases through the original dirfd, bounded same-directory chains and explicit decoded object hash checks. This applies to both source import and worker collection. Arbitrary metadata links, config/refs/HEAD aliases and private/proc targets remain refused. Additive codes `invalid_proot_object_link` and `repository_object_hash_mismatch` distinguish an unsafe chain from corrupt object identity; `repository_too_large` also covers decoded-object limits (64 MiB per object, 2 GiB total, 200,000 objects/files).
+
+Planner proposals now require a nonempty task title (`planTaskTitleRequired`). The planner prompt provides the authored JSON schema explicitly; intake normalizes runtime defaults and checks role/repo/server/phase placement and dependency validity transactionally before publishing `needsPlanApproval`. A missing-title proposal rolls back without changing the workspace or job. This fixes the live GLM planner/approval contract mismatch.
+
+Phase intake also rejects malformed types, missing titles and duplicate IDs with `planPhaseInvalid`; it strips model runtime fields and forces `accepted:false`. The planner receives the configured implementation-role catalog and a role enum. Job update failures preserve their static store reason.
+
+Structured-output intake accepts raw JSON or exactly one explicit JSON/untagged fenced block with surrounding prose. Extra fences or object/array delimiters outside the block remain `structuredOutputInvalid`; schema, criterion matching, findings severity and no-waiver checks are unchanged. No prose is interpreted as a verdict.
