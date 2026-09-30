@@ -200,6 +200,45 @@ impl RepositoryAuthority {
         valid_id(repo_id)?;
         valid_id(task_id)?;
         let _lock = self.lock()?;
+        self.prepare_worker_unlocked(repo_id, task_id)
+    }
+
+    /// Discard a clone abandoned before any session could have been dispatched.
+    /// Only the trusted backend may call this after checking durable stage/session/
+    /// prompt-dispatch/session-create-uncertainty evidence. Ordinary prepare never resets.
+    pub fn prepare_fresh_worker(&self, repo_id: &str, task_id: &str) -> Result<Value> {
+        valid_id(repo_id)?;
+        valid_id(task_id)?;
+        let _lock = self.lock()?;
+        let canonical = self.open_repo(repo_id)?;
+        commit_ref(&canonical, DEV)?;
+        commit_ref(&canonical, MAIN)?;
+        // A collected task contradicts the required undispatched caller proof.
+        if canonical.find_reference(&incoming_ref(task_id)).is_ok() {
+            return Err(RepoError("worker_reset_refused"));
+        }
+        let records = open_directory(&self.private_root.join("workers"))?;
+        let record_name = format!("{repo_id}.{task_id}.json");
+        if let Some(metadata) = child_stat(&records, OsStr::new(&record_name))? {
+            if metadata.st_mode & libc::S_IFMT != libc::S_IFREG || metadata.st_nlink != 1 {
+                return Err(RepoError("unsafe_repository_metadata"));
+            }
+            let record: WorkerRecord = read_json(&self.worker_record(repo_id, task_id))?;
+            if record.repo_id != repo_id || record.task_id != task_id {
+                return Err(RepoError("worker_binding_mismatch"));
+            }
+        }
+        let root = open_directory(&self.worker_root)?;
+        let parent = mkdir_child(&root, OsStr::new(repo_id), false)?;
+        let mut removed = 0;
+        remove_worker_child(&parent, OsStr::new(task_id), 0, &mut removed)?;
+        sync_fd(&parent)?;
+        unlink_child(&records, OsStr::new(&record_name), false)?;
+        sync_fd(&records)?;
+        self.prepare_worker_unlocked(repo_id, task_id)
+    }
+
+    fn prepare_worker_unlocked(&self, repo_id: &str, task_id: &str) -> Result<Value> {
         let canonical = self.open_repo(repo_id)?;
         let dev = commit_ref(&canonical, DEV)?;
         let main = commit_ref(&canonical, MAIN)?;
@@ -752,6 +791,145 @@ fn mkdir_child(parent: &OwnedFd, name: &OsStr, exclusive: bool) -> Result<OwnedF
     }
     Ok(fd)
 }
+
+fn child_stat(parent: &OwnedFd, name: &OsStr) -> Result<Option<libc::stat>> {
+    let name = CString::new(name.as_bytes()).map_err(|_| RepoError("invalid_path"))?;
+    let mut metadata = std::mem::MaybeUninit::uninit();
+    if unsafe {
+        libc::fstatat(
+            parent.as_raw_fd(),
+            name.as_ptr(),
+            metadata.as_mut_ptr(),
+            libc::AT_SYMLINK_NOFOLLOW,
+        )
+    } != 0
+    {
+        if std::io::Error::last_os_error().kind() == std::io::ErrorKind::NotFound {
+            return Ok(None);
+        }
+        return Err(RepoError("repository_io"));
+    }
+    Ok(Some(unsafe { metadata.assume_init() }))
+}
+
+fn unlink_child(parent: &OwnedFd, name: &OsStr, directory: bool) -> Result<()> {
+    let name = CString::new(name.as_bytes()).map_err(|_| RepoError("invalid_path"))?;
+    let flags = if directory { libc::AT_REMOVEDIR } else { 0 };
+    if unsafe { libc::unlinkat(parent.as_raw_fd(), name.as_ptr(), flags) } != 0
+        && std::io::Error::last_os_error().kind() != std::io::ErrorKind::NotFound
+    {
+        return Err(RepoError("repository_changed"));
+    }
+    Ok(())
+}
+
+fn sync_fd(fd: &OwnedFd) -> Result<()> {
+    if unsafe { libc::fsync(fd.as_raw_fd()) } != 0 {
+        return Err(RepoError("repository_io"));
+    }
+    Ok(())
+}
+
+/// Never recurse by a pathname derived from worker content. Open O_PATH first so
+/// mode-000 abandoned directories can be recovered without a chmod symlink race.
+fn remove_worker_child(
+    parent: &OwnedFd,
+    name: &OsStr,
+    depth: usize,
+    count: &mut usize,
+) -> Result<()> {
+    if depth > 128 || *count >= MAX_SNAPSHOT_FILES {
+        return Err(RepoError("repository_too_large"));
+    }
+    let Some(metadata) = child_stat(parent, name)? else {
+        return Ok(());
+    };
+    *count += 1;
+    match metadata.st_mode & libc::S_IFMT {
+        libc::S_IFREG if depth > 0 => unlink_child(parent, name, false),
+        libc::S_IFDIR => {
+            let name_c = CString::new(name.as_bytes()).map_err(|_| RepoError("invalid_path"))?;
+            let fd = unsafe {
+                libc::openat(
+                    parent.as_raw_fd(),
+                    name_c.as_ptr(),
+                    libc::O_PATH | libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC,
+                )
+            };
+            if fd < 0 {
+                return Err(RepoError("unsafe_repository_path"));
+            }
+            let anchored = unsafe { OwnedFd::from_raw_fd(fd) };
+            let actual = stat(&anchored)?;
+            if actual.st_dev != metadata.st_dev || actual.st_ino != metadata.st_ino {
+                return Err(RepoError("repository_changed"));
+            }
+            // /proc's fd magic link resolves the pinned directory inode, never the
+            // untrusted name. O_PATH cannot itself be passed to fchmod on Linux.
+            fs::set_permissions(
+                format!("/proc/self/fd/{}", anchored.as_raw_fd()),
+                fs::Permissions::from_mode(0o700),
+            )?;
+            let directory = open_child(anchored.as_raw_fd(), OsStr::new("."))?;
+            for child in directory_names(&directory)? {
+                remove_worker_child(&directory, &child, depth + 1, count)?;
+            }
+            sync_fd(&directory)?;
+            let Some(current) = child_stat(parent, name)? else {
+                return Err(RepoError("repository_changed"));
+            };
+            if current.st_dev != actual.st_dev
+                || current.st_ino != actual.st_ino
+                || current.st_mode & libc::S_IFMT != libc::S_IFDIR
+            {
+                return Err(RepoError("repository_changed"));
+            }
+            unlink_child(parent, name, true)
+        }
+        libc::S_IFLNK => Err(RepoError("symlink_refused")),
+        _ => Err(RepoError("unsafe_repository_metadata")),
+    }
+}
+
+fn directory_names(fd: &OwnedFd) -> Result<Vec<std::ffi::OsString>> {
+    let duplicate = unsafe { libc::dup(fd.as_raw_fd()) };
+    if duplicate < 0 {
+        return Err(RepoError("repository_io"));
+    }
+    let pointer = unsafe { libc::fdopendir(duplicate) };
+    if pointer.is_null() {
+        unsafe {
+            libc::close(duplicate);
+        }
+        return Err(RepoError("repository_io"));
+    }
+    struct Directory(*mut libc::DIR);
+    impl Drop for Directory {
+        fn drop(&mut self) {
+            unsafe {
+                libc::closedir(self.0);
+            }
+        }
+    }
+    let directory = Directory(pointer);
+    let mut names = Vec::new();
+    loop {
+        let entry = unsafe { libc::readdir(directory.0) };
+        if entry.is_null() {
+            break;
+        }
+        let name = unsafe { CStr::from_ptr((*entry).d_name.as_ptr()) }.to_bytes();
+        if name == b"." || name == b".." {
+            continue;
+        }
+        if names.len() >= MAX_SNAPSHOT_FILES {
+            return Err(RepoError("repository_too_large"));
+        }
+        names.push(OsStr::from_bytes(name).to_owned());
+    }
+    Ok(names)
+}
+
 fn export_directory(source: &Path, destination: &OwnedFd) -> Result<()> {
     for entry in fs::read_dir(source)? {
         let entry = entry?;
