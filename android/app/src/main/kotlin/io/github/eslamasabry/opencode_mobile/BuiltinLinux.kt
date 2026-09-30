@@ -1,6 +1,7 @@
 package io.github.eslamasabry.opencode_mobile
 
 import android.content.Context
+import android.app.ActivityManager
 import android.os.Build
 import android.os.PowerManager
 import android.os.Process as AndroidProcess
@@ -79,6 +80,12 @@ class BuiltinLinux(private val context: Context) {
         val terminal = LocalTerminal.get(context)
         if (terminal.hasUnconfinedSessions()) return true
         val known = mutableSetOf(AndroidProcess.myPid())
+        // Trust only zygote processes registered by ActivityManager. A worker
+        // can forge /proc cmdline or exec -a, but cannot invent an AMS record.
+        val registered = try {
+            context.getSystemService(ActivityManager::class.java)?.runningAppProcesses
+        } catch (_: Exception) { null }
+        known.addAll(registeredAppProcessIds(registered, context.packageName, AndroidProcess.myUid()))
         for (process in processes.filter { it.isAlive }) {
             val pid = pidOf(process) ?: return true
             known.add(pid)
@@ -436,13 +443,16 @@ class BuiltinLinux(private val context: Context) {
         } else null
         val child = phoneEngine.start(profile, port, blocked, reason) { root ->
             if (controls?.get("complete") != true || hasUnconfinedChildren()) null else {
-                // Persist before signing/launch. Every future run/service/PTY,
-                // including after app restart, is confined or refuses launch.
-                PhoneEngineAttestation.write(protectionMarker, "required-v1".toByteArray(Charsets.US_ASCII))
-                protectedProot = true
                 try {
-                    PhoneEngineAttestation(context).issue(profile, root, java.util.UUID.randomUUID().toString(),
-                        protectedCommand(emptyList()).dropLast(1), controls)
+                    commitProtectionAfterReceipt({
+                        PhoneEngineAttestation(context).issue(profile, root, java.util.UUID.randomUUID().toString(),
+                            protectedCommand(emptyList()).dropLast(1), controls)
+                    }) {
+                        // Signing must succeed first. This monitor fences all
+                        // legacy launches until persistence and protected mode.
+                        PhoneEngineAttestation.write(protectionMarker, "required-v1".toByteArray(Charsets.US_ASCII))
+                        protectedProot = true
+                    }
                 } catch (_: Exception) { throw PhoneEngineNative.Failure("boundary_signer_unavailable") }
             }
         }
@@ -742,21 +752,29 @@ class BuiltinLinux(private val context: Context) {
     }
 
     private fun removeService(name: String) {
-        if (name == PHONE_ENGINE) phoneEngine.stopTracked()
-        val service = services.remove(name) ?: return
-        stopTree(service.process)
-        serviceSetChanged()
+        var failure: Exception? = null
+        try {
+            if (name == PHONE_ENGINE) try { phoneEngine.stopTracked() }
+                catch (error: Exception) { failure = error }
+            val service = services[name]
+            if (service != null) {
+                stopTree(service.process)
+                if (service.process.isAlive) throw PhoneEngineNative.Failure("engine_stop_failed")
+                services.remove(name)
+            }
+        } finally { serviceSetChanged() }
+        failure?.let { throw it }
     }
 
     /** Stops every service; Stop in the notification and uninstall use it. */
     @Synchronized
     fun stopAllServices() {
         // Clear even if a crash already removed the server from the map.
-        try {
-            setServerWanted(false)
-        } finally {
-            for (name in services.keys.toList()) removeService(name)
-        }
+        var failure: Exception? = null
+        try { setServerWanted(false) } catch (error: Exception) { failure = error }
+        try { stopEveryService(services.keys.toList()) { removeService(it) } }
+        catch (error: Exception) { if (failure == null) failure = error }
+        failure?.let { throw it }
     }
 
     /** Keeps the foreground service exactly as long as any service runs. */
@@ -962,6 +980,8 @@ class BuiltinLinux(private val context: Context) {
         processes.filter { it.isAlive }.forEach { stopTree(it) }
         check(processes.none { it.isAlive }) { "A runtime process is still stopping" }
         processes.clear()
+        // Stop removed the active copy; uninstall also sweeps inactive profile copies.
+        phoneEngine.eraseAllCredentialCopies()
         // Migration must succeed before any runtime data is removed.
         projectStorage.removeRuntime(alsoDeleteProjects)
         measured = null
@@ -1206,6 +1226,26 @@ class BuiltinLinux(private val context: Context) {
     }
 
     companion object {
+        internal fun registeredAppProcessIds(records: List<ActivityManager.RunningAppProcessInfo>?,
+            packageName: String, uid: Int): Set<Int> = records.orEmpty().filter {
+                it.pid > 0 && it.uid == uid && it.processName == "$packageName:local_pdf" &&
+                    it.pkgList?.contains(packageName) == true
+            }.map { it.pid }.toSet()
+
+        internal fun <T> commitProtectionAfterReceipt(issue: () -> T, protect: () -> Unit): T {
+            val receipt = issue()
+            protect()
+            return receipt
+        }
+
+        internal fun stopEveryService(names: List<String>, stop: (String) -> Unit) {
+            var failure: Exception? = null
+            for (name in names) try { stop(name) } catch (error: Exception) {
+                if (failure == null) failure = error
+            }
+            failure?.let { throw it }
+        }
+
         /**
          * Stops a proot [process] together with everything it started.
          *

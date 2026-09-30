@@ -1,6 +1,9 @@
 package io.github.eslamasabry.opencode_mobile
 
 import android.content.Context
+import android.app.ActivityManager
+import android.system.Os
+import java.io.File
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -20,6 +23,11 @@ internal object PhoneEngineNativeRegressions {
         check(context.packageName == "io.github.eslamasabry.opencode_mobile.preview")
         refusesUnauthenticatedChildBeforeHttp(context)
         ignoresSquatterAndSurvivesLauncher(context)
+        trustsOnlyRegisteredPdfProcess(context)
+        signsBeforeRequiringProtection()
+        stopsRemainingServicesAfterFailure()
+        erasesModeZeroWithoutFollowingLinks(context)
+        erasesInactiveCredentialCopies(context)
     }
 
     private fun refusesUnauthenticatedChildBeforeHttp(context: Context) {
@@ -95,6 +103,96 @@ internal object PhoneEngineNativeRegressions {
                     listener.join(1000)
                 }
             }
+        }
+    }
+
+    private fun trustsOnlyRegisteredPdfProcess(context: Context) {
+        val pkg = context.packageName
+        val uid = android.os.Process.myUid()
+        fun entry(pid: Int, name: String, owner: Int, packages: Array<String>) =
+            ActivityManager.RunningAppProcessInfo(name, pid, packages).apply { this.uid = owner }
+        val records = listOf(entry(101, "$pkg:local_pdf", uid, arrayOf(pkg)),
+            entry(102, "$pkg:forged_worker", uid, arrayOf(pkg)),
+            entry(103, "$pkg:local_pdf", uid + 1, arrayOf(pkg)),
+            entry(104, "$pkg:local_pdf", uid, arrayOf("other.package")))
+        check(BuiltinLinux.registeredAppProcessIds(records, pkg, uid) == setOf(101))
+        check(BuiltinLinux.registeredAppProcessIds(null, pkg, uid).isEmpty())
+    }
+
+    private fun signsBeforeRequiringProtection() {
+        val order = mutableListOf<String>()
+        check(BuiltinLinux.commitProtectionAfterReceipt({ order.add("sign"); "receipt" }) {
+            order.add("protect")
+        } == "receipt")
+        check(order == listOf("sign", "protect"))
+        var protected = false
+        try {
+            BuiltinLinux.commitProtectionAfterReceipt<String>({ throw IllegalStateException("Signer refused") }) {
+                protected = true
+            }
+            error("A failed signer returned a receipt")
+        } catch (_: IllegalStateException) { }
+        check(!protected)
+    }
+
+    private fun stopsRemainingServicesAfterFailure() {
+        val stopped = mutableListOf<String>()
+        val original = IllegalStateException("Engine stop failed")
+        var reported: Exception? = null
+        try {
+            BuiltinLinux.stopEveryService(listOf("engine", "server", "terminal_service")) {
+                stopped.add(it)
+                if (it == "engine") throw original
+            }
+        } catch (error: Exception) { reported = error }
+        check(stopped == listOf("engine", "server", "terminal_service"))
+        check(reported === original)
+    }
+
+    private fun erasesModeZeroWithoutFollowingLinks(context: Context) {
+        val profile = "qa_erase_${UUID.randomUUID().toString().replace("-", "")}"
+        val files = context.filesDir.canonicalFile
+        val worker = File(files, "linux/ubuntu/root/aiteam/work/$profile")
+        val sentinel = File(files, ".qa-erase-sentinel-$profile")
+        check(worker.mkdirs())
+        check(sentinel.mkdir())
+        val control = File(sentinel, "control").apply { writeText("private-positive-control") }
+        try {
+            Os.symlink(sentinel.absolutePath, File(worker, "outside-link").absolutePath)
+            val modeZero = File(worker, "mode-zero").apply { mkdir() }
+            File(modeZero, "data").writeText("worker-only")
+            Os.chmod(modeZero.absolutePath, 0)
+            val readOnly = File(worker, "read-only").apply { mkdir() }
+            File(readOnly, "data").writeText("worker-only")
+            Os.chmod(readOnly.absolutePath, 365) // 0555
+            PhoneEngineNative(context).delete(profile)
+            check(!worker.exists())
+            check(control.readText() == "private-positive-control")
+            check(!File(files, "oc.teamEngineDeletion.$profile").exists())
+        } finally {
+            // Exact fixtures only. Production helper owns any hostile worker cleanup.
+            if (worker.exists()) PhoneEngineNative(context).delete(profile)
+            control.delete()
+            sentinel.delete()
+        }
+    }
+
+    private fun erasesInactiveCredentialCopies(context: Context) {
+        val suffix = UUID.randomUUID().toString().replace("-", "")
+        val profiles = listOf("qa_credential_a_$suffix", "qa_credential_b_$suffix")
+        val roots = profiles.map { File(context.filesDir.canonicalFile, "oc.teamEngine.$it") }
+        val sentinel = File(context.filesDir.canonicalFile, ".qa-credential-control-$suffix")
+        sentinel.writeText("outside-control")
+        try {
+            roots.forEach { check(it.mkdir()); Os.chmod(it.absolutePath, 448) }
+            File(roots[0], "oc1-credentials.json").writeText("test-only-copy")
+            Os.symlink(sentinel.absolutePath, File(roots[1], "oc1-credentials.json").absolutePath)
+            PhoneEngineNative(context).eraseCredentialCopies(profiles)
+            check(roots.none { File(it, "oc1-credentials.json").exists() })
+            check(sentinel.readText() == "outside-control")
+        } finally {
+            profiles.forEach { PhoneEngineNative(context).delete(it) }
+            sentinel.delete()
         }
     }
 

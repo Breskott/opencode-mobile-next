@@ -341,22 +341,49 @@ internal class PhoneEngineNative(private val context: Context) {
     }
 
     private fun eraseNoLinks(file: File) {
-        val stat = try { Os.lstat(file.absolutePath) } catch (error: android.system.ErrnoException) {
-            if (error.errno == OsConstants.ENOENT) return
-            throw Failure("private_state_unavailable")
+        // The packaged native helper uses anchored directory descriptors and
+        // O_PATH to recover mode-000 directories. Java pathname chmod/listFiles
+        // cannot make the same nofollow guarantee during worker races.
+        verifyBundle(context, "libaiteam_engine.so")
+        val executable = File(context.applicationInfo.nativeLibraryDir, "libaiteam_engine.so")
+        val cleanup = try {
+            ProcessBuilder(executable.absolutePath, "--erase-tree", file.absolutePath)
+                .directory(filesRoot).apply {
+                    environment().clear()
+                    environment()["PATH"] = "/system/bin"
+                    redirectOutput(File("/dev/null"))
+                    redirectError(File("/dev/null"))
+                }.start()
+        } catch (_: Exception) { throw Failure("engine_delete_failed") }
+        cleanup.outputStream.close()
+        if (!cleanup.waitFor(60, TimeUnit.SECONDS)) {
+            cleanup.destroyForcibly()
+            cleanup.waitFor(3, TimeUnit.SECONDS)
+            throw Failure("engine_delete_failed")
         }
-        if (OsConstants.S_ISDIR(stat.st_mode)) {
-            val directory = Os.open(file.absolutePath, OsConstants.O_RDONLY or
-                OsConstants.O_NOFOLLOW or OsConstants.O_NONBLOCK or OsConstants.O_CLOEXEC, 0)
-            try {
-                val opened = Os.fstat(directory)
-                if (!OsConstants.S_ISDIR(opened.st_mode) || opened.st_dev != stat.st_dev || opened.st_ino != stat.st_ino)
-                    throw Failure("private_state_unavailable")
-                Os.fchmod(directory, 448) // 0700, on the verified directory descriptor.
-            } finally { Os.close(directory) }
-            for (child in file.listFiles() ?: throw Failure("private_state_unavailable")) eraseNoLinks(child)
+        if (cleanup.exitValue() != 0) throw Failure("engine_delete_failed")
+    }
+
+    /** Runtime uninstall must erase password copies even for inactive profiles. */
+    internal fun eraseAllCredentialCopies() {
+        if (process?.isAlive == true) throw Failure("engine_in_use")
+        val entries = filesRoot.listFiles() ?: throw Failure("private_state_unavailable")
+        eraseCredentialCopies(entries.mapNotNull { entry ->
+            if (!entry.name.startsWith("oc.teamEngine.")) return@mapNotNull null
+            entry.name.removePrefix("oc.teamEngine.").takeIf { PROFILE.matches(it) }
+        })
+    }
+
+    internal fun eraseCredentialCopies(profiles: Collection<String>) {
+        if (process?.isAlive == true) throw Failure("engine_in_use")
+        for (profile in profiles) {
+            val root = privateRoot(profile, false)
+            val copy = File(root, "oc1-credentials.json")
+            try { Os.remove(copy.absolutePath) } catch (error: android.system.ErrnoException) {
+                if (error.errno != OsConstants.ENOENT) throw Failure("private_state_unavailable")
+            }
+            syncDirectory(root)
         }
-        if (!file.delete()) throw Failure("private_state_unavailable")
     }
 
     private fun validateProfile(profile: String) {
