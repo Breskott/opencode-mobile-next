@@ -33,6 +33,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        testInstrumentationRunner = "io.github.eslamasabry.opencode_mobile.PhoneEngineAcceptance"
         // A preview build installs beside the stable app instead of over it
         // (`flutter build apk --android-project-arg=ocPreview=true`): its own
         // package, name, data and built-in Ubuntu, so trying a new version
@@ -44,6 +45,10 @@ android {
         manifestPlaceholders["appShortcuts"] =
             if (ocPreview) "@xml/shortcuts_preview" else "@xml/shortcuts"
     }
+
+    // Shorebird's pinned embedding ships release engine jars. This runner is
+    // test-only and refuses the stable package at runtime.
+    testBuildType = "release"
 
     signingConfigs {
         create("release") {
