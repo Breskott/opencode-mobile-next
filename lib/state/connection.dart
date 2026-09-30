@@ -7792,10 +7792,17 @@ class ConnectionController extends ChangeNotifier {
     if (_disposed || _lifecycleSuspended) return null;
     final owner = _connectedProfile;
     if (owner != null && BuiltinLinux.managesServerUrl(owner.baseUrl)) {
-      await phoneProjectEngine.preparePhoneAliasDispatch(owner.id);
-      if (owner.flavor != ServerFlavor.v1 &&
-          owner.orchestration?.provider == OrchestrationProvider.phoneEngine) {
-        await phoneProjectEngine.suspendChatAdmission(owner.id);
+      try {
+        await phoneProjectEngine.preparePhoneAliasDispatch(owner.id);
+        if (owner.flavor != ServerFlavor.v1 &&
+            owner.orchestration?.provider ==
+                OrchestrationProvider.phoneEngine) {
+          await phoneProjectEngine.suspendChatAdmission(owner.id);
+        }
+      } on PhoneEngineException {
+        throw ApiException(
+          'AI Team could not pause safely. Stop AI Team before sending.',
+        );
       }
       if (_disposed ||
           _lifecycleSuspended ||

@@ -193,7 +193,17 @@ void main() {
           ),
         ),
       );
-      expect(bridge.calls, ['stop:alias']);
+      await expectLater(
+        controller.prepareActionTransport(),
+        throwsA(
+          isA<ApiException>().having(
+            (error) => error.message,
+            'message',
+            'AI Team could not pause safely. Stop AI Team before sending.',
+          ),
+        ),
+      );
+      expect(bridge.calls, ['stop:alias', 'stop:alias']);
       await controller.disconnect();
       api.healthGate.complete(Health(healthy: true, version: '1.18.32'));
       await connect;
