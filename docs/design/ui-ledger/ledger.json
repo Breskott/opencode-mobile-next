@@ -1,5 +1,5 @@
 {
- "generatedFrom": "e71546a05b4379ba335c5da3f0b21749f12ac1b3",
+ "generatedFrom": "cc6a57dcac16574b88e868e6197b3625e78ccf6c",
  "pages": [
   {
    "id": "system",
@@ -40533,6 +40533,16 @@
    "part": "i1-team-core"
   },
   {
+   "file": "lib/ui/screens/team/projects/team_execution_gate.dart",
+   "reason": "Helper, not a page: TeamExecutionGate decides whether a project action may start work and shows the one-line blocked state with its fix; it is embedded in the project pages that use it.",
+   "part": "i1-team-core"
+  },
+  {
+   "file": "lib/ui/screens/team/projects/team_merge_flow.dart",
+   "reason": "Helper, not a page: confirmAndMergeToDev and confirmAndPromote open the kit confirm sheet (with progress) and write the receipt row on the project overview and task page that call them.",
+   "part": "i1-team-core"
+  },
+  {
    "file": "lib/ui/screens/team/team_needs_you.dart",
    "reason": "Embedded blocks, not pages of their own: TeamNeedsYouCard (one question as a request block) is shown on team-home, where it is also its task's row, and on team-run-overview-tab (run_screen.dart:780); TeamGateRow (a question whose task is not listed) is a row of team-home's one list. Both open the Gate sheet.",
    "part": "i1-team-core"
@@ -40540,6 +40550,11 @@
   {
    "file": "lib/ui/screens/team/team_page.dart",
    "reason": "TeamPage/openTeamPage: the one AI Team route (P3.4). No surface of its own: it shows team-home while the connected server's team is on and team-intro while it is off, following the connection, plus a bare loading page for the frame between turning on and the team starting.",
+   "part": "i1-team-core"
+  },
+  {
+   "file": "lib/ui/screens/team/team_phone_setup_screen.dart",
+   "reason": "The turn-on flow is a framed sheet opened from the AI Team page, Team settings and the Work strip (target team-phone-setup); its steps and Details are not a separate destination.",
    "part": "i1-team-core"
   },
   {

@@ -37,6 +37,8 @@ const _excluded = <String, String>{
       'opened by Android Settings › Storage, not from inside the app',
   'termux-migration':
       'offered only to a Termux user, from This phone and the Termux server row',
+  'team-migration':
+      'shown on its own when an old team was left on after the update',
   // Need a conversation: the conversation menu and its command launcher are
   // their search (phase 4 adds them to this index through the registry).
   'chat': 'a conversation; opened from Work, Inbox or All conversations',
