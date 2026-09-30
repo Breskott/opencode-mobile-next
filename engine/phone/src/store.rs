@@ -90,6 +90,25 @@ impl Store {
             .as_array_mut()
             .ok_or(StoreError("storageCorrupt"))?
         {
+            let project_id = project["id"].clone();
+            if let Some(tasks) = project["tasks"].as_array_mut() {
+                for task in tasks {
+                    if let Some(reason) = jobs
+                        .iter()
+                        .rev()
+                        .find(|job| {
+                            job["kind"] == "task"
+                                && job["projectId"] == project_id
+                                && job["taskId"] == task["id"]
+                        })
+                        .and_then(|job| job["reason"].as_str())
+                    {
+                        // Repair legacy stale presentation without rewriting a
+                        // checkpoint, its status, or the command revision.
+                        task["reason"] = json!(reason);
+                    }
+                }
+            }
             project["mergeQueue"] = checked_merge_queue(project, &jobs);
             let planner = jobs
                 .iter()
@@ -454,6 +473,7 @@ impl Store {
                 j[key] = value.clone();
             }
         }
+        let mut admission_reason_cleared = false;
         if stage != expected_stage
             && !fields.contains_key("reason")
             && matches!(
@@ -484,6 +504,7 @@ impl Store {
             )
         {
             j["reason"] = json!("");
+            admission_reason_cleared = true;
         }
         if let Some(usage) = patch.get("usage").filter(|v| !v.is_null()) {
             update_usage(&mut j, usage)?;
@@ -613,6 +634,13 @@ impl Store {
                 task["reason"] = json!(reason);
             } else if let Some(reason) = patch.get("reason") {
                 task["reason"] = reason.clone();
+            } else if let Some(reason) = patch["task"]
+                .get("reason")
+                .filter(|reason| reason.is_string())
+            {
+                j["reason"] = reason.clone();
+            } else if admission_reason_cleared {
+                task["reason"] = j["reason"].clone();
             }
             if let Some(tokens) = j["usage"]["tokens"].as_u64() {
                 task["tokens"] = json!(tokens);
@@ -2073,6 +2101,142 @@ mod checker_publication_tests {
                 store.workspace().unwrap()["projects"][0]["tasks"][0]["reason"],
                 expected
             );
+        }
+    }
+
+    fn seed_reason_checkpoint(store: &Store, stage: &str, reason: &str) -> String {
+        let id = checking(store);
+        let mut conn = store.lock().unwrap();
+        let tx = conn.transaction().unwrap();
+        let mut workspace = load_workspace(&tx).unwrap();
+        let mut jobs = load_jobs(&tx).unwrap();
+        jobs[0]["stage"] = json!(stage);
+        jobs[0]["reason"] = json!(reason);
+        workspace["projects"][0]["tasks"][0]["status"] = json!(task_status(stage));
+        workspace["projects"][0]["tasks"][0]["reason"] = json!(reason);
+        persist(&tx, &workspace, &jobs).unwrap();
+        tx.commit().unwrap();
+        id
+    }
+
+    #[test]
+    fn admission_reason_clear_reaches_task_without_clearing_blocked_or_usage_state() {
+        for (blocked_stage, admitted_stage) in [("queued", "starting"), ("starting", "running")] {
+            let root = storage();
+            let store = Store::open(root.path(), "p").unwrap();
+            let id = seed_reason_checkpoint(&store, blocked_stage, "chatStatusUnknown");
+            let before = store.jobs().unwrap()[0].clone();
+            let revision = store.workspace().unwrap()["projects"][0]["revision"].clone();
+            let usage = store
+                .update_job(
+                    &id,
+                    blocked_stage,
+                    &json!({"usage":{"cost":0.0,"tokens":3}}),
+                )
+                .unwrap();
+            assert_eq!(usage["reason"], "chatStatusUnknown");
+            assert_eq!(
+                store.workspace().unwrap()["projects"][0]["tasks"][0]["reason"],
+                "chatStatusUnknown"
+            );
+            assert_eq!(
+                store.workspace().unwrap()["projects"][0]["revision"],
+                revision
+            );
+            let blocked = store
+                .update_job(&id, blocked_stage, &json!({"stage":blocked_stage}))
+                .unwrap();
+            assert_eq!(blocked["reason"], "chatStatusUnknown");
+            let admitted = store
+                .update_job(&id, blocked_stage, &json!({"stage":admitted_stage}))
+                .unwrap();
+            assert_eq!(admitted["reason"], "");
+            let conn = store.lock().unwrap();
+            let raw = load_workspace(&conn).unwrap();
+            assert_eq!(raw["projects"][0]["tasks"][0]["reason"], "");
+            drop(conn);
+            for key in [
+                "sessionIds",
+                "promptDispatch",
+                "criteria",
+                "findings",
+                "criterionResults",
+            ] {
+                assert_eq!(admitted.get(key), before.get(key));
+            }
+            let interrupted = store
+                .update_job(
+                    &id,
+                    admitted_stage,
+                    &json!({"stage":"interrupted","reason":"sessionUnknown"}),
+                )
+                .unwrap();
+            assert_eq!(interrupted["reason"], "sessionUnknown");
+            assert_eq!(
+                store.workspace().unwrap()["projects"][0]["tasks"][0]["reason"],
+                "sessionUnknown"
+            );
+        }
+        let root = storage();
+        let store = Store::open(root.path(), "p").unwrap();
+        let id = seed_reason_checkpoint(&store, "queued", "chatStatusUnknown");
+        let updated = store
+            .update_job(
+                &id,
+                "queued",
+                &json!({"stage":"starting","task":{"reason":"needsOwnerReview"}}),
+            )
+            .unwrap();
+        assert_eq!(updated["reason"], "needsOwnerReview");
+        assert_eq!(
+            store.workspace().unwrap()["projects"][0]["tasks"][0]["reason"],
+            "needsOwnerReview"
+        );
+    }
+
+    #[test]
+    fn workspace_projects_latest_scoped_job_reason_without_writing_legacy_checkpoint() {
+        for reason in ["", "chatBusy"] {
+            let root = storage();
+            let store = Store::open(root.path(), "p").unwrap();
+            let id = seed_reason_checkpoint(&store, "running", "chatStatusUnknown");
+            let mut conn = store.lock().unwrap();
+            let tx = conn.transaction().unwrap();
+            let raw = load_workspace(&tx).unwrap();
+            let mut jobs = load_jobs(&tx).unwrap();
+            // Multiple rows use the same task scope. Latest inserted matching
+            // job wins; later unrelated rows must not affect the task.
+            let mut current = jobs[0].clone();
+            current["id"] = json!(format!("{id}-latest"));
+            current["reason"] = json!(reason);
+            jobs.push(current.clone());
+            for other_scope in ["projectId", "taskId"] {
+                let mut unrelated = current.clone();
+                unrelated["id"] = json!(format!("{id}-{other_scope}"));
+                unrelated[other_scope] = json!("unrelated");
+                unrelated["reason"] = json!("wrongScope");
+                jobs.push(unrelated);
+            }
+            persist(&tx, &raw, &jobs).unwrap();
+            tx.commit().unwrap();
+            let stored_jobs = load_jobs(&conn).unwrap();
+            drop(conn);
+            for _ in 0..3 {
+                let projected = store.workspace().unwrap();
+                assert_eq!(projected["projects"][0]["tasks"][0]["reason"], reason);
+                assert_eq!(
+                    projected["projects"][0]["tasks"][0]["status"],
+                    raw["projects"][0]["tasks"][0]["status"]
+                );
+                assert_eq!(projected["revision"], raw["revision"]);
+                assert_eq!(
+                    projected["projects"][0]["revision"],
+                    raw["projects"][0]["revision"]
+                );
+            }
+            let conn = store.lock().unwrap();
+            assert_eq!(load_workspace(&conn).unwrap(), raw);
+            assert_eq!(load_jobs(&conn).unwrap(), stored_jobs);
         }
     }
 }
