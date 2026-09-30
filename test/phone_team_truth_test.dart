@@ -59,6 +59,35 @@ void main() {
     expect(controller.replyInFlight, isFalse);
   });
 
+  test('the reply wait counts only the person\'s own sessions, never the '
+      'AI Team\'s planner or workers', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final controller = ConnectionController(ProfileStore(prefs: prefs));
+    addTearDown(controller.dispose);
+    controller.sessionsById['team'] = Session(
+      id: 'team',
+      directory: '/root/aiteam/.gc/worktrees/my-app/worker-1',
+    );
+    controller.sessionsById['mine'] = Session(
+      id: 'mine',
+      directory: '/root/projects/my-app',
+    );
+
+    controller.busySessions.add('team');
+    controller.noteLocalTurn('team');
+    expect(controller.replyInFlight, isFalse);
+
+    controller.busySessions.add('mine');
+    expect(controller.replyInFlight, isTrue);
+    controller.busySessions.remove('mine');
+    expect(controller.replyInFlight, isFalse);
+
+    // A session whose folder is not known yet still counts.
+    controller.noteLocalTurn('unknown');
+    expect(controller.replyInFlight, isTrue);
+  });
+
   test('B-18: a phone team that never proved itself reads Off, not On', () {
     final profile = ServerProfile(
       id: 'p',

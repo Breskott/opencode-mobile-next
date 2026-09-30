@@ -88,15 +88,15 @@ typedef MutationKeyMinter = String Function();
 String mintMutationKey() => const Uuid().v4();
 
 /// Probes the host described by a config. Never throws.
-typedef OrchestrationProbe = Future<ProbeVerdict> Function(
-  OrchestrationConfig config,
-);
+typedef OrchestrationProbe =
+    Future<ProbeVerdict> Function(OrchestrationConfig config);
 
 /// Builds the adapter for a config once the probe [found] the host.
-typedef OrchestrationGatewayFactory = FutureOr<OrchestrationGateway> Function(
-  OrchestrationConfig config,
-  ProbeFound found,
-);
+typedef OrchestrationGatewayFactory =
+    FutureOr<OrchestrationGateway> Function(
+      OrchestrationConfig config,
+      ProbeFound found,
+    );
 
 /// Why the plugin has no usable host, in a form the UI can map to copy.
 enum OrchestrationErrorKind {
@@ -429,6 +429,7 @@ class OrchestrationController extends ChangeNotifier {
   OrchestrationPhase _phase = OrchestrationPhase.idle;
   OrchestrationHostIdentity? _host;
   OrchestrationCapabilities _capabilities = OrchestrationCapabilities.none;
+  String _boundaryTier = '';
   OrchestrationSnapshot _snapshot = const OrchestrationSnapshot();
   OrchestrationStreamStatus _streamStatus = OrchestrationStreamStatus.closed;
   OrchestrationError? _lastError;
@@ -451,6 +452,10 @@ class OrchestrationController extends ChangeNotifier {
 
   /// [OrchestrationCapabilities.none] until the gateway is built.
   OrchestrationCapabilities get capabilities => _capabilities;
+
+  /// The proven file boundary of the phone engine (`proot`, `landlock`) once
+  /// it can run work; empty when unknown or the engine is read-only.
+  String get boundaryTier => _boundaryTier;
   OrchestrationSnapshot get snapshot => _snapshot;
 
   /// The team as the app last read it (this run or an earlier one, from
@@ -559,6 +564,7 @@ class OrchestrationController extends ChangeNotifier {
       return;
     }
     _host = verdict.host;
+    _boundaryTier = verdict.readOnly ? '' : verdict.boundaryTier;
     _setPhase(OrchestrationPhase.connecting);
 
     final OrchestrationGateway gateway;
@@ -1997,8 +2003,9 @@ class OrchestrationController extends ChangeNotifier {
       case OrchestrationProvider.phoneEngine:
         return _probePhoneEngine(config, profileId, bearerToken);
       case OrchestrationProvider.gascity:
-        return GasCityProbe(hostMode: config.hostMode)
-            .probe(config.url, city: config.city.isEmpty ? null : config.city);
+        return GasCityProbe(
+          hostMode: config.hostMode,
+        ).probe(config.url, city: config.city.isEmpty ? null : config.city);
       case OrchestrationProvider.fixture:
         return Future.value(
           ProbeFound(
@@ -2031,6 +2038,7 @@ class OrchestrationController extends ChangeNotifier {
         version: health.engineVersion,
         readOnly: !health.canExecute,
         capabilities: gateway.capabilities,
+        boundaryTier: health.boundaryTier,
       );
     } catch (_) {
       return const ProbeUnreachable(error: 'Phone engine unavailable');

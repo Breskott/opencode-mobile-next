@@ -165,8 +165,16 @@ Future<void> _settle(WidgetTester tester) async {
 
 /// Fixture projects whose engine can (or cannot) run work yet.
 class _Gateway extends ProjectFixtureGateway {
-  _Gateway({required this.lanes}) : super(persistence: MemoryPersistence());
+  _Gateway({required this.lanes, this.simulated = false})
+    : super(persistence: MemoryPersistence());
   final bool lanes;
+  final bool simulated;
+  @override
+  Future<TeamWorkspace> teamWorkspace() async =>
+      (await super.teamWorkspace()).copyWith(simulated: simulated);
+  @override
+  Stream<TeamWorkspace> watchTeamWorkspace() =>
+      super.watchTeamWorkspace().map((w) => w.copyWith(simulated: simulated));
   @override
   OrchestrationCapabilities get capabilities => OrchestrationCapabilities(
     projects: true,
@@ -529,6 +537,8 @@ void main() {
   group('execution gating', () {
     Future<(OrchestrationController, ConnectionController)> team({
       required bool lanes,
+      bool simulated = false,
+      String tier = '',
     }) async {
       _mockChannels();
       final connection = await _connection();
@@ -544,7 +554,16 @@ void main() {
           url: 'fixture://gate',
         ),
         store: OrchestrationStore(prefs),
-        gatewayFactory: (_, _) => _Gateway(lanes: lanes),
+        gatewayFactory: (_, _) => _Gateway(lanes: lanes, simulated: simulated),
+        probe: (config) async => ProbeFound(
+          host: OrchestrationHostIdentity(
+            provider: 'fixture',
+            url: config.url,
+            hostMode: config.hostMode,
+          ),
+          readOnly: !lanes,
+          boundaryTier: tier,
+        ),
       );
       addTearDown(owner.dispose);
       await owner.start();
@@ -582,6 +601,52 @@ void main() {
     testWidgets('ready engine: no line, New project is there', (tester) async {
       _size(tester);
       final (owner, connection) = await team(lanes: true);
+      TeamExecutionGate.bind(owner, connection);
+      await tester.pumpWidget(
+        _app(TeamProjectsScreen(controller: owner.projectController!)),
+      );
+      await _settle(tester);
+      expect(find.text(_en.phoneTeamBlocked), findsNothing);
+      expect(find.text(_en.teamProjectNew), findsOneWidget);
+    });
+
+    testWidgets('ready engine: one plain protection line for the proven '
+        'boundary, nothing when unknown', (tester) async {
+      _size(tester);
+      for (final (tier, line) in [
+        ('proot', _en.phoneTeamProtectedProot),
+        ('landlock', _en.phoneTeamProtectedLandlock),
+        ('none', null),
+        ('', null),
+      ]) {
+        final (owner, connection) = await team(lanes: true, tier: tier);
+        TeamExecutionGate.bind(owner, connection);
+        await tester.pumpWidget(
+          _app(TeamProjectsScreen(controller: owner.projectController!)),
+        );
+        await _settle(tester);
+        expect(
+          find.byKey(const ValueKey('team-protection-line')),
+          line == null ? findsNothing : findsOneWidget,
+          reason: tier,
+        );
+        if (line != null) expect(find.text(line), findsOneWidget);
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+      // Not shown while the engine cannot run work.
+      final (owner, connection) = await team(lanes: false, tier: 'proot');
+      TeamExecutionGate.bind(owner, connection);
+      await tester.pumpWidget(
+        _app(TeamProjectsScreen(controller: owner.projectController!)),
+      );
+      await _settle(tester);
+      expect(find.text(_en.phoneTeamProtectedProot), findsNothing);
+    });
+
+    testWidgets('the demo is never gated, even when its page is bound to a '
+        'phone team that is not ready', (tester) async {
+      _size(tester);
+      final (owner, connection) = await team(lanes: false, simulated: true);
       TeamExecutionGate.bind(owner, connection);
       await tester.pumpWidget(
         _app(TeamProjectsScreen(controller: owner.projectController!)),

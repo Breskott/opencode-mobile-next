@@ -41057,6 +41057,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for its checks'**
   String get teamProjectMergeChecking;
+
+  /// Plain reason the team refused a project command (code unsupportedCommand)
+  ///
+  /// In en, this message translates to:
+  /// **'This version of the team can\'t do that yet.'**
+  String get teamRefusalUnsupportedCommand;
+
+  /// Way forward for refusal code unsupportedCommand
+  ///
+  /// In en, this message translates to:
+  /// **'Update the app, then try again.'**
+  String get teamRefusalUnsupportedCommandNext;
+
+  /// Plain reason the team refused a project command (code boundaryUnverified)
+  ///
+  /// In en, this message translates to:
+  /// **'The team can\'t work until this phone\'s protection has been checked.'**
+  String get teamRefusalBoundaryUnverified;
+
+  /// Way forward for refusal code boundaryUnverified
+  ///
+  /// In en, this message translates to:
+  /// **'Open AI Team and turn it on again.'**
+  String get teamRefusalBoundaryUnverifiedNext;
+
+  /// Plain reason the team refused a project command (code protocolUnverified)
+  ///
+  /// In en, this message translates to:
+  /// **'The team is waiting for OpenCode to restart.'**
+  String get teamRefusalProtocolUnverified;
+
+  /// Way forward for refusal code protocolUnverified
+  ///
+  /// In en, this message translates to:
+  /// **'Try again in a minute.'**
+  String get teamRefusalProtocolUnverifiedNext;
+
+  /// Plain reason the team refused a project command (code engineUnavailable)
+  ///
+  /// In en, this message translates to:
+  /// **'The team isn\'t answering right now.'**
+  String get teamRefusalEngineUnavailable;
+
+  /// Way forward for refusal code engineUnavailable
+  ///
+  /// In en, this message translates to:
+  /// **'Try again in a moment.'**
+  String get teamRefusalEngineUnavailableNext;
+
+  /// Plain reason the team refused a project command (code transportUncertain)
+  ///
+  /// In en, this message translates to:
+  /// **'The team may not have received that.'**
+  String get teamRefusalTransportUncertain;
+
+  /// Way forward for refusal code transportUncertain
+  ///
+  /// In en, this message translates to:
+  /// **'Check the project list before you try again.'**
+  String get teamRefusalTransportUncertainNext;
+
+  /// Plain reason the team refused a project command (code busy)
+  ///
+  /// In en, this message translates to:
+  /// **'Another change is still being saved.'**
+  String get teamRefusalBusy;
+
+  /// Way forward for refusal code busy
+  ///
+  /// In en, this message translates to:
+  /// **'Try again in a moment.'**
+  String get teamRefusalBusyNext;
+
+  /// Plain reason the team refused a project command (code saveFailed)
+  ///
+  /// In en, this message translates to:
+  /// **'The change couldn\'t be saved on this phone.'**
+  String get teamRefusalSaveFailed;
+
+  /// Way forward for refusal code saveFailed
+  ///
+  /// In en, this message translates to:
+  /// **'Your edits are still here. Try again.'**
+  String get teamRefusalSaveFailedNext;
+
+  /// Plain reason the team refused a project command (code readOnly)
+  ///
+  /// In en, this message translates to:
+  /// **'The team is read-only right now.'**
+  String get teamRefusalReadOnly;
+
+  /// Way forward for refusal code readOnly
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on AI Team on this phone to make changes.'**
+  String get teamRefusalReadOnlyNext;
+
+  /// Plain reason the team refused a project command (code closed)
+  ///
+  /// In en, this message translates to:
+  /// **'The team has been closed.'**
+  String get teamRefusalClosed;
+
+  /// Way forward for refusal code closed
+  ///
+  /// In en, this message translates to:
+  /// **'Open AI Team again to continue.'**
+  String get teamRefusalClosedNext;
+
+  /// Plain reason the team refused a project command (code commandRefused)
+  ///
+  /// In en, this message translates to:
+  /// **'The team turned this request down.'**
+  String get teamRefusalCommandRefused;
+
+  /// Way forward for refusal code commandRefused
+  ///
+  /// In en, this message translates to:
+  /// **'Check the goal and the repository folder, then try again.'**
+  String get teamRefusalCommandRefusedNext;
+
+  /// Plain reason the team refused a project command (code importFailed)
+  ///
+  /// In en, this message translates to:
+  /// **'The team couldn\'t read the repository folder.'**
+  String get teamRefusalImportFailed;
+
+  /// Way forward for refusal code importFailed
+  ///
+  /// In en, this message translates to:
+  /// **'Check the folder name, then try again.'**
+  String get teamRefusalImportFailedNext;
+
+  /// Plain reason the team refused a project command (code payloadInvalid)
+  ///
+  /// In en, this message translates to:
+  /// **'The team answered in a way this app doesn\'t understand.'**
+  String get teamRefusalPayloadInvalid;
+
+  /// Way forward for refusal code payloadInvalid
+  ///
+  /// In en, this message translates to:
+  /// **'Update the app, then try again.'**
+  String get teamRefusalPayloadInvalidNext;
+
+  /// Plain reason the team refused a project command (code schemaUnsupported)
+  ///
+  /// In en, this message translates to:
+  /// **'The team and this app are on different versions.'**
+  String get teamRefusalSchemaUnsupported;
+
+  /// Way forward for refusal code schemaUnsupported
+  ///
+  /// In en, this message translates to:
+  /// **'Update the app, then try again.'**
+  String get teamRefusalSchemaUnsupportedNext;
+
+  /// Plain reason the team refused a project command (code engineClosed)
+  ///
+  /// In en, this message translates to:
+  /// **'The team is shutting down.'**
+  String get teamRefusalEngineClosed;
+
+  /// Way forward for refusal code engineClosed
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on AI Team again to continue.'**
+  String get teamRefusalEngineClosedNext;
+
+  /// Action phrase for createProject, used in: The team couldn't ...
+  ///
+  /// In en, this message translates to:
+  /// **'start planning'**
+  String get teamRefusalDidPlan;
+
+  /// Action phrase for createQuickTask, used in: The team couldn't ...
+  ///
+  /// In en, this message translates to:
+  /// **'start that task'**
+  String get teamRefusalDidQuick;
+
+  /// Action phrase for approvePlan, used in: The team couldn't ...
+  ///
+  /// In en, this message translates to:
+  /// **'start the work'**
+  String get teamRefusalDidApprove;
+
+  /// Action phrase for approveSpec, used in: The team couldn't ...
+  ///
+  /// In en, this message translates to:
+  /// **'approve the spec'**
+  String get teamRefusalDidSpec;
+
+  /// Action phrase for promote, used in: The team couldn't ...
+  ///
+  /// In en, this message translates to:
+  /// **'promote the work'**
+  String get teamRefusalDidPromote;
+
+  /// Action phrase for stopProject, used in: The team couldn't ...
+  ///
+  /// In en, this message translates to:
+  /// **'stop the project'**
+  String get teamRefusalDidStop;
+
+  /// Action phrase for pauseProject, used in: The team couldn't ...
+  ///
+  /// In en, this message translates to:
+  /// **'pause the project'**
+  String get teamRefusalDidPause;
+
+  /// Action phrase for resumeProject, used in: The team couldn't ...
+  ///
+  /// In en, this message translates to:
+  /// **'resume the project'**
+  String get teamRefusalDidResume;
+
+  /// Default action phrase
+  ///
+  /// In en, this message translates to:
+  /// **'save your changes'**
+  String get teamRefusalDidSave;
+
+  /// Generic refusal sentence naming the action
+  ///
+  /// In en, this message translates to:
+  /// **'The team couldn\'t {action}.'**
+  String teamRefusalUnknown(String action);
+
+  /// Way forward for an unknown refusal code
+  ///
+  /// In en, this message translates to:
+  /// **'Try again. If it keeps happening, open Details for the code.'**
+  String get teamRefusalUnknownNext;
+
+  /// Label of the technical refusal code under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get teamRefusalCode;
+
+  /// One line shown when the team is ready: its files are fenced by the phone's Linux sandbox
+  ///
+  /// In en, this message translates to:
+  /// **'Protected by this phone\'s Linux sandbox'**
+  String get phoneTeamProtectedProot;
+
+  /// One line shown when the team is ready: its files are fenced by Android's file protection (Landlock)
+  ///
+  /// In en, this message translates to:
+  /// **'Protected by Android\'s file protection'**
+  String get phoneTeamProtectedLandlock;
 }
 
 class _AppLocalizationsDelegate

@@ -71,6 +71,7 @@ final class ProbeFound extends ProbeVerdict {
     this.identityLogin,
     this.identityAllowed = false,
     this.capabilities = OrchestrationCapabilities.gascityRead,
+    this.boundaryTier = '',
   }) : readOnly = readOnly ?? !(front && identityAllowed);
 
   /// Identity of the host; when [front] is set, [OrchestrationHostIdentity.url]
@@ -95,6 +96,10 @@ final class ProbeFound extends ProbeVerdict {
   /// What the adapter built for this host may do: [OrchestrationCapabilities.gascityFront]
   /// behind an allowing front, else [OrchestrationCapabilities.gascityRead].
   final OrchestrationCapabilities capabilities;
+
+  /// The phone engine's proven file boundary (`proot`, `landlock`, or empty
+  /// when unknown). Only the phone engine reports one.
+  final String boundaryTier;
 
   @override
   String describe() =>

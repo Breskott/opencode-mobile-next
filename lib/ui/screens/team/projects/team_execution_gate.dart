@@ -8,6 +8,7 @@
 // team ([TeamExecutionGate.bind]); screens pushed on the navigator find it
 // from the controller they already hold. A controller nobody bound (the
 // demo, which simulates every action) is never gated.
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 
 import '../../../../domain/orchestration_gateway.dart'
@@ -57,8 +58,10 @@ class TeamExecutionGate {
       openPhoneTeamSetup(context, connection);
 
   /// Whether [need] can run now; true for an unbound controller.
+  /// The demo simulates every action, so it is never gated, even when the
+  /// page that shows it belongs to a phone team that is not ready.
   static bool allows(TeamProjectController c, TeamExecutionNeed need) =>
-      of(c)?.permits(need) ?? true;
+      c.snapshot?.simulated == true || (of(c)?.permits(need) ?? true);
 }
 
 /// The one plain line, with the fix, shown once per page while the engine
@@ -71,7 +74,9 @@ class TeamExecutionBlocked extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gate = TeamExecutionGate.of(controller);
-    if (gate == null || gate.permits(TeamExecutionNeed.lanes)) {
+    if (gate == null ||
+        controller.snapshot?.simulated == true ||
+        gate.permits(TeamExecutionNeed.lanes)) {
       return const SizedBox.shrink();
     }
     final l = lookupAppLocalizations(Localizations.localeOf(context));
@@ -85,6 +90,37 @@ class TeamExecutionBlocked extends StatelessWidget {
           onPressed: () => gate.setUp(context),
         ),
       ],
+    );
+  }
+}
+
+/// One plain line once the phone's team can run work: what fences its files.
+/// Draws nothing for the demo, a team that cannot run work, or an unknown
+/// boundary.
+class TeamProtectionLine extends StatelessWidget {
+  const TeamProtectionLine({super.key, required this.controller});
+
+  final TeamProjectController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final gate = TeamExecutionGate.of(controller);
+    if (gate == null ||
+        controller.snapshot?.simulated == true ||
+        !gate.permits(TeamExecutionNeed.lanes)) {
+      return const SizedBox.shrink();
+    }
+    final l = lookupAppLocalizations(Localizations.localeOf(context));
+    final line = switch (gate.team.boundaryTier) {
+      'proot' => l.phoneTeamProtectedProot,
+      'landlock' => l.phoneTeamProtectedLandlock,
+      _ => null,
+    };
+    if (line == null) return const SizedBox.shrink();
+    return KitNotice(
+      key: const ValueKey('team-protection-line'),
+      message: line,
+      icon: Icons.shield_outlined,
     );
   }
 }

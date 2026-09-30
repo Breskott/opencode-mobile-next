@@ -30840,5 +30840,178 @@
   "teamMigrationMenu": "What's new in AI Team",
   "teamProjectPages": "Project pages",
   "teamProjectMergeReady": "Ready to merge",
-  "teamProjectMergeChecking": "Waiting for its checks"
+  "teamProjectMergeChecking": "Waiting for its checks",
+  "teamRefusalUnsupportedCommand": "This version of the team can't do that yet.",
+  "@teamRefusalUnsupportedCommand": {
+    "description": "Plain reason the team refused a project command (code unsupportedCommand)"
+  },
+  "teamRefusalUnsupportedCommandNext": "Update the app, then try again.",
+  "@teamRefusalUnsupportedCommandNext": {
+    "description": "Way forward for refusal code unsupportedCommand"
+  },
+  "teamRefusalBoundaryUnverified": "The team can't work until this phone's protection has been checked.",
+  "@teamRefusalBoundaryUnverified": {
+    "description": "Plain reason the team refused a project command (code boundaryUnverified)"
+  },
+  "teamRefusalBoundaryUnverifiedNext": "Open AI Team and turn it on again.",
+  "@teamRefusalBoundaryUnverifiedNext": {
+    "description": "Way forward for refusal code boundaryUnverified"
+  },
+  "teamRefusalProtocolUnverified": "The team is waiting for OpenCode to restart.",
+  "@teamRefusalProtocolUnverified": {
+    "description": "Plain reason the team refused a project command (code protocolUnverified)"
+  },
+  "teamRefusalProtocolUnverifiedNext": "Try again in a minute.",
+  "@teamRefusalProtocolUnverifiedNext": {
+    "description": "Way forward for refusal code protocolUnverified"
+  },
+  "teamRefusalEngineUnavailable": "The team isn't answering right now.",
+  "@teamRefusalEngineUnavailable": {
+    "description": "Plain reason the team refused a project command (code engineUnavailable)"
+  },
+  "teamRefusalEngineUnavailableNext": "Try again in a moment.",
+  "@teamRefusalEngineUnavailableNext": {
+    "description": "Way forward for refusal code engineUnavailable"
+  },
+  "teamRefusalTransportUncertain": "The team may not have received that.",
+  "@teamRefusalTransportUncertain": {
+    "description": "Plain reason the team refused a project command (code transportUncertain)"
+  },
+  "teamRefusalTransportUncertainNext": "Check the project list before you try again.",
+  "@teamRefusalTransportUncertainNext": {
+    "description": "Way forward for refusal code transportUncertain"
+  },
+  "teamRefusalBusy": "Another change is still being saved.",
+  "@teamRefusalBusy": {
+    "description": "Plain reason the team refused a project command (code busy)"
+  },
+  "teamRefusalBusyNext": "Try again in a moment.",
+  "@teamRefusalBusyNext": {
+    "description": "Way forward for refusal code busy"
+  },
+  "teamRefusalSaveFailed": "The change couldn't be saved on this phone.",
+  "@teamRefusalSaveFailed": {
+    "description": "Plain reason the team refused a project command (code saveFailed)"
+  },
+  "teamRefusalSaveFailedNext": "Your edits are still here. Try again.",
+  "@teamRefusalSaveFailedNext": {
+    "description": "Way forward for refusal code saveFailed"
+  },
+  "teamRefusalReadOnly": "The team is read-only right now.",
+  "@teamRefusalReadOnly": {
+    "description": "Plain reason the team refused a project command (code readOnly)"
+  },
+  "teamRefusalReadOnlyNext": "Turn on AI Team on this phone to make changes.",
+  "@teamRefusalReadOnlyNext": {
+    "description": "Way forward for refusal code readOnly"
+  },
+  "teamRefusalClosed": "The team has been closed.",
+  "@teamRefusalClosed": {
+    "description": "Plain reason the team refused a project command (code closed)"
+  },
+  "teamRefusalClosedNext": "Open AI Team again to continue.",
+  "@teamRefusalClosedNext": {
+    "description": "Way forward for refusal code closed"
+  },
+  "teamRefusalCommandRefused": "The team turned this request down.",
+  "@teamRefusalCommandRefused": {
+    "description": "Plain reason the team refused a project command (code commandRefused)"
+  },
+  "teamRefusalCommandRefusedNext": "Check the goal and the repository folder, then try again.",
+  "@teamRefusalCommandRefusedNext": {
+    "description": "Way forward for refusal code commandRefused"
+  },
+  "teamRefusalImportFailed": "The team couldn't read the repository folder.",
+  "@teamRefusalImportFailed": {
+    "description": "Plain reason the team refused a project command (code importFailed)"
+  },
+  "teamRefusalImportFailedNext": "Check the folder name, then try again.",
+  "@teamRefusalImportFailedNext": {
+    "description": "Way forward for refusal code importFailed"
+  },
+  "teamRefusalPayloadInvalid": "The team answered in a way this app doesn't understand.",
+  "@teamRefusalPayloadInvalid": {
+    "description": "Plain reason the team refused a project command (code payloadInvalid)"
+  },
+  "teamRefusalPayloadInvalidNext": "Update the app, then try again.",
+  "@teamRefusalPayloadInvalidNext": {
+    "description": "Way forward for refusal code payloadInvalid"
+  },
+  "teamRefusalSchemaUnsupported": "The team and this app are on different versions.",
+  "@teamRefusalSchemaUnsupported": {
+    "description": "Plain reason the team refused a project command (code schemaUnsupported)"
+  },
+  "teamRefusalSchemaUnsupportedNext": "Update the app, then try again.",
+  "@teamRefusalSchemaUnsupportedNext": {
+    "description": "Way forward for refusal code schemaUnsupported"
+  },
+  "teamRefusalEngineClosed": "The team is shutting down.",
+  "@teamRefusalEngineClosed": {
+    "description": "Plain reason the team refused a project command (code engineClosed)"
+  },
+  "teamRefusalEngineClosedNext": "Turn on AI Team again to continue.",
+  "@teamRefusalEngineClosedNext": {
+    "description": "Way forward for refusal code engineClosed"
+  },
+  "teamRefusalDidPlan": "start planning",
+  "@teamRefusalDidPlan": {
+    "description": "Action phrase for createProject, used in: The team couldn't ..."
+  },
+  "teamRefusalDidQuick": "start that task",
+  "@teamRefusalDidQuick": {
+    "description": "Action phrase for createQuickTask, used in: The team couldn't ..."
+  },
+  "teamRefusalDidApprove": "start the work",
+  "@teamRefusalDidApprove": {
+    "description": "Action phrase for approvePlan, used in: The team couldn't ..."
+  },
+  "teamRefusalDidSpec": "approve the spec",
+  "@teamRefusalDidSpec": {
+    "description": "Action phrase for approveSpec, used in: The team couldn't ..."
+  },
+  "teamRefusalDidPromote": "promote the work",
+  "@teamRefusalDidPromote": {
+    "description": "Action phrase for promote, used in: The team couldn't ..."
+  },
+  "teamRefusalDidStop": "stop the project",
+  "@teamRefusalDidStop": {
+    "description": "Action phrase for stopProject, used in: The team couldn't ..."
+  },
+  "teamRefusalDidPause": "pause the project",
+  "@teamRefusalDidPause": {
+    "description": "Action phrase for pauseProject, used in: The team couldn't ..."
+  },
+  "teamRefusalDidResume": "resume the project",
+  "@teamRefusalDidResume": {
+    "description": "Action phrase for resumeProject, used in: The team couldn't ..."
+  },
+  "teamRefusalDidSave": "save your changes",
+  "@teamRefusalDidSave": {
+    "description": "Default action phrase"
+  },
+  "teamRefusalUnknown": "The team couldn't {action}.",
+  "@teamRefusalUnknown": {
+    "description": "Generic refusal sentence naming the action",
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "teamRefusalUnknownNext": "Try again. If it keeps happening, open Details for the code.",
+  "@teamRefusalUnknownNext": {
+    "description": "Way forward for an unknown refusal code"
+  },
+  "teamRefusalCode": "Code",
+  "@teamRefusalCode": {
+    "description": "Label of the technical refusal code under Details"
+  },
+  "phoneTeamProtectedProot": "Protected by this phone's Linux sandbox",
+  "@phoneTeamProtectedProot": {
+    "description": "One line shown when the team is ready: its files are fenced by the phone's Linux sandbox"
+  },
+  "phoneTeamProtectedLandlock": "Protected by Android's file protection",
+  "@phoneTeamProtectedLandlock": {
+    "description": "One line shown when the team is ready: its files are fenced by Android's file protection (Landlock)"
+  }
 }

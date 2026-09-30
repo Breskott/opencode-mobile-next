@@ -9,6 +9,7 @@ import '../../../../state/team_project_controller.dart';
 import '../../../kit/kit.dart';
 import '../team_model_sheet.dart';
 import 'team_execution_gate.dart';
+import 'team_refusal.dart';
 
 /// Opens the team's model sheet for a role; [fallback] picks the fallback
 /// model. Null means the sheet was dismissed.
@@ -191,6 +192,7 @@ class _EditorState extends State<_Editor> {
   String? _roleId;
   String? _budgetChoice;
   String? _error;
+  TeamRefusal? _refusal;
   bool _working = false;
   bool _planFirst = true;
   bool _history = false;
@@ -504,6 +506,7 @@ class _EditorState extends State<_Editor> {
     _change(() {
       _working = true;
       _error = null;
+      _refusal = null;
     });
     final result = await _controller.execute(
       TeamProjectCommand(
@@ -547,15 +550,35 @@ class _EditorState extends State<_Editor> {
     if (!mounted) return result.accepted;
     _change(() {
       _working = false;
+      _refusal = result.accepted || result.code == 'staleRevision'
+          ? null
+          : teamRefusalFor(
+              _l,
+              action,
+              result.code.isEmpty ? 'saveFailed' : result.code,
+            );
       _error = result.accepted
           ? null
           : result.code == 'staleRevision'
           ? _l.teamProjectEditorChangedElsewhere
-          : _l.teamProjectEditorSaveFailed;
+          : _refusal!.message;
     });
     if (result.accepted && close) Navigator.of(context).pop();
     return result.accepted;
   }
+
+  /// The plain sentence, a way forward, and the code under Details.
+  List<Widget> _refusalNotice(TeamRefusal refusal) => [
+    KitNotice(
+      key: const ValueKey('team-refusal'),
+      message: refusal.message,
+      notes: [refusal.next],
+      actions: [KitAction(label: _l.teamProjectRetry, onPressed: _save)],
+    ),
+    KitDetailsFold(
+      values: [KitTechnicalValue(_l.teamRefusalCode, refusal.code)],
+    ),
+  ];
 
   Future<void> _reload() async {
     final approved = await showKitConfirm(
@@ -802,7 +825,10 @@ class _EditorState extends State<_Editor> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_error != null) KitNotice(message: _error!),
+          if (_error != null && _refusal?.message == _error)
+            ..._refusalNotice(_refusal!)
+          else if (_error != null)
+            KitNotice(message: _error!),
           if (_project != null && _project!.revision != _reviewedRevision)
             _button(_l.teamProjectEditorReload, _reload),
           if (_restoring)

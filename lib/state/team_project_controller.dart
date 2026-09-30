@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../ui/kit/kit_redact.dart';
 import 'package:flutter/foundation.dart';
+import '../domain/phone_project_engine.dart' show PhoneEngineException;
 import '../domain/team_project_gateway.dart';
 export '../domain/team_project_gateway.dart';
 
@@ -63,9 +64,13 @@ class TeamProjectController extends ChangeNotifier {
       late final TeamCommandResult result;
       try {
         result = await gateway.executeProject(command);
-      } catch (_) {
-        errorCode = 'saveFailed';
-        return const TeamCommandResult(accepted: false, code: 'saveFailed');
+      } catch (error) {
+        // The adapter's safe public code (never a cause or payload) says why.
+        final code = error is PhoneEngineException && error.code.isNotEmpty
+            ? error.code
+            : 'saveFailed';
+        errorCode = code;
+        return TeamCommandResult(accepted: false, code: code);
       }
       if (!result.accepted) errorCode = result.code;
       try {

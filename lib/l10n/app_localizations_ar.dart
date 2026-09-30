@@ -26176,4 +26176,153 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamProjectMergeChecking => 'بانتظار فحوصاته';
+
+  @override
+  String get teamRefusalUnsupportedCommand =>
+      'This version of the team can\'t do that yet.';
+
+  @override
+  String get teamRefusalUnsupportedCommandNext =>
+      'Update the app, then try again.';
+
+  @override
+  String get teamRefusalBoundaryUnverified =>
+      'The team can\'t work until this phone\'s protection has been checked.';
+
+  @override
+  String get teamRefusalBoundaryUnverifiedNext =>
+      'Open AI Team and turn it on again.';
+
+  @override
+  String get teamRefusalProtocolUnverified =>
+      'The team is waiting for OpenCode to restart.';
+
+  @override
+  String get teamRefusalProtocolUnverifiedNext => 'Try again in a minute.';
+
+  @override
+  String get teamRefusalEngineUnavailable =>
+      'The team isn\'t answering right now.';
+
+  @override
+  String get teamRefusalEngineUnavailableNext => 'Try again in a moment.';
+
+  @override
+  String get teamRefusalTransportUncertain =>
+      'The team may not have received that.';
+
+  @override
+  String get teamRefusalTransportUncertainNext =>
+      'Check the project list before you try again.';
+
+  @override
+  String get teamRefusalBusy => 'Another change is still being saved.';
+
+  @override
+  String get teamRefusalBusyNext => 'Try again in a moment.';
+
+  @override
+  String get teamRefusalSaveFailed =>
+      'The change couldn\'t be saved on this phone.';
+
+  @override
+  String get teamRefusalSaveFailedNext =>
+      'Your edits are still here. Try again.';
+
+  @override
+  String get teamRefusalReadOnly => 'The team is read-only right now.';
+
+  @override
+  String get teamRefusalReadOnlyNext =>
+      'Turn on AI Team on this phone to make changes.';
+
+  @override
+  String get teamRefusalClosed => 'The team has been closed.';
+
+  @override
+  String get teamRefusalClosedNext => 'Open AI Team again to continue.';
+
+  @override
+  String get teamRefusalCommandRefused => 'The team turned this request down.';
+
+  @override
+  String get teamRefusalCommandRefusedNext =>
+      'Check the goal and the repository folder, then try again.';
+
+  @override
+  String get teamRefusalImportFailed =>
+      'The team couldn\'t read the repository folder.';
+
+  @override
+  String get teamRefusalImportFailedNext =>
+      'Check the folder name, then try again.';
+
+  @override
+  String get teamRefusalPayloadInvalid =>
+      'The team answered in a way this app doesn\'t understand.';
+
+  @override
+  String get teamRefusalPayloadInvalidNext => 'Update the app, then try again.';
+
+  @override
+  String get teamRefusalSchemaUnsupported =>
+      'The team and this app are on different versions.';
+
+  @override
+  String get teamRefusalSchemaUnsupportedNext =>
+      'Update the app, then try again.';
+
+  @override
+  String get teamRefusalEngineClosed => 'The team is shutting down.';
+
+  @override
+  String get teamRefusalEngineClosedNext =>
+      'Turn on AI Team again to continue.';
+
+  @override
+  String get teamRefusalDidPlan => 'start planning';
+
+  @override
+  String get teamRefusalDidQuick => 'start that task';
+
+  @override
+  String get teamRefusalDidApprove => 'start the work';
+
+  @override
+  String get teamRefusalDidSpec => 'approve the spec';
+
+  @override
+  String get teamRefusalDidPromote => 'promote the work';
+
+  @override
+  String get teamRefusalDidStop => 'stop the project';
+
+  @override
+  String get teamRefusalDidPause => 'pause the project';
+
+  @override
+  String get teamRefusalDidResume => 'resume the project';
+
+  @override
+  String get teamRefusalDidSave => 'save your changes';
+
+  @override
+  String teamRefusalUnknown(String action) {
+    return 'The team couldn\'t $action.';
+  }
+
+  @override
+  String get teamRefusalUnknownNext =>
+      'Try again. If it keeps happening, open Details for the code.';
+
+  @override
+  String get teamRefusalCode => 'Code';
+
+  @override
+  String get phoneTeamProtectedProot =>
+      'Protected by this phone\'s Linux sandbox';
+
+  @override
+  String get phoneTeamProtectedLandlock =>
+      'Protected by Android\'s file protection';
 }

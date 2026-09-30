@@ -1333,12 +1333,21 @@ class ConnectionController extends ChangeNotifier {
   /// the server has not reported busy yet. The same signal the chat uses to
   /// keep its stop button, so nothing that must not cut a reply short can
   /// miss the first seconds of one.
+  ///
+  /// Only the person's own conversations count: the AI Team's own sessions
+  /// (its planner and workers, in the team's folders) never hold a flow that
+  /// waits for "your reply". A session whose folder is not known yet counts.
   bool get replyInFlight =>
-      busySessions.isNotEmpty ||
-      _phoneChatDispatch.isNotEmpty ||
-      _openTurns.values.any(
-        (at) => DateTime.now().difference(at) < _openTurnGrace,
+      busySessions.any(_isPersonsSession) ||
+      _phoneChatDispatch.sessionIds.any(_isPersonsSession) ||
+      _openTurns.entries.any(
+        (e) =>
+            _isPersonsSession(e.key) &&
+            DateTime.now().difference(e.value) < _openTurnGrace,
       );
+
+  bool _isPersonsSession(String sessionId) =>
+      !isAiTeamDirectory(sessionsById[sessionId]?.directory);
 
   /// Sessions with a prompt just sent (by this phone's chat, or seen as a
   /// new user message on the live stream) that the server has not yet

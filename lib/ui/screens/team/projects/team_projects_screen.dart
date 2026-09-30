@@ -113,6 +113,7 @@ class _TeamProjectsScreenState extends State<TeamProjectsScreen> {
           padding: KitScreen.padding(context),
           children: [
             TeamExecutionBlocked(controller: c),
+            TeamProtectionLine(controller: c),
             if (c.errorCode != null) _failure(context, c),
             if (projects.isEmpty && !c.loading)
               KitStateView(icon: Icons.work_outline, title: l.teamProjectEmpty),
