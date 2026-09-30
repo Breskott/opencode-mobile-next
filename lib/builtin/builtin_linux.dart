@@ -191,6 +191,7 @@ class BuiltinPhoneEngineStatus {
     this.boundaryReason = 'boundary_unverified',
     this.boundaryGeneration,
     this.protectionRequired = false,
+    this.unconfinedChildren = false,
   });
 
   factory BuiltinPhoneEngineStatus.fromMap(Map<Object?, Object?> map) =>
@@ -208,6 +209,7 @@ class BuiltinPhoneEngineStatus {
             ? map['boundaryGeneration'] as String
             : null,
         protectionRequired: map['protectionRequired'] == true,
+        unconfinedChildren: map['unconfinedChildren'] == true,
       );
 
   final String profileId;
@@ -219,6 +221,9 @@ class BuiltinPhoneEngineStatus {
   final String boundaryReason;
   final String? boundaryGeneration;
   final bool protectionRequired;
+
+  /// App-wide live old server/terminal prerequisite, independent of daemon life.
+  final bool unconfinedChildren;
 }
 
 /// Ephemeral channel handoff. Never persist this object or include it in logs.

@@ -45,14 +45,18 @@ internal class PhoneEngineNative(private val context: Context) {
         )
     }
 
+    /** No receipt or daemon generation may be reused by an explicit start. */
+    fun prepareFreshStart(profile: String) {
+        validateProfile(profile)
+        if (process?.isAlive == true && activeProfile != profile) throw Failure("engine_in_use")
+        if (activeProfile == profile) stop(profile)
+    }
+
     fun start(profile: String, port: Int, serverRunning: Boolean, reason: String,
         proofFactory: (File) -> PhoneEngineAttestation.Receipt?): Process {
         validateProfile(profile)
         if (port !in 1024..65535 || port == 4097) throw Failure("invalid_port")
-        if (process?.isAlive == true) {
-            if (activeProfile != profile) throw Failure("engine_in_use")
-            return process!!
-        }
+        prepareFreshStart(profile)
         // Interrupted deletion is completed before a new profile generation is
         // allowed to recreate state. Tombstones never carry credentials.
         if (deletionMarker(profile).exists()) delete(profile)

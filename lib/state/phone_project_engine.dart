@@ -399,8 +399,24 @@ class PhoneProjectEngineController {
       throw const PhoneEngineException('endpointInvalid');
     }
     await _admissionStops[profileId];
+    // Start rotates native credentials. Drain old producers/clients before
+    // launch so an old heartbeat cannot retire the new daemon generation.
+    _admissionRequired.add(profileId);
+    await (_admissionStops[profileId] ??= _stopForAdmission(profileId)
+        .whenComplete(() {
+          _admissionStops.remove(profileId);
+        }));
+    final oldClients = _gateways.remove(profileId) ?? <PhoneEngineGateway>{};
+    for (final client in oldClients.toList()) {
+      await client.close();
+    }
     try {
       await bridge.start(profileId, port: port, notice: notice);
+    } on BuiltinLinuxException catch (error) {
+      // Native emits static codes. Never retain its message/details or cause.
+      throw PhoneEngineException(error.code ?? 'engineUnavailable');
+    } on PhoneEngineException {
+      rethrow;
     } catch (_) {
       throw const PhoneEngineException('engineUnavailable');
     }

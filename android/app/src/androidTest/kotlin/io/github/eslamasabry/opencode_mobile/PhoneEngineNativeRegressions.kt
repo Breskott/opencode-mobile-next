@@ -23,11 +23,51 @@ internal object PhoneEngineNativeRegressions {
         check(context.packageName == "io.github.eslamasabry.opencode_mobile.preview")
         refusesUnauthenticatedChildBeforeHttp(context)
         ignoresSquatterAndSurvivesLauncher(context)
+        repeatsNativeProofFactoryWithoutReusingDaemon(context)
         trustsOnlyRegisteredPdfProcess(context)
         signsBeforeRequiringProtection()
         stopsRemainingServicesAfterFailure()
         erasesModeZeroWithoutFollowingLinks(context)
         erasesInactiveCredentialCopies(context)
+    }
+
+    private fun repeatsNativeProofFactoryWithoutReusingDaemon(context: Context) {
+        val profile = "qa_fresh_${UUID.randomUUID().toString().replace("-", "")}"
+        val native = PhoneEngineNative(context)
+        var attempts = 0
+        try {
+            val first = native.start(profile, 4098, false, "fixture_unverified") { attempts++; null }
+            val oldAuth = native.credentials(profile)["bearerToken"]
+            val second = native.start(profile, 4098, false, "fixture_unverified") { attempts++; null }
+            check(attempts == 2) { "The running daemon skipped the new proof factory" }
+            check(first !== second && !first.isAlive && second.isAlive)
+            check(native.credentials(profile)["bearerToken"] != oldAuth)
+            check(native.status(profile)["boundary"] == false) // No fake proof grants authority.
+            var refused = false
+            try { native.start("qa_other", 4098, false, "fixture_unverified") { error("Wrong owner reached proof") } }
+            catch (failure: PhoneEngineNative.Failure) { check(failure.code == "engine_in_use"); refused = true }
+            check(refused && second.isAlive) { "Start displaced another profile's daemon" }
+        } finally { native.stop(profile); native.delete(profile) }
+    }
+
+    /** Full proof mode is separate: requires compatible kernel and idle runtime. */
+    fun reproofRunningGeneration(context: Context) {
+        check(context.packageName == "io.github.eslamasabry.opencode_mobile.preview")
+        val linux = BuiltinLinux.get(context)
+        val profile = "qa_reproof_${UUID.randomUUID().toString().replace("-", "")}"
+        check(linux.phoneEngineStatus(profile)["unconfinedChildren"] == false) {
+            "Stop old preview services and terminals before the proof regression"
+        }
+        try {
+            val first = linux.startPhoneEngine(profile, 4098, null)
+            check(first["boundary"] == true) { "This device did not pass the actual boundary proof" }
+            val generation = first["boundaryGeneration"] as? String
+            check(!generation.isNullOrBlank())
+            val second = linux.startPhoneEngine(profile, 4098, null)
+            check(second["boundary"] == true && second["running"] == true)
+            check(second["boundaryGeneration"] != generation) { "Running start reused a stale signed generation" }
+            check(second["unconfinedChildren"] == false)
+        } finally { linux.stopPhoneEngine(profile); linux.deletePhoneEngine(profile) }
     }
 
     private fun refusesUnauthenticatedChildBeforeHttp(context: Context) {

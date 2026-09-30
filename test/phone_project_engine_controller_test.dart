@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:opencode_mobile/builtin/builtin_linux.dart';
+import 'package:opencode_mobile/domain/phone_project_engine.dart';
 import 'package:opencode_mobile/state/phone_project_engine.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/orchestration/adapters/inapp/phone_engine_gateway.dart';
@@ -15,11 +17,14 @@ class NativeBridge implements PhoneProjectEngineBridge {
   final calls = <String>[];
   bool failDelete = false;
   bool failStop = false;
+  Object? startFailure;
+  Completer<void>? stopGate;
   final Completer<void>? attachGate;
   NativeBridge({this.attachGate});
   @override
   Future<void> start(String id, {int port = 4098, String? notice}) async {
     calls.add('start:$id');
+    if (startFailure != null) throw startFailure!;
   }
 
   @override
@@ -35,6 +40,7 @@ class NativeBridge implements PhoneProjectEngineBridge {
   @override
   Future<void> stop(String id) async {
     calls.add('stop:$id');
+    await stopGate?.future;
     if (failStop) throw StateError('unsafe stop details');
   }
 
@@ -132,7 +138,7 @@ void main() {
         );
   });
   PhoneProjectEngineController controller(
-    NativeBridge bridge,
+    PhoneProjectEngineBridge bridge,
     List<String> requests,
   ) => PhoneProjectEngineController(
     store: store,
@@ -153,6 +159,129 @@ void main() {
               }),
             ),
   );
+  test(
+    'native start codes survive controller without native payloads',
+    () async {
+      const channel = MethodChannel('test.phone_engine_setup_codes');
+      final calls = <MethodCall>[];
+      final native = BuiltinPhoneProjectEngineBridge(
+        BuiltinLinux(channel: channel),
+      );
+      final c = controller(native, []);
+      try {
+        for (final code in [
+          'restart_required',
+          'boundary_not_packaged',
+          'boundary_unavailable',
+        ]) {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(channel, (call) async {
+                calls.add(call);
+                if (call.method == 'stopPhoneEngine') {
+                  return {'profileId': 'phone', 'running': false};
+                }
+                throw PlatformException(
+                  code: code,
+                  message: 'fixture-private-message',
+                  details: 'fixture-private-details',
+                );
+              });
+          await expectLater(
+            c.start('phone'),
+            throwsA(
+              isA<PhoneEngineException>()
+                  .having((e) => e.code, 'code', code)
+                  .having(
+                    (e) => e.toString(),
+                    'safe error',
+                    isNot(contains('fixture-private')),
+                  ),
+            ),
+          );
+        }
+        expect(
+          calls.where((call) => call.method == 'startPhoneEngine'),
+          hasLength(3),
+        );
+        expect(
+          calls.where((call) => call.method == 'phoneEngineCredentials'),
+          isEmpty,
+        );
+        expect(
+          store.profiles.firstWhere((p) => p.id == 'phone').teamEngineAuth,
+          isEmpty,
+        );
+      } finally {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null);
+        await c.close();
+      }
+    },
+  );
+
+  test(
+    'start preserves typed bridge failure and safely maps unknown failure',
+    () async {
+      final bridge = NativeBridge()
+        ..startFailure = const PhoneEngineException('boundary_unavailable');
+      final c = controller(bridge, []);
+      await expectLater(
+        c.start('phone'),
+        throwsA(fake.safeError('boundary_unavailable')),
+      );
+      bridge.startFailure = StateError('private implementation error');
+      await expectLater(
+        c.start('phone'),
+        throwsA(fake.safeError('engineUnavailable')),
+      );
+      await c.close();
+    },
+  );
+
+  test(
+    'fresh start closes prior gateway before rotating native credentials',
+    () async {
+      final bridge = NativeBridge();
+      final c = controller(bridge, []);
+      await c.attach('phone');
+      final client = c.gateway(
+        store.profiles.firstWhere((p) => p.id == 'phone'),
+      );
+      expect(client.isClosed, isFalse);
+      await c.start('phone');
+      expect(client.isClosed, isTrue);
+      expect(bridge.calls.where((call) => call == 'start:phone').length, 1);
+      await c.close();
+    },
+  );
+
+  test(
+    'human dispatch cannot bypass the old generation while fresh start stops it',
+    () async {
+      final gate = Completer<void>();
+      final bridge = NativeBridge()..stopGate = gate;
+      final c = controller(bridge, []);
+      final starting = c.start('phone');
+      await Future<void>.delayed(Duration.zero);
+      expect(bridge.calls, contains('stop:phone'));
+      var admitted = false;
+      final dispatch = c
+          .beforePersonDispatch('phone')
+          .then((_) => admitted = true);
+      await Future<void>.delayed(Duration.zero);
+      expect(admitted, isFalse);
+      gate.complete();
+      await dispatch;
+      await starting;
+      expect(admitted, isTrue);
+      expect(
+        bridge.calls.indexOf('stop:phone'),
+        lessThan(bridge.calls.indexOf('start:phone')),
+      );
+      await c.close();
+    },
+  );
+
   test(
     'legacy provider parsing stays compatible; new provider round trips',
     () {

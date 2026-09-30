@@ -78,6 +78,12 @@ class PhoneEngineAcceptance : Instrumentation() {
             emit("PASS", currentStep, "verified")
             return
         }
+        if (arguments.getString("reproofRegression") == "true") {
+            currentStep = "running_generation_reproof"
+            PhoneEngineNativeRegressions.reproofRunningGeneration(targetContext)
+            emit("PASS", currentStep, "verified")
+            return
+        }
         requireSafe(arguments.getString("allowModelSpend") == "true", "model_spend_required")
         requireSafe(arguments.getString("server") == "http://127.0.0.1:4097", "in_app_server_required")
         val model = arguments.getString("model") ?: throw Refused("model_required")

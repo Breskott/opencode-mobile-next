@@ -422,18 +422,26 @@ class BuiltinLinux(private val context: Context) {
     }
 
     @Synchronized
-    fun phoneEngineStatus(profile: String): Map<String, Any?> = phoneEngine.status(profile) +
-        mapOf("restartRequired" to hasUnconfinedChildren(), "protectionRequired" to markerPresent())
+    fun phoneEngineStatus(profile: String): Map<String, Any?> {
+        val native = phoneEngine.status(profile)
+        val unconfined = hasUnconfinedChildren()
+        return native + mapOf("restartRequired" to unconfined,
+            "unconfinedChildren" to unconfined, "protectionRequired" to markerPresent())
+    }
 
     @Synchronized
     fun phoneEngineCredentials(profile: String): Map<String, String> = phoneEngine.credentials(profile)
 
     @Synchronized
     fun startPhoneEngine(profile: String, port: Int, notice: String?): Map<String, Any?> {
-        val alreadyRunning = phoneEngine.status(profile)["running"] == true
+        // Quiesce the tracked daemon before proof. Its stored receipt and
+        // cached flags may belong to an older package/generation.
+        phoneEngine.prepareFreshStart(profile)
+        if (services[PHONE_ENGINE]?.process?.isAlive != true) services.remove(PHONE_ENGINE)
+        serviceSetChanged()
         val blocked = hasUnconfinedChildren()
         var reason = if (blocked) "restart_required" else "boundary_unverified"
-        val controls = if (!alreadyRunning && !blocked) try {
+        val controls = if (!blocked) try {
             runPhoneEngineBoundaryProbe().also {
                 if (it["complete"] != true) reason = "boundary_proof_failed"
             }
