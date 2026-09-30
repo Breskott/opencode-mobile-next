@@ -3,11 +3,21 @@
 
 use reqwest::{Client, Method, StatusCode, Url};
 use serde_json::{json, Map, Value};
-use std::{fmt, net::IpAddr, time::Duration};
+use std::{
+    collections::BTreeSet,
+    fmt,
+    net::IpAddr,
+    time::{Duration, Instant},
+};
 
 const VERSION: &str = "1.18.32";
 const SOURCE: &str = "545f51d26cc39a907d2867492d498d9607ea5fa4";
 const MAX_RESPONSE: usize = 8 * 1024 * 1024;
+const MAX_STATUS_DIRECTORIES: usize = 64;
+const MAX_SSE_FRAME: usize = 256 * 1024;
+const MAX_BUSY_OBSERVATIONS: usize = 4096;
+const STATUS_FRESHNESS: Duration = Duration::from_secs(10);
+const STREAM_FRESHNESS: Duration = Duration::from_secs(30);
 
 /// Contains a static, credential-safe code only. Never wraps a server body/error.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -28,6 +38,7 @@ impl std::error::Error for ProtocolError {}
 /// Deliberately not Debug: authentication stays in memory and HTTP headers only.
 pub struct OpenCodeClient {
     http: Client,
+    stream_http: Client,
     base: Url,
     username: String,
     password: String,
@@ -58,8 +69,17 @@ impl OpenCodeClient {
             .timeout(Duration::from_secs(10))
             .build()
             .map_err(|_| ProtocolError("transport_unavailable"))?;
+        // SSE has no overall lifetime timeout. Header and each read are bounded
+        // separately; a heartbeat is emitted every ten seconds by pinned OC1.
+        let stream_http = Client::builder()
+            .no_proxy()
+            .redirect(reqwest::redirect::Policy::none())
+            .connect_timeout(Duration::from_secs(10))
+            .build()
+            .map_err(|_| ProtocolError("transport_unavailable"))?;
         Ok(Self {
             http,
+            stream_http,
             base,
             username: username.to_owned(),
             password: password.to_owned(),
@@ -151,6 +171,8 @@ impl OpenCodeClient {
             "healthy": true, "version": VERSION, "sourceRevision": SOURCE,
             "pinnedVersion": true, "openapiVerified": true,
             "capabilities": {"sessionDriver": true, "readOnlyPermissions": true,
+                "executionDriver": true, "knownPersonDirectoryStatus": true,
+                "globalStatusObserver": true, "globalAdmissionAuthority": false,
                 "chatAdmission": false, "execution": false, "oc2": false},
             "blockers": ["global_status_unavailable"]
         }))
@@ -164,6 +186,74 @@ impl OpenCodeClient {
     ) -> Result<bool, ProtocolError> {
         self.pinned_health().await?;
         Err(ProtocolError("global_status_unavailable"))
+    }
+
+    /// Complete, fresh snapshots only for the positively supplied known person
+    /// directories. This cannot discover directories used by another client.
+    /// Root must prove app-process absence before selecting this fallback.
+    pub async fn person_directory_status(
+        &self,
+        directories: &[String],
+        team_session_ids: &[String],
+    ) -> Result<bool, ProtocolError> {
+        let directories = known_directories(directories)?;
+        validate_team_ids(team_session_ids)?;
+        self.pinned_health().await?;
+        let started = Instant::now();
+        let mut idle = true;
+        for directory in directories {
+            let statuses = self
+                .request(Method::GET, "/session/status", Some(directory), None)
+                .await?;
+            idle &= person_status_snapshot(&statuses, team_session_ids)?;
+            if started.elapsed() > STATUS_FRESHNESS {
+                return Err(ProtocolError("person_status_stale"));
+            }
+        }
+        Ok(idle)
+    }
+
+    /// Volatile blocker observations only. Even connected with no observed busy
+    /// sessions is not a complete global idle checkpoint or admission authority.
+    pub async fn global_status_observer(&self) -> Result<GlobalStatusObserver, ProtocolError> {
+        self.pinned_health().await?;
+        let mut url = self.base.clone();
+        url.set_path("/global/event");
+        let response = tokio::time::timeout(
+            Duration::from_secs(10),
+            self.stream_http
+                .get(url)
+                .header(reqwest::header::ACCEPT, "text/event-stream")
+                .basic_auth(&self.username, Some(&self.password))
+                .send(),
+        )
+        .await
+        .map_err(|_| ProtocolError("global_status_disconnected"))?
+        .map_err(|_| ProtocolError("global_status_disconnected"))?;
+        if !response.status().is_success() {
+            return Err(ProtocolError(match response.status() {
+                StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => "authentication_failed",
+                StatusCode::NOT_FOUND => "protocol_unavailable",
+                _ => "global_status_disconnected",
+            }));
+        }
+        if response
+            .headers()
+            .get(reqwest::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.split(';').next())
+            .map(str::trim)
+            != Some("text/event-stream")
+        {
+            return Err(ProtocolError("invalid_global_status_stream"));
+        }
+        Ok(GlobalStatusObserver {
+            response: Some(response),
+            decoder: SseStatusDecoder::default(),
+            busy: BTreeSet::new(),
+            last_event: Instant::now(),
+            connected: true,
+        })
     }
 
     pub async fn create_session(
@@ -193,7 +283,8 @@ impl OpenCodeClient {
     }
 
     /// Wire implementation. Coordinator must first obtain chat admission and
-    /// boundary proof; current verify() explicitly reports execution unavailable.
+    /// boundary proof. verify() distinguishes usable driver evidence from absent
+    /// global admission authority; the coordinator owns app-authoritative gating.
     pub async fn prompt(
         &self,
         directory: &str,
@@ -301,6 +392,282 @@ impl OpenCodeClient {
     }
 }
 
+/// Metadata only; never includes raw event bodies, retry messages, or errors.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum GlobalStatusObservation {
+    Status {
+        directory: String,
+        session_id: String,
+        busy: bool,
+    },
+    Other,
+}
+
+/// A connection-local observation set. Do not persist or treat an empty set as
+/// global idle. Reconnect starts a new incomplete history, never a checkpoint.
+pub struct GlobalStatusObserver {
+    response: Option<reqwest::Response>,
+    decoder: SseStatusDecoder,
+    busy: BTreeSet<(String, String)>,
+    last_event: Instant,
+    connected: bool,
+}
+
+impl GlobalStatusObserver {
+    pub fn connected(&self) -> bool {
+        self.connected && self.last_event.elapsed() <= STREAM_FRESHNESS
+    }
+
+    /// True blocks admission. False means only "no observed non-team busy";
+    /// the independent app authority/known-directory snapshot is still required.
+    pub fn observed_non_team_busy(
+        &self,
+        team_session_ids: &[String],
+    ) -> Result<bool, ProtocolError> {
+        validate_team_ids(team_session_ids)?;
+        if !self.connected() {
+            return Err(ProtocolError("global_status_disconnected"));
+        }
+        Ok(self
+            .busy
+            .iter()
+            .any(|(_, id)| !team_session_ids.contains(id)))
+    }
+
+    fn disconnect(&mut self, code: &'static str) -> ProtocolError {
+        self.connected = false;
+        self.response = None;
+        self.decoder = SseStatusDecoder::default();
+        // Existing busy evidence remains in memory, but has no fresh authority.
+        ProtocolError(code)
+    }
+
+    pub async fn next(&mut self) -> Result<GlobalStatusObservation, ProtocolError> {
+        if !self.connected() {
+            return Err(self.disconnect("global_status_disconnected"));
+        }
+        loop {
+            let data = match self.decoder.next_event() {
+                Ok(data) => data,
+                Err(error) => return Err(self.disconnect(error.code())),
+            };
+            if let Some(data) = data {
+                let event = match parse_global_status(&data) {
+                    Ok(event) => event,
+                    Err(error) => return Err(self.disconnect(error.code())),
+                };
+                if let GlobalStatusObservation::Status {
+                    directory,
+                    session_id,
+                    busy,
+                } = &event
+                {
+                    let key = (directory.clone(), session_id.clone());
+                    if *busy {
+                        if !self.busy.contains(&key) && self.busy.len() >= MAX_BUSY_OBSERVATIONS {
+                            return Err(self.disconnect("global_status_capacity_unknown"));
+                        }
+                        self.busy.insert(key);
+                    } else {
+                        self.busy.remove(&key);
+                    }
+                }
+                self.last_event = Instant::now();
+                return Ok(event);
+            }
+            let Some(response) = self.response.as_mut() else {
+                return Err(self.disconnect("global_status_disconnected"));
+            };
+            match tokio::time::timeout(STREAM_FRESHNESS, response.chunk()).await {
+                Ok(Ok(Some(chunk))) => {
+                    if let Err(error) = self.decoder.push(&chunk) {
+                        return Err(self.disconnect(error.code()));
+                    }
+                }
+                // EOF discards even a syntactically complete unterminated frame.
+                // Closure never clears busy evidence or completes a task.
+                _ => return Err(self.disconnect("global_status_disconnected")),
+            }
+        }
+    }
+}
+
+#[derive(Default)]
+struct SseStatusDecoder {
+    buffer: Vec<u8>,
+    data: String,
+    frame_bytes: usize,
+}
+
+impl SseStatusDecoder {
+    fn push(&mut self, bytes: &[u8]) -> Result<(), ProtocolError> {
+        if self.buffer.len().saturating_add(bytes.len()) > MAX_SSE_FRAME {
+            return Err(ProtocolError("global_status_frame_too_large"));
+        }
+        self.buffer.extend_from_slice(bytes);
+        Ok(())
+    }
+
+    fn next_event(&mut self) -> Result<Option<String>, ProtocolError> {
+        while let Some(end) = self.buffer.iter().position(|b| *b == b'\n') {
+            let bytes: Vec<u8> = self.buffer.drain(..=end).collect();
+            self.frame_bytes = self.frame_bytes.saturating_add(bytes.len());
+            if self.frame_bytes > MAX_SSE_FRAME {
+                return Err(ProtocolError("global_status_frame_too_large"));
+            }
+            let line = std::str::from_utf8(&bytes[..bytes.len() - 1])
+                .map_err(|_| ProtocolError("invalid_global_status_stream"))?;
+            let line = line.strip_suffix('\r').unwrap_or(line);
+            if line.is_empty() {
+                self.frame_bytes = 0;
+                if !self.data.is_empty() {
+                    return Ok(Some(std::mem::take(&mut self.data)));
+                }
+                continue;
+            }
+            if let Some(data) = line.strip_prefix("data:") {
+                let data = data.strip_prefix(' ').unwrap_or(data);
+                if !self.data.is_empty() {
+                    self.data.push('\n');
+                }
+                self.data.push_str(data);
+            }
+            // event/id/retry/comments never establish status or checkpoints.
+        }
+        Ok(None)
+    }
+}
+
+fn parse_global_status(data: &str) -> Result<GlobalStatusObservation, ProtocolError> {
+    let data: Value =
+        serde_json::from_str(data).map_err(|_| ProtocolError("invalid_global_status_stream"))?;
+    let payload = data
+        .get("payload")
+        .and_then(Value::as_object)
+        .ok_or(ProtocolError("invalid_global_status_stream"))?;
+    let kind = payload
+        .get("type")
+        .and_then(Value::as_str)
+        .ok_or(ProtocolError("invalid_global_status_stream"))?;
+    if matches!(
+        kind,
+        "server.instance.disposed" | "server.disposed" | "global.disposed"
+    ) {
+        return Err(ProtocolError("global_status_disconnected"));
+    }
+    if !matches!(kind, "session.status" | "session.idle") {
+        return Ok(GlobalStatusObservation::Other);
+    }
+    let directory = data
+        .get("directory")
+        .and_then(Value::as_str)
+        .ok_or(ProtocolError("invalid_global_status_stream"))?;
+    validate_directory(directory).map_err(|_| ProtocolError("invalid_global_status_stream"))?;
+    let properties = payload
+        .get("properties")
+        .and_then(Value::as_object)
+        .ok_or(ProtocolError("invalid_global_status_stream"))?;
+    let id = properties
+        .get("sessionID")
+        .and_then(Value::as_str)
+        .ok_or(ProtocolError("invalid_global_status_stream"))?;
+    validate_session_id(id).map_err(|_| ProtocolError("invalid_global_status_stream"))?;
+    let busy = if kind == "session.idle" {
+        false
+    } else {
+        let state = properties
+            .get("status")
+            .ok_or(ProtocolError("invalid_global_status_stream"))?;
+        validate_status_entry(state).map_err(|_| ProtocolError("invalid_global_status_stream"))?;
+        state["type"] != "idle"
+    };
+    Ok(GlobalStatusObservation::Status {
+        directory: directory.to_owned(),
+        session_id: id.to_owned(),
+        busy,
+    })
+}
+
+fn validate_directory(directory: &str) -> Result<(), ProtocolError> {
+    if !directory.starts_with('/') || directory.contains('\0') || directory.len() > 4096 {
+        return Err(ProtocolError("person_directory_unknown"));
+    }
+    Ok(())
+}
+
+fn known_directories(directories: &[String]) -> Result<Vec<&str>, ProtocolError> {
+    if directories.is_empty() || directories.len() > MAX_STATUS_DIRECTORIES {
+        return Err(ProtocolError("person_directory_unknown"));
+    }
+    let mut known = BTreeSet::new();
+    for directory in directories {
+        validate_directory(directory)?;
+        known.insert(directory.as_str());
+    }
+    Ok(known.into_iter().collect())
+}
+
+fn validate_team_ids(ids: &[String]) -> Result<(), ProtocolError> {
+    for id in ids {
+        validate_session_id(id)?;
+    }
+    Ok(())
+}
+
+fn validate_status_entry(entry: &Value) -> Result<(), ProtocolError> {
+    let entry = entry.as_object().ok_or(ProtocolError("invalid_status"))?;
+    match entry.get("type").and_then(Value::as_str) {
+        Some("idle" | "busy") if entry.len() == 1 => Ok(()),
+        Some("retry") => {
+            if !entry.get("attempt").is_some_and(|v| v.as_u64().is_some())
+                || !entry.get("next").is_some_and(|v| v.as_u64().is_some())
+                || !entry.get("message").is_some_and(Value::is_string)
+                || entry.keys().any(|k| {
+                    !matches!(
+                        k.as_str(),
+                        "type" | "attempt" | "next" | "message" | "action"
+                    )
+                })
+            {
+                return Err(ProtocolError("invalid_status"));
+            }
+            if let Some(action) = entry.get("action") {
+                let action = action.as_object().ok_or(ProtocolError("invalid_status"))?;
+                if ["reason", "provider", "title", "message", "label"]
+                    .iter()
+                    .any(|k| !action.get(*k).is_some_and(Value::is_string))
+                    || action.keys().any(|k| {
+                        !matches!(
+                            k.as_str(),
+                            "reason" | "provider" | "title" | "message" | "label" | "link"
+                        )
+                    })
+                    || action.get("link").is_some_and(|v| !v.is_string())
+                {
+                    return Err(ProtocolError("invalid_status"));
+                }
+            }
+            Ok(())
+        }
+        _ => Err(ProtocolError("invalid_status")),
+    }
+}
+
+fn person_status_snapshot(statuses: &Value, team_ids: &[String]) -> Result<bool, ProtocolError> {
+    let statuses = statuses
+        .as_object()
+        .ok_or(ProtocolError("invalid_status"))?;
+    let mut idle = true;
+    for (id, entry) in statuses {
+        validate_session_id(id).map_err(|_| ProtocolError("invalid_status"))?;
+        validate_status_entry(entry)?;
+        if !team_ids.contains(id) && entry["type"] != "idle" {
+            idle = false;
+        }
+    }
+    Ok(idle)
+}
+
 fn validate_session_id(id: &str) -> Result<(), ProtocolError> {
     if !id.starts_with("ses")
         || id.len() > 128
@@ -377,6 +744,7 @@ fn validate_openapi(doc: &Value) -> Result<(), ProtocolError> {
         .ok_or(ProtocolError("openapi_unconfirmed"))?;
     for (path, method, operation) in [
         ("/global/health", "get", "global.health"),
+        ("/global/event", "get", "global.event"),
         ("/session", "post", "session.create"),
         ("/session/{sessionID}", "get", "session.get"),
         ("/session/{sessionID}", "patch", "session.update"),
@@ -765,5 +1133,77 @@ mod tests {
         .is_err());
         assert!(validate_session_id("ses/../global/config").is_err());
         assert!(validate_openapi(&json!({"paths":{}})).is_err());
+    }
+
+    #[test]
+    fn fallback_requires_complete_valid_known_scope() {
+        assert!(known_directories(&[]).is_err());
+        assert!(known_directories(&["unknown".into()]).is_err());
+        assert!(known_directories(&["/ok".into(), "".into()]).is_err());
+        assert_eq!(
+            known_directories(&["/a".into(), "/a".into()]).unwrap(),
+            vec!["/a"]
+        );
+        assert!(person_status_snapshot(&json!({}), &[]).unwrap());
+        assert!(!person_status_snapshot(&json!({"ses_other":{"type":"busy"}}), &[]).unwrap());
+        assert!(
+            person_status_snapshot(&json!({"ses_team":{"type":"busy"}}), &["ses_team".into()])
+                .unwrap()
+        );
+        assert!(!person_status_snapshot(
+            &json!({"ses_retry":{"type":"retry","attempt":1,"next":123,"message":"retrying"}}),
+            &[]
+        )
+        .unwrap());
+        for malformed in [
+            json!(null),
+            json!([]),
+            json!({"ses_other":{"type":"unknown"}}),
+            json!({"ses_other":{"type":"retry"}}),
+            json!({"invalid":{"type":"busy"}}),
+            json!({"ses_other":{"type":"idle","unexpected":true}}),
+        ] {
+            assert!(person_status_snapshot(&malformed, &[]).is_err());
+        }
+    }
+
+    #[test]
+    fn global_fixture_parses_pinned_envelope_without_exposing_retry_text() {
+        let event = parse_global_status(r#"{"directory":"/other-client","payload":{"type":"session.status","properties":{"sessionID":"ses_person","status":{"type":"retry","attempt":1,"next":123,"message":"credential-like private output"}}}}"#).unwrap();
+        assert_eq!(
+            event,
+            GlobalStatusObservation::Status {
+                directory: "/other-client".into(),
+                session_id: "ses_person".into(),
+                busy: true,
+            }
+        );
+        assert_eq!(
+            parse_global_status(r#"{"payload":{"type":"server.connected","properties":{}}}"#)
+                .unwrap(),
+            GlobalStatusObservation::Other
+        );
+        assert!(parse_global_status(r#"{"payload":{"type":"session.status","properties":{"sessionID":"ses_person","status":{"type":"busy"}}}}"#).is_err());
+        assert!(parse_global_status(r#"{"directory":"/a","payload":{"type":"session.status","properties":{"sessionID":"ses_person","status":{"type":"unknown"}}}}"#).is_err());
+    }
+
+    #[test]
+    fn split_sse_frames_multiline_crlf_and_eof_are_not_checkpoints() {
+        let mut decoder = SseStatusDecoder::default();
+        decoder
+            .push(b": comment\r\ndata: {\"payload\":\r\ndata: {\"type\":\"server.heartbeat\"}}\r\n")
+            .unwrap();
+        assert!(decoder.next_event().unwrap().is_none());
+        decoder.push(b"\r\n").unwrap();
+        assert_eq!(
+            parse_global_status(&decoder.next_event().unwrap().unwrap()).unwrap(),
+            GlobalStatusObservation::Other
+        );
+        let mut decoder = SseStatusDecoder::default();
+        decoder
+            .push(b"data: {\"payload\":{\"type\":\"server.connected\"}}\n")
+            .unwrap();
+        assert!(decoder.next_event().unwrap().is_none());
+        assert!(decoder.push(&vec![b'x'; MAX_SSE_FRAME + 1]).is_err());
     }
 }
