@@ -99,7 +99,7 @@ internal object PhoneEngineNativeRegressions {
         val native = PhoneEngineNative(context)
         val token = "a".repeat(64)
         val profile = "qa_frame"
-        for (code in listOf("server_auth_unavailable", "repositoryUnavailable")) {
+        for (code in listOf("server_auth_unavailable", "repositoryUnavailable", "symlinkRefused")) {
             val frame = JSONObject().put("schemaVersion", 1).put("startupError", code).toString() + "\n"
             var reported: String? = null
             try { native.authenticatedStartup(PipeChild(frame), token, profile) }

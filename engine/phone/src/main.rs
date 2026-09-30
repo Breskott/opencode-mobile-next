@@ -12,6 +12,7 @@ fn startup_failure(code: &str, status: i32) -> ! {
         | "nativePinsInvalid"
         | "configUnavailable"
         | "configInvalid"
+        | "symlinkRefused"
         | "boundaryInvalid"
         | "serverNotLoopback"
         | "boundaryProofRequired"

@@ -441,7 +441,7 @@ internal class PhoneEngineNative(private val context: Context) {
         private val STARTUP_ERRORS = setOf(
             "engineInspectionProtectionUnavailable", "engineFdHygieneUnavailable", "engineRuntimeUnavailable",
             "nativeArgumentsInvalid", "nativePinsInvalid", "configUnavailable", "configInvalid",
-            "boundaryInvalid", "serverNotLoopback", "boundaryProofRequired", "credentialsUnavailable",
+            "boundaryInvalid", "symlinkRefused", "serverNotLoopback", "boundaryProofRequired", "credentialsUnavailable",
             "credentialsUnsafe", "credentialsInvalid", "server_auth_unavailable", "authUnavailable",
             "authInvalid", "serverCredentialsUnavailable", "serverCredentialsInvalid", "serverConfigInvalid",
             "storeUnavailable", "recoveryFailed", "repositoryUnavailable", "listenUnavailable",
