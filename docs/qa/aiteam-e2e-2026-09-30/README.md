@@ -75,6 +75,31 @@ After fixing hashes: `libaiteam_sandbox` dies with SIGSYS, syscall 444 (`landloc
 - B-20 The On-this-phone page shows "Computer at 127.0.0.1 isn't answering" while OpenCode is reported ready; Inbox lists my own Restart as "Restarted by itself".
 - B-21 Onboarding keyboard: first keystroke often dropped and "X" prefix appeared (emulator IME, likely harness; not counted).
 
+## Fixed in (UI, branch crit/aiteam-integration)
+
+| Bug | Fixed in | Note |
+|---|---|---|
+| B-3 | 3092aa78 | Failed turn-on restarts OpenCode and says so (UI half) |
+| B-4 | 3092aa78 | Failure copy states the real state; Details = sentence + code |
+| B-6 | 3092aa78, 61f2da05 | Reply wait reads `replyInFlight`; chat reports a just-sent prompt. Root cause of the 6 s lag not confirmed on a device |
+| B-7 | 470f526f | Host cost line; "Not measured on <host> yet" when unknown |
+| B-8 | 470f526f | Typed repo counts; hint says what is missing |
+| B-9 | 470f526f | Budget hints agree |
+| B-5 | 470f526f | Roles use the model picker; Checker read-only. Demo roles editor still typed (no catalog) |
+| B-10 | 723869a1 | "Not yet", per-task server, "Review gate · risky". NOT done: per-task dependency choice, per-phase flag on the card |
+| B-11 | 723869a1 | Confirm, progress, receipt row; Promote dev to main on the overview. Real-engine receipts need the adapter |
+| B-2 | 353d6c75, e2a8e150 | Migration screen: switch, keep old team, demo |
+| B-12 | e2a8e150 | Board opens on first non-empty column; gutter |
+| B-13 | e5bc8c02 | Models sorted by family, newest first |
+| B-14 | e2a8e150 | "Project pages" heading |
+| B-15 | e2a8e150 | Lane limit and merge wording agree |
+| B-16 | 723869a1 | Timeline folds repeated rows; default lanes 3 |
+| B-17 | 470f526f, 723869a1 | Hint scrolls at 1.5x+; flat cards keep a gap |
+| B-18, B-20 (address) | e71546a0 | Settings row reads Off when unproven; "This phone" not 127.0.0.1 |
+| B-19 | not fixed | Not reproducible without a device; blind edit risked the cached-excerpt contract |
+| B-20 (Inbox "Restarted by itself") | not fixed | Cause in `lib/builtin/builtin_server_recovery.dart`, needs device/log check |
+| P0-1, P0-2, B-1 | Codex | Engine branch |
+
 ## Counts
 P0: 2, P1: 10, P2: 12 (B-21 not counted). UI vs engine: P0-1 and P0-2 are engine/build (Codex); B-1 engine; B-3 both; the rest UI (Claude).
 
