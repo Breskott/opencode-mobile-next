@@ -35,6 +35,7 @@ import 'team_home_screen.dart';
 import 'projects/team_projects_screen.dart';
 import 'projects/team_execution_gate.dart';
 import 'team_intro_screen.dart';
+import 'team_migration.dart';
 import 'team_phone_setup_screen.dart';
 import 'team_settings_screen.dart';
 
@@ -215,16 +216,19 @@ class TeamPage extends StatelessWidget {
           );
         }
         // A new controller (a changed address) is a new team: fresh state.
-        return TeamHomeScreen(
-          key: ObjectKey(team),
-          controller: team,
+        return TeamMigrationGate(
           connection: connection,
-          probe: probe,
-          teamRuntime: runtime,
-          now: now,
-          onOpenRun: onOpenRun,
-          // This page follows the connection by itself.
-          onTeamChanged: () {},
+          child: TeamHomeScreen(
+            key: ObjectKey(team),
+            controller: team,
+            connection: connection,
+            probe: probe,
+            teamRuntime: runtime,
+            now: now,
+            onOpenRun: onOpenRun,
+            // This page follows the connection by itself.
+            onTeamChanged: () {},
+          ),
         );
       }
       if (profile != null && profile.orchestration != null) {

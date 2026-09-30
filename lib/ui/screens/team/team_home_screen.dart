@@ -98,6 +98,7 @@ import '../../../state/team_planning.dart'
     show TeamPlanningRequest, TeamPlanningStatus;
 import 'team_board_screen.dart';
 import 'team_agents_screen.dart';
+import 'team_migration.dart';
 import 'team_needs_you.dart';
 import 'team_settings_screen.dart';
 import 'team_states.dart';
@@ -397,6 +398,15 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
                 enabled: !_refreshing,
                 onSelected: () => unawaited(_refresh()),
               ),
+              if (widget.connection != null &&
+                  teamMigrationOffered(widget.connection!))
+                KitMenuItem(
+                  key: const ValueKey('team-home-migration'),
+                  label: l10n.teamMigrationMenu,
+                  icon: AppIconography.swap,
+                  onSelected: () =>
+                      unawaited(openTeamMigration(context, widget.connection!)),
+                ),
             ],
             menuKey: const ValueKey('team-home-more'),
           ),
