@@ -90,6 +90,7 @@ impl Store {
             .as_array_mut()
             .ok_or(StoreError("storageCorrupt"))?
         {
+            project["mergeQueue"] = checked_merge_queue(project, &jobs);
             let planner = jobs
                 .iter()
                 .rev()
@@ -580,6 +581,7 @@ impl Store {
                         return Err(StoreError("invalidTaskPatch"));
                     }
                     task[key] = value.clone();
+                    j[key] = value.clone();
                 }
             }
             task["status"] = json!(task_status(stage));
@@ -795,6 +797,93 @@ fn load_jobs(conn: &Connection) -> Result<Vec<Value>, StoreError> {
         out.push(decode(&row?)?);
     }
     Ok(out)
+}
+fn checked_merge_queue(project: &Value, jobs: &[Value]) -> Value {
+    let Some(tasks) = project["tasks"].as_array() else {
+        return json!([]);
+    };
+    json!(jobs
+        .iter()
+        .filter(|job| job["projectId"] == project["id"] && job["kind"] == "task" && matches!(job["stage"].as_str(), Some("completed" | "merged")))
+        .filter_map(|job| {
+            let task = tasks.iter().find(|task| task["id"] == job["taskId"])?;
+            let evidence = checked_merge_evidence(project, job, task);
+            Some(json!({"id":format!("merge-{}",job["id"].as_str().unwrap_or("")),"taskId":task["id"],"repoId":task["repoId"],"status":if evidence.is_ok() {"merged"} else {"blocked"},"reason":evidence.err().unwrap_or(""),"checksPassed":evidence.is_ok()}))
+        })
+        .collect::<Vec<_>>())
+}
+fn checked_merge_evidence(project: &Value, job: &Value, task: &Value) -> Result<(), &'static str> {
+    if task["status"] != "merged" {
+        return Err("mergeNotCompleted");
+    }
+    if job["repoId"] != task["repoId"]
+        || job["serverId"] != task["serverId"]
+        || job["criteria"] != task["criteria"]
+        || !project["repos"].as_array().is_some_and(|repos| {
+            repos
+                .iter()
+                .any(|repo| repo["id"] == job["repoId"] && repo["serverId"] == job["serverId"])
+        })
+    {
+        return Err("mergeScopeInvalid");
+    }
+    // Older jobs kept checker snapshots only on the matched project task.
+    // Partial job evidence never falls back: both fields must be absent.
+    let source = if job.get("findings").is_none() && job.get("criterionResults").is_none() {
+        task
+    } else {
+        job
+    };
+    if crate::daemon::validate_check(source, &job["criteria"]) != Ok(true)
+        || crate::daemon::validate_check(task, &job["criteria"]) != Ok(true)
+    {
+        return Err("checksNotPassed");
+    }
+    let receipt = job
+        .get("repoReceipt")
+        .filter(|r| r.is_object())
+        .ok_or("mergeReceiptMissing")?;
+    if receipt["repoId"] != job["repoId"] || receipt["taskId"] != task["id"] {
+        return Err("mergeScopeInvalid");
+    }
+    for side in ["before", "after"] {
+        for key in ["devCommit", "mainCommit"] {
+            if receipt[side][key]
+                .as_str()
+                .is_none_or(|s| s.len() != 40 || !s.bytes().all(|b| b.is_ascii_hexdigit()))
+            {
+                return Err("mergeReceiptInvalid");
+            }
+        }
+    }
+    if job["taskCommit"]
+        .as_str()
+        .is_none_or(|s| s.len() != 40 || !s.bytes().all(|b| b.is_ascii_hexdigit()))
+        || receipt["taskCommit"] != job["taskCommit"]
+        || receipt["devCommit"] != receipt["after"]["devCommit"]
+        || receipt["mainCommit"] != receipt["after"]["mainCommit"]
+        || job["mergedCommit"] != receipt["after"]["devCommit"]
+        || receipt["before"]["mainCommit"] != receipt["after"]["mainCommit"]
+    {
+        return Err("mergeReceiptInvalid");
+    }
+    let bound = project["receipts"].as_array().is_some_and(|receipts| {
+        receipts.iter().any(|r| {
+            r["id"] == job["id"]
+                && r["kind"] == "merge"
+                && r["actor"] == "engine"
+                && r["repoId"] == job["repoId"]
+                && (r.get("taskId").is_none() || r["taskId"] == job["taskId"])
+                && r["beforeRefs"] == receipt["before"]
+                && r["afterRefs"] == receipt["after"]
+                && r["before"] == receipt["before"]["devCommit"]
+                && r["after"] == receipt["after"]["devCommit"]
+        })
+    });
+    if !bound {
+        return Err("mergeReceiptUnbound");
+    }
+    Ok(())
 }
 fn persist(conn: &Connection, w: &Value, jobs: &[Value]) -> Result<(), StoreError> {
     conn.execute("UPDATE workspace SET data=?1 WHERE id=1", [w.to_string()])?;
@@ -1807,6 +1896,6 @@ fn apply_repo_receipt(
     } else {
         "devCommit"
     };
-    p["receipts"].as_array_mut().ok_or(StoreError("storageCorrupt"))?.push(json!({"id":binding["id"],"kind":kind,"repoId":repo_id,"before":receipt["before"][ref_key],"after":receipt["after"][ref_key],"at":now(),"actor":"engine","beforeRefs":receipt["before"],"afterRefs":receipt["after"]}));
+    p["receipts"].as_array_mut().ok_or(StoreError("storageCorrupt"))?.push(json!({"id":binding["id"],"kind":kind,"repoId":repo_id,"taskId":binding["taskId"].as_str().unwrap_or(""),"before":receipt["before"][ref_key],"after":receipt["after"][ref_key],"at":now(),"actor":"engine","beforeRefs":receipt["before"],"afterRefs":receipt["after"]}));
     Ok(())
 }
