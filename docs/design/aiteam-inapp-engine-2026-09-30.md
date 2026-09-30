@@ -345,3 +345,41 @@ Planner proposals now require a nonempty task title (`planTaskTitleRequired`). T
 Phase intake also rejects malformed types, missing titles and duplicate IDs with `planPhaseInvalid`; it strips model runtime fields and forces `accepted:false`. The planner receives the configured implementation-role catalog and a role enum. Job update failures preserve their static store reason.
 
 Structured-output intake accepts raw JSON or exactly one explicit JSON/untagged fenced block with surrounding prose. Extra fences or object/array delimiters outside the block remain `structuredOutputInvalid`; schema, criterion matching, findings severity and no-waiver checks are unchanged. No prose is interpreted as a verdict.
+
+## Run 4 additive planner and readiness contract (2026-10-01)
+
+An empty role `model` uses the authenticated OC1 server's default model: omit
+`model` from `prompt_async`, whose pinned schema requires only `parts`. An
+explicit selection remains `provider/model` and is validated before any clone,
+session or dispatch checkpoint. Local errors retain typed reasons; only a
+transport with an uncertain outcome becomes `promptUncertain`. Existing
+uncertain jobs are not resent automatically.
+
+Workspace reads now project each project's nullable `planningState` as
+`{jobId, stage, reason, updatedAt}` from the durable planner job. `timeline`
+contains bounded durable stage/reason events, with `timelineTruncated` when
+older events were omitted. Legacy interrupted planners with no timeline get a
+stable read-only checkpoint row. Consumers should show the planner stage and
+reason rather than the generic dependencies label while planning is pending.
+`TeamServer.reason` is an additive string. The phone server's `online`,
+`chatWaiting` and reason are derived live without changing the command revision.
+
+Health adds `readinessReason`: `protocolUnverified`, `transport_unavailable`,
+`authentication_failed`, or the static protocol verification code identify the
+unavailable protocol prerequisite. Server reasons additionally expose
+`chatBusy` and `chatStatusUnknown` for admission waits.
+A proven boundary's positive `boundary_attested` is not a readiness failure;
+Dart's legacy failure getter returns the protocol reason instead. Failed OC1
+verification retries after 2 seconds; healthy revalidation stays at 30 seconds.
+Before native snapshots OC1 credentials, production start writes the app-owned
+phone profile password through the existing atomic password writer. Missing or
+failed preparation returns `server_auth_unavailable` or
+`server_credentials_write_failed`.
+
+The authoritative managed-phone chat observation refreshes every 5 seconds,
+including idle/unknown states and pending session-page loads. Reads time out
+at 4 seconds; an observation older than 15 seconds is unknown. New busy/retry
+IDs block admission even without session metadata. Generation, directory,
+workspace and later-observation fences reject stale reads. No heartbeat or
+reconnect by itself establishes idle, and another client on another device
+remains the previously documented residual observation gap.

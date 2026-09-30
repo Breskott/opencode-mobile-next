@@ -168,6 +168,8 @@ void main() {
         BuiltinLinux(channel: channel),
       );
       final c = controller(native, []);
+      store.profiles.firstWhere((p) => p.id == 'phone').password =
+          'fixture-server-password';
       try {
         for (final code in [
           'restart_required',
@@ -178,6 +180,9 @@ void main() {
           TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
               .setMockMethodCallHandler(channel, (call) async {
                 calls.add(call);
+                if (call.method == 'run') {
+                  return {'exitCode': 0, 'output': ''};
+                }
                 if (call.method == 'stopPhoneEngine') {
                   return {'profileId': 'phone', 'running': false};
                 }
@@ -212,6 +217,54 @@ void main() {
           store.profiles.firstWhere((p) => p.id == 'phone').teamEngineAuth,
           isEmpty,
         );
+      } finally {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null);
+        await c.close();
+      }
+    },
+  );
+
+  test(
+    'native snapshots the app-owned server password after preparation',
+    () async {
+      const channel = MethodChannel('test.phone_engine_auth_preparation');
+      final calls = <String>[];
+      final profile = store.profiles.firstWhere((p) => p.id == 'phone');
+      profile.password = 'fixture-current-server-password';
+      final native = BuiltinPhoneProjectEngineBridge(
+        BuiltinLinux(channel: channel),
+      );
+      final c = controller(native, []);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            calls.add(call.method);
+            if (call.method == 'stopPhoneEngine') return {'running': false};
+            if (call.method == 'run') {
+              expect(
+                (call.arguments as Map)['script'],
+                BuiltinLinux.writePasswordScript(profile.password),
+              );
+              return {'exitCode': 0, 'output': ''};
+            }
+            if (call.method == 'startPhoneEngine') {
+              throw PlatformException(code: 'boundary_unsupported');
+            }
+            throw StateError('Unexpected native operation');
+          });
+      try {
+        await expectLater(
+          c.start('phone'),
+          throwsA(fake.safeError('boundary_unsupported')),
+        );
+        expect(calls, ['stopPhoneEngine', 'run', 'startPhoneEngine']);
+        calls.clear();
+        profile.password = '';
+        await expectLater(
+          c.start('phone'),
+          throwsA(fake.safeError('server_auth_unavailable')),
+        );
+        expect(calls, ['stopPhoneEngine']);
       } finally {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(channel, null);

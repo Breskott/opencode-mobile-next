@@ -297,16 +297,69 @@ async fn health(State(e): State<Shared>) -> Json<Value> {
         "capabilities":{"execution":execution_enabled(&e),"boundary":verified_tier.is_some(),"boundaryTier":tier,
             "oc1Verified":protocol["pinnedVersion"] == true && protocol["openapiVerified"] == true,"oc2":false},
         "commandActions":command_actions(&e),"boundaryReason":if verified_tier.is_some() {"boundary_attested"} else if e.boundary.is_some() {"attestation_rejected"} else {e.config.boundary.reason.as_str()},
-        "restartRequired":e.config.boundary.restart_required,
+        "readinessReason":readiness_reason(&e),"restartRequired":e.config.boundary.restart_required,
         "admission":admission,"chatAuthority":"phoneAppAndKnownDirectories","globalAdmissionAuthority":false,
         "boundaryGeneration":e.boundary.as_ref().map(|b|b.pins.generation.as_str()),"eventWindow":e.store.lock().ok().and_then(|store|store.event_window().ok()),"chargingTelemetry":false,"protocol":protocol}),
     )
 }
+fn protocol_driver_ready(protocol: &Value) -> bool {
+    protocol["pinnedVersion"] == true
+        && protocol["openapiVerified"] == true
+        && protocol["capabilities"]["executionDriver"] == true
+}
+fn protocol_driver_reason(protocol: &Value) -> &str {
+    if protocol_driver_ready(protocol) {
+        ""
+    } else {
+        protocol["error"].as_str().unwrap_or("protocolUnverified")
+    }
+}
+fn readiness_reason(e: &Engine) -> String {
+    if boundary_tier(e).is_none() {
+        return "boundaryUnavailable".into();
+    }
+    e.protocol
+        .lock()
+        .map(|p| protocol_driver_reason(&p).to_owned())
+        .unwrap_or_else(|_| "protocolUnverified".into())
+}
+fn protocol_retry_delay(protocol: &Value) -> Duration {
+    Duration::from_secs(if protocol_driver_ready(protocol) {
+        30
+    } else {
+        2
+    })
+}
 async fn workspace(State(e): State<Shared>) -> Result<Json<Value>, ApiError> {
-    let s = e.store.lock().map_err(|_| internal("storeUnavailable"))?;
-    Ok(Json(
-        s.workspace().map_err(|_| internal("storeUnavailable"))?,
-    ))
+    let mut workspace = e
+        .store
+        .lock()
+        .map_err(|_| internal("storeUnavailable"))?
+        .workspace()
+        .map_err(|_| internal("storeUnavailable"))?;
+    let protocol = e.protocol.lock().map(|p| p.clone()).unwrap_or(json!({}));
+    let ledger = e.chat.read().await;
+    let admission = ledger.admission(
+        crate::admission::now_ms(),
+        crate::admission::app_alive(&e),
+        &team_sessions(&e),
+    );
+    if let Some(servers) = workspace["servers"].as_array_mut() {
+        for server in servers.iter_mut().filter(|s| s["id"] == "phone") {
+            server["online"] = json!(protocol_driver_ready(&protocol));
+            server["chatWaiting"] = json!(admission != crate::chat::ChatAdmission::Idle);
+            server["reason"] = json!(if !protocol_driver_ready(&protocol) {
+                protocol_driver_reason(&protocol)
+            } else {
+                match admission {
+                    crate::chat::ChatAdmission::Busy => "chatBusy",
+                    crate::chat::ChatAdmission::Idle => "",
+                    _ => "chatStatusUnknown",
+                }
+            });
+        }
+    }
+    Ok(Json(workspace))
 }
 #[derive(Deserialize)]
 struct EventQuery {
@@ -617,13 +670,12 @@ async fn reconcile(e: Shared) {
             }
         }
         if tokio::time::Instant::now() >= next_verify {
-            let protocol = e.server.verify().await.unwrap_or(
-                json!({"capabilities":{"execution":false},"blockers":["protocolUnverified"]}),
-            );
+            let protocol = e.server.verify().await.unwrap_or_else(|error| json!({"capabilities":{"executionDriver":false,"execution":false},"error":error.code(),"blockers":[error.code()]}));
+            let retry_delay = protocol_retry_delay(&protocol);
             if let Ok(mut value) = e.protocol.lock() {
                 *value = protocol;
             }
-            next_verify = tokio::time::Instant::now() + Duration::from_secs(30);
+            next_verify = tokio::time::Instant::now() + retry_delay;
         }
         crate::admission::reconcile_busy(&e).await;
         let jobs = e
@@ -641,12 +693,13 @@ async fn reconcile(e: Shared) {
                 continue;
             }
             if !execution_enabled(&e) {
-                if job["reason"] != "Protected execution is not verified" {
+                let reason = readiness_reason(&e);
+                if job["reason"] != reason {
                     if let Ok(s) = e.store.lock() {
                         let _ = s.update_job(
                             &id,
-                            "queued",
-                            &json!({"reason":"Protected execution is not verified"}),
+                            job["stage"].as_str().unwrap_or("queued"),
+                            &json!({"reason":reason}),
                         );
                     }
                 }
@@ -839,6 +892,10 @@ async fn admitted_prompt(
     checkpoint_role: &str,
     read_only: bool,
 ) -> Result<(), &'static str> {
+    crate::opencode::validate_model(model).map_err(|error| error.code())?;
+    if instructions.is_empty() || prompt.is_empty() {
+        return Err("invalid_role");
+    }
     loop {
         let ledger = e.chat.read().await;
         // Hold through actual HTTP dispatch, never while waiting for the person.
@@ -876,6 +933,9 @@ async fn admitted_prompt(
                             return Err("jobNotActive");
                         }
                         return Ok(());
+                    }
+                    Ok(Err(error)) if error.code() != "transport_uncertain" => {
+                        return Err(error.code())
                     }
                     _ => return Err("promptUncertain"),
                 }
@@ -972,6 +1032,19 @@ async fn run_job(e: Shared, job: Value) -> Result<(), &'static str> {
 }
 async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     let id = job["id"].as_str().ok_or("jobInvalid")?;
+    crate::opencode::validate_model(job["model"].as_str().ok_or("invalid_model")?)
+        .map_err(|error| error.code())?;
+    if job["instructions"].as_str().is_none_or(str::is_empty) {
+        return Err("invalid_role");
+    }
+    if job["kind"] != "planner" {
+        crate::opencode::validate_model(
+            job["checkerRole"]["model"]
+                .as_str()
+                .ok_or("checkerRoleMissing")?,
+        )
+        .map_err(|error| error.code())?;
+    }
     let task = job["taskId"]
         .as_str()
         .filter(|s| !s.is_empty())
@@ -1879,6 +1952,46 @@ mod tests {
         assert!(!execution_enabled(&e));
         assert!(!command_actions(&e).contains(&"createProject"));
         assert!(!command_actions(&e).contains(&"promote"));
+    }
+    #[test]
+    fn failed_protocol_probes_retry_before_the_setup_readiness_window() {
+        let failed =
+            json!({"error":"transport_unavailable","capabilities":{"executionDriver":false}});
+        assert_eq!(protocol_retry_delay(&failed), Duration::from_secs(2));
+        assert_eq!(protocol_driver_reason(&failed), "transport_unavailable");
+        let healthy = json!({"pinnedVersion":true,"openapiVerified":true,"capabilities":{"executionDriver":true}});
+        assert_eq!(protocol_retry_delay(&healthy), Duration::from_secs(30));
+        assert_eq!(protocol_driver_reason(&healthy), "");
+    }
+    #[tokio::test]
+    async fn workspace_reports_live_server_state_and_preserves_command_revision() {
+        let temp = tempfile::tempdir().unwrap();
+        let e = attested_fixture(temp.path(), "proot");
+        let before = e.store.lock().unwrap().workspace().unwrap();
+        let observed = workspace(State(e.clone())).await.unwrap().0;
+        assert_eq!(observed["servers"][0]["online"], true);
+        assert_eq!(e.store.lock().unwrap().workspace().unwrap(), before);
+        *e.protocol.lock().unwrap() =
+            json!({"error":"authentication_failed","capabilities":{"executionDriver":false}});
+        let observed = workspace(State(e.clone())).await.unwrap().0;
+        assert_eq!(observed["servers"][0]["online"], false);
+        assert_eq!(observed["servers"][0]["reason"], "authentication_failed");
+        assert_eq!(
+            health(State(e)).await.0["readinessReason"],
+            "authentication_failed"
+        );
+    }
+    #[tokio::test]
+    async fn invalid_model_is_local_before_any_worker_or_dispatch_checkpoint() {
+        let temp = tempfile::tempdir().unwrap();
+        let e = fixture(temp.path());
+        let job = json!({"id":"job-invalid-model","kind":"planner","model":"not-a-model-identity","instructions":"Plan only","repoId":"repo"});
+        assert_eq!(task_pipeline(&e, &job).await, Err("invalid_model"));
+        assert!(fs::read_dir(&e.config.worker_root)
+            .unwrap()
+            .next()
+            .is_none());
+        assert!(e.store.lock().unwrap().jobs().unwrap().is_empty());
     }
     #[tokio::test]
     async fn health_reports_only_live_signed_boundary_tier_at_both_locations() {

@@ -23,6 +23,24 @@ class BuiltinPhoneProjectEngineBridge implements PhoneProjectEngineBridge {
   BuiltinPhoneProjectEngineBridge([BuiltinLinux? builtin])
     : _builtin = builtin ?? BuiltinLinux();
   final BuiltinLinux _builtin;
+
+  /// Match the app-owned OC1 profile before native snapshots server auth.
+  /// The protected restart writes this same password; it must not strand the
+  /// already-started daemon with a stale rootfs copy.
+  Future<void> prepareServerAuthentication(ServerProfile profile) async {
+    if (!BuiltinLinux.managesServerUrl(profile.baseUrl) ||
+        profile.password.isEmpty) {
+      throw const PhoneEngineException('server_auth_unavailable');
+    }
+    final written = await _builtin.run(
+      BuiltinLinux.writePasswordScript(profile.password),
+      timeout: const Duration(seconds: 60),
+    );
+    if (!written.ok) {
+      throw const PhoneEngineException('server_credentials_write_failed');
+    }
+  }
+
   @override
   Future<void> start(
     String profileId, {
@@ -411,6 +429,10 @@ class PhoneProjectEngineController {
       await client.close();
     }
     try {
+      final native = bridge;
+      if (native is BuiltinPhoneProjectEngineBridge) {
+        await native.prepareServerAuthentication(_profile(profileId));
+      }
       await bridge.start(profileId, port: port, notice: notice);
     } on BuiltinLinuxException catch (error) {
       // Native emits static codes. Never retain its message/details or cause.
