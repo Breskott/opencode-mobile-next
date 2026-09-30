@@ -5,17 +5,6 @@ async fn main() {
     // Protect the auth token and OpenCode credential material from same-UID
     // process inspection. Agent children must separately be kernel-confined.
     #[cfg(any(target_os = "linux", target_os = "android"))]
-    {
-        let parent = unsafe { libc::getppid() };
-        if parent == 1
-            || unsafe { libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGTERM, 0, 0, 0) } != 0
-            || unsafe { libc::getppid() } != parent
-        {
-            eprintln!("engineParentUnavailable");
-            std::process::exit(1);
-        }
-    }
-    #[cfg(any(target_os = "linux", target_os = "android"))]
     if unsafe { libc::prctl(libc::PR_SET_DUMPABLE, 0, 0, 0, 0) } != 0 {
         eprintln!("engineInspectionProtectionUnavailable");
         std::process::exit(1);
@@ -48,6 +37,9 @@ async fn main() {
         eprintln!("nativePinsInvalid");
         std::process::exit(64);
     };
+    // A Java channel thread may exit immediately after launch. The app-owned
+    // stdin pipe, unlike PR_SET_PDEATHSIG, follows the whole app lifetime.
+    oc_phone_engine::startup::watch_parent_pipe();
     if let Err(code) = daemon::serve(config, pins).await {
         eprintln!("{code}");
         std::process::exit(1);

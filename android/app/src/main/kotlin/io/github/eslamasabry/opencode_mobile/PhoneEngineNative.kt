@@ -12,11 +12,16 @@ import java.net.URL
 import java.security.SecureRandom
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.FutureTask
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+import java.util.UUID
 
 /** Native executable and credentials stay outside the proot filesystem. */
 internal class PhoneEngineNative(private val context: Context) {
     class Failure(val code: String) : Exception("The phone engine is unavailable.")
 
+    private val filesRoot: File get() = context.filesDir.canonicalFile
     private var activeProfile: String? = null
     private var activePort: Int? = null
     private var process: Process? = null
@@ -45,7 +50,7 @@ internal class PhoneEngineNative(private val context: Context) {
         validateProfile(profile)
         if (port !in 1024..65535 || port == 4097) throw Failure("invalid_port")
         if (process?.isAlive == true) {
-            if (activeProfile != profile || activePort != port) throw Failure("engine_in_use")
+            if (activeProfile != profile) throw Failure("engine_in_use")
             return process!!
         }
         // Interrupted deletion is completed before a new profile generation is
@@ -68,7 +73,7 @@ internal class PhoneEngineNative(private val context: Context) {
         writePrivate(tokenFile, freshToken)
         val token = readPrivate(tokenFile)
         if (!TOKEN.matches(token)) throw Failure("private_state_invalid")
-        val source = File(context.filesDir, "linux/ubuntu/root/.oc-builtin/server.password")
+        val source = File(filesRoot, "linux/ubuntu/root/.oc-builtin/server.password")
         val credentials = File(root, "oc1-credentials.json")
         // A missing server password is an unavailable execution prerequisite,
         // while the durable store can still run. Never keep an obsolete copy.
@@ -81,7 +86,7 @@ internal class PhoneEngineNative(private val context: Context) {
             throw Failure("private_state_unavailable")
         }
         val config = File(root, "native-config.json")
-        val workerRoot = File(context.filesDir, "linux/ubuntu/root/aiteam/work/$profile")
+        val workerRoot = safePath("linux/ubuntu/root/aiteam/work/$profile")
         val boundary = JSONObject().put("verified", false)
             .put("reason", if (proof != null) "boundary_attested" else fallbackReason)
             .put("restartRequired", serverRunning)
@@ -92,9 +97,9 @@ internal class PhoneEngineNative(private val context: Context) {
             .put("privateRoot", root.absolutePath).put("workerRoot", workerRoot.absolutePath)
             .put("guestWorkerRoot", "/root/aiteam/work/$profile")
             .put("sourceRoots", org.json.JSONArray().put(JSONObject()
-                .put("hostRoot", File(context.filesDir, "projects").absolutePath)
+                .put("hostRoot", safePath("projects").absolutePath)
                 .put("guestRoot", "/root/projects")))
-            .put("port", port).put("authTokenFile", tokenFile.absolutePath)
+            .put("port", 0).put("authTokenFile", tokenFile.absolutePath)
             .put("oc1CredentialFile", credentials.absolutePath)
             .put("oc1BaseUrl", "http://127.0.0.1:4097")
             .put("boundary", boundary)
@@ -109,13 +114,13 @@ internal class PhoneEngineNative(private val context: Context) {
                 .directory(root).apply {
                     environment().clear()
                     environment()["PATH"] = "/system/bin"
-                    redirectOutput(File("/dev/null"))
                     redirectError(File("/dev/null"))
                 }.start()
         } catch (_: Exception) { throw Failure("engine_start_failed") }
-        child.outputStream.close()
+        // Keep stdin open: EOF binds the daemon lifetime to the app process,
+        // rather than the short-lived MethodChannel launch thread.
         activeProfile = profile
-        activePort = port
+        activePort = null
         process = child
         restartRequired = serverRunning
         verifiedBoundary = false
@@ -123,7 +128,9 @@ internal class PhoneEngineNative(private val context: Context) {
         boundaryGeneration = proof?.generation
         boundaryReason = if (proof != null) "attestation_pending" else fallbackReason
         try {
-            val health = awaitHealth(child, port, token, profile)
+            val actualPort = awaitReady(child, token, profile)
+            activePort = actualPort
+            val health = awaitHealth(child, actualPort, token, profile)
             verifiedBoundary = proof != null && health.optJSONObject("capabilities")?.optBoolean("boundary") == true
             executionAvailable = verifiedBoundary && health.optJSONObject("capabilities")?.optBoolean("execution") == true
             if (proof != null) boundaryReason = if (verifiedBoundary) "boundary_attested" else "attestation_rejected"
@@ -138,6 +145,7 @@ internal class PhoneEngineNative(private val context: Context) {
         if (status(profile)["running"] != true) throw Failure("engine_not_running")
         val token = readPrivate(File(privateRoot(profile, false), "auth.token"))
         if (!TOKEN.matches(token)) throw Failure("private_state_invalid")
+        if (process?.isAlive != true || activePort == null) throw Failure("engine_not_running")
         return mapOf("baseUrl" to "http://127.0.0.1:$activePort", "bearerToken" to token)
     }
 
@@ -145,10 +153,16 @@ internal class PhoneEngineNative(private val context: Context) {
         validateProfile(profile)
         if (activeProfile != profile) return
         val child = process
+        try { child?.outputStream?.close() } catch (_: Exception) { }
         if (child?.isAlive == true) {
             child.destroy()
             if (!child.waitFor(3, TimeUnit.SECONDS)) child.destroyForcibly()
             if (!child.waitFor(3, TimeUnit.SECONDS)) throw Failure("engine_stop_failed")
+        }
+        try { child?.inputStream?.close() } catch (_: Exception) { }
+        val credentials = File(privateRoot(profile, false), "oc1-credentials.json")
+        try { Os.remove(credentials.absolutePath) } catch (error: android.system.ErrnoException) {
+            if (error.errno != OsConstants.ENOENT) throw Failure("private_state_unavailable")
         }
         process = null
         activeProfile = null
@@ -176,11 +190,11 @@ internal class PhoneEngineNative(private val context: Context) {
         stop(profile)
         val marker = deletionMarker(profile)
         writePrivate(marker, "deleting-v1")
-        val worker = File(context.filesDir, "linux/ubuntu/root/aiteam/work/$profile")
+        val worker = File(filesRoot, "linux/ubuntu/root/aiteam/work/$profile")
         if (worker.exists()) {
             // Do not traverse a substituted parent directory out of the rootfs.
             var parent = worker.parentFile
-            while (parent != null && parent != context.filesDir) {
+            while (parent != null && parent != filesRoot) {
                 if (OsConstants.S_ISLNK(Os.lstat(parent.absolutePath).st_mode))
                     throw Failure("private_state_invalid")
                 parent = parent.parentFile
@@ -190,11 +204,50 @@ internal class PhoneEngineNative(private val context: Context) {
         val root = privateRoot(profile, false)
         if (root.exists()) eraseNoLinks(root)
         if (!marker.delete()) throw Failure("engine_delete_failed")
-        syncDirectory(context.filesDir)
+        syncDirectory(filesRoot)
     }
 
     private fun deletionMarker(profile: String): File =
-        File(context.filesDir, "oc.teamEngineDeletion.$profile")
+        File(filesRoot, "oc.teamEngineDeletion.$profile")
+
+    /** Only the private child stdout pipe can select the authenticated TCP port. */
+    private fun awaitReady(child: Process, token: String, profile: String): Int {
+        val task = FutureTask<Int> {
+            val output = java.io.ByteArrayOutputStream()
+            while (output.size() <= 1024) {
+                val byte = child.inputStream.read()
+                if (byte < 0) throw Failure("engine_start_failed")
+                if (byte == 10) break
+                output.write(byte)
+            }
+            if (output.size() > 1024) throw Failure("engine_ready_invalid")
+            verifiedReadyPort(output.toString("UTF-8"), token, profile)
+        }
+        Thread(task, "phone-engine-ready").apply { isDaemon = true; start() }
+        try {
+            val port = task.get(10, TimeUnit.SECONDS)
+            if (!child.isAlive) throw Failure("engine_start_failed")
+            return port
+        } catch (_: Exception) {
+            task.cancel(true)
+            throw Failure("engine_ready_invalid")
+        }
+    }
+
+    /** Resolve the system-owned app-data ancestor, never an agent-owned child. */
+    private fun safePath(relative: String): File {
+        var path = filesRoot
+        for (component in relative.split('/')) {
+            if (component.isEmpty() || component == "." || component == "..") throw Failure("private_state_invalid")
+            path = File(path, component)
+            try {
+                if (OsConstants.S_ISLNK(Os.lstat(path.absolutePath).st_mode)) throw Failure("private_state_invalid")
+            } catch (error: android.system.ErrnoException) {
+                if (error.errno != OsConstants.ENOENT) throw Failure("private_state_unavailable")
+            }
+        }
+        return path
+    }
 
     private fun awaitHealth(child: Process, port: Int, token: String, profile: String): JSONObject {
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
@@ -212,6 +265,7 @@ internal class PhoneEngineNative(private val context: Context) {
                     val health = JSONObject(String(bytes, Charsets.UTF_8))
                     if (health.optInt("schemaVersion") != 1 ||
                         health.optString("profileId") != profile) throw Failure("engine_health_invalid")
+                    if (!child.isAlive) throw Failure("engine_start_failed")
                     return health
                 }
             } catch (failure: Failure) { throw failure
@@ -224,12 +278,12 @@ internal class PhoneEngineNative(private val context: Context) {
 
     private fun privateRoot(profile: String, create: Boolean): File {
         validateProfile(profile)
-        val root = File(context.filesDir, "oc.teamEngine.$profile")
+        val root = File(filesRoot, "oc.teamEngine.$profile")
         if (create && !root.exists() && !root.mkdir()) throw Failure("private_state_unavailable")
         if (root.exists()) {
             val stat = Os.lstat(root.absolutePath)
             if (!OsConstants.S_ISDIR(stat.st_mode) || root.canonicalFile.parentFile !=
-                context.filesDir.canonicalFile) throw Failure("private_state_invalid")
+                filesRoot) throw Failure("private_state_invalid")
             Os.chmod(root.absolutePath, 448) // 0700
         }
         return root
@@ -237,7 +291,7 @@ internal class PhoneEngineNative(private val context: Context) {
 
     private fun regularNoLinks(file: File): Boolean = try {
         var cursor: File? = file
-        while (cursor != null && cursor != context.filesDir.parentFile) {
+        while (cursor != null && cursor != filesRoot.parentFile) {
             if (OsConstants.S_ISLNK(Os.lstat(cursor.absolutePath).st_mode)) return false
             cursor = cursor.parentFile
         }
@@ -282,8 +336,14 @@ internal class PhoneEngineNative(private val context: Context) {
     }
 
     private fun eraseNoLinks(file: File) {
-        val stat = Os.lstat(file.absolutePath)
+        val stat = try { Os.lstat(file.absolutePath) } catch (error: android.system.ErrnoException) {
+            if (error.errno == OsConstants.ENOENT) return
+            throw Failure("private_state_unavailable")
+        }
         if (OsConstants.S_ISDIR(stat.st_mode)) {
+            val directory = Os.open(file.absolutePath, OsConstants.O_RDONLY or
+                OsConstants.O_DIRECTORY or OsConstants.O_NOFOLLOW or OsConstants.O_CLOEXEC, 0)
+            try { Os.fchmod(directory, 448) } finally { Os.close(directory) } // 0700
             for (child in file.listFiles() ?: throw Failure("private_state_unavailable")) eraseNoLinks(child)
         }
         if (!file.delete()) throw Failure("private_state_unavailable")
@@ -305,6 +365,30 @@ internal class PhoneEngineNative(private val context: Context) {
     }
 
     companion object {
+        internal fun verifiedReadyPort(line: String, token: String, profile: String): Int {
+            try {
+                if (line.toByteArray(Charsets.UTF_8).size > 1024 || !TOKEN.matches(token)) throw Failure("engine_ready_invalid")
+                val ready = JSONObject(line)
+                val nonce = ready.getString("nonce")
+                val port = ready.getInt("port")
+                val signature = ready.getString("mac")
+                if (ready.length() != 5 || ready.getInt("schemaVersion") != 1 ||
+                    ready.getString("profileId") != profile || port !in 1024..65535 || port == 4097 ||
+                    nonce.length != 36 || UUID.fromString(nonce).toString() != nonce || !TOKEN.matches(signature)) {
+                    throw Failure("engine_ready_invalid")
+                }
+                val mac = Mac.getInstance("HmacSHA256")
+                mac.init(SecretKeySpec(token.toByteArray(Charsets.UTF_8), "HmacSHA256"))
+                val message = "oc-phone-engine-ready-v1\n$profile\n$port\n$nonce"
+                val expected = mac.doFinal(message.toByteArray(Charsets.UTF_8))
+                    .joinToString("") { "%02x".format(it.toInt() and 255) }
+                if (!MessageDigest.isEqual(expected.toByteArray(Charsets.US_ASCII), signature.toByteArray(Charsets.US_ASCII))) {
+                    throw Failure("engine_ready_invalid")
+                }
+                return port
+            } catch (_: Exception) { throw Failure("engine_ready_invalid") }
+        }
+
         fun verifyBundle(context: Context, vararg names: String) {
             try {
                 if (names.isEmpty() || names.any { it !in BUNDLE_NAMES } || !android.os.Process.is64Bit()) {
