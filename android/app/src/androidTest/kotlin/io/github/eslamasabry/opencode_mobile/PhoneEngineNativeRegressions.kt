@@ -22,6 +22,9 @@ internal object PhoneEngineNativeRegressions {
     fun run(context: Context) {
         check(context.packageName == "io.github.eslamasabry.opencode_mobile.preview")
         refusesUnauthenticatedChildBeforeHttp(context)
+        propagatesOnlyStaticPrivateFailureFrames(context)
+        requiresGenuineServerPassword(context)
+        acceptsOnlyAuthenticatedHealthTiers()
         ignoresSquatterAndSurvivesLauncher(context)
         repeatsNativeProofFactoryWithoutReusingDaemon(context)
         trustsOnlyRegisteredPdfProcess(context)
@@ -90,6 +93,61 @@ internal object PhoneEngineNativeRegressions {
                 squatter.accept().use { throw IllegalStateException("HTTP opened before pipe authentication") }
             } catch (_: SocketTimeoutException) { }
         }
+    }
+
+    private fun propagatesOnlyStaticPrivateFailureFrames(context: Context) {
+        val native = PhoneEngineNative(context)
+        val token = "a".repeat(64)
+        val profile = "qa_frame"
+        for (code in listOf("server_auth_unavailable", "repositoryUnavailable", "symlinkRefused")) {
+            val frame = JSONObject().put("schemaVersion", 1).put("startupError", code).toString() + "\n"
+            var reported: String? = null
+            try { native.authenticatedStartup(PipeChild(frame), token, profile) }
+            catch (failure: PhoneEngineNative.Failure) { reported = failure.code }
+            check(reported == code)
+        }
+        for (frame in listOf(
+            "{\"schemaVersion\":1,\"startupError\":\"raw-provider-secret\"}\n",
+            "{\"schemaVersion\":1,\"startupError\":\"configInvalid\",\"secret\":\"raw\"}\n",
+        )) {
+            var refused = false
+            try { native.authenticatedStartup(PipeChild(frame), token, profile) }
+            catch (failure: PhoneEngineNative.Failure) { refused = failure.code == "engine_ready_invalid" }
+            check(refused)
+        }
+    }
+
+    private fun requiresGenuineServerPassword(context: Context) {
+        val fixture = File(context.filesDir.canonicalFile, ".qa-password-${UUID.randomUUID()}")
+        val native = PhoneEngineNative(context)
+        fun refused() {
+            var code: String? = null
+            try { native.requiredServerPassword(fixture) }
+            catch (failure: PhoneEngineNative.Failure) { code = failure.code }
+            check(code == "server_auth_unavailable")
+        }
+        try {
+            refused() // A first start must not invent credentials.
+            fixture.writeText("")
+            refused()
+            fixture.writeText("test-only-existing-server-password")
+            check(native.requiredServerPassword(fixture) == "test-only-existing-server-password")
+            fixture.writeText("a".repeat(4097))
+            refused()
+        } finally { fixture.delete() }
+    }
+
+    private fun acceptsOnlyAuthenticatedHealthTiers() {
+        fun health(tier: String, capabilityTier: String = tier, boundary: Boolean = true) =
+            JSONObject().put("boundaryTier", tier).put("capabilities", JSONObject()
+                .put("boundary", boundary).put("boundaryTier", capabilityTier))
+        check(PhoneEngineNative.healthBoundaryTier(health("landlock"), true) == "landlock")
+        check(PhoneEngineNative.healthBoundaryTier(health("proot"), true) == "proot")
+        check(PhoneEngineNative.healthBoundaryTier(health("proot"), false) == "none")
+        check(PhoneEngineNative.healthBoundaryTier(health("proot", "landlock"), true) == "none")
+        check(PhoneEngineNative.healthBoundaryTier(health("proot", boundary = false), true) == "none")
+        check(PhoneEngineNative.healthBoundaryTier(health("unknown"), true) == "none")
+        check(PhoneEngineNative.healthBoundaryTier(JSONObject(), true) == "none")
     }
 
     private fun ignoresSquatterAndSurvivesLauncher(context: Context) {

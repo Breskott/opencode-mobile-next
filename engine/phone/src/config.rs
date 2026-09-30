@@ -113,7 +113,13 @@ impl Config {
             return Err("boundaryInvalid");
         }
         for file in [&self.auth_token_file, &self.oc1_credential_file] {
-            let canonical = fs::canonicalize(file).map_err(|_| "credentialsUnavailable")?;
+            let canonical = fs::canonicalize(file).map_err(|_| {
+                if file == &self.oc1_credential_file {
+                    "server_auth_unavailable"
+                } else {
+                    "credentialsUnavailable"
+                }
+            })?;
             if !canonical.starts_with(&private) {
                 return Err("boundaryInvalid");
             }

@@ -63,6 +63,9 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            // Release instrumentation shares the target's Kotlin/native ABI.
+            // R8 prototype rewrites otherwise break test-APK calls into it.
+            if (ocPreview) proguardFiles("phone-engine-instrumentation.pro")
         }
     }
 }
@@ -104,9 +107,13 @@ androidComponents.onVariants(androidComponents.selector().withBuildType("release
         description = "Verify packaged AI Team executable hashes against the runtime manifest."
         inputs.file(checker)
         inputs.file(manifest)
+        inputs.dir(rootProject.file("../engine/phone/src"))
+        inputs.file(rootProject.file("../engine/phone/Cargo.toml"))
+        inputs.file(rootProject.file("../engine/phone/Cargo.lock"))
         inputs.dir(packagedApks)
         commandLine(
             listOf("python3", checker.absolutePath, "--manifest", manifest.absolutePath,
+                "--source-root", rootProject.file("..").absolutePath,
                 "--apk-dir", packagedApks.get().asFile.absolutePath) +
                 abiFilters.flatMap { listOf("--abi", it) }
         )

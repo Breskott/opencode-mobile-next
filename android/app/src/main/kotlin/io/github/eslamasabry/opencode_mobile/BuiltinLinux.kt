@@ -64,6 +64,10 @@ class BuiltinLinux(private val context: Context) {
     private val phoneEngine = PhoneEngineNative(context)
     private val protectionMarker = File(context.filesDir, "oc.teamEngine.protection-required")
     @Volatile private var protectedProot = markerPresent()
+    @Volatile private var protectedTier: String? = null
+    private val prootMaskedPids = mutableSetOf<Int>()
+    private var latestBoundaryControls = emptyMap<String, Any?>()
+    internal fun phoneBoundaryControls(): Map<String, Any?> = latestBoundaryControls.toMap()
     private val processConfinement = java.util.IdentityHashMap<Process, Boolean>()
 
     // A corrupt/symlink marker still requires protection. Never fall back to
@@ -74,6 +78,21 @@ class BuiltinLinux(private val context: Context) {
     }
 
     val prootIsConfined: Boolean get() = protectedProot || markerPresent()
+
+    private fun protectionTier(): String {
+        protectedTier?.let { return it }
+        if (!markerPresent()) return "none"
+        // Unknown/corrupt old markers continue to require the stronger launcher.
+        return try {
+            val fd = Os.open(protectionMarker.absolutePath, OsConstants.O_RDONLY or OsConstants.O_NOFOLLOW, 0)
+            val bytes = ByteArray(32)
+            val text = java.io.FileInputStream(fd).use { input ->
+                val n = input.read(bytes)
+                if (n > 0) String(bytes, 0, n, Charsets.US_ASCII) else ""
+            }
+            if (text == "required-proot-v1") "proot" else "landlock"
+        } catch (_: Exception) { "landlock" }
+    }
 
     private fun hasUnconfinedChildren(): Boolean {
         if (processes.any { it.isAlive && processConfinement[it] != true }) return true
@@ -217,6 +236,7 @@ class BuiltinLinux(private val context: Context) {
         return ProcessBuilder(prootCommand(listOf("/bin/sh", "-c", script)))
             .redirectErrorStream(true)
             .apply {
+                environment().clear()
                 environment().putAll(prootEnvironment())
                 if (log != null) {
                     log.parentFile?.mkdirs()
@@ -252,7 +272,15 @@ class BuiltinLinux(private val context: Context) {
             "--bind=/sys",
             "--bind=${File(rootfs, "tmp").absolutePath}:/dev/shm",
             "--bind=${projectStorage.projects.absolutePath}:/root/projects",
-        ) + fakeProcBinds + listOf(
+        ) + fakeProcBinds + (if (protectionTier() == "proot") {
+            // PRoot exposes host proc by default. Hide native app/daemon entries
+            // rather than depending on Linux cmdline permissions alone.
+            val mask = File(home.canonicalFile, "proc/phone-engine-hidden").apply { mkdirs() }
+            check(mask.isDirectory && mask.canonicalFile == mask.absoluteFile && mask.listFiles()?.isEmpty() == true)
+            (prootMaskedPids + AndroidProcess.myPid()).sorted().flatMap {
+                listOf("--bind=${mask.absolutePath}:/proc/$it")
+            }
+        } else emptyList()) + listOf(
             "--cwd=/root",
             "/usr/bin/env", "-i",
             "HOME=/root",
@@ -261,12 +289,12 @@ class BuiltinLinux(private val context: Context) {
             "TERM=xterm-256color",
             "TMPDIR=/tmp",
         ) + program
-        return if (prootIsConfined) protectedCommand(command) else command
+        return if (prootIsConfined && protectionTier() != "proot") protectedCommand(command) else command
     }
 
     /** The executable must match argv[0], including for the native PTY bridge. */
     val prootLaunchPath: String get() =
-        if (prootIsConfined) "$nativeDir/libaiteam_sandbox.so" else prootPath
+        if (prootIsConfined && protectionTier() != "proot") "$nativeDir/libaiteam_sandbox.so" else prootPath
 
     private fun protectedCommand(command: List<String>): List<String> {
         PhoneEngineNative.verifyBundle(context, "libaiteam_sandbox.so")
@@ -283,6 +311,305 @@ class BuiltinLinux(private val context: Context) {
         return policy + listOf("--") + command
     }
 
+    /** The shipped helper isolates forbidden syscalls in a disposable child. */
+    private fun requirePhoneBoundaryKernel() {
+        PhoneEngineNative.verifyBundle(context, "libaiteam_sandbox.so")
+        val launcher = File(nativeDir, "libaiteam_sandbox.so")
+        if (!launcher.canExecute()) throw PhoneEngineNative.Failure("boundary_not_packaged")
+        val child = ProcessBuilder(launcher.absolutePath, "--check-kernel").apply {
+            environment().clear()
+            redirectOutput(File("/dev/null"))
+            redirectError(File("/dev/null"))
+        }.start()
+        child.outputStream.close()
+        if (!child.waitFor(3, TimeUnit.SECONDS)) {
+            stopTree(child)
+            throw PhoneEngineNative.Failure("boundary_unavailable")
+        }
+        when (child.exitValue()) {
+            0 -> Unit
+            78 -> throw PhoneEngineNative.Failure("boundary_unsupported")
+            else -> throw PhoneEngineNative.Failure("boundary_unavailable")
+        }
+    }
+
+    /** Diagnostic candidate only: path emulation never signs an authority receipt. */
+    @Synchronized
+    fun runProotViewBoundaryProbe(): Map<String, Any?> {
+        if (!installed || prootIsConfined || hasUnconfinedChildren())
+            throw PhoneEngineNative.Failure("restart_required")
+        projectStorage.prepare()
+        val id = java.util.UUID.randomUUID().toString()
+        val fixture = File(context.filesDir.canonicalFile, ".phone-engine-view-$id")
+        val worker = File(projectStorage.projects, ".phone-engine-view-$id")
+        check(fixture.mkdir() && worker.mkdir())
+        val sentinel = File(fixture, "sentinel").apply { writeText("isolated-private-control") }
+        Os.chmod(fixture.absolutePath, 448)
+        Os.chmod(sentinel.absolutePath, 384)
+        Os.symlink(sentinel.absolutePath, File(fixture, "link").absolutePath)
+        Os.symlink(fixture.absolutePath, File(worker, "private-alias").absolutePath)
+        val labels = listOf("positiveWrite", "positiveRead", "positiveGit", "positiveStat", "positiveReadlink", "positiveTracerIdentity",
+            "directOpenDenied", "directStatDenied", "directReadlinkDenied", "workerAliasDenied",
+            "procSelfRootDenied", "procParentRootDenied", "parentEnvironDenied", "parentCmdlineDenied",
+            "fdHygiene", "tracerEscapeDenied")
+        val controls = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+        val ready = java.util.concurrent.CountDownLatch(1)
+        val observedTracer = java.util.concurrent.atomic.AtomicInteger(0)
+        val root = fixture.absolutePath.replace("'", "'\"'\"'")
+        val parent = AndroidProcess.myPid()
+        val script = """
+            set -u
+            cd '/root/projects/${worker.name}' || exit 78
+            allow() { label=${'$'}1; shift; if "${'$'}@" >/dev/null 2>&1; then printf '%s=true\n' "${'$'}label"; else printf '%s=false\n' "${'$'}label"; fi; }
+            deny() { label=${'$'}1; shift; if "${'$'}@" >/dev/null 2>&1; then printf '%s=false\n' "${'$'}label"; else printf '%s=true\n' "${'$'}label"; fi; }
+            allow positiveWrite sh -c 'printf worker > positive'
+            allow positiveRead cat positive
+            allow positiveStat stat positive
+            ln -s positive readable-link
+            allow positiveReadlink readlink readable-link
+            allow positiveGit sh -c 'git init -q repo && git -C repo -c user.name=proof -c user.email=proof@invalid.example commit -qm proof --allow-empty && git -C repo update-ref refs/heads/worker-proof HEAD && git -C repo show-ref --verify --quiet refs/heads/worker-proof'
+            deny directOpenDenied cat '$root/sentinel'
+            deny directStatDenied stat '$root/sentinel'
+            deny directReadlinkDenied readlink '$root/link'
+            deny workerAliasDenied cat private-alias/sentinel
+            deny procSelfRootDenied cat '/proc/self/root$root/sentinel'
+            deny procParentRootDenied cat '/proc/$parent/root$root/sentinel'
+            deny parentEnvironDenied cat '/proc/$parent/environ'
+            deny parentCmdlineDenied cat '/proc/$parent/cmdline'
+            # No inherited descriptor may reveal the seeded private fixture.
+            if (for fd in /proc/self/fd/*; do readlink "${'$'}fd"; done) 2>/dev/null | grep -F '$root' >/dev/null; then
+                printf 'fdHygiene=false\n'
+            else
+                printf 'fdHygiene=true\n'
+            fi
+            # proot can have a launcher and a separate actual tracer. Target
+            # only the kernel-reported tracer, verified by the native parent.
+            while IFS=: read field value; do
+                if [ "${'$'}field" = TracerPid ]; then printf 'TRACE_PID=%s\n' "${'$'}value"; break; fi
+            done < /proc/${'$'}${'$'}/status
+            printf 'READY_ESCAPE\n'
+            read tracer_pid || exit 78
+            # Exact isolated tracer only. If detached, shell builtins now use
+            # real host paths. Never aim this probe at actual canonical data.
+            if kill -KILL "${'$'}tracer_pid" 2>/dev/null; then
+                # Let the owned parent reap the tracer; otherwise this write
+                # can race its last pathname rewrite and give a false denial.
+                n=0
+                while kill -0 "${'$'}tracer_pid" 2>/dev/null && [ "${'$'}n" -lt 100000 ]; do
+                    n=${'$'}((n + 1))
+                done
+                /system/bin/sh -c "printf escaped-control > '$root/sentinel'" 2>/dev/null || :
+                printf 'tracerEscapeDenied=false\n'
+            else
+                printf 'tracerEscapeDenied=true\n'
+            fi
+        """.trimIndent()
+        var child: Process? = null
+        var owned = emptyList<Int>()
+        var reader: Thread? = null
+        try {
+            child = ProcessBuilder(prootCommand(listOf("/bin/sh", "-c", script))).apply {
+                environment().clear()
+                environment().putAll(prootEnvironment())
+                redirectError(File("/dev/null"))
+            }.start()
+            val running = child
+            reader = Thread {
+                running.inputStream.bufferedReader().useLines { lines -> lines.take(64).forEach { line ->
+                    if (line == "READY_ESCAPE") ready.countDown()
+                    else if (line.startsWith("TRACE_PID="))
+                        observedTracer.set(line.substringAfter('=').trim().toIntOrNull() ?: 0)
+                    else line.split('=', limit = 2).takeIf { it.size == 2 && it[0] in labels &&
+                        it[1] in listOf("true", "false") }?.let { controls[it[0]] = it[1] == "true" }
+                } }
+            }.apply { isDaemon = true; start() }
+            if (ready.await(30, TimeUnit.SECONDS)) {
+                val pid = pidOf(running) ?: throw PhoneEngineNative.Failure("boundary_probe_unavailable")
+                owned = descendants(pid) + pid
+                val tracer = observedTracer.get().takeIf { it > 0 && it in owned }
+                    ?: throw PhoneEngineNative.Failure("boundary_probe_unavailable")
+                controls["positiveTracerIdentity"] = true
+                running.outputStream.write("$tracer\n".toByteArray(Charsets.US_ASCII))
+                running.outputStream.flush()
+            }
+            running.outputStream.close()
+            if (!running.waitFor(5, TimeUnit.SECONDS)) stopTree(running)
+            reader.join(3000)
+            val unchanged = sentinel.readText() == "isolated-private-control"
+            return labels.associateWith { controls[it] == true } + mapOf(
+                "fixtureUnchanged" to unchanged,
+                "complete" to (unchanged && labels.all { controls[it] == true }),
+                "enablesExecution" to false,
+                "boundaryReason" to "boundary_unsupported")
+        } finally {
+            // Detached tracees are still ours; stop only the exact recorded PIDs.
+            owned.forEach { signal(it, OsConstants.SIGKILL) }
+            child?.takeIf { it.isAlive }?.let { stopTree(it) }
+            try { child?.inputStream?.close() } catch (_: Exception) { }
+            reader?.join(1000)
+            fun erase(file: File) {
+                if (OsConstants.S_ISDIR(Os.lstat(file.absolutePath).st_mode))
+                    file.listFiles()?.forEach { erase(it) }
+                if (!file.delete()) throw PhoneEngineNative.Failure("proof_cleanup_failed")
+            }
+            erase(worker)
+            erase(fixture)
+        }
+    }
+
+    /** Isolated acceptance harness; it never grants execution authority. */
+    @Synchronized
+    fun runProotTierProof(canonicalRoot: File, daemonPid: Int? = null): Map<String, Any?> {
+        check(installed && canonicalRoot.canonicalFile == canonicalRoot && canonicalRoot.isDirectory)
+        val base = context.filesDir.canonicalFile
+        check(canonicalRoot.parentFile == base && canonicalRoot.name.startsWith("oc.teamEngine."))
+        val id = java.util.UUID.randomUUID().toString()
+        val fixture = File(base, ".phone-engine-view-$id")
+        val worker = File(projectStorage.projects, ".phone-engine-view-$id")
+        projectStorage.prepare()
+        check(fixture.mkdir() && worker.mkdir())
+        val sentinel = File(fixture, "sentinel").apply { writeText("private-proot-control") }
+        Os.chmod(fixture.absolutePath, 448)
+        Os.chmod(sentinel.absolutePath, 384)
+        Os.symlink(sentinel.absolutePath, File(fixture, "link").absolutePath)
+        Os.symlink(fixture.absolutePath, File(worker, "private-alias").absolutePath)
+        var subject: Process? = null
+        var child: Process? = null
+        var reader: Thread? = null
+        var maskedSubject: Int? = null
+        val controls = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+        val labels = listOf("positiveWorkerClone", "positiveOpen", "positiveStat", "positiveReadlink", "positiveLs",
+            "canonicalPathsDenied", "daemonProcDenied", "fdHygiene", "parentInspectionDenied",
+            "canonicalOpenDenied", "canonicalStatDenied", "canonicalReadlinkDenied", "canonicalListDenied",
+            "workerAliasOpenDenied", "workerAliasStatDenied", "workerAliasListDenied")
+        fun quote(s: String) = "'" + s.replace("'", "'\"'\"'") + "'"
+        try {
+            var fd: Int? = null
+            val pid = daemonPid ?: run {
+                PhoneEngineNative.verifyBundle(context, "libaiteam_engine.so")
+                val engine = File(nativeDir, "libaiteam_engine.so")
+                val started = ProcessBuilder(engine.absolutePath, "--proot-proof-subject", fixture.absolutePath).apply {
+                    environment().clear()
+                    redirectError(File("/dev/null"))
+                }.start()
+                subject = started
+                val ready = java.util.concurrent.FutureTask<String> {
+                    val bytes = java.io.ByteArrayOutputStream()
+                    while (bytes.size() < 128) {
+                        val b = started.inputStream.read()
+                        if (b < 0 || b == 10) break
+                        bytes.write(b)
+                    }
+                    bytes.toString("US-ASCII")
+                }
+                Thread(ready, "proot-proof-subject").apply { isDaemon = true; start() }
+                val frame = try { ready.get(5, TimeUnit.SECONDS) }
+                    catch (_: Exception) { ready.cancel(true); throw PhoneEngineNative.Failure("boundary_probe_unavailable") }
+                val match = Regex("READY_SUBJECT:([0-9]+):([0-9]+)").matchEntire(frame)
+                    ?: throw PhoneEngineNative.Failure("boundary_probe_unavailable")
+                fd = match.groupValues[2].toIntOrNull()?.takeIf { it >= 3 }
+                    ?: throw PhoneEngineNative.Failure("boundary_probe_unavailable")
+                match.groupValues[1].toIntOrNull()?.takeIf { it > 1 && started.isAlive }
+                    ?: throw PhoneEngineNative.Failure("boundary_probe_unavailable")
+            }
+            check(pid > 1)
+            prootMaskedPids.add(pid)
+            maskedSubject = pid
+            val parent = AndroidProcess.myPid()
+            val paths = listOf(fixture.absolutePath, sentinel.absolutePath, File(fixture, "link").absolutePath,
+                canonicalRoot.absolutePath)
+            val procPaths = listOf("/proc/$pid/root", "/proc/$pid/cwd", "/proc/$pid/fd") +
+                listOfNotNull(fd?.let { "/proc/$pid/fd/$it" })
+            val script = """
+                set -u
+                cd '/root/projects/${worker.name}' || exit 78
+                ok() { label=${'$'}1; shift; if "${'$'}@" >/dev/null 2>&1; then printf '%s=true\n' "${'$'}label"; else printf '%s=false\n' "${'$'}label"; fi; }
+                ok positiveWorkerClone sh -c 'git init -q source && git -C source -c user.name=proof -c user.email=proof@invalid.example commit -qm proof --allow-empty && git clone -q source clone && git -C clone rev-parse --verify HEAD >/dev/null'
+                printf worker > clone/positive
+                ln -s positive clone/readable-link
+                ok positiveOpen cat clone/positive
+                ok positiveStat stat clone/positive
+                ok positiveReadlink readlink clone/readable-link
+                ok positiveLs ls clone
+                denied=true
+                open_denied=true; stat_denied=true; readlink_denied=true; list_denied=true
+                for path in ${paths.joinToString(" ", transform = ::quote)}; do
+                    if cat "${'$'}path" >/dev/null 2>&1; then open_denied=false; fi
+                    if stat "${'$'}path" >/dev/null 2>&1; then stat_denied=false; fi
+                    if readlink "${'$'}path" >/dev/null 2>&1; then readlink_denied=false; fi
+                    if ls "${'$'}path" >/dev/null 2>&1; then list_denied=false; fi
+                done
+                printf 'canonicalOpenDenied=%s\ncanonicalStatDenied=%s\ncanonicalReadlinkDenied=%s\ncanonicalListDenied=%s\n' "${'$'}open_denied" "${'$'}stat_denied" "${'$'}readlink_denied" "${'$'}list_denied"
+                alias_open=true; alias_stat=true; alias_list=true
+                if cat private-alias/sentinel >/dev/null 2>&1; then alias_open=false; fi
+                if stat -L private-alias/sentinel >/dev/null 2>&1; then alias_stat=false; fi
+                if ls private-alias/sentinel >/dev/null 2>&1; then alias_list=false; fi
+                printf 'workerAliasOpenDenied=%s\nworkerAliasStatDenied=%s\nworkerAliasListDenied=%s\n' "${'$'}alias_open" "${'$'}alias_stat" "${'$'}alias_list"
+                for flag in "${'$'}open_denied" "${'$'}stat_denied" "${'$'}readlink_denied" "${'$'}list_denied" "${'$'}alias_open" "${'$'}alias_stat" "${'$'}alias_list"; do
+                    [ "${'$'}flag" = true ] || denied=false
+                done
+                printf 'canonicalPathsDenied=%s\n' "${'$'}denied"
+                denied=true
+                for path in ${procPaths.joinToString(" ", transform = ::quote)}; do
+                    for op in cat stat readlink ls; do
+                        if "${'$'}op" "${'$'}path" >/dev/null 2>&1; then denied=false; fi
+                    done
+                done
+                for path in '/proc/$pid/root${sentinel.absolutePath}' '/proc/$pid/cwd/sentinel' '/proc/self/root${sentinel.absolutePath}' '/proc/self/cwd${sentinel.absolutePath}'; do
+                    if cat "${'$'}path" >/dev/null 2>&1; then denied=false; fi
+                done
+                printf 'daemonProcDenied=%s\n' "${'$'}denied"
+                denied=true
+                for path in '/proc/$pid/environ' '/proc/$pid/cmdline' '/proc/$parent/environ' '/proc/$parent/cmdline'; do
+                    if cat "${'$'}path" >/dev/null 2>&1; then denied=false; fi
+                done
+                printf 'parentInspectionDenied=%s\n' "${'$'}denied"
+                denied=true
+                for f in /proc/self/fd/*; do
+                    target=${'$'}(readlink "${'$'}f" 2>/dev/null || :)
+                    case "${'$'}target" in *'oc.teamEngine.'*|*'.phone-engine-view-'*'/sentinel'*) denied=false;; esac
+                done
+                if env | grep -E 'OC_ENGINE_TOKEN|OC_PROMOTION|OC_BOUNDARY_PRIVATE_CANARY' >/dev/null; then denied=false; fi
+                printf 'fdHygiene=%s\n' "${'$'}denied"
+            """.trimIndent()
+            child = ProcessBuilder(prootCommand(listOf("/bin/sh", "-c", script))).apply {
+                environment().clear()
+                environment().putAll(prootEnvironment())
+                redirectError(File("/dev/null"))
+            }.start()
+            val running = child
+            running.outputStream.close()
+            reader = Thread {
+                running.inputStream.bufferedReader().useLines { lines -> lines.take(32).forEach { line ->
+                    line.split('=', limit = 2).takeIf { it.size == 2 && it[0] in labels &&
+                        it[1] in listOf("true", "false") }?.let { controls[it[0]] = it[1] == "true" }
+                } }
+            }.apply { isDaemon = true; start() }
+            val finished = running.waitFor(30, TimeUnit.SECONDS)
+            if (!finished) stopTree(running)
+            reader.join(2000)
+            val unchanged = sentinel.readText() == "private-proot-control"
+            val complete = finished && running.exitValue() == 0 && unchanged && labels.all { controls[it] == true }
+            val report = labels.associateWith { controls[it] == true } + mapOf("tier" to "proot",
+                "nativeAttacksDenied" to false, "prootGitCompatible" to (controls["positiveWorkerClone"] == true),
+                "fixtureUnchanged" to unchanged, "complete" to complete)
+            latestBoundaryControls = report
+            return report
+        } finally {
+            if (daemonPid == null) maskedSubject?.let { prootMaskedPids.remove(it) }
+            subject?.let { try { it.outputStream.close() } catch (_: Exception) { }; if (!it.waitFor(3, TimeUnit.SECONDS)) stopTree(it) }
+            child?.takeIf { it.isAlive }?.let { stopTree(it) }
+            try { child?.inputStream?.close() } catch (_: Exception) { }
+            reader?.join(1000)
+            fun erase(file: File) {
+                if (OsConstants.S_ISDIR(Os.lstat(file.absolutePath).st_mode)) file.listFiles()?.forEach { erase(it) }
+                if (!file.delete()) throw PhoneEngineNative.Failure("proof_cleanup_failed")
+            }
+            erase(worker)
+            erase(fixture)
+        }
+    }
+
     /** Isolated acceptance harness; it never grants execution authority. */
     @Synchronized
     fun runPhoneEngineBoundaryProbe(): Map<String, Any?> {
@@ -290,6 +617,7 @@ class BuiltinLinux(private val context: Context) {
         if (!installed || hasUnconfinedChildren()) {
             throw PhoneEngineNative.Failure("restart_required")
         }
+        requirePhoneBoundaryKernel()
         val probe = File(nativeDir, "libaiteam_boundary_probe.so")
         if (!probe.canExecute()) throw PhoneEngineNative.Failure("boundary_not_packaged")
         val id = java.util.UUID.randomUUID().toString()
@@ -377,7 +705,7 @@ class BuiltinLinux(private val context: Context) {
                 (Os.lstat(sentinel.absolutePath).st_mode and 511) == 384 &&
                 mainRef.readText().trim() == expectedMain && head.readText().trim() == "ref: refs/heads/main" &&
                 PhoneEngineAttestation.hash(config) == configHash
-            mapOf("schemaVersion" to 1, "nativeAttacksDenied" to native,
+            mapOf("schemaVersion" to 1, "tier" to "landlock", "nativeAttacksDenied" to native,
                 "prootGitCompatible" to proot, "fixtureUnchanged" to unchanged,
                 "complete" to (native && proot && unchanged),
                 "enablesExecution" to false, "boundaryReason" to "boundary_unverified")
@@ -402,19 +730,14 @@ class BuiltinLinux(private val context: Context) {
             throw PhoneEngineNative.Failure("restart_required")
         }
         if (port !in 1024..65535) throw PhoneEngineNative.Failure("invalid_port")
-        val launcher = File(nativeDir, "libaiteam_sandbox.so")
-        if (!launcher.canExecute()) throw PhoneEngineNative.Failure("boundary_not_packaged")
-        val probe = ProcessBuilder(launcher.absolutePath, "--check-kernel")
-            .redirectOutput(File("/dev/null")).redirectError(File("/dev/null")).start()
-        probe.outputStream.close()
-        if (!probe.waitFor(3, TimeUnit.SECONDS)) {
-            probe.destroyForcibly()
-            throw PhoneEngineNative.Failure("boundary_unavailable")
-        }
-        if (probe.exitValue() != 0) throw PhoneEngineNative.Failure("boundary_unavailable")
+        if (phoneEngine.status(profile)["boundary"] != true) throw PhoneEngineNative.Failure("boundary_unverified")
+        val tier = phoneEngine.status(profile)["boundaryTier"]
+        if (tier !in listOf("landlock", "proot")) throw PhoneEngineNative.Failure("boundary_unverified")
+        if (tier == "landlock") requirePhoneBoundaryKernel()
         // This affects every subsequent run, service and PTY launch. Kernel
         // support is a prerequisite, not proof; capabilities remain false.
         protectedProot = true
+        protectedTier = tier as String
         try { startServer(script, port) } catch (error: Exception) {
             protectedProot = false
             throw error
@@ -434,14 +757,40 @@ class BuiltinLinux(private val context: Context) {
 
     @Synchronized
     fun startPhoneEngine(profile: String, port: Int, notice: String?): Map<String, Any?> {
+        try {
+            val status = startPhoneEngineChecked(profile, port, notice)
+            if (status["boundary"] != true) restoreStoppedPhoneServer()
+            else stoppedPhoneServer = null
+            return status
+        } catch (error: Exception) {
+            // Roll back only the server explicitly stopped in this runtime.
+            // The UI may repeat its existing restart; startServer is idempotent.
+            try { restoreStoppedPhoneServer() } catch (_: Exception) { }
+            throw error
+        }
+    }
+
+    private fun startPhoneEngineChecked(profile: String, port: Int, notice: String?): Map<String, Any?> {
         // Quiesce the tracked daemon before proof. Its stored receipt and
         // cached flags may belong to an older package/generation.
         phoneEngine.prepareFreshStart(profile)
+        prootMaskedPids.clear()
         if (services[PHONE_ENGINE]?.process?.isAlive != true) services.remove(PHONE_ENGINE)
         serviceSetChanged()
-        val blocked = hasUnconfinedChildren()
+        // PRoot proc bindings are fixed at launch. Even a prior protected
+        // generation must stop before its replacement daemon changes PID.
+        val blocked = hasUnconfinedChildren() || serverRunning || processes.any { it.isAlive } ||
+            services.any { it.key != PHONE_ENGINE && it.value.process.isAlive } ||
+            LocalTerminal.get(context).hasLiveSessions()
+        if (blocked) throw PhoneEngineNative.Failure("restart_required")
+        val tier = try { requirePhoneBoundaryKernel(); "landlock" }
+            catch (failure: PhoneEngineNative.Failure) {
+                if (failure.code != "boundary_unsupported") throw failure
+                "proot"
+            }
+        protectedTier = tier
         var reason = if (blocked) "restart_required" else "boundary_unverified"
-        val controls = if (!blocked) try {
+        var controls: Map<String, Any?>? = if (tier == "landlock") try {
             runPhoneEngineBoundaryProbe().also {
                 if (it["complete"] != true) reason = "boundary_proof_failed"
             }
@@ -450,18 +799,48 @@ class BuiltinLinux(private val context: Context) {
             null
         } else null
         val child = phoneEngine.start(profile, port, blocked, reason) { root ->
-            if (controls?.get("complete") != true || hasUnconfinedChildren()) null else {
+            if (tier == "proot") {
+                protectedTier = "proot"
+                controls = runProotTierProof(root)
+            }
+            val verified = controls
+            if (verified?.get("complete") != true || hasUnconfinedChildren()) {
+                throw PhoneEngineNative.Failure("boundary_proof_failed")
+            } else {
                 try {
                     commitProtectionAfterReceipt({
                         PhoneEngineAttestation(context).issue(profile, root, java.util.UUID.randomUUID().toString(),
-                            protectedCommand(emptyList()).dropLast(1), controls)
+                            if (tier == "landlock") protectedCommand(emptyList()).dropLast(1)
+                                else listOf("tier=proot", prootPath, "--kill-on-exit", rootfs.canonicalPath,
+                                    "private-store-unbound", "clean-environment", "proc-subject-denied"), verified)
                     }) {
                         // Signing must succeed first. This monitor fences all
                         // legacy launches until persistence and protected mode.
-                        PhoneEngineAttestation.write(protectionMarker, "required-v1".toByteArray(Charsets.US_ASCII))
+                        PhoneEngineAttestation.write(protectionMarker,
+                            (if (tier == "proot") "required-proot-v1" else "required-v1").toByteArray(Charsets.US_ASCII))
                         protectedProot = true
+                        protectedTier = tier
                     }
                 } catch (_: Exception) { throw PhoneEngineNative.Failure("boundary_signer_unavailable") }
+            }
+        }
+        if (phoneEngine.status(profile)["boundary"] != true) {
+            val reasonCode = phoneEngine.status(profile)["boundaryReason"] as? String
+            phoneEngine.stop(profile)
+            throw PhoneEngineNative.Failure(reasonCode?.takeIf { it in listOf("boundary_signer_unavailable",
+                "boundary_probe_unavailable", "attestation_rejected") } ?: "boundary_proof_failed")
+        }
+        if (tier == "proot") {
+            val pid = pidOf(child) ?: throw PhoneEngineNative.Failure("boundary_probe_unavailable")
+            prootMaskedPids.add(pid)
+            val root = File(context.filesDir.canonicalFile, "oc.teamEngine.$profile")
+            try {
+                if (runProotTierProof(root, pid)["complete"] != true)
+                    throw PhoneEngineNative.Failure("boundary_proof_failed")
+            } catch (error: Exception) {
+                prootMaskedPids.remove(pid)
+                phoneEngine.stop(profile)
+                throw error
             }
         }
         if (services[PHONE_ENGINE]?.process !== child) {
@@ -489,6 +868,7 @@ class BuiltinLinux(private val context: Context) {
     @Synchronized
     fun stopPhoneEngine(profile: String): Map<String, Any?> {
         phoneEngine.stop(profile)
+        prootMaskedPids.clear()
         if (services[PHONE_ENGINE]?.process?.isAlive != true) services.remove(PHONE_ENGINE)
         serviceSetChanged()
         return phoneEngineStatus(profile)
@@ -497,6 +877,7 @@ class BuiltinLinux(private val context: Context) {
     @Synchronized
     fun deletePhoneEngine(profile: String) {
         phoneEngine.delete(profile)
+        prootMaskedPids.clear()
         if (services[PHONE_ENGINE]?.process?.isAlive != true) services.remove(PHONE_ENGINE)
         serviceSetChanged()
     }
@@ -550,7 +931,7 @@ class BuiltinLinux(private val context: Context) {
      * program a script leaves running in the background dies with that
      * script's proot (`--kill-on-exit`).
      */
-    private class Service(val process: Process, val port: Int?, val notice: String?) {
+    private class Service(val process: Process, val port: Int?, val notice: String?, val script: String? = null) {
         /** When this run began, on the clock that keeps counting in deep sleep. */
         val startedAt: Long = SystemClock.elapsedRealtime()
     }
@@ -683,7 +1064,25 @@ class BuiltinLinux(private val context: Context) {
 
     fun startServer(script: String, port: Int) = startService(SERVER, script, port, null)
 
-    fun stopServer() = stopService(SERVER)
+    private data class StoppedServer(val script: String, val port: Int)
+    private var stoppedPhoneServer: StoppedServer? = null
+
+    @Synchronized
+    fun stopServer(forPhoneEngineSetup: Boolean = false) {
+        stoppedPhoneServer = null
+        if (forPhoneEngineSetup) services[SERVER]?.takeIf { it.process.isAlive }?.let { service ->
+            service.script?.let { script -> service.port?.let { port ->
+                stoppedPhoneServer = StoppedServer(script, port)
+            } }
+        }
+        stopService(SERVER)
+    }
+
+    private fun restoreStoppedPhoneServer() {
+        val stopped = stoppedPhoneServer ?: return
+        if (!serverRunning) startServer(stopped.script, stopped.port)
+        stoppedPhoneServer = null
+    }
 
     /**
      * Starts [script] as the service [name], stopping an earlier run of the
@@ -697,6 +1096,11 @@ class BuiltinLinux(private val context: Context) {
         check(installed) { "Ubuntu is not installed in the app yet" }
         require(NAME.matches(name)) { "Invalid service name: $name" }
         require(name != PHONE_ENGINE) { "The native phone engine has a dedicated launcher." }
+        if (name == SERVER) stoppedPhoneServer = null
+        // Joining a setup rollback must not cut off the already restored server.
+        if (name == SERVER && services[SERVER]?.let {
+                it.process.isAlive && it.port == port && it.script == script
+            } == true) return
         if (name == SERVER) setServerWanted(true)
         launchService(name, script, port, notice)
     }
@@ -727,7 +1131,7 @@ class BuiltinLinux(private val context: Context) {
             }
         }
         process.outputStream.close()
-        services[name] = Service(process, port, notice)
+        services[name] = Service(process, port, notice, script)
         recordRunning()
         try {
             BuiltinServerService.start(context, currentNotice())

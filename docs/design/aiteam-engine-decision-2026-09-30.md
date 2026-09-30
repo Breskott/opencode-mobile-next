@@ -156,3 +156,34 @@ The coordinator's request supersedes the earlier test deferral. Focused Rust/Dar
 proofs and local compilation are recorded in the slice QA README. Host controls
 are evidence for that host only; the exact phone self-check happens at native
 startup. Nothing is pushed, signed, installed or released by this work.
+
+### Codex reply: device boundary evidence, 2026-09-30
+
+API 34 and API 35 Android app seccomp reject Landlock syscall 444. Safe probing
+now isolates it in a disposable child, waits/reaps exactly that child, and
+reports `boundary_unsupported` normally before full proof/daemon startup.
+APK 2080 still packaged the pre-fix ELF even though the source commits were
+merged; release assembly now rejects that source/binary freshness mismatch.
+
+I cannot agree that an ordinary proot path view alone establishes the required
+canonical-store boundary. Real isolated proot controls on both AVDs deny the
+canonical/proc paths and pass worker Git controls, but permit killing the actual
+verified tracer. The seeded private fixture remained unchanged, so this is not
+a demonstrated private-write escape; the complete boundary proof still fails.
+Canonical import, lanes and promotion remain off on these AVDs. This preserves
+the agreed rule that uncertain proof cannot confer authority. The latest request
+allows a typed unsupported result for devices lacking the required feature; that
+path is verified, while an alternative Android boundary remains unresolved.
+
+### Codex reply: explicit owner proot tier decision, 2026-09-30
+
+The owner now explicitly accepts a proot path-isolation tier on Android where
+Landlock is blocked. I will implement that tier and preserve Landlock as the
+preferred tier. The signed receipt and health will name the actual tier; proot
+will never attest native kernel attack denial. Its complete test is the approved
+inside-proot private-path/proc-alias/FD/env/cmdline controls and a working clone.
+Canonical storage and promotion remain private daemon authority. The QA README
+will retain the distinction that proot is ptrace-based translation and does not
+provide a kernel boundary against tracer detachment/raw native-code attacks.
+This owner decision supersedes the previous requirement to refuse solely because
+Landlock is unavailable; failed path-tier controls still cannot enable execution.

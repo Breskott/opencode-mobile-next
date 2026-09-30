@@ -16,15 +16,31 @@ import java.security.MessageDigest
 import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 
-/** The signer is inaccessible to confined tools: no Binder device/socket access. */
+/** AndroidKeystore signs native-observed controls; receipts name the actual tier. */
 internal class PhoneEngineAttestation(private val context: Context) {
     data class Receipt(val file: File, val publicKeyFile: File, val generation: String,
         val keySha256: String, val policySha256: String)
 
     fun issue(profile: String, root: File, generation: String, policy: List<String>,
         controls: Map<String, Any?>): Receipt {
-        if (listOf("nativeAttacksDenied", "prootGitCompatible", "fixtureUnchanged", "complete")
-            .any { controls[it] != true }) throw PhoneEngineNative.Failure("boundary_proof_failed")
+        val tier = controls["tier"] as? String
+            ?: throw PhoneEngineNative.Failure("boundary_proof_failed")
+        val required = when (tier) {
+            "landlock" -> listOf("nativeAttacksDenied")
+            "proot" -> listOf("canonicalPathsDenied", "daemonProcDenied", "fdHygiene", "parentInspectionDenied")
+            else -> throw PhoneEngineNative.Failure("boundary_proof_failed")
+        } + listOf("prootGitCompatible", "fixtureUnchanged", "complete")
+        if (required.any { controls[it] != true } || controls["nativeAttacksDenied"] !is Boolean)
+            throw PhoneEngineNative.Failure("boundary_proof_failed")
+        // Preserve observed controls rather than converting a weaker proof into
+        // a claim that all native attacks were denied.
+        val signedControls = JSONObject()
+        for (name in listOf("nativeAttacksDenied", "prootGitCompatible", "fixtureUnchanged", "complete",
+            "canonicalPathsDenied", "daemonProcDenied", "fdHygiene", "parentInspectionDenied")) {
+            val value = controls[name]
+            if (value != null && value !is Boolean) throw PhoneEngineNative.Failure("boundary_proof_failed")
+            if (value is Boolean) signedControls.put(name, value)
+        }
         PhoneEngineNative.verifyBundle(context, "libaiteam_engine.so", "libaiteam_sandbox.so",
             "libaiteam_boundary_probe.so")
         val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -42,7 +58,7 @@ internal class PhoneEngineAttestation(private val context: Context) {
         val bootId = File("/proc/sys/kernel/random/boot_id").readText().trim()
         java.util.UUID.fromString(bootId) // Unsupported boot metadata is fail closed.
         val nativeDir = File(context.applicationInfo.nativeLibraryDir)
-        val payload = JSONObject().put("schemaVersion", 1).put("profileId", profile)
+        val payload = JSONObject().put("schemaVersion", 2).put("tier", tier).put("profileId", profile)
             .put("parentPid", Process.myPid()).put("generation", generation)
             .put("bootId", bootId).put("kernelRelease", Os.uname().release)
             .put("policySha256", policyDigest)
@@ -51,8 +67,7 @@ internal class PhoneEngineAttestation(private val context: Context) {
             .put("probeSha256", hash(File(nativeDir, "libaiteam_boundary_probe.so")))
             .put("issuedAtElapsedMs", SystemClock.elapsedRealtime())
             .put("protectedLaunchesRequired", true)
-            .put("controls", JSONObject().put("nativeAttacksDenied", true)
-                .put("prootGitCompatible", true).put("fixtureUnchanged", true).put("complete", true))
+            .put("controls", signedControls)
             .toString().toByteArray(Charsets.UTF_8)
         val signature = Signature.getInstance("SHA256withECDSA").apply {
             initSign(entry.privateKey)

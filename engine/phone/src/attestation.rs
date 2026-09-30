@@ -25,8 +25,24 @@ pub struct AttestationExpectation<'a> {
     pub expected_policy_sha256: &'a str,
 }
 
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum BoundaryTier {
+    Landlock,
+    Proot,
+}
+impl BoundaryTier {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Landlock => "landlock",
+            Self::Proot => "proot",
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct VerifiedBoundary {
+    pub tier: BoundaryTier,
     pub generation: String,
     pub policy_sha256: String,
     pub receipt_sha256: String,
@@ -36,6 +52,8 @@ pub struct VerifiedBoundary {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Receipt {
     schema_version: u32,
+    #[serde(default)]
+    tier: Option<BoundaryTier>,
     profile_id: String,
     parent_pid: i32,
     generation: String,
@@ -57,6 +75,14 @@ struct Controls {
     proot_git_compatible: bool,
     fixture_unchanged: bool,
     complete: bool,
+    #[serde(default)]
+    canonical_paths_denied: Option<bool>,
+    #[serde(default)]
+    daemon_proc_denied: Option<bool>,
+    #[serde(default)]
+    fd_hygiene: Option<bool>,
+    #[serde(default)]
+    parent_inspection_denied: Option<bool>,
 }
 
 pub fn verify(expected: &AttestationExpectation<'_>) -> Result<VerifiedBoundary, AttestationError> {
@@ -73,7 +99,11 @@ pub fn verify_current(
     {
         return Err(AttestationError("attestationChanged"));
     }
-    verify_impl(expected, false)
+    let current = verify_impl(expected, false)?;
+    if current.tier != accepted.tier {
+        return Err(AttestationError("attestationChanged"));
+    }
+    Ok(current)
 }
 
 fn verify_impl(
@@ -101,8 +131,12 @@ fn verify_impl(
         .map_err(|_| AttestationError("attestationSignatureInvalid"))?;
     let receipt: Receipt =
         serde_json::from_slice(&payload).map_err(|_| AttestationError("attestationMalformed"))?;
-    if receipt.schema_version != 1
-        || receipt.profile_id != expected.profile_id
+    let tier = match (receipt.schema_version, receipt.tier) {
+        (1, None | Some(BoundaryTier::Landlock)) => BoundaryTier::Landlock,
+        (2, Some(tier)) => tier,
+        _ => return Err(AttestationError("attestationTierInvalid")),
+    };
+    if receipt.profile_id != expected.profile_id
         || receipt.generation != expected.generation
         || receipt.parent_pid != expected.expected_parent_pid
         || unsafe { libc::getppid() } != expected.expected_parent_pid
@@ -111,7 +145,16 @@ fn verify_impl(
     {
         return Err(AttestationError("attestationGenerationMismatch"));
     }
-    if !(receipt.controls.native_attacks_denied
+    let tier_controls = match tier {
+        BoundaryTier::Landlock => receipt.controls.native_attacks_denied,
+        BoundaryTier::Proot => {
+            receipt.controls.canonical_paths_denied == Some(true)
+                && receipt.controls.daemon_proc_denied == Some(true)
+                && receipt.controls.fd_hygiene == Some(true)
+                && receipt.controls.parent_inspection_denied == Some(true)
+        }
+    };
+    if !(tier_controls
         && receipt.controls.proot_git_compatible
         && receipt.controls.fixture_unchanged
         && receipt.controls.complete)
@@ -139,6 +182,7 @@ fn verify_impl(
         return Err(AttestationError("attestationBinaryMismatch"));
     }
     Ok(VerifiedBoundary {
+        tier,
         generation: receipt.generation,
         policy_sha256: receipt.policy_sha256,
         receipt_sha256: digest(&payload),

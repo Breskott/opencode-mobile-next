@@ -1,4 +1,4 @@
-use oc_phone_engine::attestation::{self, AttestationExpectation};
+use oc_phone_engine::attestation::{self, AttestationExpectation, BoundaryTier};
 use p256::ecdsa::{signature::Signer, Signature, SigningKey};
 use p256::pkcs8::EncodePublicKey;
 use serde_json::{json, Value};
@@ -100,6 +100,7 @@ fn exact_signed_complete_native_handoff_is_valid_and_rechecked() {
     let fixture = Fixture::new();
     let accepted = attestation::verify(&fixture.expected()).unwrap();
     assert_eq!(accepted.generation, fixture.generation);
+    assert_eq!(accepted.tier, BoundaryTier::Landlock);
     assert!(attestation::verify_current(&fixture.expected(), &accepted).is_ok());
     let mut bytes = std::fs::read(&fixture.receipt).unwrap();
     bytes.push(b' '); // Same JSON value, different exact signed payload bytes.
@@ -231,5 +232,135 @@ fn cached_binaries_do_not_cache_receipt_signature_or_runtime_authority() {
             .unwrap_err()
             .0,
         "attestationBinaryMismatch"
+    );
+}
+
+fn tier_fixture(tier: &str) -> Fixture {
+    let mut fixture = Fixture::new();
+    fixture.payload["schemaVersion"] = json!(2);
+    fixture.payload["tier"] = json!(tier);
+    fixture.payload["controls"]["nativeAttacksDenied"] = json!(tier == "landlock");
+    for name in [
+        "canonicalPathsDenied",
+        "daemonProcDenied",
+        "fdHygiene",
+        "parentInspectionDenied",
+    ] {
+        fixture.payload["controls"][name] = json!(true);
+    }
+    fixture.sign();
+    fixture
+}
+
+#[test]
+fn schema_two_accepts_each_explicit_tier_with_its_real_controls() {
+    for (name, tier) in [
+        ("landlock", BoundaryTier::Landlock),
+        ("proot", BoundaryTier::Proot),
+    ] {
+        let fixture = tier_fixture(name);
+        let accepted = attestation::verify(&fixture.expected()).unwrap();
+        assert_eq!(accepted.tier, tier);
+        assert_eq!(accepted.tier.as_str(), name);
+        assert_eq!(
+            attestation::verify_current(&fixture.expected(), &accepted)
+                .unwrap()
+                .tier,
+            tier
+        );
+    }
+}
+
+#[test]
+fn schema_two_requires_explicit_known_tier_and_legacy_never_implies_proot() {
+    let mut fixture = tier_fixture("proot");
+    fixture.payload.as_object_mut().unwrap().remove("tier");
+    fixture.sign();
+    assert_eq!(fixture.error(), "attestationTierInvalid");
+    fixture.payload["tier"] = json!("none");
+    fixture.sign();
+    assert_eq!(fixture.error(), "attestationMalformed");
+    fixture.payload["tier"] = json!("proot");
+    fixture.payload["schemaVersion"] = json!(1);
+    fixture.sign();
+    assert_eq!(fixture.error(), "attestationTierInvalid");
+    fixture.payload["schemaVersion"] = json!(3);
+    fixture.sign();
+    assert_eq!(fixture.error(), "attestationTierInvalid");
+}
+
+#[test]
+fn neither_tier_borrows_the_others_proof_or_skips_common_controls() {
+    for name in ["landlock", "proot"] {
+        for control in ["prootGitCompatible", "fixtureUnchanged", "complete"] {
+            let mut fixture = tier_fixture(name);
+            fixture.payload["controls"][control] = json!(false);
+            fixture.sign();
+            assert_eq!(fixture.error(), "attestationIncomplete", "{name}:{control}");
+        }
+    }
+    let mut landlock = tier_fixture("landlock");
+    landlock.payload["controls"]["nativeAttacksDenied"] = json!(false);
+    landlock.sign();
+    assert_eq!(landlock.error(), "attestationIncomplete");
+    for control in [
+        "canonicalPathsDenied",
+        "daemonProcDenied",
+        "fdHygiene",
+        "parentInspectionDenied",
+    ] {
+        for remove in [false, true] {
+            let mut fixture = tier_fixture("proot");
+            // Native syscall rejection cannot substitute for an unproved
+            // proot path/process/descriptor control.
+            fixture.payload["controls"]["nativeAttacksDenied"] = json!(true);
+            if remove {
+                fixture.payload["controls"]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove(control);
+            } else {
+                fixture.payload["controls"][control] = json!(false);
+            }
+            fixture.sign();
+            assert_eq!(
+                fixture.error(),
+                "attestationIncomplete",
+                "{control}:missing={remove}"
+            );
+        }
+    }
+}
+
+#[test]
+fn tier_tampering_is_signed_and_cannot_change_an_accepted_generation() {
+    let mut fixture = tier_fixture("proot");
+    let accepted = attestation::verify(&fixture.expected()).unwrap();
+    fixture.payload["tier"] = json!("landlock");
+    std::fs::write(
+        &fixture.receipt,
+        serde_json::to_vec(&fixture.payload).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(fixture.error(), "attestationSignatureInvalid");
+    fixture.payload["controls"]["nativeAttacksDenied"] = json!(true);
+    fixture.sign();
+    assert_eq!(
+        attestation::verify(&fixture.expected()).unwrap().tier,
+        BoundaryTier::Landlock
+    );
+    assert_eq!(
+        attestation::verify_current(&fixture.expected(), &accepted)
+            .unwrap_err()
+            .0,
+        "attestationChanged"
+    );
+    let mut accepted = attestation::verify(&fixture.expected()).unwrap();
+    accepted.tier = BoundaryTier::Proot;
+    assert_eq!(
+        attestation::verify_current(&fixture.expected(), &accepted)
+            .unwrap_err()
+            .0,
+        "attestationChanged"
     );
 }
