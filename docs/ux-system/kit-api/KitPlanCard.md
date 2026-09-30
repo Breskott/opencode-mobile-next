@@ -22,3 +22,15 @@ Theme colors use semantic roles; severity has explicit words as well as color.
 Validation: `test/kit/kit_plan_card_test.dart` and
 `test/goldens/kit/kit_plan_card_golden_test.dart`; 360 dp at 2x text, phone and
 wide Android galleries in light and dark. Actual TalkBack requires a device.
+
+## Options added 2026-09-30 (E2E fixes)
+
+- `KitPlanTask.onChangeWho`: when given, the task's "who" line is a neutral
+  tertiary button (for example to choose the task's server). Null keeps plain
+  text. The screen decides from capabilities whether to pass it.
+- `KitPlanCard.secondary`: the neutral "Not yet" answer beside the primary.
+  The action block shows at most two tertiary actions, so a third answer
+  belongs here rather than behind "More".
+- Flat team parts (`KitMergeQueue`, `KitServerLane`, `KitTimelineDay`) carry a
+  `space4` gap below themselves, so the next heading never touches their last
+  action at 2.0x text.

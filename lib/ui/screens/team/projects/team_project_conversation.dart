@@ -5,6 +5,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../state/team_project_controller.dart';
 import '../../../kit/kit.dart';
 import 'team_execution_gate.dart';
+import 'team_merge_flow.dart';
 import 'team_project_editors.dart';
 
 /// Finish line: review, steer, verify and promote a task from its conversation.
@@ -71,6 +72,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
     bool confirmed = false,
     TeamRepo? repo,
     List<String> findingIds = const [],
+    String serverId = '',
   }) => c.execute(
     TeamProjectCommand(
       requestId: c.newRequestId(),
@@ -80,6 +82,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
       targetId: target ?? widget.taskId,
       text: text,
       findingIds: findingIds,
+      serverId: serverId,
       confirmed: confirmed,
       expectedDevCommit: repo?.devCommit ?? '',
       expectedMainCommit: repo?.mainCommit ?? '',
@@ -268,72 +271,26 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
 
   Future<void> _merge(TeamProject p, TeamRepo? repo) async {
     if (repo == null) return;
-    final requiresConfirmation = p.settings.reviewLevel == 'everyStep';
-    if (requiresConfirmation) {
-      final yes = await showKitConfirm(
-        context,
-        title: l.teamProjectTaskMergeRun,
-        body: l.teamProjectMergeConfirmBody,
-        confirmLabel: l.teamProjectTaskMergeRun,
-      );
-      if (!yes || !mounted) return;
-    }
-    await _run(
-      p,
-      TeamProjectAction.processMergeQueue,
-      target: repo.id,
-      confirmed: requiresConfirmation,
-    );
+    await confirmAndMergeToDev(context, c, p, repo);
   }
 
-  bool _canPromote(TeamProject project, TeamRepo? repo) {
-    if (repo == null ||
-        !project.planApproved ||
-        repo.devCommit == repo.mainCommit) {
-      return false;
-    }
-    final tasks = project.tasks
-        .where((task) => task.repoId == repo.id)
-        .toList();
-    final merges = project.mergeQueue
-        .where((item) => item.repoId == repo.id)
-        .toList();
-    if (tasks.isEmpty ||
-        tasks.any(
-          (task) =>
-              task.status != 'merged' ||
-              task.findings.any((finding) => finding.status == 'open'),
-        )) {
-      return false;
-    }
-    if (merges.isEmpty ||
-        merges.any((item) => item.status != 'merged' || !item.checksPassed)) {
-      return false;
-    }
-    final phases = tasks.map((task) => task.phaseId).toSet();
-    return !project.phases.any(
-      (phase) =>
-          phases.contains(phase.id) &&
-          (phase.risky || project.settings.reviewLevel == 'everyStep') &&
-          !phase.accepted,
-    );
-  }
+  Future<void> _promote(TeamProject p, TeamRepo repo) =>
+      confirmAndPromote(context, c, p, repo);
 
-  Future<void> _promote(TeamProject p, TeamRepo repo) async {
-    final yes = await showKitConfirm(
+  Future<void> _chooseServer(TeamProject p, TeamTask task) async {
+    final servers = c.snapshot?.servers ?? const <TeamServer>[];
+    final target = await showKitChoiceSheet<String>(
       context,
-      title: l.teamProjectTaskPromote,
-      body: l.teamProjectTaskPromoteBody,
-      confirmLabel: l.teamProjectTaskPromote,
-      consequences: ['${repo.name}: ${repo.mainCommit} → ${repo.devCommit}'],
+      title: l.teamProjectPlanServerTitle(task.title),
+      choices: [for (final s in servers) KitChoice(value: s.id, title: s.name)],
+      selected: task.serverId,
     );
-    if (!yes || !mounted) return;
+    if (target == null || target == task.serverId || !mounted) return;
     await _run(
       p,
-      TeamProjectAction.promote,
-      target: repo.id,
-      repo: repo,
-      confirmed: true,
+      TeamProjectAction.moveTask,
+      target: task.id,
+      serverId: target,
     );
   }
 
@@ -403,6 +360,9 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
     ];
     var shown = 0;
     const limit = 4;
+    final movable =
+        (c.snapshot?.servers.length ?? 0) > 1 &&
+        TeamExecutionGate.allows(c, TeamExecutionNeed.placement);
     final cards = <KitPlanPhase>[];
     for (var i = 0; i < phases.length; i++) {
       final tasks = <KitPlanTask>[];
@@ -421,6 +381,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
         final server = c.snapshot?.servers
             .where((s) => s.id == task.serverId)
             .firstOrNull;
+        final canMove = movable && server != null;
         tasks.add(
           KitPlanTask(
             number: number,
@@ -434,6 +395,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
               if (role != null) role.name,
               if (server != null) server.name,
             ].join(' · '),
+            onChangeWho: canMove ? () => _chooseServer(p, task) : null,
           ),
         );
       }
@@ -455,6 +417,11 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
           : l.teamProjectPlanFor(mIndex + 1),
       status: l.teamProjectPlanSummary(phases.length, ordered.length, repos),
       state: KitTeamState.needsYou,
+      summary:
+          (c.snapshot?.servers.length ?? 0) > 1 &&
+              !TeamExecutionGate.allows(c, TeamExecutionNeed.placement)
+          ? l.teamProjectPlanServerFixed
+          : null,
       phases: cards,
       more: rest > 0 ? l.teamProjectPlanMore(rest) : null,
       primary: widget.embedded
@@ -477,6 +444,12 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
         ),
         _action(l.teamProjectPlanAsk, _focus.requestFocus),
       ],
+      secondary: widget.embedded
+          ? null
+          : _action(
+              l.teamProjectPlanNotYet,
+              () => Navigator.of(context).maybePop(),
+            ),
     );
   }
 
@@ -611,7 +584,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
       final queue = p.mergeQueue.where((m) => m.taskId == t.id).toList();
       final events = p.timeline.where((e) => e.taskId == t.id).toList();
       final planning = p.status == 'plan' || p.status == 'planned';
-      final canPromote = _canPromote(p, repo);
+      final canPromote = teamCanPromote(p, repo);
       final selected = _selected.intersection(
         t.findings.where((f) => f.status == 'open').map((f) => f.id).toSet(),
       );
@@ -860,6 +833,25 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                             () => _merge(p, repo),
                           ),
                         ],
+                      ),
+                    for (final receipt
+                        in p.receipts
+                            .where(
+                              (r) => r.repoId == t.repoId && r.kind == 'merge',
+                            )
+                            .toList()
+                            .reversed
+                            .take(3)
+                            .toList()
+                            .reversed)
+                      KitPhaseCard(
+                        title: l.teamProjectReceiptMerged(repo?.name ?? ''),
+                        status: _age(receipt.at),
+                        state: KitTeamState.done,
+                        summary: teamCommitChange(
+                          receipt.before,
+                          receipt.after,
+                        ),
                       ),
                     if (canPromote) _promoteCard(p, t, repo!),
                     for (final receipt in p.receipts.where(

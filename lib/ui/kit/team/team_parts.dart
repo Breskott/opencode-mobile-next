@@ -126,6 +126,7 @@ Widget teamCard(
   List<KitTeamItem> items = const [],
   List<Widget> content = const [],
   KitAction? primary,
+  KitAction? secondary,
   List<KitAction> actions = const [],
   bool flat = false,
   bool neutralStatus = false,
@@ -184,13 +185,25 @@ Widget teamCard(
           onPressed: item.onPressed,
         ),
       ...content,
-      if (mutations && (primary != null || actions.isNotEmpty)) ...[
+      if (mutations &&
+          (primary != null || secondary != null || actions.isNotEmpty)) ...[
         SizedBox(height: t.space3),
-        KitActionBlock(primary: primary, tertiary: actions),
+        KitActionBlock(
+          primary: primary,
+          secondary: secondary,
+          tertiary: actions,
+        ),
       ],
     ],
   );
-  if (flat) return column;
+  // A flat part has no card around it, so it brings its own gap below:
+  // the next heading or card must not touch its last action (2.0x text).
+  if (flat) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: t.space4),
+      child: column,
+    );
+  }
   return DecoratedBox(
     decoration: ShapeDecoration(
       color: attention

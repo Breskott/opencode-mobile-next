@@ -65,11 +65,16 @@ class KitPlanTask {
     required this.title,
     this.detail,
     this.who,
+    this.onChangeWho,
   });
   final int number;
   final String title;
   final String? detail;
   final String? who;
+
+  /// When given, [who] is drawn as a neutral button that calls this (for
+  /// example to choose the task's server); null leaves it plain text.
+  final VoidCallback? onChangeWho;
 }
 
 /// A named group of plan tasks; [flagged] carries the worded review point.

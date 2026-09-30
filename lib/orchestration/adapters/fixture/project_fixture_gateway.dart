@@ -905,16 +905,20 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
         }
       }
     }
-    p = _log(
-      p,
-      c.action.name,
-      c.action == TeamProjectAction.moveTask && c.confirmed
-          ? 'Started over on another server with a new branch and context'
-          : c.text.isEmpty
-          ? _actionText(c.action)
-          : c.text,
-      actor: c.action == TeamProjectAction.advance ? 'fixture' : 'person',
-    );
+    // A tick already wrote one row per task that changed; a generic
+    // "work advanced" row on top would repeat itself forever.
+    if (c.action != TeamProjectAction.advance) {
+      p = _log(
+        p,
+        c.action.name,
+        c.action == TeamProjectAction.moveTask && c.confirmed
+            ? 'Started over on another server with a new branch and context'
+            : c.text.isEmpty
+            ? _actionText(c.action)
+            : c.text,
+        actor: 'person',
+      );
+    }
     p = p.copyWith(revision: before.revision + 1, updatedAt: _at);
     return w.copyWith(
       revision: w.revision + 1,
@@ -1747,6 +1751,8 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
 
   TeamWorkspace _initial() {
     final base = TeamWorkspace(
+      // A person who picks Parallel expects more than one lane.
+      defaultSettings: const TeamProjectSettings(maxLanes: 3),
       servers: const [
         TeamServer(id: 'computer', name: 'Home PC', memoryMb: 120),
         TeamServer(

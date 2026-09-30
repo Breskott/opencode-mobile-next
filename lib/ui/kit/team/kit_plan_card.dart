@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../app_iconography.dart';
 import '../kit_buttons.dart';
+import '../kit_icon.dart';
 import '../kit_text.dart';
+import '../kit_tappable.dart';
 import '../kit_tokens.dart';
 import 'kit_team_data.dart';
 import 'team_parts.dart';
@@ -21,6 +24,7 @@ class KitPlanCard extends StatelessWidget {
     this.phases = const [],
     this.more,
     this.primary,
+    this.secondary,
     this.actions = const [],
   });
   final String title;
@@ -33,6 +37,9 @@ class KitPlanCard extends StatelessWidget {
   /// "… 4 more tasks": shown under the phases when the plan is cut short.
   final String? more;
   final KitAction? primary;
+
+  /// The neutral "not now" answer, drawn beside the primary.
+  final KitAction? secondary;
   final List<KitAction> actions;
   @override
   Widget build(BuildContext context) {
@@ -45,6 +52,7 @@ class KitPlanCard extends StatelessWidget {
       summary: summary,
       items: items,
       primary: primary,
+      secondary: secondary,
       actions: actions,
       neutralStatus: phases.isNotEmpty,
       content: [
@@ -80,6 +88,31 @@ class _PlanTaskRow extends StatelessWidget {
     final large = MediaQuery.textScalerOf(context).scale(1) > 1.3;
     final who = task.who == null
         ? null
+        : task.onChangeWho != null
+        ? KitTappable(
+            onTap: task.onChangeWho,
+            label: task.who,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: t.space2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: KitText(
+                      task.who!,
+                      role: KitTextRole.secondary,
+                      textAlign: large ? TextAlign.start : TextAlign.end,
+                    ),
+                  ),
+                  SizedBox(width: t.space1),
+                  const KitIcon(
+                    AppIconography.chevronDown,
+                    size: KitIconSize.small,
+                  ),
+                ],
+              ),
+            ),
+          )
         : KitText(
             task.who!,
             role: KitTextRole.secondary,
