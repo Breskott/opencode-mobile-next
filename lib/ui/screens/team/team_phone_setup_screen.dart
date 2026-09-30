@@ -75,6 +75,15 @@ Future<void> openPhoneTeamSetup(
 }
 
 /// Details: one plain sentence, then the technical code.
+/// The one plain line for the boundary the engine proved, or null when the
+/// tier is unknown (`none`, empty, anything new).
+String? phoneTeamProtectionText(AppLocalizations l, String tier) =>
+    switch (tier) {
+      'proot' => l.phoneTeamProtectedProot,
+      'landlock' => l.phoneTeamProtectedLandlock,
+      _ => null,
+    };
+
 String? phoneTeamDetailsText(
   AppLocalizations l,
   PhoneTeamSetupProblem problem,
@@ -308,13 +317,30 @@ class _TeamPhoneSetupScreenState extends State<TeamPhoneSetupScreen> {
     final Widget body;
     switch (_flow.phase) {
       case PhoneTeamSetupPhase.done:
+        final health = _flow.health;
+        final protection = health != null && health.canExecute
+            ? phoneTeamProtectionText(l, health.boundaryTier)
+            : null;
         body = KitStateView(
           key: const ValueKey('phone-team-ready'),
           icon: AppIconography.checkCircle,
           tone: AppStatusTone.ok,
           title: l.phoneTeamDoneTitle,
           body: l.phoneTeamDoneBody,
-          content: checklist,
+          content: protection == null
+              ? checklist
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    KitNotice(
+                      key: const ValueKey('phone-team-ready-protection'),
+                      message: protection,
+                      icon: Icons.shield_outlined,
+                    ),
+                    checklist,
+                  ],
+                ),
           primary: KitAction(
             key: const ValueKey('phone-team-new-project'),
             label: l.teamProjectNew,

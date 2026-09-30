@@ -1271,7 +1271,10 @@ class TeamProjectServers extends StatelessWidget {
         body: ListView(
           padding: KitScreen.padding(context),
           children: [
-            TeamExecutionBlocked(controller: controller),
+            if (controller.snapshot!.servers.any((s) => s.phone && !s.online))
+              TeamPhoneServerProblem(controller: controller)
+            else
+              TeamExecutionBlocked(controller: controller),
             if (controller.errorCode != null) _failure(context, controller),
             if (p.simulated)
               KitText(l.teamProjectCostDemo, role: KitTextRole.secondary),

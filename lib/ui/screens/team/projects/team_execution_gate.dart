@@ -111,16 +111,68 @@ class TeamProtectionLine extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final l = lookupAppLocalizations(Localizations.localeOf(context));
-    final line = switch (gate.team.boundaryTier) {
-      'proot' => l.phoneTeamProtectedProot,
-      'landlock' => l.phoneTeamProtectedLandlock,
-      _ => null,
-    };
+    final line = phoneTeamProtectionText(l, gate.team.boundaryTier);
     if (line == null) return const SizedBox.shrink();
     return KitNotice(
       key: const ValueKey('team-protection-line'),
       message: line,
       icon: Icons.shield_outlined,
+    );
+  }
+}
+
+/// Why the phone's own server reads "Not reachable", with the one action
+/// that fixes it. The raw state goes under Copy details, never on screen.
+/// Draws nothing for the demo, an unbound controller, or a phone that is
+/// reachable.
+class TeamPhoneServerProblem extends StatelessWidget {
+  const TeamPhoneServerProblem({super.key, required this.controller});
+
+  final TeamProjectController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final gate = TeamExecutionGate.of(controller);
+    final servers = controller.snapshot?.servers ?? const <TeamServer>[];
+    if (gate == null ||
+        controller.snapshot?.simulated == true ||
+        !servers.any((s) => s.phone && !s.online)) {
+      return const SizedBox.shrink();
+    }
+    final l = lookupAppLocalizations(Localizations.localeOf(context));
+    final team = gate.team;
+    final failed = team.phase == OrchestrationPhase.failed;
+    final notReady = !failed && !gate.permits(TeamExecutionNeed.lanes);
+    final message = failed
+        ? l.teamServerPhoneFailed
+        : notReady
+        ? l.teamServerPhoneNotReady
+        : l.teamServerPhoneNoAnswer;
+    final details = [
+      'phase=${team.phase.name}',
+      if (team.lastError != null) 'error=${team.lastError!.kind.name}',
+      'projectLanes=${gate.permits(TeamExecutionNeed.lanes)}',
+    ].join(' ');
+    final fix = failed || notReady
+        ? KitAction(
+            key: const ValueKey('team-server-set-up'),
+            label: l.teamIntroTurnOnPhone,
+            onPressed: () => gate.setUp(context),
+          )
+        : KitAction(
+            key: const ValueKey('team-server-retry'),
+            label: l.teamProjectRetry,
+            onPressed: () async {
+              await team.refresh();
+              await controller.load();
+            },
+          );
+    return KitNotice.error(
+      key: const ValueKey('team-server-problem'),
+      message: message,
+      errorKind: KitErrorKind.other,
+      details: details,
+      retry: fix,
     );
   }
 }

@@ -41369,6 +41369,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check each phase has tasks and criteria, then approve again.'**
   String get teamRefusalPlanPhaseNext;
+
+  /// Project Servers page: why This phone is not reachable when the team's engine did not answer.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team on this phone isn\'t answering, so its work can\'t be reached.'**
+  String get teamServerPhoneFailed;
+
+  /// Project Servers page: why This phone is not reachable when the engine cannot run work yet.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team on this phone isn\'t ready: its safety check hasn\'t passed.'**
+  String get teamServerPhoneNotReady;
+
+  /// Project Servers page: why This phone is not reachable when the team is ready but OpenCode did not answer.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode on this phone didn\'t answer the last check.'**
+  String get teamServerPhoneNoAnswer;
 }
 
 class _AppLocalizationsDelegate

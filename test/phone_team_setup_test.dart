@@ -28,7 +28,9 @@ PhoneEngineHealth _health({
   bool oc1Verified = true,
   bool restartRequired = false,
   String reason = '',
+  String tier = 'none',
 }) => PhoneEngineHealth(
+  boundaryTier: tier,
   profileId: 'p',
   engineVersion: '1',
   execution: execution,
@@ -165,16 +167,26 @@ Future<void> _settle(WidgetTester tester) async {
 
 /// Fixture projects whose engine can (or cannot) run work yet.
 class _Gateway extends ProjectFixtureGateway {
-  _Gateway({required this.lanes, this.simulated = false})
-    : super(persistence: MemoryPersistence());
+  _Gateway({
+    required this.lanes,
+    this.simulated = false,
+    this.phoneOffline = false,
+  }) : super(persistence: MemoryPersistence());
   final bool lanes;
   final bool simulated;
+  final bool phoneOffline;
+  TeamWorkspace _shape(TeamWorkspace w) => w.copyWith(
+    simulated: simulated,
+    servers: phoneOffline
+        ? [for (final s in w.servers) s.copyWith(phone: true, online: false)]
+        : null,
+  );
   @override
   Future<TeamWorkspace> teamWorkspace() async =>
-      (await super.teamWorkspace()).copyWith(simulated: simulated);
+      _shape(await super.teamWorkspace());
   @override
   Stream<TeamWorkspace> watchTeamWorkspace() =>
-      super.watchTeamWorkspace().map((w) => w.copyWith(simulated: simulated));
+      super.watchTeamWorkspace().map(_shape);
   @override
   OrchestrationCapabilities get capabilities => OrchestrationCapabilities(
     projects: true,
@@ -538,6 +550,7 @@ void main() {
     Future<(OrchestrationController, ConnectionController)> team({
       required bool lanes,
       bool simulated = false,
+      bool phoneOffline = false,
       String tier = '',
     }) async {
       _mockChannels();
@@ -554,7 +567,11 @@ void main() {
           url: 'fixture://gate',
         ),
         store: OrchestrationStore(prefs),
-        gatewayFactory: (_, _) => _Gateway(lanes: lanes, simulated: simulated),
+        gatewayFactory: (_, _) => _Gateway(
+          lanes: lanes,
+          simulated: simulated,
+          phoneOffline: phoneOffline,
+        ),
         probe: (config) async => ProbeFound(
           host: OrchestrationHostIdentity(
             provider: 'fixture',
@@ -641,6 +658,77 @@ void main() {
       );
       await _settle(tester);
       expect(find.text(_en.phoneTeamProtectedProot), findsNothing);
+    });
+
+    testWidgets('the Ready page shows the protection line from the real '
+        'health shape (boundaryTier proot)', (tester) async {
+      _size(tester);
+      final connection = await _connection();
+      final real = PhoneEngineHealth.fromJson({
+        'schemaVersion': 1,
+        'engineVersion': '1',
+        'profileId': 'p',
+        'boundaryTier': 'proot',
+        'capabilities': {
+          'execution': true,
+          'boundary': true,
+          'boundaryTier': 'proot',
+          'oc1Verified': true,
+          'oc2': false,
+        },
+        'commandActions': <String>[],
+      }, 'p');
+      final phone = _Phone()
+        ..started = real
+        ..probed = real;
+      final flow = _flow(phone);
+      await tester.pumpWidget(
+        _app(TeamPhoneSetupScreen(connection: connection, controller: flow)),
+      );
+      await flow.run();
+      await _settle(tester);
+      expect(find.text(_en.phoneTeamDoneTitle), findsOneWidget);
+      expect(find.text(_en.phoneTeamProtectedProot), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('project Servers: This phone not reachable says why and '
+        'offers the fix', (tester) async {
+      _size(tester);
+      for (final lanes in [false, true]) {
+        final (owner, connection) = await team(
+          lanes: lanes,
+          phoneOffline: true,
+          tier: 'proot',
+        );
+        TeamExecutionGate.bind(owner, connection);
+        final c = owner.projectController!;
+        await c.load();
+        final snap = c.snapshot!;
+        await tester.pumpWidget(
+          _app(
+            TeamProjectServers(
+              controller: c,
+              projectId: snap.projects.first.id,
+            ),
+          ),
+        );
+        await _settle(tester);
+        expect(
+          find.text(
+            lanes ? _en.teamServerPhoneNoAnswer : _en.teamServerPhoneNotReady,
+          ),
+          findsOneWidget,
+          reason: 'lanes=$lanes',
+        );
+        expect(
+          find.byKey(
+            ValueKey(lanes ? 'team-server-retry' : 'team-server-set-up'),
+          ),
+          findsOneWidget,
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
     });
 
     testWidgets('the demo is never gated, even when its page is bound to a '

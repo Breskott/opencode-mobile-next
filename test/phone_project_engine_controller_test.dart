@@ -9,6 +9,8 @@ import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/domain/phone_project_engine.dart';
 import 'package:opencode_mobile/state/phone_project_engine.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_probe.dart'
+    show ProbeFound;
 import 'package:opencode_mobile/orchestration/adapters/inapp/phone_engine_gateway.dart';
 
 import 'phone_project_engine_gateway_test.dart' as fake;
@@ -816,5 +818,42 @@ void main() {
     tracker.observeBusy('person');
     tracker.reconcile({}, tracker.epoch, '/chat');
     expect(tracker.sessionIds, isEmpty);
+  });
+
+  test('the orchestration probe carries the proven boundary tier from the '
+      'real health shape', () async {
+    final c = PhoneProjectEngineController(
+      store: store,
+      bridge: NativeBridge(),
+      gatewayBuilder:
+          ({required baseUrl, required profileId, required bearerToken}) =>
+              PhoneEngineGateway(
+                baseUrl: baseUrl,
+                profileId: profileId,
+                bearerToken: bearerToken,
+                adapter: fake.FakeEngineAdapter((r) async {
+                  final wire = fake.health(profileId, execution: true)
+                    ..['boundaryTier'] = 'proot';
+                  (wire['capabilities'] as Map)['boundaryTier'] = 'proot';
+                  return fake.jsonBody(wire);
+                }),
+              ),
+    );
+    addTearDown(c.close);
+    final verdict = await c.orchestrationProbe(
+      ServerProfile(
+        id: 'phone',
+        name: 'Phone',
+        baseUrl: 'http://127.0.0.1:4097',
+        teamEngineAuth: 'engine-private-token',
+        orchestration: const OrchestrationConfig(
+          provider: OrchestrationProvider.phoneEngine,
+          url: 'http://127.0.0.1:4098',
+        ),
+      ),
+    );
+    expect(verdict, isA<ProbeFound>());
+    expect((verdict as ProbeFound).boundaryTier, 'proot');
+    expect(verdict.readOnly, isFalse);
   });
 }

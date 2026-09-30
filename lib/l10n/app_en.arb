@@ -31033,5 +31033,11 @@
   "teamRefusalPlanPhase": "A phase in the plan isn't complete.",
   "@teamRefusalPlanPhase": {"description": "AI Team: why a project command was refused (planPhaseInvalid)."},
   "teamRefusalPlanPhaseNext": "Check each phase has tasks and criteria, then approve again.",
-  "@teamRefusalPlanPhaseNext": {"description": "AI Team: what to do next after planPhaseInvalid."}
+  "@teamRefusalPlanPhaseNext": {"description": "AI Team: what to do next after planPhaseInvalid."},
+  "teamServerPhoneFailed": "AI Team on this phone isn't answering, so its work can't be reached.",
+  "@teamServerPhoneFailed": {"description": "Project Servers page: why This phone is not reachable when the team's engine did not answer."},
+  "teamServerPhoneNotReady": "AI Team on this phone isn't ready: its safety check hasn't passed.",
+  "@teamServerPhoneNotReady": {"description": "Project Servers page: why This phone is not reachable when the engine cannot run work yet."},
+  "teamServerPhoneNoAnswer": "OpenCode on this phone didn't answer the last check.",
+  "@teamServerPhoneNoAnswer": {"description": "Project Servers page: why This phone is not reachable when the team is ready but OpenCode did not answer."}
 }

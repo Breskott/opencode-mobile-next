@@ -618,6 +618,7 @@ class PhoneProjectEngineController {
         version: h.engineVersion,
         readOnly: !h.canExecute,
         capabilities: client.capabilities,
+        boundaryTier: h.boundaryTier,
       );
     } catch (_) {
       return const ProbeUnreachable(error: 'Phone engine unavailable');

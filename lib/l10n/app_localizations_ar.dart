@@ -26363,4 +26363,16 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamRefusalPlanPhaseNext =>
       'Check each phase has tasks and criteria, then approve again.';
+
+  @override
+  String get teamServerPhoneFailed =>
+      'AI Team on this phone isn\'t answering, so its work can\'t be reached.';
+
+  @override
+  String get teamServerPhoneNotReady =>
+      'AI Team on this phone isn\'t ready: its safety check hasn\'t passed.';
+
+  @override
+  String get teamServerPhoneNoAnswer =>
+      'OpenCode on this phone didn\'t answer the last check.';
 }
