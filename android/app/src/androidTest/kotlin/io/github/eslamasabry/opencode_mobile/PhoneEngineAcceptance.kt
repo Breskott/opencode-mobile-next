@@ -72,6 +72,12 @@ class PhoneEngineAcceptance : Instrumentation() {
     private fun execute() {
         requireSafe(targetContext.packageName == "io.github.eslamasabry.opencode_mobile.preview", "preview_required")
         requireSafe(arguments.getString("isolatedQa") == "true", "isolated_qa_required")
+        if (arguments.getString("nativeRegressions") == "true") {
+            currentStep = "native_regressions"
+            PhoneEngineNativeRegressions.run(targetContext)
+            emit("PASS", currentStep, "verified")
+            return
+        }
         requireSafe(arguments.getString("allowModelSpend") == "true", "model_spend_required")
         requireSafe(arguments.getString("server") == "http://127.0.0.1:4097", "in_app_server_required")
         val model = arguments.getString("model") ?: throw Refused("model_required")

@@ -128,9 +128,8 @@ internal class PhoneEngineNative(private val context: Context) {
         boundaryGeneration = proof?.generation
         boundaryReason = if (proof != null) "attestation_pending" else fallbackReason
         try {
-            val actualPort = awaitReady(child, token, profile)
+            val (actualPort, health) = authenticatedStartup(child, token, profile)
             activePort = actualPort
-            val health = awaitHealth(child, actualPort, token, profile)
             verifiedBoundary = proof != null && health.optJSONObject("capabilities")?.optBoolean("boundary") == true
             executionAvailable = verifiedBoundary && health.optJSONObject("capabilities")?.optBoolean("execution") == true
             if (proof != null) boundaryReason = if (verifiedBoundary) "boundary_attested" else "attestation_rejected"
@@ -232,6 +231,12 @@ internal class PhoneEngineNative(private val context: Context) {
             task.cancel(true)
             throw Failure("engine_ready_invalid")
         }
+    }
+
+    /** Authenticate the private pipe before opening any bearer-authenticated socket. */
+    internal fun authenticatedStartup(child: Process, token: String, profile: String): Pair<Int, JSONObject> {
+        val port = awaitReady(child, token, profile)
+        return Pair(port, awaitHealth(child, port, token, profile))
     }
 
     /** Resolve the system-owned app-data ancestor, never an agent-owned child. */
