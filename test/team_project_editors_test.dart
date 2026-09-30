@@ -155,7 +155,7 @@ void main() {
     );
     tester.testTextInput.hide();
     await tester.pumpAndSettle();
-    await _tap(tester, 'Pause for review after this phase');
+    await _tap(tester, 'Review gate · risky');
     await _tap(tester, 'Build server');
     await _tap(tester, 'Approve and start');
 
