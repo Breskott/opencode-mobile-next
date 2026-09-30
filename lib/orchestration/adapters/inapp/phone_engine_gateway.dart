@@ -265,7 +265,12 @@ class PhoneEngineGateway extends NullOrchestrationGateway
       throw const PhoneEngineException('payloadInvalid');
     }
     try {
-      return TeamWorkspace.fromJson(Map<String, dynamic>.from(raw));
+      final workspace = TeamWorkspace.fromJson(Map<String, dynamic>.from(raw));
+      return workspace.copyWith(
+        projects: List.unmodifiable(
+          workspace.projects.map(_presentPhoneProject),
+        ),
+      );
     } catch (_) {
       throw const PhoneEngineException('payloadInvalid');
     }
@@ -475,4 +480,82 @@ class PhoneEngineGateway extends NullOrchestrationGateway
     await close();
     _dio.close(force: true);
   }
+}
+
+// Translate phone wire states into the existing domain presentation vocabulary.
+// The engine remains authoritative for revisions, approval and retry admission.
+TeamProject _presentPhoneProject(TeamProject project) {
+  final planning = project.planningState;
+  var status = project.status;
+  if (status == 'needsPlanApproval') {
+    status = 'plan';
+  } else if (!project.planApproved &&
+      (status == 'planning' || status == 'interrupted')) {
+    status = switch (planning?.stage) {
+      'starting' ||
+      'planning' ||
+      'preparing' ||
+      'submitting' ||
+      'running' => 'running',
+      'failed' => 'failed',
+      'interrupted' => switch (planning?.reason) {
+        'restartNeedsReconciliation' || 'pauseNeedsReconciliation' => 'stalled',
+        _ => 'failed',
+      },
+      'paused' => 'paused',
+      'stopped' => 'stopped',
+      _ => 'waiting',
+    };
+  }
+  final summary =
+      !project.planApproved &&
+          planning != null &&
+          const ['failed', 'interrupted'].contains(planning.stage)
+      ? _planningCheckpointSummary(planning)
+      : null;
+  return project.copyWith(
+    status: status,
+    tasks: List.unmodifiable(
+      project.tasks.map(
+        (task) => task.copyWith(
+          status: switch (task.status) {
+            'checked' => 'verified',
+            'needsFix' => 'findings',
+            'merging' => 'running',
+            _ => task.status,
+          },
+        ),
+      ),
+    ),
+    timeline: summary == null
+        ? project.timeline
+        : List.unmodifiable([
+            ...project.timeline,
+            TeamTimelineEvent(
+              id: 'phone-planning-checkpoint',
+              kind: 'planningCheckpoint',
+              actor: 'engine',
+              at: planning?.updatedAt ?? '',
+              text: summary,
+            ),
+          ]),
+  );
+}
+
+String _planningCheckpointSummary(TeamPlanningState planning) {
+  final reason = switch (planning.reason) {
+    'sessionFailed' => 'sessionFailed',
+    'promptUncertain' => 'promptUncertain',
+    'modelUnavailable' => 'modelUnavailable',
+    'modelInvalid' => 'modelInvalid',
+    'restartNeedsReconciliation' => 'restartNeedsReconciliation',
+    'pauseNeedsReconciliation' => 'pauseNeedsReconciliation',
+    _ => '',
+  };
+  if (reason.isEmpty) {
+    return 'Planning stopped and needs review.';
+  }
+  return planning.stage == 'failed'
+      ? 'Planning failed ($reason).'
+      : 'Planning needs review ($reason).';
 }
