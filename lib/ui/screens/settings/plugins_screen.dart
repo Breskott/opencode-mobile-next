@@ -54,6 +54,11 @@ String teamRowSubtitle(
   }
   final c = orchestration;
   if (c == null || c.profileId != profile.id) {
+    // A phone team that never proved itself (a failed turn-on leaves its
+    // settings behind) is off, not "On".
+    if (config.provider == OrchestrationProvider.phoneEngine) {
+      return l10n.teamUiRowOff;
+    }
     return l10n.teamUiRowOn(server);
   }
   switch (c.phase) {

@@ -20,6 +20,7 @@ import '../../../builtin/team/builtin_team_job.dart';
 import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
+import '../../../state/profiles.dart' show OrchestrationProvider;
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../kit/scenes/team_scenes.dart';
@@ -324,7 +325,9 @@ Widget _phoneTeamStopped(
 String teamNotAnsweringBody(
   AppLocalizations l10n,
   OrchestrationController controller,
-) => switch (controller.host?.hostMode ?? controller.config.hostMode) {
+) => switch (controller.config.provider == OrchestrationProvider.phoneEngine
+    ? OrchestrationHostMode.phone
+    : (controller.host?.hostMode ?? controller.config.hostMode)) {
   OrchestrationHostMode.phone => l10n.teamUiStateNotAnsweringPhone,
   OrchestrationHostMode.computer => switch (teamComputerName(controller)) {
     final name? => l10n.teamUiStateNotAnsweringComputerNamed(name),

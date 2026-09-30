@@ -330,6 +330,11 @@ class ServerProfile {
 /// or a name the person typed is kept as is.
 String plainServerName(String name) {
   final value = name.trim();
+  // This device by any of its names is "This phone", never "Computer at
+  // 127.0.0.1": a loopback address is not somewhere else.
+  if (isLoopbackHost(value.replaceAll(RegExp(r'[\[\]]'), ''))) {
+    return 'This phone';
+  }
   final ipv4 = RegExp(r'^\d{1,3}(?:\.\d{1,3}){3}$').hasMatch(value);
   final ipv6 =
       value.contains(':') && RegExp(r'^[0-9a-fA-F:.\[\]]+$').hasMatch(value);
