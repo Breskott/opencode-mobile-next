@@ -31013,5 +31013,25 @@
   "phoneTeamProtectedLandlock": "Protected by Android's file protection",
   "@phoneTeamProtectedLandlock": {
     "description": "One line shown when the team is ready: its files are fenced by Android's file protection (Landlock)"
-  }
+  },
+  "teamRefusalRepositoryEmpty": "This repository has no commits yet.",
+  "@teamRefusalRepositoryEmpty": {"description": "AI Team: why a project command was refused (repository_empty)."},
+  "teamRefusalRepositoryEmptyNext": "Make a first commit in it, then start planning again.",
+  "@teamRefusalRepositoryEmptyNext": {"description": "AI Team: what to do next after repository_empty."},
+  "teamRefusalRepositoryLink": "The team couldn't safely copy this repository.",
+  "@teamRefusalRepositoryLink": {"description": "AI Team: why a project command was refused (invalid_proot_object_link)."},
+  "teamRefusalRepositoryLinkNext": "Try again. If it keeps happening, report the problem.",
+  "@teamRefusalRepositoryLinkNext": {"description": "AI Team: what to do next after invalid_proot_object_link."},
+  "teamRefusalRepositoryDamaged": "The repository copy didn't match the original.",
+  "@teamRefusalRepositoryDamaged": {"description": "AI Team: why a project command was refused (repository_object_hash_mismatch)."},
+  "teamRefusalRepositoryDamagedNext": "Try again. If it keeps happening, report the problem.",
+  "@teamRefusalRepositoryDamagedNext": {"description": "AI Team: what to do next after repository_object_hash_mismatch."},
+  "teamRefusalPlanTaskTitle": "A task in the plan has no name.",
+  "@teamRefusalPlanTaskTitle": {"description": "AI Team: why a project command was refused (planTaskTitleRequired)."},
+  "teamRefusalPlanTaskTitleNext": "Give every task a name, then approve again.",
+  "@teamRefusalPlanTaskTitleNext": {"description": "AI Team: what to do next after planTaskTitleRequired."},
+  "teamRefusalPlanPhase": "A phase in the plan isn't complete.",
+  "@teamRefusalPlanPhase": {"description": "AI Team: why a project command was refused (planPhaseInvalid)."},
+  "teamRefusalPlanPhaseNext": "Check each phase has tasks and criteria, then approve again.",
+  "@teamRefusalPlanPhaseNext": {"description": "AI Team: what to do next after planPhaseInvalid."}
 }

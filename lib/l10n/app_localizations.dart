@@ -41309,6 +41309,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Protected by Android\'s file protection'**
   String get phoneTeamProtectedLandlock;
+
+  /// AI Team: why a project command was refused (repository_empty).
+  ///
+  /// In en, this message translates to:
+  /// **'This repository has no commits yet.'**
+  String get teamRefusalRepositoryEmpty;
+
+  /// AI Team: what to do next after repository_empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Make a first commit in it, then start planning again.'**
+  String get teamRefusalRepositoryEmptyNext;
+
+  /// AI Team: why a project command was refused (invalid_proot_object_link).
+  ///
+  /// In en, this message translates to:
+  /// **'The team couldn\'t safely copy this repository.'**
+  String get teamRefusalRepositoryLink;
+
+  /// AI Team: what to do next after invalid_proot_object_link.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again. If it keeps happening, report the problem.'**
+  String get teamRefusalRepositoryLinkNext;
+
+  /// AI Team: why a project command was refused (repository_object_hash_mismatch).
+  ///
+  /// In en, this message translates to:
+  /// **'The repository copy didn\'t match the original.'**
+  String get teamRefusalRepositoryDamaged;
+
+  /// AI Team: what to do next after repository_object_hash_mismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again. If it keeps happening, report the problem.'**
+  String get teamRefusalRepositoryDamagedNext;
+
+  /// AI Team: why a project command was refused (planTaskTitleRequired).
+  ///
+  /// In en, this message translates to:
+  /// **'A task in the plan has no name.'**
+  String get teamRefusalPlanTaskTitle;
+
+  /// AI Team: what to do next after planTaskTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Give every task a name, then approve again.'**
+  String get teamRefusalPlanTaskTitleNext;
+
+  /// AI Team: why a project command was refused (planPhaseInvalid).
+  ///
+  /// In en, this message translates to:
+  /// **'A phase in the plan isn\'t complete.'**
+  String get teamRefusalPlanPhase;
+
+  /// AI Team: what to do next after planPhaseInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Check each phase has tasks and criteria, then approve again.'**
+  String get teamRefusalPlanPhaseNext;
 }
 
 class _AppLocalizationsDelegate

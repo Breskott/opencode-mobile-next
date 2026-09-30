@@ -26325,4 +26325,42 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get phoneTeamProtectedLandlock =>
       'Protected by Android\'s file protection';
+
+  @override
+  String get teamRefusalRepositoryEmpty =>
+      'This repository has no commits yet.';
+
+  @override
+  String get teamRefusalRepositoryEmptyNext =>
+      'Make a first commit in it, then start planning again.';
+
+  @override
+  String get teamRefusalRepositoryLink =>
+      'The team couldn\'t safely copy this repository.';
+
+  @override
+  String get teamRefusalRepositoryLinkNext =>
+      'Try again. If it keeps happening, report the problem.';
+
+  @override
+  String get teamRefusalRepositoryDamaged =>
+      'The repository copy didn\'t match the original.';
+
+  @override
+  String get teamRefusalRepositoryDamagedNext =>
+      'Try again. If it keeps happening, report the problem.';
+
+  @override
+  String get teamRefusalPlanTaskTitle => 'A task in the plan has no name.';
+
+  @override
+  String get teamRefusalPlanTaskTitleNext =>
+      'Give every task a name, then approve again.';
+
+  @override
+  String get teamRefusalPlanPhase => 'A phase in the plan isn\'t complete.';
+
+  @override
+  String get teamRefusalPlanPhaseNext =>
+      'Check each phase has tasks and criteria, then approve again.';
 }

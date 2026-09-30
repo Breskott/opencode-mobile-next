@@ -22,6 +22,26 @@ class TeamRefusal {
 typedef _Say = String Function(AppLocalizations l);
 
 final Map<String, (_Say, _Say)> _known = {
+  'repository_empty': (
+    (l) => l.teamRefusalRepositoryEmpty,
+    (l) => l.teamRefusalRepositoryEmptyNext,
+  ),
+  'invalid_proot_object_link': (
+    (l) => l.teamRefusalRepositoryLink,
+    (l) => l.teamRefusalRepositoryLinkNext,
+  ),
+  'repository_object_hash_mismatch': (
+    (l) => l.teamRefusalRepositoryDamaged,
+    (l) => l.teamRefusalRepositoryDamagedNext,
+  ),
+  'planTaskTitleRequired': (
+    (l) => l.teamRefusalPlanTaskTitle,
+    (l) => l.teamRefusalPlanTaskTitleNext,
+  ),
+  'planPhaseInvalid': (
+    (l) => l.teamRefusalPlanPhase,
+    (l) => l.teamRefusalPlanPhaseNext,
+  ),
   'unsupportedCommand': (
     (l) => l.teamRefusalUnsupportedCommand,
     (l) => l.teamRefusalUnsupportedCommandNext,
