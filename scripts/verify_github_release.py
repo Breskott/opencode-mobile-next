@@ -27,6 +27,75 @@ def verify_run(run, workflow, head):
     require(run.get("event") in {"push", "workflow_dispatch"}, "Untrusted CI event")
 
 
+QUALITY_WORKFLOW = Path(".github/workflows/android-quality.yml")
+# Parallel jobs of one android-quality run, by job name: each must succeed with
+# these steps successful. The test job is a matrix of shards that together run
+# every test file exactly once, so every shard of the workflow must be present.
+CHECKS_STEPS = {
+    "Verify generated OpenCode SDK integrity",
+    "Test generated OpenCode SDK",
+    "Analyze generated OpenCode SDK",
+    "Analyze",
+    "Check the serial test runner",
+    "Run Android release lint",
+}
+TEST_STEPS = {"Test"}
+BUILD_STEPS = {"Compile test-signed release APK", "Verify release artifact exists"}
+GATE_STEPS = {"Require every quality job"}
+SHARD_NAME = re.compile(r"test \(shard (\d+)/(\d+)\)")
+
+
+def workflow_shard_count(path):
+    """Number of test shards the candidate's quality workflow declares."""
+    require(path.is_file(), f"Missing {path}")
+    found = re.findall(r"^\s*shard:\s*\[([^\]]*)\]\s*$", path.read_text(), re.MULTILINE)
+    require(len(found) == 1, "Quality workflow must declare exactly one test shard matrix")
+    values = [value.strip() for value in found[0].split(",") if value.strip()]
+    require(
+        values and values == [str(index) for index in range(1, len(values) + 1)],
+        "Quality workflow shards must be numbered 1..N",
+    )
+    return len(values)
+
+
+def verify_quality_jobs(data, shard_count):
+    jobs = data.get("jobs")
+    require(isinstance(jobs, list) and jobs, "Quality run has no jobs")
+    require(
+        data.get("total_count", len(jobs)) == len(jobs),
+        "Quality job list is incomplete",
+    )
+
+    def single(name):
+        matches = [job for job in jobs if isinstance(job, dict) and job.get("name") == name]
+        require(len(matches) == 1, f"Quality job {name!r} is missing or duplicated")
+        return matches[0]
+
+    def passed(name, steps):
+        job = single(name)
+        succeeded = {
+            step.get("name") for step in job.get("steps", [])
+            if isinstance(step, dict) and step.get("conclusion") == "success"
+        }
+        require(
+            job.get("conclusion") == "success" and steps <= succeeded,
+            f"Quality job {name!r} did not pass all of its steps (APK-only and partial runs are insufficient)",
+        )
+
+    passed("checks", CHECKS_STEPS)
+    passed("build", BUILD_STEPS)
+    passed("gate", GATE_STEPS)
+    shards = [
+        SHARD_NAME.fullmatch(job.get("name", "")) for job in jobs if isinstance(job, dict)
+    ]
+    require(
+        all(int(match.group(2)) == shard_count for match in shards if match),
+        f"Test shards differ from the workflow's {shard_count}",
+    )
+    for index in range(1, shard_count + 1):
+        passed(f"test (shard {index}/{shard_count})", TEST_STEPS)
+
+
 def verify_notes(root, version):
     committed = Path(f"docs/releases/v{version}.md").read_text().strip()
     require(committed.startswith(f"# OpenCode Mobile {version}\n"), "Missing versioned stable notes")
@@ -80,29 +149,7 @@ def main():
         require(release.get("prerelease") is False, "Expected a stable draft")
         verify_run(read_json(root, "build.json"), "android-release", head)
         verify_run(read_json(root, "quality.json"), "android-quality", head)
-        required_steps = {
-            "Verify generated OpenCode SDK integrity",
-            "Test generated OpenCode SDK",
-            "Analyze generated OpenCode SDK",
-            "Analyze",
-            "Check the serial test runner",
-            "Test",
-            "Run Android release lint",
-            "Compile test-signed release APK",
-            "Verify release artifact exists",
-        }
-        jobs = read_json(root, "jobs.json").get("jobs", [])
-        require(
-            any(
-                job.get("conclusion") == "success"
-                and required_steps <= {
-                    step.get("name") for step in job.get("steps", [])
-                    if step.get("conclusion") == "success"
-                }
-                for job in jobs
-            ),
-            "Full Android quality steps did not pass (APK-only runs are insufficient)",
-        )
+        verify_quality_jobs(read_json(root, "jobs.json"), workflow_shard_count(QUALITY_WORKFLOW))
     elif action == "artifacts":
         name = f"opencode-mobile-{version}.apk"
         require(

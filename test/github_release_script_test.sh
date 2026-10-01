@@ -6,6 +6,9 @@ task_root="$(mktemp -d)"
 trap 'rm -rf -- "$task_root"' EXIT
 mkdir -p "$task_root/dist" "$task_root/scripts" "$task_root/mock-bin" "$task_root/docs/releases" "$task_root/artifact"
 cp "$repo_root/scripts/"{release.sh,release_github.sh,verify_github_release.py} "$task_root/scripts/"
+# Preflight reads the candidate's own quality workflow for its shard count.
+mkdir -p "$task_root/.github/workflows"
+cp "$repo_root/.github/workflows/android-quality.yml" "$task_root/.github/workflows/"
 printf 'version: 1.0.43+49\n' > "$task_root/pubspec.yaml"
 printf '# OpenCode Mobile 1.0.43+49\n\nFixture release notes.\n' > "$task_root/docs/releases/v1.0.43+49.md"
 printf 'fixture signed APK bytes\n' > "$task_root/artifact/opencode-mobile-1.0.43+49.apk"
@@ -80,12 +83,44 @@ def release():
     if flag('MOCK_DUPLICATE_ASSET'):
         assets.append(dict(id=4, name='opencode-mobile-1.0.43+49.apk'))
     return dict(id=int(os.getenv('MOCK_PAYLOAD_ID', '1')), tag_name=os.getenv('MOCK_RELEASE_TAG', 'v1.0.43+49'), assets=assets, draft=not ((root/'published').exists() or flag('MOCK_PUBLISHED')), prerelease=flag('MOCK_PRERELEASE'), body='wrong notes' if flag('MOCK_NOTES') else notes)
+def quality_jobs():
+    """Jobs of one android-quality run; MOCK_JOBS selects a broken variant."""
+    import re
+    workflow = (root/'.github/workflows/android-quality.yml').read_text()
+    shards = len(re.search(r'shard: \[([^\]]*)\]', workflow).group(1).split(','))
+    variant = os.getenv('MOCK_JOBS', 'full')
+    checks = ['Verify generated OpenCode SDK integrity', 'Test generated OpenCode SDK', 'Analyze generated OpenCode SDK', 'Analyze', 'Check the serial test runner', 'Run Android release lint']
+    build = ['Check out source', 'Compile test-signed release APK', 'Verify release artifact exists', 'Upload test-signed APK']
+    def job(name, steps, conclusion='success', step_conclusion='success'):
+        return dict(name=name, conclusion=conclusion, steps=[dict(name=step, conclusion=step_conclusion) for step in steps])
+    if variant == 'legacy':
+        # The old single-job shape: every step in one successful job.
+        steps = checks + ['Test'] + build
+        jobs = [job('verify', steps)]
+        return dict(total_count=len(jobs), jobs=jobs)
+    if variant == 'apk-only':
+        jobs = [job('checks', [], 'skipped'), job('test (shard ${{ matrix.shard }}/${{ strategy.job-total }})', [], 'skipped'), job('build', build), job('gate', ['Require every quality job'])]
+        return dict(total_count=len(jobs), jobs=jobs)
+    count = shards - 1 if variant == 'fewer-shards' else shards
+    jobs = [job('checks', checks, step_conclusion='skipped' if variant == 'lint-skipped' else 'success')]
+    for index in range(1, count + 1):
+        if variant == 'shard-missing' and index == count:
+            continue
+        conclusion = 'failure' if variant == 'shard-failed' and index == 3 else 'success'
+        step = 'skipped' if variant == 'shard-test-skipped' and index == 2 else 'success'
+        jobs.append(job(f'test (shard {index}/{count})', ['Set up pinned Flutter', 'Test'], conclusion, step))
+    if variant == 'duplicate-shard':
+        jobs.append(job(f'test (shard 1/{count})', ['Test']))
+    jobs.append(job('build', build[:-2] if variant == 'build-unverified' else build))
+    jobs.append(job('gate', ['Require every quality job'], 'failure' if variant == 'gate-failed' else 'success'))
+    if variant == 'gate-missing':
+        jobs.pop()
+    return dict(total_count=len(jobs) + (1 if variant == 'truncated' else 0), jobs=jobs)
 if args[0] == 'api':
     path = args[1]
     assert path.startswith('repos/Eslamasabry/opencode-mobile-next/')
     if '/jobs?' in path:
-        names = ['Verify generated OpenCode SDK integrity', 'Test generated OpenCode SDK', 'Analyze generated OpenCode SDK', 'Analyze', 'Check the serial test runner', 'Test', 'Run Android release lint', 'Compile test-signed release APK', 'Verify release artifact exists']
-        print(json.dumps(dict(jobs=[dict(conclusion='success', steps=[dict(name=name, conclusion='skipped' if name == 'Test' and flag('MOCK_APK_ONLY') else 'success') for name in names])])))
+        print(json.dumps(quality_jobs()))
     elif '/actions/runs/' in path:
         workflow = 'android-quality' if path.endswith('/101') else 'android-release'
         print(json.dumps(dict(head_sha=head, path=f'.github/workflows/{workflow}.yml', status='completed', conclusion='failure' if flag('MOCK_CI_FAILED') else 'success', event='workflow_dispatch')))
@@ -188,7 +223,13 @@ run_case fail publish MOCK_TAG_MISSING=true
 run_case fail publish MOCK_TAG_HEAD=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 run_case fail publish MOCK_CI_HEAD=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 run_case fail publish MOCK_CI_FAILED=true
-run_case fail publish MOCK_APK_ONLY=true
+# Quality evidence: one run whose checks, build, gate and every test shard of
+# the workflow passed. The old single-job shape and partial runs are refused.
+for variant in apk-only legacy shard-missing shard-failed shard-test-skipped \
+  fewer-shards duplicate-shard lint-skipped build-unverified gate-failed \
+  gate-missing truncated; do
+  run_case fail publish MOCK_JOBS="$variant"
+done
 run_case fail publish MOCK_PUBLISHED=true
 run_case fail publish MOCK_PRERELEASE=true
 run_case fail publish MOCK_NOTES=true

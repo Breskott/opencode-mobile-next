@@ -1,3 +1,10 @@
+# The gate runs as parallel jobs in one workflow run: `checks` (SDK, analyze,
+# runner unit tests, Android lint), `test` (the whole recursive suite split into
+# timing-balanced shards by tool/qa/run_serial_tests.py; together the shards run
+# every test file exactly once), `build` (the test-signed release APK) and a
+# final `gate` that succeeds only when all of them did. Release preflight
+# (scripts/verify_github_release.py) checks those jobs and step names.
+#
 # Branch APKs use one stable, non-production CI certificate so they can update
 # one another. Fork pull requests cannot access secrets and use an isolated
 # key instead. Neither certificate is the production release identity.
@@ -30,9 +37,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
+  checks:
+    name: checks
+    if: ${{ !inputs.apk_only }}
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 20
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -47,6 +56,8 @@ jobs:
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
           gradle-version: "9.5.0"
+          # Branch runs on dev and master refresh the dependency cache too.
+          cache-read-only: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/dev' }}
 
       - name: Set up pinned Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
@@ -59,13 +70,11 @@ jobs:
         run: flutter pub get
 
       - name: Set up Node for the optional quota collector tests
-        if: ${{ !inputs.apk_only }}
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: "24.19.0"
 
       - name: Test optional quota collector with synthetic inputs
-        if: ${{ !inputs.apk_only }}
         run: node --test tool/quota/collector.test.mjs
 
       - name: Generate ignored Gradle wrapper
@@ -76,11 +85,9 @@ jobs:
           --gradle-distribution-sha256-sum a3c4ba4aca8f0075688b9c5b18939fd28e8cb4357c227da5c1d9f38343791439
 
       - name: Resolve generated SDK dependencies
-        if: ${{ !inputs.apk_only }}
         run: dart pub get --directory packages/opencode_sdk --enforce-lockfile
 
       - name: Verify generated OpenCode SDK integrity
-        if: ${{ !inputs.apk_only }}
         run: |
           dart run tool/sdk/verify_contract.dart \
             contracts/opencode-openapi-f12e14cf.json \
@@ -102,50 +109,121 @@ jobs:
             contracts/opencode-sdk-matrix.md
 
       - name: Test generated OpenCode SDK
-        if: ${{ !inputs.apk_only }}
         working-directory: packages/opencode_sdk
         run: dart test
 
       - name: Analyze generated OpenCode SDK
-        if: ${{ !inputs.apk_only }}
         working-directory: packages/opencode_sdk
         run: dart analyze
 
       - name: Analyze
-        if: ${{ !inputs.apk_only }}
         run: flutter analyze
 
       - name: Check the serial test runner
-        if: ${{ !inputs.apk_only }}
         run: python3 -m unittest discover -s tool/qa -p 'test_*.py'
 
       - name: Run Android release lint
-        if: ${{ !inputs.apk_only }}
         run: ./android/gradlew -p android :app:lintRelease --no-daemon
 
+  test:
+    # The shard count is the matrix length, so the name, the runner and the
+    # release preflight can never disagree about how many shards make a run.
+    name: test (shard ${{ matrix.shard }}/${{ strategy.job-total }})
+    if: ${{ !inputs.apk_only }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Native harness tests compile Kotlin and run it on the JVM.
+      - name: Set up Java 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up pinned Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
       - name: Test
-        if: ${{ !inputs.apk_only }}
         # Same runner as the local gate (tool/qa/run_serial_tests.py): every
-        # test/**/*_test.dart is discovered recursively and run exactly once,
-        # nested suites such as the theme goldens included, in bounded serial
-        # chunks with --concurrency=1. A hung chunk is stopped at the deadline
-        # and named in summary.json instead of silently consuming the job
-        # timeout. Per-chunk logs land in build/traycer for the artifact below.
+        # test/**/*_test.dart is discovered recursively, nested suites such as
+        # the theme goldens included, and split into timing-balanced shards
+        # (tool/qa/test_timings.json); every file runs in exactly one shard.
+        # A shard runs as one bounded chunk, four files at a time on the
+        # runner's four vCPUs. A hung chunk is stopped at the deadline and
+        # named in summary.json with its failing files instead of silently
+        # consuming the job timeout. Logs and JSON reports land in
+        # build/traycer for the artifact below.
         run: >-
           python3 tool/qa/run_serial_tests.py
           --flutter "$(command -v flutter)"
-          --chunk-size 40
-          --chunk-timeout 1200
+          --shard-index ${{ matrix.shard }}
+          --shard-count ${{ strategy.job-total }}
+          --concurrency 4
+          --chunk-size 1000
+          --chunk-timeout 900
+          --json-report
           --output-root build/traycer
 
       - name: Upload serial test logs
-        if: ${{ always() && !inputs.apk_only }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: serial-test-logs-${{ github.sha }}
+          name: serial-test-logs-${{ github.sha }}-shard-${{ matrix.shard }}
           path: build/traycer
           if-no-files-found: ignore
           retention-days: 7
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Java 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle 9.5
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          gradle-version: "9.5.0"
+          # Branch runs on dev and master refresh the dependency cache too.
+          cache-read-only: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/dev' }}
+
+      - name: Set up pinned Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Generate ignored Gradle wrapper
+        run: >-
+          gradle -p android wrapper
+          --gradle-version 9.5.0
+          --distribution-type all
+          --gradle-distribution-sha256-sum a3c4ba4aca8f0075688b9c5b18939fd28e8cb4357c227da5c1d9f38343791439
 
       - name: Configure CI signing identity
         env:
@@ -216,3 +294,31 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 7
+
+  gate:
+    # The one required result: every quality job passed. An APK-only manual
+    # run passes here with checks and tests skipped, and release preflight
+    # rejects it for exactly that reason.
+    name: gate
+    if: ${{ !cancelled() }}
+    needs: [checks, test, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every quality job
+        env:
+          APK_ONLY: ${{ inputs.apk_only && 'true' || 'false' }}
+          CHECKS: ${{ needs.checks.result }}
+          TESTS: ${{ needs.test.result }}
+          BUILD: ${{ needs.build.result }}
+        run: |
+          set -euo pipefail
+          echo "checks=$CHECKS test=$TESTS build=$BUILD apk_only=$APK_ONLY"
+          test "$BUILD" = success
+          if [[ "$APK_ONLY" == true ]]; then
+            test "$CHECKS" = skipped
+            test "$TESTS" = skipped
+          else
+            test "$CHECKS" = success
+            test "$TESTS" = success
+          fi
