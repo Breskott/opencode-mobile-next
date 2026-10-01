@@ -366,6 +366,7 @@ impl Store {
             "sessionUsage",
             "promptDispatch",
             "freshSessionIds",
+            "resolvedModels",
         ];
         let fields = patch.as_object().ok_or(StoreError("invalidJobPatch"))?;
         if fields.keys().any(|k| !allowed.contains(&k.as_str()))
@@ -419,6 +420,39 @@ impl Store {
         {
             return Err(StoreError("projectPaused"));
         }
+        if let Some(resolved) = patch.get("resolvedModels") {
+            let resolved = resolved
+                .as_object()
+                .filter(|models| !models.is_empty())
+                .ok_or(StoreError("invalidResolvedModel"))?;
+            if !j["resolvedModels"].is_null() && !j["resolvedModels"].is_object() {
+                return Err(StoreError("storageCorrupt"));
+            }
+            for (role, value) in resolved {
+                let model = value
+                    .as_str()
+                    .filter(|model| !model.is_empty())
+                    .ok_or(StoreError("invalidResolvedModel"))?;
+                if !["planner", "worker", "checker"].contains(&role.as_str())
+                    || crate::opencode::validate_model(model).is_err()
+                {
+                    return Err(StoreError("invalidResolvedModel"));
+                }
+                if let Some(previous) = j["resolvedModels"].get(role) {
+                    if previous != value {
+                        return Err(StoreError("resolvedModelAlreadyRecorded"));
+                    }
+                } else if j["sessionIds"].get(role).is_some()
+                    || j["promptDispatch"].get(role).is_some()
+                    || patch["sessionIds"].get(role).is_some()
+                    || patch["promptDispatch"].get(role).is_some()
+                {
+                    // A provider selection is fixed before the session exists,
+                    // including across death and lost dispatch acknowledgments.
+                    return Err(StoreError("modelResolutionTooLate"));
+                }
+            }
+        }
         if let Some(fresh) = patch.get("freshSessionIds") {
             for (role, session) in fresh.as_object().ok_or(StoreError("invalidJobPatch"))? {
                 if !["planner", "worker", "checker"].contains(&role.as_str())
@@ -444,7 +478,17 @@ impl Store {
             ) {
                 continue;
             }
-            if key == "freshSessionIds" {
+            if key == "resolvedModels" {
+                if j["resolvedModels"].is_null() {
+                    j["resolvedModels"] = json!({});
+                }
+                for (role, model) in value
+                    .as_object()
+                    .ok_or(StoreError("invalidResolvedModel"))?
+                {
+                    j["resolvedModels"][role] = model.clone();
+                }
+            } else if key == "freshSessionIds" {
                 if j["freshSessionIds"].is_null() {
                     j["freshSessionIds"] = json!({});
                 }
