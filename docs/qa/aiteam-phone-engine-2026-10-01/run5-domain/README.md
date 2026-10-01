@@ -18,3 +18,7 @@ Non-goal: change UI screens, submit/replay prompts, start a replacement session,
 `test/phone_engine_status_presentation_test.dart` adds six cases covering successful Resume predicates, missing command advertisements, unsafe review/redaction, mixed checkpoints, refetch presentation, and preservation of explicit Stop/Pause. It updates the old planner `stalled` expectation to the advertised `paused` Resume contract.
 
 Formatting and `git diff --check` passed locally. This worker did not launch Flutter tests, analyzer, native builds or emulator processes; the coordinator owns serialized execution and will record the results in the run 5 backend QA README.
+
+## Limited admission diagnostics
+
+Interrupted planning/task summaries now retain the scheduler's exact static admission codes, including `totalUsageUnknown`, `dailyUsageUnknown`, `tokenUsageUnknown`, `budgetReached`, and `taskTokenBudgetReached`. The scheduler does not return `budgetExceeded`; that invented value remains omitted alongside unknown private/error text. Two regressions cover every current scheduler admission code in both planner and task checkpoints, plus unknown-budget/secret redaction. These summaries stay read-only and never authorize prompt resend. Root owns the focused test rerun.

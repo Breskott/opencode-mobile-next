@@ -344,6 +344,94 @@ void main() {
   });
 
   test(
+    'scheduler admission codes remain visible in interrupted checkpoints',
+    () async {
+      // Exact static codes returned by engine/phone/src/scheduler.rs, including
+      // budgetReached/taskTokenBudgetReached rather than invented budget codes.
+      for (final reason in [
+        'jobNotQueued',
+        'projectNotRunning',
+        'serverOffline',
+        'chatBusy',
+        'chatStateUnknown',
+        'chargingRequired',
+        'chargingUnknown',
+        'chooseExecutionMode',
+        'serverCapUnknown',
+        'laneCap',
+        'invalidDependencies',
+        'dependencyPending',
+        'missingDependency',
+        'chooseBudget',
+        'totalUsageUnknown',
+        'dailyUsageUnknown',
+        'invalidBudget',
+        'budgetReached',
+        'tokenUsageUnknown',
+        'taskTokenBudgetReached',
+      ]) {
+        for (final planApproved in [false, true]) {
+          final source = planned.copyWith(
+            status: 'interrupted',
+            planApproved: planApproved,
+            planningState: TeamPlanningState(
+              stage: 'interrupted',
+              reason: reason,
+            ),
+            tasks: planApproved
+                ? [task.copyWith(status: 'interrupted', reason: reason)]
+                : [],
+          );
+          final harness = client(source);
+          final project =
+              (await harness.gateway.teamWorkspace()).projects.single;
+          expect(project.timeline.last.text, contains('($reason)'));
+          expect(project.timeline.last.text, isNot(contains('Resume')));
+          expect(project.revision, source.revision);
+          expect(
+            harness.adapter.requests.every((r) => r.method == 'GET'),
+            isTrue,
+          );
+        }
+      }
+    },
+  );
+
+  test(
+    'checkpoint diagnostics reject unknown budget codes and secret text',
+    () async {
+      for (final reason in [
+        'budgetExceeded',
+        'private key secret-provider-value',
+      ]) {
+        for (final planApproved in [false, true]) {
+          final source = planned.copyWith(
+            status: 'interrupted',
+            planApproved: planApproved,
+            planningState: TeamPlanningState(
+              stage: 'interrupted',
+              reason: reason,
+            ),
+            tasks: planApproved
+                ? [task.copyWith(status: 'interrupted', reason: reason)]
+                : [],
+          );
+          final project = (await client(
+            source,
+          ).gateway.teamWorkspace()).projects.single;
+          expect(project.timeline.last.text, isNot(contains(reason)));
+          expect(
+            project.timeline.last.text,
+            planApproved
+                ? 'Work was interrupted and needs review.'
+                : 'Planning stopped and needs review.',
+          );
+        }
+      }
+    },
+  );
+
+  test(
     'mixed safe and review-only checkpoints do not offer project Resume',
     () async {
       final source = planned.copyWith(

@@ -612,6 +612,31 @@ bool _resumableInterruption(String reason) => const [
   'pauseNeedsReconciliation',
 ].contains(reason);
 
+// Exact static admission codes from the native scheduler. Dynamic native/model
+// text is never substituted for these application-authored diagnostic codes.
+const _phoneAdmissionReasons = {
+  'jobNotQueued',
+  'projectNotRunning',
+  'serverOffline',
+  'chatBusy',
+  'chatStateUnknown',
+  'chargingRequired',
+  'chargingUnknown',
+  'chooseExecutionMode',
+  'serverCapUnknown',
+  'laneCap',
+  'invalidDependencies',
+  'dependencyPending',
+  'missingDependency',
+  'chooseBudget',
+  'totalUsageUnknown',
+  'dailyUsageUnknown',
+  'invalidBudget',
+  'budgetReached',
+  'tokenUsageUnknown',
+  'taskTokenBudgetReached',
+};
+
 String _taskCheckpointSummary(TeamTask task, {required bool canResume}) {
   // These are application-authored codes. Never copy paths, model error text
   // or secrets into the diagnostic timeline. Resume only refetches a session.
@@ -624,6 +649,7 @@ String _taskCheckpointSummary(TeamTask task, {required bool canResume}) {
     'sessionUncertain' ||
     'promptUncertain' ||
     'sessionCreateUncertain' => task.reason,
+    _ when _phoneAdmissionReasons.contains(task.reason) => task.reason,
     _ => '',
   };
   if (canResume) {
@@ -661,6 +687,7 @@ String _planningCheckpointSummary(
     'recoveryNeedsReview' => planning.reason,
     'restartNeedsReconciliation' => 'restartNeedsReconciliation',
     'pauseNeedsReconciliation' => 'pauseNeedsReconciliation',
+    _ when _phoneAdmissionReasons.contains(planning.reason) => planning.reason,
     _ => '',
   };
   if (reason.isEmpty) {
