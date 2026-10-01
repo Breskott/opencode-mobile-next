@@ -539,7 +539,8 @@ void main() {
       debugBuiltinTeam = _BuiltinTeam();
       final engine = FakeSetupEngine(registry: _teamRegistry);
       PhoneSetup.engine = engine;
-      PhoneTeamSetup.debugPorts = (_) => _WaitingPhone();
+      final phone = _WaitingPhone();
+      PhoneTeamSetup.debugPorts = (_) => phone;
       addTearDown(() => PhoneTeamSetup.debugPorts = null);
       _mockChannels();
       final controller = await _boot(_inApp());
@@ -551,6 +552,9 @@ void main() {
       await _settle(tester);
       expect(_key('phone-team-steps'), findsOneWidget);
       expect(find.textContaining(_en.phoneTeamReplyWaiting), findsOneWidget);
+      // The reply ends, so the page's wait (and its polling timer) ends too.
+      phone.endReply();
+      await _settle(tester);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
@@ -866,12 +870,20 @@ void main() {
 
 /// A phone with a reply still running: the setup page waits, changes nothing.
 class _WaitingPhone extends ChangeNotifier implements PhoneTeamSetupPorts {
+  bool replying = true;
+
+  /// The reply ends: the setup stops polling for it.
+  void endReply() {
+    replying = false;
+    notifyListeners();
+  }
+
   @override
   bool get hasServer => true;
   @override
   bool get wasOn => false;
   @override
-  bool get replyRunning => true;
+  bool get replyRunning => replying;
   @override
   Listenable get replyChanges => this;
   @override

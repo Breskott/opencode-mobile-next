@@ -35,6 +35,8 @@ import 'package:opencode_mobile/ui/widgets/team_switch.dart';
 import 'package:opencode_mobile/voice/device.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'team_open_settings.dart';
+
 final _en = lookupAppLocalizations(const Locale('en'));
 final _clock = DateTime.utc(2026, 9, 27, 14, 2);
 
@@ -216,7 +218,7 @@ Future<void> _settle(WidgetTester tester) async {
 
 /// Picks [item] from the team page's top bar menu.
 Future<void> _menu(WidgetTester tester, String item) async {
-  await tester.tap(_key('team-home-settings'));
+  await openTeamSettingsFromHome(tester);
   await _settle(tester);
   await tester.tap(_key(item));
   await _settle(tester);
@@ -297,7 +299,7 @@ void main() {
       await _settle(tester);
       expect(find.byType(TeamHomeScreen), findsOneWidget);
       // No Change address for a team the app runs itself; here there is.
-      await tester.tap(_key('team-home-settings'));
+      await openTeamSettingsFromHome(tester);
       await _settle(tester);
       expect(_key('team-home-change-address'), findsOneWidget);
       await tester.tap(_key('team-home-turn-off'));
@@ -356,8 +358,12 @@ void main() {
         ),
       );
       await _settle(tester);
+      // The old in-app team stays On after the update: the person keeps it
+      // first (the migration screen), then it is the team.
+      await tester.tap(_key('team-migration-keep'));
+      await _settle(tester);
       expect(find.byType(TeamHomeScreen), findsOneWidget);
-      await tester.tap(_key('team-home-settings'));
+      await openTeamSettingsFromHome(tester);
       await _settle(tester);
       // Its address is the app's own: nothing to change.
       expect(_key('team-home-change-address'), findsNothing);
@@ -371,7 +377,9 @@ void main() {
       expect(find.text(_en.teamHomeTurnOffFailed), findsOneWidget);
 
       builtin.fail = false;
-      await _menu(tester, 'team-home-turn-off');
+      // A failed turn-off leaves Team settings open: try again from there.
+      await tester.tap(_key('team-home-turn-off'));
+      await _settle(tester);
       await tester.tap(_key('team-turn-off-confirm'));
       await _settle(tester);
       expect(builtin.turnOffs, 2);
@@ -599,9 +607,11 @@ void main() {
       );
       await _settle(tester);
       expect(_key('team-home-info'), findsNothing);
-      expect(find.text(_en.teamUiDisclaimerPhone), findsOneWidget);
-      await tester.tap(_key('team-home-settings'));
+      // The work page no longer carries the speed line; Team settings does.
+      expect(find.text(_en.teamUiDisclaimerPhone), findsNothing);
+      await openTeamSettingsFromHome(tester);
       await _settle(tester);
+      expect(find.text(_en.teamUiDisclaimerPhone), findsOneWidget);
       await tester.tap(_key('team-home-host-row'));
       await _settle(tester);
       expect(_key('team-home-host-sheet'), findsOneWidget);

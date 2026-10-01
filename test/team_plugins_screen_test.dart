@@ -27,6 +27,8 @@ import 'package:opencode_mobile/ui/widgets/team_discovery_card.dart';
 import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'team_open_settings.dart';
+
 const _profileId = 'workstation';
 
 Directory _findFixtureRoot() {
@@ -242,7 +244,7 @@ void main() {
 
   /// Picks [item] from the team page's top bar menu.
   Future<void> menu(WidgetTester tester, String item) async {
-    await tester.tap(find.byKey(const ValueKey('team-home-settings')));
+    await openTeamSettingsFromHome(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(ValueKey(item)));
     await tester.pumpAndSettle();
@@ -590,7 +592,7 @@ void main() {
         // The fixture reports the config's own mode, so the chosen kind
         // stands (a phone config is a phone gateway).
         expect(controller.orchestration?.phase, OrchestrationPhase.ready);
-        await tester.tap(find.byKey(const ValueKey('team-home-settings')));
+        await openTeamSettingsFromHome(tester);
         await tester.pumpAndSettle();
         expect(speed(tester), teamHostDisclaimer(l10n, kind));
         for (final other in OrchestrationHostKind.values) {
@@ -671,7 +673,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(p.orchestration, isNotNull);
       expect(controller.orchestration?.phase, OrchestrationPhase.ready);
-      expect(find.byType(TeamHomeScreen), findsOneWidget);
+      // Still on Team settings, which sits over the team's page.
+      expect(find.byKey(const ValueKey('team-settings')), findsOneWidget);
     });
   });
 

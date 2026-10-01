@@ -254,10 +254,16 @@ void main() {
               // menu, reachable at large text.
               expect(controller.orchestration?.phase, OrchestrationPhase.ready);
               expect(find.byKey(const ValueKey('team-home')), findsOneWidget);
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('team-home-settings')),
+              // One action stays in view on a phone; Team settings waits
+              // in the overflow, named in the page's language.
+              await tester.tap(find.byKey(const ValueKey('team-home-more')));
+              await tester.pumpAndSettle();
+              await tester.tap(
+                find.text(
+                  lookupAppLocalizations(locale).teamSettingsOpenTooltip,
+                ),
               );
+              await tester.pumpAndSettle();
               final off = find.byKey(const ValueKey('team-home-turn-off'));
               await tester.ensureVisible(off);
               await tester.pumpAndSettle();

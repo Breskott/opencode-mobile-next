@@ -207,24 +207,44 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
     return connection;
   }
 
+  bool _closed = false;
+
+  /// Closes this page once, however the team went away.
+  void _close() {
+    if (_closed || !mounted) return;
+    _closed = true;
+    Navigator.of(context).pop();
+  }
+
   void _changed() {
-    if (mounted) Navigator.of(context).pop();
+    _close();
     widget.onTeamChanged?.call();
+  }
+
+  /// The team was turned off or removed elsewhere (the phone's own Remove):
+  /// there is nothing left to set up here.
+  bool get _teamGone {
+    final profile = widget.connection?.profile;
+    return profile != null &&
+        profile.id == widget.controller.profileId &&
+        profile.orchestration == null;
   }
 
   Future<void> _changeAddress() async {
     final connection = _owner;
     if (connection == null || _switching) return;
     setState(() => _switching = true);
+    var replaced = false;
     try {
-      final saved = await editTeamAddress(
+      replaced = await editTeamAddress(
         context,
         connection,
         probe: widget.probe,
       );
-      if (saved) _changed();
+      if (replaced) _changed();
     } finally {
-      if (mounted) setState(() => _switching = false);
+      // A replaced team keeps this page blank until it has closed.
+      if (!replaced && mounted) setState(() => _switching = false);
     }
   }
 
@@ -238,15 +258,18 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
       _switching = true;
       _offFailed = false;
     });
+    var replaced = false;
     try {
       final outcome = await turnOffTeam(connection, profile);
       if (outcome == TeamOffOutcome.failed) {
         if (mounted) setState(() => _offFailed = true);
         return;
       }
+      replaced = true;
       _changed();
     } finally {
-      if (mounted) setState(() => _switching = false);
+      // A replaced team keeps this page blank until it has closed.
+      if (!replaced && mounted) setState(() => _switching = false);
     }
   }
 
@@ -286,6 +309,11 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
     final l10n = _copy(context);
     final tokens = KitTokens.of(context);
     final controller = widget.controller;
+    // Change address and Turn off replace the team before this page closes
+    // itself: draw nothing for that moment, never listen to a stopped team.
+    if (_switching && widget.connection?.orchestration != controller) {
+      return const SizedBox.shrink();
+    }
     return ListenableBuilder(
       listenable: Listenable.merge([
         controller,
@@ -294,6 +322,10 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
         _roles,
       ]),
       builder: (context, _) {
+        if (_teamGone) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _close());
+          return const SizedBox.shrink();
+        }
         final owner = _owner;
         final builtin = BuiltinTeam.isBuiltinConfig(controller.config);
         final snapshot = controller.snapshot;

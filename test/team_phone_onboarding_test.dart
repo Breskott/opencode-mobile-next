@@ -39,6 +39,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_setup_engine.dart';
 
+import 'team_open_settings.dart';
+
 const _profileId = 'phone';
 
 TeamRuntimeStatus _status(
@@ -990,7 +992,7 @@ void main() {
     // The one AI Team page; the phone team's own controls are in its menu,
     // in every state of the page.
     Future<void> openSheet(WidgetTester tester) async {
-      await tester.tap(find.byKey(const ValueKey('team-home-settings')));
+      await openTeamSettingsFromHome(tester);
       await settle(tester);
       await tester.tap(find.byKey(const ValueKey('team-home-phone-controls')));
       await settle(tester);
@@ -1180,7 +1182,11 @@ void main() {
           controller.orchestrationStore.phoneOffer(_profileId),
           PhoneOffer.dismissed,
         );
-        // The sheet closed with the removal, and the page is off.
+        // The sheet closed with the removal, Team settings closed itself,
+        // and the page is off.
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
         expect(find.byKey(const ValueKey('team-phone-section')), findsNothing);
         expect(find.byKey(const ValueKey('team-intro')), findsOneWidget);
         await teardown(tester, controller);
@@ -1290,7 +1296,7 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(tester.takeException(), isNull);
         // The team page's menu opens the phone team's own controls.
-        await tester.tap(find.byKey(const ValueKey('team-home-settings')));
+        await openTeamSettingsFromHome(tester);
         await settle(tester);
         await tester.tap(
           find.byKey(const ValueKey('team-home-phone-controls')),
