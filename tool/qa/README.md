@@ -59,6 +59,32 @@ contracts inspected by tests change. The exact paths are listed in
 are not included. Generated golden-failure images and tool caches are excluded.
 Old chunk logs/results are retained; retries receive a new attempt number.
 
+## Shards, concurrency and the fast local run
+
+`--shard-index I --shard-count N` (1-based) runs one of N disjoint shards. The
+split is a deterministic longest-first partition weighted by
+`test_timings.json` (seconds per file, load included); a file missing from it
+weighs the median. Every file lands in exactly one shard, so the N shards
+together are the full suite. A sharded or `--concurrency C` run schedules the
+heaviest files first; the default (one shard, `--concurrency 1`) keeps the
+sorted serial order and command line `scripts/release.sh` uses. Shard
+arguments are part of the run snapshot (resume refuses different ones);
+concurrency, like the deadline, can be overridden on resume.
+
+`--json-report` also writes each chunk's Flutter JSON report
+(`chunks/*.report.jsonl`) so `summary.json` lists `failed_files`. Refresh the
+weights from reports, preferably of a serial run:
+
+```bash
+python3 tool/qa/update_test_timings.py build/traycer/*/chunks/*.report.jsonl
+```
+
+`run_tests_fast.sh` is the fast full local run: 4 shards side by side, each
+`--concurrency 2` and holding one `machine_lock.sh` test slot, then
+`summary.txt`/`summary.json` with each shard's status, the failing files and
+an every-file-exactly-once coverage check. CI (`android-quality.yml`) runs the
+same runner as a 6-shard matrix with `--concurrency 4`.
+
 # Commit rules check (opt-in)
 
 `check_commits.sh` (STANDARDS.md G33, PROC-14) checks a branch's commits

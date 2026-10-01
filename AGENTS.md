@@ -24,6 +24,7 @@ flutter test --concurrency=1    # serial in the phone-hosted container; a workst
 ```
 
 - Single file: `flutter test --concurrency=1 test/offline_queue_test.dart`.
+- Fast full run: `tool/qa/run_tests_fast.sh` (4 timing-balanced shards × `--concurrency 2`, one machine_lock slot each; failing files in `build/traycer/fast-*/summary.txt`). CI runs the same runner as 6 shards.
 - If the shell kills long runs, split the suite and run the chunks one after
   another: `find test -name '*_test.dart' | sort | split -n l/6 - "${TMPDIR:-/tmp}/chunk_"`
   (this includes nested directories and goldens).
