@@ -172,6 +172,7 @@ const STORE_ACTIONS: &[&str] = &[
     "createQuickTask",
     "saveSpecDraft",
     "approveSpec",
+    "retryPlan",
     "approvePlan",
     "acceptPhase",
     "acceptMilestone",
@@ -495,6 +496,50 @@ async fn command(
                 store.execute(&c).map_err(|error| internal(error.code()))?,
             ));
         }
+    }
+    if matches!(action, "approveSpec" | "retryPlan")
+        || action == "createQuickTask" && c["confirmed"] == true
+    {
+        let (directory, requested) = {
+            let store = e.store.lock().map_err(|_| internal("storeUnavailable"))?;
+            let workspace = store
+                .workspace()
+                .map_err(|_| internal("storeUnavailable"))?;
+            let repos = if action == "createQuickTask" {
+                &c["repos"]
+            } else {
+                &workspace["projects"]
+                    .as_array()
+                    .and_then(|projects| projects.iter().find(|p| p["id"] == c["projectId"]))
+                    .ok_or(internal("projectMissing"))?["repos"]
+            };
+            let directory = repos
+                .as_array()
+                .and_then(|repos| repos.first())
+                .and_then(|repo| repo["path"].as_str())
+                .ok_or(internal("repoInvalid"))?
+                .to_owned();
+            let role_id = if action == "createQuickTask" {
+                c["roleId"]
+                    .as_str()
+                    .filter(|s| !s.is_empty())
+                    .unwrap_or("worker")
+            } else {
+                "planner"
+            };
+            let requested = workspace["roles"]
+                .as_array()
+                .and_then(|roles| roles.iter().find(|role| role["id"] == role_id))
+                .and_then(|role| role["model"].as_str())
+                .ok_or(internal("invalid_role"))?
+                .to_owned();
+            (directory, requested)
+        };
+        // Refuse before recording a queued planner or creating a session. A
+        // later config change is checked again at actual session admission.
+        resolved_server_model(&e, &directory, &requested)
+            .await
+            .map_err(internal)?;
     }
     let mut imported = vec![];
     if matches!(action, "createProject" | "createQuickTask") {
@@ -1049,6 +1094,9 @@ async fn admitted_prompt(
     checkpoint_role: &str,
     read_only: bool,
 ) -> Result<(), &'static str> {
+    if model.is_empty() {
+        return Err("modelNotConfigured");
+    }
     crate::opencode::validate_model(model).map_err(|error| error.code())?;
     if instructions.is_empty() || prompt.is_empty() {
         return Err("invalid_role");
@@ -1193,6 +1241,83 @@ async fn run_job(e: Shared, job: Value) -> Result<(), &'static str> {
     }
     result
 }
+async fn resolved_server_model(
+    e: &Engine,
+    directory: &str,
+    requested: &str,
+) -> Result<String, &'static str> {
+    tokio::time::timeout(
+        Duration::from_secs(8),
+        e.server.resolve_model(directory, requested),
+    )
+    .await
+    .map_err(|_| "transport_unavailable")?
+    .map_err(|error| error.code())
+}
+
+async fn selected_job_model(
+    e: &Engine,
+    job: &Value,
+    directory: &str,
+    role: &str,
+) -> Result<String, &'static str> {
+    let id = job["id"].as_str().ok_or("jobInvalid")?;
+    // Use the latest durable checkpoint even when the caller holds an older
+    // job snapshot. Reconnect must never switch models after dispatch.
+    {
+        let store = e.store.lock().map_err(|_| "storeUnavailable")?;
+        let jobs = store.jobs().map_err(|_| "jobChanged")?;
+        let current = jobs
+            .iter()
+            .find(|job| job["id"] == id)
+            .ok_or("jobChanged")?;
+        if let Some(model) = current["resolvedModels"][role]
+            .as_str()
+            .filter(|s| !s.is_empty())
+        {
+            crate::opencode::validate_model(model).map_err(|error| error.code())?;
+            return Ok(model.to_owned());
+        }
+    }
+    let requested = if role == "checker" {
+        &job["checkerRole"]["model"]
+    } else {
+        &job["model"]
+    };
+    let model =
+        resolved_server_model(e, directory, requested.as_str().ok_or("invalid_model")?).await?;
+    let store = e.store.lock().map_err(|_| "storeUnavailable")?;
+    let jobs = store.jobs().map_err(|_| "jobChanged")?;
+    let current = jobs
+        .iter()
+        .find(|job| job["id"] == id)
+        .ok_or("jobChanged")?;
+    let stage = current["stage"].as_str().ok_or("jobChanged")?;
+    if !matches!(
+        stage,
+        "queued" | "starting" | "running" | "checking" | "resuming"
+    ) {
+        return Err("jobChanged");
+    }
+    store
+        .update_job(id, stage, &json!({"resolvedModels":{role:model}}))
+        .map_err(|error| error.code())?;
+    Ok(model)
+}
+
+fn project_worker_source(e: &Engine, job: &Value) -> Result<String, &'static str> {
+    let store = e.store.lock().map_err(|_| "storeUnavailable")?;
+    let workspace = store.workspace().map_err(|_| "storeUnavailable")?;
+    workspace["projects"]
+        .as_array()
+        .and_then(|projects| projects.iter().find(|p| p["id"] == job["projectId"]))
+        .and_then(|project| project["repos"].as_array())
+        .and_then(|repos| repos.iter().find(|repo| repo["id"] == job["repoId"]))
+        .and_then(|repo| repo["path"].as_str())
+        .map(str::to_owned)
+        .ok_or("repoInvalid")
+}
+
 async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     let id = job["id"].as_str().ok_or("jobInvalid")?;
     crate::opencode::validate_model(job["model"].as_str().ok_or("invalid_model")?)
@@ -1217,6 +1342,10 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
         return resume_job(e, job).await;
     }
     stage_admitted(e, job).await?;
+    let planner = job["kind"] == "planner";
+    let selected = if planner { "planner" } else { "worker" };
+    let source = project_worker_source(e, job)?;
+    let model = selected_job_model(e, job, &source, selected).await?;
     {
         // The durable starting reservation and cap check are one serialized
         // admission. Concurrent queued futures cannot both take the last lane.
@@ -1235,14 +1364,12 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
         .map_err(|_| "workerCloneFailed")?;
     let directory = format!("{}/{}/{}", e.config.guest_worker_root, repo, task);
     let dev = work["devCommit"].as_str().ok_or("repoInvalid")?;
-    let planner = job["kind"] == "planner";
     let role = if planner {
         "planner"
     } else {
         job["roleId"].as_str().unwrap_or("worker")
     };
     let instructions = job["instructions"].as_str().unwrap_or("");
-    let model = job["model"].as_str().unwrap_or("");
     let session = e
         .server
         .create_session(&directory, role)
@@ -1274,7 +1401,7 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
         &directory,
         &session,
         role,
-        model,
+        &model,
         instructions,
         &request,
         if planner { "planner" } else { "worker" },
@@ -1324,6 +1451,7 @@ async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &
     let collected = collect_against_current_dev(e, repo, task).await?;
     let commit = collected["taskCommit"].as_str().ok_or("repoInvalid")?;
     stage_admitted(e, job).await?;
+    let model = selected_job_model(e, job, &directory, "checker").await?;
     let checker = e
         .server
         .create_session(&directory, "checker")
@@ -1346,9 +1474,7 @@ async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &
         &directory,
         &checker,
         "checker",
-        job["checkerRole"]["model"]
-            .as_str()
-            .ok_or("checkerRoleMissing")?,
+        &model,
         job["checkerRole"]["instructions"]
             .as_str()
             .ok_or("checkerRoleMissing")?,
@@ -1907,6 +2033,167 @@ mod tests {
     use axum::body::Body;
     use tower::ServiceExt;
 
+    fn unapproved_model_project(e: &Engine) -> Value {
+        let store = e.store.lock().unwrap();
+        let created = store.execute(&json!({"requestId":"create-model","action":"createProject","name":"Fresh model",
+            "settings":{"mode":"single","maxLanes":1,"reviewLevel":"milestones","maxFixRounds":0,"chargingOnly":false,"budget":{"chosen":true,"unlimited":true}},
+            "spec":{"goal":"Plan without role overrides","milestones":[{"id":"m","title":"Greeting","criteria":["One greeting"]}]},
+            "repos":[{"id":"repo","serverId":"phone","path":"/root/projects/fresh","devCommit":"seed","mainCommit":"seed"}]})).unwrap();
+        assert_eq!(created["accepted"], true);
+        json!({"requestId":"approve-model","action":"approveSpec","projectId":created["projectId"],"expectedRevision":0})
+    }
+
+    async fn model_server(
+        connected: bool,
+    ) -> (
+        String,
+        Arc<std::sync::atomic::AtomicUsize>,
+        tokio::task::JoinHandle<()>,
+    ) {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let writes = Arc::new(AtomicUsize::new(0));
+        let observed = writes.clone();
+        let app = Router::new().fallback(move |request: Request| {
+            let observed = observed.clone();
+            async move {
+                if request.method() != axum::http::Method::GET { observed.fetch_add(1, Ordering::SeqCst); }
+                assert_eq!(request.uri().query(), Some("directory=%2Froot%2Fprojects%2Ffresh"));
+                let body = match request.uri().path() {
+                    "/config" => json!({"provider":{"fixture":{"apiKey":"never-return-this-secret"}}}),
+                    "/provider" if connected => json!({"connected":["zai-coding-plan"],"default":{"zai-coding-plan":"glm-5.3"},"all":[{"id":"zai-coding-plan","models":{"glm-5.3":{"id":"glm-5.3"}}}]}),
+                    "/provider" => json!({"connected":[],"default":{},"all":[]}),
+                    _ => panic!("model resolution must only read config/provider"),
+                };
+                Json(body)
+            }
+        });
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        (url, writes, server)
+    }
+
+    #[tokio::test]
+    async fn model_preflight_refuses_before_queuing_and_accepts_after_provider_setup() {
+        use std::sync::atomic::Ordering;
+        let root = tempfile::tempdir().unwrap();
+        let mut e = fixture(root.path());
+        let input = unapproved_model_project(&e);
+        let before = e.store.lock().unwrap().workspace().unwrap();
+        let (url, writes, server) = model_server(false).await;
+        Arc::get_mut(&mut e).unwrap().server =
+            OpenCodeClient::new(&url, "opencode", "fixture-only").unwrap();
+        let error = command(State(e.clone()), Ok(Json(input.clone())))
+            .await
+            .err()
+            .unwrap();
+        assert_eq!(error.1, "modelNotConfigured");
+        assert_eq!(e.store.lock().unwrap().workspace().unwrap(), before);
+        assert!(e.store.lock().unwrap().jobs().unwrap().is_empty());
+        assert_eq!(writes.load(Ordering::SeqCst), 0);
+        server.abort();
+        let (url, writes, server) = model_server(true).await;
+        Arc::get_mut(&mut e).unwrap().server =
+            OpenCodeClient::new(&url, "opencode", "fixture-only").unwrap();
+        assert_eq!(
+            command(State(e.clone()), Ok(Json(input.clone())))
+                .await
+                .unwrap()
+                .0["accepted"],
+            true
+        );
+        let job = e.store.lock().unwrap().jobs().unwrap()[0].clone();
+        assert_eq!(job["model"], "");
+        assert_eq!(
+            selected_job_model(&e, &job, "/root/projects/fresh", "planner")
+                .await
+                .unwrap(),
+            "zai-coding-plan/glm-5.3"
+        );
+        let bound = e.store.lock().unwrap().jobs().unwrap()[0].clone();
+        assert_eq!(
+            bound["resolvedModels"]["planner"],
+            "zai-coding-plan/glm-5.3"
+        );
+        assert_eq!(bound["model"], "");
+        assert_eq!(bound["sessionIds"], json!({}));
+        assert_eq!(writes.load(Ordering::SeqCst), 0);
+        server.abort();
+        // Both stale in-memory snapshots and accepted command replays retain
+        // their durable choice even when the server no longer answers.
+        assert_eq!(
+            selected_job_model(&e, &job, "/root/projects/fresh", "planner")
+                .await
+                .unwrap(),
+            "zai-coding-plan/glm-5.3"
+        );
+        assert_eq!(
+            command(State(e.clone()), Ok(Json(input))).await.unwrap().0["replayed"],
+            true
+        );
+    }
+
+    #[tokio::test]
+    async fn model_resolution_cannot_bind_a_stopped_job() {
+        let root = tempfile::tempdir().unwrap();
+        let mut e = fixture(root.path());
+        let input = unapproved_model_project(&e);
+        e.store.lock().unwrap().execute(&input).unwrap();
+        let job = e.store.lock().unwrap().jobs().unwrap()[0].clone();
+        let id = job["id"].as_str().unwrap();
+        e.store
+            .lock()
+            .unwrap()
+            .update_job(id, "queued", &json!({"stage":"stopped"}))
+            .unwrap();
+        let (url, _, server) = model_server(true).await;
+        Arc::get_mut(&mut e).unwrap().server =
+            OpenCodeClient::new(&url, "opencode", "fixture-only").unwrap();
+        assert_eq!(
+            selected_job_model(&e, &job, "/root/projects/fresh", "planner").await,
+            Err("jobChanged")
+        );
+        assert!(e.store.lock().unwrap().jobs().unwrap()[0]["resolvedModels"].is_null());
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn omitted_model_never_reaches_prompt_dispatch() {
+        let root = tempfile::tempdir().unwrap();
+        let e = fixture(root.path());
+        let (_, id) = running_planner(&e);
+        let job = e.store.lock().unwrap().jobs().unwrap()[0].clone();
+        assert_eq!(
+            admitted_prompt(
+                &e,
+                &job,
+                "/root/projects/fresh",
+                "ses_test",
+                "planner",
+                "",
+                "Plan",
+                "Goal",
+                "planner",
+                true
+            )
+            .await,
+            Err("modelNotConfigured")
+        );
+        assert_eq!(
+            e.store
+                .lock()
+                .unwrap()
+                .jobs()
+                .unwrap()
+                .iter()
+                .find(|j| j["id"] == id)
+                .unwrap(),
+            &job
+        );
+    }
+
     fn running_planner(e: &Engine) -> (String, String) {
         let store = e.store.lock().unwrap();
         let created = store.execute(&json!({"requestId":"create-poll","action":"createProject","name":"Poll proof",
@@ -2194,7 +2481,7 @@ mod tests {
             "/root/work/parallel",
             "ses_two",
             "worker",
-            "",
+            "zai/glm-5.3",
             "Do the approved task",
             "Task",
             "worker",
