@@ -775,6 +775,19 @@ fn resolve_runtime_model(
     // /provider defaults are model IDs keyed by provider, not full identities.
     // Follow the runtime's connected order without choosing a catalog-only model.
     for provider in &connected {
+        if *provider == "zai-coding-plan" {
+            // ZAI documents ordinary GLM-5.3 as supported by every Coding Plan:
+            // https://docs.z.ai/devpack/overview#supported-models
+            // OC1's catalog sort can instead nominate a subscription-restricted
+            // highspeed model. Use the documented baseline only for omission;
+            // this is selection policy, never proof of this key's entitlement.
+            let baseline = "zai-coding-plan/glm-5.3";
+            if usable(baseline) {
+                return Ok(baseline.to_owned());
+            }
+            // No suffix stripping or automatic switch to a restricted variant.
+            continue;
+        }
         if let Some(model) = defaults.get(*provider).and_then(Value::as_str) {
             let candidate = format!("{provider}/{model}");
             if usable(&candidate) {
@@ -1448,6 +1461,10 @@ mod tests {
         ] {
             let mut providers = model_providers();
             providers["default"] = defaults;
+            providers["all"][1]["models"]
+                .as_object_mut()
+                .unwrap()
+                .remove("glm-5.3");
             cases.push(providers);
         }
         let mut providers = model_providers();
@@ -1466,6 +1483,58 @@ mod tests {
             );
             server.abort();
         }
+    }
+
+    #[tokio::test]
+    async fn coding_plan_omission_uses_documented_standard_instead_of_highspeed_catalog_default() {
+        let mut providers = model_providers();
+        providers["default"]["zai-coding-plan"] = json!("glm-5.3-highspeed");
+        let (client, server, _) =
+            model_server(json!({}), providers.clone(), axum::http::StatusCode::OK).await;
+        assert_eq!(
+            client
+                .resolve_model("/root/projects/fresh", "")
+                .await
+                .unwrap(),
+            "zai-coding-plan/glm-5.3"
+        );
+        assert_eq!(
+            client
+                .resolve_model("/root/projects/fresh", "zai-coding-plan/glm-5.3-highspeed")
+                .await
+                .unwrap(),
+            "zai-coding-plan/glm-5.3-highspeed"
+        );
+        server.abort();
+        let (client, server, _) = model_server(
+            json!({"model":"zai-coding-plan/glm-5.3-highspeed"}),
+            providers.clone(),
+            axum::http::StatusCode::OK,
+        )
+        .await;
+        assert_eq!(
+            client
+                .resolve_model("/root/projects/fresh", "")
+                .await
+                .unwrap(),
+            "zai-coding-plan/glm-5.3-highspeed"
+        );
+        server.abort();
+        providers["all"][1]["models"]
+            .as_object_mut()
+            .unwrap()
+            .remove("glm-5.3");
+        let (client, server, _) =
+            model_server(json!({}), providers, axum::http::StatusCode::OK).await;
+        assert_eq!(
+            client
+                .resolve_model("/root/projects/fresh", "")
+                .await
+                .unwrap_err()
+                .code(),
+            "modelNotConfigured"
+        );
+        server.abort();
     }
 
     #[tokio::test]
