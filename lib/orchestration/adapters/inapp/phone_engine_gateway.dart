@@ -308,6 +308,7 @@ class PhoneEngineGateway extends NullOrchestrationGateway
 
   static const _executionActions = {
     TeamProjectAction.approvePlan,
+    TeamProjectAction.retryPlan,
     TeamProjectAction.resumeProject,
     TeamProjectAction.resumeTask,
     TeamProjectAction.restartTask,
@@ -501,6 +502,15 @@ TeamProject _presentPhoneProject(
   if (status == 'needsPlanApproval') {
     status = 'plan';
   } else if (!project.planApproved &&
+      planning != null &&
+      const ['failed', 'interrupted'].contains(planning.stage) &&
+      !const ['paused', 'pausedBudget', 'stopped'].contains(status) &&
+      !_resumableInterruption(planning.reason) &&
+      commandActions.contains(TeamProjectAction.retryPlan)) {
+    // This editor affordance explicitly asks the person to start another plan.
+    // The original checkpoint stays reviewable; reads never replay its prompt.
+    status = 'planFailed';
+  } else if (!project.planApproved &&
       (status == 'planning' || status == 'interrupted')) {
     status = switch (planning?.stage) {
       'starting' ||
@@ -691,6 +701,7 @@ String _planningCheckpointSummary(
     'sessionFailed' => 'sessionFailed',
     'promptUncertain' => 'promptUncertain',
     'modelUnavailable' => 'modelUnavailable',
+    'modelNotConfigured' => 'modelNotConfigured',
     'modelInvalid' => 'modelInvalid',
     'invalid_model' ||
     'invalid_role' ||
