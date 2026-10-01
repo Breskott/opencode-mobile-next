@@ -14,7 +14,7 @@
 #
 # Options (or environment): --shards (OC_FAST_SHARDS, 4), --concurrency
 # (OC_FAST_CONCURRENCY, 2), --chunk-size (OC_FAST_CHUNK_SIZE, 1000 = one
-# chunk per shard), --chunk-timeout (OC_FAST_CHUNK_TIMEOUT, 1800 s), --flutter
+# chunk per shard), --chunk-timeout (OC_FAST_CHUNK_TIMEOUT, 3600 s), --flutter
 # (FLUTTER, the pinned Shorebird Flutter), --output-root (default
 # build/traycer/fast-<UTC time>). Ctrl-C stops every shard and the Flutter
 # processes it started (by captured process group, never by name).
@@ -24,7 +24,7 @@ root="$(cd "$(dirname "$0")/../.." && pwd)"
 shards="${OC_FAST_SHARDS:-4}"
 concurrency="${OC_FAST_CONCURRENCY:-2}"
 chunk_size="${OC_FAST_CHUNK_SIZE:-1000}"
-chunk_timeout="${OC_FAST_CHUNK_TIMEOUT:-1800}"
+chunk_timeout="${OC_FAST_CHUNK_TIMEOUT:-3600}"
 flutter="${FLUTTER:-$HOME/.shorebird/bin/cache/flutter/91f8bd75076e9c740aa13cf67eb9ec1a093f68f5/bin/flutter}"
 output=""
 
