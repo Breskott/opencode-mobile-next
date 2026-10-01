@@ -1,0 +1,13 @@
+{
+  "apk": 2085,
+  "rolesModel": "",
+  "teamModel": null,
+  "configModel": null,
+  "provider": "zai-coding-plan",
+  "actualModel": "glm-5.3-highspeed",
+  "assistantErrorName": "APIError",
+  "statusCode": 429,
+  "safeProviderReason": "Your current subscription plan does not yet include access to GLM-5.3-Highspeed",
+  "plannerStage": "interrupted",
+  "plannerReason": "sessionFailed"
+}

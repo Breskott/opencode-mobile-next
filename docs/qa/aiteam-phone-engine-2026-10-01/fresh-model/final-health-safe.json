@@ -1,0 +1,34 @@
+{
+  "capabilities": {
+    "boundary": true,
+    "boundaryTier": "proot",
+    "execution": true,
+    "oc1Verified": true,
+    "oc2": false
+  },
+  "boundaryTier": "proot",
+  "commandActions": [
+    "createProject",
+    "createQuickTask",
+    "saveSpecDraft",
+    "approveSpec",
+    "retryPlan",
+    "approvePlan",
+    "acceptPhase",
+    "acceptMilestone",
+    "updateDefaults",
+    "updateSettings",
+    "pauseProject",
+    "resumeProject",
+    "stopProject",
+    "pauseTask",
+    "resumeTask",
+    "stopTask",
+    "acknowledgeDigest",
+    "deleteProject",
+    "saveRole",
+    "deleteRole",
+    "updateServer",
+    "promote"
+  ]
+}
