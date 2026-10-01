@@ -833,6 +833,10 @@ fn record_admission_reason(
         .into_iter()
         .find(|j| j["id"] == requested["id"])
         .ok_or("jobMissing")?;
+    let stage = current["stage"].as_str().ok_or("jobInvalid")?;
+    if !crate::scheduler::active_stage(stage) && !matches!(stage, "queued" | "mergeReady") {
+        return Err("jobNotActive");
+    }
     let previous = current["reason"].as_str().unwrap_or("");
     if previous == reason
         || (reason.is_empty()
@@ -2224,6 +2228,28 @@ mod tests {
             .unwrap();
         assert_eq!(current["promptDispatch"]["worker"], "dispatched");
         assert_eq!(current["reason"], "");
+    }
+
+    #[test]
+    fn late_admission_wait_cannot_overwrite_user_pause_or_stop_checkpoint() {
+        for action in ["pauseProject", "stopProject"] {
+            let root = tempfile::tempdir().unwrap();
+            let e = fixture(root.path());
+            let (project, id) = running_planner(&e);
+            let requested = e.store.lock().unwrap().jobs().unwrap()[0].clone();
+            {
+                let store = e.store.lock().unwrap();
+                let revision = store.workspace().unwrap()["projects"][0]["revision"].clone();
+                assert_eq!(store.execute(&json!({"requestId":action,"action":action,"projectId":project,"expectedRevision":revision,"confirmed":true})).unwrap()["accepted"],true);
+            }
+            let before = e.store.lock().unwrap().jobs().unwrap();
+            assert_eq!(
+                record_admission_reason(&e, &requested, "totalUsageUnknown"),
+                Err("jobNotActive")
+            );
+            assert_eq!(e.store.lock().unwrap().jobs().unwrap(), before);
+            assert_eq!(before[0]["id"], id);
+        }
     }
 
     #[tokio::test]
