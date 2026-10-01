@@ -1397,11 +1397,9 @@ class _CodeScrollerState extends State<_CodeScroller> {
                 // While the scroll cue shows, its thumb lies along the
                 // bottom edge: leave that strip below the last line so the
                 // thumb never sits on readable text.
-                padding: EdgeInsets.only(
-                  bottom: (finePointer || _overflowing)
-                      ? KitTokens.of(context).space2
-                      : 0,
-                ),
+                padding: (finePointer || _overflowing)
+                    ? EdgeInsets.only(bottom: KitTokens.of(context).space2)
+                    : EdgeInsets.zero,
                 child: widget.child,
               ),
             ),
