@@ -128,7 +128,12 @@ class _Fixture {
       '$prefix/var/lib/proot-distro/containers/opencode-ubuntu/rootfs';
 
   static Future<_Fixture> create({bool ubuntu = true}) async {
-    final root = Directory.systemTemp.createTempSync('oc-claude-');
+    // tmpfs where there is one: the script moves many small files, and a
+    // busy disk made each verb seconds long.
+    final shm = Directory('/dev/shm');
+    final root = (shm.existsSync() ? shm : Directory.systemTemp).createTempSync(
+      'oc-claude-',
+    );
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     // A free port for the daemon stub: bind, read, release.
     final probe = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
@@ -225,6 +230,8 @@ class _Fixture {
     'OC_CLAUDE_PORT': '$port',
     'OC_CLAUDE_ARCH': 'x86_64',
     'OC_CLAUDE_HEALTH_TIMEOUT': '8',
+    // A poll tick is a tenth of a second here; the timeouts count ticks.
+    'OC_CLAUDE_POLL': '0.1',
     'OC_CLAUDE_ALLOW_LOOPBACK_PINS': '1',
   };
 

@@ -72,6 +72,8 @@ void main() {
       home: const ThisPhoneScreen(kind: PhoneHostKind.inApp),
       linux: linux ?? PhoneLinux(running: true),
       profiles: [inAppProfile],
+      // The fake server never answers a start; the real wait is 90 s.
+      readyTimeout: const Duration(milliseconds: 300),
     );
     await _settle(tester);
   }

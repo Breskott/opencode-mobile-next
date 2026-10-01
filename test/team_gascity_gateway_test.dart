@@ -1343,12 +1343,12 @@ void main() {
     test('stream drop: unconfirmed after the window, confirmed once the '
         'stream resumes and the result arrives', () async {
       if (needFront() == null) return;
-      final fx = await _Fixture.start(front: true, resultDelay: 2.5);
+      final fx = await _Fixture.start(front: true, resultDelay: 1.2);
       addTearDown(fx.stop);
       final controller = await bootController(
         fx,
         scenario: 'stream-drop',
-        timeout: const Duration(milliseconds: 700),
+        timeout: const Duration(milliseconds: 400),
       );
       final record = await controller.messageAgent('bl-wn9', 'hello');
       expect(record.status, MutationStatus.sent);

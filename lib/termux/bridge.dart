@@ -3585,6 +3585,8 @@ PORT="${OC_CLAUDE_PORT:-6767}"
 LISTEN="127.0.0.1:$PORT"
 HEALTH_URL="http://127.0.0.1:$PORT/api/health"
 HEALTH_TIMEOUT="${OC_CLAUDE_HEALTH_TIMEOUT:-120}"
+# One poll tick in seconds; the timeouts above count ticks. Tests shorten it.
+POLL="${OC_CLAUDE_POLL:-1}"
 LOG_MAX_BYTES=2097152
 # Measured on the emulator: Node 216 MB + packages 773 MB, plus npm's cache
 # and the download while it unpacks.
@@ -4107,14 +4109,17 @@ stop_daemon_processes() {
     else
       kill -TERM "$pid" 2>/dev/null || true
     fi
-    while process_alive "$pid" && [ "$waited" -lt 10 ]; do sleep 1; waited=$((waited + 1)); done
+    while process_alive "$pid" && [ "$waited" -lt 10 ]; do sleep "$POLL"; waited=$((waited + 1)); done
     if process_alive "$pid"; then
       kill -KILL -- "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
     fi
   fi
   # Whatever of ours outlived its runner (Android kills selectively): only a
   # process started with this daemon's own home qualifies.
-  for entry in /proc/[0-9]*; do
+  # One grep narrows the scan to processes that mention the home at all, so
+  # the per-process reading below does not fork once per process on the phone.
+  for entry in $(grep -alF -e "$PASEO_HOME" /proc/[0-9]*/cmdline 2>/dev/null || true); do
+    entry=${entry%/cmdline}
     other=${entry#/proc/}
     [ "$other" != "$$" ] || continue
     cmdline=$(process_cmdline "$other")
@@ -4166,7 +4171,7 @@ start_daemon() {
       stop_daemon_processes
       fail timeout "Claude Code did not answer on $LISTEN within $HEALTH_TIMEOUT seconds"
     fi
-    sleep 1
+    sleep "$POLL"
     waited=$((waited + 1))
   done
   write_state ready 'Claude Code is running on this phone'
@@ -4362,7 +4367,7 @@ status_report() {
     # daemon must answer its health check right now.
     if daemon_alive; then
       pid=$(daemon_pid)
-      if healthy || { sleep 1; healthy; }; then
+      if healthy || { sleep "$POLL"; healthy; }; then
         phase=ready
         message='Claude Code is running on this phone'
       else

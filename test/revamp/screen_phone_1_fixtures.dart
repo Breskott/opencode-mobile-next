@@ -169,6 +169,7 @@ Future<FakeSetupEngine> pumpPhone(
   Map<String, WidgetBuilder> routes = const {},
   void Function(ConnectionController controller)? configure,
   List<Override> overrides = const [],
+  Duration readyTimeout = const Duration(seconds: 90),
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -197,6 +198,7 @@ Future<FakeSetupEngine> pumpPhone(
           builtinServerStarterProvider.overrideWith((ref) {
             final starter = BuiltinServerStarter(
               linux: phone,
+              readyTimeout: readyTimeout,
               pollInterval: Duration.zero,
             );
             ref.onDispose(starter.dispose);
