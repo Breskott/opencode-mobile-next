@@ -892,7 +892,6 @@ async fn stage_admitted_with_ledger(
         }
     }
 }
-#[allow(clippy::too_many_arguments)]
 fn fresh_undispatched_role(job: &Value, role: &str, session: &Value) -> bool {
     session.as_str().is_some_and(|id| !id.is_empty())
         && job["freshSessionIds"]
@@ -950,6 +949,7 @@ fn accounted_daily_cost(job: &Value, day: &str) -> Option<f64> {
         })
         .filter(|n| n.is_finite())
 }
+#[allow(clippy::too_many_arguments)]
 async fn admitted_prompt(
     e: &Engine,
     job: &Value,
@@ -1520,18 +1520,20 @@ fn observed_session_usage(job: &Value, role: &str, observed: &Value, day: &str) 
     let mut out = normalized_usage(observed);
     let previous = &job["sessionUsage"][role];
     let cost = out["cost"].as_f64();
-    let daily = if previous["day"] == day {
+    // A first idle/busy poll may have no cost yet. The immutable fresh-session
+    // and first-dispatch date still prove every eventual cumulative dollar was
+    // incurred today; missing initial usage must not poison that proof forever.
+    let same_day_origin = job["sessionDispatchDays"][role] == day
+        && job["freshSessionIds"][role] == job["sessionIds"][role]
+        && job["freshSessionIds"][role].is_string();
+    let daily = if same_day_origin {
+        cost.filter(|next| previous["cost"].as_f64().is_none_or(|old| *next >= old))
+    } else if previous["day"] == day {
         previous["dailyCost"]
             .as_f64()
             .zip(previous["cost"].as_f64())
             .zip(cost)
             .and_then(|((daily, old), next)| (next >= old).then_some(daily + next - old))
-    } else if previous["cost"].is_null()
-        && job["sessionDispatchDays"][role] == day
-        && job["freshSessionIds"][role] == job["sessionIds"][role]
-        && job["freshSessionIds"][role].is_string()
-    {
-        cost
     } else {
         None
     };
@@ -1960,6 +1962,31 @@ mod tests {
             "2026-10-01"
         )["dailyCost"]
             .is_null());
+    }
+
+    #[test]
+    fn first_unknown_usage_poll_does_not_poison_known_same_day_dispatch() {
+        let mut job = json!({"sessionIds":{"worker":"ses_worker"},"freshSessionIds":{"worker":"ses_worker"},
+            "sessionDispatchDays":{"worker":"2026-10-01"}});
+        let unknown = observed_session_usage(&job, "worker", &json!({}), "2026-10-01");
+        assert!(unknown["dailyCost"].is_null());
+        job["sessionUsage"] = json!({"worker":unknown});
+        let known = observed_session_usage(
+            &job,
+            "worker",
+            &json!({"cost":0.4,"tokens":{"total":10}}),
+            "2026-10-01",
+        );
+        assert_eq!(known["dailyCost"], 0.4);
+        assert!(
+            observed_session_usage(&job, "worker", &json!({"cost":0.4}), "2026-10-02")["dailyCost"]
+                .is_null()
+        );
+        job["freshSessionIds"] = Value::Null;
+        assert!(
+            observed_session_usage(&job, "worker", &json!({"cost":0.4}), "2026-10-01")["dailyCost"]
+                .is_null()
+        );
     }
 
     #[tokio::test]
