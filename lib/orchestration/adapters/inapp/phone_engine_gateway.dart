@@ -520,7 +520,13 @@ TeamProject _presentPhoneProject(
       'stopped' => 'stopped',
       _ => 'waiting',
     };
-  } else if (status == 'interrupted') {
+  } else if (status == 'interrupted' ||
+      (status == 'running' &&
+          project.planApproved &&
+          project.tasks.any((task) => task.status == 'interrupted') &&
+          !project.tasks.any(
+            (task) => _activePhoneTaskStates.contains(task.status),
+          ))) {
     final interrupted = project.tasks.where(
       (task) => task.status == 'interrupted',
     );
@@ -606,6 +612,23 @@ TeamProject _presentPhoneProject(
     ]),
   );
 }
+
+// Native checking maps to `review` in task snapshots. Treat it as possibly
+// active so a failed parallel lane never hides a checker still doing work.
+const _activePhoneTaskStates = {
+  'starting',
+  'resuming',
+  'planning',
+  'preparing',
+  'submitting',
+  'working',
+  'checking',
+  'review',
+  'collecting',
+  'merging',
+  'promoting',
+  'running',
+};
 
 bool _resumableInterruption(String reason) => const [
   'restartNeedsReconciliation',

@@ -344,6 +344,81 @@ void main() {
   });
 
   test(
+    'refetch failure remains reviewable when the native parent still runs',
+    () async {
+      for (final reason in [
+        'sessionUnknown',
+        'sessionFailed',
+        'recoveryNeedsReview',
+        'restartNeedsReconciliation',
+      ]) {
+        final source = planned.copyWith(
+          status: 'running',
+          planApproved: true,
+          tasks: [
+            task.copyWith(status: 'interrupted', reason: reason),
+            task.copyWith(
+              id: 'blocked',
+              status: 'queued',
+              dependsOn: [task.id],
+            ),
+          ],
+        );
+        final harness = client(source);
+        final project = (await harness.gateway.teamWorkspace()).projects.single;
+        expect(
+          project.status,
+          reason == 'restartNeedsReconciliation' ? 'paused' : 'failed',
+        );
+        expect(
+          project.tasks.first.status,
+          reason == 'restartNeedsReconciliation' ? 'paused' : 'review',
+        );
+        expect(project.tasks.last.status, 'queued');
+        expect(project.tasks.last.dependsOn, [task.id]);
+        expect(project.timeline.last.text, contains('($reason)'));
+        expect(project.revision, source.revision);
+        expect(source.status, 'running');
+        expect(
+          harness.adapter.requests.every((r) => r.method == 'GET'),
+          isTrue,
+        );
+      }
+    },
+  );
+
+  test(
+    'an interrupted lane does not hide another active parallel lane',
+    () async {
+      for (final active in [
+        'running',
+        'working',
+        'resuming',
+        'checking',
+        'review',
+        'merging',
+        'submitting',
+      ]) {
+        final source = planned.copyWith(
+          status: 'running',
+          planApproved: true,
+          tasks: [
+            task.copyWith(status: 'interrupted', reason: 'sessionUnknown'),
+            task.copyWith(id: 'active', status: active),
+          ],
+        );
+        final project = (await client(
+          source,
+        ).gateway.teamWorkspace()).projects.single;
+        expect(project.status, 'running', reason: active);
+        expect(project.tasks.first.status, 'review');
+        expect(project.tasks.first.reason, 'sessionUnknown');
+        expect(project.revision, source.revision);
+      }
+    },
+  );
+
+  test(
     'scheduler admission codes remain visible in interrupted checkpoints',
     () async {
       // Exact static codes returned by engine/phone/src/scheduler.rs, including

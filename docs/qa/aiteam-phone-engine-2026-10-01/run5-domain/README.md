@@ -22,3 +22,7 @@ Formatting and `git diff --check` passed locally. This worker did not launch Flu
 ## Limited admission diagnostics
 
 Interrupted planning/task summaries now retain the scheduler's exact static admission codes, including `totalUsageUnknown`, `dailyUsageUnknown`, `tokenUsageUnknown`, `budgetReached`, and `taskTokenBudgetReached`. The scheduler does not return `budgetExceeded`; that invented value remains omitted alongside unknown private/error text. Two regressions cover every current scheduler admission code in both planner and task checkpoints, plus unknown-budget/secret redaction. These summaries stay read-only and never authorize prompt resend. Root owns the focused test rerun.
+
+## Refetch failure with a retained running parent
+
+Native task refetch failure can leave the project wire status `running` while its task is `interrupted`. When an approved running project has interrupted tasks and no other possibly active lane, the same safe Resume/review classification applies to its presentation. Queued dependent tasks do not mask the interruption. Another running/refetching/checking/merging lane keeps the project presentation `running`; native checker task `review` is treated conservatively as possibly active. Two regressions cover failed-refetch/queued dependency and mixed active parallel lanes. No native status or revision is rewritten.
