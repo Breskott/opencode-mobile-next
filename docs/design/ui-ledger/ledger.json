@@ -1,5 +1,5 @@
 {
- "generatedFrom": "cc6a57dcac16574b88e868e6197b3625e78ccf6c",
+ "generatedFrom": "35b8ae454d28dadbb9de40b90e8c034f978f3404",
  "pages": [
   {
    "id": "system",
@@ -40533,6 +40533,11 @@
    "part": "i1-team-core"
   },
   {
+   "file": "lib/ui/screens/team/projects/team_digest.dart",
+   "reason": "Pure function (teamDigestEvents) choosing which timeline rows 'Since you were away' lists; no surface and no interactive element.",
+   "part": "i1-team-core"
+  },
+  {
    "file": "lib/ui/screens/team/projects/team_execution_gate.dart",
    "reason": "Helper, not a page: TeamExecutionGate decides whether a project action may start work and shows the one-line blocked state with its fix; it is embedded in the project pages that use it.",
    "part": "i1-team-core"
@@ -40540,6 +40545,11 @@
   {
    "file": "lib/ui/screens/team/projects/team_merge_flow.dart",
    "reason": "Helper, not a page: confirmAndMergeToDev and confirmAndPromote open the kit confirm sheet (with progress) and write the receipt row on the project overview and task page that call them.",
+   "part": "i1-team-core"
+  },
+  {
+   "file": "lib/ui/screens/team/projects/team_refusal.dart",
+   "reason": "Pure mapping from a refused project command's code to plain words, a way forward and Details text; no surface and no interactive element.",
    "part": "i1-team-core"
   },
   {

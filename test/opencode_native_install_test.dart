@@ -427,8 +427,9 @@ void main() {
             },
           );
           // The smoke's evidence (docs/qa/slice-builtin-opencode-pin-*).
-          // ignore: avoid_print
-          print('--- ${runtime.wireName}\n${result.stdout}${result.stderr}');
+          stdout.writeln(
+            '--- ${runtime.wireName}\n${result.stdout}${result.stderr}',
+          );
           expect(
             result.exitCode,
             0,

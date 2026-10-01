@@ -2687,6 +2687,14 @@
   ],
   "notPages": [
     {
+      "file": "lib/ui/screens/team/projects/team_digest.dart",
+      "reason": "Pure function (teamDigestEvents) choosing which timeline rows 'Since you were away' lists; no surface and no interactive element."
+    },
+    {
+      "file": "lib/ui/screens/team/projects/team_refusal.dart",
+      "reason": "Pure mapping from a refused project command's code to plain words, a way forward and Details text; no surface and no interactive element."
+    },
+    {
       "file": "lib/ui/screens/team/policy_block.dart",
       "reason": "TeamPolicyBlock is a read-only rendering block (supervision line + boundary chips) embedded in the run Overview (run_screen.dart:775) only when `controller.policy != null`; no surface and no interactive element."
     },

@@ -61,3 +61,6 @@ COMMIT_MSG.txt
 # Native phone-engine build outputs stay off the root disk.
 /engine/phone/target/
 /engine/phone/artifacts/
+
+# Screen recordings stay out of the public tree (G25)
+docs/qa/**/*.mp4

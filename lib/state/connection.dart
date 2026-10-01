@@ -1662,18 +1662,15 @@ class ConnectionController extends ChangeNotifier {
     for (final alert in diff.alerts) {
       _postedTeamAlerts.add(alert.key);
       unawaited(
-        backgroundLive
-            .showCodingAlert(
-              kind: alert.kind,
-              profileID: team.profileId,
-              sessionID: alert.id,
-              key: alert.key,
-              allowActions: false,
-              subtext: team.profile.name,
-            )
-            .then((shown) {
-              if (!shown && !_disposed) _postedTeamAlerts.remove(alert.key);
-            }),
+        _postTeamNotification(
+          kind: alert.kind,
+          profileID: team.profileId,
+          sessionID: alert.id,
+          key: alert.key,
+          subtext: team.profile.name,
+        ).then((shown) {
+          if (!shown && !_disposed) _postedTeamAlerts.remove(alert.key);
+        }),
       );
     }
   }
@@ -1730,22 +1727,38 @@ class ConnectionController extends ChangeNotifier {
     _teamProgressKey = key;
     _teamProgressPostedAt = now;
     unawaited(
-      backgroundLive
-          .showCodingAlert(
-            kind: CodingAlertKind.teamProgress,
-            profileID: team.profileId,
-            sessionID: sessionID,
-            key: key,
-            allowActions: false,
-            text: line,
-          )
-          .then((shown) {
-            if (!shown && _teamProgressLine == signature) {
-              _teamProgressLine = null;
-            }
-          }),
+      _postTeamNotification(
+        kind: CodingAlertKind.teamProgress,
+        profileID: team.profileId,
+        sessionID: sessionID,
+        key: key,
+        text: line,
+      ).then((shown) {
+        if (!shown && _teamProgressLine == signature) {
+          _teamProgressLine = null;
+        }
+      }),
     );
   }
+
+  /// The one posting site for AI Team notifications (alerts and the ongoing
+  /// progress line): no actions, ids only.
+  Future<bool> _postTeamNotification({
+    required CodingAlertKind kind,
+    required String profileID,
+    required String sessionID,
+    required String key,
+    String subtext = '',
+    String text = '',
+  }) => backgroundLive.showCodingAlert(
+    kind: kind,
+    profileID: profileID,
+    sessionID: sessionID,
+    key: key,
+    allowActions: false,
+    subtext: subtext,
+    text: text,
+  );
 
   void _clearTeamProgress() {
     final key = _teamProgressKey;
