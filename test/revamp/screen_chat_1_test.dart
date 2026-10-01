@@ -267,7 +267,8 @@ void main() {
     expect(find.byKey(const Key('demo-reset')), findsOneWidget);
     expect(find.text('Reset demo'), findsOneWidget);
     expect(find.byTooltip('Leave demo'), findsOneWidget);
-    expect(find.byTooltip('More'), findsNothing);
+    // The team-projects demo sits behind the one overflow, next to the exit.
+    expect(find.byTooltip('More'), findsOneWidget);
     // Before the loop is finished there is nothing to set up yet.
     expect(find.text('Set up your own server'), findsNothing);
     await tester.tap(find.byTooltip('Leave demo'));

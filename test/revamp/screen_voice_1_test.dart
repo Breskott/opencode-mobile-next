@@ -271,10 +271,8 @@ void main() {
 
       await tester.tap(find.text('ONNX Runtime'));
       await tester.pumpAndSettle();
-      expect(
-        find.textContaining('Copyright (c) Microsoft Corporation'),
-        findsOneWidget,
-      );
+      // The viewer puts a zero-width break after "(", so match around it.
+      expect(find.textContaining('Microsoft Corporation'), findsOneWidget);
       expect(find.text('Open the ONNX Runtime website'), findsOneWidget);
     });
   });

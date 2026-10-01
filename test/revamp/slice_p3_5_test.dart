@@ -171,17 +171,25 @@ void main() {
       expect(find.textContaining('2700 min'), findsNothing);
     });
 
-    _test('the worker line reads its run time in days and hours', (
+    _test('the worker line names its role and state, not its internal id', (
       tester,
     ) async {
       await pumpStalled(tester);
+      final row = _key('team-conversation-agent-my-app/gastown.furiosa');
       expect(
-        find.descendant(
-          of: _key('team-conversation-agent-my-app/gastown.furiosa'),
-          matching: find.textContaining('Running for 1 d 21 h'),
-        ),
+        find.descendant(of: row, matching: find.textContaining('Worker')),
+        findsWidgets,
+      );
+      expect(
+        find.descendant(of: row, matching: find.textContaining('Running')),
         findsOneWidget,
       );
+      expect(
+        find.descendant(of: row, matching: find.textContaining('furiosa')),
+        findsNothing,
+      );
+      // The time is said once, on the Now line, never thousands of minutes.
+      expect(find.textContaining('Running for'), findsNothing);
     });
 
     _test('the notice offers the next step: nudge, restart, report', (
@@ -190,11 +198,11 @@ void main() {
       final (_, gateway) = await pumpStalled(tester);
       expect(_key('team-conversation-no-progress'), findsOneWidget);
       expect(
-        find.textContaining("furiosa hasn't moved this task since"),
+        find.textContaining("Worker hasn't moved this task since"),
         findsOneWidget,
       );
-      expect(find.text('Nudge furiosa'), findsOneWidget);
-      expect(find.text('Restart furiosa'), findsOneWidget);
+      expect(find.text('Nudge Worker'), findsOneWidget);
+      expect(find.text('Restart Worker'), findsOneWidget);
       expect(find.text(_en.teamChatNoProgressReport), findsOneWidget);
 
       await toEnd(tester);
@@ -248,8 +256,8 @@ void main() {
           phoneHost: true,
         ),
       );
-      expect(find.text('Nudge furiosa'), findsNothing);
-      expect(find.text('Restart furiosa'), findsNothing);
+      expect(find.text('Nudge Worker'), findsNothing);
+      expect(find.text('Restart Worker'), findsNothing);
       expect(find.text(_en.teamChatNoProgressReport), findsOneWidget);
     });
 

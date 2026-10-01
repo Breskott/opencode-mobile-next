@@ -389,6 +389,9 @@ void main() {
     await tester.tap(_key('team-conversation-team-page'));
     await tester.pumpAndSettle();
     expect(find.byType(TeamPage), findsOneWidget);
+    // An old team that stayed on first asks once whether to switch.
+    await tester.tap(find.text('Keep the old team for now'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text(teamTask.title));
     await tester.pumpAndSettle();

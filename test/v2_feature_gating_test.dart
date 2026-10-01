@@ -555,6 +555,9 @@ void main() {
       final help = find.byKey(const ValueKey('settings-server-capabilities'));
       expect(help, findsOneWidget);
 
+      // The hub is longer than the test window: bring the row into view.
+      await tester.ensureVisible(help);
+      await tester.pumpAndSettle();
       await tester.tap(help);
       await tester.pumpAndSettle();
       // R16 puts missing features first in one list, each with its own state.

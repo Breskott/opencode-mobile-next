@@ -186,7 +186,11 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('confirm-provider-key')));
     await tester.pumpAndSettle();
     expect(repository.keys, ['anthropic=sk-secret-1']);
-    expect(find.text('Anthropic is connected'), findsOneWidget);
+    // Saved is not loaded: with no model in the catalog the page says so.
+    expect(
+      find.text('Anthropic key saved. The server has not loaded it yet.'),
+      findsOneWidget,
+    );
     expect(find.textContaining('sk-secret-1'), findsNothing);
   });
 
@@ -210,11 +214,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('provider-openai')));
     await tester.pumpAndSettle();
     expect(find.text('Disconnect OpenAI'), findsOneWidget);
-    // This server cannot list accounts: the item stays and says why.
-    expect(
-      find.text('This server can\'t list saved accounts from the app.'),
-      findsOneWidget,
-    );
+    // A server that cannot list accounts shows no dead Manage accounts item.
+    expect(find.text('Manage OpenAI accounts'), findsNothing);
     await tester.tap(find.text('Disconnect OpenAI'));
     await tester.pumpAndSettle();
     expect(find.text('Disconnect OpenAI?'), findsOneWidget);

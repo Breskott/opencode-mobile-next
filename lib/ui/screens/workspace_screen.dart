@@ -901,6 +901,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         ),
     ];
 
+    final pinHeader = wide || MediaQuery.textScalerOf(context).scale(16) < 28;
     final list = KitRefresh(
       onRefresh: _refreshWorkspace,
       child: KitScrollArea(
@@ -909,6 +910,11 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           key: const PageStorageKey('workspace-scroll'),
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
+            // At very large text the project header scrolls with the list:
+            // pinned, it and the New conversation block leave the list no
+            // room on a small window.
+            if (!pinHeader)
+              for (final row in header) SliverToBoxAdapter(child: row),
             // 1. At most one status line, and only with something to
             // do (item 3, 6, 7).
             SliverToBoxAdapter(child: _statusLine(context, l10n)),
@@ -1134,7 +1140,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
     if (!wide) {
       return KitScreen(
-        header: header,
+        header: pinHeader ? header : const [],
         // One bar for everything loading the first time (item 3).
         loading: loading,
         loadingLabel: l10n.workLoadingLabel,
