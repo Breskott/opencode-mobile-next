@@ -26,6 +26,8 @@ case "$kind" in
     exec flock /home/eslam/Storage/tmp/oc-build.lock "$@"
     ;;
   test | analyze)
+    # Tests run in UTC like CI, so goldens that show clock times match there.
+    export TZ="${OC_TEST_TZ:-UTC}"
     slots="${OC_TEST_SLOTS:-4}"
     waited=0
     while true; do
