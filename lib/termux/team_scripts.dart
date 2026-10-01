@@ -925,10 +925,11 @@ kill_team_processes() {
         *"$dir"*) hit=1; break ;;
       esac
       # Working folder is <dir> or below it: walk up from /proc/<pid>/cwd with
-      # the shell's own same-file test, no process per candidate.
+      # the shell's own same-file test, no process per candidate, stopping at /.
       cwd="$entry/cwd"
-      for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+      for _ in {1..64}; do
         if [ "$cwd" -ef "$dir" ]; then hit=1; break 2; fi
+        [ ! "$cwd" -ef / ] || break
         cwd="$cwd/.."
       done
     done
