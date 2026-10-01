@@ -32,7 +32,8 @@ android {
 
     defaultConfig {
         applicationId = "io.github.eslamasabry.opencode_mobile"
-        minSdk = flutter.minSdkVersion
+        // The built-in Linux and AI Team engine use process APIs from Android 8.
+        minSdk = maxOf(flutter.minSdkVersion, 26)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

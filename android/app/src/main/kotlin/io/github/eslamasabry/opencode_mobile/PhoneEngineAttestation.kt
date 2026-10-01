@@ -104,8 +104,12 @@ internal class PhoneEngineAttestation(private val context: Context) {
             FileOutputStream(fd).use { it.write(bytes); it.flush(); it.fd.sync() }
             Os.rename(temporary.absolutePath, file.absolutePath)
             val directory = Os.open(file.parentFile!!.absolutePath, OsConstants.O_RDONLY or
-                OsConstants.O_NOFOLLOW or OsConstants.O_CLOEXEC, 0)
+                OsConstants.O_NOFOLLOW or oCloexec, 0)
             try { Os.fsync(directory) } finally { Os.close(directory) }
         }
     }
 }
+
+/** O_CLOEXEC is an API 27 constant in OsConstants; on Linux it is 0x80000. */
+internal val oCloexec: Int =
+    if (android.os.Build.VERSION.SDK_INT >= 27) OsConstants.O_CLOEXEC else 0x80000

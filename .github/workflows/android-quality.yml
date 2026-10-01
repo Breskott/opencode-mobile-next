@@ -119,6 +119,10 @@ jobs:
         if: ${{ !inputs.apk_only }}
         run: python3 -m unittest discover -s tool/qa -p 'test_*.py'
 
+      - name: Run Android release lint
+        if: ${{ !inputs.apk_only }}
+        run: ./android/gradlew -p android :app:lintRelease --no-daemon
+
       - name: Test
         if: ${{ !inputs.apk_only }}
         # Same runner as the local gate (tool/qa/run_serial_tests.py): every
@@ -182,10 +186,6 @@ jobs:
             "keyPassword=$CI_KEYSTORE_PASSWORD" \
             > android/key.properties
           chmod 600 android/key.properties
-
-      - name: Run Android release lint
-        if: ${{ !inputs.apk_only }}
-        run: ./android/gradlew -p android :app:lintRelease --no-daemon
 
       - name: Compile test-signed release APK
         run: flutter build apk --release

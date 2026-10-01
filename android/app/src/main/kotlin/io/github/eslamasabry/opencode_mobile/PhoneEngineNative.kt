@@ -369,7 +369,7 @@ internal class PhoneEngineNative(private val context: Context) {
 
     private fun syncDirectory(directory: File) {
         val fd = Os.open(directory.absolutePath, OsConstants.O_RDONLY or
-            OsConstants.O_NOFOLLOW or OsConstants.O_NONBLOCK or OsConstants.O_CLOEXEC, 0)
+            OsConstants.O_NOFOLLOW or OsConstants.O_NONBLOCK or oCloexec, 0)
         try {
             if (!OsConstants.S_ISDIR(Os.fstat(fd).st_mode)) throw Failure("private_state_unavailable")
             Os.fsync(fd)
@@ -506,7 +506,7 @@ internal class PhoneEngineNative(private val context: Context) {
                 for (name in BUNDLE_NAMES) {
                     val file = File(context.applicationInfo.nativeLibraryDir, name)
                     val fd = Os.open(file.absolutePath, OsConstants.O_RDONLY or
-                        OsConstants.O_NOFOLLOW or OsConstants.O_NONBLOCK or OsConstants.O_CLOEXEC, 0)
+                        OsConstants.O_NOFOLLOW or OsConstants.O_NONBLOCK or oCloexec, 0)
                     try {
                         if (!OsConstants.S_ISREG(Os.fstat(fd).st_mode)) throw Failure("engine_bundle_invalid")
                         val header = ByteArray(64)
