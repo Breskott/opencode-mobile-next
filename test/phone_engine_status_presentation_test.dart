@@ -28,13 +28,14 @@ void main() {
   );
 
   ({PhoneEngineGateway gateway, engine.FakeEngineAdapter adapter}) client(
-    TeamProject project,
-  ) {
+    TeamProject project, {
+    List<String> actions = const ['approvePlan', 'resumeProject', 'resumeTask'],
+  }) {
     final wire = engine.workspace(12)..['projects'] = [project.toJson()];
     final adapter = engine.FakeEngineAdapter(
       (request) async => engine.jsonBody(
         request.path == '/v1/health'
-            ? engine.health('p1', execution: true, actions: ['approvePlan'])
+            ? engine.health('p1', execution: true, actions: actions)
             : request.path == '/v1/commands'
             ? {
                 'accepted': true,
@@ -112,6 +113,7 @@ void main() {
         'queued': 'waiting',
         'planning': 'running',
         'submitting': 'running',
+        'resuming': 'running',
         'failed': 'failed',
         'interrupted': 'failed',
       }.entries) {
@@ -180,7 +182,7 @@ void main() {
   );
 
   test(
-    'reconciliation checkpoint is stalled while person pause and stop stay intact',
+    'reconciliation checkpoint offers Resume while person pause and stop stay intact',
     () async {
       const interrupted = TeamPlanningState(
         stage: 'interrupted',
@@ -190,8 +192,226 @@ void main() {
         final project = (await client(
           planned.copyWith(status: status, planningState: interrupted),
         ).gateway.teamWorkspace()).projects.single;
-        expect(project.status, status == 'planning' ? 'stalled' : status);
+        expect(project.status, status == 'planning' ? 'paused' : status);
+        expect(
+          project.timeline.last.text,
+          status == 'stopped' ? isNot(contains('Resume')) : contains('Resume'),
+        );
         expect(project.revision, 7);
+      }
+    },
+  );
+
+  test(
+    'interrupted approved work exposes the existing Resume controls',
+    () async {
+      for (final reason in [
+        'restartNeedsReconciliation',
+        'pauseNeedsReconciliation',
+      ]) {
+        final source = planned.copyWith(
+          status: 'interrupted',
+          planApproved: true,
+          tasks: [task.copyWith(status: 'interrupted', reason: reason)],
+        );
+        final harness = client(source);
+        final project = (await harness.gateway.teamWorkspace()).projects.single;
+        expect(project.status, 'paused');
+        expect(project.tasks.single.status, 'paused');
+        expect(project.tasks.single.reason, reason);
+        expect(project.revision, source.revision);
+        expect(project.planningState!.toJson(), source.planningState!.toJson());
+        expect(project.timeline.last.kind, 'taskCheckpoint');
+        expect(project.timeline.last.taskId, task.id);
+        expect(project.timeline.last.text, contains('($reason)'));
+        expect(project.timeline.last.text, contains('Resume'));
+        expect(source.status, 'interrupted');
+        expect(source.tasks.single.status, 'interrupted');
+        expect(
+          harness.adapter.requests.every((r) => r.method == 'GET'),
+          isTrue,
+        );
+        final result = await harness.gateway.executeProject(
+          TeamProjectCommand(
+            requestId: 'resume-existing-session',
+            action: TeamProjectAction.resumeProject,
+            projectId: project.id,
+            expectedRevision: project.revision,
+          ),
+        );
+        expect(result.accepted, isTrue);
+        final command = harness.adapter.requests.last.data as Map;
+        expect(command['action'], 'resumeProject');
+        expect(command['expectedRevision'], source.revision);
+      }
+    },
+  );
+
+  test(
+    'Resume presentation respects the native command advertisement',
+    () async {
+      final source = planned.copyWith(
+        status: 'interrupted',
+        planApproved: true,
+        tasks: [
+          task.copyWith(
+            status: 'interrupted',
+            reason: 'restartNeedsReconciliation',
+          ),
+        ],
+      );
+      for (final actions in [
+        <String>[],
+        ['resumeProject'],
+        ['resumeTask'],
+      ]) {
+        final harness = client(source, actions: actions);
+        final project = (await harness.gateway.teamWorkspace()).projects.single;
+        expect(
+          project.status,
+          actions.contains('resumeProject') ? 'paused' : 'failed',
+        );
+        expect(
+          project.tasks.single.status,
+          actions.contains('resumeTask') ? 'paused' : 'review',
+        );
+        if (!actions.contains('resumeProject')) {
+          final result = await harness.gateway.executeProject(
+            TeamProjectCommand(
+              requestId: 'unsupported-resume',
+              action: TeamProjectAction.resumeProject,
+              projectId: project.id,
+              expectedRevision: project.revision,
+            ),
+          );
+          expect(result.accepted, isFalse);
+          expect(result.code, 'unsupportedCommand');
+          expect(
+            harness.adapter.requests.every((r) => r.method == 'GET'),
+            isTrue,
+          );
+        }
+      }
+      final planning = planned.copyWith(
+        status: 'interrupted',
+        planningState: const TeamPlanningState(
+          stage: 'interrupted',
+          reason: 'restartNeedsReconciliation',
+        ),
+      );
+      expect(
+        (await client(
+          planning,
+          actions: [],
+        ).gateway.teamWorkspace()).projects.single.status,
+        'failed',
+      );
+    },
+  );
+
+  test('reviewable interruption never suggests a safe prompt resend', () async {
+    for (final reason in [
+      'recoveryNeedsReview',
+      'sessionUnknown',
+      'sessionFailed',
+      'promptUncertain',
+      'sessionCreateUncertain',
+      'untrusted private token path',
+      '',
+    ]) {
+      final source = planned.copyWith(
+        status: 'interrupted',
+        planApproved: true,
+        tasks: [task.copyWith(status: 'interrupted', reason: reason)],
+      );
+      final harness = client(source);
+      final project = (await harness.gateway.teamWorkspace()).projects.single;
+      expect(project.status, 'failed');
+      expect(project.tasks.single.status, 'review');
+      expect(project.tasks.single.reason, reason);
+      expect(project.timeline.last.kind, 'taskCheckpoint');
+      expect(project.timeline.last.text, isNot(contains('Resume')));
+      if (reason.isEmpty || reason.startsWith('untrusted')) {
+        expect(
+          project.timeline.last.text,
+          'Work was interrupted and needs review.',
+        );
+      } else {
+        expect(project.timeline.last.text, contains('($reason)'));
+      }
+      expect(harness.adapter.requests.every((r) => r.method == 'GET'), isTrue);
+    }
+  });
+
+  test(
+    'mixed safe and review-only checkpoints do not offer project Resume',
+    () async {
+      final source = planned.copyWith(
+        status: 'interrupted',
+        planApproved: true,
+        tasks: [
+          task.copyWith(
+            status: 'interrupted',
+            reason: 'restartNeedsReconciliation',
+          ),
+          task.copyWith(
+            id: 'unsafe',
+            status: 'interrupted',
+            reason: 'recoveryNeedsReview',
+          ),
+        ],
+      );
+      final project = (await client(
+        source,
+      ).gateway.teamWorkspace()).projects.single;
+      expect(project.status, 'failed');
+      expect(project.tasks.map((t) => t.status), ['paused', 'review']);
+      expect(
+        project.timeline.where((e) => e.kind == 'taskCheckpoint'),
+        hasLength(2),
+      );
+    },
+  );
+
+  test(
+    'existing session refetch is running without a new prompt or receipt',
+    () async {
+      final source = planned.copyWith(
+        status: 'running',
+        planApproved: true,
+        tasks: [task.copyWith(status: 'resuming', reason: 'chatStatusUnknown')],
+      );
+      final harness = client(source);
+      final project = (await harness.gateway.teamWorkspace()).projects.single;
+      expect(project.status, 'running');
+      expect(project.tasks.single.status, 'running');
+      expect(project.tasks.single.reason, 'chatStatusUnknown');
+      expect(project.revision, source.revision);
+      expect(project.receipts, isEmpty);
+      expect(harness.adapter.requests.every((r) => r.method == 'GET'), isTrue);
+    },
+  );
+
+  test(
+    'reconciliation presentation never overrides an explicit stop or pause',
+    () async {
+      for (final status in ['paused', 'stopped']) {
+        final source = planned.copyWith(
+          status: status,
+          planApproved: true,
+          tasks: [
+            task.copyWith(
+              status: 'interrupted',
+              reason: 'restartNeedsReconciliation',
+            ),
+          ],
+        );
+        final project = (await client(
+          source,
+        ).gateway.teamWorkspace()).projects.single;
+        expect(project.status, status);
+        expect(project.planApproved, isTrue);
+        expect(project.revision, source.revision);
       }
     },
   );

@@ -268,7 +268,12 @@ class PhoneEngineGateway extends NullOrchestrationGateway
       final workspace = TeamWorkspace.fromJson(Map<String, dynamic>.from(raw));
       return workspace.copyWith(
         projects: List.unmodifiable(
-          workspace.projects.map(_presentPhoneProject),
+          workspace.projects.map(
+            (project) => _presentPhoneProject(
+              project,
+              commandActions: _health!.commandActions,
+            ),
+          ),
         ),
       );
     } catch (_) {
@@ -484,7 +489,10 @@ class PhoneEngineGateway extends NullOrchestrationGateway
 
 // Translate phone wire states into the existing domain presentation vocabulary.
 // The engine remains authoritative for revisions, approval and retry admission.
-TeamProject _presentPhoneProject(TeamProject project) {
+TeamProject _presentPhoneProject(
+  TeamProject project, {
+  required Set<TeamProjectAction> commandActions,
+}) {
   final planning = project.planningState;
   var status = project.status;
   if (status == 'running' && _hasCompletedPhonePromotion(project)) {
@@ -499,22 +507,41 @@ TeamProject _presentPhoneProject(TeamProject project) {
       'planning' ||
       'preparing' ||
       'submitting' ||
-      'running' => 'running',
+      'running' ||
+      'resuming' => 'running',
       'failed' => 'failed',
       'interrupted' => switch (planning?.reason) {
-        'restartNeedsReconciliation' || 'pauseNeedsReconciliation' => 'stalled',
+        'restartNeedsReconciliation' || 'pauseNeedsReconciliation'
+            when commandActions.contains(TeamProjectAction.resumeProject) =>
+          'paused',
         _ => 'failed',
       },
       'paused' => 'paused',
       'stopped' => 'stopped',
       _ => 'waiting',
     };
+  } else if (status == 'interrupted') {
+    final interrupted = project.tasks.where(
+      (task) => task.status == 'interrupted',
+    );
+    status =
+        interrupted.isNotEmpty &&
+            interrupted.every((task) => _resumableInterruption(task.reason)) &&
+            commandActions.contains(TeamProjectAction.resumeProject)
+        ? 'paused'
+        : 'failed';
   }
   final summary =
       !project.planApproved &&
           planning != null &&
           const ['failed', 'interrupted'].contains(planning.stage)
-      ? _planningCheckpointSummary(planning)
+      ? _planningCheckpointSummary(
+          planning,
+          canResume:
+              project.status != 'stopped' &&
+              _resumableInterruption(planning.reason) &&
+              commandActions.contains(TeamProjectAction.resumeProject),
+        )
       : null;
   return project.copyWith(
     status: status,
@@ -525,7 +552,13 @@ TeamProject _presentPhoneProject(TeamProject project) {
           status: switch (task.status) {
             'checked' => 'verified',
             'needsFix' => 'review',
-            'merging' => 'running',
+            'merging' || 'resuming' => 'running',
+            'interrupted'
+                when project.status != 'stopped' &&
+                    _resumableInterruption(task.reason) &&
+                    commandActions.contains(TeamProjectAction.resumeTask) =>
+              'paused',
+            'interrupted' => 'review',
             _ => task.status,
           },
           reason: needsFix && task.reason.isEmpty
@@ -543,22 +576,68 @@ TeamProject _presentPhoneProject(TeamProject project) {
         );
       }),
     ),
-    timeline: summary == null
-        ? project.timeline
-        : List.unmodifiable([
-            ...project.timeline,
-            TeamTimelineEvent(
-              id: 'phone-planning-checkpoint',
-              kind: 'planningCheckpoint',
-              actor: 'engine',
-              at: planning?.updatedAt ?? '',
-              text: summary,
-            ),
-          ]),
+    timeline: List.unmodifiable([
+      ...project.timeline,
+      if (summary != null)
+        TeamTimelineEvent(
+          id: 'phone-planning-checkpoint',
+          kind: 'planningCheckpoint',
+          actor: 'engine',
+          at: planning?.updatedAt ?? '',
+          text: summary,
+        ),
+      for (final task in project.tasks.where(
+        (task) => task.status == 'interrupted',
+      ))
+        TeamTimelineEvent(
+          id: 'phone-task-checkpoint-${task.id}',
+          kind: 'taskCheckpoint',
+          actor: 'engine',
+          at: task.changedAt,
+          taskId: task.id,
+          text: _taskCheckpointSummary(
+            task,
+            canResume:
+                project.status != 'stopped' &&
+                _resumableInterruption(task.reason) &&
+                commandActions.contains(TeamProjectAction.resumeTask),
+          ),
+        ),
+    ]),
   );
 }
 
-String _planningCheckpointSummary(TeamPlanningState planning) {
+bool _resumableInterruption(String reason) => const [
+  'restartNeedsReconciliation',
+  'pauseNeedsReconciliation',
+].contains(reason);
+
+String _taskCheckpointSummary(TeamTask task, {required bool canResume}) {
+  // These are application-authored codes. Never copy paths, model error text
+  // or secrets into the diagnostic timeline. Resume only refetches a session.
+  final reason = switch (task.reason) {
+    'restartNeedsReconciliation' ||
+    'pauseNeedsReconciliation' ||
+    'recoveryNeedsReview' ||
+    'sessionUnknown' ||
+    'sessionFailed' ||
+    'sessionUncertain' ||
+    'promptUncertain' ||
+    'sessionCreateUncertain' => task.reason,
+    _ => '',
+  };
+  if (canResume) {
+    return 'Work was interrupted. Resume to check its existing session ($reason).';
+  }
+  return reason.isEmpty
+      ? 'Work was interrupted and needs review.'
+      : 'Work was interrupted and needs review ($reason).';
+}
+
+String _planningCheckpointSummary(
+  TeamPlanningState planning, {
+  required bool canResume,
+}) {
   final reason = switch (planning.reason) {
     'sessionFailed' => 'sessionFailed',
     'promptUncertain' => 'promptUncertain',
@@ -578,13 +657,17 @@ String _planningCheckpointSummary(TeamPlanningState planning) {
     'invalidPlan' ||
     'planTaskTitleRequired' ||
     'planPhaseInvalid' ||
-    'usageUncertain' => planning.reason,
+    'usageUncertain' ||
+    'recoveryNeedsReview' => planning.reason,
     'restartNeedsReconciliation' => 'restartNeedsReconciliation',
     'pauseNeedsReconciliation' => 'pauseNeedsReconciliation',
     _ => '',
   };
   if (reason.isEmpty) {
     return 'Planning stopped and needs review.';
+  }
+  if (canResume && planning.stage == 'interrupted') {
+    return 'Planning was interrupted. Resume to check its existing session ($reason).';
   }
   return planning.stage == 'failed'
       ? 'Planning failed ($reason).'
