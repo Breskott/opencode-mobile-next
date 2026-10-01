@@ -1449,6 +1449,7 @@ fn apply_command(
         "saveSpecDraft",
         "approveSpec",
         "approvePlan",
+        "retryPlan",
         "acceptPhase",
         "acceptMilestone",
         "updateSettings",
@@ -1665,6 +1666,70 @@ fn apply_command(
                         p["status"] = json!("planning");
                         p["planApproved"] = json!(false);
                         jobs.push(job(w, &p, None));
+                    }
+                    "retryPlan" => {
+                        if p["status"] == "stopped" {
+                            return Err(StoreError("projectStopped"));
+                        }
+                        if matches!(p["status"].as_str(), Some("paused" | "pausedBudget")) {
+                            return Err(StoreError("projectPaused"));
+                        }
+                        if p["planApproved"] == true {
+                            return Err(StoreError("planAlreadyApproved"));
+                        }
+                        if p["specVersions"]
+                            .as_array()
+                            .and_then(|versions| versions.last())
+                            != Some(&p["specDraft"])
+                            || p["specDraft"]["approvedBy"] != "person"
+                            || p["specDraft"]["approvedAt"]
+                                .as_str()
+                                .is_none_or(str::is_empty)
+                        {
+                            return Err(StoreError("approveSpecFirst"));
+                        }
+                        let in_flight = |j: &Value| {
+                            crate::scheduler::active_stage(j["stage"].as_str().unwrap_or(""))
+                                || matches!(j["stage"].as_str(), Some("queued" | "mergeReady"))
+                        };
+                        if jobs
+                            .iter()
+                            .any(|j| j["projectId"] == id && j["kind"] == "planner" && in_flight(j))
+                        {
+                            return Err(StoreError("plannerBusy"));
+                        }
+                        if jobs
+                            .iter()
+                            .any(|j| j["projectId"] == id && j["kind"] == "task" && in_flight(j))
+                        {
+                            return Err(StoreError("tasksBusy"));
+                        }
+                        let latest = jobs
+                            .iter()
+                            .rposition(|j| j["projectId"] == id && j["kind"] == "planner")
+                            .ok_or(StoreError("planningRetryUnavailable"))?;
+                        if !matches!(
+                            jobs[latest]["stage"].as_str(),
+                            Some("failed" | "interrupted")
+                        ) {
+                            return Err(StoreError("planningRetryUnavailable"));
+                        }
+                        if matches!(
+                            jobs[latest]["reason"].as_str(),
+                            Some("restartNeedsReconciliation" | "pauseNeedsReconciliation")
+                        ) {
+                            return Err(StoreError("planningNeedsReconciliation"));
+                        }
+                        // This explicit request authorizes a new proposal, not
+                        // replaying the old prompt or changing the approved spec.
+                        p["tasks"] = json!([]);
+                        p["phases"] = json!([]);
+                        p["status"] = json!("planning");
+                        let fresh = job(w, &p, None);
+                        jobs[latest]["stage"] = json!("stopped");
+                        jobs[latest]["retiredBy"] = fresh["id"].clone();
+                        jobs[latest]["updatedAt"] = json!(now());
+                        jobs.push(fresh);
                     }
                     "approvePlan" => {
                         if p["specVersions"].as_array().unwrap().is_empty() {
