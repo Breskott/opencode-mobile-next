@@ -34,6 +34,7 @@ pub struct Engine {
     pub(crate) observer_connected: Mutex<bool>,
     pub(crate) parent_pid: i32,
     lane_admission: tokio::sync::Mutex<()>,
+    merge_publication: tokio::sync::Mutex<()>,
     boundary: Option<BoundaryAuthority>,
     deleting: std::sync::atomic::AtomicBool,
 }
@@ -78,6 +79,7 @@ pub async fn serve(config: Config, pins: Option<LaunchPins>) -> Result<(), &'sta
         boundary,
         deleting: std::sync::atomic::AtomicBool::new(false),
         lane_admission: tokio::sync::Mutex::new(()),
+        merge_publication: tokio::sync::Mutex::new(()),
         chat: tokio::sync::RwLock::new(chat),
         observer_connected: Mutex::new(false),
         parent_pid: unsafe { libc::getppid() },
@@ -678,6 +680,35 @@ async fn reconcile(e: Shared) {
             next_verify = tokio::time::Instant::now() + retry_delay;
         }
         crate::admission::reconcile_busy(&e).await;
+        if execution_enabled(&e) {
+            if let Ok(store) = e.store.lock() {
+                let _ = store.reconcile_restart_jobs();
+            }
+        }
+        // Publish interrupted canonical merges before any later task may
+        // advance dev. The private journal provides the original before/after
+        // refs; observation cannot guess an earlier receipt from current refs.
+        if execution_enabled(&e) {
+            let pending = e
+                .store
+                .lock()
+                .ok()
+                .and_then(|s| s.jobs().ok())
+                .unwrap_or_default();
+            for job in pending
+                .iter()
+                .filter(|j| j["stage"] == "resuming" && j["resumeStage"] == "merging")
+            {
+                if let Err(reason) = recover_merge_publication(&e, job).await {
+                    let _ = patch(
+                        &e,
+                        job["id"].as_str().unwrap_or(""),
+                        "resuming",
+                        json!({"stage":"interrupted","reason":reason}),
+                    );
+                }
+            }
+        }
         let jobs = e
             .store
             .lock()
@@ -706,7 +737,9 @@ async fn reconcile(e: Shared) {
                 continue;
             }
             let ledger = e.chat.read().await;
-            if !crate::admission::idle(&e, &ledger).await.unwrap_or(false) {
+            if job["stage"] != "resuming"
+                && !crate::admission::idle(&e, &ledger).await.unwrap_or(false)
+            {
                 let reason = if ledger.admission(
                     crate::admission::now_ms(),
                     crate::admission::app_alive(&e),
@@ -718,9 +751,13 @@ async fn reconcile(e: Shared) {
                     "chatStatusUnknown"
                 };
                 drop(ledger);
-                if job["reason"] != reason && job["stage"] == "queued" {
+                if job["reason"] != reason {
                     if let Ok(store) = e.store.lock() {
-                        let _ = store.update_job(&id, "queued", &json!({"reason":reason}));
+                        let _ = store.update_job(
+                            &id,
+                            job["stage"].as_str().unwrap_or("queued"),
+                            &json!({"reason":reason}),
+                        );
                     }
                 }
                 continue;
@@ -817,24 +854,13 @@ async fn stage_admitted_with_ledger(
         .iter()
         .filter(|j| j["projectId"] == current["projectId"])
         .collect();
-    let never_dispatched = project_jobs.iter().all(|j| {
-        j["sessionIds"]
-            .as_object()
-            .is_some_and(|ids| ids.is_empty())
+    let observed_cost = project_jobs
+        .iter()
+        .try_fold(0.0, |sum, j| Some(sum + accounted_cost(j)?));
+    let observed_daily_cost = project_jobs.iter().try_fold(0.0, |sum, j| {
+        Some(sum + accounted_daily_cost(j, &utc_day())?)
     });
-    let observed_cost = project_jobs.iter().try_fold(0.0, |sum, j| {
-        if j["sessionIds"]
-            .as_object()
-            .is_some_and(|ids| ids.is_empty())
-        {
-            Some(sum)
-        } else {
-            j["usage"]["cost"].as_f64().map(|v| sum + v)
-        }
-    });
-    if never_dispatched {
-        project["spendDay"] = json!(utc_day());
-    }
+    project["spendDay"] = json!(utc_day());
     let others: Vec<Value> = jobs
         .iter()
         .filter(|j| j["id"] != current["id"])
@@ -856,21 +882,8 @@ async fn stage_admitted_with_ledger(
         lane_cap: 32,
         utc_day: utc_day(),
         observed_total_cost: observed_cost,
-        observed_daily_cost: if never_dispatched {
-            Some(0.0)
-        } else if project["usageReported"] == true {
-            project["spentToday"].as_f64()
-        } else {
-            None
-        },
-        observed_task_tokens: if current["sessionIds"]
-            .as_object()
-            .is_some_and(|ids| ids.is_empty())
-        {
-            Some(0)
-        } else {
-            current["usage"]["tokens"].as_u64()
-        },
+        observed_daily_cost,
+        observed_task_tokens: accounted_tokens(current),
     };
     match crate::scheduler::evaluate(&project, &candidate, &others, &context) {
         crate::scheduler::Admission::Admit => Ok(()),
@@ -880,6 +893,63 @@ async fn stage_admitted_with_ledger(
     }
 }
 #[allow(clippy::too_many_arguments)]
+fn fresh_undispatched_role(job: &Value, role: &str, session: &Value) -> bool {
+    session.as_str().is_some_and(|id| !id.is_empty())
+        && job["freshSessionIds"]
+            .as_object()
+            .is_some_and(|fresh| fresh.get(role) == Some(session))
+        && (job["promptDispatch"].is_null()
+            || job["promptDispatch"]
+                .as_object()
+                .is_some_and(|d| !d.contains_key(role)))
+}
+fn accounted_cost(job: &Value) -> Option<f64> {
+    let sessions = job["sessionIds"].as_object()?;
+    sessions
+        .iter()
+        .try_fold(0.0, |sum, (role, id)| {
+            let cost = job["sessionUsage"][role]["cost"]
+                .as_f64()
+                .filter(|n| n.is_finite() && *n >= 0.0)
+                .or_else(|| fresh_undispatched_role(job, role, id).then_some(0.0))?;
+            Some(sum + cost)
+        })
+        .filter(|n| n.is_finite())
+}
+fn accounted_tokens(job: &Value) -> Option<u64> {
+    job["sessionIds"]
+        .as_object()?
+        .iter()
+        .try_fold(0u64, |sum, (role, id)| {
+            let tokens = job["sessionUsage"][role]["tokens"]
+                .as_u64()
+                .or_else(|| fresh_undispatched_role(job, role, id).then_some(0))?;
+            sum.checked_add(tokens)
+        })
+}
+fn accounted_daily_cost(job: &Value, day: &str) -> Option<f64> {
+    job["sessionIds"]
+        .as_object()?
+        .iter()
+        .try_fold(0.0, |sum, (role, id)| {
+            let usage = &job["sessionUsage"][role];
+            let cost = if fresh_undispatched_role(job, role, id) {
+                0.0
+            } else if usage["day"] == day {
+                usage["dailyCost"]
+                    .as_f64()
+                    .filter(|n| n.is_finite() && *n >= 0.0)?
+            } else if matches!(job["stage"].as_str(), Some("completed" | "merged"))
+                && usage["day"].as_str().is_some_and(|old| old < day)
+            {
+                0.0
+            } else {
+                return None;
+            };
+            Some(sum + cost)
+        })
+        .filter(|n| n.is_finite())
+}
 async fn admitted_prompt(
     e: &Engine,
     job: &Value,
@@ -1050,10 +1120,10 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
         .filter(|s| !s.is_empty())
         .unwrap_or(id);
     let repo = job["repoId"].as_str().ok_or("repoInvalid")?;
-    stage_admitted(e, job).await?;
     if job["stage"] == "resuming" {
         return resume_job(e, job).await;
     }
+    stage_admitted(e, job).await?;
     {
         // The durable starting reservation and cap check are one serialized
         // admission. Concurrent queued futures cannot both take the last lane.
@@ -1094,7 +1164,7 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
         e,
         id,
         "starting",
-        json!({"stage":"running","directory":directory,"sessionIds":sessions,"expectedDevCommit":dev}),
+        json!({"stage":"running","directory":directory,"sessionIds":sessions,"freshSessionIds":sessions,"expectedDevCommit":dev}),
     ).is_err() {
         let _ = e.server.abort(&directory, &session).await;
         return Err("jobChanged");
@@ -1160,7 +1230,7 @@ async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &
         e,
         id,
         "running",
-        json!({"stage":"checking","sessionIds":{"worker":session,"checker":checker},"taskCommit":commit}),
+        json!({"stage":"checking","sessionIds":{"worker":session,"checker":checker},"freshSessionIds":{"checker":checker},"taskCommit":commit}),
     ).is_err() {
         let _ = e.server.abort(&directory, &checker).await;
         return Err("jobChanged");
@@ -1210,20 +1280,7 @@ async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &
     }
     stage_admitted(e, job).await?;
     patch(e, id, "mergeReady", json!({"stage":"merging"}))?;
-    let expected_dev = current_dev(e, repo)?;
-    let receipt = e
-        .repositories
-        .lock()
-        .map_err(|_| "repositoryUnavailable")?
-        .merge_dev(repo, task, &expected_dev, commit)
-        .map_err(|_| "mergeRefused")?;
-    patch(
-        e,
-        id,
-        "merging",
-        json!({"stage":"completed","mergedCommit":receipt["devCommit"],"repoReceipt":receipt}),
-    )?;
-    Ok(())
+    merge_and_publish(e, job, commit).await
 }
 fn undispatched_clone_allowed(job: &Value) -> bool {
     job["stage"] == "queued"
@@ -1251,10 +1308,92 @@ fn current_dev(e: &Engine, repo: &str) -> Result<String, &'static str> {
         .map(str::to_owned)
         .ok_or("repoInvalid")
 }
+fn merge_evidence(e: &Engine, id: &str) -> Result<(Value, String), &'static str> {
+    use sha2::{Digest, Sha256};
+    let job = e
+        .store
+        .lock()
+        .map_err(|_| "storeUnavailable")?
+        .jobs()
+        .map_err(|_| "storeUnavailable")?
+        .into_iter()
+        .find(|j| j["id"] == id)
+        .ok_or("jobMissing")?;
+    let proof = json!({"checkerSessionId":job["sessionIds"]["checker"],
+        "criteria":job["criteria"],"findings":job["findings"],"criterionResults":job["criterionResults"]});
+    if !proof["checkerSessionId"].is_string() || !validate_check(&proof, &job["criteria"])? {
+        return Err("recoveryNeedsReview");
+    }
+    let fingerprint = format!(
+        "{:x}",
+        Sha256::digest(serde_json::to_vec(&proof).map_err(|_| "checkInvalid")?)
+    );
+    Ok((job, fingerprint))
+}
+async fn merge_and_publish(
+    e: &Engine,
+    job: &Value,
+    expected_task: &str,
+) -> Result<(), &'static str> {
+    let id = job["id"].as_str().ok_or("jobInvalid")?;
+    let repo = job["repoId"].as_str().ok_or("repoInvalid")?;
+    let task = job["taskId"].as_str().ok_or("jobInvalid")?;
+    let _publication = e.merge_publication.lock().await;
+    let (_, fingerprint) = merge_evidence(e, id)?;
+    let expected_dev = current_dev(e, repo)?;
+    let receipt = e
+        .repositories
+        .lock()
+        .map_err(|_| "repositoryUnavailable")?
+        .merge_dev_for_evidence(repo, task, &expected_dev, expected_task, id, &fingerprint)
+        .map_err(|error| error.code())?;
+    patch(
+        e,
+        id,
+        "merging",
+        json!({"stage":"completed","mergedCommit":receipt["devCommit"],"repoReceipt":receipt}),
+    )?;
+    Ok(())
+}
+async fn recover_merge_publication(e: &Engine, job: &Value) -> Result<bool, &'static str> {
+    let id = job["id"].as_str().ok_or("jobInvalid")?;
+    if job["resumeStage"] == "merging" {
+        let _publication = e.merge_publication.lock().await;
+        let (current, fingerprint) = merge_evidence(e, id)?;
+        let repo = current["repoId"].as_str().ok_or("repoInvalid")?;
+        let task = current["taskId"].as_str().ok_or("jobInvalid")?;
+        let commit = current["taskCommit"]
+            .as_str()
+            .ok_or("recoveryNeedsReview")?;
+        if !boundary_verified(e) {
+            return Err("boundaryUnavailable");
+        }
+        let receipt = e
+            .repositories
+            .lock()
+            .map_err(|_| "repositoryUnavailable")?
+            .recover_merge_dev(repo, task, commit, id, &fingerprint)
+            .map_err(|error| error.code())?;
+        if let Some(receipt) = receipt {
+            patch(e, id, "resuming", json!({"stage":"merging"}))?;
+            patch(
+                e,
+                id,
+                "merging",
+                json!({"stage":"completed","mergedCommit":receipt["devCommit"],"repoReceipt":receipt}),
+            )?;
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
 async fn resume_job(e: &Engine, job: &Value) -> Result<(), &'static str> {
     // Only refetch an already recorded session. A lost prompt acknowledgment
     // cannot lead to a replacement prompt, session or duplicate provider cost.
     let id = job["id"].as_str().ok_or("jobInvalid")?;
+    if recover_merge_publication(e, job).await? {
+        return Ok(());
+    }
     let directory = job["directory"].as_str().ok_or("recoveryNeedsReview")?;
     let role = if job["sessionIds"]["checker"].is_string() {
         "checker"
@@ -1314,19 +1453,7 @@ async fn resume_job(e: &Engine, job: &Value) -> Result<(), &'static str> {
     )?;
     stage_admitted(e, job).await?;
     patch(e, id, "mergeReady", json!({"stage":"merging"}))?;
-    let receipt = e
-        .repositories
-        .lock()
-        .map_err(|_| "repositoryUnavailable")?
-        .merge_dev(repo, task, &dev, commit)
-        .map_err(|_| "mergeRefused")?;
-    patch(
-        e,
-        id,
-        "merging",
-        json!({"stage":"completed","mergedCommit":receipt["devCommit"],"repoReceipt":receipt}),
-    )?;
-    Ok(())
+    merge_and_publish(e, job, commit).await
 }
 async fn await_completion(
     e: &Engine,
@@ -1353,7 +1480,6 @@ async fn await_completion(
             }
             Err(_) => return Err("sessionUnknown"),
         };
-        let usage = normalized_usage(&observed["usage"]);
         {
             let store = e.store.lock().map_err(|_| "storeUnavailable")?;
             let jobs = store.jobs().map_err(|_| "jobChanged")?;
@@ -1365,6 +1491,7 @@ async fn await_completion(
             if matches!(stage, "paused" | "stopped" | "interrupted") {
                 return Err("jobChanged");
             }
+            let usage = observed_session_usage(current, role, &observed["usage"], &utc_day());
             if current["sessionUsage"][role] != usage {
                 store
                     .update_job(job_id, stage, &json!({"sessionUsage":{role:usage}}))
@@ -1388,6 +1515,29 @@ async fn await_completion(
         }
     }
     Err("sessionUncertain")
+}
+fn observed_session_usage(job: &Value, role: &str, observed: &Value, day: &str) -> Value {
+    let mut out = normalized_usage(observed);
+    let previous = &job["sessionUsage"][role];
+    let cost = out["cost"].as_f64();
+    let daily = if previous["day"] == day {
+        previous["dailyCost"]
+            .as_f64()
+            .zip(previous["cost"].as_f64())
+            .zip(cost)
+            .and_then(|((daily, old), next)| (next >= old).then_some(daily + next - old))
+    } else if previous["cost"].is_null()
+        && job["sessionDispatchDays"][role] == day
+        && job["freshSessionIds"][role] == job["sessionIds"][role]
+        && job["freshSessionIds"][role].is_string()
+    {
+        cost
+    } else {
+        None
+    };
+    out["day"] = json!(day);
+    out["dailyCost"] = json!(daily.filter(|n| n.is_finite() && *n >= 0.0));
+    out
 }
 fn normalized_usage(usage: &Value) -> Value {
     // Preserve the protocol's explicit cumulative total; no token arithmetic.
@@ -1487,12 +1637,20 @@ pub fn structured_output(value: &Value) -> Result<Value, &'static str> {
 }
 /// Require durable evidence that a read-only checker can inspect without
 /// executing commands or inferring that a proposed test actually ran.
+fn verification_report_path(job: &Value) -> String {
+    job["taskId"]
+        .as_str()
+        .filter(|id| crate::config::valid_id(id))
+        .map(|id| format!(".aiteam-verification/{id}.md"))
+        .unwrap_or_else(|| ".aiteam-verification.md".into())
+}
 pub fn worker_request(job: &Value, branch: &str) -> String {
+    let report = verification_report_path(job);
     format!(
         "Implement this task on branch {branch}. Keep edits in this isolated clone. \
          Commit completed changes to that task branch, without editing main or dev. \
          Run the acceptance checks that are feasible and authorized for this task. \
-         Record the actual executed acceptance checks in .aiteam-verification.md and \
+         Record the actual executed acceptance checks in {report} and \
          commit that task-verification report with your changes. For each original \
          criterion, record the exact commands, working directory, exit codes, and \
          observed results/output, or the concrete committed files inspected for a \
@@ -1509,6 +1667,7 @@ pub fn worker_request(job: &Value, branch: &str) -> String {
 /// Keep criterion verdicts distinct from unresolved defects. Successful
 /// evidence must not become a finding: every finding intentionally blocks merge.
 pub fn checker_request(job: &Value) -> String {
+    let report = verification_report_path(job);
     let passed_example = json!({
         "findings": [],
         "criterionResults": [{"criterion": "<exact original criterion>", "status": "met"}]
@@ -1516,14 +1675,17 @@ pub fn checker_request(job: &Value) -> String {
     let defect_example = json!({
         "findings": [{"id": "finding-1", "severity": "major",
             "criterion": "<exact original criterion>",
-            "location": ".aiteam-verification.md",
+            "location": report,
             "text": "Required executed-check evidence is missing.", "status": "open"}],
         "criterionResults": [{"criterion": "<exact original criterion>", "status": "unmet"}]
     });
     format!(
         "Read-only verification. Inspect committed task changes and the committed \
-         .aiteam-verification.md task-verification report against every original \
-         acceptance criterion: {}. Use only read, glob, and grep tools. Do not modify \
+         {report} task-verification report against every original \
+         acceptance criterion: {}. For a task dispatched by an older engine, an \
+         existing legacy .aiteam-verification.md report may be inspected only if it \
+         contains actual evidence for this exact task and its original criteria. \
+         Never substitute another task report. Use only read, glob, and grep tools. Do not modify \
          files or run commands, tests, shell tools, or subagents. For a criterion \
          requiring executed checks, establish what actually ran from the committed \
          evidence, including the exact command, exit code, and observed result. \
@@ -1717,6 +1879,114 @@ mod tests {
         (address, polls, posts, server)
     }
 
+    #[test]
+    fn fresh_session_budget_zero_requires_durable_provenance_and_no_dispatch() {
+        let fresh =
+            json!({"sessionIds":{"planner":"ses_new"},"freshSessionIds":{"planner":"ses_new"}});
+        assert_eq!(accounted_cost(&fresh), Some(0.0));
+        assert_eq!(accounted_tokens(&fresh), Some(0));
+        assert_eq!(accounted_daily_cost(&fresh, "2026-10-01"), Some(0.0));
+        for patch in [
+            json!({"freshSessionIds":null}),
+            json!({"freshSessionIds":{"planner":"other"}}),
+            json!({"promptDispatch":{"planner":"dispatching"}}),
+            json!({"promptDispatch":{"planner":"dispatched"}}),
+            json!({"promptDispatch":[]}),
+            json!({"promptDispatch":{"planner":"invalid"}}),
+        ] {
+            let mut job = fresh.clone();
+            for (key, value) in patch.as_object().unwrap() {
+                job[key] = value.clone();
+            }
+            assert_eq!(accounted_cost(&job), None);
+            assert_eq!(accounted_tokens(&job), None);
+            assert_eq!(accounted_daily_cost(&job, "2026-10-01"), None);
+        }
+    }
+
+    #[test]
+    fn fresh_checker_keeps_observed_worker_cost_and_task_tokens() {
+        let mut job = json!({"sessionIds":{"worker":"ses_worker","checker":"ses_checker"},
+            "freshSessionIds":{"checker":"ses_checker"},"promptDispatch":{"worker":"dispatched"},
+            "sessionUsage":{"worker":{"cost":0.7,"tokens":123,"day":"2026-10-01","dailyCost":0.7}}});
+        assert_eq!(accounted_cost(&job), Some(0.7));
+        assert_eq!(accounted_tokens(&job), Some(123));
+        assert_eq!(accounted_daily_cost(&job, "2026-10-01"), Some(0.7));
+        job["promptDispatch"]["checker"] = json!("dispatching");
+        assert_eq!(accounted_cost(&job), None);
+        assert_eq!(accounted_daily_cost(&job, "2026-10-01"), None);
+    }
+
+    #[test]
+    fn daily_usage_requires_same_day_provenance_and_preserves_unknown_cross_day() {
+        let mut job = json!({"sessionIds":{"worker":"ses_worker"},"freshSessionIds":{"worker":"ses_worker"},
+            "sessionDispatchDays":{"worker":"2026-10-01"}});
+        let first = observed_session_usage(
+            &job,
+            "worker",
+            &json!({"cost":0.4,"tokens":{"total":10}}),
+            "2026-10-01",
+        );
+        assert_eq!(first["dailyCost"], 0.4);
+        job["sessionUsage"] = json!({"worker":first});
+        let second = observed_session_usage(
+            &job,
+            "worker",
+            &json!({"cost":0.7,"tokens":{"total":20}}),
+            "2026-10-01",
+        );
+        assert_eq!(second["dailyCost"], 0.7);
+        let tomorrow = observed_session_usage(
+            &job,
+            "worker",
+            &json!({"cost":0.9,"tokens":{"total":30}}),
+            "2026-10-02",
+        );
+        assert!(tomorrow["dailyCost"].is_null());
+        job["sessionUsage"]["worker"] = tomorrow;
+        assert!(observed_session_usage(
+            &job,
+            "worker",
+            &json!({"cost":1.1,"tokens":{"total":40}}),
+            "2026-10-02"
+        )["dailyCost"]
+            .is_null());
+        job["sessionUsage"] = json!({});
+        job["freshSessionIds"] = Value::Null;
+        assert!(observed_session_usage(
+            &job,
+            "worker",
+            &json!({"cost":0.4,"tokens":{"total":10}}),
+            "2026-10-01"
+        )["dailyCost"]
+            .is_null());
+    }
+
+    #[tokio::test]
+    async fn ready_restart_refetches_exact_session_without_new_prompt_or_clone() {
+        let root = tempfile::tempdir().unwrap();
+        let mut e = fixture(root.path());
+        let (url, polls, posts, server) = poll_server(true, false).await;
+        Arc::get_mut(&mut e).unwrap().server =
+            OpenCodeClient::new(&url, "opencode", "fixture-only").unwrap();
+        let (_, id) = running_planner(&e);
+        {
+            let store = e.store.lock().unwrap();
+            store.recover().unwrap();
+            store.reconcile_restart_jobs().unwrap();
+            assert_eq!(store.jobs().unwrap()[0]["stage"], "resuming");
+        }
+        let result = await_completion(&e, &id, "planner", "/root/projects/poll", "ses_test").await;
+        server.abort();
+        assert_eq!(result.unwrap()["state"], "completed");
+        assert!(polls.load(std::sync::atomic::Ordering::SeqCst) >= 2);
+        assert_eq!(posts.load(std::sync::atomic::Ordering::SeqCst), 0);
+        assert_eq!(
+            e.store.lock().unwrap().jobs().unwrap()[0]["sessionIds"]["planner"],
+            "ses_test"
+        );
+    }
+
     #[tokio::test]
     async fn accepted_async_turn_can_appear_after_first_idle_poll_without_resubmission() {
         let root = tempfile::tempdir().unwrap();
@@ -1888,6 +2158,7 @@ mod tests {
             boundary: None,
             deleting: std::sync::atomic::AtomicBool::new(false),
             lane_admission: tokio::sync::Mutex::new(()),
+            merge_publication: tokio::sync::Mutex::new(()),
             chat: tokio::sync::RwLock::new(ChatLedger::default()),
             observer_connected: Mutex::new(false),
             parent_pid: unsafe { libc::getppid() },
@@ -2273,6 +2544,16 @@ mod tests {
         assert_eq!(defect["findings"][0]["status"], "open");
         assert_eq!(defect["criterionResults"][0]["status"], "unmet");
         assert!(!validate_check(&defect, &criteria).unwrap());
+    }
+
+    #[test]
+    fn parallel_tasks_use_distinct_committed_verification_reports() {
+        let first = json!({"taskId":"task-one","criteria":["Verify one"],"title":"One"});
+        let second = json!({"taskId":"task-two","criteria":["Verify two"],"title":"Two"});
+        assert!(worker_request(&first, "task/one").contains(".aiteam-verification/task-one.md"));
+        assert!(worker_request(&second, "task/two").contains(".aiteam-verification/task-two.md"));
+        assert!(checker_request(&first).contains(".aiteam-verification/task-one.md"));
+        assert!(!worker_request(&first, "task/one").contains(".aiteam-verification/task-two.md"));
     }
 
     #[test]

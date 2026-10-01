@@ -365,6 +365,7 @@ impl Store {
             "repoReceipt",
             "sessionUsage",
             "promptDispatch",
+            "freshSessionIds",
         ];
         let fields = patch.as_object().ok_or(StoreError("invalidJobPatch"))?;
         if fields.keys().any(|k| !allowed.contains(&k.as_str()))
@@ -418,6 +419,18 @@ impl Store {
         {
             return Err(StoreError("projectPaused"));
         }
+        if let Some(fresh) = patch.get("freshSessionIds") {
+            for (role, session) in fresh.as_object().ok_or(StoreError("invalidJobPatch"))? {
+                if !["planner", "worker", "checker"].contains(&role.as_str())
+                    || patch["sessionIds"][role] != *session
+                    || session.as_str().filter(|id| !id.is_empty()).is_none()
+                    || j["sessionIds"].get(role).is_some()
+                    || j["promptDispatch"].get(role).is_some()
+                {
+                    return Err(StoreError("invalidJobPatch"));
+                }
+            }
+        }
         for (key, value) in fields {
             if matches!(
                 key.as_str(),
@@ -431,7 +444,14 @@ impl Store {
             ) {
                 continue;
             }
-            if key == "promptDispatch" {
+            if key == "freshSessionIds" {
+                if j["freshSessionIds"].is_null() {
+                    j["freshSessionIds"] = json!({});
+                }
+                for (role, session) in value.as_object().ok_or(StoreError("invalidJobPatch"))? {
+                    j["freshSessionIds"][role] = session.clone();
+                }
+            } else if key == "promptDispatch" {
                 let dispatches = value.as_object().ok_or(StoreError("invalidJobPatch"))?;
                 for (role, state) in dispatches {
                     if !["planner", "worker", "checker"].contains(&role.as_str())
@@ -448,6 +468,12 @@ impl Store {
                     }
                     if j["promptDispatch"].is_null() {
                         j["promptDispatch"] = json!({});
+                    }
+                    if j["promptDispatch"].get(role).is_none() {
+                        if j["sessionDispatchDays"].is_null() {
+                            j["sessionDispatchDays"] = json!({});
+                        }
+                        j["sessionDispatchDays"][role] = json!(&now()[..10]);
                     }
                     j["promptDispatch"][role] = state.clone();
                 }
@@ -544,6 +570,27 @@ impl Store {
             });
             j["usage"]["cost"] = json!(cost.filter(|n| n.is_finite()));
             j["usage"]["tokens"] = json!(tokens);
+            let day = patch["sessionUsage"]
+                .as_object()
+                .into_iter()
+                .flat_map(|roles| roles.values())
+                .filter_map(|usage| usage["day"].as_str())
+                .max();
+            if let Some(day) = day {
+                let daily: Option<f64> = roles
+                    .iter()
+                    .map(|role| {
+                        let usage = &j["sessionUsage"][role];
+                        if usage["day"] == day {
+                            usage["dailyCost"].as_f64()
+                        } else {
+                            None
+                        }
+                    })
+                    .sum();
+                j["usage"]["day"] = json!(day);
+                j["usage"]["dailyCost"] = json!(daily.filter(|n| n.is_finite()));
+            }
         }
         if let Some(receipt) = patch.get("repoReceipt") {
             if j["kind"] != "task" || stage != "completed" {
@@ -752,7 +799,9 @@ impl Store {
         let mut jobs = load_jobs(&tx)?;
         let mut changed = HashSet::new();
         for j in &mut jobs {
-            if crate::scheduler::active_stage(j["stage"].as_str().unwrap_or("")) {
+            if crate::scheduler::active_stage(j["stage"].as_str().unwrap_or(""))
+                || j["stage"] == "mergeReady"
+            {
                 let stage = j["stage"].as_str().unwrap_or("").to_owned();
                 checkpoint_interruption(j, &stage);
                 j["stage"] = json!("interrupted");
@@ -787,6 +836,75 @@ impl Store {
                 &tx,
                 "recovery",
                 "interrupted",
+                id,
+                "",
+                project_revision(&w, id),
+            )?;
+        }
+        if !changed.is_empty() {
+            w["revision"] = json!(w["revision"].as_u64().unwrap_or(0) + 1);
+            persist(&tx, &w, &jobs)?;
+        }
+        tx.commit()?;
+        Ok(())
+    }
+    /// Ready-daemon attachment may observe only restart-owned checkpoints.
+    /// User pause/stop and ambiguous or reviewable failures require a command.
+    pub fn reconcile_restart_jobs(&self) -> Result<(), StoreError> {
+        let mut conn = self.lock()?;
+        let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
+        alive(&tx)?;
+        let mut w = load_workspace(&tx)?;
+        let mut jobs = load_jobs(&tx)?;
+        let mut changed = HashSet::new();
+        for j in &mut jobs {
+            if j["stage"] != "interrupted" || j["reason"] != "restartNeedsReconciliation" {
+                continue;
+            }
+            let id = j["projectId"].as_str().unwrap_or("").to_owned();
+            let Some(p) = w["projects"]
+                .as_array_mut()
+                .and_then(|ps| ps.iter_mut().find(|p| p["id"] == id))
+            else {
+                continue;
+            };
+            if !matches!(
+                p["status"].as_str(),
+                Some("interrupted" | "running" | "planning")
+            ) {
+                continue;
+            }
+            if resume_job_checkpoint(j).is_err() {
+                j["reason"] = json!("recoveryNeedsReview");
+                j["updatedAt"] = json!(now());
+            }
+            append_job_timeline(p, j)?;
+            changed.insert(id);
+        }
+        for id in &changed {
+            if let Some(p) = w["projects"]
+                .as_array_mut()
+                .and_then(|ps| ps.iter_mut().find(|p| p["id"] == *id))
+            {
+                if p["status"] == "interrupted"
+                    && jobs.iter().any(|j| {
+                        j["projectId"] == *id
+                            && matches!(j["stage"].as_str(), Some("queued" | "resuming"))
+                    })
+                {
+                    p["status"] = json!(if p["planApproved"] == true {
+                        "running"
+                    } else {
+                        "planning"
+                    });
+                }
+                sync_task_stages(p, &jobs);
+                increment_project(p);
+            }
+            event(
+                &tx,
+                "recovery",
+                "reconcile",
                 id,
                 "",
                 project_revision(&w, id),
@@ -1786,6 +1904,7 @@ fn sync_task_stages(p: &mut Value, jobs: &[Value]) {
             .find(|j| j["projectId"] == id && j["taskId"] == t["id"])
         {
             t["status"] = json!(task_status(j["stage"].as_str().unwrap_or("")));
+            t["reason"] = j["reason"].clone();
             t["changedAt"] = json!(now());
         }
     }
@@ -1850,6 +1969,9 @@ fn update_usage(j: &mut Value, usage: &Value) -> Result<(), StoreError> {
         match key.as_str() {
             "cost" | "dailyCost" => {
                 if value.is_null() {
+                    if key == "dailyCost" {
+                        j["usage"][key] = Value::Null;
+                    }
                     continue;
                 }
                 let cost = value
