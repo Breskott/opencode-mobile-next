@@ -2131,7 +2131,7 @@ mod tests {
         crate::admission::accept(
             e,
             ChatHeartbeat {
-                until: now + 60_000,
+                until: now + 25_000,
                 session_ids: vec![],
                 directories: vec![],
                 known: true,
