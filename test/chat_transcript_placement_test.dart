@@ -439,15 +439,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('step-note')), findsOneWidget);
     expect(find.textContaining('The bundle is stale'), findsOneWidget);
-    // The kit body keeps one indent from its row's leading edge.
+    // One transcript gutter: the opened note sits flush with its row's
+    // leading edge, with no indent of its own.
     final row = find.ancestor(
       of: find.text('Rebuilding latest source'),
       matching: find.byType(KitToolRow),
     );
-    final tokens = KitTokens.of(tester.element(row));
     expect(
       tester.getTopLeft(find.textContaining('The bundle is stale')).dx,
-      equals(tester.getTopLeft(row).dx + tokens.space3),
+      equals(tester.getTopLeft(row).dx),
     );
   });
 

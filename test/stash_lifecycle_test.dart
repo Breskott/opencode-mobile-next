@@ -178,8 +178,13 @@ Future<void> settleConstructorMonitors(ConnectionController controller) {
 
 /// Every secret a deletion of profile `a` sweeps: its password and the AI
 /// Team plugin's per-profile secrets (TEAM-105; the plugin joins the
-/// existing profile-deletion sweep whether or not it was ever on).
-final _profileASecrets = ['pw.a', ...OrchestrationStore.secretKeys('a')];
+/// existing profile-deletion sweep whether or not it was ever on) and the
+/// phone team engine's token.
+final _profileASecrets = [
+  'pw.a',
+  '${ProfileStore.teamEngineAuthKey}a',
+  ...OrchestrationStore.secretKeys('a'),
+];
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

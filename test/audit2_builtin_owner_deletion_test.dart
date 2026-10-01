@@ -12,6 +12,7 @@ import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/state/builtin_server_owner.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/phone_project_engine.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
@@ -176,7 +177,10 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     final store = ProfileStore(prefs: prefs);
     await store.load();
-    final connection = ConnectionController(store);
+    final connection = ConnectionController(
+      store,
+      phoneEngineBridge: _EngineBridge(),
+    );
     addTearDown(connection.dispose);
 
     await expectLater(
@@ -240,7 +244,10 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final store = ProfileStore(prefs: prefs);
       await store.load();
-      final connection = ConnectionController(store);
+      final connection = ConnectionController(
+        store,
+        phoneEngineBridge: _EngineBridge(),
+      );
       final linux = _Linux();
       final starter = BuiltinServerStarter(linux: linux);
       final healing = PhoneServerHealing(
@@ -287,4 +294,25 @@ void main() {
       expect(prefs.getString(PhoneServerHealing.ownerKey), isNot(profile.id));
     },
   );
+}
+
+/// Profile deletion also deletes the phone team engine; no native side here.
+class _EngineBridge implements PhoneProjectEngineBridge {
+  @override
+  Future<void> start(
+    String profileId, {
+    int port = 4098,
+    String? notice,
+  }) async {}
+
+  @override
+  Future<({String baseUrl, String bearerToken})> credentials(
+    String profileId,
+  ) async => (baseUrl: '', bearerToken: '');
+
+  @override
+  Future<void> delete(String profileId) async {}
+
+  @override
+  Future<void> stop(String profileId) async {}
 }

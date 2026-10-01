@@ -142,6 +142,13 @@ class _Fixture {
     if (ubuntu) Directory(fx.rootfs).createSync(recursive: true);
     _executable(fx.script, TermuxBridge.localAgentsScriptForTesting());
     _executable('${fx.stubs}/proot-distro', _prootStub);
+    // Plenty of room, whatever this machine's disk holds; the full-phone
+    // test swaps in a small one.
+    _executable(
+      '${fx.stubs}/df',
+      '#!/bin/bash\necho "Filesystem 1024-blocks Used Available Capacity '
+          'Mounted on"\necho "/dev/x 99999999 1 90000000 1% /"\n',
+    );
     _executable('${fx.stubs}/termux-wake-lock', _wakeStub);
     _executable('${fx.stubs}/termux-wake-unlock', _wakeStub);
     _executable('${root.path}/paseo-stub', _paseoStub);

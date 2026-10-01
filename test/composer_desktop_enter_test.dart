@@ -147,7 +147,6 @@ void main() {
   testWidgets('a sent prompt runs at once: status and Stop on the composer '
       'edge, and the composer keeps its mic or Send', (tester) async {
     final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
     final api = _ComposerApi();
     await _pump(tester, api);
 
@@ -177,5 +176,6 @@ void main() {
     expect(stop, findsNothing);
     expect(find.text('Thinking…'), findsNothing);
     expect(find.text('No reply came back'), findsNothing);
+    semantics.dispose();
   });
 }

@@ -4735,6 +4735,8 @@ void main() {
       }),
     );
     await _pumpEvent(tester);
+    // The edge status leaves with a short exit animation.
+    await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('chat-stop-button')), findsNothing);
     expect(find.byKey(const ValueKey('prompt-error-banner')), findsOneWidget);

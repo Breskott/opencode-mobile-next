@@ -2579,11 +2579,11 @@ void main() {
   test('fork session sends the selected OpenCode message point', () async {
     await HttpOverrides.runZoned(() async {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      String? body;
-      Uri? uri;
+      // The fork, then the best-effort plain-name lookup and rename.
+      final requests = <({String method, Uri uri, String body})>[];
       server.listen((request) async {
-        uri = request.uri;
-        body = await utf8.decoder.bind(request).join();
+        final text = await utf8.decoder.bind(request).join();
+        requests.add((method: request.method, uri: request.uri, body: text));
         request.response.headers.contentType = ContentType.json;
         request.response.write(
           jsonEncode({
@@ -2612,12 +2612,15 @@ void main() {
         );
 
         expect(id, 'forked-session');
-        expect(uri?.path, '/session/session-1/fork');
-        expect(uri?.queryParameters, {
+        final fork = requests.firstWhere(
+          (request) => request.uri.path == '/session/session-1/fork',
+        );
+        expect(fork.method, 'POST');
+        expect(fork.uri.queryParameters, {
           'directory': '/work/acme',
           'workspace': 'phone',
         });
-        expect(jsonDecode(body!), {'messageID': 'message-7'});
+        expect(jsonDecode(fork.body), {'messageID': 'message-7'});
       } finally {
         await server.close(force: true);
       }

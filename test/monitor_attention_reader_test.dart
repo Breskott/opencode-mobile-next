@@ -180,11 +180,19 @@ void main() {
         () => true,
       );
       expect(details.teamComplete, isTrue);
+      // The gateway presents an interrupted task that cannot resume itself
+      // as `review` (and a resumable one as `paused`); neither is a failure
+      // or a request, so only the open request and the failure need the
+      // person. The running task never does.
       expect(
         details.items.map((item) => item.taskID),
-        containsAll(['task', 'failed', 'interrupted']),
+        containsAll(['task', 'failed']),
       );
-      expect(details.items, hasLength(3));
+      expect(
+        details.items.map((item) => item.taskID),
+        isNot(contains('running')),
+      );
+      expect(details.items, hasLength(2));
       expect(adapter.requests.map((request) => request.path), [
         '/v1/health',
         '/v1/workspace',

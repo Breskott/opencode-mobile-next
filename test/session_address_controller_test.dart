@@ -219,6 +219,9 @@ void main() {
           verifiedAt: DateTime.now(),
         ),
       );
+      // Saving a profile reads its team engine token back; only reads the
+      // link flow makes count against "never reuses secrets".
+      credentialReads = 0;
       controller.receive(link());
       await controller.approveContact();
       expect(controller.phase, SessionAddressPhase.chooseProfile);

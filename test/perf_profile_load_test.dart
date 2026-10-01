@@ -78,10 +78,12 @@ void main() {
       store.load().then((value) => loaded = value),
     );
     expect(before, 160);
-    expect(after, 40);
+    // Each server now restores two secrets, one after the other: the phone
+    // team engine's token, then its sign-in. Four servers overlap at a time.
+    expect(after, 80);
     expect(peak, 4);
     expect(inFlight, 0);
-    expect(reads, 8);
+    expect(reads, 16);
     expect(loaded!.map((p) => p.id), metadata.map((p) => p['id']));
     for (final profile in loaded!) {
       // Compare booleans so an assertion failure cannot print a sign-in value.

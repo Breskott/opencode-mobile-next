@@ -135,7 +135,9 @@ void main() {
     await tester.pump();
 
     var previous = double.negativeInfinity;
-    for (final slug in ['what', 'quiet', 'background', 'servers']) {
+    // The merged page: what notifies, quiet hours, saved servers, then the
+    // background connection.
+    for (final slug in ['what', 'quiet', 'servers', 'background']) {
       final section = _key('notifications-section-$slug');
       expect(section, findsOneWidget, reason: slug);
       final top = tester.getTopLeft(section).dy;

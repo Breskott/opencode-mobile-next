@@ -430,9 +430,17 @@ void main() {
     );
     await store.setActiveId(profile.id);
     final secureCallsAfterSetup = secureMethods.length;
+    // Saving a server reads its team engine token back; the quota screens
+    // themselves read no secret.
+    final secureReadsAfterSetup = secureMethods
+        .where((method) => method == 'read')
+        .length;
     addTearDown(() {
       expect(secureMethods, hasLength(secureCallsAfterSetup));
-      expect(secureMethods.where((method) => method == 'read'), isEmpty);
+      expect(
+        secureMethods.where((method) => method == 'read'),
+        hasLength(secureReadsAfterSetup),
+      );
     });
 
     final connection = _Connection(store);

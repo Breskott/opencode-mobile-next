@@ -182,9 +182,17 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const Key('continue-on-phone-link')),
-          matching: find.textContaining(
-            'opencode-mobile://session?profile=1757500000000000&session=ses_0123456789abcdef',
-            findRichText: true,
+          // The block lets a long link break after punctuation with
+          // zero-width spaces; Copy and selection keep the source.
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is RichText &&
+                widget.text
+                    .toPlainText()
+                    .replaceAll('\u200B', '')
+                    .contains(
+                      'opencode-mobile://session?profile=1757500000000000&session=ses_0123456789abcdef',
+                    ),
           ),
         ),
         findsWidgets,

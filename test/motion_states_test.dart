@@ -409,9 +409,9 @@ void main() {
       controller.notifyListeners();
       await _frames(tester, 4);
       // The edge light fades into the border and the dip straightens
-      // (about 1.2 s), then nothing is left moving.
-      await tester.pump(const Duration(milliseconds: 1500));
-      await tester.pump(const Duration(milliseconds: 500));
+      // (about 1.2 s of frames; the light's clock steps at most 50 ms a
+      // frame), then nothing is left moving.
+      await tester.pumpAndSettle();
       expect(stop, findsNothing);
       expect(tester.hasRunningAnimations, isFalse);
       await _unmount(tester);
