@@ -174,7 +174,7 @@ void main() {
     expect(find.textContaining('(sessionFailed)'), findsNothing);
     expect(find.text('Planning is stopped.'), findsNothing);
     expect(
-      find.text("The planner's session stopped before it answered."),
+      find.text("The planner stopped before it answered."),
       findsWidgets,
     );
   });
