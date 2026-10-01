@@ -208,7 +208,15 @@ void main() {
       'the answer surface', (tester) async {
     await open(tester, TeamScene.loaded, home);
     expect(find.byType(TeamNeedsYouLabel), findsNothing);
-    expect(find.byType(KitRequestCard), findsOneWidget);
+    // One list (Sept 27): the question is its task's row, not a card.
+    expect(find.byType(KitRequestCard), findsNothing);
+    expect(
+      find.descendant(
+        of: _key('team-home-run-$teamSceneRunId'),
+        matching: find.textContaining('Needs you', findRichText: true),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Needs you: the agent waves the first time, not again', (

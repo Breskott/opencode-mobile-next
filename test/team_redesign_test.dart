@@ -109,8 +109,7 @@ void main() {
     await _pump(tester, _home);
     final question = find.textContaining(_question, findRichText: true);
     expect(question, findsOneWidget);
-    // The question is also its task's row (team-home-one-list, Sept 27).
-    expect(_key('team-home-run-oc-xru'), findsNothing);
+    // The question is its task's row (team-home-one-list, Sept 27).
     expect(_key('team-home-run-$teamSceneRunId'), findsOneWidget);
     expect(find.textContaining('Offline-first sessions'), findsOneWidget);
     expect(

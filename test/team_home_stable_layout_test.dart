@@ -18,6 +18,7 @@ import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../tool/capture/fixtures.dart' show captureTheme, loadCaptureFonts;
+import 'team_open_settings.dart';
 
 Directory _findFixtureRoot() {
   var dir = Directory.current;
@@ -170,8 +171,7 @@ void main() {
     onScreen(tester, run, 320);
     // Technical details open from the page's "how it runs" row (P3.4).
     const host = ValueKey('team-home-host-row');
-    await tester.tap(find.byKey(const ValueKey('team-home-settings')));
-    await tester.pumpAndSettle();
+    await openTeamSettingsFromHome(tester);
     await tester.tap(find.byKey(host));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('team-home-host-sheet')), findsOneWidget);

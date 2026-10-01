@@ -412,9 +412,15 @@ void main() {
         'Export a conversation as Markdown',
       );
       await tester.pump();
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('team-start-run-backlog')),
+      // The sheet is one scrolling form: Keep in backlog sits below the
+      // fold on a phone, so scroll the form up to it.
+      await tester.drag(
+        field.evaluate().isNotEmpty
+            ? field
+            : find.byKey(const ValueKey('team-start-run-direct-title')),
+        const Offset(0, -400),
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('team-start-run-backlog')));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('team-start-run-sheet')), findsNothing);

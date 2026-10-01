@@ -1087,7 +1087,14 @@ void main() {
       final row = find.byKey(const ValueKey('team-home-gate-req-1'));
       final chip = find.byKey(const ValueKey('team-home-gate-req-1-receipt'));
       expect(row, findsOneWidget);
-      expect(chip, findsNothing);
+      // The row's line carries no receipt word until an answer is sent.
+      expect(
+        find.descendant(
+          of: chip,
+          matching: find.textContaining('Not', findRichText: true),
+        ),
+        findsNothing,
+      );
       await team.answerGate('req-1', const GateResponse.choice('SQLite'));
       await tester.pump();
       await tester.pump();
@@ -1096,7 +1103,7 @@ void main() {
       expect(
         find.descendant(
           of: chip,
-          matching: find.textContaining('Not accepted'),
+          matching: find.textContaining('Not accepted', findRichText: true),
         ),
         findsOneWidget,
       );

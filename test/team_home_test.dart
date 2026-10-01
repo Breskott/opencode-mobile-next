@@ -31,6 +31,7 @@ import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/gascity_recorded_city.dart';
+import 'team_open_settings.dart';
 
 Directory _findFixtureRoot() {
   var dir = Directory.current;
@@ -493,10 +494,12 @@ void main() {
       );
       expect(find.textContaining('convoy'), findsNothing);
       expect(find.text('Planning'), findsNothing);
-      // Five live agents; the dog slots and the core helper are not agents.
-      await tester.tap(find.byKey(const ValueKey('team-home-settings')));
+      await tester.tap(runRow('oc-xru'));
+      expect(opened?.id, 'oc-xru');
       await tester.pumpAndSettle();
-      expect(find.textContaining('5 agents'), findsOneWidget);
+      // Five live agents; the dog slots and the core helper are not agents.
+      await openTeamSettingsFromHome(tester);
+      expect(find.textContaining('5 roles'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('team-home-upkeep-row')),
         findsNothing,
@@ -505,8 +508,6 @@ void main() {
       expect(find.text('Done today'), findsNothing);
       expect(find.byKey(const ValueKey('team-home-stale')), findsNothing);
 
-      await tester.tap(runRow('oc-xru'));
-      expect(opened?.id, 'oc-xru');
       expect(tester.takeException(), isNull);
     });
 
@@ -853,15 +854,13 @@ void main() {
 
   // Technical details open from the page's "how it runs" row (P3.4).
   Future<void> openDetails(WidgetTester tester) async {
-    await tester.tap(find.byKey(const ValueKey('team-home-settings')));
-    await tester.pumpAndSettle();
+    await openTeamSettingsFromHome(tester);
     await tester.tap(find.byKey(const ValueKey('team-home-host-row')));
     await tester.pumpAndSettle();
   }
 
   Future<void> openAgents(WidgetTester tester) async {
-    await tester.tap(find.byKey(const ValueKey('team-home-settings')));
-    await tester.pumpAndSettle();
+    await openTeamSettingsFromHome(tester);
     await tester.tap(find.byKey(const ValueKey('team-home-agents-row')));
     await tester.pumpAndSettle();
   }
@@ -1270,18 +1269,18 @@ void main() {
 
       // Upkeep is one line in words in the team's own panel (owner, build
       // 2055): no switch, no rows of engine names, duplicates collapsed.
-      await tester.tap(find.byKey(const ValueKey('team-home-settings')));
-      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('team-home-upkeep-line')),
+        findsNothing,
+        reason: 'the work page carries no upkeep',
+      );
+      await openTeamSettingsFromHome(tester);
       final line = find.byKey(const ValueKey('team-home-upkeep-line'));
       expect(line, findsOneWidget);
       expect(find.byType(SwitchListTile), findsNothing);
       expect(
         find.text('Patrol ×3 · planning', findRichText: true),
         findsOneWidget,
-      );
-      expect(
-        top(tester, find.byKey(const ValueKey('team-home-tasks'))),
-        lessThan(top(tester, line)),
       );
       expect(opened, isNull);
       expect(tester.takeException(), isNull);
@@ -1301,11 +1300,12 @@ void main() {
         find.byKey(const ValueKey('team-home-runs-empty')),
         findsOneWidget,
       );
+      expect(runRow('oc-wisp-refinery'), findsNothing);
+      await openTeamSettingsFromHome(tester);
       expect(
         find.text('Patrol · planning', findRichText: true),
         findsOneWidget,
       );
-      expect(runRow('oc-wisp-refinery'), findsNothing);
     });
   });
 

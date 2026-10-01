@@ -799,11 +799,14 @@ void main() {
       expect(tester.widget(text), isA<TeamAgentTranscript>());
       expect(Directionality.of(tester.element(text)), TextDirection.rtl);
       expect(find.textContaining('[tool:'), findsNothing);
-      // The status line names who is watched once words arrived.
+      // The status line names who is watched (its role, not the generated
+      // name) once words arrived.
       expect(
         find.descendant(
           of: key('chat-watching-banner'),
-          matching: find.textContaining('fox'),
+          matching: find.textContaining(
+            lookupAppLocalizations(const Locale('ar')).teamUiAgentRoleWorker,
+          ),
         ),
         findsOneWidget,
       );

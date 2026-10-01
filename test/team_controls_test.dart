@@ -733,7 +733,7 @@ void main() {
       await settle(tester);
       // The composer addresses the worker; empty text cannot be sent.
       expect(key('chat-watching-composer'), findsOneWidget);
-      expect(find.text('Message fox…'), findsWidgets);
+      expect(find.text('Message Worker…'), findsWidgets);
       await tester.tap(key('chat-watching-message-send'));
       await tester.pump();
       expect(gateway.calls, isEmpty);

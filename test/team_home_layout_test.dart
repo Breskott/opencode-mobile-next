@@ -21,6 +21,8 @@ import 'package:opencode_mobile/ui/kit/kit_search_field.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'team_open_settings.dart';
+
 Directory _findFixtureRoot() {
   var dir = Directory.current;
   for (var i = 0; i < 5; i++) {
@@ -456,8 +458,7 @@ void main() {
         expect(tester.takeException(), isNull);
 
         // P3.4 moved Technical details into the team's own panel.
-        await tester.tap(find.byKey(const ValueKey('team-home-settings')));
-        await tester.pumpAndSettle();
+        await openTeamSettingsFromHome(tester);
         final details = find.byKey(const ValueKey('team-home-host-row'));
         await tester.ensureVisible(details);
         await tester.tap(details);
@@ -528,8 +529,7 @@ void main() {
         expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
         // The empty board's drawing has room now (team-discover-2026-09-25):
         // at 2.5x text the agents row is further down the list.
-        await tester.tap(find.byKey(const ValueKey('team-home-settings')));
-        await tester.pumpAndSettle();
+        await openTeamSettingsFromHome(tester);
         await tester.ensureVisible(
           find.byKey(const ValueKey('team-home-agents-row')),
         );
@@ -538,9 +538,12 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byKey(const ValueKey('team-agents')), findsOneWidget);
         expect(tester.takeException(), isNull);
-        // Back to the home, so the next scene starts on it.
-        tester.state<NavigatorState>(find.byType(Navigator)).pop();
-        await tester.pumpAndSettle();
+        // Back to the home (Agents, then Team settings), so the next scene
+        // starts on it.
+        for (var i = 0; i < 2; i++) {
+          tester.state<NavigatorState>(find.byType(Navigator)).pop();
+          await tester.pumpAndSettle();
+        }
 
         // Loading: a controller that has not started.
         final config = OrchestrationConfig(

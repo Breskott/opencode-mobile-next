@@ -326,9 +326,32 @@ void main() {
         OrchestrationCapabilities.none.asMap().values,
         everyElement(isFalse),
       );
+      // The project-level switches belong to the project fixture's own set
+      // (the in-app engine); the run fixture leaves them off.
+      const projectOnly = {
+        'projectLifecycle',
+        'livingSpec',
+        'projectLanes',
+        'projectPlacement',
+        'projectVerification',
+        'projectMergeQueue',
+        'projectPromotion',
+        'projectResume',
+        'projectBudgets',
+        'projectDigest',
+      };
+      final fixture = OrchestrationCapabilities.fixture.asMap();
       expect(
-        OrchestrationCapabilities.fixture.asMap().values,
+        fixture.entries
+            .where((e) => !projectOnly.contains(e.key))
+            .map((e) => e.value),
         everyElement(isTrue),
+      );
+      expect(
+        fixture.entries
+            .where((e) => projectOnly.contains(e.key))
+            .map((e) => e.value),
+        everyElement(isFalse),
       );
       expect(OrchestrationCapabilities.none.anyControl, isFalse);
       expect(OrchestrationCapabilities.fixture.anyControl, isTrue);
@@ -337,6 +360,16 @@ void main() {
     test('asMap covers every field named in the architecture plan', () {
       const names = [
         'projects',
+        'projectLifecycle',
+        'livingSpec',
+        'projectLanes',
+        'projectPlacement',
+        'projectVerification',
+        'projectMergeQueue',
+        'projectPromotion',
+        'projectResume',
+        'projectBudgets',
+        'projectDigest',
         'runs',
         'runSteps',
         'workGraph',
