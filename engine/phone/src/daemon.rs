@@ -2154,10 +2154,21 @@ mod tests {
         let app = Router::new().fallback(move |request: Request| {
             let writes = writes.clone();
             async move {
+                if request.uri().path() == "/global/health" {
+                    return Json(json!({"healthy":true,"version":"1.18.32"})).into_response();
+                }
+                if request.method() == axum::http::Method::PATCH {
+                    let body = axum::body::to_bytes(request.into_body(), 65536)
+                        .await
+                        .unwrap();
+                    let value: Value = serde_json::from_slice(&body).unwrap();
+                    return Json(json!({"id":"ses_two","permission":value["permission"]}))
+                        .into_response();
+                }
                 if request.method() == axum::http::Method::POST {
                     writes.fetch_add(1, Ordering::SeqCst);
                 }
-                StatusCode::NO_CONTENT
+                StatusCode::NO_CONTENT.into_response()
             }
         });
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
