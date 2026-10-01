@@ -11,11 +11,10 @@
 //    KitSegmented, once it exists, must stack full-width KitChoiceRows, with
 //    no track beside them, at text 2.0 on every phone size. STANDARDS calls
 //    G6 absolute; until kit-KitRow-v2 fixes KitRowValue in a KitRow it is a
-//    ratchet whose ceiling (_overflowCeiling) is fixed here and whose
+//    ratchet whose ceiling (kitOverflowCeiling) is fixed here and whose
 //    committed baseline must equal what overflows and may only shrink. Kit
 //    units add scenes there, never edit this file (PROC-13).
 import 'support/complete_message_history.dart';
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -45,8 +44,8 @@ import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/form_renderer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../tool/capture/fixtures.dart' show captureTheme;
 import 'goldens/kit/kit_gallery.dart' show loadKitGalleryFonts;
+import 'kit/kit_overflow_matrix.dart';
 import 'kit/kit_overflow_scenes.dart';
 
 /// UX-P0-05 / audit rec #5: the global clamp no longer caps accessibility at
@@ -168,22 +167,6 @@ Widget _scoped(ConnectionController conn, Widget home) => ProviderScope(
 
 // ---------------------------------------------------------------------------
 // Gate G6: the kit overflow matrix.
-
-/// LAY-4's overflow widths (320, 360, 412, 600, 800, 840, 1280, 1600) at a
-/// plausible height for each, plus the 915x412 phone in landscape.
-const _overflowSizes = <Size>[
-  Size(320, 640),
-  Size(360, 740),
-  Size(412, 915),
-  Size(600, 960),
-  Size(800, 1280),
-  Size(840, 1180),
-  Size(1280, 800),
-  Size(1600, 1000),
-  Size(915, 412),
-];
-
-const _overflowScales = <double>[1.0, 1.3, 2.0];
 
 const _kitDir = 'lib/ui/kit';
 
@@ -372,268 +355,6 @@ KitManifest readKitManifest({String kitFile = '$_kitDir/kit.dart'}) {
 
 // ---------------------------------------------------------------------------
 // The overflow ratchet.
-
-/// The ceiling of the ratchet: every combination that overflowed when the
-/// gate was built (code head 4cc835fd), with its first error line. The
-/// committed baseline may hold only these combinations, each with the same
-/// error and an overflow no larger. Nothing is ever added here (kit units
-/// never edit this file, PROC-13); a new scene or combination that overflows
-/// fails.
-///
-/// The KitActionBlock and KitSheet entries the gate was built with left
-/// when the visual language merge (ddcb6bc7) made them fit, so they are
-/// gone from here too. The one addition is that merge's own code, added
-/// once by the integrator when the merge met the gate
-/// (docs/qa/integrate-vl-gates-2026-09-26/README.md): KitRowValue as a
-/// KitRow's trailing value takes its full width at text 2.0 on a narrow
-/// phone. kit-KitRow-v2 removes it (docs/ux-system/kit-api/KitRow.md,
-/// test 11: no overflow at 2.0 and 320 dp).
-const _overflowCeiling = <String, Map<String, String>>{
-  'KitRowGroup/default': {
-    '320x640 text 2.0 ltr':
-        'A RenderFlex overflowed by 55 pixels on the right.',
-    '320x640 text 2.0 rtl':
-        'A RenderFlex overflowed by 55 pixels on the right.',
-    '360x740 text 2.0 ltr':
-        'A RenderFlex overflowed by 15 pixels on the right.',
-    '360x740 text 2.0 rtl':
-        'A RenderFlex overflowed by 15 pixels on the right.',
-  },
-};
-
-/// The committed baseline: the entries of [_overflowCeiling] that still
-/// overflow. It must exist, must equal what the matrix observes, and may
-/// only shrink.
-const _baselinePath = 'test/text_scale_overflow_baseline.json';
-
-typedef _Overflows = Map<String, Map<String, String>>;
-
-/// The baseline, or null when the file is missing (which fails the gate;
-/// it is never recreated from observations).
-_Overflows? _loadOverflowBaseline() {
-  final file = File(_baselinePath);
-  if (!file.existsSync()) return null;
-  final json = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
-  return {
-    for (final MapEntry(:key, :value) in json.entries)
-      key: {
-        for (final MapEntry(:key, :value)
-            in (value as Map<String, dynamic>).entries)
-          key: value as String,
-      },
-  };
-}
-
-String _encodeOverflowBaseline(_Overflows baseline) {
-  final ids = baseline.keys.where((id) => baseline[id]!.isNotEmpty).toList()
-    ..sort();
-  return '${const JsonEncoder.withIndent('  ').convert({
-    for (final id in ids) id: {for (final combo in baseline[id]!.keys.toList()..sort()) combo: baseline[id]![combo]},
-  })}\n';
-}
-
-final _pixels = RegExp(r'([\d.]+) pixels');
-
-/// The error with its pixel amount taken out, and the amount.
-(String, double?) _errorShape(String line) {
-  final m = _pixels.firstMatch(line);
-  return (
-    line.replaceAll(_pixels, '# pixels'),
-    m == null ? null : double.tryParse(m[1]!),
-  );
-}
-
-/// Compares [observed] failures with the [allowed] ones for one scene:
-/// `worse` is every failure not allowed (a new combination, a different
-/// error, a larger overflow); `better` is every allowed failure that is gone
-/// or smaller, which the same change must remove from the baseline.
-({List<String> worse, List<String> better}) _compareOverflows(
-  Map<String, String> observed,
-  Map<String, String> allowed,
-) {
-  final worse = <String>[];
-  final better = <String>[];
-  for (final MapEntry(:key, :value) in observed.entries) {
-    final known = allowed[key];
-    if (known == null) {
-      worse.add('$key: $value');
-      continue;
-    }
-    final (shape, amount) = _errorShape(value);
-    final (knownShape, knownAmount) = _errorShape(known);
-    if (shape != knownShape || (amount ?? 0) > (knownAmount ?? 0)) {
-      worse.add('$key: $value (baselined: $known)');
-    } else if ((amount ?? 0) < (knownAmount ?? 0)) {
-      better.add('$key: now $value (baselined: $known)');
-    }
-  }
-  for (final MapEntry(:key, :value) in allowed.entries) {
-    if (!observed.containsKey(key)) {
-      better.add('$key: fixed (baselined: $value)');
-    }
-  }
-  return (worse: worse, better: better);
-}
-
-String _sizeName(Size size) => '${size.width.toInt()}x${size.height.toInt()}';
-
-Widget _kitApp({
-  required Key key,
-  required double scale,
-  required bool rtl,
-  required Widget Function(BuildContext context) home,
-}) => KeyedSubtree(
-  key: key,
-  child: MaterialApp(
-    debugShowCheckedModeBanner: false,
-    theme: captureTheme(),
-    locale: Locale(rtl ? 'ar' : 'en'),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    builder: (context, child) => MediaQuery(
-      data: MediaQuery.of(
-        context,
-      ).copyWith(disableAnimations: true, textScaler: TextScaler.linear(scale)),
-      child: child!,
-    ),
-    home: Scaffold(body: Builder(builder: home)),
-  ),
-);
-
-// ---------------------------------------------------------------------------
-// KIT-24.
-
-bool _isKitSegmented(Widget widget) => widget is KitSegmented<Object?>;
-
-bool _isKitChoiceRow(Widget widget) => widget is KitChoiceRow<Object?>;
-
-/// KIT-24 on the pumped tree, for a scene whose labels do not fit: every
-/// KitSegmented is full width and is a vertical stack of at least two
-/// full-width KitChoiceRows, and draws no text outside them (the horizontal
-/// segmented track is gone). Returns why it fails, or null.
-String? kit24Problem({
-  bool Function(Widget) isSegmented = _isKitSegmented,
-  bool Function(Widget) isChoiceRow = _isKitChoiceRow,
-}) {
-  final segmented = find.byWidgetPredicate(isSegmented).evaluate().toList();
-  if (segmented.isEmpty) {
-    return 'labels do not fit, but no KitSegmented is shown (KIT-24)';
-  }
-  for (final part in segmented) {
-    final partBox = part.renderObject! as RenderBox;
-    final available = partBox.constraints.maxWidth;
-    if (available.isFinite && partBox.size.width < available - 0.5) {
-      return 'KitSegmented is ${partBox.size.width} of $available dp '
-          '(KIT-24: full width)';
-    }
-    final of = find.byElementPredicate((e) => identical(e, part));
-    final rows =
-        find
-            .descendant(of: of, matching: find.byWidgetPredicate(isChoiceRow))
-            .evaluate()
-            .map((e) => e.renderObject! as RenderBox)
-            .map((b) => b.localToGlobal(Offset.zero) & b.size)
-            .toList()
-          ..sort((a, b) => a.top.compareTo(b.top));
-    if (rows.length < 2) {
-      return 'labels do not fit, but KitSegmented shows ${rows.length} '
-          'KitChoiceRow(s), not a stack (KIT-24)';
-    }
-    for (var i = 0; i < rows.length; i++) {
-      if (rows[i].width < partBox.size.width - 0.5) {
-        return 'a KitChoiceRow is ${rows[i].width} of the part\'s '
-            '${partBox.size.width} dp (KIT-24: full-width rows)';
-      }
-      if (i > 0 && rows[i].top < rows[i - 1].bottom - 0.5) {
-        return 'KitChoiceRows overlap or sit side by side, not stacked '
-            '(KIT-24)';
-      }
-    }
-    final texts = find
-        .descendant(of: of, matching: find.byType(RichText))
-        .evaluate();
-    for (final text in texts) {
-      var inRow = false;
-      text.visitAncestorElements((ancestor) {
-        if (isChoiceRow(ancestor.widget)) {
-          inRow = true;
-          return false;
-        }
-        return !identical(ancestor, part);
-      });
-      if (!inRow) {
-        return 'KitSegmented still draws '
-            '"${(text.widget as RichText).text.toPlainText()}" outside its '
-            'KitChoiceRows (KIT-24: the track gives way to the stack)';
-      }
-    }
-  }
-  return null;
-}
-
-/// A phone, portrait or landscape: where KIT-24's stack is checked at 2.0.
-bool _isPhone(Size size) => size.shortestSide < 600;
-
-/// Pumps [scene] at every size, scale and direction and returns, for each
-/// combination that threw (an overflow included) or broke KIT-24, its first
-/// line, keyed by the combination ("800x1280 text 2.0 ltr").
-Future<Map<String, String>> _pumpMatrix(
-  WidgetTester tester,
-  KitOverflowScene scene,
-) async {
-  final failures = <String, String>{};
-  addTearDown(tester.view.reset);
-  for (final size in _overflowSizes) {
-    tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = size;
-    for (final scale in _overflowScales) {
-      for (final rtl in [false, true]) {
-        final where = '${_sizeName(size)} text $scale ${rtl ? 'rtl' : 'ltr'}';
-        final copy = KitSceneCopy(rtl: rtl);
-        BuildContext? opener;
-        await tester.pumpWidget(
-          _kitApp(
-            key: ValueKey(where),
-            scale: scale,
-            rtl: rtl,
-            home: (context) {
-              if (scene.open != null) {
-                opener = context;
-                return const SizedBox.expand();
-              }
-              final part = scene.build!(context, copy);
-              return switch (scene.host) {
-                KitOverflowHost.list => ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [part],
-                ),
-                _ => part,
-              };
-            },
-          ),
-        );
-        if (scene.open != null) {
-          unawaited(Future.sync(() => scene.open!(opener!, copy)));
-          await tester.pump();
-        }
-        await tester.pump(const Duration(milliseconds: 400));
-        await tester.pump(const Duration(milliseconds: 400));
-        final error = tester.takeException();
-        if (error != null) {
-          failures[where] = '$error'.split('\n').first;
-          continue;
-        }
-        if (scene.labelsOverflow && scale >= 2.0 && _isPhone(size)) {
-          final problem = kit24Problem();
-          if (problem != null) failures[where] = problem;
-        }
-      }
-    }
-  }
-  // Leave no route or ticker behind for the next scene.
-  await tester.pumpWidget(const SizedBox());
-  return failures;
-}
 
 // Stand-ins for the KIT-24 self-test: a segmented part that stacks its rows,
 // keeps its track beside them, or stacks rows narrower than itself.
@@ -1036,17 +757,17 @@ class KitUtilityView extends StatelessWidget {}
           selected: true,
           onTap: () {},
         );
-        expect(_isKitSegmented(segmented), isTrue);
-        expect(_isKitChoiceRow(choice), isTrue);
-        expect(_isKitSegmented(choice), isFalse);
-        expect(_isKitChoiceRow(segmented), isFalse);
+        expect(isKitSegmented(segmented), isTrue);
+        expect(isKitChoiceRow(choice), isTrue);
+        expect(isKitSegmented(choice), isFalse);
+        expect(isKitChoiceRow(segmented), isFalse);
 
         tester.view.devicePixelRatio = 1;
         tester.view.physicalSize = const Size(360, 740);
         addTearDown(tester.view.reset);
         Future<String?> check(Widget child) async {
           await tester.pumpWidget(
-            _kitApp(
+            kitOverflowApp(
               key: UniqueKey(),
               scale: 2.0,
               rtl: false,
@@ -1080,15 +801,14 @@ class KitUtilityView extends StatelessWidget {}
       },
     );
 
-    final baseline = _loadOverflowBaseline();
-    final observed = <String, Map<String, String>>{};
+    final baseline = loadKitOverflowBaseline();
 
     test('the overflow baseline exists and stays under the ceiling', () {
       expect(
         baseline,
         isNotNull,
         reason:
-            '$_baselinePath is missing. It is never recreated from what '
+            '$kitOverflowBaselinePath is missing. It is never recreated from what '
             'overflows today: restore it from git',
       );
       final ids = {for (final s in kitOverflowScenes) s.id};
@@ -1096,9 +816,9 @@ class KitUtilityView extends StatelessWidget {}
       expect(baseline!.keys.toSet().difference(ids), isEmpty);
       final raised = [
         for (final MapEntry(:key, :value) in baseline.entries)
-          for (final entry in _compareOverflows(
+          for (final entry in compareKitOverflows(
             value,
-            _overflowCeiling[key] ?? const {},
+            kitOverflowCeiling[key] ?? const {},
           ).worse)
             '$key $entry',
       ];
@@ -1106,71 +826,34 @@ class KitUtilityView extends StatelessWidget {}
         raised,
         isEmpty,
         reason:
-            '$_baselinePath may only shrink: these entries are not in the '
-            'ceiling (_overflowCeiling in test/text_scale_overflow_test.dart), '
+            '$kitOverflowBaselinePath may only shrink: these entries are not in the '
+            'ceiling (kitOverflowCeiling in test/text_scale_overflow_test.dart), '
             'or are larger or different there. Fix the overflow instead',
       );
     });
 
-    for (final scene in kitOverflowScenes) {
-      testWidgets(
-        '${scene.id} fits every overflow size, text scale and direction',
-        (tester) async {
-          final failures = await _pumpMatrix(tester, scene);
-          observed[scene.id] = failures;
-          final (:worse, :better) = _compareOverflows(
-            failures,
-            baseline?[scene.id] ?? const {},
-          );
-          expect(
-            worse,
-            isEmpty,
-            reason:
-                '${scene.id} overflowed or threw in ${worse.length} of '
-                '${_overflowSizes.length * _overflowScales.length * 2} '
-                'combinations beyond $_baselinePath:\n${worse.join('\n')}',
-          );
-          expect(
-            better,
-            isEmpty,
-            reason:
-                '${scene.id} improved. Tighten $_baselinePath in the same '
-                'change (G6_OVERFLOW_WRITE=1 writes it), so a later '
-                'regression at these combinations fails:\n${better.join('\n')}',
-          );
-        },
-      );
-    }
-
-    // The ratchet: once every scene ran, print the tighter baseline to commit
-    // (or write it with G6_OVERFLOW_WRITE=1). It keeps only baselined
-    // entries that still fail no worse, so it never grows.
-    tearDownAll(() {
-      final current = baseline;
-      if (current == null || observed.length != kitOverflowScenes.length) {
-        return;
-      }
-      final next = <String, Map<String, String>>{
-        for (final MapEntry(:key, :value) in observed.entries)
-          key: {
-            for (final MapEntry(key: combo, value: line) in value.entries)
-              if (current[key]?[combo] != null &&
-                  !_compareOverflows(
-                    {combo: line},
-                    {combo: current[key]![combo]!},
-                  ).worse.isNotEmpty)
-                combo: line,
-          },
-      };
-      final text = _encodeOverflowBaseline(next);
-      if (text == _encodeOverflowBaseline(current)) return;
-      if (Platform.environment['G6_OVERFLOW_WRITE'] == '1') {
-        File(_baselinePath).writeAsStringSync(text);
-        stdout.writeln('G6_OVERFLOW_WRITE=1: wrote $_baselinePath');
-      } else {
-        stdout.writeln(
-          '--- G6 overflow baseline tightened (commit as $_baselinePath) ---\n'
-          '$text--- end baseline ---',
+    // The scenes themselves are pumped by the shard files
+    // (test/text_scale_overflow_matrix_<n>_test.dart, kitOverflowShards of
+    // them), which run side by side; each takes the scenes whose index leaves
+    // its number modulo kitOverflowShards, so every scene is pumped once.
+    test('the matrix shards cover every scene exactly once', () {
+      final dir = Directory('test');
+      final shards = dir
+          .listSync()
+          .whereType<File>()
+          .where(
+            (f) => RegExp(
+              r'text_scale_overflow_matrix_\d+_test\.dart$',
+            ).hasMatch(f.path),
+          )
+          .toList();
+      expect(shards.length, kitOverflowShards);
+      for (var i = 0; i < kitOverflowShards; i++) {
+        final file = File('test/text_scale_overflow_matrix_${i}_test.dart');
+        expect(file.existsSync(), isTrue, reason: '$file is missing');
+        expect(
+          file.readAsStringSync(),
+          contains('registerKitOverflowShard($i)'),
         );
       }
     });
