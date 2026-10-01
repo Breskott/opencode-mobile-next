@@ -83,10 +83,13 @@ void main() {
     String script, {
     String shell = 'dash',
     Map<String, String>? env,
+    // The progress poll is twice a second on the phone (asserted by the
+    // progress tests, which pass their own env); every other test polls fast.
+    bool slowPoll = false,
   }) => Process.run(shell, [
     '-c',
     'set -eu\n${withSetupPrelude(script)}',
-  ], environment: env);
+  ], environment: env ?? (slowPoll ? null : {'OC_POLL_SECONDS': '0.05'}));
 
   group('oc_download', () {
     late Process server;
@@ -95,25 +98,28 @@ void main() {
     late File blob;
     late String sha;
 
-    setUp(() async {
-      final www = Directory('${dir.path}/www')..createSync();
-      blob = File('${www.path}/blob.bin');
-      // Deterministic bytes; 1.2 MB at 1 MB/s is a little over a second.
-      blob.writeAsBytesSync(List.generate(1200000, (i) => (i * 31 + 7) % 251));
-      sha = sha256.convert(blob.readAsBytesSync()).toString();
-      requests.clear();
-      server = await Process.start('python3', [
-        '-c',
-        _server,
-        www.path,
-        '1000000',
-      ]);
+    late Directory www;
+
+    /// A server serving [www]; [rate] bytes a second (the progress tests
+    /// throttle it, every other test takes it at full speed).
+    Future<void> startServer(String rate) async {
+      server = await Process.start('python3', ['-c', _server, www.path, rate]);
       final lines = server.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .asBroadcastStream();
       port = int.parse(await lines.first);
       lines.listen(requests.add);
+    }
+
+    setUp(() async {
+      www = Directory('${dir.path}/www')..createSync();
+      blob = File('${www.path}/blob.bin');
+      // Deterministic bytes; 1.2 MB.
+      blob.writeAsBytesSync(List.generate(1200000, (i) => (i * 31 + 7) % 251));
+      sha = sha256.convert(blob.readAsBytesSync()).toString();
+      requests.clear();
+      await startServer('400000000');
     });
     tearDown(() => server.kill());
 
@@ -126,10 +132,15 @@ void main() {
     for (final shell in ['dash', 'bash']) {
       test('$shell: reports real byte progress about twice a second and '
           'verifies the checksum', () async {
+        // 1.2 MB at 1 MB/s is a little over a second.
+        server.kill();
+        requests.clear();
+        await startServer('1000000');
         final target = '${dir.path}/out/blob.bin';
         final result = await sh(
           'oc_download http://127.0.0.1:$port/blob.bin $target $sha',
           shell: shell,
+          slowPoll: true,
         );
         expect(result.exitCode, 0, reason: '${result.stderr}');
         final bytes = bytesLines(result.stdout as String);

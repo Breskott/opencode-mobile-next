@@ -246,6 +246,8 @@ GC_URL="\${AITEAM_URL:-$supervisorUrl}"
 # Under proot the team takes minutes to come up (2-3 on the emulator).
 HEALTH_TIMEOUT="\${AITEAM_HEALTH_TIMEOUT:-360}"
 SUPERVISOR_WAIT="\${AITEAM_SUPERVISOR_WAIT:-90}"
+# Seconds between polls; the tests shorten it, production keeps 1.
+POLL="\${AITEAM_POLL_INTERVAL:-1}"
 ''';
 
   static const _body = r'''
@@ -880,7 +882,7 @@ start_runtime() {
       stop_supervisor
       fail health-timeout "The supervisor did not answer on $GC_URL within $SUPERVISOR_WAIT s"
     fi
-    sleep 1
+    sleep "$POLL"
     waited=$((waited + 1))
   done
   write_state starting "Registering team $city" "$pid"
@@ -894,7 +896,7 @@ start_runtime() {
     fi
     [ "$waited" -lt "$HEALTH_TIMEOUT" ] ||
       fail health-timeout "Team $city did not answer within $HEALTH_TIMEOUT s"
-    sleep 1
+    sleep "$POLL"
     waited=$((waited + 1))
   done
   write_state ready 'AI Team is running on this phone' "$pid"
@@ -906,20 +908,31 @@ start_runtime() {
 # their helpers. Matched by working folder or by that path in the command
 # line, never by a program's name.
 kill_team_processes() {
-  local dir="$1" signal="$2" entry pid cwd cmdline
-  [ -n "$dir" ] || return 0
+  local signal="$1" entry pid cwd cmdline dir hit _
+  local -a dirs=() parts=()
+  shift
+  for dir in "$@"; do [ -z "$dir" ] || dirs+=("$dir"); done
+  [ "${#dirs[@]}" -gt 0 ] || return 0
   for entry in /proc/[0-9]*; do
     pid=${entry#/proc/}
     [ "$pid" != "$$" ] && [ "$pid" != "$PPID" ] || continue
-    cwd=$(readlink "$entry/cwd" 2>/dev/null || true)
-    cmdline=$(process_cmdline "$pid")
-    case "$cwd" in
-      "$dir"|"$dir"/*) ;;
-      *) case "$cmdline" in
-           *"$dir"*) ;;
-           *) continue ;;
-         esac ;;
-    esac
+    parts=()
+    { mapfile -d '' -t parts < "$entry/cmdline"; } 2>/dev/null || true
+    cmdline="${parts[*]:-}"
+    hit=''
+    for dir in "${dirs[@]}"; do
+      case "$cmdline" in
+        *"$dir"*) hit=1; break ;;
+      esac
+      # Working folder is <dir> or below it: walk up from /proc/<pid>/cwd with
+      # the shell's own same-file test, no process per candidate.
+      cwd="$entry/cwd"
+      for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+        if [ "$cwd" -ef "$dir" ]; then hit=1; break 2; fi
+        cwd="$cwd/.."
+      done
+    done
+    [ -n "$hit" ] || continue
     case "$cmdline" in
       *aiteam.sh*) continue ;;
     esac
@@ -950,17 +963,15 @@ stop_supervisor() {
       kill -TERM "$pid" 2>/dev/null || true
     fi
     local waited=0
-    while process_alive "$pid" && [ "$waited" -lt 10 ]; do sleep 1; waited=$((waited + 1)); done
+    while process_alive "$pid" && [ "$waited" -lt 10 ]; do sleep "$POLL"; waited=$((waited + 1)); done
     if process_alive "$pid"; then
       kill -KILL -- "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
     fi
   fi
   team=$(host_path "$U_TEAM" 2>/dev/null || true)
-  kill_team_processes "$team" TERM
-  kill_team_processes "$LEGACY_CITY_DIR" TERM
-  sleep 1
-  kill_team_processes "$team" KILL
-  kill_team_processes "$LEGACY_CITY_DIR" KILL
+  kill_team_processes TERM "$team" "$LEGACY_CITY_DIR"
+  sleep "$POLL"
+  kill_team_processes KILL "$team" "$LEGACY_CITY_DIR"
   rm -f "$SUPERVISOR_PID"
 }
 

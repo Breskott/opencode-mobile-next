@@ -3,7 +3,8 @@
 set -euo pipefail
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 task_root="$(mktemp -d)"
-trap 'rm -rf -- "$task_root"' EXIT
+cases_root="$(mktemp -d)"
+trap 'rm -rf -- "$task_root" "$cases_root"' EXIT
 mkdir -p "$task_root/dist" "$task_root/scripts" "$task_root/mock-bin" "$task_root/docs/releases" "$task_root/artifact"
 cp "$repo_root/scripts/"{release.sh,release_github.sh,verify_github_release.py} "$task_root/scripts/"
 # Preflight reads the candidate's own quality workflow for its shard count.
@@ -182,11 +183,34 @@ chmod +x "$task_root/mock-bin/"*
 # release.sh prefers configured Android SDK tools; supply fixture tools there too.
 mkdir -p "$task_root/sdk/build-tools/99.0.0"
 cp "$task_root/mock-bin/"{apksigner,aapt} "$task_root/sdk/build-tools/99.0.0/"
+base_root="$task_root"
 case_number=0
-run_case() {
-  local expected="$1" mode="$2"
+# Every case runs in its own clone of the fixture (its own logs and state
+# files), a few at a time; a failure leaves a marker and the end reports it.
+max_parallel=6
+spawn_case() {
+  local body="$1" number="$2"
   shift 2
+  while [[ "$(jobs -rp | wc -l)" -ge "$max_parallel" ]]; do wait -n || true; done
+  (
+    set +e
+    task_root="$cases_root/$number"
+    mkdir -p "$task_root"
+    cp -a "$base_root/." "$task_root"
+    ( set -e; "$body" "$number" "$@" ) || touch "$cases_root/failed"
+  ) &
+}
+run_case() {
   case_number=$((case_number + 1))
+  spawn_case run_case_body "$case_number" "$@"
+}
+run_draft_case() {
+  case_number=$((case_number + 1))
+  spawn_case run_draft_case_body "$case_number" "$@"
+}
+run_case_body() {
+  local case_number="$1" expected="$2" mode="$3"
+  shift 3
   rm -f "$task_root/published" "$task_root/release-fetch-count"
   : > "$task_root/commands.log"
   local result=0
@@ -257,10 +281,9 @@ source = (Path(sys.argv[1])/'.github/workflows/android-release.yml').read_text()
 body = source.split('      - name: Create draft stable GitHub release\n', 1)[1].split('        run: |\n', 1)[1]
 (Path(sys.argv[2])/'stage-draft.sh').write_text('\n'.join(line[10:] if line.startswith('          ') else line for line in body.splitlines())+'\n')
 PYWORKFLOW
-run_draft_case() {
-  local expected="$1"
-  shift
-  case_number=$((case_number + 1))
+run_draft_case_body() {
+  local case_number="$1" expected="$2"
+  shift 2
   rm -f "$task_root/draft-touched"
   local result=0
   env PATH="$task_root/mock-bin:$PATH" MOCK_ROOT="$task_root" \
@@ -279,4 +302,9 @@ run_draft_case() {
 run_draft_case pass
 run_draft_case pass MOCK_RELEASE_ABSENT=true
 run_draft_case fail MOCK_PUBLISHED=true
+wait
+if [[ -e "$cases_root/failed" ]]; then
+  echo 'FAIL: a publication contract case failed (output above)' >&2
+  exit 1
+fi
 echo "PASS: $case_number GitHub publication contract cases"

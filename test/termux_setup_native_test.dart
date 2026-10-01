@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'native/kotlin_jar_cache.dart';
+
 void main() {
   final configured = Platform.environment['KOTLINC'];
   final sdkman =
@@ -17,36 +19,40 @@ void main() {
       (File(sdkman).existsSync() ? sdkman : (onPath ? 'kotlinc' : null));
   late Directory temporary;
   late String jar;
+  const scenarios = [
+    'progress-and-finish',
+    'cancel-and-resume',
+    'interrupted-launch',
+  ];
+  // The scenarios share nothing: the JVMs run side by side.
+  final runs = <String, Future<ProcessResult>>{};
 
   setUpAll(() async {
     temporary = await Directory.systemTemp.createTemp('termux-setup-native-');
     if (compiler == null) return;
-    jar = '${temporary.path}/lifecycle.jar';
-    final compiled = await Process.run(compiler, [
-      'android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/TermuxSetupShell.kt',
-      'test/native/termux_setup_harness.kt',
-      '-include-runtime',
-      '-d',
-      jar,
-    ]);
-    expect(compiled.exitCode, 0, reason: '${compiled.stderr}');
+    jar = await cachedKotlinJar(
+      compiler: compiler,
+      sources: [
+        'android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/TermuxSetupShell.kt',
+        'test/native/termux_setup_harness.kt',
+      ],
+    );
+    for (final scenario in scenarios) {
+      runs[scenario] = Process.run('java', ['-jar', jar, scenario]);
+    }
   });
   tearDownAll(() async {
     if (await temporary.exists()) await temporary.delete(recursive: true);
   });
 
-  for (final scenario in [
-    'progress-and-finish',
-    'cancel-and-resume',
-    'interrupted-launch',
-  ]) {
+  for (final scenario in scenarios) {
     test(
       'Termux durable shell: $scenario',
       skip: compiler == null
           ? 'kotlinc unavailable; native shell lifecycle harness not run'
           : null,
       () async {
-        final result = await Process.run('java', ['-jar', jar, scenario]);
+        final result = await runs[scenario]!;
         expect(
           result.exitCode,
           0,

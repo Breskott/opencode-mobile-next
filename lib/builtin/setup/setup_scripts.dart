@@ -42,7 +42,7 @@ oc_fetch() {
   ) &
   while [ ! -s "$oc_rc_file" ]; do
     printf '::oc bytes %s %s\n' "$(oc_size_of "$oc_file")" "$oc_total"
-    sleep 0.5
+    sleep "${OC_POLL_SECONDS:-0.5}"
   done
   wait "$!" 2>/dev/null || true
   oc_rc=$(cat "$oc_rc_file")

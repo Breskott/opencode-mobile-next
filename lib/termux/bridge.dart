@@ -2365,7 +2365,7 @@ SCAN_LOG="$OC_DIR/storage-scan.log"
 SCAN_PID="$OC_DIR/storage-scan.pid"
 SCAN_STATE="$OC_DIR/storage-scan.state"
 SCAN_CANCEL="$OC_DIR/storage-scan.cancel"
-STOP_WAIT_SECONDS=5
+STOP_WAIT_SECONDS=${OC_STOP_WAIT_SECONDS:-5}
 ORPHAN_CPU_SECONDS=300
 mkdir -p "$OC_DIR"
 umask 077
@@ -2384,13 +2384,21 @@ rootfs_dir() {
 }
 
 json_str() {
-  local s="$1"
+  local quoted
+  json_str_into quoted "$1"
+  printf '%s' "$quoted"
+}
+
+# json_str_into <var> <text>: the same quoting without a subshell, for loops
+# over hundreds of rows.
+json_str_into() {
+  local s="$2"
   s=${s//\\/\\\\}
   s=${s//\"/\\\"}
   s=${s//$'\n'/\\n}
   s=${s//$'\t'/\\t}
   s=${s//$'\r'/\\r}
-  printf '"%s"' "$s"
+  printf -v "$1" '"%s"' "$s"
 }
 
 # Bytes used by a path (file or directory); 0 when absent.
@@ -2881,11 +2889,11 @@ list_processes() {
     ps -eo pid=,ppid=,pcpu=,time=,rss=,etimes=,comm=,args= 2>/dev/null
     return
   fi
-  local dir pid stat rest fields comm ppid utime stime rss start uptime ticks=100 cpu elapsed args
+  local dir pid stat rest fields comm ppid utime stime rss start uptime ticks=100 cpu elapsed args cmd_parts pcpu
   uptime=$(cut -d' ' -f1 /proc/uptime 2>/dev/null); uptime=${uptime%%.*}
   for dir in /proc/[0-9]*; do
     pid=${dir#/proc/}
-    stat=$(cat "$dir/stat" 2>/dev/null) || continue
+    { IFS= read -r stat < "$dir/stat"; } 2>/dev/null || continue
     comm=${stat#*(}; comm=${comm%%)*}
     rest=${stat##*) }
     fields=($rest)
@@ -2893,11 +2901,14 @@ list_processes() {
     start=${fields[19]:-0}; rss=$(( ${fields[21]:-0} * 4 ))
     cpu=$(( (utime + stime) / ticks ))
     elapsed=$(( ${uptime:-0} - start / ticks )); [ "$elapsed" -ge 0 ] || elapsed=0
-    args=$(tr '\0' ' ' < "$dir/cmdline" 2>/dev/null); args=${args% }
+    cmd_parts=()
+    { mapfile -d "" -t cmd_parts < "$dir/cmdline"; } 2>/dev/null || true
+    args="${cmd_parts[*]:-}"
     [ -n "$args" ] || args=$comm
+    pcpu=0
+    [ "$elapsed" -le 0 ] || pcpu=$((cpu * 100 / elapsed))
     printf '%s %s %s %s %s %s %s %s\n' "$pid" "$ppid" \
-      "$( [ "$elapsed" -gt 0 ] && printf '%s' $((cpu * 100 / elapsed)) || printf 0 )" \
-      "$cpu" "$rss" "$elapsed" "$comm" "$args"
+      "$pcpu" "$cpu" "$rss" "$elapsed" "$comm" "$args"
   done
 }
 
@@ -3091,17 +3102,21 @@ proc_name() {
 }
 
 procs_json() {
-  local pid cwd first=1
+  local pid cwd first=1 jname jcmd jcwd jreason
   printf '['
   for pid in "${P_ORDER[@]}"; do
     cwd=$(readlink "/proc/$pid/cwd" 2>/dev/null || true)
     [ "$first" = 1 ] || printf ','
     first=0
+    json_str_into jname "$(proc_name "$pid")"
+    json_str_into jcmd "${P_ARGS[$pid]}"
+    json_str_into jcwd "$cwd"
+    if [ -z "${P_REASON[$pid]}" ]; then jreason=null; else jreason="\"${P_REASON[$pid]}\""; fi
     printf '{"pid":%s,"ppid":%s,"group":"%s","name":%s,"cmd":%s,"cpu_pct":%s,"cpu_seconds":%s,"rss_kb":%s,"elapsed_s":%s,"cwd":%s,"orphan_reason":%s,"protected":%s}' \
-      "$pid" "${P_PPID[$pid]}" "${P_GROUP[$pid]}" "$(json_str "$(proc_name "$pid")")" \
-      "$(json_str "${P_ARGS[$pid]}")" "${P_CPU[$pid]}" "${P_TIME[$pid]}" "${P_RSS[$pid]}" \
-      "${P_ELAPSED[$pid]}" "$(json_str "$cwd")" \
-      "$( [ -z "${P_REASON[$pid]}" ] && printf null || printf '"%s"' "${P_REASON[$pid]}" )" \
+      "$pid" "${P_PPID[$pid]}" "${P_GROUP[$pid]}" "$jname" \
+      "$jcmd" "${P_CPU[$pid]}" "${P_TIME[$pid]}" "${P_RSS[$pid]}" \
+      "${P_ELAPSED[$pid]}" "$jcwd" \
+      "$jreason" \
       "${P_PROTECTED[$pid]}"
   done
   printf ']\n'

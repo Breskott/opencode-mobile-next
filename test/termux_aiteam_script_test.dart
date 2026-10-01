@@ -15,6 +15,7 @@
 @Timeout(Duration(minutes: 4))
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -381,8 +382,9 @@ class _Fixture {
     'PATH': '$bin:$stubs:${Platform.environment['PATH']}',
     'AITEAM_URL': supervisorUrl,
     'AITEAM_ARCH': 'aarch64',
-    'AITEAM_HEALTH_TIMEOUT': '20',
-    'AITEAM_SUPERVISOR_WAIT': '20',
+    'AITEAM_HEALTH_TIMEOUT': '200',
+    'AITEAM_SUPERVISOR_WAIT': '200',
+    'AITEAM_POLL_INTERVAL': '0.1',
     'OC_FAKE_PROOT_LOG': prootLog,
   };
 
@@ -484,6 +486,53 @@ class _Fixture {
       root.deleteSync(recursive: true);
     } on FileSystemException {
       // A late tee may still hold the log; the temp dir is not precious.
+    }
+  }
+}
+
+/// Runs a group's scenarios concurrently (a few at a time) and hands each
+/// test its own scenario's outcome. The scripts are process-bound and
+/// mostly waiting, so side by side they cost the slowest, not the sum.
+class _Scenarios {
+  static const _parallel = 6;
+  final _bodies = <String, Future<void> Function(_Fixture)>{};
+  final _outcomes = <String, Future<(Object, StackTrace)?>>{};
+
+  void add(String name, Future<void> Function(_Fixture fx) body) {
+    _bodies[name] = body;
+    test(name, () async {
+      final failure = await _outcomes[name]!;
+      if (failure != null) Error.throwWithStackTrace(failure.$1, failure.$2);
+    });
+  }
+
+  Future<void> runAll() async {
+    final queue = _bodies.entries.toList();
+    var next = 0;
+    Future<void> worker() async {
+      while (next < queue.length) {
+        final entry = queue[next++];
+        final done = Completer<(Object, StackTrace)?>();
+        _outcomes[entry.key] = done.future;
+        _FixtureScope.run(entry.value).then(
+          (_) => done.complete(null),
+          onError: (Object e, StackTrace st) => done.complete((e, st)),
+        );
+        await done.future;
+      }
+    }
+
+    await Future.wait([for (var i = 0; i < _parallel; i++) worker()]);
+  }
+}
+
+abstract final class _FixtureScope {
+  static Future<void> run(Future<void> Function(_Fixture) body) async {
+    final fx = await _Fixture.create();
+    try {
+      await body(fx);
+    } finally {
+      await fx.dispose();
     }
   }
 }
@@ -615,10 +664,14 @@ void main() {
   });
 
   group('aiteam.sh in Termux\'s Ubuntu', skip: skip, () {
-    setUp(() async => fx = await _Fixture.create());
-    tearDown(() => fx.dispose());
+    // Every scenario owns its own fixture (temp dir, server, namespaces), so
+    // they run side by side; each test reports its own scenario's outcome.
+    final scenarios = _Scenarios();
+    setUpAll(scenarios.runAll);
+    void scenario(String name, Future<void> Function(_Fixture fx) body) =>
+        scenarios.add(name, body);
 
-    test('status before any install is idle and not installed', () async {
+    scenario('status before any install is idle and not installed', (fx) async {
       final status = await fx.status();
       expect(status.phase, TeamRuntimePhase.idle);
       expect(status.installed, isFalse);
@@ -628,72 +681,79 @@ void main() {
       expect(fx.read(fx.prootLog), isEmpty);
     });
 
-    test('install downloads the upstream archives, checks them, and installs '
-        'the packages and the programs inside Ubuntu', () async {
-      await fx.install();
-      final status = await fx.status();
-      expect(status.phase, TeamRuntimePhase.installed, reason: fx.log);
-      expect(status.installed, isTrue);
-      expect(status.versions, {'gc': '1.4.1', 'bd': '1.2.2', 'dolt': '2.3.5'});
-      expect(fx.served, [
-        'gascity_1.4.1_linux_arm64.tar.gz@0',
-        'beads_1.2.2_linux_arm64.tar.gz@0',
-        'dolt-linux-arm64.tar.gz@0',
-      ]);
-      for (final tool in ['gc', 'bd', 'dolt']) {
+    scenario(
+      'install downloads the upstream archives, checks them, and installs '
+      'the packages and the programs inside Ubuntu',
+      (fx) async {
+        await fx.install();
+        final status = await fx.status();
+        expect(status.phase, TeamRuntimePhase.installed, reason: fx.log);
+        expect(status.installed, isTrue);
+        expect(status.versions, {
+          'gc': '1.4.1',
+          'bd': '1.2.2',
+          'dolt': '2.3.5',
+        });
+        expect(fx.served, [
+          'gascity_1.4.1_linux_arm64.tar.gz@0',
+          'beads_1.2.2_linux_arm64.tar.gz@0',
+          'dolt-linux-arm64.tar.gz@0',
+        ]);
+        for (final tool in ['gc', 'bd', 'dolt']) {
+          expect(
+            File('${fx.rootfs}/opt/aiteam/bin/$tool').existsSync(),
+            isTrue,
+            reason: tool,
+          );
+          expect(
+            Link('${fx.rootfs}/usr/local/bin/$tool').targetSync(),
+            '/opt/aiteam/bin/$tool',
+          );
+          expect(fx.log, contains('verified $tool'));
+        }
+        // The agents' opencode, the in-app setup's own.
         expect(
-          File('${fx.rootfs}/opt/aiteam/bin/$tool').existsSync(),
-          isTrue,
-          reason: tool,
+          fx.read('${fx.rootfs}/opt/aiteam/agent-bin/opencode'),
+          AiTeamScripts.agentWrapperScript,
         );
+        // The packages, with the in-app setup's apt helper.
+        expect(fx.aptCalls, contains('install -y --no-install-recommends'));
+        expect(fx.aptCalls, contains('tmux jq lsof procps'));
+        // The identity and settings the team needs, inside Ubuntu.
+        final gitconfig = fx.read('${fx.rootfs}/root/.gitconfig');
+        expect(gitconfig, contains('role = maintainer'));
+        expect(gitconfig, contains('createObject = rename'));
         expect(
-          Link('${fx.rootfs}/usr/local/bin/$tool').targetSync(),
-          '/opt/aiteam/bin/$tool',
+          fx.read('${fx.rootfs}/root/dolt-calls.log'),
+          contains('metrics.disabled true'),
         );
-        expect(fx.log, contains('verified $tool'));
-      }
-      // The agents' opencode, the in-app setup's own.
-      expect(
-        fx.read('${fx.rootfs}/opt/aiteam/agent-bin/opencode'),
-        AiTeamScripts.agentWrapperScript,
-      );
-      // The packages, with the in-app setup's apt helper.
-      expect(fx.aptCalls, contains('install -y --no-install-recommends'));
-      expect(fx.aptCalls, contains('tmux jq lsof procps'));
-      // The identity and settings the team needs, inside Ubuntu.
-      final gitconfig = fx.read('${fx.rootfs}/root/.gitconfig');
-      expect(gitconfig, contains('role = maintainer'));
-      expect(gitconfig, contains('createObject = rename'));
-      expect(
-        fx.read('${fx.rootfs}/root/dolt-calls.log'),
-        contains('metrics.disabled true'),
-      );
-      // Nothing left over on either side; nothing in Termux's own bin.
-      expect(Directory('${fx.aiteamDir}/tmp').existsSync(), isFalse);
-      expect(
-        Directory('${fx.rootfs}/var/cache/oc-setup/aiteam').existsSync(),
-        isFalse,
-      );
-      expect(File('${fx.bin}/gc').existsSync(), isFalse);
-      expect(fx.read('${fx.aiteamDir}/config'), contains('source=upstream'));
-      // Each stage is logged with the seconds since the verb began.
-      expect(
-        fx.log,
-        matches(
-          RegExp(r'\[aiteam\] verifying: Verifying checksums \(at \d+s\)'),
-        ),
-      );
-      expect(
-        fx.log,
-        matches(
-          RegExp(
-            r'\[aiteam\] installed: AI Team programs installed \(at \d+s\)',
+        // Nothing left over on either side; nothing in Termux's own bin.
+        expect(Directory('${fx.aiteamDir}/tmp').existsSync(), isFalse);
+        expect(
+          Directory('${fx.rootfs}/var/cache/oc-setup/aiteam').existsSync(),
+          isFalse,
+        );
+        expect(File('${fx.bin}/gc').existsSync(), isFalse);
+        expect(fx.read('${fx.aiteamDir}/config'), contains('source=upstream'));
+        // Each stage is logged with the seconds since the verb began.
+        expect(
+          fx.log,
+          matches(
+            RegExp(r'\[aiteam\] verifying: Verifying checksums \(at \d+s\)'),
           ),
-        ),
-      );
-    });
+        );
+        expect(
+          fx.log,
+          matches(
+            RegExp(
+              r'\[aiteam\] installed: AI Team programs installed \(at \d+s\)',
+            ),
+          ),
+        );
+      },
+    );
 
-    test('a second install downloads and installs nothing', () async {
+    scenario('a second install downloads and installs nothing', (fx) async {
       await fx.install();
       fx.served.clear();
       File('${fx.rootfs}/root/apt-calls.log').deleteSync();
@@ -705,7 +765,9 @@ void main() {
       expect(fx.log, contains('are installed already'));
     });
 
-    test('a checksum mismatch stops before anything reaches Ubuntu', () async {
+    scenario('a checksum mismatch stops before anything reaches Ubuntu', (
+      fx,
+    ) async {
       fx.writePins(sha256Override: {'bd': 'f' * 64});
       final result = await fx.verb(['install']);
       expect(result.exitCode, 65, reason: '${result.stdout}${result.stderr}');
@@ -733,8 +795,8 @@ void main() {
       expect((await fx.status()).phase, TeamRuntimePhase.installed);
     });
 
-    test('a refused download names the host and HTTP status; Try again '
-        'fetches only what is missing', () async {
+    scenario('a refused download names the host and HTTP status; Try again '
+        'fetches only what is missing', (fx) async {
       final dolt = fx.files.remove('dolt-linux-arm64.tar.gz');
       final result = await fx.verb(['install']);
       expect(result.exitCode, isNot(0));
@@ -751,7 +813,9 @@ void main() {
       expect(fx.log, contains('already downloaded gc.tar.gz'));
     });
 
-    test('a download cut off mid-file resumes where it stopped', () async {
+    scenario('a download cut off mid-file resumes where it stopped', (
+      fx,
+    ) async {
       final body = fx.files['gascity_1.4.1_linux_arm64.tar.gz']!;
       Directory('${fx.aiteamDir}/tmp').createSync(recursive: true);
       File(
@@ -765,8 +829,8 @@ void main() {
       );
     });
 
-    test('a program Android stops (SIGSYS) fails in plain words, and Try '
-        'again downloads nothing', () async {
+    scenario('a program Android stops (SIGSYS) fails in plain words, and Try '
+        'again downloads nothing', (fx) async {
       fx.packArchives(bd: _bdSigsysStub);
       fx.writePins();
       final result = await fx.verb(['install']);
@@ -784,7 +848,9 @@ void main() {
       expect(fx.served, isEmpty, reason: fx.log);
     });
 
-    test('install without Ubuntu, or on a 32-bit phone, says so', () async {
+    scenario('install without Ubuntu, or on a 32-bit phone, says so', (
+      fx,
+    ) async {
       Directory(fx.rootfs).renameSync('${fx.rootfs}.away');
       var result = await fx.verb(['install']);
       expect(result.exitCode, isNot(0));
@@ -799,8 +865,8 @@ void main() {
       expect(fx.served, isEmpty);
     });
 
-    test('init makes the tuned store and adds the project with its '
-        'phone-side origin and hook', () async {
+    scenario('init makes the tuned store and adds the project with its '
+        'phone-side origin and hook', (fx) async {
       await fx.install();
       await fx.init();
       final status = await fx.status();
@@ -850,28 +916,27 @@ void main() {
       expect(fx.read('${fx.team}/pull.log'), contains('\tcalc\tup-to-date\t'));
     });
 
-    test(
-      'merged work reaches /root/projects/<project> through the hook',
-      () async {
-        await fx.install();
-        await fx.init();
-        final head = await fx.git(['rev-parse', 'HEAD']);
-        // The refinery's merge, as a push to the phone-side origin.
-        final push = await fx.inUbuntu(
-          'set -e; rm -rf /root/work; '
-          'git clone -q /root/aiteam/origins/calc.git /root/work; cd /root/work; '
-          'echo hi > hello.txt; git add hello.txt; '
-          'git commit -qm "Add hello.txt"; git push -q origin HEAD:master',
-        );
-        expect(push.exitCode, 0, reason: '${push.stdout}${push.stderr}');
-        expect(await fx.git(['log', '-1', '--format=%s']), 'Add hello.txt');
-        expect(await fx.git(['rev-parse', 'HEAD~1']), head);
-        expect(File('${fx.project}/hello.txt').readAsStringSync(), 'hi\n');
-        expect(fx.read('${fx.team}/pull.log'), contains('\tbrought-in\t'));
-      },
-    );
+    scenario('merged work reaches /root/projects/<project> through the hook', (
+      fx,
+    ) async {
+      await fx.install();
+      await fx.init();
+      final head = await fx.git(['rev-parse', 'HEAD']);
+      // The refinery's merge, as a push to the phone-side origin.
+      final push = await fx.inUbuntu(
+        'set -e; rm -rf /root/work; '
+        'git clone -q /root/aiteam/origins/calc.git /root/work; cd /root/work; '
+        'echo hi > hello.txt; git add hello.txt; '
+        'git commit -qm "Add hello.txt"; git push -q origin HEAD:master',
+      );
+      expect(push.exitCode, 0, reason: '${push.stdout}${push.stderr}');
+      expect(await fx.git(['log', '-1', '--format=%s']), 'Add hello.txt');
+      expect(await fx.git(['rev-parse', 'HEAD~1']), head);
+      expect(File('${fx.project}/hello.txt').readAsStringSync(), 'hi\n');
+      expect(fx.read('${fx.team}/pull.log'), contains('\tbrought-in\t'));
+    });
 
-    test('init refuses what it cannot use, in plain words', () async {
+    scenario('init refuses what it cannot use, in plain words', (fx) async {
       fx.writeRig();
       var result = await fx.verb(['init', fx.projectPath]);
       expect(result.exitCode, isNot(0));
@@ -893,8 +958,8 @@ void main() {
       expect(fx.gcCalls, isEmpty);
     });
 
-    test('init takes a Termux-side path and fixes an origin by that path '
-        '(the earlier native layout)', () async {
+    scenario('init takes a Termux-side path and fixes an origin by that path '
+        '(the earlier native layout)', (fx) async {
       await fx.install();
       final bare = '${fx.rootfs}/root/projects/calc.git';
       await Process.run('git', ['init', '-q', '--bare', bare]);
@@ -911,8 +976,8 @@ void main() {
       expect(File('$bare/hooks/post-receive').existsSync(), isFalse);
     });
 
-    test('start runs the supervisor in its own Ubuntu login, registers and '
-        'waits; stop takes it all down', () async {
+    scenario('start runs the supervisor in its own Ubuntu login, registers and '
+        'waits; stop takes it all down', (fx) async {
       await fx.install();
       await fx.init();
       await fx.start();
@@ -977,26 +1042,31 @@ void main() {
       expect(fx.read('${fx.ocDir}/wake.log'), endsWith('termux-wake-unlock\n'));
     });
 
-    test('a supervisor that vanished while ready reads as killed by Android, '
-        'and start brings it back', () async {
-      await fx.install();
-      await fx.init();
-      await fx.start();
-      final pid = (await fx.status()).supervisorPid!;
-      Process.runSync('kill', ['-KILL', '--', '-$pid']);
-      File('${fx.team}/supervisor.marker').deleteSync();
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-      final status = await fx.status();
-      expect(status.phase, TeamRuntimePhase.ready);
-      expect(status.killedByAndroid, isTrue);
-      expect(status.isReady, isFalse);
-      await fx.start();
-      final again = await fx.status();
-      expect(again.isReady, isTrue);
-      expect(again.killedByAndroid, isFalse);
-    });
+    scenario(
+      'a supervisor that vanished while ready reads as killed by Android, '
+      'and start brings it back',
+      (fx) async {
+        await fx.install();
+        await fx.init();
+        await fx.start();
+        final pid = (await fx.status()).supervisorPid!;
+        Process.runSync('kill', ['-KILL', '--', '-$pid']);
+        File('${fx.team}/supervisor.marker').deleteSync();
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        final status = await fx.status();
+        expect(status.phase, TeamRuntimePhase.ready);
+        expect(status.killedByAndroid, isTrue);
+        expect(status.isReady, isFalse);
+        await fx.start();
+        final again = await fx.status();
+        expect(again.isReady, isTrue);
+        expect(again.killedByAndroid, isFalse);
+      },
+    );
 
-    test('start without a team, or a supervisor that dies, fails', () async {
+    scenario('start without a team, or a supervisor that dies, fails', (
+      fx,
+    ) async {
       await fx.install();
       var result = await fx.verb(['start']);
       expect(result.exitCode, isNot(0));
@@ -1013,8 +1083,8 @@ void main() {
       expect(fx.log, contains('[supervisor] no store here'));
     });
 
-    test('remove deletes the programs and the team; the project and its '
-        'origin stay', () async {
+    scenario('remove deletes the programs and the team; the project and its '
+        'origin stay', (fx) async {
       await fx.install();
       await fx.init();
       await fx.start();
@@ -1060,14 +1130,18 @@ void main() {
       expect((await fx.status()).phase, TeamRuntimePhase.cityReady);
     });
 
-    test('remove never deletes a foreign opencode in \$PREFIX/bin', () async {
+    scenario('remove never deletes a foreign opencode in \$PREFIX/bin', (
+      fx,
+    ) async {
       await fx.install();
       File('${fx.bin}/opencode').writeAsStringSync('#!/bin/bash\necho real\n');
       await fx.verb(['remove']);
       expect(File('${fx.bin}/opencode').existsSync(), isTrue);
     });
 
-    test('a verb that dies mid-way reads as failed, not busy forever', () async {
+    scenario('a verb that dies mid-way reads as failed, not busy forever', (
+      fx,
+    ) async {
       await fx.install();
       File('${fx.aiteamDir}/state').writeAsStringSync(
         'phase=downloading\nmessage=Downloading gc\nverb=install\npid=999999\n'
@@ -1079,64 +1153,63 @@ void main() {
       expect(status.rawPhase, 'failed:interrupted');
     });
 
-    test(
-      'every verb appends to aiteam.log and the OpenCode install log',
-      () async {
-        File('${fx.ocDir}/manager.sh').writeAsStringSync(
-          '#!/bin/bash\n[ "\$1" = write-log ] && cat >> "\$HOME/.oc/install.log"\n',
-        );
-        Process.runSync('chmod', ['755', '${fx.ocDir}/manager.sh']);
-        await fx.install();
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-        expect(fx.log, contains('[aiteam] install started at'));
+    scenario('every verb appends to aiteam.log and the OpenCode install log', (
+      fx,
+    ) async {
+      File('${fx.ocDir}/manager.sh').writeAsStringSync(
+        '#!/bin/bash\n[ "\$1" = write-log ] && cat >> "\$HOME/.oc/install.log"\n',
+      );
+      Process.runSync('chmod', ['755', '${fx.ocDir}/manager.sh']);
+      await fx.install();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(fx.log, contains('[aiteam] install started at'));
+      expect(fx.read('${fx.ocDir}/install.log'), contains('install finished'));
+    });
+
+    scenario(
+      'the bridge dispatch writes the script, the pins and the project\'s '
+      'script, queues, detaches and refuses while busy',
+      (fx) async {
+        final dispatch = await fx.dispatch('install');
         expect(
-          fx.read('${fx.ocDir}/install.log'),
-          contains('install finished'),
+          dispatch.exitCode,
+          0,
+          reason: '${dispatch.stdout}${dispatch.stderr}',
+        );
+        expect(dispatch.stdout, matches(RegExp(r'aiteam-started:[0-9]+')));
+        expect(fx.read('${fx.ocDir}/aiteam-pins'), fx.pins());
+        expect((await fx.status()).busy, isTrue);
+        final busy = await fx.dispatch('start');
+        expect(busy.exitCode, 75);
+        expect(busy.stderr, contains('aiteam-busy:install:'));
+        final done = await fx.waitIdle();
+        expect(
+          done.phase,
+          TeamRuntimePhase.installed,
+          reason: '$done\n${fx.log}',
+        );
+        final init = await fx.dispatch('init', args: [fx.projectPath]);
+        expect(init.exitCode, 0, reason: '${init.stdout}${init.stderr}');
+        expect(
+          fx.read('${fx.aiteamDir}/rig.sh'),
+          TermuxTeamScripts.rigFile(fx.projectPath),
+        );
+        expect(
+          (await fx.waitIdle()).phase,
+          TeamRuntimePhase.cityReady,
+          reason: fx.log,
+        );
+        await fx.dispatch('start');
+        final ready = await fx.waitIdle();
+        expect(ready.isReady, isTrue, reason: fx.log);
+        await fx.dispatch('stop');
+        expect(
+          (await fx.waitIdle()).phase,
+          TeamRuntimePhase.stopped,
+          reason: fx.log,
         );
       },
     );
-
-    test('the bridge dispatch writes the script, the pins and the project\'s '
-        'script, queues, detaches and refuses while busy', () async {
-      final dispatch = await fx.dispatch('install');
-      expect(
-        dispatch.exitCode,
-        0,
-        reason: '${dispatch.stdout}${dispatch.stderr}',
-      );
-      expect(dispatch.stdout, matches(RegExp(r'aiteam-started:[0-9]+')));
-      expect(fx.read('${fx.ocDir}/aiteam-pins'), fx.pins());
-      expect((await fx.status()).busy, isTrue);
-      final busy = await fx.dispatch('start');
-      expect(busy.exitCode, 75);
-      expect(busy.stderr, contains('aiteam-busy:install:'));
-      final done = await fx.waitIdle();
-      expect(
-        done.phase,
-        TeamRuntimePhase.installed,
-        reason: '$done\n${fx.log}',
-      );
-      final init = await fx.dispatch('init', args: [fx.projectPath]);
-      expect(init.exitCode, 0, reason: '${init.stdout}${init.stderr}');
-      expect(
-        fx.read('${fx.aiteamDir}/rig.sh'),
-        TermuxTeamScripts.rigFile(fx.projectPath),
-      );
-      expect(
-        (await fx.waitIdle()).phase,
-        TeamRuntimePhase.cityReady,
-        reason: fx.log,
-      );
-      await fx.dispatch('start');
-      final ready = await fx.waitIdle();
-      expect(ready.isReady, isTrue, reason: fx.log);
-      await fx.dispatch('stop');
-      expect(
-        (await fx.waitIdle()).phase,
-        TeamRuntimePhase.stopped,
-        reason: fx.log,
-      );
-    });
   });
 
   group('TermuxTeamRuntime over the oc/termux channel', skip: skip, () {

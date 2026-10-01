@@ -150,7 +150,7 @@ void main() {
       runtime,
       assets: assets,
       root: root.path,
-      probeSeconds: 15,
+      probeSeconds: 150,
     );
     return Process.run(
       'dash',
@@ -158,6 +158,9 @@ void main() {
       environment: {
         'PATH': '${fakeBin.path}:/usr/bin:/bin',
         'TMPDIR': dir.path,
+        // The download progress poll (0.5 s on the phone), shortened here.
+        'OC_POLL_SECONDS': '0.05',
+        'OC_PROBE_POLL': '0.1',
       },
     );
   }

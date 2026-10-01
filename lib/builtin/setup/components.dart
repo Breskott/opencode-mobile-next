@@ -593,12 +593,12 @@ while [ "\$oc_i" -lt $probeSeconds ]; do
   done
   [ -z "\$oc_started" ] || break
   oc_alive || break
-  sleep 1
+  sleep "\${OC_PROBE_POLL:-1}"
   oc_i=\$((oc_i + 1))
 done
 kill "\$oc_pid" 2>/dev/null || true
 oc_i=0
-while [ "\$oc_i" -lt 5 ] && oc_alive; do sleep 1; oc_i=\$((oc_i + 1)); done
+while [ "\$oc_i" -lt 5 ] && oc_alive; do sleep "\${OC_PROBE_POLL:-1}"; oc_i=\$((oc_i + 1)); done
 kill -9 "\$oc_pid" 2>/dev/null || true
 wait "\$oc_pid" 2>/dev/null || true
 if [ -z "\$oc_started" ]; then

@@ -65,6 +65,9 @@ class _Phone {
       'PREFIX': '${root.path}/prefix',
       'PATH': '${bin.path}:${Platform.environment['PATH']}',
       'OC_PS_FIXTURE': psFixture.path,
+      // The grace before KILL is 5 s on the phone (asserted below); the
+      // tests shorten it.
+      'OC_STOP_WAIT_SECONDS': '1',
     },
   );
 
@@ -203,37 +206,45 @@ void main() {
       expect(phone.run(['procs-stop']).exitCode, 64);
     });
 
-    test('TERM ends a cooperative process; KILL follows after 5 s', () async {
-      final phone = _phone();
-      final polite = await Process.start('sleep', ['300']);
-      final stubborn = await Process.start('bash', [
-        '-c',
-        'trap "" TERM; sleep 300',
-      ]);
-      addTearDown(() {
-        polite.kill(ProcessSignal.sigkill);
-        stubborn.kill(ProcessSignal.sigkill);
-        Process.runSync('pkill', ['-KILL', '-P', '${stubborn.pid}']);
-      });
-      phone.processes(
-        '  ${polite.pid}     1  0.0 00:00:00 3000 100 sleep sleep 300\n'
-        '  ${stubborn.pid}     1  0.0 00:00:00 3000 100 bash bash -c trap\n',
-      );
-      final first = phone.stop('${polite.pid}');
-      expect(first.stopped, [polite.pid]);
-      expect(first.killed, isEmpty);
-      expect(first.remaining, isEmpty);
-      expect(await polite.exitCode, isNot(0));
-      final clock = Stopwatch()..start();
-      final second = phone.stop('${stubborn.pid}');
-      clock.stop();
-      expect(second.stopped, isEmpty);
-      expect(second.killed, [stubborn.pid]);
-      expect(second.remaining, isEmpty);
-      expect(clock.elapsed, greaterThanOrEqualTo(const Duration(seconds: 5)));
-      expect(clock.elapsed, lessThan(const Duration(seconds: 12)));
-      expect(await stubborn.exitCode, isNot(0));
-    });
+    test(
+      'TERM ends a cooperative process; KILL follows after the grace',
+      () async {
+        // The phone's grace is 5 s; the tests run with 1 s.
+        expect(
+          TermuxBridge.toolsScriptForTesting(),
+          contains('STOP_WAIT_SECONDS=\${OC_STOP_WAIT_SECONDS:-5}'),
+        );
+        final phone = _phone();
+        final polite = await Process.start('sleep', ['300']);
+        final stubborn = await Process.start('bash', [
+          '-c',
+          'trap "" TERM; sleep 300',
+        ]);
+        addTearDown(() {
+          polite.kill(ProcessSignal.sigkill);
+          stubborn.kill(ProcessSignal.sigkill);
+          Process.runSync('pkill', ['-KILL', '-P', '${stubborn.pid}']);
+        });
+        phone.processes(
+          '  ${polite.pid}     1  0.0 00:00:00 3000 100 sleep sleep 300\n'
+          '  ${stubborn.pid}     1  0.0 00:00:00 3000 100 bash bash -c trap\n',
+        );
+        final first = phone.stop('${polite.pid}');
+        expect(first.stopped, [polite.pid]);
+        expect(first.killed, isEmpty);
+        expect(first.remaining, isEmpty);
+        expect(await polite.exitCode, isNot(0));
+        final clock = Stopwatch()..start();
+        final second = phone.stop('${stubborn.pid}');
+        clock.stop();
+        expect(second.stopped, isEmpty);
+        expect(second.killed, [stubborn.pid]);
+        expect(second.remaining, isEmpty);
+        expect(clock.elapsed, greaterThanOrEqualTo(const Duration(seconds: 1)));
+        expect(clock.elapsed, lessThan(const Duration(seconds: 4)));
+        expect(await stubborn.exitCode, isNot(0));
+      },
+    );
 
     test('a group stop skips its protected members and reports them', () async {
       final phone = _phone();
