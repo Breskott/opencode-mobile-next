@@ -16,17 +16,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 final _en = lookupAppLocalizations(const Locale('en'));
 
 class _Phone extends ChangeNotifier implements PhoneTeamSetupPorts {
-  _Phone({this.server = true, this.replying = false});
+  _Phone({this.server = true});
   final bool server;
 
-  /// A reply still running makes the setup wait on a polling timer.
-  final bool replying;
   @override
   bool get hasServer => server;
   @override
   bool get wasOn => false;
   @override
-  bool get replyRunning => replying;
+  bool get replyRunning => false;
   @override
   Listenable get replyChanges => this;
   @override
