@@ -89,7 +89,130 @@ final Map<String, (_Say, _Say)> _known = {
     (l) => l.teamRefusalEngineClosed,
     (l) => l.teamRefusalEngineClosedNext,
   ),
+  // Job and step reasons the engine records while planning or working.
+  'sessionFailed': (
+    (l) => l.teamRefusalSessionFailed,
+    (l) => l.teamRefusalSessionFailedNext,
+  ),
+  'modelNotConfigured': (
+    (l) => l.teamRefusalModelNotConfigured,
+    (l) => l.teamRefusalModelNotConfiguredNext,
+  ),
+  'modelUnavailable': (
+    (l) => l.teamRefusalModelUnavailable,
+    (l) => l.teamRefusalModelUnavailableNext,
+  ),
+  'modelInvalid': (
+    (l) => l.teamRefusalModelUnavailable,
+    (l) => l.teamRefusalModelUnavailableNext,
+  ),
+  'invalid_model': (
+    (l) => l.teamRefusalModelUnavailable,
+    (l) => l.teamRefusalModelUnavailableNext,
+  ),
+  'authentication_failed': (
+    (l) => l.teamRefusalAuthFailed,
+    (l) => l.teamRefusalAuthFailedNext,
+  ),
+  'cloneFailed': (
+    (l) => l.teamRefusalCloneFailed,
+    (l) => l.teamRefusalCloneFailedNext,
+  ),
+  'sessionUncertain': (
+    (l) => l.teamRefusalSessionUncertain,
+    (l) => l.teamRefusalSessionUncertainNext,
+  ),
+  'sessionUnknown': (
+    (l) => l.teamRefusalSessionUncertain,
+    (l) => l.teamRefusalSessionUncertainNext,
+  ),
+  'promptUncertain': (
+    (l) => l.teamRefusalSessionUncertain,
+    (l) => l.teamRefusalSessionUncertainNext,
+  ),
+  'sessionCreateUncertain': (
+    (l) => l.teamRefusalSessionUncertain,
+    (l) => l.teamRefusalSessionUncertainNext,
+  ),
+  'usageUncertain': (
+    (l) => l.teamRefusalSessionUncertain,
+    (l) => l.teamRefusalSessionUncertainNext,
+  ),
+  'invalidPlan': (
+    (l) => l.teamRefusalPlanInvalid,
+    (l) => l.teamRefusalPlanInvalidNext,
+  ),
+  'structuredOutputInvalid': (
+    (l) => l.teamRefusalPlanInvalid,
+    (l) => l.teamRefusalPlanInvalidNext,
+  ),
+  'needsAnswer': (
+    (l) => l.teamRefusalNeedsAnswer,
+    (l) => l.teamRefusalNeedsAnswerNext,
+  ),
+  'recoveryNeedsReview': (
+    (l) => l.teamRefusalRecoveryReview,
+    (l) => l.teamRefusalRecoveryReviewNext,
+  ),
+  'restartNeedsReconciliation': (
+    (l) => l.teamRefusalAppStopped,
+    (l) => l.teamRefusalAppStoppedNext,
+  ),
+  'pauseNeedsReconciliation': (
+    (l) => l.teamRefusalAppStopped,
+    (l) => l.teamRefusalAppStoppedNext,
+  ),
+  'chatBusy': ((l) => l.teamRefusalChatBusy, (l) => l.teamRefusalChatBusyNext),
+  'budgetReached': (
+    (l) => l.teamRefusalBudgetReached,
+    (l) => l.teamRefusalBudgetReachedNext,
+  ),
+  'transport_unavailable': (
+    (l) => l.teamRefusalEngineUnavailable,
+    (l) => l.teamRefusalEngineUnavailableNext,
+  ),
+  'serverOffline': (
+    (l) => l.teamRefusalEngineUnavailable,
+    (l) => l.teamRefusalEngineUnavailableNext,
+  ),
 };
+
+/// Codes whose way forward is choosing a model.
+const _needsModel = {
+  'modelNotConfigured',
+  'modelUnavailable',
+  'modelInvalid',
+  'invalid_model',
+  'sessionFailed',
+};
+
+/// True when [code] is fixed by picking a model (offer that action).
+bool teamReasonNeedsModel(String code) => _needsModel.contains(code);
+
+/// The plain words for an engine job or step reason, or null when the code is
+/// not known (the caller then keeps the engine's own sentence).
+TeamRefusal? teamReasonFor(AppLocalizations l, String code) {
+  final known = _known[code];
+  if (known == null) return null;
+  return TeamRefusal(message: known.$1(l), next: known.$2(l), code: code);
+}
+
+final _trailingCode = RegExp(r'\s*\(([A-Za-z_]+)\)\.?$');
+
+/// The code the adapter put in parentheses at the end of a timeline row, or
+/// null.
+String? teamTimelineCode(String text) =>
+    _trailingCode.firstMatch(text)?.group(1);
+
+/// A timeline row as a person reads it: a known code becomes its plain
+/// sentence; an unknown code is cut off (it stays out of the page).
+String teamTimelineWords(AppLocalizations l, String text) {
+  final code = teamTimelineCode(text);
+  if (code == null) return text;
+  final known = teamReasonFor(l, code);
+  if (known != null) return known.message;
+  return text.replaceFirst(_trailingCode, '.');
+}
 
 String _did(AppLocalizations l, TeamProjectAction action) => switch (action) {
   TeamProjectAction.createProject => l.teamRefusalDidPlan,

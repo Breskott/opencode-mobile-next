@@ -1,6 +1,7 @@
 // Behaviour tests for KitComposer (docs/ux-system/kit-api/KitComposer.md
 // "Tests required"). Owner decision 2026-09-27: English only, no RTL.
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -337,6 +338,33 @@ void main() {
       await tester.tap(find.byKey(_send));
       expect(h.sends, 1);
       expect(haptics, ['HapticFeedbackType.lightImpact']);
+    });
+
+    testWidgets('a finger sends on press, so a button that moves under it '
+        'cannot lose the Send, and the release does not send again', (
+      tester,
+    ) async {
+      final h = _host('hello');
+      await _pump(tester, _composer(h));
+      final press = await tester.startGesture(
+        tester.getCenter(find.byKey(_send)),
+      );
+      expect(h.sends, 1);
+      await press.up();
+      await tester.pump();
+      expect(h.sends, 1);
+    });
+
+    testWidgets('a mouse click still sends on release, once', (tester) async {
+      final h = _host('hello');
+      await _pump(tester, _composer(h));
+      final mouse = await tester.startGesture(
+        tester.getCenter(find.byKey(_send)),
+        kind: PointerDeviceKind.mouse,
+      );
+      expect(h.sends, 0);
+      await mouse.up();
+      expect(h.sends, 1);
     });
 
     testWidgets('Vibration off: no haptic', (tester) async {

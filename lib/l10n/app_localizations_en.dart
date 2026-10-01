@@ -26162,6 +26162,115 @@ class AppLocalizationsEn extends AppLocalizations {
       'Turn on AI Team again to continue.';
 
   @override
+  String get teamRefusalSessionFailed =>
+      'The planner\'s session stopped before it answered.';
+
+  @override
+  String get teamRefusalSessionFailedNext =>
+      'Check the model in Team settings › Model, then approve the spec again.';
+
+  @override
+  String get teamRefusalModelNotConfigured => 'The team needs a model.';
+
+  @override
+  String get teamRefusalModelNotConfiguredNext =>
+      'Pick one in Team settings › Model.';
+
+  @override
+  String get teamRefusalModelUnavailable =>
+      'The chosen model isn\'t available.';
+
+  @override
+  String get teamRefusalModelUnavailableNext =>
+      'Pick another model in Team settings › Model.';
+
+  @override
+  String get teamRefusalAuthFailed =>
+      'The model\'s provider didn\'t accept the sign-in.';
+
+  @override
+  String get teamRefusalAuthFailedNext =>
+      'Check the provider\'s key, then approve the spec again.';
+
+  @override
+  String get teamRefusalCloneFailed =>
+      'The team couldn\'t copy the project to work on it.';
+
+  @override
+  String get teamRefusalCloneFailedNext =>
+      'Check the project\'s repository, then approve the spec again.';
+
+  @override
+  String get teamRefusalSessionUncertain =>
+      'The team isn\'t sure where its last session got to.';
+
+  @override
+  String get teamRefusalSessionUncertainNext =>
+      'Resume if you can, or approve the spec again.';
+
+  @override
+  String get teamRefusalPlanInvalid =>
+      'The plan that came back couldn\'t be used.';
+
+  @override
+  String get teamRefusalPlanInvalidNext =>
+      'Approve the spec again and the team will plan again.';
+
+  @override
+  String get teamRefusalNeedsAnswer => 'The planner has a question for you.';
+
+  @override
+  String get teamRefusalNeedsAnswerNext => 'Open the spec and answer it.';
+
+  @override
+  String get teamRefusalRecoveryReview =>
+      'The work stopped part way and needs a look.';
+
+  @override
+  String get teamRefusalRecoveryReviewNext =>
+      'Check the project, then approve the spec again.';
+
+  @override
+  String get teamRefusalAppStopped =>
+      'The app stopped while the team was working.';
+
+  @override
+  String get teamRefusalAppStoppedNext => 'Resume to check where it got to.';
+
+  @override
+  String get teamRefusalChatBusy =>
+      'The team is waiting for your chat reply to finish.';
+
+  @override
+  String get teamRefusalChatBusyNext => 'It carries on by itself afterwards.';
+
+  @override
+  String get teamRefusalBudgetReached =>
+      'The project reached its spending limit.';
+
+  @override
+  String get teamRefusalBudgetReachedNext =>
+      'Raise the limit in the project\'s settings to go on.';
+
+  @override
+  String get teamRefusalModelNotConfiguredAction => 'Pick a model';
+
+  @override
+  String get teamProjectPlanFailedTitle => 'The plan wasn\'t made';
+
+  @override
+  String get teamProjectApproveAgain => 'Approve the spec again';
+
+  @override
+  String get teamProjectApproveAgainNote => 'Approve the spec again to retry.';
+
+  @override
+  String get teamProjectTaskWorkLive => 'Work so far';
+
+  @override
+  String get teamProjectTaskWorkLog => 'Work log';
+
+  @override
   String get teamRefusalDidPlan => 'start planning';
 
   @override

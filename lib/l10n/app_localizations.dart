@@ -41226,6 +41226,186 @@ abstract class AppLocalizations {
   /// **'Turn on AI Team again to continue.'**
   String get teamRefusalEngineClosedNext;
 
+  /// Plain reason for engine code sessionFailed
+  ///
+  /// In en, this message translates to:
+  /// **'The planner\'s session stopped before it answered.'**
+  String get teamRefusalSessionFailed;
+
+  /// Way forward for engine code sessionFailed
+  ///
+  /// In en, this message translates to:
+  /// **'Check the model in Team settings › Model, then approve the spec again.'**
+  String get teamRefusalSessionFailedNext;
+
+  /// Plain reason for engine code modelNotConfigured
+  ///
+  /// In en, this message translates to:
+  /// **'The team needs a model.'**
+  String get teamRefusalModelNotConfigured;
+
+  /// Way forward for engine code modelNotConfigured
+  ///
+  /// In en, this message translates to:
+  /// **'Pick one in Team settings › Model.'**
+  String get teamRefusalModelNotConfiguredNext;
+
+  /// Plain reason for engine code modelUnavailable
+  ///
+  /// In en, this message translates to:
+  /// **'The chosen model isn\'t available.'**
+  String get teamRefusalModelUnavailable;
+
+  /// Way forward for engine code modelUnavailable
+  ///
+  /// In en, this message translates to:
+  /// **'Pick another model in Team settings › Model.'**
+  String get teamRefusalModelUnavailableNext;
+
+  /// Plain reason for engine code authentication_failed
+  ///
+  /// In en, this message translates to:
+  /// **'The model\'s provider didn\'t accept the sign-in.'**
+  String get teamRefusalAuthFailed;
+
+  /// Way forward for engine code authentication_failed
+  ///
+  /// In en, this message translates to:
+  /// **'Check the provider\'s key, then approve the spec again.'**
+  String get teamRefusalAuthFailedNext;
+
+  /// Plain reason for engine code cloneFailed
+  ///
+  /// In en, this message translates to:
+  /// **'The team couldn\'t copy the project to work on it.'**
+  String get teamRefusalCloneFailed;
+
+  /// Way forward for engine code cloneFailed
+  ///
+  /// In en, this message translates to:
+  /// **'Check the project\'s repository, then approve the spec again.'**
+  String get teamRefusalCloneFailedNext;
+
+  /// Plain reason for engine code sessionUncertain
+  ///
+  /// In en, this message translates to:
+  /// **'The team isn\'t sure where its last session got to.'**
+  String get teamRefusalSessionUncertain;
+
+  /// Way forward for engine code sessionUncertain
+  ///
+  /// In en, this message translates to:
+  /// **'Resume if you can, or approve the spec again.'**
+  String get teamRefusalSessionUncertainNext;
+
+  /// Plain reason for engine code invalidPlan
+  ///
+  /// In en, this message translates to:
+  /// **'The plan that came back couldn\'t be used.'**
+  String get teamRefusalPlanInvalid;
+
+  /// Way forward for engine code invalidPlan
+  ///
+  /// In en, this message translates to:
+  /// **'Approve the spec again and the team will plan again.'**
+  String get teamRefusalPlanInvalidNext;
+
+  /// Plain reason for engine code needsAnswer
+  ///
+  /// In en, this message translates to:
+  /// **'The planner has a question for you.'**
+  String get teamRefusalNeedsAnswer;
+
+  /// Way forward for engine code needsAnswer
+  ///
+  /// In en, this message translates to:
+  /// **'Open the spec and answer it.'**
+  String get teamRefusalNeedsAnswerNext;
+
+  /// Plain reason for engine code recoveryNeedsReview
+  ///
+  /// In en, this message translates to:
+  /// **'The work stopped part way and needs a look.'**
+  String get teamRefusalRecoveryReview;
+
+  /// Way forward for engine code recoveryNeedsReview
+  ///
+  /// In en, this message translates to:
+  /// **'Check the project, then approve the spec again.'**
+  String get teamRefusalRecoveryReviewNext;
+
+  /// Plain reason for engine code restartNeedsReconciliation
+  ///
+  /// In en, this message translates to:
+  /// **'The app stopped while the team was working.'**
+  String get teamRefusalAppStopped;
+
+  /// Way forward for engine code restartNeedsReconciliation
+  ///
+  /// In en, this message translates to:
+  /// **'Resume to check where it got to.'**
+  String get teamRefusalAppStoppedNext;
+
+  /// Plain reason for engine code chatBusy
+  ///
+  /// In en, this message translates to:
+  /// **'The team is waiting for your chat reply to finish.'**
+  String get teamRefusalChatBusy;
+
+  /// Way forward for engine code chatBusy
+  ///
+  /// In en, this message translates to:
+  /// **'It carries on by itself afterwards.'**
+  String get teamRefusalChatBusyNext;
+
+  /// Plain reason for engine code budgetReached
+  ///
+  /// In en, this message translates to:
+  /// **'The project reached its spending limit.'**
+  String get teamRefusalBudgetReached;
+
+  /// Way forward for engine code budgetReached
+  ///
+  /// In en, this message translates to:
+  /// **'Raise the limit in the project\'s settings to go on.'**
+  String get teamRefusalBudgetReachedNext;
+
+  /// Button that opens the team's model choice
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a model'**
+  String get teamRefusalModelNotConfiguredAction;
+
+  /// Title of the notice on a project whose planning failed
+  ///
+  /// In en, this message translates to:
+  /// **'The plan wasn\'t made'**
+  String get teamProjectPlanFailedTitle;
+
+  /// Button that reopens the spec to approve it again and retry planning
+  ///
+  /// In en, this message translates to:
+  /// **'Approve the spec again'**
+  String get teamProjectApproveAgain;
+
+  /// Way forward when planning failed and the team cannot resume it
+  ///
+  /// In en, this message translates to:
+  /// **'Approve the spec again to retry.'**
+  String get teamProjectApproveAgainNote;
+
+  /// Task page fold title while the work is still running
+  ///
+  /// In en, this message translates to:
+  /// **'Work so far'**
+  String get teamProjectTaskWorkLive;
+
+  /// Task page fold title when the work is neither running nor finished
+  ///
+  /// In en, this message translates to:
+  /// **'Work log'**
+  String get teamProjectTaskWorkLog;
+
   /// Action phrase for createProject, used in: The team couldn't ...
   ///
   /// In en, this message translates to:

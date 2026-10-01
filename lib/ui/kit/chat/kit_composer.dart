@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show PathMetric;
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
@@ -404,6 +405,29 @@ class _KitComposerState extends State<KitComposer> {
     widget.onSend();
   }
 
+  /// True from a touch press that already sent until the same touch ends, so
+  /// the tap that follows it does not send twice.
+  bool _sentOnPress = false;
+
+  /// A finger sends the moment it lands on Send. When the keyboard hides the
+  /// composer slides down under the finger, and a release on a moved button
+  /// was lost (the first Send only hid the keyboard). Mouse, stylus and
+  /// screen readers still send on the tap.
+  void _sendOnPress(PointerDownEvent event) {
+    if (event.kind != PointerDeviceKind.touch || !_canSendNow) return;
+    _sentOnPress = true;
+    _send();
+  }
+
+  void _endPress() {
+    if (_sentOnPress) scheduleMicrotask(() => _sentOnPress = false);
+  }
+
+  void _sendOnTap() {
+    if (_sentOnPress) return;
+    _send();
+  }
+
   bool get _suggestionsShown {
     final s = widget.suggestions;
     return s != null && !_suggestionsHidden && s.hasSuggestionContent;
@@ -787,17 +811,22 @@ class _KitComposerState extends State<KitComposer> {
 
     Widget stop() => _stopControl(l10n);
 
-    Widget send({bool enabled = true}) => _Circle(
-      key: const ValueKey('kit-composer-send'),
-      kind: enabled ? _CircleKind.send : _CircleKind.sendDisabled,
-      label: _sendWords(l10n),
-      tappableKey: widget.sendKey,
-      shortcut: sendShortcut,
-      working: widget.sending,
-      disabledReason: widget.sending
-          ? l10n.kitComposerSending
-          : (enabled ? null : widget.hint),
-      onTap: enabled && !widget.sending ? _send : null,
+    Widget send({bool enabled = true}) => Listener(
+      onPointerDown: enabled ? _sendOnPress : null,
+      onPointerUp: (_) => _endPress(),
+      onPointerCancel: (_) => _sentOnPress = false,
+      child: _Circle(
+        key: const ValueKey('kit-composer-send'),
+        kind: enabled ? _CircleKind.send : _CircleKind.sendDisabled,
+        label: _sendWords(l10n),
+        tappableKey: widget.sendKey,
+        shortcut: sendShortcut,
+        working: widget.sending,
+        disabledReason: widget.sending
+            ? l10n.kitComposerSending
+            : (enabled ? null : widget.hint),
+        onTap: enabled && !widget.sending ? _sendOnTap : null,
+      ),
     );
 
     return switch (trailing) {

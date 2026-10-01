@@ -30953,6 +30953,126 @@
   "@teamRefusalEngineClosedNext": {
     "description": "Way forward for refusal code engineClosed"
   },
+  "teamRefusalSessionFailed": "The planner's session stopped before it answered.",
+  "@teamRefusalSessionFailed": {
+    "description": "Plain reason for engine code sessionFailed"
+  },
+  "teamRefusalSessionFailedNext": "Check the model in Team settings › Model, then approve the spec again.",
+  "@teamRefusalSessionFailedNext": {
+    "description": "Way forward for engine code sessionFailed"
+  },
+  "teamRefusalModelNotConfigured": "The team needs a model.",
+  "@teamRefusalModelNotConfigured": {
+    "description": "Plain reason for engine code modelNotConfigured"
+  },
+  "teamRefusalModelNotConfiguredNext": "Pick one in Team settings › Model.",
+  "@teamRefusalModelNotConfiguredNext": {
+    "description": "Way forward for engine code modelNotConfigured"
+  },
+  "teamRefusalModelUnavailable": "The chosen model isn't available.",
+  "@teamRefusalModelUnavailable": {
+    "description": "Plain reason for engine code modelUnavailable"
+  },
+  "teamRefusalModelUnavailableNext": "Pick another model in Team settings › Model.",
+  "@teamRefusalModelUnavailableNext": {
+    "description": "Way forward for engine code modelUnavailable"
+  },
+  "teamRefusalAuthFailed": "The model's provider didn't accept the sign-in.",
+  "@teamRefusalAuthFailed": {
+    "description": "Plain reason for engine code authentication_failed"
+  },
+  "teamRefusalAuthFailedNext": "Check the provider's key, then approve the spec again.",
+  "@teamRefusalAuthFailedNext": {
+    "description": "Way forward for engine code authentication_failed"
+  },
+  "teamRefusalCloneFailed": "The team couldn't copy the project to work on it.",
+  "@teamRefusalCloneFailed": {
+    "description": "Plain reason for engine code cloneFailed"
+  },
+  "teamRefusalCloneFailedNext": "Check the project's repository, then approve the spec again.",
+  "@teamRefusalCloneFailedNext": {
+    "description": "Way forward for engine code cloneFailed"
+  },
+  "teamRefusalSessionUncertain": "The team isn't sure where its last session got to.",
+  "@teamRefusalSessionUncertain": {
+    "description": "Plain reason for engine code sessionUncertain"
+  },
+  "teamRefusalSessionUncertainNext": "Resume if you can, or approve the spec again.",
+  "@teamRefusalSessionUncertainNext": {
+    "description": "Way forward for engine code sessionUncertain"
+  },
+  "teamRefusalPlanInvalid": "The plan that came back couldn't be used.",
+  "@teamRefusalPlanInvalid": {
+    "description": "Plain reason for engine code invalidPlan"
+  },
+  "teamRefusalPlanInvalidNext": "Approve the spec again and the team will plan again.",
+  "@teamRefusalPlanInvalidNext": {
+    "description": "Way forward for engine code invalidPlan"
+  },
+  "teamRefusalNeedsAnswer": "The planner has a question for you.",
+  "@teamRefusalNeedsAnswer": {
+    "description": "Plain reason for engine code needsAnswer"
+  },
+  "teamRefusalNeedsAnswerNext": "Open the spec and answer it.",
+  "@teamRefusalNeedsAnswerNext": {
+    "description": "Way forward for engine code needsAnswer"
+  },
+  "teamRefusalRecoveryReview": "The work stopped part way and needs a look.",
+  "@teamRefusalRecoveryReview": {
+    "description": "Plain reason for engine code recoveryNeedsReview"
+  },
+  "teamRefusalRecoveryReviewNext": "Check the project, then approve the spec again.",
+  "@teamRefusalRecoveryReviewNext": {
+    "description": "Way forward for engine code recoveryNeedsReview"
+  },
+  "teamRefusalAppStopped": "The app stopped while the team was working.",
+  "@teamRefusalAppStopped": {
+    "description": "Plain reason for engine code restartNeedsReconciliation"
+  },
+  "teamRefusalAppStoppedNext": "Resume to check where it got to.",
+  "@teamRefusalAppStoppedNext": {
+    "description": "Way forward for engine code restartNeedsReconciliation"
+  },
+  "teamRefusalChatBusy": "The team is waiting for your chat reply to finish.",
+  "@teamRefusalChatBusy": {
+    "description": "Plain reason for engine code chatBusy"
+  },
+  "teamRefusalChatBusyNext": "It carries on by itself afterwards.",
+  "@teamRefusalChatBusyNext": {
+    "description": "Way forward for engine code chatBusy"
+  },
+  "teamRefusalBudgetReached": "The project reached its spending limit.",
+  "@teamRefusalBudgetReached": {
+    "description": "Plain reason for engine code budgetReached"
+  },
+  "teamRefusalBudgetReachedNext": "Raise the limit in the project's settings to go on.",
+  "@teamRefusalBudgetReachedNext": {
+    "description": "Way forward for engine code budgetReached"
+  },
+  "teamRefusalModelNotConfiguredAction": "Pick a model",
+  "@teamRefusalModelNotConfiguredAction": {
+    "description": "Button that opens the team's model choice"
+  },
+  "teamProjectPlanFailedTitle": "The plan wasn't made",
+  "@teamProjectPlanFailedTitle": {
+    "description": "Title of the notice on a project whose planning failed"
+  },
+  "teamProjectApproveAgain": "Approve the spec again",
+  "@teamProjectApproveAgain": {
+    "description": "Button that reopens the spec to approve it again and retry planning"
+  },
+  "teamProjectApproveAgainNote": "Approve the spec again to retry.",
+  "@teamProjectApproveAgainNote": {
+    "description": "Way forward when planning failed and the team cannot resume it"
+  },
+  "teamProjectTaskWorkLive": "Work so far",
+  "@teamProjectTaskWorkLive": {
+    "description": "Task page fold title while the work is still running"
+  },
+  "teamProjectTaskWorkLog": "Work log",
+  "@teamProjectTaskWorkLog": {
+    "description": "Task page fold title when the work is neither running nor finished"
+  },
   "teamRefusalDidPlan": "start planning",
   "@teamRefusalDidPlan": {
     "description": "Action phrase for createProject, used in: The team couldn't ..."

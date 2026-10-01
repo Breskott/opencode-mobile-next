@@ -8,7 +8,9 @@ import '../../../kit/kit.dart';
 import 'team_execution_gate.dart';
 import 'team_merge_flow.dart';
 import 'team_project_conversation.dart';
+import 'team_digest.dart';
 import 'team_project_editors.dart';
+import 'team_refusal.dart';
 
 // Finish line: a person can steer a persisted simulated project from goal to
 // reviewed work, with every action crossing the project controller.
@@ -245,14 +247,11 @@ class TeamProjectOverview extends StatelessWidget {
       final showDigest =
           p.timeline.isNotEmpty &&
           (unread == null || DateTime.now().difference(unread).inHours >= 4);
-      final events = p.timeline
-          .where(
-            (e) =>
-                unread == null ||
-                (DateTime.tryParse(e.at)?.isAfter(unread) ?? false),
-          )
-          .toList()
-          .reversed;
+      final events = teamDigestEvents(p.timeline, unread);
+      final digestModel = events.any((e) {
+        final code = teamTimelineCode(e.text);
+        return code != null && teamReasonNeedsModel(code);
+      });
       final milestones = p.specDraft.milestones;
       final current = milestones.indexWhere((m) => !m.accepted);
       bool finished(TeamTask t) => t.status == 'merged' || t.status == 'done';
@@ -352,15 +351,26 @@ class TeamProjectOverview extends StatelessWidget {
             if (c.errorCode != null) _failure(context, c),
             for (final r in p.requests.where((r) => !r.answered))
               _needsYou(context, l, c, p, r),
+            if (p.status == 'failed' && !p.planApproved)
+              ..._planFailed(context, l, c, p),
             if (showDigest)
               KitDigest(
                 title: l.teamProjectDigest,
                 status: p.simulated ? l.teamProjectDemo : '',
                 items: [
                   for (final e in events.take(6))
-                    KitTeamItem(title: e.text, meta: _age(context, e.at)),
+                    KitTeamItem(
+                      title: teamTimelineWords(l, e.text),
+                      meta: _age(context, e.at),
+                    ),
                 ],
                 actions: [
+                  if (digestModel)
+                    KitAction(
+                      key: const ValueKey('team-digest-model'),
+                      label: l.teamRefusalModelNotConfiguredAction,
+                      onPressed: () => openTeamDefaults(context, c),
+                    ),
                   if (interrupted)
                     KitAction(
                       key: const ValueKey('team-digest-resume'),
@@ -918,6 +928,56 @@ String _requestLabel(AppLocalizations l, TeamRequest r) => switch (r.kind) {
   'question' || 'permission' => l.teamProjectAnswer,
   _ => l.teamProjectReview,
 };
+
+/// A plan that failed always says why in plain words and what to do next:
+/// Resume when the engine can pick the planning up again, otherwise approve
+/// the spec again. The engine's code stays under Details.
+List<Widget> _planFailed(
+  BuildContext context,
+  AppLocalizations l,
+  TeamProjectController c,
+  TeamProject p,
+) {
+  final state = p.planningState;
+  final code = state?.reason ?? '';
+  final why = code.isEmpty ? null : teamReasonFor(l, code);
+  final resumable =
+      state?.stage == 'interrupted' &&
+      (code == 'restartNeedsReconciliation' ||
+          code == 'pauseNeedsReconciliation') &&
+      TeamExecutionGate.allows(c, TeamExecutionNeed.resume);
+  return [
+    KitNotice(
+      key: const ValueKey('team-plan-failed'),
+      title: l.teamProjectPlanFailedTitle,
+      message: why?.message ?? l.teamProjectFailed,
+      notes: [why?.next ?? l.teamProjectApproveAgainNote],
+      actions: [
+        if (resumable)
+          KitAction(
+            key: const ValueKey('team-plan-failed-resume'),
+            label: l.teamUiControlResume,
+            onPressed: () => _command(c, p, TeamProjectAction.resumeProject),
+          ),
+        if (teamReasonNeedsModel(code))
+          KitAction(
+            key: const ValueKey('team-plan-failed-model'),
+            label: l.teamRefusalModelNotConfiguredAction,
+            onPressed: () => openTeamDefaults(context, c),
+          ),
+        if (!resumable)
+          KitAction(
+            key: const ValueKey('team-plan-failed-approve'),
+            label: l.teamProjectApproveAgain,
+            onPressed: () => openTeamSpecEditor(context, c, p.id),
+          ),
+      ],
+    ),
+    if (code.isNotEmpty)
+      KitDetailsFold(values: [KitTechnicalValue(l.teamRefusalCode, code)]),
+  ];
+}
+
 Widget _failure(BuildContext context, TeamProjectController c) {
   final l = lookupAppLocalizations(Localizations.localeOf(context));
   return KitNotice(

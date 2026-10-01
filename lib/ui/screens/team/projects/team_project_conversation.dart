@@ -7,6 +7,7 @@ import '../../../kit/kit.dart';
 import 'team_execution_gate.dart';
 import 'team_merge_flow.dart';
 import 'team_project_editors.dart';
+import 'team_refusal.dart';
 
 /// Finish line: review, steer, verify and promote a task from its conversation.
 /// Non-goal: choosing or directly calling an execution engine.
@@ -725,13 +726,27 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                         actions: _requestActions(p, t, request),
                       ),
                     if (events.isNotEmpty)
-                      _fold('work', l.teamProjectTaskWork, [
-                        for (final event
-                            in (running
-                                ? events.reversed.take(3).toList().reversed
-                                : events))
-                          KitText('${event.text} · ${_age(event.at)}'),
-                      ]),
+                      _fold(
+                        'work',
+                        running
+                            ? l.teamProjectTaskWorkLive
+                            : const [
+                                'done',
+                                'merged',
+                                'accepted',
+                              ].contains(t.status)
+                            ? l.teamProjectTaskWork
+                            : l.teamProjectTaskWorkLog,
+                        [
+                          for (final event
+                              in (running
+                                  ? events.reversed.take(3).toList().reversed
+                                  : events))
+                            KitText(
+                              '${teamTimelineWords(l, event.text)} · ${_age(event.at)}',
+                            ),
+                        ],
+                      ),
                     if (t.criterionResults.isNotEmpty)
                       KitPhaseCard(
                         title: l.teamProjectTaskCriteria,
