@@ -1,0 +1,49 @@
+{
+  "roles": [
+    {
+      "id": "planner",
+      "model": "",
+      "fallbackModel": ""
+    },
+    {
+      "id": "worker",
+      "model": "",
+      "fallbackModel": ""
+    },
+    {
+      "id": "checker",
+      "model": "",
+      "fallbackModel": ""
+    }
+  ],
+  "planner": {
+    "stage": "completed",
+    "reason": null,
+    "sessions": {
+      "planner": "ses_f09a14709ffeKbGehOSXcNUEvg"
+    },
+    "model": "",
+    "resolvedModels": {
+      "planner": "zai-coding-plan/glm-5.3"
+    },
+    "dispatch": {
+      "planner": "dispatched"
+    }
+  },
+  "assistantMetadata": [
+    {
+      "provider": "zai-coding-plan",
+      "model": "glm-5.3",
+      "completed": 1790839805366,
+      "finish": "stop",
+      "errorName": null
+    }
+  ],
+  "project": {
+    "status": "needsPlanApproval",
+    "revision": 8,
+    "planApproved": 0,
+    "taskCount": 1,
+    "specVersion": 1
+  }
+}

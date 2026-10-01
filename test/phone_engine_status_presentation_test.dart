@@ -30,16 +30,19 @@ void main() {
   ({PhoneEngineGateway gateway, engine.FakeEngineAdapter adapter}) client(
     TeamProject project, {
     List<String> actions = const ['approvePlan', 'resumeProject', 'resumeTask'],
+    Map<String, Object?>? healthOverride,
+    String refusalCode = '',
   }) {
     final wire = engine.workspace(12)..['projects'] = [project.toJson()];
     final adapter = engine.FakeEngineAdapter(
       (request) async => engine.jsonBody(
         request.path == '/v1/health'
-            ? engine.health('p1', execution: true, actions: actions)
+            ? healthOverride ??
+                  engine.health('p1', execution: true, actions: actions)
             : request.path == '/v1/commands'
             ? {
-                'accepted': true,
-                'code': '',
+                'accepted': refusalCode.isEmpty,
+                'code': refusalCode,
                 'projectId': project.id,
                 'revision': 8,
                 'replayed': false,
@@ -134,6 +137,249 @@ void main() {
         expect(project.status, isNot('planFailed'));
         expect(project.planApproved, isFalse);
       }
+    },
+  );
+
+  test(
+    'advertised terminal planner retry exposes the plan failure editor',
+    () async {
+      for (final reason in ['sessionFailed', 'modelNotConfigured']) {
+        for (final stage in ['failed', 'interrupted']) {
+          for (final status in [
+            'planning',
+            'interrupted',
+            'failed',
+            'running',
+          ]) {
+            final source = planned.copyWith(
+              status: status,
+              planningState: TeamPlanningState(
+                jobId: 'failed-planner',
+                stage: stage,
+                reason: reason,
+              ),
+            );
+            final harness = client(source, actions: ['retryPlan']);
+            final project =
+                (await harness.gateway.teamWorkspace()).projects.single;
+            expect(project.status, 'planFailed');
+            expect(
+              project.planningState!.toJson(),
+              source.planningState!.toJson(),
+            );
+            expect(project.timeline.last.text, contains('($reason)'));
+            expect(project.revision, source.revision);
+            expect(project.planApproved, isFalse);
+            expect(
+              harness.adapter.requests.every((r) => r.method == 'GET'),
+              isTrue,
+            );
+            final result = await harness.gateway.executeProject(
+              TeamProjectCommand(
+                requestId: 'retry-terminal-planner',
+                action: TeamProjectAction.retryPlan,
+                projectId: project.id,
+                expectedRevision: project.revision,
+              ),
+            );
+            expect(result.accepted, isTrue);
+            final command = harness.adapter.requests.last.data as Map;
+            expect(command['action'], 'retryPlan');
+            expect(command['expectedRevision'], source.revision);
+            expect(source.status, status);
+          }
+        }
+      }
+    },
+  );
+
+  test(
+    'unadvertised planner retry keeps ordinary failed presentation',
+    () async {
+      final source = planned.copyWith(
+        status: 'planning',
+        planningState: const TeamPlanningState(
+          stage: 'failed',
+          reason: 'modelNotConfigured',
+        ),
+      );
+      final harness = client(source, actions: []);
+      final project = (await harness.gateway.teamWorkspace()).projects.single;
+      expect(project.status, 'failed');
+      expect(project.timeline.last.text, contains('(modelNotConfigured)'));
+      final result = await harness.gateway.executeProject(
+        TeamProjectCommand(
+          requestId: 'unsupported-planner-retry',
+          action: TeamProjectAction.retryPlan,
+          projectId: project.id,
+          expectedRevision: project.revision,
+        ),
+      );
+      expect(result.accepted, isFalse);
+      expect(result.code, 'unsupportedCommand');
+      expect(harness.adapter.requests.every((r) => r.method == 'GET'), isTrue);
+    },
+  );
+
+  test(
+    'planner retry presentation preserves deliberate stop pause and session reconciliation',
+    () async {
+      for (final status in ['paused', 'pausedBudget', 'stopped']) {
+        final source = planned.copyWith(
+          status: status,
+          planningState: const TeamPlanningState(
+            stage: 'failed',
+            reason: 'sessionFailed',
+          ),
+        );
+        final project = (await client(
+          source,
+          actions: ['retryPlan'],
+        ).gateway.teamWorkspace()).projects.single;
+        expect(project.status, status);
+        expect(project.revision, source.revision);
+      }
+      for (final reason in [
+        'restartNeedsReconciliation',
+        'pauseNeedsReconciliation',
+      ]) {
+        final source = planned.copyWith(
+          status: 'interrupted',
+          planningState: TeamPlanningState(
+            stage: 'interrupted',
+            reason: reason,
+          ),
+        );
+        final project = (await client(
+          source,
+          actions: ['retryPlan', 'resumeProject'],
+        ).gateway.teamWorkspace()).projects.single;
+        expect(project.status, 'paused');
+        expect(project.status, isNot('planFailed'));
+        expect(project.planningState!.reason, reason);
+      }
+      for (final stage in [
+        'paused',
+        'stopped',
+        'running',
+        'queued',
+        'resuming',
+      ]) {
+        final source = planned.copyWith(
+          status: 'planning',
+          planningState: TeamPlanningState(
+            stage: stage,
+            reason: 'sessionFailed',
+          ),
+        );
+        final project = (await client(
+          source,
+          actions: ['retryPlan'],
+        ).gateway.teamWorkspace()).projects.single;
+        expect(project.status, isNot('planFailed'));
+      }
+      final approved = planned.copyWith(
+        status: 'running',
+        planApproved: true,
+        planningState: const TeamPlanningState(
+          stage: 'failed',
+          reason: 'sessionFailed',
+        ),
+      );
+      expect(
+        (await client(
+          approved,
+          actions: ['retryPlan'],
+        ).gateway.teamWorkspace()).projects.single.status,
+        'running',
+      );
+    },
+  );
+
+  test('planner retry is execution gated before any POST', () async {
+    for (final flags in [
+      {
+        'execution': false,
+        'boundary': false,
+        'oc1Verified': false,
+        'oc2': false,
+      },
+      {
+        'execution': false,
+        'boundary': true,
+        'oc1Verified': false,
+        'oc2': false,
+      },
+      {'execution': false, 'boundary': true, 'oc1Verified': true, 'oc2': false},
+    ]) {
+      final wire = engine.health('p1', actions: ['retryPlan'])
+        ..['capabilities'] = flags;
+      final harness = client(
+        planned.copyWith(
+          status: 'planning',
+          planningState: const TeamPlanningState(
+            stage: 'failed',
+            reason: 'sessionFailed',
+          ),
+        ),
+        actions: ['retryPlan'],
+        healthOverride: wire,
+      );
+      final project = (await harness.gateway.teamWorkspace()).projects.single;
+      final result = await harness.gateway.executeProject(
+        TeamProjectCommand(
+          requestId: 'gated-planner-retry',
+          action: TeamProjectAction.retryPlan,
+          projectId: project.id,
+          expectedRevision: project.revision,
+        ),
+      );
+      expect(result.accepted, isFalse);
+      expect(
+        result.code,
+        flags['boundary'] == false
+            ? 'boundaryUnverified'
+            : flags['oc1Verified'] == false
+            ? 'protocolUnverified'
+            : 'engineUnavailable',
+      );
+      expect(harness.adapter.requests.every((r) => r.method == 'GET'), isTrue);
+    }
+  });
+
+  test(
+    'retry preserves typed model refusal and omits unknown secret diagnostics',
+    () async {
+      final source = planned.copyWith(
+        status: 'planning',
+        planningState: const TeamPlanningState(
+          stage: 'failed',
+          reason: 'secret provider token private-path',
+        ),
+      );
+      final harness = client(
+        source,
+        actions: ['retryPlan'],
+        refusalCode: 'modelNotConfigured',
+      );
+      final project = (await harness.gateway.teamWorkspace()).projects.single;
+      expect(project.status, 'planFailed');
+      expect(project.timeline.last.text, 'Planning stopped and needs review.');
+      expect(project.timeline.last.text, isNot(contains('secret')));
+      final result = await harness.gateway.executeProject(
+        TeamProjectCommand(
+          requestId: 'model-refused-planner-retry',
+          action: TeamProjectAction.retryPlan,
+          projectId: project.id,
+          expectedRevision: project.revision,
+        ),
+      );
+      expect(result.accepted, isFalse);
+      expect(result.code, 'modelNotConfigured');
+      expect(
+        (harness.adapter.requests.last.data as Map)['expectedRevision'],
+        source.revision,
+      );
     },
   );
 

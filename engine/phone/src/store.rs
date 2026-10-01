@@ -366,6 +366,7 @@ impl Store {
             "sessionUsage",
             "promptDispatch",
             "freshSessionIds",
+            "resolvedModels",
         ];
         let fields = patch.as_object().ok_or(StoreError("invalidJobPatch"))?;
         if fields.keys().any(|k| !allowed.contains(&k.as_str()))
@@ -419,6 +420,39 @@ impl Store {
         {
             return Err(StoreError("projectPaused"));
         }
+        if let Some(resolved) = patch.get("resolvedModels") {
+            let resolved = resolved
+                .as_object()
+                .filter(|models| !models.is_empty())
+                .ok_or(StoreError("invalidResolvedModel"))?;
+            if !j["resolvedModels"].is_null() && !j["resolvedModels"].is_object() {
+                return Err(StoreError("storageCorrupt"));
+            }
+            for (role, value) in resolved {
+                let model = value
+                    .as_str()
+                    .filter(|model| !model.is_empty())
+                    .ok_or(StoreError("invalidResolvedModel"))?;
+                if !["planner", "worker", "checker"].contains(&role.as_str())
+                    || crate::opencode::validate_model(model).is_err()
+                {
+                    return Err(StoreError("invalidResolvedModel"));
+                }
+                if let Some(previous) = j["resolvedModels"].get(role) {
+                    if previous != value {
+                        return Err(StoreError("resolvedModelAlreadyRecorded"));
+                    }
+                } else if j["sessionIds"].get(role).is_some()
+                    || j["promptDispatch"].get(role).is_some()
+                    || patch["sessionIds"].get(role).is_some()
+                    || patch["promptDispatch"].get(role).is_some()
+                {
+                    // A provider selection is fixed before the session exists,
+                    // including across death and lost dispatch acknowledgments.
+                    return Err(StoreError("modelResolutionTooLate"));
+                }
+            }
+        }
         if let Some(fresh) = patch.get("freshSessionIds") {
             for (role, session) in fresh.as_object().ok_or(StoreError("invalidJobPatch"))? {
                 if !["planner", "worker", "checker"].contains(&role.as_str())
@@ -444,7 +478,17 @@ impl Store {
             ) {
                 continue;
             }
-            if key == "freshSessionIds" {
+            if key == "resolvedModels" {
+                if j["resolvedModels"].is_null() {
+                    j["resolvedModels"] = json!({});
+                }
+                for (role, model) in value
+                    .as_object()
+                    .ok_or(StoreError("invalidResolvedModel"))?
+                {
+                    j["resolvedModels"][role] = model.clone();
+                }
+            } else if key == "freshSessionIds" {
                 if j["freshSessionIds"].is_null() {
                     j["freshSessionIds"] = json!({});
                 }
@@ -1449,6 +1493,7 @@ fn apply_command(
         "saveSpecDraft",
         "approveSpec",
         "approvePlan",
+        "retryPlan",
         "acceptPhase",
         "acceptMilestone",
         "updateSettings",
@@ -1665,6 +1710,103 @@ fn apply_command(
                         p["status"] = json!("planning");
                         p["planApproved"] = json!(false);
                         jobs.push(job(w, &p, None));
+                    }
+                    "retryPlan" => {
+                        if p["status"] == "stopped" {
+                            return Err(StoreError("projectStopped"));
+                        }
+                        if matches!(p["status"].as_str(), Some("paused" | "pausedBudget")) {
+                            return Err(StoreError("projectPaused"));
+                        }
+                        if p["planApproved"] == true {
+                            return Err(StoreError("planAlreadyApproved"));
+                        }
+                        if p["specVersions"]
+                            .as_array()
+                            .and_then(|versions| versions.last())
+                            != Some(&p["specDraft"])
+                            || p["specDraft"]["approvedBy"] != "person"
+                            || p["specDraft"]["approvedAt"]
+                                .as_str()
+                                .is_none_or(str::is_empty)
+                        {
+                            return Err(StoreError("approveSpecFirst"));
+                        }
+                        let in_flight = |j: &Value| {
+                            crate::scheduler::active_stage(j["stage"].as_str().unwrap_or(""))
+                                || matches!(j["stage"].as_str(), Some("queued" | "mergeReady"))
+                        };
+                        if jobs
+                            .iter()
+                            .any(|j| j["projectId"] == id && j["kind"] == "planner" && in_flight(j))
+                        {
+                            return Err(StoreError("plannerBusy"));
+                        }
+                        if jobs
+                            .iter()
+                            .any(|j| j["projectId"] == id && j["kind"] == "task" && in_flight(j))
+                        {
+                            return Err(StoreError("tasksBusy"));
+                        }
+                        let latest = jobs
+                            .iter()
+                            .rposition(|j| j["projectId"] == id && j["kind"] == "planner")
+                            .ok_or(StoreError("planningRetryUnavailable"))?;
+                        if !matches!(
+                            jobs[latest]["stage"].as_str(),
+                            Some("failed" | "interrupted")
+                        ) {
+                            return Err(StoreError("planningRetryUnavailable"));
+                        }
+                        if matches!(
+                            jobs[latest]["reason"].as_str(),
+                            Some("restartNeedsReconciliation" | "pauseNeedsReconciliation")
+                        ) {
+                            return Err(StoreError("planningNeedsReconciliation"));
+                        }
+                        let prior = &jobs[latest];
+                        let reason = prior["reason"].as_str().unwrap_or("");
+                        let dispatch = &prior["promptDispatch"];
+                        let no_dispatch = dispatch.is_null()
+                            || dispatch.as_object().is_some_and(|d| d.is_empty());
+                        let never_started = prior["sessionIds"]
+                            .as_object()
+                            .is_some_and(|ids| ids.is_empty())
+                            && no_dispatch;
+                        let completed_invalid_proposal = matches!(
+                            reason,
+                            "structuredOutputInvalid"
+                                | "planInvalid"
+                                | "planTaskTitleRequired"
+                                | "invalidPlan"
+                                | "planPhaseInvalid"
+                                | "invalidPlacement"
+                                | "dependencyCycle"
+                                | "missingDependency"
+                        ) && dispatch["planner"] == "dispatched";
+                        let ambiguous = matches!(
+                            reason,
+                            "promptUncertain" | "transport_uncertain" | "sessionCreateUncertain"
+                        ) || (!dispatch.is_null() && !dispatch.is_object())
+                            || dispatch.as_object().is_some_and(|d| {
+                                d.values()
+                                    .any(|state| !matches!(state.as_str(), Some("dispatched")))
+                            });
+                        if reason != "sessionFailed"
+                            && (ambiguous || (!never_started && !completed_invalid_proposal))
+                        {
+                            return Err(StoreError("planningNeedsReconciliation"));
+                        }
+                        // This explicit request authorizes a new proposal, not
+                        // replaying the old prompt or changing the approved spec.
+                        p["tasks"] = json!([]);
+                        p["phases"] = json!([]);
+                        p["status"] = json!("planning");
+                        let fresh = job(w, &p, None);
+                        jobs[latest]["stage"] = json!("stopped");
+                        jobs[latest]["retiredBy"] = fresh["id"].clone();
+                        jobs[latest]["updatedAt"] = json!(now());
+                        jobs.push(fresh);
                     }
                     "approvePlan" => {
                         if p["specVersions"].as_array().unwrap().is_empty() {
