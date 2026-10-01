@@ -1288,6 +1288,22 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     }
     check_and_merge(e, job, &session).await
 }
+async fn collect_against_current_dev(
+    e: &Engine,
+    repo: &str,
+    task: &str,
+) -> Result<Value, &'static str> {
+    // Collection validates its expected dev. Keep that read and collection
+    // behind publication so a parallel integration cannot change the ref in
+    // the gap. Release before any checker request or admission wait.
+    let _publication = e.merge_publication.lock().await;
+    let expected_dev = current_dev(e, repo)?;
+    e.repositories
+        .lock()
+        .map_err(|_| "repositoryUnavailable")?
+        .collect_worker(repo, task, &expected_dev)
+        .map_err(|error| error.code())
+}
 async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &'static str> {
     let id = job["id"].as_str().ok_or("jobInvalid")?;
     let task = job["taskId"]
@@ -1296,13 +1312,7 @@ async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &
         .unwrap_or(id);
     let repo = job["repoId"].as_str().ok_or("repoInvalid")?;
     let directory = format!("{}/{}/{}", e.config.guest_worker_root, repo, task);
-    let expected_dev = current_dev(e, repo)?;
-    let collected = e
-        .repositories
-        .lock()
-        .map_err(|_| "repositoryUnavailable")?
-        .collect_worker(repo, task, &expected_dev)
-        .map_err(|_| "collectFailed")?;
+    let collected = collect_against_current_dev(e, repo, task).await?;
     let commit = collected["taskCommit"].as_str().ok_or("repoInvalid")?;
     stage_admitted(e, job).await?;
     let checker = e
@@ -1352,13 +1362,7 @@ async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &
     }
     // The checker must not have changed the worker head; integration consumes
     // the exact commit captured before checking and refuses stale dev.
-    let expected_dev = current_dev(e, repo)?;
-    let current = e
-        .repositories
-        .lock()
-        .map_err(|_| "repositoryUnavailable")?
-        .collect_worker(repo, task, &expected_dev)
-        .map_err(|_| "collectFailed")?;
+    let current = collect_against_current_dev(e, repo, task).await?;
     if current["taskCommit"] != commit {
         return Err("checkedCommitChanged");
     }
@@ -1519,13 +1523,7 @@ async fn resume_job(e: &Engine, job: &Value) -> Result<(), &'static str> {
     let repo = job["repoId"].as_str().ok_or("repoInvalid")?;
     let task = job["taskId"].as_str().ok_or("jobInvalid")?;
     let commit = job["taskCommit"].as_str().ok_or("recoveryNeedsReview")?;
-    let dev = current_dev(e, repo)?;
-    let current = e
-        .repositories
-        .lock()
-        .map_err(|_| "repositoryUnavailable")?
-        .collect_worker(repo, task, &dev)
-        .map_err(|_| "collectFailed")?;
+    let current = collect_against_current_dev(e, repo, task).await?;
     if current["taskCommit"] != commit {
         return Err("checkedCommitChanged");
     }

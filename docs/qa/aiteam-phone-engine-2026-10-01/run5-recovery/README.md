@@ -56,3 +56,8 @@ reached, invalid configuration and non-budget failures do not gain a retry.
 Person-chat waits remain separate, and reset the usage grace interval. Two async
 regressions exercise the production prompt gate (no POST before actual usage,
 exactly one after it), and bounded persistent unknown with no invented zero.
+
+The same publication queue also fences the current-dev read and worker collection
+snapshot, including resumed checker collection. It is released before checker
+HTTP requests or admission waits; a parallel merge cannot invalidate dev between
+that read and `collect_worker`.
