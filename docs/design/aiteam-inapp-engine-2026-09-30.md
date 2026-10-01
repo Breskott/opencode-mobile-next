@@ -443,3 +443,57 @@ reason without rewriting task status, checkpoints or command revision. Clearing
 a job admission wait clears the displayed task wait; nested planner/tool waits
 retain their explicit typed reason. An old persisted `chatStatusUnknown` is not
 shown on an already completed task whose authoritative job has no wait reason.
+
+
+Run5 owner clarification: checked task branches merge automatically to dev.
+There is no user confirmation for dev merges. Each canonical dev update must
+have a durable scoped receipt, including crash recovery and parallel queue
+publication. Main promotion retains the explicit app confirmation, expected
+main/dev SHAs and promotion receipt. UI copy should describe this distinction.
+
+
+Run5 recovery contract: `resumeProject` and `resumeTask` are existing authenticated
+commands advertised in `commandActions`. After execution-ready attachment, only
+`restartNeedsReconciliation` checkpoints reconcile automatically. Recorded turns
+are refetched by exact session/directory; no prompt replay or replacement worker.
+Read-only observation bypasses new-lane chat/budget admission, but any new checker
+or merge retains admission gates. Explicit pause/stop and ambiguous checkpoints
+are never automatically restarted. Refetch failure becomes Review with a static
+typed reason (`sessionUnknown`, `sessionFailed`, `recoveryNeedsReview`, or the
+specific admission code). The adapter exposes current Resume predicates as paused
+only for safe interruptions with the command advertised; otherwise Review/failed.
+A running parent with only interrupted tasks and dependent queued work no longer
+presents generic dependency waiting. Another active parallel lane remains Running.
+
+Fresh sessions carry native-only atomic `freshSessionIds` provenance and first
+`sessionDispatchDays`. Before any prompt dispatch, a proven unused session costs
+zero for admission; missing legacy provenance or dispatch uncertainty stays
+unknown. Observed cumulative usage is attributed to the current day only with
+same-day dispatch provenance or a known cumulative baseline; missing token totals
+and cross-day unknown costs remain unknown. Usage refresh does not bump command
+revision. Each new task commits `.aiteam-verification/<taskId>.md` so parallel
+reports do not conflict. A legacy shared report may still be inspected as actual
+committed evidence for an older turn; no executed checks are inferred.
+
+Automatic dev integration journals an authenticated immutable intent in private
+storage before moving dev, bound to repo/task/job, checked commit and checker
+fingerprint. Serialized canonical merge plus SQLite receipt publication prevents
+parallel receipt reordering. Restart reconciles prepared/applied journals before
+later merges, retaining original before/after refs. Tampering, changed checker
+proof or changed refs gives a typed refusal (`invalid_merge_journal`,
+`merge_evidence_conflict`, `merge_recovery_refs_changed`). Repository deletion
+sweeps its journals; profile deletion sweeps the private engine root.
+
+Transient `totalUsageUnknown`, `dailyUsageUnknown` and `tokenUsageUnknown`
+from another active lane wait at most 30 seconds for measured usage, polling
+every 2 seconds. No prompt is dispatched during unknown usage. Persistent
+unknown becomes its typed review reason; reached limits remain a refusal.
+
+Run5 real-UI review commands `acceptPhase` and `acceptMilestone` are now
+advertised. They accept `targetId` and the usual project revision/request ID.
+A phase requires an approved plan and a nonempty merged task set. A milestone
+requires a valid current-spec target, accepted scoped phases and merged scoped
+tasks. Refusals are `phaseNotFound`, `phaseNotReady`, `milestoneNotFound`,
+`milestoneNotReady`, with existing stale revision and stopped project checks.
+Review acceptance changes only review flags; it never promotes main or creates
+a merge/promotion receipt.

@@ -1,8 +1,11 @@
 //! Native-only canonical Git authority. Worker metadata is always untrusted.
 //! This module must live outside the workers' filesystem/process boundary.
 use git2::{build::RepoBuilder, Oid, Repository, Signature};
+use hmac::{Hmac, Mac};
+use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::ffi::{CStr, CString, OsStr};
 use std::fs::{self, File, OpenOptions};
@@ -103,6 +106,28 @@ struct PromotionReceipt {
     after: Value,
 }
 
+/// Daemon-authored durable integration intent; never read from the worker tree.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct MergeJournal {
+    schema_version: u32,
+    repo_id: String,
+    task_id: String,
+    evidence_id: String,
+    evidence_fingerprint: String,
+    expected_dev: String,
+    expected_task: String,
+    expected_main: String,
+    next_dev: String,
+    state: String,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct SignedMergeJournal {
+    journal: MergeJournal,
+    authentication: String,
+}
+
 impl RepositoryAuthority {
     pub fn new(private_root: PathBuf, worker_root: PathBuf) -> Result<Self> {
         // Reject overlap before creating either root (including ancestor symlinks).
@@ -119,6 +144,7 @@ impl RepositoryAuthority {
             "repos",
             "workers",
             "receipts",
+            "merges",
             "receipt-scopes",
             "retired",
             "staging",
@@ -419,12 +445,61 @@ impl RepositoryAuthority {
         expected_dev: &str,
         expected_task: &str,
     ) -> Result<Value> {
+        self.merge_dev_unlocked(repo_id, task_id, expected_dev, expected_task, None)
+    }
+
+    /// Merge bound to the exact persisted checker checkpoint. An interrupted
+    /// caller may recover the original receipt, never a guessed before SHA.
+    pub fn merge_dev_for_evidence(
+        &self,
+        repo_id: &str,
+        task_id: &str,
+        expected_dev: &str,
+        expected_task: &str,
+        evidence_id: &str,
+        evidence_fingerprint: &str,
+    ) -> Result<Value> {
+        self.merge_dev_unlocked(
+            repo_id,
+            task_id,
+            expected_dev,
+            expected_task,
+            Some((evidence_id, evidence_fingerprint)),
+        )
+    }
+
+    fn merge_dev_unlocked(
+        &self,
+        repo_id: &str,
+        task_id: &str,
+        expected_dev: &str,
+        expected_task: &str,
+        evidence: Option<(&str, &str)>,
+    ) -> Result<Value> {
         valid_id(repo_id)?;
         valid_id(task_id)?;
         let expected_dev = parse_oid(expected_dev)?;
         let expected_task = parse_oid(expected_task)?;
         let _lock = self.lock()?;
         let repo = self.open_repo(repo_id)?;
+        if let Some((id, fingerprint)) = evidence {
+            valid_id(id)?;
+            valid_fingerprint(fingerprint)?;
+            if let Some(journal) = self.read_merge_journal(repo_id, task_id, id)? {
+                self.validate_merge_binding(
+                    &journal,
+                    repo_id,
+                    task_id,
+                    &expected_task.to_string(),
+                    id,
+                    fingerprint,
+                )?;
+                if journal.expected_dev != expected_dev.to_string() {
+                    return Err(RepoError("merge_evidence_conflict"));
+                }
+                return self.apply_merge_journal(&repo, journal);
+            }
+        }
         let mut tx = repo.transaction()?;
         tx.lock_ref(DEV)?;
         tx.lock_ref(MAIN)?;
@@ -462,6 +537,23 @@ impl RepositoryAuthority {
             )?
         };
         validate_commit_tree(&repo, next)?;
+        let mut journal = evidence.map(|(id, fingerprint)| MergeJournal {
+            schema_version: 1,
+            repo_id: repo_id.into(),
+            task_id: task_id.into(),
+            evidence_id: id.into(),
+            evidence_fingerprint: fingerprint.into(),
+            expected_dev: dev.to_string(),
+            expected_task: expected_task.to_string(),
+            expected_main: main.to_string(),
+            next_dev: next.to_string(),
+            state: "prepared".into(),
+        });
+        if let Some(journal) = &journal {
+            // Objects and immutable intent are durable before the ref can move.
+            sync_all(repo.path())?;
+            self.write_merge_journal(journal)?;
+        }
         tx.set_target(
             DEV,
             next,
@@ -470,11 +562,198 @@ impl RepositoryAuthority {
         )?;
         tx.commit()?;
         sync_all(repo.path())?;
+        if let Some(journal) = &mut journal {
+            journal.state = "applied".into();
+            self.write_merge_journal(journal)?;
+        }
         Ok(
             json!({"repoId":repo_id,"taskId":task_id,"taskCommit":expected_task.to_string(),
             "devCommit":next.to_string(),"mainCommit":main.to_string(),
             "before":{"devCommit":dev.to_string(),"mainCommit":main.to_string()},
             "after":{"devCommit":next.to_string(),"mainCommit":main.to_string()}}),
+        )
+    }
+
+    /// Only a native, authenticated journal with an exact checker fingerprint
+    /// can recover an interrupted merge. Missing journals return no authority.
+    pub fn recover_merge_dev(
+        &self,
+        repo_id: &str,
+        task_id: &str,
+        expected_task: &str,
+        evidence_id: &str,
+        evidence_fingerprint: &str,
+    ) -> Result<Option<Value>> {
+        valid_id(repo_id)?;
+        valid_id(task_id)?;
+        valid_id(evidence_id)?;
+        parse_oid(expected_task)?;
+        valid_fingerprint(evidence_fingerprint)?;
+        let _lock = self.lock()?;
+        let Some(journal) = self.read_merge_journal(repo_id, task_id, evidence_id)? else {
+            return Ok(None);
+        };
+        self.validate_merge_binding(
+            &journal,
+            repo_id,
+            task_id,
+            expected_task,
+            evidence_id,
+            evidence_fingerprint,
+        )?;
+        let repo = self.open_repo(repo_id)?;
+        self.apply_merge_journal(&repo, journal).map(Some)
+    }
+
+    fn merge_journal_path(&self, repo: &str, task: &str, evidence: &str) -> PathBuf {
+        let scope = serde_json::to_vec(&(repo, task, evidence)).expect("string tuple serializes");
+        self.private_root
+            .join("merges")
+            .join(repo)
+            .join(format!("{}.json", hex(&Sha256::digest(scope))))
+    }
+
+    fn merge_key(&self) -> Result<[u8; 32]> {
+        let path = self.private_root.join("merges/authentication.key");
+        if !path.exists() {
+            let mut key = [0; 32];
+            rand::thread_rng().fill_bytes(&mut key);
+            let mut file = OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .mode(0o600)
+                .custom_flags(libc::O_NOFOLLOW)
+                .open(&path)?;
+            file.write_all(&key)?;
+            file.sync_all()?;
+            sync_dir(path.parent().unwrap())?;
+        }
+        let mut file = OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NOFOLLOW)
+            .open(path)?;
+        use std::os::unix::fs::MetadataExt;
+        let metadata = file.metadata()?;
+        if !metadata.is_file()
+            || metadata.len() != 32
+            || metadata.nlink() != 1
+            || metadata.uid() != unsafe { libc::geteuid() }
+            || metadata.mode() & 0o777 != 0o600
+        {
+            return Err(RepoError("invalid_merge_key"));
+        }
+        let mut key = [0; 32];
+        file.read_exact(&mut key)?;
+        Ok(key)
+    }
+
+    fn write_merge_journal(&self, journal: &MergeJournal) -> Result<()> {
+        secure_create_dir(&self.private_root.join("merges").join(&journal.repo_id))?;
+        let bytes = serde_json::to_vec(journal).map_err(|_| RepoError("receipt_encoding"))?;
+        let mut mac = Hmac::<Sha256>::new_from_slice(&self.merge_key()?).expect("HMAC accepts key");
+        mac.update(&bytes);
+        let value = json!({"journal": journal, "authentication":hex(&mac.finalize().into_bytes())});
+        atomic_json(
+            &self.merge_journal_path(&journal.repo_id, &journal.task_id, &journal.evidence_id),
+            &value,
+        )
+    }
+
+    fn read_merge_journal(
+        &self,
+        repo: &str,
+        task: &str,
+        evidence: &str,
+    ) -> Result<Option<MergeJournal>> {
+        let path = self.merge_journal_path(repo, task, evidence);
+        match fs::symlink_metadata(&path) {
+            Ok(metadata) if metadata.is_file() => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            _ => return Err(RepoError("invalid_merge_journal")),
+        }
+        let signed: SignedMergeJournal =
+            read_json(&path).map_err(|_| RepoError("invalid_merge_journal"))?;
+        let bytes =
+            serde_json::to_vec(&signed.journal).map_err(|_| RepoError("invalid_merge_journal"))?;
+        let signature = unhex(&signed.authentication)?;
+        let mut mac = Hmac::<Sha256>::new_from_slice(&self.merge_key()?).expect("HMAC accepts key");
+        mac.update(&bytes);
+        mac.verify_slice(&signature)
+            .map_err(|_| RepoError("invalid_merge_journal"))?;
+        Ok(Some(signed.journal))
+    }
+
+    fn validate_merge_binding(
+        &self,
+        journal: &MergeJournal,
+        repo: &str,
+        task: &str,
+        commit: &str,
+        evidence: &str,
+        fingerprint: &str,
+    ) -> Result<()> {
+        if journal.schema_version != 1 || !matches!(journal.state.as_str(), "prepared" | "applied")
+        {
+            return Err(RepoError("invalid_merge_journal"));
+        }
+        if journal.repo_id != repo
+            || journal.task_id != task
+            || journal.expected_task != commit
+            || journal.evidence_id != evidence
+            || journal.evidence_fingerprint != fingerprint
+        {
+            return Err(RepoError("merge_evidence_conflict"));
+        }
+        for oid in [
+            &journal.expected_dev,
+            &journal.expected_task,
+            &journal.expected_main,
+            &journal.next_dev,
+        ] {
+            parse_oid(oid)?;
+        }
+        Ok(())
+    }
+
+    fn apply_merge_journal(&self, repo: &Repository, mut journal: MergeJournal) -> Result<Value> {
+        let mut tx = repo.transaction()?;
+        tx.lock_ref(DEV)?;
+        tx.lock_ref(MAIN)?;
+        let dev = commit_ref(repo, DEV)?;
+        let before = parse_oid(&journal.expected_dev)?;
+        let next = parse_oid(&journal.next_dev)?;
+        let main = parse_oid(&journal.expected_main)?;
+        let task = parse_oid(&journal.expected_task)?;
+        if commit_ref(repo, MAIN)? != main {
+            return Err(RepoError("merge_recovery_refs_changed"));
+        }
+        if direct_commit_ref(repo, &incoming_ref(&journal.task_id))? != task {
+            return Err(RepoError("stale_task"));
+        }
+        validate_commit_tree(repo, next)?;
+        if !descends(repo, next, before)? || !descends(repo, next, task)? {
+            return Err(RepoError("invalid_merge_journal"));
+        }
+        if dev == before && journal.state == "prepared" {
+            tx.set_target(
+                DEV,
+                next,
+                Some(&engine_signature()?),
+                "recover checked worker integration",
+            )?;
+            tx.commit()?;
+            sync_all(repo.path())?;
+        } else if dev != next {
+            // Never publish older evidence over a newer parallel integration.
+            return Err(RepoError("merge_recovery_refs_changed"));
+        }
+        journal.state = "applied".into();
+        self.write_merge_journal(&journal)?;
+        Ok(
+            json!({"repoId":journal.repo_id,"taskId":journal.task_id,"taskCommit":journal.expected_task,
+            "devCommit":journal.next_dev,"mainCommit":journal.expected_main,
+            "before":{"devCommit":journal.expected_dev,"mainCommit":journal.expected_main},
+            "after":{"devCommit":journal.next_dev,"mainCommit":journal.expected_main}}),
         )
     }
 
@@ -702,6 +981,7 @@ impl RepositoryAuthority {
         let repos = open_directory(&self.private_root.join("repos"))?;
         let imports = open_directory(&self.private_root.join("imports"))?;
         let records = open_directory(&self.private_root.join("workers"))?;
+        let merges = open_directory(&self.private_root.join("merges"))?;
         let workers = open_directory(&self.worker_root)?;
         let mut candidates = HashSet::<String>::new();
         for (directory, suffix) in [(&repos, ".git"), (&imports, ".json")] {
@@ -716,6 +996,16 @@ impl RepositoryAuthority {
         }
         for name in directory_names(&workers)? {
             let id = name.to_str().ok_or(RepoError("invalid_id"))?;
+            valid_id(id)?;
+            candidates.insert(id.to_owned());
+        }
+        for name in directory_names(&merges)? {
+            if name == OsStr::new("authentication.key") {
+                continue;
+            }
+            let id = name
+                .to_str()
+                .ok_or(RepoError("unsafe_repository_metadata"))?;
             valid_id(id)?;
             candidates.insert(id.to_owned());
         }
@@ -769,6 +1059,8 @@ impl RepositoryAuthority {
                 true,
             )?;
             unlink_child(&imports, OsStr::new(&format!("{id}.json")), false)?;
+            count = 0;
+            remove_collected_child(&merges, OsStr::new(id), 0, &mut count, true)?;
             for name in &record_names {
                 if name
                     .to_str()
@@ -778,7 +1070,7 @@ impl RepositoryAuthority {
                 }
             }
         }
-        for directory in [&workers, &repos, &imports, &records] {
+        for directory in [&workers, &repos, &imports, &records, &merges] {
             sync_fd(directory)?;
         }
         Ok(json!({"removedRepoIds":collected,"receiptsRetained":true}))
@@ -907,6 +1199,27 @@ fn promotion_result(r: &PromotionReceipt) -> Value {
     json!({"repoId":r.repo_id,"receiptId":r.request_id,"devCommit":r.expected_dev,
         "mainCommit":r.expected_dev,"before":r.before,"after":r.after,"state":"applied"})
 }
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+fn unhex(value: &str) -> Result<Vec<u8>> {
+    if value.len() != 64 || !value.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err(RepoError("invalid_merge_journal"));
+    }
+    (0..value.len())
+        .step_by(2)
+        .map(|i| {
+            u8::from_str_radix(&value[i..i + 2], 16).map_err(|_| RepoError("invalid_merge_journal"))
+        })
+        .collect()
+}
+fn valid_fingerprint(value: &str) -> Result<()> {
+    if value.len() != 64 || !value.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err(RepoError("invalid_merge_evidence"));
+    }
+    Ok(())
+}
+
 fn valid_id(id: &str) -> Result<()> {
     if id.is_empty()
         || id.len() > 128

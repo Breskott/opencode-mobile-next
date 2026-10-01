@@ -34,6 +34,7 @@ pub struct Engine {
     pub(crate) observer_connected: Mutex<bool>,
     pub(crate) parent_pid: i32,
     lane_admission: tokio::sync::Mutex<()>,
+    merge_publication: tokio::sync::Mutex<()>,
     boundary: Option<BoundaryAuthority>,
     deleting: std::sync::atomic::AtomicBool,
 }
@@ -78,6 +79,7 @@ pub async fn serve(config: Config, pins: Option<LaunchPins>) -> Result<(), &'sta
         boundary,
         deleting: std::sync::atomic::AtomicBool::new(false),
         lane_admission: tokio::sync::Mutex::new(()),
+        merge_publication: tokio::sync::Mutex::new(()),
         chat: tokio::sync::RwLock::new(chat),
         observer_connected: Mutex::new(false),
         parent_pid: unsafe { libc::getppid() },
@@ -171,6 +173,8 @@ const STORE_ACTIONS: &[&str] = &[
     "saveSpecDraft",
     "approveSpec",
     "approvePlan",
+    "acceptPhase",
+    "acceptMilestone",
     "updateDefaults",
     "updateSettings",
     "pauseProject",
@@ -678,6 +682,35 @@ async fn reconcile(e: Shared) {
             next_verify = tokio::time::Instant::now() + retry_delay;
         }
         crate::admission::reconcile_busy(&e).await;
+        if execution_enabled(&e) {
+            if let Ok(store) = e.store.lock() {
+                let _ = store.reconcile_restart_jobs();
+            }
+        }
+        // Publish interrupted canonical merges before any later task may
+        // advance dev. The private journal provides the original before/after
+        // refs; observation cannot guess an earlier receipt from current refs.
+        if execution_enabled(&e) {
+            let pending = e
+                .store
+                .lock()
+                .ok()
+                .and_then(|s| s.jobs().ok())
+                .unwrap_or_default();
+            for job in pending
+                .iter()
+                .filter(|j| j["stage"] == "resuming" && j["resumeStage"] == "merging")
+            {
+                if let Err(reason) = recover_merge_publication(&e, job).await {
+                    let _ = patch(
+                        &e,
+                        job["id"].as_str().unwrap_or(""),
+                        "resuming",
+                        json!({"stage":"interrupted","reason":reason}),
+                    );
+                }
+            }
+        }
         let jobs = e
             .store
             .lock()
@@ -706,7 +739,9 @@ async fn reconcile(e: Shared) {
                 continue;
             }
             let ledger = e.chat.read().await;
-            if !crate::admission::idle(&e, &ledger).await.unwrap_or(false) {
+            if job["stage"] != "resuming"
+                && !crate::admission::idle(&e, &ledger).await.unwrap_or(false)
+            {
                 let reason = if ledger.admission(
                     crate::admission::now_ms(),
                     crate::admission::app_alive(&e),
@@ -718,9 +753,13 @@ async fn reconcile(e: Shared) {
                     "chatStatusUnknown"
                 };
                 drop(ledger);
-                if job["reason"] != reason && job["stage"] == "queued" {
+                if job["reason"] != reason {
                     if let Ok(store) = e.store.lock() {
-                        let _ = store.update_job(&id, "queued", &json!({"reason":reason}));
+                        let _ = store.update_job(
+                            &id,
+                            job["stage"].as_str().unwrap_or("queued"),
+                            &json!({"reason":reason}),
+                        );
                     }
                 }
                 continue;
@@ -753,7 +792,84 @@ pub(crate) fn team_sessions(e: &Engine) -> Vec<String> {
         .filter_map(|v| v.as_str().map(str::to_owned))
         .collect()
 }
+struct AdmissionRetry {
+    usage_unknown_since: Option<tokio::time::Instant>,
+    usage_grace: Duration,
+    interval: Duration,
+}
+impl Default for AdmissionRetry {
+    fn default() -> Self {
+        Self {
+            usage_unknown_since: None,
+            usage_grace: Duration::from_secs(30),
+            interval: Duration::from_secs(2),
+        }
+    }
+}
+impl AdmissionRetry {
+    fn may_wait(&mut self, reason: &'static str) -> bool {
+        match reason {
+            "chatBusy" | "chatStatusUnknown" => {
+                self.usage_unknown_since = None;
+                true
+            }
+            "totalUsageUnknown" | "dailyUsageUnknown" | "tokenUsageUnknown" => {
+                self.usage_unknown_since
+                    .get_or_insert_with(tokio::time::Instant::now)
+                    .elapsed()
+                    < self.usage_grace
+            }
+            _ => false,
+        }
+    }
+}
+fn record_admission_reason(
+    e: &Engine,
+    requested: &Value,
+    reason: &str,
+) -> Result<(), &'static str> {
+    let store = e.store.lock().map_err(|_| "storeUnavailable")?;
+    let current = store
+        .jobs()
+        .map_err(|_| "storeUnavailable")?
+        .into_iter()
+        .find(|j| j["id"] == requested["id"])
+        .ok_or("jobMissing")?;
+    let stage = current["stage"].as_str().ok_or("jobInvalid")?;
+    if !crate::scheduler::active_stage(stage) && !matches!(stage, "queued" | "mergeReady") {
+        return Err("jobNotActive");
+    }
+    let previous = current["reason"].as_str().unwrap_or("");
+    if previous == reason
+        || (reason.is_empty()
+            && !matches!(
+                previous,
+                "chatBusy"
+                    | "chatStatusUnknown"
+                    | "totalUsageUnknown"
+                    | "dailyUsageUnknown"
+                    | "tokenUsageUnknown"
+            ))
+    {
+        return Ok(());
+    }
+    store
+        .update_job(
+            current["id"].as_str().ok_or("jobInvalid")?,
+            current["stage"].as_str().ok_or("jobInvalid")?,
+            &json!({"reason":reason}),
+        )
+        .map_err(|error| error.code())?;
+    Ok(())
+}
 async fn stage_admitted(e: &Engine, requested: &Value) -> Result<(), &'static str> {
+    stage_admitted_retry(e, requested, AdmissionRetry::default()).await
+}
+async fn stage_admitted_retry(
+    e: &Engine,
+    requested: &Value,
+    mut retry: AdmissionRetry,
+) -> Result<(), &'static str> {
     if !execution_enabled(e) {
         return Err("executionUnavailable");
     }
@@ -761,12 +877,20 @@ async fn stage_admitted(e: &Engine, requested: &Value) -> Result<(), &'static st
         let ledger = e.chat.read().await;
         let result = stage_admitted_with_ledger(e, requested, &ledger).await;
         drop(ledger);
-        if !matches!(result, Err("chatBusy" | "chatStatusUnknown")) {
-            return result;
+        match result {
+            Ok(()) => {
+                record_admission_reason(e, requested, "")?;
+                return Ok(());
+            }
+            Err(reason) if retry.may_wait(reason) => {
+                record_admission_reason(e, requested, reason)?;
+                // Another lane's first cumulative usage may arrive after its
+                // dispatch. Refetch briefly; never substitute zero or dispatch
+                // through unknown budgets. Person-chat waits remain unbounded.
+                tokio::time::sleep(retry.interval).await;
+            }
+            Err(reason) => return Err(reason),
         }
-        // Keep the durable checkpoint. Waiting for the person's reply must not
-        // resubmit the worker or turn an already finished worker into an error.
-        tokio::time::sleep(Duration::from_secs(2)).await;
     }
 }
 async fn stage_admitted_with_ledger(
@@ -817,24 +941,13 @@ async fn stage_admitted_with_ledger(
         .iter()
         .filter(|j| j["projectId"] == current["projectId"])
         .collect();
-    let never_dispatched = project_jobs.iter().all(|j| {
-        j["sessionIds"]
-            .as_object()
-            .is_some_and(|ids| ids.is_empty())
+    let observed_cost = project_jobs
+        .iter()
+        .try_fold(0.0, |sum, j| Some(sum + accounted_cost(j)?));
+    let observed_daily_cost = project_jobs.iter().try_fold(0.0, |sum, j| {
+        Some(sum + accounted_daily_cost(j, &utc_day())?)
     });
-    let observed_cost = project_jobs.iter().try_fold(0.0, |sum, j| {
-        if j["sessionIds"]
-            .as_object()
-            .is_some_and(|ids| ids.is_empty())
-        {
-            Some(sum)
-        } else {
-            j["usage"]["cost"].as_f64().map(|v| sum + v)
-        }
-    });
-    if never_dispatched {
-        project["spendDay"] = json!(utc_day());
-    }
+    project["spendDay"] = json!(utc_day());
     let others: Vec<Value> = jobs
         .iter()
         .filter(|j| j["id"] != current["id"])
@@ -856,21 +969,8 @@ async fn stage_admitted_with_ledger(
         lane_cap: 32,
         utc_day: utc_day(),
         observed_total_cost: observed_cost,
-        observed_daily_cost: if never_dispatched {
-            Some(0.0)
-        } else if project["usageReported"] == true {
-            project["spentToday"].as_f64()
-        } else {
-            None
-        },
-        observed_task_tokens: if current["sessionIds"]
-            .as_object()
-            .is_some_and(|ids| ids.is_empty())
-        {
-            Some(0)
-        } else {
-            current["usage"]["tokens"].as_u64()
-        },
+        observed_daily_cost,
+        observed_task_tokens: accounted_tokens(current),
     };
     match crate::scheduler::evaluate(&project, &candidate, &others, &context) {
         crate::scheduler::Admission::Admit => Ok(()),
@@ -878,6 +978,63 @@ async fn stage_admitted_with_ledger(
             Err(code)
         }
     }
+}
+fn fresh_undispatched_role(job: &Value, role: &str, session: &Value) -> bool {
+    session.as_str().is_some_and(|id| !id.is_empty())
+        && job["freshSessionIds"]
+            .as_object()
+            .is_some_and(|fresh| fresh.get(role) == Some(session))
+        && (job["promptDispatch"].is_null()
+            || job["promptDispatch"]
+                .as_object()
+                .is_some_and(|d| !d.contains_key(role)))
+}
+fn accounted_cost(job: &Value) -> Option<f64> {
+    let sessions = job["sessionIds"].as_object()?;
+    sessions
+        .iter()
+        .try_fold(0.0, |sum, (role, id)| {
+            let cost = job["sessionUsage"][role]["cost"]
+                .as_f64()
+                .filter(|n| n.is_finite() && *n >= 0.0)
+                .or_else(|| fresh_undispatched_role(job, role, id).then_some(0.0))?;
+            Some(sum + cost)
+        })
+        .filter(|n| n.is_finite())
+}
+fn accounted_tokens(job: &Value) -> Option<u64> {
+    job["sessionIds"]
+        .as_object()?
+        .iter()
+        .try_fold(0u64, |sum, (role, id)| {
+            let tokens = job["sessionUsage"][role]["tokens"]
+                .as_u64()
+                .or_else(|| fresh_undispatched_role(job, role, id).then_some(0))?;
+            sum.checked_add(tokens)
+        })
+}
+fn accounted_daily_cost(job: &Value, day: &str) -> Option<f64> {
+    job["sessionIds"]
+        .as_object()?
+        .iter()
+        .try_fold(0.0, |sum, (role, id)| {
+            let usage = &job["sessionUsage"][role];
+            let cost = if fresh_undispatched_role(job, role, id) {
+                0.0
+            } else if usage["day"] == day {
+                usage["dailyCost"]
+                    .as_f64()
+                    .filter(|n| n.is_finite() && *n >= 0.0)?
+            } else if matches!(job["stage"].as_str(), Some("completed" | "merged"))
+                && usage["day"].as_str().is_some_and(|old| old < day)
+            {
+                0.0
+            } else {
+                return None;
+            };
+            Some(sum + cost)
+        })
+        .filter(|n| n.is_finite())
 }
 #[allow(clippy::too_many_arguments)]
 async fn admitted_prompt(
@@ -896,16 +1053,19 @@ async fn admitted_prompt(
     if instructions.is_empty() || prompt.is_empty() {
         return Err("invalid_role");
     }
+    let mut retry = AdmissionRetry::default();
     loop {
         let ledger = e.chat.read().await;
         // Hold through actual HTTP dispatch, never while waiting for the person.
         match stage_admitted_with_ledger(e, job, &ledger).await {
-            Err("chatBusy" | "chatStatusUnknown") => {
+            Err(reason) if retry.may_wait(reason) => {
                 drop(ledger);
-                tokio::time::sleep(Duration::from_secs(2)).await;
+                record_admission_reason(e, job, reason)?;
+                tokio::time::sleep(retry.interval).await;
             }
             Err(code) => return Err(code),
             Ok(()) => {
+                record_admission_reason(e, job, "")?;
                 let id = job["id"].as_str().ok_or("jobInvalid")?;
                 record_dispatch(e, id, checkpoint_role, "dispatching")?;
                 let dispatch = tokio::time::timeout(
@@ -1017,7 +1177,10 @@ async fn run_job(e: Shared, job: Value) -> Result<(), &'static str> {
                         )
                     {
                         let _ = s.update_job(id, stage, &json!({"reason":reason}));
-                    } else if !matches!(stage, "completed" | "stopped" | "paused") {
+                    } else if !matches!(
+                        stage,
+                        "completed" | "stopped" | "paused" | "interrupted" | "failed"
+                    ) {
                         let _ = s.update_job(
                             id,
                             stage,
@@ -1050,10 +1213,10 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
         .filter(|s| !s.is_empty())
         .unwrap_or(id);
     let repo = job["repoId"].as_str().ok_or("repoInvalid")?;
-    stage_admitted(e, job).await?;
     if job["stage"] == "resuming" {
         return resume_job(e, job).await;
     }
+    stage_admitted(e, job).await?;
     {
         // The durable starting reservation and cap check are one serialized
         // admission. Concurrent queued futures cannot both take the last lane.
@@ -1094,7 +1257,7 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
         e,
         id,
         "starting",
-        json!({"stage":"running","directory":directory,"sessionIds":sessions,"expectedDevCommit":dev}),
+        json!({"stage":"running","directory":directory,"sessionIds":sessions,"freshSessionIds":sessions,"expectedDevCommit":dev}),
     ).is_err() {
         let _ = e.server.abort(&directory, &session).await;
         return Err("jobChanged");
@@ -1134,6 +1297,22 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     }
     check_and_merge(e, job, &session).await
 }
+async fn collect_against_current_dev(
+    e: &Engine,
+    repo: &str,
+    task: &str,
+) -> Result<Value, &'static str> {
+    // Collection validates its expected dev. Keep that read and collection
+    // behind publication so a parallel integration cannot change the ref in
+    // the gap. Release before any checker request or admission wait.
+    let _publication = e.merge_publication.lock().await;
+    let expected_dev = current_dev(e, repo)?;
+    e.repositories
+        .lock()
+        .map_err(|_| "repositoryUnavailable")?
+        .collect_worker(repo, task, &expected_dev)
+        .map_err(|error| error.code())
+}
 async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &'static str> {
     let id = job["id"].as_str().ok_or("jobInvalid")?;
     let task = job["taskId"]
@@ -1142,13 +1321,7 @@ async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &
         .unwrap_or(id);
     let repo = job["repoId"].as_str().ok_or("repoInvalid")?;
     let directory = format!("{}/{}/{}", e.config.guest_worker_root, repo, task);
-    let expected_dev = current_dev(e, repo)?;
-    let collected = e
-        .repositories
-        .lock()
-        .map_err(|_| "repositoryUnavailable")?
-        .collect_worker(repo, task, &expected_dev)
-        .map_err(|_| "collectFailed")?;
+    let collected = collect_against_current_dev(e, repo, task).await?;
     let commit = collected["taskCommit"].as_str().ok_or("repoInvalid")?;
     stage_admitted(e, job).await?;
     let checker = e
@@ -1160,7 +1333,7 @@ async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &
         e,
         id,
         "running",
-        json!({"stage":"checking","sessionIds":{"worker":session,"checker":checker},"taskCommit":commit}),
+        json!({"stage":"checking","sessionIds":{"worker":session,"checker":checker},"freshSessionIds":{"checker":checker},"taskCommit":commit}),
     ).is_err() {
         let _ = e.server.abort(&directory, &checker).await;
         return Err("jobChanged");
@@ -1198,32 +1371,13 @@ async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &
     }
     // The checker must not have changed the worker head; integration consumes
     // the exact commit captured before checking and refuses stale dev.
-    let expected_dev = current_dev(e, repo)?;
-    let current = e
-        .repositories
-        .lock()
-        .map_err(|_| "repositoryUnavailable")?
-        .collect_worker(repo, task, &expected_dev)
-        .map_err(|_| "collectFailed")?;
+    let current = collect_against_current_dev(e, repo, task).await?;
     if current["taskCommit"] != commit {
         return Err("checkedCommitChanged");
     }
     stage_admitted(e, job).await?;
     patch(e, id, "mergeReady", json!({"stage":"merging"}))?;
-    let expected_dev = current_dev(e, repo)?;
-    let receipt = e
-        .repositories
-        .lock()
-        .map_err(|_| "repositoryUnavailable")?
-        .merge_dev(repo, task, &expected_dev, commit)
-        .map_err(|_| "mergeRefused")?;
-    patch(
-        e,
-        id,
-        "merging",
-        json!({"stage":"completed","mergedCommit":receipt["devCommit"],"repoReceipt":receipt}),
-    )?;
-    Ok(())
+    merge_and_publish(e, job, commit).await
 }
 fn undispatched_clone_allowed(job: &Value) -> bool {
     job["stage"] == "queued"
@@ -1251,10 +1405,92 @@ fn current_dev(e: &Engine, repo: &str) -> Result<String, &'static str> {
         .map(str::to_owned)
         .ok_or("repoInvalid")
 }
+fn merge_evidence(e: &Engine, id: &str) -> Result<(Value, String), &'static str> {
+    use sha2::{Digest, Sha256};
+    let job = e
+        .store
+        .lock()
+        .map_err(|_| "storeUnavailable")?
+        .jobs()
+        .map_err(|_| "storeUnavailable")?
+        .into_iter()
+        .find(|j| j["id"] == id)
+        .ok_or("jobMissing")?;
+    let proof = json!({"checkerSessionId":job["sessionIds"]["checker"],
+        "criteria":job["criteria"],"findings":job["findings"],"criterionResults":job["criterionResults"]});
+    if !proof["checkerSessionId"].is_string() || !validate_check(&proof, &job["criteria"])? {
+        return Err("recoveryNeedsReview");
+    }
+    let fingerprint = format!(
+        "{:x}",
+        Sha256::digest(serde_json::to_vec(&proof).map_err(|_| "checkInvalid")?)
+    );
+    Ok((job, fingerprint))
+}
+async fn merge_and_publish(
+    e: &Engine,
+    job: &Value,
+    expected_task: &str,
+) -> Result<(), &'static str> {
+    let id = job["id"].as_str().ok_or("jobInvalid")?;
+    let repo = job["repoId"].as_str().ok_or("repoInvalid")?;
+    let task = job["taskId"].as_str().ok_or("jobInvalid")?;
+    let _publication = e.merge_publication.lock().await;
+    let (_, fingerprint) = merge_evidence(e, id)?;
+    let expected_dev = current_dev(e, repo)?;
+    let receipt = e
+        .repositories
+        .lock()
+        .map_err(|_| "repositoryUnavailable")?
+        .merge_dev_for_evidence(repo, task, &expected_dev, expected_task, id, &fingerprint)
+        .map_err(|error| error.code())?;
+    patch(
+        e,
+        id,
+        "merging",
+        json!({"stage":"completed","mergedCommit":receipt["devCommit"],"repoReceipt":receipt}),
+    )?;
+    Ok(())
+}
+async fn recover_merge_publication(e: &Engine, job: &Value) -> Result<bool, &'static str> {
+    let id = job["id"].as_str().ok_or("jobInvalid")?;
+    if job["resumeStage"] == "merging" {
+        let _publication = e.merge_publication.lock().await;
+        let (current, fingerprint) = merge_evidence(e, id)?;
+        let repo = current["repoId"].as_str().ok_or("repoInvalid")?;
+        let task = current["taskId"].as_str().ok_or("jobInvalid")?;
+        let commit = current["taskCommit"]
+            .as_str()
+            .ok_or("recoveryNeedsReview")?;
+        if !boundary_verified(e) {
+            return Err("boundaryUnavailable");
+        }
+        let receipt = e
+            .repositories
+            .lock()
+            .map_err(|_| "repositoryUnavailable")?
+            .recover_merge_dev(repo, task, commit, id, &fingerprint)
+            .map_err(|error| error.code())?;
+        if let Some(receipt) = receipt {
+            patch(e, id, "resuming", json!({"stage":"merging"}))?;
+            patch(
+                e,
+                id,
+                "merging",
+                json!({"stage":"completed","mergedCommit":receipt["devCommit"],"repoReceipt":receipt}),
+            )?;
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
 async fn resume_job(e: &Engine, job: &Value) -> Result<(), &'static str> {
     // Only refetch an already recorded session. A lost prompt acknowledgment
     // cannot lead to a replacement prompt, session or duplicate provider cost.
     let id = job["id"].as_str().ok_or("jobInvalid")?;
+    if recover_merge_publication(e, job).await? {
+        return Ok(());
+    }
     let directory = job["directory"].as_str().ok_or("recoveryNeedsReview")?;
     let role = if job["sessionIds"]["checker"].is_string() {
         "checker"
@@ -1296,13 +1532,7 @@ async fn resume_job(e: &Engine, job: &Value) -> Result<(), &'static str> {
     let repo = job["repoId"].as_str().ok_or("repoInvalid")?;
     let task = job["taskId"].as_str().ok_or("jobInvalid")?;
     let commit = job["taskCommit"].as_str().ok_or("recoveryNeedsReview")?;
-    let dev = current_dev(e, repo)?;
-    let current = e
-        .repositories
-        .lock()
-        .map_err(|_| "repositoryUnavailable")?
-        .collect_worker(repo, task, &dev)
-        .map_err(|_| "collectFailed")?;
+    let current = collect_against_current_dev(e, repo, task).await?;
     if current["taskCommit"] != commit {
         return Err("checkedCommitChanged");
     }
@@ -1314,19 +1544,7 @@ async fn resume_job(e: &Engine, job: &Value) -> Result<(), &'static str> {
     )?;
     stage_admitted(e, job).await?;
     patch(e, id, "mergeReady", json!({"stage":"merging"}))?;
-    let receipt = e
-        .repositories
-        .lock()
-        .map_err(|_| "repositoryUnavailable")?
-        .merge_dev(repo, task, &dev, commit)
-        .map_err(|_| "mergeRefused")?;
-    patch(
-        e,
-        id,
-        "merging",
-        json!({"stage":"completed","mergedCommit":receipt["devCommit"],"repoReceipt":receipt}),
-    )?;
-    Ok(())
+    merge_and_publish(e, job, commit).await
 }
 async fn await_completion(
     e: &Engine,
@@ -1353,7 +1571,6 @@ async fn await_completion(
             }
             Err(_) => return Err("sessionUnknown"),
         };
-        let usage = normalized_usage(&observed["usage"]);
         {
             let store = e.store.lock().map_err(|_| "storeUnavailable")?;
             let jobs = store.jobs().map_err(|_| "jobChanged")?;
@@ -1365,6 +1582,7 @@ async fn await_completion(
             if matches!(stage, "paused" | "stopped" | "interrupted") {
                 return Err("jobChanged");
             }
+            let usage = observed_session_usage(current, role, &observed["usage"], &utc_day());
             if current["sessionUsage"][role] != usage {
                 store
                     .update_job(job_id, stage, &json!({"sessionUsage":{role:usage}}))
@@ -1388,6 +1606,31 @@ async fn await_completion(
         }
     }
     Err("sessionUncertain")
+}
+fn observed_session_usage(job: &Value, role: &str, observed: &Value, day: &str) -> Value {
+    let mut out = normalized_usage(observed);
+    let previous = &job["sessionUsage"][role];
+    let cost = out["cost"].as_f64();
+    // A first idle/busy poll may have no cost yet. The immutable fresh-session
+    // and first-dispatch date still prove every eventual cumulative dollar was
+    // incurred today; missing initial usage must not poison that proof forever.
+    let same_day_origin = job["sessionDispatchDays"][role] == day
+        && job["freshSessionIds"][role] == job["sessionIds"][role]
+        && job["freshSessionIds"][role].is_string();
+    let daily = if same_day_origin {
+        cost.filter(|next| previous["cost"].as_f64().is_none_or(|old| *next >= old))
+    } else if previous["day"] == day {
+        previous["dailyCost"]
+            .as_f64()
+            .zip(previous["cost"].as_f64())
+            .zip(cost)
+            .and_then(|((daily, old), next)| (next >= old).then_some(daily + next - old))
+    } else {
+        None
+    };
+    out["day"] = json!(day);
+    out["dailyCost"] = json!(daily.filter(|n| n.is_finite() && *n >= 0.0));
+    out
 }
 fn normalized_usage(usage: &Value) -> Value {
     // Preserve the protocol's explicit cumulative total; no token arithmetic.
@@ -1487,12 +1730,20 @@ pub fn structured_output(value: &Value) -> Result<Value, &'static str> {
 }
 /// Require durable evidence that a read-only checker can inspect without
 /// executing commands or inferring that a proposed test actually ran.
+fn verification_report_path(job: &Value) -> String {
+    job["taskId"]
+        .as_str()
+        .filter(|id| crate::config::valid_id(id))
+        .map(|id| format!(".aiteam-verification/{id}.md"))
+        .unwrap_or_else(|| ".aiteam-verification.md".into())
+}
 pub fn worker_request(job: &Value, branch: &str) -> String {
+    let report = verification_report_path(job);
     format!(
         "Implement this task on branch {branch}. Keep edits in this isolated clone. \
          Commit completed changes to that task branch, without editing main or dev. \
          Run the acceptance checks that are feasible and authorized for this task. \
-         Record the actual executed acceptance checks in .aiteam-verification.md and \
+         Record the actual executed acceptance checks in {report} and \
          commit that task-verification report with your changes. For each original \
          criterion, record the exact commands, working directory, exit codes, and \
          observed results/output, or the concrete committed files inspected for a \
@@ -1509,6 +1760,7 @@ pub fn worker_request(job: &Value, branch: &str) -> String {
 /// Keep criterion verdicts distinct from unresolved defects. Successful
 /// evidence must not become a finding: every finding intentionally blocks merge.
 pub fn checker_request(job: &Value) -> String {
+    let report = verification_report_path(job);
     let passed_example = json!({
         "findings": [],
         "criterionResults": [{"criterion": "<exact original criterion>", "status": "met"}]
@@ -1516,14 +1768,17 @@ pub fn checker_request(job: &Value) -> String {
     let defect_example = json!({
         "findings": [{"id": "finding-1", "severity": "major",
             "criterion": "<exact original criterion>",
-            "location": ".aiteam-verification.md",
+            "location": report,
             "text": "Required executed-check evidence is missing.", "status": "open"}],
         "criterionResults": [{"criterion": "<exact original criterion>", "status": "unmet"}]
     });
     format!(
         "Read-only verification. Inspect committed task changes and the committed \
-         .aiteam-verification.md task-verification report against every original \
-         acceptance criterion: {}. Use only read, glob, and grep tools. Do not modify \
+         {report} task-verification report against every original \
+         acceptance criterion: {}. For a task dispatched by an older engine, an \
+         existing legacy .aiteam-verification.md report may be inspected only if it \
+         contains actual evidence for this exact task and its original criteria. \
+         Never substitute another task report. Use only read, glob, and grep tools. Do not modify \
          files or run commands, tests, shell tools, or subagents. For a criterion \
          requiring executed checks, establish what actually ran from the committed \
          evidence, including the exact command, exit code, and observed result. \
@@ -1717,6 +1972,398 @@ mod tests {
         (address, polls, posts, server)
     }
 
+    #[test]
+    fn fresh_session_budget_zero_requires_durable_provenance_and_no_dispatch() {
+        let fresh =
+            json!({"sessionIds":{"planner":"ses_new"},"freshSessionIds":{"planner":"ses_new"}});
+        assert_eq!(accounted_cost(&fresh), Some(0.0));
+        assert_eq!(accounted_tokens(&fresh), Some(0));
+        assert_eq!(accounted_daily_cost(&fresh, "2026-10-01"), Some(0.0));
+        for patch in [
+            json!({"freshSessionIds":null}),
+            json!({"freshSessionIds":{"planner":"other"}}),
+            json!({"promptDispatch":{"planner":"dispatching"}}),
+            json!({"promptDispatch":{"planner":"dispatched"}}),
+            json!({"promptDispatch":[]}),
+            json!({"promptDispatch":{"planner":"invalid"}}),
+        ] {
+            let mut job = fresh.clone();
+            for (key, value) in patch.as_object().unwrap() {
+                job[key] = value.clone();
+            }
+            assert_eq!(accounted_cost(&job), None);
+            assert_eq!(accounted_tokens(&job), None);
+            assert_eq!(accounted_daily_cost(&job, "2026-10-01"), None);
+        }
+    }
+
+    #[test]
+    fn fresh_checker_keeps_observed_worker_cost_and_task_tokens() {
+        let mut job = json!({"sessionIds":{"worker":"ses_worker","checker":"ses_checker"},
+            "freshSessionIds":{"checker":"ses_checker"},"promptDispatch":{"worker":"dispatched"},
+            "sessionUsage":{"worker":{"cost":0.7,"tokens":123,"day":"2026-10-01","dailyCost":0.7}}});
+        assert_eq!(accounted_cost(&job), Some(0.7));
+        assert_eq!(accounted_tokens(&job), Some(123));
+        assert_eq!(accounted_daily_cost(&job, "2026-10-01"), Some(0.7));
+        job["promptDispatch"]["checker"] = json!("dispatching");
+        assert_eq!(accounted_cost(&job), None);
+        assert_eq!(accounted_daily_cost(&job, "2026-10-01"), None);
+    }
+
+    #[test]
+    fn daily_usage_requires_same_day_provenance_and_preserves_unknown_cross_day() {
+        let mut job = json!({"sessionIds":{"worker":"ses_worker"},"freshSessionIds":{"worker":"ses_worker"},
+            "sessionDispatchDays":{"worker":"2026-10-01"}});
+        let first = observed_session_usage(
+            &job,
+            "worker",
+            &json!({"cost":0.4,"tokens":{"total":10}}),
+            "2026-10-01",
+        );
+        assert_eq!(first["dailyCost"], 0.4);
+        job["sessionUsage"] = json!({"worker":first});
+        let second = observed_session_usage(
+            &job,
+            "worker",
+            &json!({"cost":0.7,"tokens":{"total":20}}),
+            "2026-10-01",
+        );
+        assert_eq!(second["dailyCost"], 0.7);
+        let tomorrow = observed_session_usage(
+            &job,
+            "worker",
+            &json!({"cost":0.9,"tokens":{"total":30}}),
+            "2026-10-02",
+        );
+        assert!(tomorrow["dailyCost"].is_null());
+        job["sessionUsage"]["worker"] = tomorrow;
+        assert!(observed_session_usage(
+            &job,
+            "worker",
+            &json!({"cost":1.1,"tokens":{"total":40}}),
+            "2026-10-02"
+        )["dailyCost"]
+            .is_null());
+        job["sessionUsage"] = json!({});
+        job["freshSessionIds"] = Value::Null;
+        assert!(observed_session_usage(
+            &job,
+            "worker",
+            &json!({"cost":0.4,"tokens":{"total":10}}),
+            "2026-10-01"
+        )["dailyCost"]
+            .is_null());
+    }
+
+    #[test]
+    fn first_unknown_usage_poll_does_not_poison_known_same_day_dispatch() {
+        let mut job = json!({"sessionIds":{"worker":"ses_worker"},"freshSessionIds":{"worker":"ses_worker"},
+            "sessionDispatchDays":{"worker":"2026-10-01"}});
+        let unknown = observed_session_usage(&job, "worker", &json!({}), "2026-10-01");
+        assert!(unknown["dailyCost"].is_null());
+        job["sessionUsage"] = json!({"worker":unknown});
+        let known = observed_session_usage(
+            &job,
+            "worker",
+            &json!({"cost":0.4,"tokens":{"total":10}}),
+            "2026-10-01",
+        );
+        assert_eq!(known["dailyCost"], 0.4);
+        assert!(
+            observed_session_usage(&job, "worker", &json!({"cost":0.4}), "2026-10-02")["dailyCost"]
+                .is_null()
+        );
+        job["freshSessionIds"] = Value::Null;
+        assert!(
+            observed_session_usage(&job, "worker", &json!({"cost":0.4}), "2026-10-01")["dailyCost"]
+                .is_null()
+        );
+    }
+
+    async fn limited_parallel_fixture(e: &Engine) -> (String, Value) {
+        let (first, second) = {
+            let store = e.store.lock().unwrap();
+            let created = store.execute(&json!({"requestId":"parallel-create","action":"createProject","name":"Limited parallel",
+                "settings":{"mode":"parallel","maxLanes":2,"reviewLevel":"milestones","maxFixRounds":0,"chargingOnly":false,
+                    "budget":{"chosen":true,"unlimited":false,"daily":2.0,"total":5.0,"taskTokens":null}},
+                "spec":{"goal":"Respect known budgets","milestones":[{"id":"m","title":"Safe","criteria":["Verified"]}]},
+                "repos":[{"id":"repo","serverId":"phone","path":"/root/work/parallel","devCommit":"seed","mainCommit":"seed"}]})).unwrap();
+            let project = created["projectId"].as_str().unwrap();
+            assert_eq!(store.execute(&json!({"requestId":"parallel-spec","action":"approveSpec","projectId":project,"expectedRevision":0})).unwrap()["accepted"],true);
+            let planner = store.jobs().unwrap()[0]["id"].as_str().unwrap().to_owned();
+            store
+                .update_job(&planner, "queued", &json!({"stage":"starting"}))
+                .unwrap();
+            store
+                .update_job(&planner, "starting", &json!({"stage":"running"}))
+                .unwrap();
+            store.update_job(&planner,"running",&json!({"stage":"completed","plan":{"phases":[{"id":"phase","title":"Build","milestoneId":"m"}],
+                "tasks":[{"id":"one","title":"One","phaseId":"phase","roleId":"worker","repoId":"repo","serverId":"phone","criteria":["Verified"],"dependsOn":[]},
+                    {"id":"two","title":"Two","phaseId":"phase","roleId":"worker","repoId":"repo","serverId":"phone","criteria":["Verified"],"dependsOn":[]}]}})).unwrap();
+            let revision = store.workspace().unwrap()["projects"][0]["revision"].clone();
+            assert_eq!(store.execute(&json!({"requestId":"parallel-plan","action":"approvePlan","projectId":project,"expectedRevision":revision})).unwrap()["accepted"],true);
+            let jobs = store.jobs().unwrap();
+            let first = jobs.iter().find(|j| j["taskId"] == "one").unwrap()["id"]
+                .as_str()
+                .unwrap()
+                .to_owned();
+            let second = jobs.iter().find(|j| j["taskId"] == "two").unwrap()["id"]
+                .as_str()
+                .unwrap()
+                .to_owned();
+            for (id, session, dispatched) in
+                [(&first, "ses_one", true), (&second, "ses_two", false)]
+            {
+                store
+                    .update_job(id, "queued", &json!({"stage":"starting"}))
+                    .unwrap();
+                store.update_job(id,"starting",&json!({"stage":"running","directory":"/root/work/parallel","sessionIds":{"worker":session},"freshSessionIds":{"worker":session}})).unwrap();
+                if dispatched {
+                    store
+                        .update_job(
+                            id,
+                            "running",
+                            &json!({"promptDispatch":{"worker":"dispatched"}}),
+                        )
+                        .unwrap();
+                }
+            }
+            let requested = store
+                .jobs()
+                .unwrap()
+                .into_iter()
+                .find(|j| j["id"] == second)
+                .unwrap();
+            (first, requested)
+        };
+        let now = crate::admission::now_ms();
+        crate::admission::accept(
+            e,
+            ChatHeartbeat {
+                until: now + 25_000,
+                session_ids: vec![],
+                directories: vec![],
+                known: true,
+                app_instance: "parallel-app".into(),
+                sequence: 1,
+            },
+        )
+        .await
+        .unwrap();
+        (first, second)
+    }
+
+    #[tokio::test]
+    async fn parallel_prompt_waits_for_actual_other_lane_usage_before_dispatch() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let root = tempfile::tempdir().unwrap();
+        let mut e = attested_fixture(root.path(), "proot");
+        let posts = Arc::new(AtomicUsize::new(0));
+        let writes = posts.clone();
+        let app = Router::new().fallback(move |request: Request| {
+            let writes = writes.clone();
+            async move {
+                if request.uri().path() == "/global/health" {
+                    return Json(json!({"healthy":true,"version":"1.18.32"})).into_response();
+                }
+                if request.method() == axum::http::Method::PATCH {
+                    let body = axum::body::to_bytes(request.into_body(), 65536)
+                        .await
+                        .unwrap();
+                    let value: Value = serde_json::from_slice(&body).unwrap();
+                    return Json(json!({"id":"ses_two","permission":value["permission"]}))
+                        .into_response();
+                }
+                if request.method() == axum::http::Method::POST {
+                    writes.fetch_add(1, Ordering::SeqCst);
+                }
+                StatusCode::NO_CONTENT.into_response()
+            }
+        });
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        Arc::get_mut(&mut e).unwrap().server =
+            OpenCodeClient::new(&url, "opencode", "fixture-only").unwrap();
+        let (first, second) = limited_parallel_fixture(&e).await;
+        let prompt = admitted_prompt(
+            &e,
+            &second,
+            "/root/work/parallel",
+            "ses_two",
+            "worker",
+            "",
+            "Do the approved task",
+            "Task",
+            "worker",
+            false,
+        );
+        let usage = async {
+            tokio::time::sleep(Duration::from_millis(40)).await;
+            assert_eq!(
+                posts.load(Ordering::SeqCst),
+                0,
+                "unknown budgets must not dispatch"
+            );
+            let store = e.store.lock().unwrap();
+            let current = store
+                .jobs()
+                .unwrap()
+                .into_iter()
+                .find(|j| j["id"] == second["id"])
+                .unwrap();
+            assert_eq!(current["reason"], "totalUsageUnknown");
+            assert!(current["promptDispatch"].is_null());
+            store.update_job(&first,"running",&json!({"sessionUsage":{"worker":{"cost":0.2,"tokens":12,"day":utc_day(),"dailyCost":0.2}}})).unwrap();
+        };
+        let (result, ()) = tokio::join!(prompt, usage);
+        server.abort();
+        assert_eq!(result, Ok(()));
+        assert_eq!(posts.load(Ordering::SeqCst), 1);
+        let current = e
+            .store
+            .lock()
+            .unwrap()
+            .jobs()
+            .unwrap()
+            .into_iter()
+            .find(|j| j["id"] == second["id"])
+            .unwrap();
+        assert_eq!(current["promptDispatch"]["worker"], "dispatched");
+        assert_eq!(current["reason"], "");
+    }
+
+    #[test]
+    fn late_admission_wait_cannot_overwrite_user_pause_or_stop_checkpoint() {
+        for action in ["pauseProject", "stopProject"] {
+            let root = tempfile::tempdir().unwrap();
+            let e = fixture(root.path());
+            let (project, id) = running_planner(&e);
+            let requested = e.store.lock().unwrap().jobs().unwrap()[0].clone();
+            {
+                let store = e.store.lock().unwrap();
+                let revision = store.workspace().unwrap()["projects"][0]["revision"].clone();
+                assert_eq!(store.execute(&json!({"requestId":action,"action":action,"projectId":project,"expectedRevision":revision,"confirmed":true})).unwrap()["accepted"],true);
+            }
+            let before = e.store.lock().unwrap().jobs().unwrap();
+            assert_eq!(
+                record_admission_reason(&e, &requested, "totalUsageUnknown"),
+                Err("jobNotActive")
+            );
+            assert_eq!(e.store.lock().unwrap().jobs().unwrap(), before);
+            assert_eq!(before[0]["id"], id);
+        }
+    }
+
+    #[tokio::test]
+    async fn runner_error_cannot_overwrite_user_pause_during_pending_budget_admission() {
+        let root = tempfile::tempdir().unwrap();
+        let e = attested_fixture(root.path(), "proot");
+        let (_, requested) = limited_parallel_fixture(&e).await;
+        let job = requested["id"].as_str().unwrap().to_owned();
+        let run = run_job(e.clone(), requested.clone());
+        let pause = async {
+            tokio::time::sleep(Duration::from_millis(40)).await;
+            let store = e.store.lock().unwrap();
+            let project = store.workspace().unwrap()["projects"][0].clone();
+            assert_eq!(
+                store
+                    .execute(
+                        &json!({"requestId":"pause-during-admission","action":"pauseProject",
+                "projectId":project["id"],"expectedRevision":project["revision"]})
+                    )
+                    .unwrap()["accepted"],
+                true
+            );
+            let paused = store
+                .jobs()
+                .unwrap()
+                .into_iter()
+                .find(|j| j["id"] == job)
+                .unwrap();
+            assert_eq!(paused["stage"], "interrupted");
+            assert_eq!(paused["reason"], "pauseNeedsReconciliation");
+            paused
+        };
+        let (result, paused) = tokio::join!(run, pause);
+        assert_eq!(result, Err("jobNotActive"));
+        let current = e
+            .store
+            .lock()
+            .unwrap()
+            .jobs()
+            .unwrap()
+            .into_iter()
+            .find(|j| j["id"] == job)
+            .unwrap();
+        assert_eq!(
+            current, paused,
+            "runner completion must preserve the authoritative pause checkpoint"
+        );
+    }
+
+    #[tokio::test]
+    async fn persistent_parallel_usage_unknown_is_bounded_and_never_fabricated_zero() {
+        let root = tempfile::tempdir().unwrap();
+        let e = attested_fixture(root.path(), "proot");
+        let (_, second) = limited_parallel_fixture(&e).await;
+        let retry = AdmissionRetry {
+            usage_unknown_since: None,
+            usage_grace: Duration::from_millis(30),
+            interval: Duration::from_millis(5),
+        };
+        let result = tokio::time::timeout(
+            Duration::from_secs(2),
+            stage_admitted_retry(&e, &second, retry),
+        )
+        .await
+        .unwrap();
+        assert_eq!(result, Err("totalUsageUnknown"));
+        let current = e
+            .store
+            .lock()
+            .unwrap()
+            .jobs()
+            .unwrap()
+            .into_iter()
+            .find(|j| j["id"] == second["id"])
+            .unwrap();
+        assert_eq!(current["reason"], "totalUsageUnknown");
+        assert!(current["promptDispatch"].is_null());
+        assert_eq!(
+            accounted_cost(&current),
+            Some(0.0),
+            "second undispatched lane is zero; first lane remains unknown"
+        );
+    }
+
+    #[tokio::test]
+    async fn ready_restart_refetches_exact_session_without_new_prompt_or_clone() {
+        let root = tempfile::tempdir().unwrap();
+        let mut e = fixture(root.path());
+        let (url, polls, posts, server) = poll_server(true, false).await;
+        Arc::get_mut(&mut e).unwrap().server =
+            OpenCodeClient::new(&url, "opencode", "fixture-only").unwrap();
+        let (_, id) = running_planner(&e);
+        {
+            let store = e.store.lock().unwrap();
+            store.recover().unwrap();
+            store.reconcile_restart_jobs().unwrap();
+            assert_eq!(store.jobs().unwrap()[0]["stage"], "resuming");
+        }
+        let result = await_completion(&e, &id, "planner", "/root/projects/poll", "ses_test").await;
+        server.abort();
+        assert_eq!(result.unwrap()["state"], "completed");
+        assert!(polls.load(std::sync::atomic::Ordering::SeqCst) >= 2);
+        assert_eq!(posts.load(std::sync::atomic::Ordering::SeqCst), 0);
+        assert_eq!(
+            e.store.lock().unwrap().jobs().unwrap()[0]["sessionIds"]["planner"],
+            "ses_test"
+        );
+    }
+
     #[tokio::test]
     async fn accepted_async_turn_can_appear_after_first_idle_poll_without_resubmission() {
         let root = tempfile::tempdir().unwrap();
@@ -1888,6 +2535,7 @@ mod tests {
             boundary: None,
             deleting: std::sync::atomic::AtomicBool::new(false),
             lane_admission: tokio::sync::Mutex::new(()),
+            merge_publication: tokio::sync::Mutex::new(()),
             chat: tokio::sync::RwLock::new(ChatLedger::default()),
             observer_connected: Mutex::new(false),
             parent_pid: unsafe { libc::getppid() },
@@ -2273,6 +2921,16 @@ mod tests {
         assert_eq!(defect["findings"][0]["status"], "open");
         assert_eq!(defect["criterionResults"][0]["status"], "unmet");
         assert!(!validate_check(&defect, &criteria).unwrap());
+    }
+
+    #[test]
+    fn parallel_tasks_use_distinct_committed_verification_reports() {
+        let first = json!({"taskId":"task-one","criteria":["Verify one"],"title":"One"});
+        let second = json!({"taskId":"task-two","criteria":["Verify two"],"title":"Two"});
+        assert!(worker_request(&first, "task/one").contains(".aiteam-verification/task-one.md"));
+        assert!(worker_request(&second, "task/two").contains(".aiteam-verification/task-two.md"));
+        assert!(checker_request(&first).contains(".aiteam-verification/task-one.md"));
+        assert!(!worker_request(&first, "task/one").contains(".aiteam-verification/task-two.md"));
     }
 
     #[test]

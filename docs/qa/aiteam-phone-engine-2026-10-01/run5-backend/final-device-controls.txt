@@ -1,0 +1,48 @@
+PASS exact worker bytes task-alpha 90c877f65b3141d28d51619fd2bbc862c49c48be4fab42386062f532e27e4fd6
+PASS committed task-specific report exists task-alpha bytes 2933
+PASS exact worker bytes task-beta 977fe4f3da44d8d29129d1135c219221a22a721b6c89862af2178da577ef9b4a
+PASS committed task-specific report exists task-beta bytes 2513
+REF main f63afa07b6356c6306175ad7305435daf973b5a5
+REF dev f63afa07b6356c6306175ad7305435daf973b5a5
+PASS actual provider/model no assistant error ses_f0a4ca109ffemMhr0uJtIeCQQD [{"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828569084, "completed": 1790828590773, "finish": "stop", "errorName": null}]
+TOOL metadata ses_f0a4ca109ffemMhr0uJtIeCQQD 
+PASS actual provider/model no assistant error ses_f0a4a7b9dffeOI4BX0opeZVKUA [{"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828714457, "completed": 1790828727872, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828727889, "completed": 1790828735336, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828735342, "completed": 1790828742288, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828742296, "completed": 1790828757737, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828757742, "completed": 1790828768404, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828768410, "completed": 1790828775786, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828775790, "completed": 1790828783264, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828783269, "completed": 1790828793208, "finish": "stop", "errorName": null}]
+TOOL metadata ses_f0a4a7b9dffeOI4BX0opeZVKUA {"tool":"bash","status":"completed","exit":0,"pythonCommand":0}
+{"tool":"bash","status":"completed","exit":0,"pythonCommand":1}
+{"tool":"bash","status":"completed","exit":0,"pythonCommand":0}
+{"tool":"write","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"write","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"bash","status":"completed","exit":128,"pythonCommand":1}
+{"tool":"bash","status":"completed","exit":0,"pythonCommand":1}
+{"tool":"bash","status":"completed","exit":0,"pythonCommand":1}
+PASS actual provider/model no assistant error ses_f0a4a7e23ffeiFF0eHFWVdbFM1 [{"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828709073, "completed": 1790828719690, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828719709, "completed": 1790828726903, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828726916, "completed": 1790828734076, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828734082, "completed": 1790828743373, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828743378, "completed": 1790828756673, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828756677, "completed": 1790828763554, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828763567, "completed": 1790828771303, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828771313, "completed": 1790828777824, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828777829, "completed": 1790828781833, "finish": "stop", "errorName": null}]
+TOOL metadata ses_f0a4a7e23ffeiFF0eHFWVdbFM1 {"tool":"bash","status":"completed","exit":0,"pythonCommand":0}
+{"tool":"bash","status":"completed","exit":0,"pythonCommand":1}
+{"tool":"bash","status":"completed","exit":0,"pythonCommand":0}
+{"tool":"write","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"write","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"bash","status":"completed","exit":128,"pythonCommand":0}
+{"tool":"bash","status":"completed","exit":0,"pythonCommand":0}
+{"tool":"bash","status":"completed","exit":0,"pythonCommand":0}
+PASS actual provider/model no assistant error ses_f0a492e61ffejGAdIVYfZd6o25 [{"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828794411, "completed": 1790828801078, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828801082, "completed": 1790828808630, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828808634, "completed": 1790828817814, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828817817, "completed": 1790828823608, "finish": "stop", "errorName": null}]
+TOOL metadata ses_f0a492e61ffejGAdIVYfZd6o25 {"tool":"glob","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"glob","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"read","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"read","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"read","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"read","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"glob","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"grep","status":"completed","exit":null,"pythonCommand":0}
+PASS actual provider/model no assistant error ses_f0a495a03ffetH8WE4P5uxcq4N [{"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828783318, "completed": 1790828787019, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828787029, "completed": 1790828791818, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828791824, "completed": 1790828805386, "finish": "tool-calls", "errorName": null}, {"provider": "zai-coding-plan", "model": "glm-5.3", "created": 1790828805389, "completed": 1790828817230, "finish": "stop", "errorName": null}]
+TOOL metadata ses_f0a495a03ffetH8WE4P5uxcq4N {"tool":"glob","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"glob","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"read","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"read","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"read","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"read","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"grep","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"grep","status":"completed","exit":null,"pythonCommand":0}
+{"tool":"glob","status":"completed","exit":null,"pythonCommand":0}
+BOUNDARY {"schemaVersion": 2, "tier": "proot", "engineSha256": "04dbe35efe2844364a081de63d3d68ebfa691edc92c597e5f3891c58484ea71f", "protectedLaunchesRequired": true, "controls": {"nativeAttacksDenied": false, "prootGitCompatible": true, "fixtureUnchanged": true, "complete": true, "canonicalPathsDenied": true, "daemonProcDenied": true, "fdHygiene": true, "parentInspectionDenied": true}}
+PASS private authenticated merge journal {"evidenceFingerprint": "15a5e8d5a3259de1dfd2e1f19de9d2a52f8b5f8599680ced6833eb2cf0072391", "evidenceId": "job-dab8c33b-743a-4825-9b2f-f0590a6d6668", "expectedDev": "75a33911d5d7d0bc7c4cbc862eccabd8de33d8f6", "expectedMain": "690f0c828a6fc4b26177735ccce6ff4b334a0d4f", "expectedTask": "777da8c4c45d5670963b6a7eca8ffe20587d2bd6", "nextDev": "f63afa07b6356c6306175ad7305435daf973b5a5", "repoId": "edit-1790828439976026-0", "schemaVersion": 1, "state": "applied", "taskId": "task-alpha"}
+PASS private authenticated merge journal {"evidenceFingerprint": "e48e2bc99f59bf9c7f7faa9c2d56084f4475214f91f66b6d40fec0d5f8a8bc97", "evidenceId": "job-89b829a7-79a1-4606-b3c8-4f94beab2dd1", "expectedDev": "690f0c828a6fc4b26177735ccce6ff4b334a0d4f", "expectedMain": "690f0c828a6fc4b26177735ccce6ff4b334a0d4f", "expectedTask": "75a33911d5d7d0bc7c4cbc862eccabd8de33d8f6", "nextDev": "75a33911d5d7d0bc7c4cbc862eccabd8de33d8f6", "repoId": "edit-1790828439976026-0", "schemaVersion": 1, "state": "applied", "taskId": "task-beta"}
