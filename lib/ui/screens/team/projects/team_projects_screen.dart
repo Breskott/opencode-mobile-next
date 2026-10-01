@@ -351,7 +351,8 @@ class TeamProjectOverview extends StatelessWidget {
             if (c.errorCode != null) _failure(context, c),
             for (final r in p.requests.where((r) => !r.answered))
               _needsYou(context, l, c, p, r),
-            if (p.status == 'failed' && !p.planApproved)
+            if ((p.status == 'failed' || p.status == 'planFailed') &&
+                !p.planApproved)
               ..._planFailed(context, l, c, p),
             if (showDigest)
               KitDigest(
@@ -941,6 +942,8 @@ List<Widget> _planFailed(
   final state = p.planningState;
   final code = state?.reason ?? '';
   final why = code.isEmpty ? null : teamReasonFor(l, code);
+  // The status is planFailed only when the engine advertises retryPlan.
+  final canRetry = p.status == 'planFailed';
   final resumable =
       state?.stage == 'interrupted' &&
       (code == 'restartNeedsReconciliation' ||
@@ -951,7 +954,9 @@ List<Widget> _planFailed(
       key: const ValueKey('team-plan-failed'),
       title: l.teamProjectPlanFailedTitle,
       message: why?.message ?? l.teamProjectFailed,
-      notes: [why?.next ?? l.teamProjectApproveAgainNote],
+      notes: [
+        why?.next ?? (canRetry ? '' : l.teamProjectApproveAgainNote),
+      ].where((n) => n.isNotEmpty).toList(),
       actions: [
         if (resumable)
           KitAction(
@@ -965,7 +970,13 @@ List<Widget> _planFailed(
             label: l.teamRefusalModelNotConfiguredAction,
             onPressed: () => openTeamDefaults(context, c),
           ),
-        if (!resumable)
+        if (canRetry && !resumable)
+          KitAction(
+            key: const ValueKey('team-plan-failed-retry'),
+            label: l.teamProjectEditorAskAgain,
+            onPressed: () => _command(c, p, TeamProjectAction.retryPlan),
+          ),
+        if (!resumable && !canRetry)
           KitAction(
             key: const ValueKey('team-plan-failed-approve'),
             label: l.teamProjectApproveAgain,
@@ -1013,7 +1024,7 @@ String _progress(AppLocalizations l, TeamProject p) => l.teamProjectProgress(
 );
 KitTeamState _state(String value) => switch (value) {
   'running' => KitTeamState.running,
-  'failed' || 'conflict' => KitTeamState.failed,
+  'failed' || 'planFailed' || 'conflict' => KitTeamState.failed,
   'stalled' || 'interrupted' => KitTeamState.stalled,
   'findings' || 'review' => KitTeamState.needsYou,
   'offline' => KitTeamState.stale,
@@ -1042,7 +1053,7 @@ String _mergeWord(AppLocalizations l, TeamMergeItem i) => i.status == 'queued'
 
 String _word(AppLocalizations l, String value) => switch (value) {
   'running' => l.teamProjectWorking,
-  'failed' || 'conflict' => l.teamProjectFailed,
+  'failed' || 'planFailed' || 'conflict' => l.teamProjectFailed,
   'stalled' => l.teamProjectStalled,
   'interrupted' => l.teamProjectInterrupted,
   'paused' => l.teamProjectPaused,

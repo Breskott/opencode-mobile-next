@@ -14,14 +14,18 @@ import 'kit/kit_harness.dart';
 class _Gateway implements OrchestrationProjectGateway {
   _Gateway(this.project);
   final TeamProject project;
+  final sent = <TeamProjectAction>[];
   @override
   Future<TeamWorkspace> teamWorkspace() async =>
       TeamWorkspace(projects: [project]);
   @override
   Stream<TeamWorkspace> watchTeamWorkspace() => const Stream.empty();
   @override
-  Future<TeamCommandResult> executeProject(TeamProjectCommand command) async =>
-      const TeamCommandResult(accepted: true);
+  Future<TeamCommandResult> executeProject(TeamProjectCommand command) async {
+    sent.add(command.action);
+    return const TeamCommandResult(accepted: true);
+  }
+
   @override
   Future<void> close() async {}
   @override
@@ -45,8 +49,9 @@ TeamTimelineEvent _row(
 
 final _l = lookupAppLocalizations(const Locale('en'));
 
-Future<void> _openOverview(WidgetTester tester, TeamProject project) async {
-  final c = TeamProjectController(_Gateway(project));
+Future<_Gateway> _openOverview(WidgetTester tester, TeamProject project) async {
+  final gateway = _Gateway(project);
+  final c = TeamProjectController(gateway);
   await c.load();
   addTearDown(c.dispose);
   final context = await pumpKitHost(tester);
@@ -55,6 +60,7 @@ Future<void> _openOverview(WidgetTester tester, TeamProject project) async {
     (_) => TeamProjectOverview(controller: c, projectId: project.id),
   );
   await tester.pumpAndSettle();
+  return gateway;
 }
 
 void main() {
@@ -193,6 +199,47 @@ void main() {
     expect(find.text('Pick a model'), findsOneWidget);
     expect(find.text('Approve the spec again'), findsOneWidget);
     expect(find.text('modelNotConfigured'), findsNothing);
+  });
+
+  testWidgets('a failed plan the engine can retry asks again, not approve', (
+    tester,
+  ) async {
+    final gateway = await _openOverview(
+      tester,
+      const TeamProject(
+        id: 'p',
+        name: 'Site',
+        status: 'planFailed',
+        planningState: TeamPlanningState(
+          stage: 'failed',
+          reason: 'sessionFailed',
+        ),
+      ),
+    );
+    expect(find.byKey(const ValueKey('team-plan-failed')), findsOneWidget);
+    expect(find.text('Approve the spec again'), findsNothing);
+    expect(find.text('Approve the spec again to retry.'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('team-plan-failed-retry')));
+    await tester.pumpAndSettle();
+    expect(gateway.sent, [TeamProjectAction.retryPlan]);
+  });
+
+  testWidgets('a retryable failed plan with no reason has no approve note', (
+    tester,
+  ) async {
+    await _openOverview(
+      tester,
+      const TeamProject(id: 'p', name: 'Site', status: 'planFailed'),
+    );
+    expect(find.text('Approve the spec again to retry.'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('team-plan-failed-approve')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('team-plan-failed-retry')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a failed plan with no reason says to approve the spec again', (
