@@ -1,0 +1,53 @@
+{
+  "id": "project-977340d7-0e43-40e4-804b-994d648c6ac4",
+  "status": "running",
+  "revision": 18,
+  "settings": {
+    "autoFix": true,
+    "budget": {
+      "chosen": true,
+      "daily": 2.0,
+      "taskTokens": null,
+      "total": 5.0,
+      "unlimited": false
+    },
+    "chargingOnly": false,
+    "keepWorkingScreenOff": false,
+    "maxFixRounds": 2,
+    "maxLanes": 2,
+    "mode": "parallel",
+    "reviewLevel": "milestones"
+  },
+  "planApproved": true,
+  "planningState": null,
+  "repos": [
+    {
+      "id": "edit-1790828439976026-0",
+      "devCommit": "690f0c828a6fc4b26177735ccce6ff4b334a0d4f",
+      "mainCommit": "690f0c828a6fc4b26177735ccce6ff4b334a0d4f"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-alpha",
+      "status": "running",
+      "reason": "",
+      "dependsOn": [],
+      "criterionResults": [],
+      "findingCount": 0
+    },
+    {
+      "id": "task-beta",
+      "status": "running",
+      "reason": "",
+      "dependsOn": [],
+      "criterionResults": [],
+      "findingCount": 0
+    }
+  ],
+  "receipts": []
+}
+JOB CHECKPOINTS
+{"id":"job-caeae388-4318-40f3-a190-4ea52d6b04a5","kind":"planner","taskId":"","stage":"completed","reason":null,"sessions":{"planner":"ses_f0a4ca109ffemMhr0uJtIeCQQD"},"dispatch":{"planner":"dispatched"},"usage":{"cost":0.0,"dailyCost":0.0,"day":"2026-10-01","tokens":null},"model":"zai-coding-plan/glm-5.3"}
+{"id":"job-dab8c33b-743a-4825-9b2f-f0590a6d6668","kind":"task","taskId":"task-alpha","stage":"running","reason":"","sessions":{"worker":"ses_f0a4a7b9dffeOI4BX0opeZVKUA"},"dispatch":{"worker":"dispatched"},"usage":{"cost":0.0,"dailyCost":0.0,"day":"2026-10-01","tokens":null},"model":"zai-coding-plan/glm-5.3"}
+{"id":"job-89b829a7-79a1-4606-b3c8-4f94beab2dd1","kind":"task","taskId":"task-beta","stage":"running","reason":null,"sessions":{"worker":"ses_f0a4a7e23ffeiFF0eHFWVdbFM1"},"dispatch":{"worker":"dispatched"},"usage":{"cost":0.0,"dailyCost":0.0,"day":"2026-10-01","tokens":null},"model":"zai-coding-plan/glm-5.3"}

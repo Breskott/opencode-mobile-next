@@ -37,7 +37,7 @@ Non-goal: changing explicit pause/stop, granting unknown usage, or UI changes.
 ## Verification
 
 Root agent owns serialized Rust/Dart checks and real API35 UI evidence. This
-slice adds six Store regressions and four daemon regressions; no heavy tests or
+slice adds six Store regressions and ten daemon regressions; no heavy tests or
 emulator started by this worker. Repository journal crash controls are recorded
 in `../run5-merge/README.md`.
 
