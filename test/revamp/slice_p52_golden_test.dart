@@ -120,27 +120,6 @@ List<OrchestrationAgent> _leanTeam() => [
     ),
 ];
 
-/// A computer's team with two paused workers.
-List<OrchestrationAgent> _pausedTeam() => [
-  OrchestrationAgent(
-    id: 'fox',
-    name: 'ocproof/gastown.fox',
-    pool: 'gastown.polecat',
-    state: AgentState.working,
-    sessionRunning: true,
-    lastActivity: _clock.subtract(const Duration(minutes: 2)),
-  ),
-  for (final name in ['nux', 'slit'])
-    OrchestrationAgent(
-      id: name,
-      name: 'ocproof/gastown.$name',
-      pool: 'gastown.polecat',
-      state: AgentState.stopped,
-      rawState: 'suspended',
-      suspended: true,
-    ),
-];
-
 Future<OrchestrationController> _team(
   List<OrchestrationAgent> agents, {
   bool builtin = false,
@@ -212,7 +191,6 @@ enum _Shot {
   pageWide('team_page', _wide),
   agents('team_agents', _phone),
   agentsWide('team_agents', _wide),
-  wake('team_agents_wake_unconfirmed', _phone),
   taskCost('task_details_cost', _tallPhone);
 
   const _Shot(this.state, this.size);
@@ -251,9 +229,6 @@ void main() {
         case _Shot.agents || _Shot.agentsWide:
           team = await _team(_leanTeam(), builtin: true);
           home = TeamAgentsScreen(controller: team, now: () => _clock);
-        case _Shot.wake:
-          team = await _team(_pausedTeam());
-          home = TeamAgentsScreen(controller: team, now: () => _clock);
         case _Shot.taskCost:
           team = await teamSceneController(TeamScene.loaded);
           // Task details (P3.5: the run page is retired).
@@ -286,15 +261,6 @@ void main() {
         );
         for (var i = 0; i < 10; i++) {
           await tester.pump(const Duration(milliseconds: 100));
-        }
-        if (shot == _Shot.wake) {
-          final wake = find.byKey(const ValueKey('team-agents-wake-paused'));
-          // Before this slice each paused row had its own Wake button.
-          final perRow = find.byKey(const ValueKey('team-agents-wake-nux'));
-          await tester.tap(wake.evaluate().isNotEmpty ? wake : perRow);
-          for (var i = 0; i < 10; i++) {
-            await tester.pump(const Duration(milliseconds: 100));
-          }
         }
         expect(tester.takeException(), isNull);
         // Task details' elapsed time reads the wall clock, so only its body

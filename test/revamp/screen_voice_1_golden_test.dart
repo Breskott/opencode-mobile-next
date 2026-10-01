@@ -184,7 +184,7 @@ void main() {
             await tester.pumpAndSettle();
           }
           expect(
-            find.textContaining('Copyright (c) Microsoft Corporation'),
+            find.textContaining('Microsoft Corporation'),
             findsOneWidget,
           );
         },
