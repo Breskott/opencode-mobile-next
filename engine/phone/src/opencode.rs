@@ -178,6 +178,31 @@ impl OpenCodeClient {
         }))
     }
 
+    /// Resolve an omitted role model from authenticated, directory-local OC1
+    /// configuration and provider availability. Both responses can contain
+    /// credentials: only the selected provider/model identity leaves this method.
+    /// An explicit user choice is preserved without substituting another model.
+    pub async fn resolve_model(
+        &self,
+        directory: &str,
+        requested: &str,
+    ) -> Result<String, ProtocolError> {
+        if !requested.is_empty() {
+            validate_model(requested)?;
+            return Ok(requested.to_owned());
+        }
+        let configured = self
+            .request(Method::GET, "/config", Some(directory), None)
+            .await?
+            .get("model")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        let providers = self
+            .request(Method::GET, "/provider", Some(directory), None)
+            .await?;
+        resolve_runtime_model(configured.as_deref(), &providers)
+    }
+
     /// The pinned server stores status in InstanceState; global session inventory
     /// contains creation directories, not all execution instances. Never fake idle.
     pub async fn chat_admission(
@@ -710,6 +735,56 @@ pub fn validate_model(model: &str) -> Result<(), ProtocolError> {
     model_selection(model).map(|_| ())
 }
 
+fn resolve_runtime_model(
+    configured: Option<&str>,
+    providers: &Value,
+) -> Result<String, ProtocolError> {
+    let all = providers["all"]
+        .as_array()
+        .ok_or(ProtocolError("invalid_response"))?;
+    let defaults = providers["default"]
+        .as_object()
+        .ok_or(ProtocolError("invalid_response"))?;
+    let connected: Vec<&str> = providers["connected"]
+        .as_array()
+        .ok_or(ProtocolError("invalid_response"))?
+        .iter()
+        .map(|id| id.as_str().ok_or(ProtocolError("invalid_response")))
+        .collect::<Result<_, _>>()?;
+    let usable = |candidate: &str| {
+        let Ok(Some((provider_id, model_id))) = model_selection(candidate) else {
+            return false;
+        };
+        if !connected.contains(&provider_id) {
+            return false;
+        }
+        let mut matching = all.iter().filter(|p| p["id"] == provider_id);
+        let Some(provider) = matching.next() else {
+            return false;
+        };
+        // Ambiguous provider identities cannot establish a usable runtime model.
+        matching.next().is_none()
+            && provider["models"]
+                .get(model_id)
+                .and_then(Value::as_object)
+                .is_some_and(|model| model.get("id").and_then(Value::as_str) == Some(model_id))
+    };
+    if let Some(model) = configured.filter(|model| usable(model)) {
+        return Ok(model.to_owned());
+    }
+    // /provider defaults are model IDs keyed by provider, not full identities.
+    // Follow the runtime's connected order without choosing a catalog-only model.
+    for provider in &connected {
+        if let Some(model) = defaults.get(*provider).and_then(Value::as_str) {
+            let candidate = format!("{provider}/{model}");
+            if usable(&candidate) {
+                return Ok(candidate);
+            }
+        }
+    }
+    Err(ProtocolError("modelNotConfigured"))
+}
+
 fn model_selection(model: &str) -> Result<Option<(&str, &str)>, ProtocolError> {
     if model.is_empty() {
         return Ok(None);
@@ -1220,6 +1295,270 @@ mod tests {
         assert_eq!(
             listener.accept().unwrap_err().kind(),
             std::io::ErrorKind::WouldBlock
+        );
+    }
+
+    fn model_providers() -> Value {
+        json!({
+            "all":[
+                {"id":"catalog-only","models":{"catalog-model":{"id":"catalog-model"}}},
+                {"id":"zai-coding-plan","key":"fixture-provider-secret", "models":{
+                    "glm-5.3":{"id":"glm-5.3"},"glm-5.3-highspeed":{"id":"glm-5.3-highspeed"}}}
+            ],
+            "default":{"catalog-only":"catalog-model","zai-coding-plan":"glm-5.3"},
+            "connected":["zai-coding-plan"]
+        })
+    }
+
+    async fn model_server(
+        config: Value,
+        providers: Value,
+        status: axum::http::StatusCode,
+    ) -> (
+        OpenCodeClient,
+        tokio::task::JoinHandle<()>,
+        std::sync::Arc<std::sync::Mutex<Vec<(bool, String)>>>,
+    ) {
+        use axum::{
+            http::{HeaderMap, Uri},
+            routing::get,
+            Json, Router,
+        };
+        let seen = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let config_seen = seen.clone();
+        let provider_seen = seen.clone();
+        let record =
+            |headers: HeaderMap, uri: Uri, seen: &std::sync::Mutex<Vec<(bool, String)>>| {
+                // Synthetic Basic credentials only; failed assertions never dump headers.
+                let authenticated = headers.get("authorization").and_then(|h| h.to_str().ok())
+                    == Some("Basic b3BlbmNvZGU6aXNvbGF0ZWQtZml4dHVyZQ==");
+                seen.lock().unwrap().push((authenticated, uri.to_string()));
+            };
+        let app = Router::new()
+            .route(
+                "/config",
+                get(move |headers: HeaderMap, uri: Uri| {
+                    record(headers, uri, &config_seen);
+                    let config = config.clone();
+                    async move { (status, Json(config)) }
+                }),
+            )
+            .route(
+                "/provider",
+                get(move |headers: HeaderMap, uri: Uri| {
+                    record(headers, uri, &provider_seen);
+                    let providers = providers.clone();
+                    async move { (status, Json(providers)) }
+                }),
+            );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let client = OpenCodeClient::new(
+            &format!("http://{}", listener.local_addr().unwrap()),
+            "opencode",
+            "isolated-fixture",
+        )
+        .unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        (client, server, seen)
+    }
+
+    #[tokio::test]
+    async fn omitted_model_resolves_authenticated_connected_provider_on_fresh_profile() {
+        let (client, server, seen) = model_server(
+            json!({"provider":{"fixture":{"options":{"apiKey":"fixture-config-secret"}}}}),
+            model_providers(),
+            axum::http::StatusCode::OK,
+        )
+        .await;
+        assert_eq!(
+            client
+                .resolve_model("/root/projects/fresh", "")
+                .await
+                .unwrap(),
+            "zai-coding-plan/glm-5.3"
+        );
+        assert_eq!(
+            *seen.lock().unwrap(),
+            vec![
+                (true, "/config?directory=%2Froot%2Fprojects%2Ffresh".into()),
+                (
+                    true,
+                    "/provider?directory=%2Froot%2Fprojects%2Ffresh".into()
+                )
+            ]
+        );
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn configured_connected_model_precedes_provider_default() {
+        let (client, server, _) = model_server(
+            json!({"model":"zai-coding-plan/glm-5.3-highspeed"}),
+            model_providers(),
+            axum::http::StatusCode::OK,
+        )
+        .await;
+        assert_eq!(
+            client
+                .resolve_model("/root/projects/fresh", "")
+                .await
+                .unwrap(),
+            "zai-coding-plan/glm-5.3-highspeed"
+        );
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn invalid_or_disconnected_configured_models_use_connected_default_only() {
+        for configured in [
+            "invalid",
+            "catalog-only/catalog-model",
+            "zai-coding-plan/missing",
+        ] {
+            let (client, server, _) = model_server(
+                json!({"model":configured}),
+                model_providers(),
+                axum::http::StatusCode::OK,
+            )
+            .await;
+            assert_eq!(
+                client
+                    .resolve_model("/root/projects/fresh", "")
+                    .await
+                    .unwrap(),
+                "zai-coding-plan/glm-5.3"
+            );
+            server.abort();
+        }
+    }
+
+    #[tokio::test]
+    async fn missing_invalid_or_disconnected_defaults_return_typed_model_not_configured() {
+        let mut cases = Vec::new();
+        let mut providers = model_providers();
+        providers["connected"] = json!([]);
+        cases.push(providers);
+        for defaults in [
+            json!({}),
+            json!({"zai-coding-plan":"missing"}),
+            json!({"zai-coding-plan":"invalid model"}),
+            json!({"zai-coding-plan":42}),
+        ] {
+            let mut providers = model_providers();
+            providers["default"] = defaults;
+            cases.push(providers);
+        }
+        let mut providers = model_providers();
+        providers["all"][1]["models"]["glm-5.3"]["id"] = json!("different-model");
+        cases.push(providers);
+        for providers in cases {
+            let (client, server, _) =
+                model_server(json!({}), providers, axum::http::StatusCode::OK).await;
+            assert_eq!(
+                client
+                    .resolve_model("/root/projects/fresh", "")
+                    .await
+                    .unwrap_err()
+                    .code(),
+                "modelNotConfigured"
+            );
+            server.abort();
+        }
+    }
+
+    #[tokio::test]
+    async fn explicit_model_is_preserved_without_runtime_http_and_invalid_choice_fails_locally() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let client = OpenCodeClient::new(
+            &format!("http://{}", listener.local_addr().unwrap()),
+            "opencode",
+            "isolated-fixture",
+        )
+        .unwrap();
+        assert_eq!(
+            client
+                .resolve_model("/root/projects/fresh", "chosen/my-model")
+                .await
+                .unwrap(),
+            "chosen/my-model"
+        );
+        assert_eq!(
+            client
+                .resolve_model("/root/projects/fresh", "invalid")
+                .await
+                .unwrap_err()
+                .code(),
+            "invalid_model"
+        );
+        assert_eq!(
+            listener.accept().unwrap_err().kind(),
+            std::io::ErrorKind::WouldBlock
+        );
+    }
+
+    #[tokio::test]
+    async fn model_resolution_preserves_safe_auth_and_server_failure_codes() {
+        for (status, code) in [
+            (
+                axum::http::StatusCode::UNAUTHORIZED,
+                "authentication_failed",
+            ),
+            (
+                axum::http::StatusCode::SERVICE_UNAVAILABLE,
+                "server_rejected",
+            ),
+        ] {
+            let (client, server, seen) =
+                model_server(json!({"error":"fixture-secret"}), model_providers(), status).await;
+            assert_eq!(
+                client
+                    .resolve_model("/root/projects/fresh", "")
+                    .await
+                    .unwrap_err()
+                    .code(),
+                code
+            );
+            assert_eq!(seen.lock().unwrap().len(), 1);
+            assert!(seen.lock().unwrap()[0].0);
+            server.abort();
+        }
+    }
+
+    #[tokio::test]
+    async fn model_resolution_preserves_read_transport_failure() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let client = OpenCodeClient::new(
+            &format!("http://{}", listener.local_addr().unwrap()),
+            "opencode",
+            "isolated-fixture",
+        )
+        .unwrap();
+        drop(listener);
+        assert_eq!(
+            client
+                .resolve_model("/root/projects/fresh", "")
+                .await
+                .unwrap_err()
+                .code(),
+            "transport_unavailable"
+        );
+    }
+
+    #[test]
+    fn model_resolution_preserves_connected_order_and_never_uses_disconnected_catalog() {
+        let mut providers = model_providers();
+        providers["connected"] = json!(["catalog-only", "zai-coding-plan"]);
+        assert_eq!(
+            resolve_runtime_model(None, &providers).unwrap(),
+            "catalog-only/catalog-model"
+        );
+        providers["connected"] = json!(["zai-coding-plan"]);
+        assert_eq!(
+            resolve_runtime_model(None, &providers).unwrap(),
+            "zai-coding-plan/glm-5.3"
         );
     }
 
