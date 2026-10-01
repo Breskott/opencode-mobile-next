@@ -1449,6 +1449,8 @@ fn apply_command(
         "saveSpecDraft",
         "approveSpec",
         "approvePlan",
+        "acceptPhase",
+        "acceptMilestone",
         "updateSettings",
         "pauseProject",
         "resumeProject",
@@ -1715,6 +1717,73 @@ fn apply_command(
                         for t in p["tasks"].as_array().unwrap() {
                             jobs.push(job(w, &p, Some(t)));
                         }
+                    }
+                    "acceptPhase" | "acceptMilestone" => {
+                        if p["status"] == "stopped" {
+                            return Err(StoreError("projectStopped"));
+                        }
+                        let target = required_str(
+                            c,
+                            "targetId",
+                            if action == "acceptPhase" {
+                                "phaseNotFound"
+                            } else {
+                                "milestoneNotFound"
+                            },
+                        )?;
+                        if action == "acceptPhase" {
+                            let index = p["phases"]
+                                .as_array()
+                                .ok_or(StoreError("storageCorrupt"))?
+                                .iter()
+                                .position(|phase| phase["id"] == target)
+                                .ok_or(StoreError("phaseNotFound"))?;
+                            let tasks: Vec<&Value> = p["tasks"]
+                                .as_array()
+                                .ok_or(StoreError("storageCorrupt"))?
+                                .iter()
+                                .filter(|task| task["phaseId"] == target)
+                                .collect();
+                            if p["planApproved"] != true
+                                || tasks.is_empty()
+                                || tasks.iter().any(|task| task["status"] != "merged")
+                            {
+                                return Err(StoreError("phaseNotReady"));
+                            }
+                            p["phases"][index]["accepted"] = json!(true);
+                        } else {
+                            let index = p["specDraft"]["milestones"]
+                                .as_array()
+                                .ok_or(StoreError("storageCorrupt"))?
+                                .iter()
+                                .position(|milestone| milestone["id"] == target)
+                                .ok_or(StoreError("milestoneNotFound"))?;
+                            let phases: Vec<&Value> = p["phases"]
+                                .as_array()
+                                .ok_or(StoreError("storageCorrupt"))?
+                                .iter()
+                                .filter(|phase| phase["milestoneId"] == target)
+                                .collect();
+                            let tasks: Vec<&Value> = p["tasks"]
+                                .as_array()
+                                .ok_or(StoreError("storageCorrupt"))?
+                                .iter()
+                                .filter(|task| {
+                                    phases.iter().any(|phase| task["phaseId"] == phase["id"])
+                                })
+                                .collect();
+                            if p["planApproved"] != true
+                                || phases.is_empty()
+                                || phases.iter().any(|phase| phase["accepted"] != true)
+                                || tasks.is_empty()
+                                || tasks.iter().any(|task| task["status"] != "merged")
+                            {
+                                return Err(StoreError("milestoneNotReady"));
+                            }
+                            p["specDraft"]["milestones"][index]["accepted"] = json!(true);
+                        }
+                        // Acceptance is the person's review decision only. It
+                        // cannot promote main or fabricate project completion.
                     }
                     "updateSettings" => {
                         validate_settings(&c["settings"])?;

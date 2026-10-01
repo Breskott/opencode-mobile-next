@@ -173,6 +173,8 @@ const STORE_ACTIONS: &[&str] = &[
     "saveSpecDraft",
     "approveSpec",
     "approvePlan",
+    "acceptPhase",
+    "acceptMilestone",
     "updateDefaults",
     "updateSettings",
     "pauseProject",
