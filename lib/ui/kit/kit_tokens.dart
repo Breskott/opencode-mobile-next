@@ -396,6 +396,10 @@ class KitTokens extends ThemeExtension<KitTokens> {
   /// KitRequestCard.md: the card's window-height cap at 2.0 text.
   static const double requestMaxHeightShare = .45;
 
+  /// KitRequestCard.md: the same cap at 2.5 text, where a decide button
+  /// wraps to two lines and the answers alone outgrow 45 %.
+  static const double requestMaxHeightShareLarge = .6;
+
   /// KitScanner.md: the side of the square scan window.
   static const double scannerWindow = 240;
 

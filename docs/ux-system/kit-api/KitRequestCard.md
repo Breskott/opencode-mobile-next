@@ -325,7 +325,7 @@ All exist on `feat/visual-language-v1` unless flagged.
 - **200 % text:**
   - the caption, title, detail and `ifIgnored` wrap;
   - the decide buttons stack;
-  - the card is never taller than `requestMaxHeightShare` (45 %) of the window: past that, the words scroll inside the card and the answers stay visible (today's behaviour, kept);
+  - the card is never taller than `requestMaxHeightShare` (45 %) of the window (`requestMaxHeightShareLarge`, 60 %, from 250 % text, where a decide button wraps to two lines): past that, the words scroll inside the card and the answers stay visible (today's behaviour, kept);
   - no overflow at the LAY-4 widths.
 - **Colour is never alone (STATE-9):** "Needs your decision" is the word, amber the tone.
 

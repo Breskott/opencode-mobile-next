@@ -1190,7 +1190,9 @@ class _LivingEdgeState extends State<_LivingEdge>
           final bendHalf = open > 0 ? captionWidth / 2 + _bendMargin : 0.0;
           final dip =
               _bendDepth * open * (level == KitMotionLevel.calm ? 0.5 : 1);
-          final idle = open == 0 && _shown.isEmpty;
+          // Once the gap has closed on an empty edge nothing stays behind:
+          // a hidden caption would keep Stop in the tree and tappable.
+          final idle = open == 0 && _data.isEmpty;
           return Stack(
             clipBehavior: Clip.none,
             children: [

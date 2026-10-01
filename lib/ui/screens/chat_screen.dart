@@ -8,6 +8,7 @@ import 'package:clock/clock.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show compute, listEquals;
+import 'package:flutter/scheduler.dart' show SchedulerPhase;
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -4220,10 +4221,20 @@ class _ChatScreenState extends State<ChatScreen>
     // from the newest message.
     final away = notification.metrics.pixels > 480;
     if (away != _awayFromLatest) {
-      setState(() {
+      void apply() => setState(() {
         _awayFromLatest = away;
         _pinnedMessageCount = away ? _messages.length : null;
       });
+      // A scroll position can settle while the list lays out (new content
+      // ends a fling): rebuild after that frame, never during it.
+      if (WidgetsBinding.instance.schedulerPhase ==
+          SchedulerPhase.persistentCallbacks) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && away != _awayFromLatest) apply();
+        });
+      } else {
+        apply();
+      }
     }
     return false;
   }

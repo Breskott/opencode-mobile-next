@@ -681,11 +681,14 @@ class _KitRequestCardState extends State<KitRequestCard> {
     // At 2.0 text never more than 45 % of the window: the words scroll
     // inside and the answers stay in sight.
     if (large) {
+      final largest = MediaQuery.textScalerOf(context).scale(10) >= 25;
       card = ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight:
               MediaQuery.sizeOf(context).height *
-              KitTokens.requestMaxHeightShare,
+              (largest
+                  ? KitTokens.requestMaxHeightShareLarge
+                  : KitTokens.requestMaxHeightShare),
         ),
         child: card,
       );
