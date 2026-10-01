@@ -1175,7 +1175,10 @@ async fn run_job(e: Shared, job: Value) -> Result<(), &'static str> {
                         )
                     {
                         let _ = s.update_job(id, stage, &json!({"reason":reason}));
-                    } else if !matches!(stage, "completed" | "stopped" | "paused") {
+                    } else if !matches!(
+                        stage,
+                        "completed" | "stopped" | "paused" | "interrupted" | "failed"
+                    ) {
                         let _ = s.update_job(
                             id,
                             stage,
@@ -2250,6 +2253,53 @@ mod tests {
             assert_eq!(e.store.lock().unwrap().jobs().unwrap(), before);
             assert_eq!(before[0]["id"], id);
         }
+    }
+
+    #[tokio::test]
+    async fn runner_error_cannot_overwrite_user_pause_during_pending_budget_admission() {
+        let root = tempfile::tempdir().unwrap();
+        let e = attested_fixture(root.path(), "proot");
+        let (_, requested) = limited_parallel_fixture(&e).await;
+        let job = requested["id"].as_str().unwrap().to_owned();
+        let run = run_job(e.clone(), requested.clone());
+        let pause = async {
+            tokio::time::sleep(Duration::from_millis(40)).await;
+            let store = e.store.lock().unwrap();
+            let project = store.workspace().unwrap()["projects"][0].clone();
+            assert_eq!(
+                store
+                    .execute(
+                        &json!({"requestId":"pause-during-admission","action":"pauseProject",
+                "projectId":project["id"],"expectedRevision":project["revision"]})
+                    )
+                    .unwrap()["accepted"],
+                true
+            );
+            let paused = store
+                .jobs()
+                .unwrap()
+                .into_iter()
+                .find(|j| j["id"] == job)
+                .unwrap();
+            assert_eq!(paused["stage"], "interrupted");
+            assert_eq!(paused["reason"], "pauseNeedsReconciliation");
+            paused
+        };
+        let (result, paused) = tokio::join!(run, pause);
+        assert_eq!(result, Err("jobNotActive"));
+        let current = e
+            .store
+            .lock()
+            .unwrap()
+            .jobs()
+            .unwrap()
+            .into_iter()
+            .find(|j| j["id"] == job)
+            .unwrap();
+        assert_eq!(
+            current, paused,
+            "runner completion must preserve the authoritative pause checkpoint"
+        );
     }
 
     #[tokio::test]
