@@ -19,7 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../phone_team_setup_test.dart'
     as fake
-    show phoneForGolden, healthForGolden;
+    show phoneForGolden, healthForGolden, PhoneTeamSetupPortsForGolden;
 import '../../team_project_fixture_test.dart' show MemoryPersistence;
 import '../kit/kit_gallery.dart';
 
@@ -70,9 +70,11 @@ void main() {
           var clock = DateTime.utc(2026, 9, 30, 12);
           late PhoneTeamSetupController flow;
           final proof = Completer<void>();
+          final held = <fake.PhoneTeamSetupPortsForGolden>[];
           OrchestrationController? owner;
           Future<void> open(BuildContext context) async {
             final phone = fake.phoneForGolden();
+            held.add(phone);
             switch (scene) {
               case 'reply':
                 phone.reply = true;
@@ -151,6 +153,15 @@ void main() {
             settleAfterThen: false,
           );
           proof.complete();
+          // The reply scene holds the flow on a running reply (and its
+          // 2 s poll); let it end so no timer outlives the test.
+          // Both theme passes opened their own flow.
+          for (final phone in held) {
+            phone.finishReply();
+          }
+          await tester.pump(const Duration(seconds: 3));
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump(const Duration(seconds: 3));
           owner?.dispose();
           connection.dispose();
         },

@@ -1394,6 +1394,14 @@ class _CodeScrollerState extends State<_CodeScroller> {
               child: SingleChildScrollView(
                 controller: _controller,
                 scrollDirection: Axis.horizontal,
+                // While the scroll cue shows, its thumb lies along the
+                // bottom edge: leave that strip below the last line so the
+                // thumb never sits on readable text.
+                padding: EdgeInsets.only(
+                  bottom: (finePointer || _overflowing)
+                      ? KitTokens.of(context).space2
+                      : 0,
+                ),
                 child: widget.child,
               ),
             ),

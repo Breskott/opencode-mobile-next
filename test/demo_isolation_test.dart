@@ -213,6 +213,7 @@ void main() {
                 'The pending request must keep its Details action reachable',
           );
           await Scrollable.ensureVisible(tester.element(review), alignment: .5);
+          await _pump(tester);
           await tester.tap(review);
           await _pump(tester);
           final allow = find.descendant(
