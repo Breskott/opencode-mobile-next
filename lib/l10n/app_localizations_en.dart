@@ -8925,7 +8925,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String teamUiRowOnReadOnly(String server) {
-    return 'On · $server · read-only';
+    return 'On · $server · view only';
   }
 
   @override
@@ -26257,4 +26257,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamServerPhoneNoAnswer =>
       'OpenCode on this phone didn\'t answer the last check.';
+
+  @override
+  String get phoneTeamOffReview => 'Review and choose when';
+
+  @override
+  String teamProjectInterruptedRow(String name) {
+    return '$name: work was interrupted, tap to resume';
+  }
+
+  @override
+  String get teamProjectResumeUnavailable =>
+      'This version of AI Team can\'t resume interrupted work yet. You can stop the project and start it again.';
+
+  @override
+  String get teamProjectInterrupted => 'Interrupted, ready to resume';
+
+  @override
+  String get teamProjectEditorContextFilesHelpReal =>
+      'Optional. One path per line. The team reads these before it plans.';
 }

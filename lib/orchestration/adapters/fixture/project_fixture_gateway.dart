@@ -55,6 +55,7 @@ class ProjectFixtureGateway extends NullOrchestrationGateway
     projectVerification: true,
     projectMergeQueue: true,
     projectPromotion: true,
+    projectResume: true,
     projectBudgets: true,
     projectDigest: true,
   );

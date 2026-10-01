@@ -241,6 +241,12 @@ class BuiltinPhoneTeamSetupPorts implements PhoneTeamSetupPorts {
   }
 }
 
+class _StepTimeout implements Exception {
+  _StepTimeout(this.tag, this.problem);
+  final String tag;
+  final PhoneTeamSetupProblem problem;
+}
+
 /// One run of the flow. Listen to it; it never touches the widgets.
 class PhoneTeamSetupController extends ChangeNotifier {
   PhoneTeamSetupController(
@@ -249,6 +255,8 @@ class PhoneTeamSetupController extends ChangeNotifier {
     Future<void> Function(Duration)? delay,
     this.readyAttempts = 15,
     this.readyGap = const Duration(seconds: 2),
+    this.replyWait = const Duration(minutes: 3),
+    this.stepWait = const Duration(seconds: 90),
   }) : _now = now ?? DateTime.now,
        _delay = delay ?? Future<void>.delayed;
 
@@ -257,6 +265,14 @@ class PhoneTeamSetupController extends ChangeNotifier {
   final Future<void> Function(Duration) _delay;
   final int readyAttempts;
   final Duration readyGap;
+
+  /// The longest the flow waits for a running reply (a stale "reply in
+  /// flight" after a force-stop would otherwise hold it forever).
+  final Duration replyWait;
+
+  /// The longest any one call to the phone may take before the run ends in
+  /// a failure with a reason, instead of an endless hourglass.
+  final Duration stepWait;
 
   PhoneTeamSetupPhase _phase = PhoneTeamSetupPhase.idle;
   PhoneTeamSetupProblem? _problem;
@@ -408,6 +424,18 @@ class PhoneTeamSetupController extends ChangeNotifier {
     _fail(problem, step, details);
   }
 
+  /// Bounds one call to the phone; a call that never answers becomes a
+  /// [_StepTimeout] naming where it hung.
+  Future<T> _bounded<T>(
+    Future<T> call,
+    String tag, {
+    Duration? limit,
+    PhoneTeamSetupProblem problem = PhoneTeamSetupProblem.engine,
+  }) => call.timeout(
+    limit ?? stepWait,
+    onTimeout: () => throw _StepTimeout(tag, problem),
+  );
+
   Future<void> _waitForReply() async {
     if (!ports.replyRunning) return;
     final done = Completer<void>();
@@ -420,7 +448,13 @@ class PhoneTeamSetupController extends ChangeNotifier {
     // look again on a timer: the flow must never wait on a reply that ended.
     final poll = Timer.periodic(const Duration(seconds: 2), (_) => check());
     try {
-      await done.future;
+      await done.future.timeout(
+        replyWait,
+        onTimeout: () => throw _StepTimeout(
+          'replyStillRunning',
+          PhoneTeamSetupProblem.engine,
+        ),
+      );
     } finally {
       poll.cancel();
       ports.replyChanges.removeListener(check);
@@ -445,9 +479,16 @@ class PhoneTeamSetupController extends ChangeNotifier {
     _emit();
     try {
       _serverStopped = true;
-      await ports.stopServer();
-      await ports.closeTerminals();
+      await _bounded(ports.stopServer(), 'stopServer');
+      await _bounded(ports.closeTerminals(), 'closeTerminals');
       _terminalsClosed = _hostTerminals > 0;
+    } on _StepTimeout {
+      await _failWith(
+        PhoneTeamSetupProblem.stopFailed,
+        PhoneTeamSetupStep.stop,
+        'timeout',
+      );
+      return false;
     } catch (_) {
       await _failWith(
         PhoneTeamSetupProblem.stopFailed,
@@ -479,7 +520,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
       _end(PhoneTeamSetupStep.reply);
 
       // b) The unprotected server and terminals: only with a yes.
-      final host = await ports.inspect();
+      final host = await _bounded(ports.inspect(), 'inspect');
       _hostTerminals = host.terminals;
       var stopped = false;
       if (host.needsStop) {
@@ -491,7 +532,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
 
       // c) The engine proves this phone safe.
       _begin(PhoneTeamSetupStep.check);
-      var health = await ports.startEngine();
+      var health = await _bounded(ports.startEngine(), 'startEngine');
       if (health.restartRequired && !stopped) {
         // The engine found an old server it cannot vouch for: ask now.
         _took.remove(PhoneTeamSetupStep.stop);
@@ -499,7 +540,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
         if (!await _stopForProtection()) return;
         stopped = true;
         _begin(PhoneTeamSetupStep.check);
-        health = await ports.startEngine();
+        health = await _bounded(ports.startEngine(), 'startEngine');
       }
       _health = health;
       // The check proves the boundary; OpenCode itself is verified only
@@ -518,7 +559,12 @@ class PhoneTeamSetupController extends ChangeNotifier {
 
       // d) OpenCode back, protected; probe until the engine can run work.
       _begin(PhoneTeamSetupStep.server);
-      final failure = await ports.startServer();
+      final failure = await _bounded(
+        ports.startServer(),
+        'startServer',
+        limit: const Duration(minutes: 4),
+        problem: PhoneTeamSetupProblem.serverStart,
+      );
       if (failure != null) {
         await _failWith(
           PhoneTeamSetupProblem.serverStart,
@@ -530,8 +576,10 @@ class PhoneTeamSetupController extends ChangeNotifier {
       PhoneEngineHealth? last;
       for (var attempt = 0; attempt < readyAttempts; attempt++) {
         try {
-          last = await ports.probeEngine();
+          last = await _bounded(ports.probeEngine(), 'probe');
         } on PhoneEngineException {
+          last = null;
+        } on _StepTimeout {
           last = null;
         }
         if (last != null && last.canExecute) break;
@@ -550,11 +598,17 @@ class PhoneTeamSetupController extends ChangeNotifier {
         );
         return;
       }
-      await ports.attach();
+      await _bounded(ports.attach(), 'attach');
       _end(PhoneTeamSetupStep.server);
       _step = null;
       _phase = PhoneTeamSetupPhase.done;
       _emit();
+    } on _StepTimeout catch (e) {
+      await _failWith(
+        e.problem,
+        _step ?? PhoneTeamSetupStep.check,
+        'timeout:${e.tag}',
+      );
     } on PhoneEngineException catch (e) {
       await _failWith(
         PhoneTeamSetupProblem.engine,

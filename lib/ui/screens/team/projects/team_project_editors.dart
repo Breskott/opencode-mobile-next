@@ -200,6 +200,9 @@ class _EditorState extends State<_Editor> {
   TeamProjectRole? _role;
   int _id = 0;
   TeamProjectController get _controller => widget.controller;
+  String get _contextFilesHelp => _controller.snapshot?.simulated == false
+      ? _l.teamProjectEditorContextFilesHelpReal
+      : _l.teamProjectEditorContextFilesHelp;
   TeamProject? get _project => _controller.snapshot?.projects
       .where((p) => p.id == widget.projectId)
       .firstOrNull;
@@ -1035,7 +1038,7 @@ class _EditorState extends State<_Editor> {
             _l.teamProjectEditorContextFiles,
             multiline: true,
           ),
-          KitNotice(message: _l.teamProjectEditorContextFilesHelp),
+          KitNotice(message: _contextFilesHelp),
           ..._screenFields(),
           ..._limitFields(),
         ]
@@ -1052,7 +1055,7 @@ class _EditorState extends State<_Editor> {
     _button(_l.teamProjectEditorAskChange, _requestChange),
     _field('goal', _l.teamProjectEditorGoal, multiline: true),
     _field('contextFiles', _l.teamProjectEditorContextFiles, multiline: true),
-    KitNotice(message: _l.teamProjectEditorContextFilesHelp),
+    KitNotice(message: _contextFilesHelp),
     _field('constraints', _l.teamProjectEditorConstraints, multiline: true),
     _field('decisions', _l.teamProjectEditorDecisions, multiline: true),
     _field('outOfScope', _l.teamProjectEditorOutOfScope, multiline: true),

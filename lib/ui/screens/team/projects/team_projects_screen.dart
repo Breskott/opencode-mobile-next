@@ -114,10 +114,18 @@ class _TeamProjectsScreenState extends State<TeamProjectsScreen> {
           children: [
             TeamExecutionBlocked(controller: c),
             TeamProtectionLine(controller: c),
+            TeamResumeUnavailable(controller: c),
             if (c.errorCode != null) _failure(context, c),
             if (projects.isEmpty && !c.loading)
               KitStateView(icon: Icons.work_outline, title: l.teamProjectEmpty),
             for (final p in projects) ...[
+              if (p.status == 'interrupted' &&
+                  TeamExecutionGate.allows(c, TeamExecutionNeed.resume))
+                KitRow(
+                  key: ValueKey('team-resume-row-${p.id}'),
+                  title: l.teamProjectInterruptedRow(p.name),
+                  onTap: () => _command(c, p, TeamProjectAction.resumeProject),
+                ),
               for (final request in p.requests.where((r) => !r.answered))
                 KitRow(
                   title: request.title,
@@ -271,7 +279,15 @@ class TeamProjectOverview extends StatelessWidget {
           .take(3)
           .toList();
       final open = p.status != 'stopped' && p.status != 'done';
+      final interrupted =
+          p.status == 'interrupted' &&
+          TeamExecutionGate.allows(c, TeamExecutionNeed.resume);
       final menu = <KitMenuItem>[
+        if (interrupted)
+          KitMenuItem(
+            label: l.teamProjectResume,
+            onSelected: () => _command(c, p, TeamProjectAction.resumeProject),
+          ),
         if (open &&
             (p.status != 'paused' ||
                 TeamExecutionGate.allows(c, TeamExecutionNeed.lanes)))
@@ -332,6 +348,7 @@ class TeamProjectOverview extends StatelessWidget {
           padding: KitScreen.padding(context),
           children: [
             if (!embedded) TeamExecutionBlocked(controller: c),
+            if (!embedded) TeamResumeUnavailable(controller: c),
             if (c.errorCode != null) _failure(context, c),
             for (final r in p.requests.where((r) => !r.answered))
               _needsYou(context, l, c, p, r),
@@ -344,6 +361,13 @@ class TeamProjectOverview extends StatelessWidget {
                     KitTeamItem(title: e.text, meta: _age(context, e.at)),
                 ],
                 actions: [
+                  if (interrupted)
+                    KitAction(
+                      key: const ValueKey('team-digest-resume'),
+                      label: l.teamUiControlResume,
+                      onPressed: () =>
+                          _command(c, p, TeamProjectAction.resumeProject),
+                    ),
                   KitAction(
                     label: l.teamProjectDigestRead,
                     onPressed: () =>
@@ -930,7 +954,7 @@ String _progress(AppLocalizations l, TeamProject p) => l.teamProjectProgress(
 KitTeamState _state(String value) => switch (value) {
   'running' => KitTeamState.running,
   'failed' || 'conflict' => KitTeamState.failed,
-  'stalled' => KitTeamState.stalled,
+  'stalled' || 'interrupted' => KitTeamState.stalled,
   'findings' || 'review' => KitTeamState.needsYou,
   'offline' => KitTeamState.stale,
   'done' || 'merged' || 'passed' => KitTeamState.done,
@@ -960,6 +984,7 @@ String _word(AppLocalizations l, String value) => switch (value) {
   'running' => l.teamProjectWorking,
   'failed' || 'conflict' => l.teamProjectFailed,
   'stalled' => l.teamProjectStalled,
+  'interrupted' => l.teamProjectInterrupted,
   'paused' => l.teamProjectPaused,
   'stopped' => l.teamProjectStopped,
   'done' || 'merged' || 'passed' => l.teamProjectDone,

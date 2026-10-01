@@ -9021,7 +9021,7 @@
       }
     }
   },
-  "teamUiRowOnReadOnly": "On · {server} · read-only",
+  "teamUiRowOnReadOnly": "On · {server} · view only",
   "@teamUiRowOnReadOnly": {
     "description": "AI Team row subtitle when the plugin is on but the phone can only watch",
     "placeholders": {
@@ -31039,5 +31039,15 @@
   "teamServerPhoneNotReady": "AI Team on this phone isn't ready: its safety check hasn't passed.",
   "@teamServerPhoneNotReady": {"description": "Project Servers page: why This phone is not reachable when the engine cannot run work yet."},
   "teamServerPhoneNoAnswer": "OpenCode on this phone didn't answer the last check.",
-  "@teamServerPhoneNoAnswer": {"description": "Project Servers page: why This phone is not reachable when the team is ready but OpenCode did not answer."}
+  "@teamServerPhoneNoAnswer": {"description": "Project Servers page: why This phone is not reachable when the team is ready but OpenCode did not answer."},
+  "phoneTeamOffReview": "Review and choose when",
+  "@phoneTeamOffReview": {"description": "Button on the AI Team page when the automatic check waits for the person to allow an OpenCode restart"},
+  "teamProjectInterruptedRow": "{name}: work was interrupted, tap to resume",
+  "@teamProjectInterruptedRow": {"placeholders": {"name": {"type": "String"}}, "description": "Project list row for a project whose work stopped when the app closed"},
+  "teamProjectResumeUnavailable": "This version of AI Team can't resume interrupted work yet. You can stop the project and start it again.",
+  "@teamProjectResumeUnavailable": {"description": "Notice on an interrupted project when the engine does not offer Resume"},
+  "teamProjectInterrupted": "Interrupted, ready to resume",
+  "@teamProjectInterrupted": {"description": "Project or task status word after the app closed while work was running"},
+  "teamProjectEditorContextFilesHelpReal": "Optional. One path per line. The team reads these before it plans.",
+  "@teamProjectEditorContextFilesHelpReal": {"description": "Help under the context files field for a real team (not the demo)"}
 }

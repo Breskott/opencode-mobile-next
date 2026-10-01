@@ -3149,7 +3149,7 @@
   "teamUiRowOff": "متوقف",
   "teamUiRowOffAddManually": "متوقف · أضفه يدويًا",
   "teamUiRowOn": "مفعّل · {server}",
-  "teamUiRowOnReadOnly": "مفعّل · {server} · للقراءة فقط",
+  "teamUiRowOnReadOnly": "مفعّل · {server} · للعرض فقط",
   "teamUiRowReconnecting": "مفعّل · جارٍ إعادة الاتصال…",
   "teamUiRowTitle": "فريق الذكاء الاصطناعي · Gas City",
   "teamUiRowUnreachable": "مفعّل · تعذّر الوصول إلى المضيف منذ {minutes} دقيقة",
@@ -4922,5 +4922,10 @@
   "teamMigrationMenu": "ما الجديد في فريق الذكاء الاصطناعي",
   "teamProjectPages": "صفحات المشروع",
   "teamProjectMergeReady": "جاهز للدمج",
-  "teamProjectMergeChecking": "بانتظار فحوصاته"
+  "teamProjectMergeChecking": "بانتظار فحوصاته",
+  "phoneTeamOffReview": "راجع واختر الوقت",
+  "teamProjectInterruptedRow": "{name}: توقف العمل، اضغط للاستئناف",
+  "teamProjectResumeUnavailable": "هذا الإصدار من فريق الذكاء الاصطناعي لا يستطيع استئناف العمل المتوقف بعد. يمكنك إيقاف المشروع وبدءه من جديد.",
+  "teamProjectInterrupted": "توقف العمل، جاهز للاستئناف",
+  "teamProjectEditorContextFilesHelpReal": "اختياري. مسار واحد في كل سطر. يقرأ الفريق هذه الملفات قبل أن يخطط."
 }

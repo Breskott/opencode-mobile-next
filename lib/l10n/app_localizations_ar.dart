@@ -9014,7 +9014,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String teamUiRowOnReadOnly(String server) {
-    return 'مفعّل · $server · للقراءة فقط';
+    return 'مفعّل · $server · للعرض فقط';
   }
 
   @override
@@ -26375,4 +26375,23 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamServerPhoneNoAnswer =>
       'OpenCode on this phone didn\'t answer the last check.';
+
+  @override
+  String get phoneTeamOffReview => 'راجع واختر الوقت';
+
+  @override
+  String teamProjectInterruptedRow(String name) {
+    return '$name: توقف العمل، اضغط للاستئناف';
+  }
+
+  @override
+  String get teamProjectResumeUnavailable =>
+      'هذا الإصدار من فريق الذكاء الاصطناعي لا يستطيع استئناف العمل المتوقف بعد. يمكنك إيقاف المشروع وبدءه من جديد.';
+
+  @override
+  String get teamProjectInterrupted => 'توقف العمل، جاهز للاستئناف';
+
+  @override
+  String get teamProjectEditorContextFilesHelpReal =>
+      'اختياري. مسار واحد في كل سطر. يقرأ الفريق هذه الملفات قبل أن يخطط.';
 }

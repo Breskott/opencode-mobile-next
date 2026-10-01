@@ -14745,7 +14745,7 @@ abstract class AppLocalizations {
   /// AI Team row subtitle when the plugin is on but the phone can only watch
   ///
   /// In en, this message translates to:
-  /// **'On · {server} · read-only'**
+  /// **'On · {server} · view only'**
   String teamUiRowOnReadOnly(String server);
 
   /// AI Team row subtitle while the event stream reconnects
@@ -41387,6 +41387,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OpenCode on this phone didn\'t answer the last check.'**
   String get teamServerPhoneNoAnswer;
+
+  /// Button on the AI Team page when the automatic check waits for the person to allow an OpenCode restart
+  ///
+  /// In en, this message translates to:
+  /// **'Review and choose when'**
+  String get phoneTeamOffReview;
+
+  /// Project list row for a project whose work stopped when the app closed
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: work was interrupted, tap to resume'**
+  String teamProjectInterruptedRow(String name);
+
+  /// Notice on an interrupted project when the engine does not offer Resume
+  ///
+  /// In en, this message translates to:
+  /// **'This version of AI Team can\'t resume interrupted work yet. You can stop the project and start it again.'**
+  String get teamProjectResumeUnavailable;
+
+  /// Project or task status word after the app closed while work was running
+  ///
+  /// In en, this message translates to:
+  /// **'Interrupted, ready to resume'**
+  String get teamProjectInterrupted;
+
+  /// Help under the context files field for a real team (not the demo)
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. One path per line. The team reads these before it plans.'**
+  String get teamProjectEditorContextFilesHelpReal;
 }
 
 class _AppLocalizationsDelegate

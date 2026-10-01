@@ -105,8 +105,8 @@ Future<void> openTeamSetup(
 
 /// The phone's own team when it is on but not answering: one headline,
 /// one action, and the progress of a check that is already running.
-class _PhoneTeamOff extends StatelessWidget {
-  const _PhoneTeamOff({super.key, required this.connection});
+class PhoneTeamOffPage extends StatelessWidget {
+  const PhoneTeamOffPage({super.key, required this.connection});
 
   final ConnectionController connection;
 
@@ -116,26 +116,80 @@ class _PhoneTeamOff extends StatelessWidget {
     final flow = PhoneTeamSetup.of(connection, copy: l10n);
     return ListenableBuilder(
       listenable: flow,
-      builder: (context, _) => KitScreen(
-        topBar: KitTopBar(title: l10n.teamUiHomeTitle),
-        width: KitScreenWidth.reading,
-        body: KitStateView(
-          icon: flow.isRunning
-              ? AppIconography.waiting
-              : AppIconography.cloudOff,
-          tone: flow.isRunning ? AppStatusTone.progress : AppStatusTone.neutral,
-          title: flow.isRunning
-              ? l10n.phoneTeamStripChecking
-              : l10n.phoneTeamOffTitle,
-          body: flow.isRunning ? null : l10n.phoneTeamOffBody,
-          primary: KitAction(
-            key: const ValueKey('phone-team-off-turn-on'),
-            label: l10n.teamIntroTurnOnPhone,
-            icon: AppIconography.play,
-            onPressed: () => unawaited(openPhoneTeamSetup(context, connection)),
+      builder: (context, _) {
+        final waiting = flow.phase == PhoneTeamSetupPhase.confirming;
+        final working = flow.isRunning && !waiting;
+        final failed =
+            flow.phase == PhoneTeamSetupPhase.failed && flow.automatic;
+        final done = PhoneTeamSetupStep.values
+            .where((s) => flow.took(s) != null)
+            .length;
+        final String title;
+        final String? body;
+        final IconData icon;
+        final AppStatusTone tone;
+        final String action;
+        if (waiting) {
+          // The check is waiting for the person, not working: say so.
+          title = l10n.phoneTeamStripWaiting;
+          body = l10n.phoneTeamStripReview;
+          icon = AppIconography.phone;
+          tone = AppStatusTone.neutral;
+          action = l10n.phoneTeamOffReview;
+        } else if (working) {
+          title = l10n.phoneTeamStripChecking;
+          body = l10n.phoneTeamStripStep(
+            (done + 1).clamp(1, PhoneTeamSetupStep.values.length),
+            PhoneTeamSetupStep.values.length,
+          );
+          icon = AppIconography.waiting;
+          tone = AppStatusTone.progress;
+          action = l10n.teamIntroTurnOnPhone;
+        } else if (failed) {
+          final copy = phoneTeamProblemCopy(
+            l10n,
+            flow.problem ?? PhoneTeamSetupProblem.engine,
+            flow,
+          );
+          title = copy.title;
+          body = copy.body;
+          icon = AppIconography.warning;
+          tone = AppStatusTone.failure;
+          action = l10n.teamStartAgain;
+        } else {
+          title = l10n.phoneTeamOffTitle;
+          body = l10n.phoneTeamOffBody;
+          icon = AppIconography.cloudOff;
+          tone = AppStatusTone.neutral;
+          action = l10n.teamIntroTurnOnPhone;
+        }
+        return KitScreen(
+          topBar: KitTopBar(title: l10n.teamUiHomeTitle),
+          width: KitScreenWidth.reading,
+          body: KitStateView(
+            key: ValueKey(
+              'phone-team-off-${waiting
+                  ? 'waiting'
+                  : working
+                  ? 'working'
+                  : failed
+                  ? 'failed'
+                  : 'off'}',
+            ),
+            icon: icon,
+            tone: tone,
+            title: title,
+            body: body,
+            primary: KitAction(
+              key: const ValueKey('phone-team-off-turn-on'),
+              label: action,
+              icon: AppIconography.play,
+              onPressed: () =>
+                  unawaited(openPhoneTeamSetup(context, connection)),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -190,7 +244,7 @@ class TeamPage extends StatelessWidget {
                         projects != null)))) {
           // The phone's team is not answering (an app update stops it) or
           // cannot run projects yet: say so and offer the one-tap setup.
-          return _PhoneTeamOff(
+          return PhoneTeamOffPage(
             key: const ValueKey('team-page-phone-off'),
             connection: connection,
           );

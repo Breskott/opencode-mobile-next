@@ -136,6 +136,9 @@ class PhoneEngineGateway extends NullOrchestrationGateway
       projectMergeQueue:
           h.canExecute && all([TeamProjectAction.processMergeQueue]),
       projectPromotion: h.canExecute && all([TeamProjectAction.promote]),
+      projectResume:
+          h.canExecute &&
+          all([TeamProjectAction.resumeProject, TeamProjectAction.resumeTask]),
       projectBudgets: all([TeamProjectAction.updateSettings]),
       projectDigest: all([TeamProjectAction.acknowledgeDigest]),
     );

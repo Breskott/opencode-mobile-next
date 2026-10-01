@@ -125,7 +125,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
     'question' ||
     'review' => KitTeamState.needsYou,
     'failed' => KitTeamState.failed,
-    'stalled' => KitTeamState.stalled,
+    'stalled' || 'interrupted' => KitTeamState.stalled,
     'done' || 'merged' || 'accepted' => KitTeamState.done,
     _ => KitTeamState.empty,
   };
@@ -881,9 +881,11 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                             l.teamProjectTaskPause,
                             () => _run(p, TeamProjectAction.pauseTask),
                           ),
-                        if (t.status == 'paused')
+                        if (t.status == 'paused' || t.status == 'interrupted')
                           ?_gated(
-                            TeamExecutionNeed.lanes,
+                            t.status == 'interrupted'
+                                ? TeamExecutionNeed.resume
+                                : TeamExecutionNeed.lanes,
                             l.teamProjectTaskResume,
                             () => _run(p, TeamProjectAction.resumeTask),
                           ),

@@ -84,6 +84,7 @@ class OrchestrationCapabilities {
     this.projectVerification = false,
     this.projectMergeQueue = false,
     this.projectPromotion = false,
+    this.projectResume = false,
     this.projectBudgets = false,
     this.projectDigest = false,
 
@@ -118,6 +119,9 @@ class OrchestrationCapabilities {
   final bool projectVerification;
   final bool projectMergeQueue;
   final bool projectPromotion;
+
+  /// The engine can resume interrupted work (resumeProject/resumeTask).
+  final bool projectResume;
   final bool projectBudgets;
   final bool projectDigest;
 
@@ -314,6 +318,7 @@ class OrchestrationCapabilities {
     'projectVerification': projectVerification,
     'projectMergeQueue': projectMergeQueue,
     'projectPromotion': projectPromotion,
+    'projectResume': projectResume,
     'projectBudgets': projectBudgets,
     'projectDigest': projectDigest,
 

@@ -21,7 +21,14 @@ import '../../../kit/kit.dart';
 import '../team_phone_setup_screen.dart';
 
 /// What an action needs the engine to be able to do.
-enum TeamExecutionNeed { lanes, promotion, mergeQueue, verification, placement }
+enum TeamExecutionNeed {
+  lanes,
+  promotion,
+  mergeQueue,
+  verification,
+  placement,
+  resume,
+}
 
 class TeamExecutionGate {
   TeamExecutionGate._(this.team, this.connection);
@@ -51,6 +58,7 @@ class TeamExecutionGate {
     TeamExecutionNeed.mergeQueue => capabilities.projectMergeQueue,
     TeamExecutionNeed.verification => capabilities.projectVerification,
     TeamExecutionNeed.placement => capabilities.projectPlacement,
+    TeamExecutionNeed.resume => capabilities.projectResume,
   };
 
   /// Opens "Turn on AI Team on this phone".
@@ -173,6 +181,31 @@ class TeamPhoneServerProblem extends StatelessWidget {
       errorKind: KitErrorKind.other,
       details: details,
       retry: fix,
+    );
+  }
+}
+
+/// One plain line on an interrupted project when the engine can run work
+/// but does not offer Resume: why there is no button, and what to do.
+class TeamResumeUnavailable extends StatelessWidget {
+  const TeamResumeUnavailable({super.key, required this.controller});
+
+  final TeamProjectController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final interrupted =
+        controller.snapshot?.projects.any((p) => p.status == 'interrupted') ??
+        false;
+    if (!interrupted ||
+        !TeamExecutionGate.allows(controller, TeamExecutionNeed.lanes) ||
+        TeamExecutionGate.allows(controller, TeamExecutionNeed.resume)) {
+      return const SizedBox.shrink();
+    }
+    final l = lookupAppLocalizations(Localizations.localeOf(context));
+    return KitNotice(
+      key: const ValueKey('team-resume-unavailable'),
+      message: l.teamProjectResumeUnavailable,
     );
   }
 }
