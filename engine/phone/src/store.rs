@@ -1720,6 +1720,39 @@ fn apply_command(
                         ) {
                             return Err(StoreError("planningNeedsReconciliation"));
                         }
+                        let prior = &jobs[latest];
+                        let reason = prior["reason"].as_str().unwrap_or("");
+                        let dispatch = &prior["promptDispatch"];
+                        let no_dispatch = dispatch.is_null()
+                            || dispatch.as_object().is_some_and(|d| d.is_empty());
+                        let never_started = prior["sessionIds"]
+                            .as_object()
+                            .is_some_and(|ids| ids.is_empty())
+                            && no_dispatch;
+                        let completed_invalid_proposal = matches!(
+                            reason,
+                            "structuredOutputInvalid"
+                                | "planInvalid"
+                                | "planTaskTitleRequired"
+                                | "invalidPlan"
+                                | "planPhaseInvalid"
+                                | "invalidPlacement"
+                                | "dependencyCycle"
+                                | "missingDependency"
+                        ) && dispatch["planner"] == "dispatched";
+                        let ambiguous = matches!(
+                            reason,
+                            "promptUncertain" | "transport_uncertain" | "sessionCreateUncertain"
+                        ) || (!dispatch.is_null() && !dispatch.is_object())
+                            || dispatch.as_object().is_some_and(|d| {
+                                d.values()
+                                    .any(|state| !matches!(state.as_str(), Some("dispatched")))
+                            });
+                        if reason != "sessionFailed"
+                            && (ambiguous || (!never_started && !completed_invalid_proposal))
+                        {
+                            return Err(StoreError("planningNeedsReconciliation"));
+                        }
                         // This explicit request authorizes a new proposal, not
                         // replaying the old prompt or changing the approved spec.
                         p["tasks"] = json!([]);

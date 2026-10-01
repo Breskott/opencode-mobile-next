@@ -193,3 +193,72 @@ fn retry_refuses_approved_plan_and_cannot_restart_its_tasks() {
     );
     assert_eq!(store.jobs().unwrap(), before);
 }
+
+#[test]
+fn retry_refuses_ambiguous_dispatch_and_session_observation_failures() {
+    for reason in [
+        "promptUncertain",
+        "transport_uncertain",
+        "sessionCreateUncertain",
+        "sessionUnknown",
+        "needsAnswer",
+    ] {
+        let (_, store, id) = fixture(true);
+        fail(&store, reason);
+        let before = store.jobs().unwrap();
+        assert_eq!(
+            store
+                .execute(&command(&store, &id, "retry", "retryPlan"))
+                .unwrap()["code"],
+            "planningNeedsReconciliation"
+        );
+        assert_eq!(store.jobs().unwrap(), before);
+    }
+    let (_, store, id) = fixture(true);
+    let planner = store.jobs().unwrap()[0]["id"].as_str().unwrap().to_owned();
+    store
+        .update_job(&planner, "queued", &json!({"stage":"starting"}))
+        .unwrap();
+    store.update_job(&planner,"starting",&json!({"stage":"running","directory":"/root/work/retry","sessionIds":{"planner":"possibly-live"},"promptDispatch":{"planner":"dispatching"}})).unwrap();
+    store
+        .update_job(
+            &planner,
+            "running",
+            &json!({"stage":"interrupted","reason":"planInvalid"}),
+        )
+        .unwrap();
+    let before = store.jobs().unwrap();
+    assert_eq!(
+        store
+            .execute(&command(&store, &id, "retry", "retryPlan"))
+            .unwrap()["code"],
+        "planningNeedsReconciliation"
+    );
+    assert_eq!(store.jobs().unwrap(), before);
+}
+#[test]
+fn retry_allows_proven_pre_dispatch_failure_and_completed_invalid_proposal() {
+    let (_, store, id) = fixture(true);
+    let planner = store.jobs().unwrap()[0]["id"].as_str().unwrap().to_owned();
+    store
+        .update_job(
+            &planner,
+            "queued",
+            &json!({"stage":"interrupted","reason":"invalid_model"}),
+        )
+        .unwrap();
+    assert_eq!(
+        store
+            .execute(&command(&store, &id, "retry", "retryPlan"))
+            .unwrap()["accepted"],
+        true
+    );
+    let (_, store, id) = fixture(true);
+    fail(&store, "planInvalid");
+    assert_eq!(
+        store
+            .execute(&command(&store, &id, "retry", "retryPlan"))
+            .unwrap()["accepted"],
+        true
+    );
+}
