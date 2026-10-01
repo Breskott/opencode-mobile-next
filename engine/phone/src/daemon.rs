@@ -790,7 +790,80 @@ pub(crate) fn team_sessions(e: &Engine) -> Vec<String> {
         .filter_map(|v| v.as_str().map(str::to_owned))
         .collect()
 }
+struct AdmissionRetry {
+    usage_unknown_since: Option<tokio::time::Instant>,
+    usage_grace: Duration,
+    interval: Duration,
+}
+impl Default for AdmissionRetry {
+    fn default() -> Self {
+        Self {
+            usage_unknown_since: None,
+            usage_grace: Duration::from_secs(30),
+            interval: Duration::from_secs(2),
+        }
+    }
+}
+impl AdmissionRetry {
+    fn may_wait(&mut self, reason: &'static str) -> bool {
+        match reason {
+            "chatBusy" | "chatStatusUnknown" => {
+                self.usage_unknown_since = None;
+                true
+            }
+            "totalUsageUnknown" | "dailyUsageUnknown" | "tokenUsageUnknown" => {
+                self.usage_unknown_since
+                    .get_or_insert_with(tokio::time::Instant::now)
+                    .elapsed()
+                    < self.usage_grace
+            }
+            _ => false,
+        }
+    }
+}
+fn record_admission_reason(
+    e: &Engine,
+    requested: &Value,
+    reason: &str,
+) -> Result<(), &'static str> {
+    let store = e.store.lock().map_err(|_| "storeUnavailable")?;
+    let current = store
+        .jobs()
+        .map_err(|_| "storeUnavailable")?
+        .into_iter()
+        .find(|j| j["id"] == requested["id"])
+        .ok_or("jobMissing")?;
+    let previous = current["reason"].as_str().unwrap_or("");
+    if previous == reason
+        || (reason.is_empty()
+            && !matches!(
+                previous,
+                "chatBusy"
+                    | "chatStatusUnknown"
+                    | "totalUsageUnknown"
+                    | "dailyUsageUnknown"
+                    | "tokenUsageUnknown"
+            ))
+    {
+        return Ok(());
+    }
+    store
+        .update_job(
+            current["id"].as_str().ok_or("jobInvalid")?,
+            current["stage"].as_str().ok_or("jobInvalid")?,
+            &json!({"reason":reason}),
+        )
+        .map_err(|error| error.code())?;
+    Ok(())
+}
 async fn stage_admitted(e: &Engine, requested: &Value) -> Result<(), &'static str> {
+    stage_admitted_retry(e, requested, AdmissionRetry::default()).await
+}
+async fn stage_admitted_retry(
+    e: &Engine,
+    requested: &Value,
+    mut retry: AdmissionRetry,
+) -> Result<(), &'static str> {
     if !execution_enabled(e) {
         return Err("executionUnavailable");
     }
@@ -798,12 +871,20 @@ async fn stage_admitted(e: &Engine, requested: &Value) -> Result<(), &'static st
         let ledger = e.chat.read().await;
         let result = stage_admitted_with_ledger(e, requested, &ledger).await;
         drop(ledger);
-        if !matches!(result, Err("chatBusy" | "chatStatusUnknown")) {
-            return result;
+        match result {
+            Ok(()) => {
+                record_admission_reason(e, requested, "")?;
+                return Ok(());
+            }
+            Err(reason) if retry.may_wait(reason) => {
+                record_admission_reason(e, requested, reason)?;
+                // Another lane's first cumulative usage may arrive after its
+                // dispatch. Refetch briefly; never substitute zero or dispatch
+                // through unknown budgets. Person-chat waits remain unbounded.
+                tokio::time::sleep(retry.interval).await;
+            }
+            Err(reason) => return Err(reason),
         }
-        // Keep the durable checkpoint. Waiting for the person's reply must not
-        // resubmit the worker or turn an already finished worker into an error.
-        tokio::time::sleep(Duration::from_secs(2)).await;
     }
 }
 async fn stage_admitted_with_ledger(
@@ -966,16 +1047,19 @@ async fn admitted_prompt(
     if instructions.is_empty() || prompt.is_empty() {
         return Err("invalid_role");
     }
+    let mut retry = AdmissionRetry::default();
     loop {
         let ledger = e.chat.read().await;
         // Hold through actual HTTP dispatch, never while waiting for the person.
         match stage_admitted_with_ledger(e, job, &ledger).await {
-            Err("chatBusy" | "chatStatusUnknown") => {
+            Err(reason) if retry.may_wait(reason) => {
                 drop(ledger);
-                tokio::time::sleep(Duration::from_secs(2)).await;
+                record_admission_reason(e, job, reason)?;
+                tokio::time::sleep(retry.interval).await;
             }
             Err(code) => return Err(code),
             Ok(()) => {
+                record_admission_reason(e, job, "")?;
                 let id = job["id"].as_str().ok_or("jobInvalid")?;
                 record_dispatch(e, id, checkpoint_role, "dispatching")?;
                 let dispatch = tokio::time::timeout(
@@ -1986,6 +2070,185 @@ mod tests {
         assert!(
             observed_session_usage(&job, "worker", &json!({"cost":0.4}), "2026-10-01")["dailyCost"]
                 .is_null()
+        );
+    }
+
+    async fn limited_parallel_fixture(e: &Engine) -> (String, Value) {
+        let (first, second) = {
+            let store = e.store.lock().unwrap();
+            let created = store.execute(&json!({"requestId":"parallel-create","action":"createProject","name":"Limited parallel",
+                "settings":{"mode":"parallel","maxLanes":2,"reviewLevel":"milestones","maxFixRounds":0,"chargingOnly":false,
+                    "budget":{"chosen":true,"unlimited":false,"daily":2.0,"total":5.0,"taskTokens":null}},
+                "spec":{"goal":"Respect known budgets","milestones":[{"id":"m","title":"Safe","criteria":["Verified"]}]},
+                "repos":[{"id":"repo","serverId":"phone","path":"/root/work/parallel","devCommit":"seed","mainCommit":"seed"}]})).unwrap();
+            let project = created["projectId"].as_str().unwrap();
+            assert_eq!(store.execute(&json!({"requestId":"parallel-spec","action":"approveSpec","projectId":project,"expectedRevision":0})).unwrap()["accepted"],true);
+            let planner = store.jobs().unwrap()[0]["id"].as_str().unwrap().to_owned();
+            store
+                .update_job(&planner, "queued", &json!({"stage":"starting"}))
+                .unwrap();
+            store
+                .update_job(&planner, "starting", &json!({"stage":"running"}))
+                .unwrap();
+            store.update_job(&planner,"running",&json!({"stage":"completed","plan":{"phases":[{"id":"phase","title":"Build","milestoneId":"m"}],
+                "tasks":[{"id":"one","title":"One","phaseId":"phase","roleId":"worker","repoId":"repo","serverId":"phone","criteria":["Verified"],"dependsOn":[]},
+                    {"id":"two","title":"Two","phaseId":"phase","roleId":"worker","repoId":"repo","serverId":"phone","criteria":["Verified"],"dependsOn":[]}]}})).unwrap();
+            let revision = store.workspace().unwrap()["projects"][0]["revision"].clone();
+            assert_eq!(store.execute(&json!({"requestId":"parallel-plan","action":"approvePlan","projectId":project,"expectedRevision":revision})).unwrap()["accepted"],true);
+            let jobs = store.jobs().unwrap();
+            let first = jobs.iter().find(|j| j["taskId"] == "one").unwrap()["id"]
+                .as_str()
+                .unwrap()
+                .to_owned();
+            let second = jobs.iter().find(|j| j["taskId"] == "two").unwrap()["id"]
+                .as_str()
+                .unwrap()
+                .to_owned();
+            for (id, session, dispatched) in
+                [(&first, "ses_one", true), (&second, "ses_two", false)]
+            {
+                store
+                    .update_job(id, "queued", &json!({"stage":"starting"}))
+                    .unwrap();
+                store.update_job(id,"starting",&json!({"stage":"running","directory":"/root/work/parallel","sessionIds":{"worker":session},"freshSessionIds":{"worker":session}})).unwrap();
+                if dispatched {
+                    store
+                        .update_job(
+                            id,
+                            "running",
+                            &json!({"promptDispatch":{"worker":"dispatched"}}),
+                        )
+                        .unwrap();
+                }
+            }
+            let requested = store
+                .jobs()
+                .unwrap()
+                .into_iter()
+                .find(|j| j["id"] == second)
+                .unwrap();
+            (first, requested)
+        };
+        let now = crate::admission::now_ms();
+        crate::admission::accept(
+            e,
+            ChatHeartbeat {
+                until: now + 60_000,
+                session_ids: vec![],
+                directories: vec![],
+                known: true,
+                app_instance: "parallel-app".into(),
+                sequence: 1,
+            },
+        )
+        .await
+        .unwrap();
+        (first, second)
+    }
+
+    #[tokio::test]
+    async fn parallel_prompt_waits_for_actual_other_lane_usage_before_dispatch() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let root = tempfile::tempdir().unwrap();
+        let mut e = attested_fixture(root.path(), "proot");
+        let posts = Arc::new(AtomicUsize::new(0));
+        let writes = posts.clone();
+        let app = Router::new().fallback(move |request: Request| {
+            let writes = writes.clone();
+            async move {
+                if request.method() == axum::http::Method::POST {
+                    writes.fetch_add(1, Ordering::SeqCst);
+                }
+                StatusCode::NO_CONTENT
+            }
+        });
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        Arc::get_mut(&mut e).unwrap().server =
+            OpenCodeClient::new(&url, "opencode", "fixture-only").unwrap();
+        let (first, second) = limited_parallel_fixture(&e).await;
+        let prompt = admitted_prompt(
+            &e,
+            &second,
+            "/root/work/parallel",
+            "ses_two",
+            "worker",
+            "",
+            "Do the approved task",
+            "Task",
+            "worker",
+            false,
+        );
+        let usage = async {
+            tokio::time::sleep(Duration::from_millis(40)).await;
+            assert_eq!(
+                posts.load(Ordering::SeqCst),
+                0,
+                "unknown budgets must not dispatch"
+            );
+            let store = e.store.lock().unwrap();
+            let current = store
+                .jobs()
+                .unwrap()
+                .into_iter()
+                .find(|j| j["id"] == second["id"])
+                .unwrap();
+            assert_eq!(current["reason"], "totalUsageUnknown");
+            assert!(current["promptDispatch"].is_null());
+            store.update_job(&first,"running",&json!({"sessionUsage":{"worker":{"cost":0.2,"tokens":12,"day":utc_day(),"dailyCost":0.2}}})).unwrap();
+        };
+        let (result, ()) = tokio::join!(prompt, usage);
+        server.abort();
+        assert_eq!(result, Ok(()));
+        assert_eq!(posts.load(Ordering::SeqCst), 1);
+        let current = e
+            .store
+            .lock()
+            .unwrap()
+            .jobs()
+            .unwrap()
+            .into_iter()
+            .find(|j| j["id"] == second["id"])
+            .unwrap();
+        assert_eq!(current["promptDispatch"]["worker"], "dispatched");
+        assert_eq!(current["reason"], "");
+    }
+
+    #[tokio::test]
+    async fn persistent_parallel_usage_unknown_is_bounded_and_never_fabricated_zero() {
+        let root = tempfile::tempdir().unwrap();
+        let e = attested_fixture(root.path(), "proot");
+        let (_, second) = limited_parallel_fixture(&e).await;
+        let retry = AdmissionRetry {
+            usage_unknown_since: None,
+            usage_grace: Duration::from_millis(30),
+            interval: Duration::from_millis(5),
+        };
+        let result = tokio::time::timeout(
+            Duration::from_secs(2),
+            stage_admitted_retry(&e, &second, retry),
+        )
+        .await
+        .unwrap();
+        assert_eq!(result, Err("totalUsageUnknown"));
+        let current = e
+            .store
+            .lock()
+            .unwrap()
+            .jobs()
+            .unwrap()
+            .into_iter()
+            .find(|j| j["id"] == second["id"])
+            .unwrap();
+        assert_eq!(current["reason"], "totalUsageUnknown");
+        assert!(current["promptDispatch"].is_null());
+        assert_eq!(
+            accounted_cost(&current),
+            Some(0.0),
+            "second undispatched lane is zero; first lane remains unknown"
         );
     }
 

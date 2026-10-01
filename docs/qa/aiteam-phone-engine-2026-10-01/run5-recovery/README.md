@@ -46,3 +46,13 @@ Parallel workers now commit verification reports to
 on the engine-required common report. Checkers inspect that exact task report;
 older engine reports may be read only when they contain actual evidence for the
 same task/criteria. One additional regression checks the distinct paths.
+
+A limited-budget Parallel-2 lane now waits up to 30 seconds for another freshly
+dispatched lane's first cumulative usage observation. During this interval the
+real typed `totalUsageUnknown`/`dailyUsageUnknown`/`tokenUsageUnknown` checkpoint
+is recorded, and no prompt is dispatched. Actual measured usage permits the next
+admission; persistent unknown returns the same typed review reason. Budget limits
+reached, invalid configuration and non-budget failures do not gain a retry.
+Person-chat waits remain separate, and reset the usage grace interval. Two async
+regressions exercise the production prompt gate (no POST before actual usage,
+exactly one after it), and bounded persistent unknown with no invented zero.
