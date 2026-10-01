@@ -21833,7 +21833,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Change. Takes effect the next time a worker starts.';
 
   @override
-  String get teamModelSheetTitle => 'Model for the team\'s workers';
+  String get teamModelSheetTitle => 'Model for the workers';
 
   @override
   String get teamModelSheetNote =>
@@ -21849,7 +21849,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamNowReasonWorkerPreparing =>
-      'The worker is being set up: its workspace is made and its program is starting.';
+      'The worker is being set up: its folder is made and its program is starting.';
 
   @override
   String get teamNowReasonWorkerRunning =>
@@ -24194,7 +24194,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Compact replaces earlier messages with a short summary to save space. It can\'t be undone.';
 
   @override
-  String get chatUiCompactConfirmAction => 'Compact';
+  String get chatUiCompactConfirmAction => 'Compact conversation';
 
   @override
   String get kitTurnReconnecting =>
@@ -24640,13 +24640,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'It is waiting for its next task. Message it below to ask for something.';
 
   @override
-  String get teamUiAgentLabelSessionTitle => 'Session title';
+  String get teamUiAgentLabelSessionTitle => 'Conversation title';
 
   @override
   String get kitComposerPillNoAnswer => 'No answer yet';
 
   @override
-  String get kitComposerRailRetry => 'Retry';
+  String get kitComposerRailRetry => 'Try again';
 
   @override
   String get teamProjectHome => 'AI Team';
@@ -24680,7 +24680,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamProjectLoad => 'Loading projects';
 
   @override
-  String get teamProjectRetry => 'Retry';
+  String get teamProjectRetry => 'Try again';
 
   @override
   String get teamProjectError =>
@@ -24724,6 +24724,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamProjectResume => 'Resume project';
+
+  @override
+  String get teamProjectStopConfirmTitle => 'Stop this project?';
 
   @override
   String get teamProjectStop => 'Stop project';
@@ -24829,14 +24832,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamProjectUnknown => 'Not reported';
 
   @override
+  String get teamProjectAcceptMilestoneConfirmTitle => 'Accept this milestone?';
+
+  @override
   String get teamProjectAccept => 'Accept milestone';
+
+  @override
+  String get teamProjectMergeConfirmTitle => 'Merge into dev?';
 
   @override
   String get teamProjectMergeNext => 'Merge checked work into dev';
 
   @override
   String get teamProjectCostDemo =>
-      'Demo figures are simulated; device memory, battery, heat and chat slowdown have not been measured.';
+      'Demo figures are simulated; device memory, battery, heat and conversation speed have not been measured.';
 
   @override
   String teamProjectProgress(int done, int total, int working) {
@@ -24938,12 +24947,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String teamProjectEditorCostMeasured(String host, String memory) {
-    return 'On $host: about $memory MB of memory per lane, measured. Battery and chat speed are not measured yet.';
+    return 'On $host: about $memory MB of memory per lane, measured. Battery and conversation speed are not measured yet.';
   }
 
   @override
   String teamProjectEditorCostNotMeasured(String host) {
-    return 'Not measured on $host yet. Your chat stays first.';
+    return 'Not measured on $host yet. Your conversation stays first.';
   }
 
   @override
@@ -25199,6 +25208,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamProjectTaskMergeRun => 'Check and merge to dev';
 
   @override
+  String get teamProjectTaskPromoteConfirmTitle => 'Promote dev to main?';
+
+  @override
   String get teamProjectTaskPromote => 'Promote dev to main';
 
   @override
@@ -25216,6 +25228,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamProjectTaskResume => 'Resume task';
+
+  @override
+  String get teamProjectTaskStopConfirmTitle => 'Stop this task?';
 
   @override
   String get teamProjectTaskStop => 'Stop task';
@@ -25290,7 +25305,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter a positive token limit or leave it empty.';
 
   @override
-  String get teamProjectEditorReload => 'Reload latest project';
+  String get teamProjectEditorReloadConfirmTitle => 'Refresh this project?';
+
+  @override
+  String get teamProjectEditorReload => 'Refresh latest project';
 
   @override
   String get teamProjectEditorDiscardDraft =>
@@ -25317,7 +25335,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamProjectEditorScreenOffHelp =>
-      'This preference is saved for the project. Background work remains subject to the host and system limits.';
+      'This preference is saved for the project. Background work remains subject to the server and system limits.';
 
   @override
   String get teamProjectEditorDraftApproval =>
@@ -25353,6 +25371,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamProjectEditorDraftClearFailed =>
       'Changes were saved, but the local draft could not be cleared. Close this sheet and review the project before trying again.';
+
+  @override
+  String get teamProjectRestartElsewhereConfirmTitle => 'Start over elsewhere?';
 
   @override
   String get teamProjectRestartElsewhere => 'Start over elsewhere';
@@ -25438,18 +25459,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String teamProjectGoalStatus(
-    int version,
-    String age,
-    int milestones,
-    int repos,
-  ) {
-    return 'Spec v$version · approved $age · $milestones milestones · $repos repos';
+  String teamProjectGoalStatus(String age, int milestones, int repos) {
+    return 'Spec approved $age · $milestones milestones · $repos repos';
   }
 
   @override
-  String teamProjectGoalStatusDraft(int version, int milestones, int repos) {
-    return 'Spec v$version · $milestones milestones · $repos repos';
+  String teamProjectGoalStatusDraft(int milestones, int repos) {
+    return 'Draft spec · $milestones milestones · $repos repos';
   }
 
   @override
@@ -25486,7 +25502,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String teamProjectLanesTitle(int busy, int total) {
-    return 'Lanes · $busy of $total busy';
+    return 'Lanes $busy/$total busy';
   }
 
   @override
@@ -25891,7 +25907,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneTeamNotNeeded => 'Not needed';
 
   @override
-  String get phoneTeamStopTitle => 'Stop OpenCode for a minute?';
+  String get phoneTeamStopTitle => 'Stop OpenCode briefly?';
 
   @override
   String get phoneTeamStopBody =>
@@ -25907,7 +25923,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneTeamStopWaiting => 'Waiting for your answer';
 
   @override
-  String get phoneTeamDoneTitle => 'AI Team is ready on this phone';
+  String get phoneTeamDoneTitle => 'AI Team is ready';
 
   @override
   String get phoneTeamDoneBody =>
@@ -25928,14 +25944,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'The team\'s engine didn\'t start on this phone.';
 
   @override
-  String get phoneTeamFailStopTitle => 'OpenCode didn\'t stop';
+  String get phoneTeamFailStopTitle => 'The server didn\'t stop';
 
   @override
   String get phoneTeamFailStopBody =>
       'OpenCode or a terminal didn\'t close, so the check can\'t run safely yet.';
 
   @override
-  String get phoneTeamFailServerTitle => 'OpenCode didn\'t come back';
+  String get phoneTeamFailServerTitle => 'The server didn\'t return';
 
   @override
   String get phoneTeamFailServerBody =>
@@ -25956,8 +25972,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'OpenCode stays as it is, so the team stays off. Start again when you\'re ready to restart it.';
 
   @override
-  String get phoneTeamFailNoServerTitle =>
-      'Set up OpenCode on this phone first';
+  String get phoneTeamFailNoServerTitle => 'Add a server first';
 
   @override
   String get phoneTeamFailNoServerBody =>
@@ -26004,7 +26019,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneTeamDetails => 'Details';
 
   @override
-  String get phoneTeamOffTitle => 'AI Team is off on this phone';
+  String get phoneTeamOffTitle => 'AI Team is off';
 
   @override
   String get phoneTeamOffBody =>
@@ -26032,14 +26047,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get phoneTeamBlockedTitle => 'Check this phone first';
+  String get phoneTeamBlockedTitle => 'Check this phone first?';
 
   @override
   String get teamMigrationTitle => 'AI Team has changed';
 
   @override
   String get teamMigrationBody =>
-      'The new AI Team plans whole projects and runs them on this phone. Your old team keeps working, but it only takes quick tasks: it cannot plan projects. Switching asks before it stops anything.';
+      'The new AI Team plans whole projects and runs them on this phone. Your old team keeps taking quick tasks but cannot plan projects, and switching asks before it stops anything.';
 
   @override
   String get teamMigrationSwitch => 'Switch to the new AI Team on this phone';
@@ -26163,7 +26178,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamRefusalSessionFailed =>
-      'The planner\'s session stopped before it answered.';
+      'The planner stopped before it answered.';
 
   @override
   String get teamRefusalSessionFailedNext =>
@@ -26202,7 +26217,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamRefusalSessionUncertain =>
-      'The team isn\'t sure where its last session got to.';
+      'The team isn\'t sure how far its last run got.';
 
   @override
   String get teamRefusalSessionUncertainNext =>
@@ -26232,14 +26247,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamRefusalAppStopped =>
-      'The app stopped while the team was working.';
+      'The app closed before the team finished.';
 
   @override
   String get teamRefusalAppStoppedNext => 'Resume to check where it got to.';
 
   @override
   String get teamRefusalChatBusy =>
-      'The team is waiting for your chat reply to finish.';
+      'The team is waiting for your conversation to finish replying.';
 
   @override
   String get teamRefusalChatBusyNext => 'It carries on by itself afterwards.';
@@ -26342,10 +26357,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Try again. If it keeps happening, report the problem.';
 
   @override
-  String get teamRefusalPlanTaskTitle => 'A task in the plan has no name.';
+  String get teamRefusalPlanTaskName => 'A task in the plan has no name.';
 
   @override
-  String get teamRefusalPlanTaskTitleNext =>
+  String get teamRefusalPlanTaskNameNext =>
       'Give every task a name, then approve again.';
 
   @override

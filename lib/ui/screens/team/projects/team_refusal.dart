@@ -35,8 +35,8 @@ final Map<String, (_Say, _Say)> _known = {
     (l) => l.teamRefusalRepositoryDamagedNext,
   ),
   'planTaskTitleRequired': (
-    (l) => l.teamRefusalPlanTaskTitle,
-    (l) => l.teamRefusalPlanTaskTitleNext,
+    (l) => l.teamRefusalPlanTaskName,
+    (l) => l.teamRefusalPlanTaskNameNext,
   ),
   'planPhaseInvalid': (
     (l) => l.teamRefusalPlanPhase,

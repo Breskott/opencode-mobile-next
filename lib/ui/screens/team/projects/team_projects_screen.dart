@@ -319,7 +319,7 @@ class TeamProjectOverview extends StatelessWidget {
           onSelected: () async {
             if (await showKitConfirm(
               context,
-              title: l.teamProjectStop,
+              title: l.teamProjectStopConfirmTitle,
               body: l.teamProjectStopBody,
               confirmLabel: l.teamProjectStop,
               kind: KitConfirmKind.stop,
@@ -717,12 +717,10 @@ String _goalStatus(BuildContext context, AppLocalizations l, TeamProject p) {
   final at = DateTime.tryParse(approved?.approvedAt ?? '');
   return at == null
       ? l.teamProjectGoalStatusDraft(
-          spec.version,
           spec.milestones.length,
           p.repos.length,
         )
       : l.teamProjectGoalStatus(
-          spec.version,
           _age(context, approved!.approvedAt),
           spec.milestones.length,
           p.repos.length,
@@ -877,8 +875,8 @@ Future<void> _answer(
       if (milestone != null &&
           await showKitConfirm(
             context,
-            title: milestone.title,
-            body: milestone.criteria.join('\n'),
+            title: l.teamProjectAcceptMilestoneConfirmTitle,
+            body: '${milestone.title}\n${milestone.criteria.join('\n')}',
             confirmLabel: l.teamProjectAccept,
           )) {
         await _command(
@@ -1477,7 +1475,7 @@ class TeamProjectServers extends StatelessWidget {
                         context.mounted) {
                       final restart = await showKitConfirm(
                         context,
-                        title: l.teamProjectRestartElsewhere,
+                        title: l.teamProjectRestartElsewhereConfirmTitle,
                         body: l.teamProjectRestartElsewhereBody,
                         confirmLabel: l.teamProjectRestartElsewhere,
                         cancelLabel: l.teamProjectWaitForServer,

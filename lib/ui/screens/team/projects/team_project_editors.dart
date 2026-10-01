@@ -586,7 +586,7 @@ class _EditorState extends State<_Editor> {
   Future<void> _reload() async {
     final approved = await showKitConfirm(
       context,
-      title: _l.teamProjectEditorReload,
+      title: _l.teamProjectEditorReloadConfirmTitle,
       body: _l.teamProjectEditorDiscardDraft,
       confirmLabel: _l.teamProjectEditorReload,
     );

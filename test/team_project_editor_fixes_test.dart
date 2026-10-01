@@ -133,12 +133,12 @@ void main() {
     expect(find.textContaining('about 120 MB of memory per lane'), findsOne);
     await _tap(tester, 'Build box');
     expect(
-      find.text('Not measured on Build box yet. Your chat stays first.'),
+      find.text('Not measured on Build box yet. Your conversation stays first.'),
       findsOne,
     );
     await _tap(tester, 'Phone');
     expect(
-      find.text('Not measured on this phone yet. Your chat stays first.'),
+      find.text('Not measured on this phone yet. Your conversation stays first.'),
       findsOne,
     );
     await tester.pumpWidget(const SizedBox.shrink());

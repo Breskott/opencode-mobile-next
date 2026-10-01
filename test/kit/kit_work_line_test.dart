@@ -678,29 +678,21 @@ void main() {
     expect(find.byKey(_stepsKey), findsOneWidget);
   });
 
-  testWidgets('the steps stroke is one physical pixel at '
-      'the start edge (DPR 3)', (tester) async {
+  testWidgets('the opened steps draw no grouping stroke (DPR 3)', (
+    tester,
+  ) async {
     await _pump(tester, _line(expanded: true), devicePixelRatio: 3);
     final steps = find.byKey(_stepsKey);
     final hairline = KitTokens.of(tester.element(steps)).roles.hairline;
-    // Every shape painted in the hairline role: its drawn thickness is
-    // 1/3 dp, one physical pixel at DPR 3, and it sits on the start edge.
-    final strokes = <Rect>[
+    // The steps sit on the transcript's one gutter (crit-chat-insets): no
+    // shape of the steps is painted in the hairline role.
+    final strokes = [
       for (final args in _paintCalls(tester, steps))
         if (args.any(
           (a) => a is Paint && a.color.toARGB32() == hairline.toARGB32(),
         ))
-          switch (args.first) {
-            final Path p => p.getBounds(),
-            final Rect r => r,
-            final RRect r => r.outerRect,
-            _ => Rect.zero,
-          },
+          args,
     ];
-    expect(strokes, hasLength(1));
-    final stepsBox = tester.getRect(steps);
-    expect(strokes.single.width, closeTo(1 / 3, 1e-6));
-    expect(strokes.single.left, closeTo(0, 1e-6));
-    expect(strokes.single.height, closeTo(stepsBox.height, 1e-6));
+    expect(strokes, isEmpty);
   });
 }

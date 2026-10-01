@@ -26093,7 +26093,7 @@
   "@teamModelChange": {
     "description": "Under the team model row: what tapping does and when it applies."
   },
-  "teamModelSheetTitle": "Model for the team's workers",
+  "teamModelSheetTitle": "Model for the workers",
   "@teamModelSheetTitle": {
     "description": "Title of the sheet that picks the team's model."
   },
@@ -26109,7 +26109,7 @@
   "@teamModelFailed": {
     "description": "Notice when saving the team's model on the phone failed."
   },
-  "teamNowReasonWorkerPreparing": "The worker is being set up: its workspace is made and its program is starting.",
+  "teamNowReasonWorkerPreparing": "The worker is being set up: its folder is made and its program is starting.",
   "@teamNowReasonWorkerPreparing": {
     "description": "Team Now line reason while the worker's session is being created or its program is starting."
   },
@@ -29168,7 +29168,7 @@
   "@chatUiCompactConfirmBody": {
     "description": "Confirm sheet: one line on what Compact does"
   },
-  "chatUiCompactConfirmAction": "Compact",
+  "chatUiCompactConfirmAction": "Compact conversation",
   "@chatUiCompactConfirmAction": {
     "description": "Confirm sheet button that starts compacting"
   },
@@ -29807,7 +29807,7 @@
   "@chatWatchEmptyIdleBody": {
     "description": "Empty watching page body while the agent is idle"
   },
-  "teamUiAgentLabelSessionTitle": "Session title",
+  "teamUiAgentLabelSessionTitle": "Conversation title",
   "@teamUiAgentLabelSessionTitle": {
     "description": "Technical details label: the title the agent's own conversation carries inside its harness"
   },
@@ -29815,7 +29815,7 @@
   "@kitComposerPillNoAnswer": {
     "description": "Composer status pill: the server has been quiet for a while"
   },
-  "kitComposerRailRetry": "Retry",
+  "kitComposerRailRetry": "Try again",
   "@kitComposerRailRetry": {
     "description": "Composer top row: action that sends a failed message again"
   },
@@ -29829,7 +29829,7 @@
   "teamProjectSelect": "Select a project",
   "teamProjectSelectTask": "Select a task to follow its conversation.",
   "teamProjectLoad": "Loading projects",
-  "teamProjectRetry": "Retry",
+  "teamProjectRetry": "Try again",
   "teamProjectError": "The project could not be updated. Your saved work is still available.",
   "teamProjectSpec": "Open spec",
   "teamProjectPlan": "Review plan",
@@ -29844,6 +29844,7 @@
   "teamProjectDecisions": "Recent decisions",
   "teamProjectPause": "Pause project",
   "teamProjectResume": "Resume project",
+  "teamProjectStopConfirmTitle": "Stop this project?",
   "teamProjectStop": "Stop project",
   "teamProjectStopBody": "Running tasks will stop. Their work and project history will be kept.",
   "teamProjectAdvance": "Advance demo",
@@ -29878,9 +29879,11 @@
   "teamProjectOffline": "Not reachable · last known tasks",
   "teamProjectNoLimit": "No limit",
   "teamProjectUnknown": "Not reported",
+  "teamProjectAcceptMilestoneConfirmTitle": "Accept this milestone?",
   "teamProjectAccept": "Accept milestone",
+  "teamProjectMergeConfirmTitle": "Merge into dev?",
   "teamProjectMergeNext": "Merge checked work into dev",
-  "teamProjectCostDemo": "Demo figures are simulated; device memory, battery, heat and chat slowdown have not been measured.",
+  "teamProjectCostDemo": "Demo figures are simulated; device memory, battery, heat and conversation speed have not been measured.",
   "teamProjectProgress": "{done} of {total} tasks complete · {working} working",
   "@teamProjectProgress": {
     "placeholders": {
@@ -29949,7 +29952,7 @@
   "teamProjectEditorSingle": "Single lane",
   "teamProjectEditorParallel": "Parallel agents",
   "teamProjectEditorMaxLanes": "Maximum lanes",
-  "teamProjectEditorCostMeasured": "On {host}: about {memory} MB of memory per lane, measured. Battery and chat speed are not measured yet.",
+  "teamProjectEditorCostMeasured": "On {host}: about {memory} MB of memory per lane, measured. Battery and conversation speed are not measured yet.",
   "@teamProjectEditorCostMeasured": {
     "description": "Cost line in the New project sheet, from a measured host",
     "placeholders": {
@@ -29961,7 +29964,7 @@
       }
     }
   },
-  "teamProjectEditorCostNotMeasured": "Not measured on {host} yet. Your chat stays first.",
+  "teamProjectEditorCostNotMeasured": "Not measured on {host} yet. Your conversation stays first.",
   "@teamProjectEditorCostNotMeasured": {
     "description": "Cost line when the chosen host has no measurement",
     "placeholders": {
@@ -30048,12 +30051,14 @@
   "teamProjectTaskMinor": "Minor",
   "teamProjectTaskMerge": "Merge queue to dev",
   "teamProjectTaskMergeRun": "Check and merge to dev",
+  "teamProjectTaskPromoteConfirmTitle": "Promote dev to main?",
   "teamProjectTaskPromote": "Promote dev to main",
   "teamProjectTaskPromoteBody": "This updates protected main to the dev commit you reviewed. The engine will check both commits again before changing main.",
   "teamProjectTaskPromotion": "Protected branch",
   "teamProjectTaskDiff": "View changes",
   "teamProjectTaskPause": "Pause task",
   "teamProjectTaskResume": "Resume task",
+  "teamProjectTaskStopConfirmTitle": "Stop this task?",
   "teamProjectTaskStop": "Stop task",
   "teamProjectTaskStopBody": "Stop this task and keep its conversation and changes for review.",
   "teamProjectTaskRestart": "Start task again",
@@ -30076,7 +30081,8 @@
   "teamProjectOff": "Leave demo",
   "teamProjectEditorFixRoundsRange": "Enter a fix-round limit from 0 to 3.",
   "teamProjectEditorPositiveTokens": "Enter a positive token limit or leave it empty.",
-  "teamProjectEditorReload": "Reload latest project",
+  "teamProjectEditorReloadConfirmTitle": "Refresh this project?",
+  "teamProjectEditorReload": "Refresh latest project",
   "teamProjectEditorDiscardDraft": "This replaces your unsaved edits with the latest project. Your saved project is kept.",
   "teamProjectEditorRoleRequired": "Enter a name for this role.",
   "teamProjectEditorDefaults": "New project defaults",
@@ -30084,7 +30090,7 @@
   "teamProjectEditorContextFiles": "Files to read first",
   "teamProjectEditorContextFilesHelp": "Optional. One path per line. The team reads these before it plans. The demo does not read or upload files.",
   "teamProjectEditorScreenOff": "Keep working with the screen off",
-  "teamProjectEditorScreenOffHelp": "This preference is saved for the project. Background work remains subject to the host and system limits.",
+  "teamProjectEditorScreenOffHelp": "This preference is saved for the project. Background work remains subject to the server and system limits.",
   "teamProjectEditorDraftApproval": "Draft changes need your approval before they become the project spec.",
   "teamProjectEditorChangeRequest": "What should the planner change?",
   "teamProjectEditorAskChange": "Ask to change",
@@ -30095,6 +30101,7 @@
   "teamProjectTaskFindingsAddressed": "Findings addressed",
   "teamProjectMergeConfirmBody": "Checked task branches will merge into dev, followed by combined checks. Main stays unchanged.",
   "teamProjectEditorDraftClearFailed": "Changes were saved, but the local draft could not be cleared. Close this sheet and review the project before trying again.",
+  "teamProjectRestartElsewhereConfirmTitle": "Start over elsewhere?",
   "teamProjectRestartElsewhere": "Start over elsewhere",
   "teamProjectRestartElsewhereBody": "Start a new attempt on this server. The previous branch stays on its original server.",
   "teamProjectWaitForServer": "Wait for the original server",
@@ -30140,12 +30147,9 @@
       }
     }
   },
-  "teamProjectGoalStatus": "Spec v{version} · approved {age} · {milestones} milestones · {repos} repos",
+  "teamProjectGoalStatus": "Spec approved {age} · {milestones} milestones · {repos} repos",
   "@teamProjectGoalStatus": {
     "placeholders": {
-      "version": {
-        "type": "int"
-      },
       "age": {
         "type": "String"
       },
@@ -30157,12 +30161,9 @@
       }
     }
   },
-  "teamProjectGoalStatusDraft": "Spec v{version} · {milestones} milestones · {repos} repos",
+  "teamProjectGoalStatusDraft": "Draft spec · {milestones} milestones · {repos} repos",
   "@teamProjectGoalStatusDraft": {
     "placeholders": {
-      "version": {
-        "type": "int"
-      },
       "milestones": {
         "type": "int"
       },
@@ -30214,7 +30215,7 @@
     }
   },
   "teamProjectMilestoneNoTasks": "No tasks yet",
-  "teamProjectLanesTitle": "Lanes · {busy} of {total} busy",
+  "teamProjectLanesTitle": "Lanes {busy}/{total} busy",
   "@teamProjectLanesTitle": {
     "placeholders": {
       "busy": {
@@ -30661,7 +30662,7 @@
   "@phoneTeamNotNeeded": {
     "description": "Under a step that was skipped because nothing needed doing"
   },
-  "phoneTeamStopTitle": "Stop OpenCode for a minute?",
+  "phoneTeamStopTitle": "Stop OpenCode briefly?",
   "@phoneTeamStopTitle": {
     "description": "Question before stopping the OpenCode server on this phone"
   },
@@ -30681,7 +30682,7 @@
   "@phoneTeamStopWaiting": {
     "description": "Under step 2 while the stop question is open"
   },
-  "phoneTeamDoneTitle": "AI Team is ready on this phone",
+  "phoneTeamDoneTitle": "AI Team is ready",
   "@phoneTeamDoneTitle": {
     "description": "Headline once the team passed its check and OpenCode is back"
   },
@@ -30705,7 +30706,7 @@
   "@phoneTeamFailEngineBody": {
     "description": "Failure: the engine did not start or answer"
   },
-  "phoneTeamFailStopTitle": "OpenCode didn't stop",
+  "phoneTeamFailStopTitle": "The server didn't stop",
   "@phoneTeamFailStopTitle": {
     "description": "Failure headline: the server or a terminal did not stop"
   },
@@ -30713,7 +30714,7 @@
   "@phoneTeamFailStopBody": {
     "description": "Failure: stopping did not complete"
   },
-  "phoneTeamFailServerTitle": "OpenCode didn't come back",
+  "phoneTeamFailServerTitle": "The server didn't return",
   "@phoneTeamFailServerTitle": {
     "description": "Failure headline: the server did not start again"
   },
@@ -30737,7 +30738,7 @@
   "@phoneTeamFailDeclinedBody": {
     "description": "After the person said not now to the stop question"
   },
-  "phoneTeamFailNoServerTitle": "Set up OpenCode on this phone first",
+  "phoneTeamFailNoServerTitle": "Add a server first",
   "@phoneTeamFailNoServerTitle": {
     "description": "Headline when there is no OpenCode on this phone"
   },
@@ -30789,7 +30790,7 @@
   "@phoneTeamDetails": {
     "description": "Fold title for technical reasons under a failure"
   },
-  "phoneTeamOffTitle": "AI Team is off on this phone",
+  "phoneTeamOffTitle": "AI Team is off",
   "@phoneTeamOffTitle": {
     "description": "Headline when the team was on but its engine is not answering"
   },
@@ -30829,12 +30830,12 @@
       }
     }
   },
-  "phoneTeamBlockedTitle": "Check this phone first",
+  "phoneTeamBlockedTitle": "Check this phone first?",
   "@phoneTeamBlockedTitle": {
     "description": "Question title when a work action waits for the phone check"
   },
   "teamMigrationTitle": "AI Team has changed",
-  "teamMigrationBody": "The new AI Team plans whole projects and runs them on this phone. Your old team keeps working, but it only takes quick tasks: it cannot plan projects. Switching asks before it stops anything.",
+  "teamMigrationBody": "The new AI Team plans whole projects and runs them on this phone. Your old team keeps taking quick tasks but cannot plan projects, and switching asks before it stops anything.",
   "teamMigrationSwitch": "Switch to the new AI Team on this phone",
   "teamMigrationKeep": "Keep the old team for now",
   "teamMigrationMenu": "What's new in AI Team",
@@ -30953,7 +30954,7 @@
   "@teamRefusalEngineClosedNext": {
     "description": "Way forward for refusal code engineClosed"
   },
-  "teamRefusalSessionFailed": "The planner's session stopped before it answered.",
+  "teamRefusalSessionFailed": "The planner stopped before it answered.",
   "@teamRefusalSessionFailed": {
     "description": "Plain reason for engine code sessionFailed"
   },
@@ -30993,7 +30994,7 @@
   "@teamRefusalCloneFailedNext": {
     "description": "Way forward for engine code cloneFailed"
   },
-  "teamRefusalSessionUncertain": "The team isn't sure where its last session got to.",
+  "teamRefusalSessionUncertain": "The team isn't sure how far its last run got.",
   "@teamRefusalSessionUncertain": {
     "description": "Plain reason for engine code sessionUncertain"
   },
@@ -31025,7 +31026,7 @@
   "@teamRefusalRecoveryReviewNext": {
     "description": "Way forward for engine code recoveryNeedsReview"
   },
-  "teamRefusalAppStopped": "The app stopped while the team was working.",
+  "teamRefusalAppStopped": "The app closed before the team finished.",
   "@teamRefusalAppStopped": {
     "description": "Plain reason for engine code restartNeedsReconciliation"
   },
@@ -31033,7 +31034,7 @@
   "@teamRefusalAppStoppedNext": {
     "description": "Way forward for engine code restartNeedsReconciliation"
   },
-  "teamRefusalChatBusy": "The team is waiting for your chat reply to finish.",
+  "teamRefusalChatBusy": "The team is waiting for your conversation to finish replying.",
   "@teamRefusalChatBusy": {
     "description": "Plain reason for engine code chatBusy"
   },
@@ -31146,10 +31147,10 @@
   "@teamRefusalRepositoryDamaged": {"description": "AI Team: why a project command was refused (repository_object_hash_mismatch)."},
   "teamRefusalRepositoryDamagedNext": "Try again. If it keeps happening, report the problem.",
   "@teamRefusalRepositoryDamagedNext": {"description": "AI Team: what to do next after repository_object_hash_mismatch."},
-  "teamRefusalPlanTaskTitle": "A task in the plan has no name.",
-  "@teamRefusalPlanTaskTitle": {"description": "AI Team: why a project command was refused (planTaskTitleRequired)."},
-  "teamRefusalPlanTaskTitleNext": "Give every task a name, then approve again.",
-  "@teamRefusalPlanTaskTitleNext": {"description": "AI Team: what to do next after planTaskTitleRequired."},
+  "teamRefusalPlanTaskName": "A task in the plan has no name.",
+  "@teamRefusalPlanTaskName": {"description": "AI Team: why a project command was refused (planTaskTitleRequired)."},
+  "teamRefusalPlanTaskNameNext": "Give every task a name, then approve again.",
+  "@teamRefusalPlanTaskNameNext": {"description": "AI Team: what to do next after planTaskTitleRequired."},
   "teamRefusalPlanPhase": "A phase in the plan isn't complete.",
   "@teamRefusalPlanPhase": {"description": "AI Team: why a project command was refused (planPhaseInvalid)."},
   "teamRefusalPlanPhaseNext": "Check each phase has tasks and criteria, then approve again.",

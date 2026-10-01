@@ -525,7 +525,7 @@ void main() {
       // Asked first: nothing is compacted until the person confirms.
       expect(find.text('Compact this conversation?'), findsOneWidget);
       expect(repository.compacted, isEmpty);
-      await tester.tap(find.widgetWithText(KitButton, 'Compact'));
+      await tester.tap(find.widgetWithText(KitButton, 'Compact conversation'));
       await tester.pumpAndSettle();
       expect(repository.compacted, ['session-1']);
       expect(_nudge(NudgeId.compact), findsNothing);
@@ -826,6 +826,17 @@ void main() {
         await tester.pumpAndSettle();
         expect(_action(NudgeId.compact).hitTestable(), findsOneWidget);
         await tester.tap(_action(NudgeId.compact));
+        await tester.pumpAndSettle();
+        // Compact asks first: nothing happens until the person confirms.
+        expect(repository.compacted, isEmpty);
+        // The nudge steps aside for the sheet, which scrolls at large text.
+        final confirm = find.widgetWithText(
+          KitButton,
+          lookupAppLocalizations(locale).chatUiCompactConfirmAction,
+        );
+        await tester.ensureVisible(confirm);
+        await tester.pumpAndSettle();
+        await tester.tap(confirm);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         expect(repository.compacted, ['session-1']);

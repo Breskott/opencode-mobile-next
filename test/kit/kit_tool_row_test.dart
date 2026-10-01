@@ -363,16 +363,15 @@ void main() {
       expect(find.text('first output'), findsNothing);
     });
 
-    testWidgets('opened body is indented one level, also inside a work '
-        'line', (tester) async {
+    testWidgets('opened body sits on the one gutter, with no indent, also '
+        'inside a work line', (tester) async {
       double indentOf() =>
           tester.getTopLeft(find.byKey(const ValueKey('body-0'))).dx -
           tester.getTopLeft(find.byType(KitToolRow)).dx;
 
       await _pump(tester, _row(body: _body(), expanded: true));
       final alone = indentOf();
-      final tokens = KitTokens.of(tester.element(find.byType(KitToolRow)));
-      expect(alone, closeTo(tokens.space3, 0.01));
+      expect(alone, closeTo(0, 0.01));
 
       await _pump(
         tester,

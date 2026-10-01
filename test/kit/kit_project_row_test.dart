@@ -1,7 +1,16 @@
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'kit_motion_still.dart';
 import 'team_kit_test_support.dart';
 
 void main() {
+  kitMotionStillTests(
+    'KitProjectRow',
+    builds: {
+      for (final state in KitTeamState.values)
+        state.name: () => teamSample('kit_project_row', state: state),
+    },
+  );
   testWidgets('wraps at 360 dp with 2x text', (tester) async {
     await pumpTeam(tester, teamSample('kit_project_row'), scale: 2);
     expect(tester.takeException(), isNull);

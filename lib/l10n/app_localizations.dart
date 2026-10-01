@@ -34483,7 +34483,7 @@ abstract class AppLocalizations {
   /// Title of the sheet that picks the team's model.
   ///
   /// In en, this message translates to:
-  /// **'Model for the team\'s workers'**
+  /// **'Model for the workers'**
   String get teamModelSheetTitle;
 
   /// Subtitle of the team model sheet.
@@ -34507,7 +34507,7 @@ abstract class AppLocalizations {
   /// Team Now line reason while the worker's session is being created or its program is starting.
   ///
   /// In en, this message translates to:
-  /// **'The worker is being set up: its workspace is made and its program is starting.'**
+  /// **'The worker is being set up: its folder is made and its program is starting.'**
   String get teamNowReasonWorkerPreparing;
 
   /// Team Now line reason while the worker's program runs but the task has not been reported delivered.
@@ -38075,7 +38075,7 @@ abstract class AppLocalizations {
   /// Confirm sheet button that starts compacting
   ///
   /// In en, this message translates to:
-  /// **'Compact'**
+  /// **'Compact conversation'**
   String get chatUiCompactConfirmAction;
 
   /// KitTurn: end line of an unfinished turn while the connection is coming back
@@ -38765,7 +38765,7 @@ abstract class AppLocalizations {
   /// Technical details label: the title the agent's own conversation carries inside its harness
   ///
   /// In en, this message translates to:
-  /// **'Session title'**
+  /// **'Conversation title'**
   String get teamUiAgentLabelSessionTitle;
 
   /// Composer status pill: the server has been quiet for a while
@@ -38777,7 +38777,7 @@ abstract class AppLocalizations {
   /// Composer top row: action that sends a failed message again
   ///
   /// In en, this message translates to:
-  /// **'Retry'**
+  /// **'Try again'**
   String get kitComposerRailRetry;
 
   /// No description provided for @teamProjectHome.
@@ -38843,7 +38843,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectRetry.
   ///
   /// In en, this message translates to:
-  /// **'Retry'**
+  /// **'Try again'**
   String get teamProjectRetry;
 
   /// No description provided for @teamProjectError.
@@ -38929,6 +38929,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resume project'**
   String get teamProjectResume;
+
+  /// No description provided for @teamProjectStopConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop this project?'**
+  String get teamProjectStopConfirmTitle;
 
   /// No description provided for @teamProjectStop.
   ///
@@ -39134,11 +39140,23 @@ abstract class AppLocalizations {
   /// **'Not reported'**
   String get teamProjectUnknown;
 
+  /// No description provided for @teamProjectAcceptMilestoneConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept this milestone?'**
+  String get teamProjectAcceptMilestoneConfirmTitle;
+
   /// No description provided for @teamProjectAccept.
   ///
   /// In en, this message translates to:
   /// **'Accept milestone'**
   String get teamProjectAccept;
+
+  /// No description provided for @teamProjectMergeConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge into dev?'**
+  String get teamProjectMergeConfirmTitle;
 
   /// No description provided for @teamProjectMergeNext.
   ///
@@ -39149,7 +39167,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectCostDemo.
   ///
   /// In en, this message translates to:
-  /// **'Demo figures are simulated; device memory, battery, heat and chat slowdown have not been measured.'**
+  /// **'Demo figures are simulated; device memory, battery, heat and conversation speed have not been measured.'**
   String get teamProjectCostDemo;
 
   /// No description provided for @teamProjectProgress.
@@ -39334,13 +39352,13 @@ abstract class AppLocalizations {
   /// Cost line in the New project sheet, from a measured host
   ///
   /// In en, this message translates to:
-  /// **'On {host}: about {memory} MB of memory per lane, measured. Battery and chat speed are not measured yet.'**
+  /// **'On {host}: about {memory} MB of memory per lane, measured. Battery and conversation speed are not measured yet.'**
   String teamProjectEditorCostMeasured(String host, String memory);
 
   /// Cost line when the chosen host has no measurement
   ///
   /// In en, this message translates to:
-  /// **'Not measured on {host} yet. Your chat stays first.'**
+  /// **'Not measured on {host} yet. Your conversation stays first.'**
   String teamProjectEditorCostNotMeasured(String host);
 
   /// No description provided for @teamProjectEditorCostNoHost.
@@ -39811,6 +39829,12 @@ abstract class AppLocalizations {
   /// **'Check and merge to dev'**
   String get teamProjectTaskMergeRun;
 
+  /// No description provided for @teamProjectTaskPromoteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Promote dev to main?'**
+  String get teamProjectTaskPromoteConfirmTitle;
+
   /// No description provided for @teamProjectTaskPromote.
   ///
   /// In en, this message translates to:
@@ -39846,6 +39870,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resume task'**
   String get teamProjectTaskResume;
+
+  /// No description provided for @teamProjectTaskStopConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop this task?'**
+  String get teamProjectTaskStopConfirmTitle;
 
   /// No description provided for @teamProjectTaskStop.
   ///
@@ -39979,10 +40009,16 @@ abstract class AppLocalizations {
   /// **'Enter a positive token limit or leave it empty.'**
   String get teamProjectEditorPositiveTokens;
 
+  /// No description provided for @teamProjectEditorReloadConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh this project?'**
+  String get teamProjectEditorReloadConfirmTitle;
+
   /// No description provided for @teamProjectEditorReload.
   ///
   /// In en, this message translates to:
-  /// **'Reload latest project'**
+  /// **'Refresh latest project'**
   String get teamProjectEditorReload;
 
   /// No description provided for @teamProjectEditorDiscardDraft.
@@ -40030,7 +40066,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectEditorScreenOffHelp.
   ///
   /// In en, this message translates to:
-  /// **'This preference is saved for the project. Background work remains subject to the host and system limits.'**
+  /// **'This preference is saved for the project. Background work remains subject to the server and system limits.'**
   String get teamProjectEditorScreenOffHelp;
 
   /// No description provided for @teamProjectEditorDraftApproval.
@@ -40092,6 +40128,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Changes were saved, but the local draft could not be cleared. Close this sheet and review the project before trying again.'**
   String get teamProjectEditorDraftClearFailed;
+
+  /// No description provided for @teamProjectRestartElsewhereConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start over elsewhere?'**
+  String get teamProjectRestartElsewhereConfirmTitle;
 
   /// No description provided for @teamProjectRestartElsewhere.
   ///
@@ -40246,19 +40288,14 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectGoalStatus.
   ///
   /// In en, this message translates to:
-  /// **'Spec v{version} · approved {age} · {milestones} milestones · {repos} repos'**
-  String teamProjectGoalStatus(
-    int version,
-    String age,
-    int milestones,
-    int repos,
-  );
+  /// **'Spec approved {age} · {milestones} milestones · {repos} repos'**
+  String teamProjectGoalStatus(String age, int milestones, int repos);
 
   /// No description provided for @teamProjectGoalStatusDraft.
   ///
   /// In en, this message translates to:
-  /// **'Spec v{version} · {milestones} milestones · {repos} repos'**
-  String teamProjectGoalStatusDraft(int version, int milestones, int repos);
+  /// **'Draft spec · {milestones} milestones · {repos} repos'**
+  String teamProjectGoalStatusDraft(int milestones, int repos);
 
   /// No description provided for @teamProjectOpenSpec.
   ///
@@ -40299,7 +40336,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectLanesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Lanes · {busy} of {total} busy'**
+  /// **'Lanes {busy}/{total} busy'**
   String teamProjectLanesTitle(int busy, int total);
 
   /// No description provided for @teamProjectLanesChange.
@@ -40767,7 +40804,7 @@ abstract class AppLocalizations {
   /// Question before stopping the OpenCode server on this phone
   ///
   /// In en, this message translates to:
-  /// **'Stop OpenCode for a minute?'**
+  /// **'Stop OpenCode briefly?'**
   String get phoneTeamStopTitle;
 
   /// The one-line effect of stopping OpenCode to turn on AI Team
@@ -40797,7 +40834,7 @@ abstract class AppLocalizations {
   /// Headline once the team passed its check and OpenCode is back
   ///
   /// In en, this message translates to:
-  /// **'AI Team is ready on this phone'**
+  /// **'AI Team is ready'**
   String get phoneTeamDoneTitle;
 
   /// Under the ready headline
@@ -40833,7 +40870,7 @@ abstract class AppLocalizations {
   /// Failure headline: the server or a terminal did not stop
   ///
   /// In en, this message translates to:
-  /// **'OpenCode didn\'t stop'**
+  /// **'The server didn\'t stop'**
   String get phoneTeamFailStopTitle;
 
   /// Failure: stopping did not complete
@@ -40845,7 +40882,7 @@ abstract class AppLocalizations {
   /// Failure headline: the server did not start again
   ///
   /// In en, this message translates to:
-  /// **'OpenCode didn\'t come back'**
+  /// **'The server didn\'t return'**
   String get phoneTeamFailServerTitle;
 
   /// Failure: the protected server did not start
@@ -40881,7 +40918,7 @@ abstract class AppLocalizations {
   /// Headline when there is no OpenCode on this phone
   ///
   /// In en, this message translates to:
-  /// **'Set up OpenCode on this phone first'**
+  /// **'Add a server first'**
   String get phoneTeamFailNoServerTitle;
 
   /// Body when there is no OpenCode on this phone
@@ -40959,7 +40996,7 @@ abstract class AppLocalizations {
   /// Headline when the team was on but its engine is not answering
   ///
   /// In en, this message translates to:
-  /// **'AI Team is off on this phone'**
+  /// **'AI Team is off'**
   String get phoneTeamOffTitle;
 
   /// Body under the off headline
@@ -41007,7 +41044,7 @@ abstract class AppLocalizations {
   /// Question title when a work action waits for the phone check
   ///
   /// In en, this message translates to:
-  /// **'Check this phone first'**
+  /// **'Check this phone first?'**
   String get phoneTeamBlockedTitle;
 
   /// No description provided for @teamMigrationTitle.
@@ -41019,7 +41056,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamMigrationBody.
   ///
   /// In en, this message translates to:
-  /// **'The new AI Team plans whole projects and runs them on this phone. Your old team keeps working, but it only takes quick tasks: it cannot plan projects. Switching asks before it stops anything.'**
+  /// **'The new AI Team plans whole projects and runs them on this phone. Your old team keeps taking quick tasks but cannot plan projects, and switching asks before it stops anything.'**
   String get teamMigrationBody;
 
   /// No description provided for @teamMigrationSwitch.
@@ -41229,7 +41266,7 @@ abstract class AppLocalizations {
   /// Plain reason for engine code sessionFailed
   ///
   /// In en, this message translates to:
-  /// **'The planner\'s session stopped before it answered.'**
+  /// **'The planner stopped before it answered.'**
   String get teamRefusalSessionFailed;
 
   /// Way forward for engine code sessionFailed
@@ -41289,7 +41326,7 @@ abstract class AppLocalizations {
   /// Plain reason for engine code sessionUncertain
   ///
   /// In en, this message translates to:
-  /// **'The team isn\'t sure where its last session got to.'**
+  /// **'The team isn\'t sure how far its last run got.'**
   String get teamRefusalSessionUncertain;
 
   /// Way forward for engine code sessionUncertain
@@ -41337,7 +41374,7 @@ abstract class AppLocalizations {
   /// Plain reason for engine code restartNeedsReconciliation
   ///
   /// In en, this message translates to:
-  /// **'The app stopped while the team was working.'**
+  /// **'The app closed before the team finished.'**
   String get teamRefusalAppStopped;
 
   /// Way forward for engine code restartNeedsReconciliation
@@ -41349,7 +41386,7 @@ abstract class AppLocalizations {
   /// Plain reason for engine code chatBusy
   ///
   /// In en, this message translates to:
-  /// **'The team is waiting for your chat reply to finish.'**
+  /// **'The team is waiting for your conversation to finish replying.'**
   String get teamRefusalChatBusy;
 
   /// Way forward for engine code chatBusy
@@ -41530,13 +41567,13 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'A task in the plan has no name.'**
-  String get teamRefusalPlanTaskTitle;
+  String get teamRefusalPlanTaskName;
 
   /// AI Team: what to do next after planTaskTitleRequired.
   ///
   /// In en, this message translates to:
   /// **'Give every task a name, then approve again.'**
-  String get teamRefusalPlanTaskTitleNext;
+  String get teamRefusalPlanTaskNameNext;
 
   /// AI Team: why a project command was refused (planPhaseInvalid).
   ///

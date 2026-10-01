@@ -61,7 +61,7 @@ Future<void> confirmAndMergeToDev(
       .length;
   await showKitConfirm(
     context,
-    title: l.teamProjectMergeNext,
+    title: l.teamProjectMergeConfirmTitle,
     body: l.teamProjectMergeConfirmBody,
     confirmLabel: l.teamProjectMergeNext,
     consequences: [
@@ -93,7 +93,7 @@ Future<void> confirmAndPromote(
   final l = lookupAppLocalizations(Localizations.localeOf(context));
   await showKitConfirm(
     context,
-    title: l.teamProjectTaskPromote,
+    title: l.teamProjectTaskPromoteConfirmTitle,
     body: l.teamProjectTaskPromoteBody,
     confirmLabel: l.teamProjectTaskPromote,
     consequences: ['${repo.name}: ${repo.mainCommit} → ${repo.devCommit}'],

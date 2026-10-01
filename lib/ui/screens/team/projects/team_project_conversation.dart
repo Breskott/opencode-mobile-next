@@ -298,7 +298,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
   Future<void> _stop(TeamProject p) async {
     final yes = await showKitConfirm(
       context,
-      title: l.teamProjectTaskStop,
+      title: l.teamProjectTaskStopConfirmTitle,
       body: l.teamProjectTaskStopBody,
       confirmLabel: l.teamProjectTaskStop,
       kind: KitConfirmKind.stop,

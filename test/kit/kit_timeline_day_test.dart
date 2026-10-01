@@ -1,8 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
+import 'kit_motion_still.dart';
 import 'team_kit_test_support.dart';
 
 void main() {
+  kitMotionStillTests(
+    'KitTimelineDay',
+    builds: {
+      for (final state in KitTeamState.values)
+        state.name: () => teamSample('kit_timeline_day', state: state),
+    },
+  );
   testWidgets('long day folds after ten events', (tester) async {
     await pumpTeam(
       tester,

@@ -76,11 +76,11 @@ void main() {
     });
 
     for (final light in [false, true]) {
-      // R5 (4e49ccde, KitAskLine.md updated): enabled tertiary buttons use
-      // the accent so an inline answer never reads as disabled; the glyph
-      // and question keep their opaque text roles.
+      // Tertiary buttons are neutral (crit-look-2026-09-29): both answers
+      // read in text1, never the accent, and the glyph and question keep
+      // their opaque text roles.
       testWidgets('paints the glyph and question in opaque text roles and '
-          'both answers in the tertiary accent (${light ? 'light' : 'dark'})', (
+          'both answers in neutral text1 (${light ? 'light' : 'dark'})', (
         tester,
       ) async {
         _setWidth(tester, 412);
@@ -101,8 +101,8 @@ void main() {
         final accept = only(find.text('Notify me'));
         expect(glyph, roles.text2);
         expect(question, roles.text1);
-        expect(decline, roles.accent);
-        expect(accept, roles.accent);
+        expect(decline, roles.text1);
+        expect(accept, roles.text1);
 
         final all = _paintedTextColours(tester, find.byType(KitAskLine));
         expect(all, isNotEmpty);
