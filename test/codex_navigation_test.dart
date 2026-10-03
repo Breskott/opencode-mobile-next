@@ -8,6 +8,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_nav.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -112,17 +113,6 @@ Widget _app(ConnectionController controller) => ProviderScope(
   ),
 );
 
-/// The hit-testable tap target of a NavigationRail destination, found from
-/// its label. The rail's destination ink is a private InkResponse subclass,
-/// so match by type hierarchy rather than exact type.
-Finder _railDestination(String label) => find
-    .ancestor(
-      of: find.text(label),
-      matching: find.byWidgetPredicate((widget) => widget is InkResponse),
-    )
-    .first
-    .hitTestable();
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -138,13 +128,7 @@ void main() {
 
       // Project is logical destination 2, so an initial Project selection
       // falls back to Work rather than shifting Settings left.
-      expect(find.byKey(const ValueKey('current-tab-title')), findsOneWidget);
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-            .data,
-        'Work',
-      );
+      expect(tester.widget<KitNav>(find.byType(KitNav)).selected, 0);
       expect(find.text('Project'), findsNothing);
       expect(find.text('Work'), findsWidgets);
       expect(find.text('Inbox'), findsOneWidget);
@@ -157,64 +141,43 @@ void main() {
         find.byKey(const ValueKey('restricted-directory-context')),
         findsOneWidget,
       );
-      expect(find.text('Pinned'), findsOneWidget);
+      // One list with no caption: the pin is a row in it, no Pinned header.
+      expect(find.text('Conversations'), findsNothing);
       expect(find.text('Pinned Codex session'), findsOneWidget);
 
       // The project catalog is not queried when project management is absent.
       expect(repository.listProjectsCalls, 0);
       expect(find.byKey(const ValueKey('search-all-sessions')), findsNothing);
-      // Terminal is a section-menu entry, so its absence only means
-      // something with the menu open.
-      await tester.tap(find.byKey(const ValueKey('workspace-section-menu')));
-      await tester.pumpAndSettle();
-      expect(find.text('Refresh recent conversations'), findsOneWidget);
-      expect(find.byKey(const ValueKey('workspace-terminal')), findsNothing);
-      await tester.tapAt(const Offset(4, 4));
-      await tester.pumpAndSettle();
-      expect(find.text('Refresh recent conversations'), findsNothing);
-      // The menu route is gone: only the shell's navigator page remains.
+      // No caption menu: reload is pull to refresh, background updates
+      // live in Settings (owner rule R4).
       expect(
-        find.byWidgetPredicate((widget) => widget is PopupMenuItem),
+        find.byKey(const ValueKey('workspace-section-menu')),
         findsNothing,
       );
+      expect(find.byKey(const ValueKey('workspace-terminal')), findsNothing);
 
-      // At the 800px test surface the shell uses a NavigationRail, whose
-      // labels are zero-size semantics-only boxes; tap the destination's
-      // ink well, which is what a pointer actually reaches.
-      await tester.tap(_railDestination('Inbox'));
+      // The shell's KitNav keeps the logical destination mapping when
+      // unsupported Project is absent, including the medium-window rail.
+      expect(find.byType(KitNavRail), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('home-shell-tab-inbox')));
       await tester.pumpAndSettle();
+      expect(tester.widget<KitNav>(find.byType(KitNav)).selected, 1);
       expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-            .data,
+        tester.widget<KitNav>(find.byType(KitNav)).destinations[1].label,
         'Inbox',
       );
-      expect(
-        tester
-            .widget<NavigationRail>(find.byType(NavigationRail))
-            .selectedIndex,
-        1,
-        reason: 'Inbox is the second rail destination',
-      );
 
-      await tester.tap(_railDestination('Settings'));
+      await tester.tap(find.byKey(const ValueKey('home-shell-tab-settings')));
       await tester.pumpAndSettle();
+      expect(tester.widget<KitNav>(find.byType(KitNav)).selected, 2);
       expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-            .data,
+        tester.widget<KitNav>(find.byType(KitNav)).destinations[2].label,
         'Settings',
-      );
-      expect(
-        tester
-            .widget<NavigationRail>(find.byType(NavigationRail))
-            .selectedIndex,
-        2,
       );
       // The tab is the hub itself; what is about the app survives a Codex
       // connection, what needs the server catalog is absent.
       expect(
-        find.byKey(const ValueKey('settings-group-connection')),
+        find.byKey(const ValueKey('settings-group-server')),
         findsOneWidget,
       );
       expect(
@@ -256,9 +219,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Models & agents'), findsOneWidget);
-    expect(find.text('Providers'), findsOneWidget);
-    expect(find.text('MCP'), findsOneWidget);
-    expect(find.text('Commands & tools'), findsOneWidget);
+    // One Model row (R3); the catalog screen is found by search.
+    expect(
+      find.byKey(const ValueKey('settings-model-and-mode')),
+      findsOneWidget,
+    );
+    // The catalog stays: Providers and accounts, and Tools, which holds
+    // MCP and Commands & tools (slice-P3.10).
+    expect(find.text('Providers and accounts'), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings-tools')), findsOneWidget);
   });
 }

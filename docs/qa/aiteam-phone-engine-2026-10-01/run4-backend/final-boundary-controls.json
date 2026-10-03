@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 2,
+  "tier": "proot",
+  "engineSha256": "a5ca7759462952d0e3b198af604a656c34327757b83ca2973455a9b92d17fe11",
+  "protectedLaunchesRequired": true,
+  "controls": {
+    "nativeAttacksDenied": false,
+    "prootGitCompatible": true,
+    "fixtureUnchanged": true,
+    "complete": true,
+    "canonicalPathsDenied": true,
+    "daemonProcDenied": true,
+    "fdHygiene": true,
+    "parentInspectionDenied": true
+  }
+}

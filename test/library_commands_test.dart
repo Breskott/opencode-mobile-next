@@ -29,12 +29,18 @@ class _CommandsApi extends OpenCodeApi {
   Completer<void>? submission;
   Object? failure;
   Future<ServerPage<Session>> Function(String? cursor)? pageHandler;
+  final pages = <String?>[];
   @override
   Future<ServerPage<Session>> sessionPage({
     String? cursor,
     int limit = 100,
-  }) async =>
-      pageHandler == null ? const ServerPage(items: []) : pageHandler!(cursor);
+  }) async {
+    pages.add(cursor);
+    return pageHandler == null
+        ? const ServerPage(items: [])
+        : pageHandler!(cursor);
+  }
+
   @override
   Future<Map<String, String>> sessionStatuses() async => {};
   final calls =
@@ -105,16 +111,15 @@ void main() {
       await controller.refreshSessions();
       await _open(tester, controller);
       await tester.enterText(_arguments, 'keep my arguments');
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('session-inventory-more')),
-      );
-      await tester.tap(find.byKey(const ValueKey('session-inventory-more')));
+      // The choices page themselves: opening them loads the older page.
+      await tester.tap(find.byKey(const ValueKey('command-destination')));
       await tester.pumpAndSettle();
+      expect(api.pages, [null, 'older']);
       expect(
-        tester.widget<TextField>(_arguments).controller!.text,
+        tester.widget<TextFormField>(_arguments).controller!.text,
         'keep my arguments',
       );
-      await tester.tap(find.byKey(const ValueKey('command-destination')));
+      await tester.ensureVisible(find.text('Older chat'));
       await tester.pumpAndSettle();
       expect(find.text('Older chat').hitTestable(), findsOneWidget);
       await tester.tap(find.text('Older chat').hitTestable());
@@ -142,7 +147,9 @@ void main() {
       await tester.pump();
       expect(api.creates, 1);
       expect(api.calls.single.args, 'pending changes');
-      expect(find.byType(AlertDialog), findsOneWidget);
+      // The review sheet stays open while the command starts (a kit sheet
+      // since 06102116, not a dialog).
+      expect(find.byKey(const ValueKey('run-command-sheet')), findsOneWidget);
       api.submission!.complete();
       await tester.pumpAndSettle();
       expect(find.text('/chat/new-chat'), findsOneWidget);
@@ -161,7 +168,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Try again'), findsOneWidget);
       expect(
-        tester.widget<TextField>(_arguments).controller!.text,
+        tester.widget<TextFormField>(_arguments).controller!.text,
         'my arguments',
       );
       api.failure = null;

@@ -1,0 +1,11 @@
+$ # throwaway: chat gets a new kit-none element and hides server.any in the map, and the same commit adds both pairs to the baseline by hand (both files restored after)
+$ python3 tool/ux/check_kit_map.py            # without --base the raised baseline hides the violation
+G13 kit map: 721 replaces entries checked; kit none 810 (baseline 810); hidden with an enable flow 236 (baseline 236); dead rows 15 (baseline 15); off vocabulary 3 (baseline 3)
+G13 PASSED
+exit=0
+$ python3 tool/ux/check_kit_map.py --base HEAD # HEAD holds the committed baseline
+G13 kit map: 721 replaces entries checked; kit none 810 (baseline 810); hidden with an enable flow 236 (baseline 236); dead rows 15 (baseline 15); off vocabulary 3 (baseline 3); base 7cadcb5315
+  FAIL baseline: kitNoneElements gained 'chat#g13-throwaway' over the merge base 7cadcb5315; baselines may only shrink (PROC-13)
+  FAIL baseline: hiddenWithEnableFlow gained 'chat|server.any' over the merge base 7cadcb5315; baselines may only shrink (PROC-13)
+G13 FAILED: 2 violation(s)
+exit=1

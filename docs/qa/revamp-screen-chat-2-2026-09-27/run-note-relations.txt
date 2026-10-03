@@ -1,0 +1,25 @@
+00:00 +0: loading test/session_note_test.dart
+00:00 +0: test/session_note_test.dart: wire operations isolate the mobile-owned key, auth and location
+00:00 +1: test/session_note_test.dart: 8192 encoded bytes includes quotes, escapes and Unicode
+00:00 +2: test/session_note_test.dart: read preserves authorization errors without disabling capability
+00:00 +3: test/session_note_test.dart: save preserves authorization errors without disabling capability
+00:00 +4: test/session_note_test.dart: remove preserves authorization errors without disabling capability
+00:00 +5: test/session_note_test.dart: unsupported endpoint hides capability, missing session does not
+00:00 +6: test/session_note_test.dart: server 413 retains its byte limit and unsupported value stays untouched
+00:00 +7: test/session_note_test.dart: save re-reads before mutation and rejects another client change
+00:00 +8: test/session_note_test.dart: wake and fresh-read scope changes never write into a new location
+00:00 +9: test/session_note_test.dart: duplicate decisions serialize and only successful writes create receipts
+00:00 +10: test/session_note_test.dart: live and reloaded transcript notices redact instruction keys and values
+00:00 +11: test/session_note_test.dart: repository replacement disables a stale note review until refresh
+00:01 +12: test/session_note_test.dart: an in-flight load completing after disposal does not update the screen
+00:01 +13: test/session_note_test.dart: an in-flight save cannot pop a replacement session editor
+00:01 +14: test/session_note_test.dart: a delayed old save failure cannot affect a fresh editor save
+00:01 +15: test/session_note_test.dart: failed save retains draft and refresh shows remote note before replacing
+00:01 +16: test/session_note_test.dart: authorization failure keeps the draft and successful retry returns to chat
+00:02 +17: test/session_note_test.dart: compact large text scrolls, oversize save disabled and back protects draft
+00:02 +18: loading test/session_relations_screen_test.dart
+00:04 +18: test/session_relations_screen_test.dart: shows parent and ordered subagents on a compact large-text phone
+00:05 +19: test/session_relations_screen_test.dart: returns the exact selected child session
+00:05 +20: test/session_relations_screen_test.dart: replaced controller retires its late load instead of overwriting new data
+00:05 +21: test/session_relations_screen_test.dart: late selection and pin completion retire after the reviewed session changes
+00:05 +22: All tests passed!

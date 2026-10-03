@@ -18,6 +18,7 @@ import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/terminal_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/ui/app_iconography.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitNav;
 
 class _ShellApi extends OpenCodeApi {
   _ShellApi() : super(baseUrl: 'http://localhost');
@@ -63,6 +64,14 @@ Future<ConnectionController> _controller() async {
 ///
 /// The override has to be cleared inside the test body — flutter_test asserts
 /// that no foundation debug variable outlives it, so tearDown runs too late.
+/// The destination the shell's navigation marks as current. Since slice-R14
+/// (635f69ac) no pane bar repeats it as a title; the navigation is the one
+/// place that names the open destination.
+String _destination(WidgetTester tester) {
+  final nav = tester.widget<KitNav>(find.byType(KitNav));
+  return nav.destinations[nav.selected].label;
+}
+
 void desktopTest(
   String description,
   Future<void> Function(WidgetTester tester) body,
@@ -333,44 +342,19 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-            .data,
-        'Work',
-      );
+      expect(_destination(tester), 'Work');
 
       await _press(tester, LogicalKeyboardKey.digit2);
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-            .data,
-        'Inbox',
-      );
+      expect(_destination(tester), 'Inbox');
 
       await _press(tester, LogicalKeyboardKey.digit3);
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-            .data,
-        'Project',
-      );
+      expect(_destination(tester), 'Project');
 
       await _press(tester, LogicalKeyboardKey.digit4);
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-            .data,
-        'Settings',
-      );
+      expect(_destination(tester), 'Settings');
 
       await _press(tester, LogicalKeyboardKey.digit1);
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-            .data,
-        'Work',
-      );
+      expect(_destination(tester), 'Work');
     });
 
     desktopTest(
@@ -409,22 +393,12 @@ void main() {
         await pushRoute();
         await _press(tester, LogicalKeyboardKey.digit3);
         expect(find.text('pushed-route'), findsNothing);
-        expect(
-          tester
-              .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-              .data,
-          'Project',
-        );
+        expect(_destination(tester), 'Project');
 
         await pushRoute();
         await _press(tester, LogicalKeyboardKey.digit4);
         expect(find.text('pushed-route'), findsNothing);
-        expect(
-          tester
-              .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-              .data,
-          'Settings',
-        );
+        expect(_destination(tester), 'Settings');
 
         // The terminal shortcut likewise returns to the shell first, then
         // opens the one terminal page from there.
@@ -555,7 +529,7 @@ void main() {
       expect(find.text('Keyboard shortcuts'), findsNothing);
       await tester.tap(find.byIcon(AppIconography.settings));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('library-search')), findsOneWidget);
+      expect(find.byKey(const ValueKey('settings-hub-list')), findsOneWidget);
       expect(
         find.byKey(const ValueKey('library-keyboard-shortcuts')),
         findsNothing,

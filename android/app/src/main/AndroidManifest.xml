@@ -5,7 +5,12 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <!-- The OpenCode server running inside the app (BuiltinServerService). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+    <!-- Keeps the phone awake while a reply runs on the in-app server
+         (BuiltinLinux.holdAwakeForWork; every hold times out). -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <!-- QR pairing uses an ephemeral preview. The composer's explicit Take
          photo action also opens the system camera; that result is kept locally
          for review and is uploaded only when the user sends the prompt. -->
@@ -32,7 +37,7 @@
         </intent>
     </queries>
     <application
-        android:label="OpenCode Mobile"
+        android:label="${appLabel}"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
@@ -42,6 +47,7 @@
         android:fullBackupContent="@xml/backup_rules"
         android:usesCleartextTraffic="false"
         android:enableOnBackInvokedCallback="true"
+        android:manageSpaceActivity=".ManageSpaceActivity"
         android:networkSecurityConfig="@xml/network_security_config">
         <activity
             android:name=".MainActivity"
@@ -72,7 +78,9 @@
             </intent-filter>
             <!-- Session handoff link (backlog F4-S2): the QR another phone
                  shows encodes opencode-mobile://session?profile=…&session=…
-                 with route identifiers only. MainActivity.captureSessionLink
+                 with route identifiers only. The same session host also admits
+                 /v2 to the local bounded parser; v2 never automatically connects.
+                 MainActivity.captureSessionLink
                  forwards the URI text to Dart over oc/link; Dart validates
                  it and decides whether the saved server exists here. Nothing
                  here connects, creates a session or sends a prompt. -->
@@ -91,11 +99,47 @@
                  MainActivity whitelists and forwards to Dart. -->
             <meta-data
                 android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
+                android:resource="${appShortcuts}" />
+        </activity>
+        <!-- App info › Storage: "Clear storage" becomes "Manage space" and
+             opens this page first (ManageSpaceActivity.kt): what clearing
+             deletes (the in-app server, its projects and conversations),
+             Export projects first, Clear the app's cache only, and Delete
+             everything after an explicit confirm. Its own Flutter engine
+             runs manageSpaceMain, so it works while the app is not running.
+             Exported for Settings; it reads no extras. -->
+        <activity
+            android:name=".ManageSpaceActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
         </activity>
         <service
             android:name=".TermuxResultService"
             android:exported="false" />
+        <service
+            android:name=".BuiltinServerService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Runs the user's own coding-agent server (OpenCode) inside the app, on this device only, while they use other apps." />
+        </service>
+        <service
+            android:name=".SetupService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Installs the user's own coding agent (OpenCode) inside the app, on this device only, and keeps the install going while they use other apps." />
+        </service>
         <service
             android:name=".BackgroundConnectionService"
             android:exported="false"

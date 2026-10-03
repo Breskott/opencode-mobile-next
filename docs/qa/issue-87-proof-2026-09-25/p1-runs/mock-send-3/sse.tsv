@@ -1,0 +1,28 @@
+1790368538.509	server.connected				
+1790368543.677	session.updated	info	ses_f25b83f2effetaV8aV7J6yi2Jb		ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368543.677	message.updated	info	msg_0da47f1a4001yAr4KcFvYWlKkd	user	ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368543.677	message.part.updated	text	msg_0da47f1a4001yAr4KcFvYWlKkd	22	ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368543.713	session.updated	info	ses_f25b83f2effetaV8aV7J6yi2Jb		ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368543.751	session.status				ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368543.751	message.updated	info	msg_0da47f3d8001cyjx87DRCUKtS2	assistant	ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368543.891	session.updated	info	ses_f25b83f2effetaV8aV7J6yi2Jb		ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368544.129	session.updated	info	ses_f25b83f2effetaV8aV7J6yi2Jb		ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368544.129	session.diff				ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368544.129	message.updated	info	msg_0da47f1a4001yAr4KcFvYWlKkd	user	ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368544.142	session.status				ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368544.601	message.part.updated	step-start	msg_0da47f3d8001cyjx87DRCUKtS2	0	ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368544.601	message.part.updated	text	msg_0da47f3d8001cyjx87DRCUKtS2	0	ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368544.601	message.part.delta	delta	msg_0da47f3d8001cyjx87DRCUKtS2	2	ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368544.601	message.part.updated	text	msg_0da47f3d8001cyjx87DRCUKtS2	2	ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368544.764	message.part.updated	step-finish	msg_0da47f3d8001cyjx87DRCUKtS2	0	ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368544.764	message.updated	info	msg_0da47f3d8001cyjx87DRCUKtS2	assistant	ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368545.140	message.updated	info	msg_0da47f3d8001cyjx87DRCUKtS2	assistant	ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368545.140	session.status				ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368545.140	session.status				ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368545.140	session.idle				ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368545.140	session.updated	info	ses_f25b83f2effetaV8aV7J6yi2Jb		ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368545.140	session.diff				ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368545.301	message.updated	info	msg_0da47f1a4001yAr4KcFvYWlKkd	user	ses_f25b83f2effetaV8aV7J6yi2Jb
+1790368548.510	server.heartbeat				
+1790368558.510	server.heartbeat				
+1790368568.511	server.heartbeat				

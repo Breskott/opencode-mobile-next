@@ -1,0 +1,18 @@
+1790198725.772115544	show	A clean phone: no Termux, no server
+1790198728.783269993	wait	Install OpenCode Mobile
+1790198730.002936762	show	Open the app
+1790198736.060485770	show	Where does the agent run? On this phone
+1790198749.928916782	show	One screen, one button: Set up
+1790198752.967703714	wait	Setting up — real progress, you can leave the app
+1790198966.372456722	show	Interrupt it: force-stop the app mid-download
+1790198971.579447320	show	The app was killed. Open it again…
+1790199001.293200501	show	It remembers: 46% done — Continue setup
+1790199015.516524898	wait	Finished parts are skipped; Node.js resumes its download
+1790199144.692320829	show	OpenCode is ready
+1790199154.997822463	show	Name your first project — Create
+1790199163.079755368	show	Straight into a new conversation
+1790199194.171463300	show	Ask the agent — Big Pickle is free, no account
+1790199202.162302778	wait	The agent writes notes.py and runs it with Python
+1790199257.299651787	show	Done — the answer, with the work folded above it
+1790199270.593502244	show	Leave the app — OpenCode keeps running
+1790199279.790397879	show	Back to your conversation

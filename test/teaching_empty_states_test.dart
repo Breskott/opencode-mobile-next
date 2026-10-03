@@ -6,6 +6,7 @@
 // team_controls_test.dart (empty + Start a run) and team_home_test.dart
 // (failed, and a host that cannot start runs).
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
@@ -15,6 +16,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
 import 'package:opencode_mobile/ui/screens/review_workspace.dart';
@@ -222,6 +224,15 @@ void _phone(WidgetTester tester, [Size size = const Size(400, 800)]) {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  const storage = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(storage, (_) async => null);
+  });
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(storage, null);
+  });
 
   group('Inbox', () {
     testWidgets('empty: says what will appear here', (tester) async {
@@ -280,13 +291,17 @@ void main() {
 
       // The copy names the docked button rather than repeating it: one New
       // conversation action on the screen, and it fills the list.
-      final action = find.widgetWithText(FilledButton, 'New conversation');
+      final action = find.widgetWithText(KitButton, 'New conversation');
       expect(action, findsOneWidget);
       expect(
-        find.descendant(of: empty, matching: find.byType(TextButton)),
+        find.descendant(of: empty, matching: find.byType(KitButton)),
         findsNothing,
       );
       await tester.tap(action);
+      await _frames(tester);
+      // P4.5 asks how to start before creating the conversation.
+      expect(controller.createCalls, 0);
+      await tester.tap(find.byKey(const ValueKey('new-conversation-solo')));
       await _frames(tester);
       expect(controller.createCalls, 1);
       expect(find.text('Created conversation'), findsOneWidget);
@@ -331,11 +346,12 @@ void main() {
       );
       await _frames(tester);
 
-      expect(find.text('The server did not answer.'), findsOneWidget);
-      // The list footer owns the retry for a failed conversation load.
+      // The end of the list owns the retry for a failed conversation load,
+      // said in words (the raw error is under Details).
+      expect(find.text('Could not load your conversations.'), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byKey(const ValueKey('session-inventory-more')),
+          of: find.byKey(const ValueKey('sessions-older-error')),
           matching: find.text('Try again'),
         ),
         findsOneWidget,
@@ -410,9 +426,9 @@ void main() {
       expect(find.text(_worktreesTeaching), findsOneWidget);
       expect(find.textContaining('OpenCode'), findsNothing);
 
-      await tester.tap(
-        find.descendant(of: empty, matching: find.text('New worktree')),
-      );
+      // The one create action is now pinned below the list.
+      expect(find.text('New worktree'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('create-worktree')));
       await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('confirm-create-worktree')),

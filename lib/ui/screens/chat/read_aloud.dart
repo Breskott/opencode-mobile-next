@@ -1,5 +1,9 @@
 part of '../chat_screen.dart';
 
+/// Where this phone remembers the read-aloud consent (app-wide: the speech
+/// engine is the phone's, whatever server the reply came from).
+const _readAloudConsentKey = 'oc.readAloudConsent';
+
 extension _ChatReadAloud on _ChatScreenState {
   Object get _speechScopeNow {
     final profile = _conn.profile;
@@ -79,11 +83,10 @@ extension _ChatReadAloud on _ChatScreenState {
     if (_speechOwnerScope == null || _speechOwnerScope == _speechScopeNow) {
       return;
     }
-    _readAloudConsented = false;
     _readAloudVoiceID = null;
     _speechOwnerScope = null;
-    // Consent was scoped to the old server/session; automatic reading was
-    // granted on that consent and lapses with it.
+    // Consent is the phone's and stays; automatic reading of replies was
+    // turned on for the old server/session and lapses with it.
     _revokeVoiceSpeakReplies();
     unawaited(_stopReading());
   }
@@ -99,19 +102,25 @@ extension _ChatReadAloud on _ChatScreenState {
       _speechSheetOpen = true;
       bool accepted;
       try {
-        accepted = await showConfirmSheet(
+        final l10n = _chatL10n(context);
+        // Two sentences; the caveats are the consequences under them.
+        accepted = await showKitConfirm(
           context,
           icon: AppIconography.volume,
-          title: _chatL10n(context).readAloudConsentTitle,
-          message: _chatL10n(context).readAloudConsentDetail,
-          confirmLabel: _chatL10n(context).readAloudContinue,
-          cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
+          title: l10n.readAloudConsentTitle,
+          body: l10n.readAloudConsentDetail,
+          consequences: [
+            l10n.readAloudConsentEngine,
+            l10n.readAloudConsentHeard,
+          ],
+          confirmLabel: l10n.readAloudContinue,
+          sheetKey: const ValueKey('read-aloud-consent'),
         );
       } finally {
         _speechSheetOpen = false;
       }
       if (!accepted || !current()) return false;
-      _readAloudConsented = true;
+      await _conn.store.prefs.setBool(_readAloudConsentKey, true);
     }
     if (!current()) return false;
     final speech = _readAloud ??= (ReadAloudController()
@@ -122,40 +131,37 @@ extension _ChatReadAloud on _ChatScreenState {
       if (voices.isEmpty) {
         throw const ReadAloudException(ReadAloudFailure.noOfflineVoice);
       }
+      // P10.4: the voice follows the app's language; the choice sheet
+      // opens only for "Choose voice", or when no voice speaks it.
+      if (!chooseVoice) {
+        final byLocale = readAloudVoiceForLocale(
+          voices,
+          Localizations.localeOf(context),
+        );
+        if (byLocale != null) {
+          _readAloudVoiceID = byLocale.id;
+          return current();
+        }
+      }
       _speechSheetOpen = true;
       ReadAloudVoice? selected;
       try {
-        selected = await showModalBottomSheet<ReadAloudVoice>(
-          context: context,
-          isScrollControlled: true,
-          useSafeArea: true,
-          showDragHandle: true,
-          builder: (context) => SafeArea(
-            top: false,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * .8,
+        // The current voice is checked; a tap chooses and closes.
+        final id = await showKitChoiceSheet<String>(
+          context,
+          title: _chatL10n(context).readAloudChooseVoice,
+          sheetKey: const ValueKey('read-aloud-voices'),
+          selected: _readAloudVoiceID,
+          choices: [
+            for (final voice in voices)
+              KitChoice(
+                key: ValueKey('read-aloud-voice-${voice.id}'),
+                value: voice.id,
+                title: voice.label,
               ),
-              child: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 24),
-                children: [
-                  Text(
-                    _chatL10n(context).readAloudChooseVoice,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  for (final voice in voices)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(voice.label),
-                      subtitle: Text(voice.locale),
-                      onTap: () => Navigator.pop(context, voice),
-                    ),
-                ],
-              ),
-            ),
-          ),
+          ],
         );
+        selected = voices.where((voice) => voice.id == id).firstOrNull;
       } finally {
         _speechSheetOpen = false;
       }

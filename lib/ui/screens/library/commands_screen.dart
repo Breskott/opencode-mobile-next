@@ -1,5 +1,15 @@
 part of '../library_screen.dart';
 
+/// Settings › Tools › Commands (map `commands`, slice-P10.1): the same
+/// command sheet the conversation's "/" opens ([CommandSheet]), inside its
+/// tab. The server's commands in plain words, searchable, grouped; a pick
+/// asks which conversation it runs in (the most recent one first) and
+/// opens it there. A server that does not share its commands says so and
+/// names what is missing, as the sheet does in a conversation.
+///
+/// States: loading (the list is on its way), empty (where commands come
+/// from), error (a failed read says so with Retry; a later failure keeps
+/// the last list), no match.
 class CommandsScreen extends StatefulWidget {
   final ConnectionController controller;
 
@@ -17,131 +27,85 @@ class CommandsScreen extends StatefulWidget {
 
 class _CommandsScreenState extends State<CommandsScreen> {
   List<CommandInfo>? _commands;
-  String? _error;
-  String _query = '';
+  Object? _error;
+  bool _loading = false;
   bool _openingCommand = false;
   int _loadGeneration = 0;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    unawaited(_load());
   }
 
+  /// A newer read wins: an older one that lands later changes nothing.
   Future<void> _load() async {
+    if (!widget.controller.capabilities.slashCommands) return;
     final generation = ++_loadGeneration;
-    if (_commands == null) setState(() => _error = null);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final repository = await widget.controller.prepareActionRepository();
       if (!mounted || generation != _loadGeneration) return;
       if (repository == null) {
         throw ProductException(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryOpenCodeIsReconnecting,
+          _libraryCopy(context).e7LibraryOpenCodeIsReconnecting,
         );
       }
       final commands = await repository.listCommands();
       if (!mounted || generation != _loadGeneration) return;
-      setState(() {
-        _commands = commands;
-        _error = null;
-      });
+      setState(() => _commands = commands);
     } catch (error) {
       if (mounted && generation == _loadGeneration) {
-        setState(() => _error = productErrorText(error));
+        setState(() => _error = error);
+      }
+    } finally {
+      if (mounted && generation == _loadGeneration) {
+        setState(() => _loading = false);
       }
     }
   }
 
+  List<CommandSheetEntry> _entries() => serverCommandEntries(
+    _libraryCopy(context),
+    _commands ?? const <CommandInfo>[],
+    serverName: widget.controller.profile?.name,
+  );
+
   @override
   Widget build(BuildContext context) {
-    final commands = (_commands ?? const <CommandInfo>[]).where((command) {
-      final query = _query.toLowerCase();
-      return query.isEmpty ||
-          command.name.toLowerCase().contains(query) ||
-          (command.description ?? '').toLowerCase().contains(query);
-    }).toList();
-    final body = _commands == null && _error == null
-        ? const LoadingList()
-        : _error != null && _commands == null
-        ? ProductErrorState(message: _error!, onRetry: _load)
-        : Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7LibrarySearchServerCommands,
-                    prefixIcon: Icon(AppIconography.search),
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  onChanged: (value) => setState(() => _query = value),
-                ),
-              ),
-              Expanded(
-                child: commands.isEmpty
-                    ? RefreshIndicator(
-                        onRefresh: _load,
-                        child: ProductEmptyState(
-                          icon: AppIcons.run,
-                          title: lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).e7LibraryNoServerCommandsFound,
-                          message: lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).e7LibraryCommandsFromYourProjectAndSkillsAppear,
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _load,
-                        child: ListView.separated(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: commands.length,
-                          separatorBuilder: (_, _) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final command = commands[index];
-                            return ListTile(
-                              leading: const Icon(AppIcons.run),
-                              title: Text(
-                                '/${command.name}',
-                                textDirection: TextDirection.ltr,
-                              ),
-                              subtitle: Text(
-                                command.description ??
-                                    lookupAppLocalizations(
-                                      Localizations.localeOf(context),
-                                    ).e7LibraryNoDescription,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              trailing: const Icon(AppIconography.play),
-                              onTap: () => _run(command),
-                            );
-                          },
-                        ),
-                      ),
-              ),
-            ],
-          );
-    final content = ProductRefreshBody(
-      message: _commands == null ? null : _error,
-      onRetry: _load,
-      child: body,
-    );
-    if (widget.embedded) return content;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryServerCommands,
-        ),
+    final l10n = _libraryCopy(context);
+    final sheet = KitRefresh(
+      onRefresh: _load,
+      child: CommandSheet(
+        controller: widget.controller,
+        embedded: true,
+        searchElsewhere: false,
+        // This page reads the list itself when it opens.
+        refreshOnOpen: false,
+        subtitle: widget.controller.capabilities.slashCommands
+            ? l10n.commandSheetLibrarySubtitle
+            : null,
+        commands: _entries,
+        loading: () => _loading && _commands == null,
+        loaded: () => _commands != null,
+        error: () => _error,
+        onRefresh: _load,
+        onSelected: (entry) {
+          if (entry.serverCommand case final command?) {
+            unawaited(_run(command));
+          }
+        },
       ),
-      body: content,
+    );
+    return KitScreen(
+      width: KitScreenWidth.list,
+      topBar: widget.embedded
+          ? null
+          : KitTopBar(title: l10n.e7LibraryServerCommands),
+      body: sheet,
     );
   }
 

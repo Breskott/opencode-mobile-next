@@ -2,9 +2,14 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:desktop_drop/desktop_drop.dart';
-import 'package:flutter/material.dart';
-import '../../l10n/app_localizations.dart';
+import 'package:flutter/widgets.dart';
 
+import '../../l10n/app_localizations.dart';
+import '../app_iconography.dart';
+import '../kit/kit_dialog.dart';
+import '../kit/kit_surface.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 import 'desktop_interaction.dart';
 
 /// A file the window manager handed the app through a drag-and-drop.
@@ -68,27 +73,13 @@ class DesktopFileDropTargetState extends State<DesktopFileDropTarget> {
       if (!mounted) return;
       // Never display exception text: it can contain local paths or server
       // content. Do not retry automatically; some files may already be added.
-      await showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).desktopDropFailedTitle,
-          ),
-          content: Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).desktopDropFailedRecovery,
-          ),
-          actions: [
-            TextButton(
-              autofocus: true,
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(MaterialLocalizations.of(context).closeButtonLabel),
-            ),
-          ],
-        ),
+      final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+      await showKitAlert(
+        context,
+        title: l10n.desktopDropFailedTitle,
+        body: l10n.desktopDropFailedRecovery,
+        icon: AppIconography.attach,
+        alertKey: const ValueKey('desktop-drop-failed'),
       );
     } finally {
       _handlingDrop = false;
@@ -98,7 +89,8 @@ class DesktopFileDropTargetState extends State<DesktopFileDropTarget> {
   @override
   Widget build(BuildContext context) {
     if (!desktopInteractions) return widget.child;
-    final theme = Theme.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
     return DropTarget(
       onDragEntered: (_) => setState(() => _dragging = true),
       onDragExited: (_) => setState(() => _dragging = false),
@@ -117,23 +109,33 @@ class DesktopFileDropTargetState extends State<DesktopFileDropTarget> {
         children: [
           widget.child,
           if (_dragging)
-            Positioned.fill(
+            PositionedDirectional(
+              start: 0,
+              end: 0,
+              top: 0,
+              bottom: 0,
               child: IgnorePointer(
-                child: DecoratedBox(
+                // A solid surface step over the composer, never a tint or a
+                // blur (LOOK-20, LOOK-22), with its hairline edge.
+                child: KitSurface(
                   key: const ValueKey('composer-drop-highlight'),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withValues(
-                      alpha: .38,
-                    ),
-                    border: Border.all(color: theme.colorScheme.primary),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
+                  level: KitSurfaceLevel.surface3,
+                  shape: KitShape.panel,
+                  outlined: true,
                   child: Center(
-                    child: Text(
-                      'Drop to attach',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        KitSurface.tile(AppIconography.attach),
+                        SizedBox(width: tokens.space3),
+                        Flexible(
+                          child: KitText(
+                            l10n.desktopDropHint,
+                            role: KitTextRole.label,
+                            maxLines: 2,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

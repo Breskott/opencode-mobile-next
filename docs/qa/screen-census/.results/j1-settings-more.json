@@ -1,0 +1,346 @@
+{
+ "area": "j1-settings-more",
+ "renderedAt": "2026-09-26T02:56:06.805867Z",
+ "declaredShots": [
+  {
+   "page": "settings",
+   "state": "pushed"
+  },
+  {
+   "page": "settings",
+   "state": "in-shell"
+  },
+  {
+   "page": "settings-transcript-display-sheet",
+   "state": "default"
+  },
+  {
+   "page": "settings-disconnect-sheet",
+   "state": "default"
+  },
+  {
+   "page": "coding-settings-shell-sheet",
+   "state": "default"
+  },
+  {
+   "page": "notifications-settings",
+   "state": "loaded"
+  },
+  {
+   "page": "notifications-settings-quiet-time-dialog",
+   "state": "default"
+  },
+  {
+   "page": "usage-hub",
+   "state": "loaded"
+  },
+  {
+   "page": "appearance-settings",
+   "state": "loaded"
+  },
+  {
+   "page": "appearance-picker-sheet",
+   "state": "default"
+  },
+  {
+   "page": "theme-pack-preview-sheet",
+   "state": "default"
+  },
+  {
+   "page": "language-sheet",
+   "state": "default"
+  },
+  {
+   "page": "privacy-settings",
+   "state": "loaded"
+  },
+  {
+   "page": "privacy-settings-clear-queued-sheet",
+   "state": "default"
+  },
+  {
+   "page": "privacy-settings-clear-drafts-sheet",
+   "state": "default"
+  },
+  {
+   "page": "plugins-settings",
+   "state": "loaded"
+  },
+  {
+   "page": "team-plugin-sheet",
+   "state": "default"
+  },
+  {
+   "page": "plugins-clear-mappings-sheet",
+   "state": "default"
+  },
+  {
+   "page": "plugins-mapping-dialog",
+   "state": "default"
+  },
+  {
+   "page": "about",
+   "state": "default"
+  },
+  {
+   "page": "about-privacy-tab",
+   "state": "default"
+  },
+  {
+   "page": "about-open-source-tab",
+   "state": "default"
+  },
+  {
+   "page": "guide",
+   "state": "default"
+  },
+  {
+   "page": "app-diagnostics",
+   "state": "loaded"
+  },
+  {
+   "page": "app-diagnostics",
+   "state": "empty"
+  },
+  {
+   "page": "app-diagnostics-clear-sheet",
+   "state": "default"
+  },
+  {
+   "page": "legacy-drafts",
+   "state": "default"
+  },
+  {
+   "page": "legacy-drafts-review-sheet",
+   "state": "default"
+  },
+  {
+   "page": "legacy-drafts-delete-sheet",
+   "state": "default"
+  },
+  {
+   "page": "saved-permissions",
+   "state": "loaded"
+  },
+  {
+   "page": "saved-permissions-revoke-dialog",
+   "state": "default"
+  },
+  {
+   "page": "web-sources",
+   "state": "reviewed"
+  },
+  {
+   "page": "model-picker-sheet",
+   "state": "default"
+  },
+  {
+   "page": "model-picker-sheet-unloaded-providers-dialog",
+   "state": "default"
+  },
+  {
+   "page": "model-picker-sheet-agent-dialog",
+   "state": "default"
+  },
+  {
+   "page": "model-picker-sheet-options-dialog",
+   "state": "default"
+  },
+  {
+   "page": "server-capabilities",
+   "state": "default"
+  }
+ ],
+ "notRendered": {},
+ "shots": [
+  {
+   "page": "settings",
+   "state": "pushed",
+   "image": "j1-settings-more/settings--pushed.png",
+   "note": "Pushed via Ctrl/Cmd+, or a search result, with its own app bar."
+  },
+  {
+   "page": "settings",
+   "state": "in-shell",
+   "image": "j1-settings-more/settings--in-shell.png",
+   "note": "The same hub embedded as tab 3 of HomeScreen (bottom nav shown)."
+  },
+  {
+   "page": "settings-transcript-display-sheet",
+   "state": "default",
+   "image": "j1-settings-more/settings-transcript-display-sheet.png"
+  },
+  {
+   "page": "settings-disconnect-sheet",
+   "state": "default",
+   "image": "j1-settings-more/settings-disconnect-sheet.png"
+  },
+  {
+   "page": "coding-settings-shell-sheet",
+   "state": "default",
+   "image": "j1-settings-more/coding-settings-shell-sheet.png"
+  },
+  {
+   "page": "notifications-settings",
+   "state": "loaded",
+   "image": "j1-settings-more/notifications-settings--loaded.png"
+  },
+  {
+   "page": "notifications-settings-quiet-time-dialog",
+   "state": "default",
+   "image": "j1-settings-more/notifications-settings-quiet-time-dialog.png"
+  },
+  {
+   "page": "usage-hub",
+   "state": "loaded",
+   "image": "j1-settings-more/usage-hub--loaded.png"
+  },
+  {
+   "page": "appearance-settings",
+   "state": "loaded",
+   "image": "j1-settings-more/appearance-settings--loaded.png"
+  },
+  {
+   "page": "appearance-picker-sheet",
+   "state": "default",
+   "image": "j1-settings-more/appearance-picker-sheet.png"
+  },
+  {
+   "page": "theme-pack-preview-sheet",
+   "state": "default",
+   "image": "j1-settings-more/theme-pack-preview-sheet.png"
+  },
+  {
+   "page": "language-sheet",
+   "state": "default",
+   "image": "j1-settings-more/language-sheet.png"
+  },
+  {
+   "page": "privacy-settings",
+   "state": "loaded",
+   "image": "j1-settings-more/privacy-settings--loaded.png"
+  },
+  {
+   "page": "privacy-settings-clear-queued-sheet",
+   "state": "default",
+   "image": "j1-settings-more/privacy-settings-clear-queued-sheet.png"
+  },
+  {
+   "page": "privacy-settings-clear-drafts-sheet",
+   "state": "default",
+   "image": "j1-settings-more/privacy-settings-clear-drafts-sheet.png"
+  },
+  {
+   "page": "plugins-settings",
+   "state": "loaded",
+   "image": "j1-settings-more/plugins-settings--loaded.png"
+  },
+  {
+   "page": "team-plugin-sheet",
+   "state": "default",
+   "image": "j1-settings-more/team-plugin-sheet.png"
+  },
+  {
+   "page": "plugins-clear-mappings-sheet",
+   "state": "default",
+   "image": "j1-settings-more/plugins-clear-mappings-sheet.png"
+  },
+  {
+   "page": "plugins-mapping-dialog",
+   "state": "default",
+   "image": "j1-settings-more/plugins-mapping-dialog.png"
+  },
+  {
+   "page": "about",
+   "state": "default",
+   "image": "j1-settings-more/about.png",
+   "note": "top of the screen: build identity, then the Privacy document"
+  },
+  {
+   "page": "about-privacy-tab",
+   "state": "default",
+   "image": "j1-settings-more/about-privacy-tab.png",
+   "note": "the Privacy tab scrolled into the document"
+  },
+  {
+   "page": "about-open-source-tab",
+   "state": "default",
+   "image": "j1-settings-more/about-open-source-tab.png"
+  },
+  {
+   "page": "guide",
+   "state": "default",
+   "image": "j1-settings-more/guide.png"
+  },
+  {
+   "page": "app-diagnostics",
+   "state": "loaded",
+   "image": "j1-settings-more/app-diagnostics--loaded.png"
+  },
+  {
+   "page": "app-diagnostics",
+   "state": "empty",
+   "image": "j1-settings-more/app-diagnostics--empty.png"
+  },
+  {
+   "page": "app-diagnostics-clear-sheet",
+   "state": "default",
+   "image": "j1-settings-more/app-diagnostics-clear-sheet.png"
+  },
+  {
+   "page": "legacy-drafts",
+   "state": "default",
+   "image": "j1-settings-more/legacy-drafts.png"
+  },
+  {
+   "page": "legacy-drafts-review-sheet",
+   "state": "default",
+   "image": "j1-settings-more/legacy-drafts-review-sheet.png"
+  },
+  {
+   "page": "legacy-drafts-delete-sheet",
+   "state": "default",
+   "image": "j1-settings-more/legacy-drafts-delete-sheet.png"
+  },
+  {
+   "page": "saved-permissions",
+   "state": "loaded",
+   "image": "j1-settings-more/saved-permissions--loaded.png"
+  },
+  {
+   "page": "saved-permissions-revoke-dialog",
+   "state": "default",
+   "image": "j1-settings-more/saved-permissions-revoke-dialog.png"
+  },
+  {
+   "page": "web-sources",
+   "state": "reviewed",
+   "image": "j1-settings-more/web-sources--reviewed.png"
+  },
+  {
+   "page": "model-picker-sheet",
+   "state": "default",
+   "image": "j1-settings-more/model-picker-sheet.png"
+  },
+  {
+   "page": "model-picker-sheet-unloaded-providers-dialog",
+   "state": "default",
+   "image": "j1-settings-more/model-picker-sheet-unloaded-providers-dialog.png"
+  },
+  {
+   "page": "model-picker-sheet-agent-dialog",
+   "state": "default",
+   "image": "j1-settings-more/model-picker-sheet-agent-dialog.png"
+  },
+  {
+   "page": "model-picker-sheet-options-dialog",
+   "state": "default",
+   "image": "j1-settings-more/model-picker-sheet-options-dialog.png"
+  },
+  {
+   "page": "server-capabilities",
+   "state": "default",
+   "image": "j1-settings-more/server-capabilities.png"
+  }
+ ]
+}

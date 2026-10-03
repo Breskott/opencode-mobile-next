@@ -1,11 +1,12 @@
-import 'dart:async';
+import 'package:flutter/widgets.dart';
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
-import 'desktop_interaction.dart';
+import '../kit/kit_context_region.dart';
+import '../kit/kit_menu.dart';
 
 /// One entry in a right-click menu.
+///
+/// Retired by screen-shell-1: use [KitMenuItem]. Kept so the seven callers
+/// keep compiling until their units move to `KitRow.menu` (KIT-43).
 class ContextMenuAction {
   const ContextMenuAction({
     required this.label,
@@ -22,21 +23,26 @@ class ContextMenuAction {
   /// Key on the rendered menu item, so a test can name the entry it taps.
   final ValueKey<String>? menuKey;
 
-  /// Rendered in the error colour, matching the destructive rows in the
-  /// bottom sheets these menus mirror.
+  /// Loses data or ends running work: shown last, after a divider, in the
+  /// kit's destructive look (KitMenu ordering, KIT-28).
   final bool destructive;
+
+  /// The same entry as the kit's one menu item.
+  KitMenuItem toKitMenuItem() => KitMenuItem(
+    label: label,
+    icon: icon,
+    onSelected: onSelected,
+    key: menuKey,
+    destructive: destructive,
+  );
 }
 
 /// Adds a desktop right-click menu to [child].
 ///
-/// On Android this returns [child] untouched — the long-press sheets stay the
-/// only action surface there, exactly as before. On desktop the same actions
-/// become a secondary-tap menu, because a long press with a mouse is not a
-/// gesture anyone performs.
-///
-/// [actions] is a callback rather than a list so the menu is built from state
-/// at the moment of the click, not at the moment the row was laid out.
-class ContextMenuRegion extends StatefulWidget {
+/// Retired by screen-shell-1: use [KitContextRegion] (or, for a row,
+/// `KitRow.menu`). Off desktop this returns [child] untouched; on desktop a
+/// secondary click, Shift+F10 or the context-menu key opens the kit menu.
+class ContextMenuRegion extends StatelessWidget {
   const ContextMenuRegion({
     super.key,
     required this.actions,
@@ -47,119 +53,25 @@ class ContextMenuRegion extends StatefulWidget {
   final Widget child;
 
   @override
-  State<ContextMenuRegion> createState() => _ContextMenuRegionState();
+  Widget build(BuildContext context) => KitContextRegion(
+    menu: () => [for (final action in actions()) action.toKitMenuItem()],
+    child: child,
+  );
 }
 
-class _ContextMenuRegionState extends State<ContextMenuRegion> {
-  bool _showFocus = false;
-  bool _menuOpen = false;
-
-  Future<void> _open(Offset position) async {
-    if (_menuOpen) return;
-    _menuOpen = true;
-    try {
-      await showContextMenu(context, position, widget.actions());
-    } finally {
-      _menuOpen = false;
-    }
-  }
-
-  void _openFromKeyboard() {
-    final box = context.findRenderObject();
-    if (box is! RenderBox || !box.hasSize) return;
-    unawaited(_open(box.localToGlobal(box.size.center(Offset.zero))));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!desktopInteractions) return widget.child;
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.f10, shift: true):
-            _openFromKeyboard,
-        const SingleActivator(LogicalKeyboardKey.contextMenu):
-            _openFromKeyboard,
-      },
-      child: FocusableActionDetector(
-        onShowFocusHighlight: (value) => setState(() => _showFocus = value),
-        child: DecoratedBox(
-          position: DecorationPosition.foreground,
-          decoration: BoxDecoration(
-            border: _showFocus
-                ? Border.all(
-                    color: Theme.of(context).colorScheme.primary,
-                    width: 2,
-                  )
-                : null,
-          ),
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            // Excluded from semantics: every action in the menu is reachable from
-            // the row's own overflow button or sheet, which screen readers use.
-            excludeFromSemantics: true,
-            onSecondaryTapDown: (details) =>
-                unawaited(_open(details.globalPosition)),
-            child: widget.child,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Opens a context menu at [globalPosition]. Exposed so a surface that
-/// already owns a gesture recognizer can raise the same menu.
+/// Opens the kit menu at [globalPosition]. Exposed so a surface that already
+/// owns a gesture recognizer can raise the same menu.
+///
+/// Retired by screen-shell-1: use `showKitMenu(context, items:, position:)`.
 Future<void> showContextMenu(
   BuildContext context,
   Offset globalPosition,
   List<ContextMenuAction> actions,
 ) async {
   if (actions.isEmpty) return;
-  final overlay = Overlay.maybeOf(context)?.context.findRenderObject();
-  if (overlay is! RenderBox || !overlay.hasSize) return;
-  final position = overlay.globalToLocal(globalPosition);
-  final theme = Theme.of(context);
-  final selected = await showMenu<int>(
-    context: context,
-    requestFocus: true,
-    position: RelativeRect.fromRect(
-      Rect.fromPoints(position, position),
-      Offset.zero & overlay.size,
-    ),
-    items: [
-      for (var index = 0; index < actions.length; index++)
-        PopupMenuItem<int>(
-          key: actions[index].menuKey,
-          value: index,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                actions[index].icon,
-                size: 18,
-                color: actions[index].destructive
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 12),
-              // A click near the right edge leaves the menu narrow, and a
-              // clipped label must degrade to an ellipsis rather than an
-              // overflow stripe.
-              Flexible(
-                child: Text(
-                  actions[index].label,
-                  softWrap: false,
-                  overflow: TextOverflow.ellipsis,
-                  style: actions[index].destructive
-                      ? TextStyle(color: theme.colorScheme.error)
-                      : null,
-                ),
-              ),
-            ],
-          ),
-        ),
-    ],
+  await showKitMenu(
+    context,
+    items: [for (final action in actions) action.toKitMenuItem()],
+    position: globalPosition,
   );
-  if (!context.mounted || selected == null) return;
-  actions[selected].onSelected();
 }

@@ -14,6 +14,19 @@ void main() {
           as Map<String, dynamic>;
   final pages = (ledger['pages'] as List).cast<Map<String, dynamic>>();
 
+  test('ledger pages and nonpage helpers still exist', () {
+    final files = <String>{
+      for (final page in pages) page['file'] as String,
+      for (final entry in ledger['notPages'] as List)
+        entry is Map ? entry['file'] as String : entry as String,
+    };
+    expect(
+      files.where((path) => !File(path).existsSync()).toList()..sort(),
+      isEmpty,
+      reason: 'Remove deleted pages and their incoming edges from the ledger.',
+    );
+  });
+
   test('every screen file has a home in the ledger', () {
     final referenced = <String>{
       for (final page in pages) ...[

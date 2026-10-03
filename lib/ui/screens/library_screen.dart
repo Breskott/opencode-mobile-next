@@ -1,30 +1,27 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../api/mcp_oauth.dart';
 import '../../l10n/app_localizations.dart';
-import '../../domain/server_gateway.dart' show StreamStatus;
+import '../../domain/server_gateway.dart'
+    show ProviderRuntimeBusyException, StreamStatus;
 import '../../api/provider_presentation.dart';
 import '../../api/product_repository.dart';
 import '../../state/connection.dart';
 import '../../state/pending_auth.dart';
 import '../app_theme.dart';
-import '../widgets/file_preview.dart';
+import '../kit/kit.dart';
 import '../widgets/external_link.dart';
 import '../widgets/connect_methods.dart';
-import '../widgets/info_label.dart';
 import '../widgets/provider_logo.dart';
-import '../widgets/confirm_sheet.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/product_states.dart';
+import '../widgets/command_sheet.dart';
 import '../widgets/run_command_dialog.dart';
-import '../widgets/pickers.dart';
+import 'mcp_catalog_screen.dart';
 import 'mcp_setup_screen.dart';
 
-part 'library/catalog_screen.dart';
 part 'library/integrations_screen.dart';
 part 'library/integration_tiles.dart';
 part 'library/credential_sheet.dart';

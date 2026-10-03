@@ -4,11 +4,13 @@
 // and present with `gascityFront`; Nudge is one tap with a receipt chip
 // that follows the record (Sent → Confirmed / Unconfirmed); Stop, Restart
 // and Cancel run are two-step (the first tap opens the confirmation, the
-// second sends, backing out sends nothing); Message sends the text;
-// Reassign picks a ready item and sends assignWork; Start a run sends the
+// second sends, backing out sends nothing); messaging the worker is its
+// conversation's composer (slice-P3.6), which sends the text;
+// Manual reassign is absent (the dispatcher owns it); Start a run sends the
 // objective and the supervision line to the Mayor, shows "Planning…
 // (Mayor)" on the home, resolves when a run carrying the objective
-// appears, and a suspended Mayor shows the host-off copy without sending.
+// appears, and a suspended Mayor opens "Team can't take tasks" with Wake
+// the planner, without sending.
 // TEAM-306: on a host that creates work (the phone's loopback) a suspended
 // Mayor shows the direct task form instead, which creates one bead and
 // slings it at the project's polecat pool; a refused create stays on the
@@ -24,12 +26,13 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/state/team_dispatch.dart';
 import 'package:opencode_mobile/state/team_planning.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamConversationScreen, TeamWatchLiveScreen;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// One recorded control call.
@@ -369,17 +372,30 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
   }
 
-  Future<void> scrollToControls(WidgetTester tester) async {
-    await tester.scrollUntilVisible(
-      key('team-agent-controls'),
-      300,
-      scrollable: find.descendant(
-        of: key('team-agent-list'),
-        matching: find.byType(Scrollable),
-      ),
-    );
-    await tester.pump();
+  /// Controls moved into the top bar in screen-team-1 (2026-09-27).
+  Future<void> openMore(WidgetTester tester) async {
+    await tester.tap(key('team-agent-more'));
+    await tester.pumpAndSettle();
   }
+
+  Future<void> tapVisible(WidgetTester tester, Finder target) async {
+    // Let a newly focused field finish its caret reveal before scrolling
+    // to the next action; otherwise it scrolls back after ensureVisible.
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(target);
+    await tester.pumpAndSettle();
+    expect(target.hitTestable(), findsOneWidget);
+    await tester.tap(target);
+  }
+
+  /// The task's conversation, where the run page's controls moved.
+  Widget conversation(OrchestrationController controller, String runId) =>
+      TeamConversationScreen(
+        key: ValueKey('conversation-$runId'),
+        team: controller,
+        runId: runId,
+        now: () => clock,
+      );
 
   Future<void> settle(WidgetTester tester) async {
     await tester.pump();
@@ -402,8 +418,12 @@ void main() {
         capabilities: OrchestrationCapabilities.gascityRead,
       );
       await pumpAgent(tester, controller);
-      expect(key('team-agent-controls'), findsNothing);
+      // Only the way to its work (its conversation) remains.
+      expect(key('team-agent-control-message'), findsNothing);
       expect(key('team-agent-control-nudge'), findsNothing);
+      expect(key('team-agent-control-pause'), findsNothing);
+      expect(key('team-agent-open-conversation'), findsOneWidget);
+      expect(key('team-agent-open-output'), findsNothing);
       expect(find.text('Open session'), findsNothing);
 
       await tester.pumpWidget(
@@ -412,14 +432,14 @@ void main() {
       await settle(tester);
       expect(key('team-home-start-run'), findsNothing);
 
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
+      // The task's conversation (RunScreen retired, P3.5): its menu holds
+      // Task details, and a read-only host adds no Stop task.
+      await tester.pumpWidget(app(conversation(controller, 'oc-xru')));
       await settle(tester);
-      expect(key('team-run-more'), findsNothing);
-      expect(key('team-run-details'), findsOneWidget);
+      await tester.tap(key('team-conversation-menu'));
+      await tester.pumpAndSettle();
+      expect(key('team-conversation-details'), findsOneWidget);
+      expect(key('team-conversation-stop'), findsNothing);
     });
 
     testWidgets('front host: every control, never Open session', (
@@ -428,22 +448,18 @@ void main() {
       await size(tester, const Size(400, 900));
       final (controller, _) = await boot();
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
-      for (final id in [
-        'message',
-        'nudge',
-        'pause',
-        'stop',
-        'restart',
-        'reassign',
-      ]) {
+      await openMore(tester);
+      // Messaging is the conversation's composer, not a control here.
+      expect(key('team-agent-control-message'), findsNothing);
+      expect(key('team-agent-open-conversation'), findsOneWidget);
+      for (final id in ['nudge', 'pause', 'stop', 'restart']) {
         expect(key('team-agent-control-$id'), findsOneWidget, reason: id);
       }
       expect(key('team-agent-control-resume'), findsNothing);
       expect(find.text('Open session'), findsNothing);
       expect(find.text('Open worktree'), findsNothing);
-      expect(find.text('Message'), findsOneWidget);
-      expect(find.text('Reassign work…'), findsOneWidget);
+      expect(key('team-agent-control-reassign'), findsNothing);
+      expect(find.text('Reassign work…'), findsNothing);
     });
 
     testWidgets('only the granted controls exist', (tester) async {
@@ -457,8 +473,9 @@ void main() {
         ),
       );
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
-      expect(key('team-agent-control-message'), findsOneWidget);
+      // Messaging lives in the conversation; the page offers it.
+      expect(key('team-agent-open-conversation'), findsOneWidget);
+      expect(key('team-agent-control-message'), findsNothing);
       expect(key('team-agent-control-nudge'), findsNothing);
       expect(key('team-agent-control-stop'), findsNothing);
       expect(key('team-agent-control-reassign'), findsNothing);
@@ -470,9 +487,9 @@ void main() {
         configure: (g) => g.agentList = [fox(state: AgentState.stopped)],
       );
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
       expect(key('team-agent-control-resume'), findsOneWidget);
       expect(key('team-agent-control-pause'), findsNothing);
+      await openMore(tester);
       expect(key('team-agent-control-stop'), findsNothing);
       expect(key('team-agent-control-restart'), findsOneWidget);
     });
@@ -487,7 +504,7 @@ void main() {
         timeout: const Duration(seconds: 30),
       );
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-nudge'));
       await settle(tester);
       expect(gateway.calls, hasLength(1));
@@ -500,13 +517,13 @@ void main() {
       );
       expect(record?.status, MutationStatus.sent);
       expect(key('team-agent-receipt'), findsOneWidget);
-      expect(find.text('Nudge · Sent'), findsOneWidget);
+      expect(find.textContaining('Nudge · Sending…'), findsOneWidget);
 
       gateway.push(
         const RequestResult(requestId: 'corr-key-1', ok: true, seq: 10),
       );
       await settle(tester);
-      expect(find.text('Nudge · Confirmed'), findsOneWidget);
+      expect(find.textContaining('Nudge · Confirmed'), findsOneWidget);
       expect(gateway.calls, hasLength(1));
     });
 
@@ -518,18 +535,20 @@ void main() {
         timeout: const Duration(milliseconds: 100),
       );
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-nudge'));
       await settle(tester);
-      expect(find.text('Nudge · Sent'), findsOneWidget);
+      expect(find.textContaining('Nudge · Sending…'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 200));
       await settle(tester);
-      expect(find.text('Nudge · Unconfirmed'), findsOneWidget);
-      expect(key('team-receipt-retry'), findsOneWidget);
+      expect(find.textContaining('Not confirmed yet'), findsOneWidget);
+      expect(key('team-agent-receipt-retry'), findsOneWidget);
       expect(gateway.calls, hasLength(1));
     });
 
-    testWidgets('the host refuses: Refused with the reason', (tester) async {
+    testWidgets('the host refuses: Not accepted with the reason', (
+      tester,
+    ) async {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot(
         configure: (g) =>
@@ -537,12 +556,53 @@ void main() {
                 MutationReceipt.rejected(call.requestId, 'session is gone'),
       );
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-pause'));
       await settle(tester);
       expect(gateway.calls.single.arg, AgentControlAction.pause);
-      expect(find.text('Pause · Refused'), findsOneWidget);
-      expect(find.text('session is gone'), findsOneWidget);
+      // The one KitReceipt says the host's reason in its refusal words.
+      expect(
+        find.textContaining('Not accepted', findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.textContaining('session is gone'), findsOneWidget);
+      expect(key('team-agent-pause-undo'), findsNothing);
+    });
+    testWidgets('an unconfirmed pause never claims the agent paused', (
+      tester,
+    ) async {
+      await size(tester, const Size(400, 900));
+      final (controller, gateway) = await boot(
+        configure: (g) => g.answer = (call) async => MutationReceipt(
+          id: call.requestId,
+          status: MutationReceiptStatus.pending,
+          retryable: true,
+        ),
+      );
+      await pumpAgent(tester, controller);
+      await openMore(tester);
+      await tester.tap(key('team-agent-control-pause'));
+      await settle(tester);
+      expect(gateway.calls, hasLength(1));
+      expect(gateway.calls.single.verb, 'controlAgent');
+      expect(gateway.calls.single.target, 'fox');
+      expect(gateway.calls.single.arg, AgentControlAction.pause);
+      expect(
+        controller
+            .latestMutation(kind: MutationKind.controlAgent, targetId: 'fox')
+            ?.status,
+        MutationStatus.unconfirmed,
+      );
+      expect(find.textContaining('Not confirmed yet'), findsOneWidget);
+      expect(key('team-agent-receipt-retry'), findsOneWidget);
+      expect(key('team-agent-pause-undo'), findsNothing);
+      expect(find.text('Paused fox'), findsNothing);
+      await drain(tester);
+      expect(
+        gateway.calls,
+        hasLength(1),
+        reason: 'never automatically retried',
+      );
     });
   });
 
@@ -551,16 +611,16 @@ void main() {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot();
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-stop'));
       await tester.pumpAndSettle();
       expect(key('team-agent-stop-confirm'), findsOneWidget);
-      expect(find.text('Stop fox?'), findsOneWidget);
+      expect(find.text('Stop Worker · fox?'), findsOneWidget);
       expect(gateway.calls, isEmpty);
       await tester.tap(key('team-agent-stop-confirm-action'));
       await tester.pumpAndSettle();
       expect(gateway.calls.single.arg, AgentControlAction.stop);
-      expect(find.text('Stop · Sent'), findsOneWidget);
+      expect(find.textContaining('Stop · Sending…'), findsOneWidget);
       await drain(tester);
     });
 
@@ -568,10 +628,10 @@ void main() {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot();
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-stop'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Keep going'));
+      await tester.tap(find.text('Keep running'));
       await tester.pumpAndSettle();
       expect(key('team-agent-stop-confirm'), findsNothing);
       expect(gateway.calls, isEmpty);
@@ -584,69 +644,56 @@ void main() {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot();
       await pumpAgent(tester, controller);
-      await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-restart'));
       await tester.pumpAndSettle();
-      expect(find.text('Restart fox?'), findsOneWidget);
+      expect(find.text('Restart Worker · fox?'), findsOneWidget);
       expect(gateway.calls, isEmpty);
       await tester.tap(key('team-agent-restart-confirm-action'));
       await tester.pumpAndSettle();
       expect(gateway.calls.single.arg, AgentControlAction.restart);
-      expect(find.text('Restart · Sent'), findsOneWidget);
+      expect(find.textContaining('Restart · Sending…'), findsOneWidget);
       await drain(tester);
     });
 
-    testWidgets('Cancel run: overflow → confirmation → cancelRun', (
-      tester,
-    ) async {
+    // RunScreen's Cancel run / Close batch is retired (P3.5): the task's
+    // conversation owns Stop task, confirmed, with its receipt.
+    testWidgets('Stop task: menu → confirmation → cancelRun', (tester) async {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot();
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
+      await tester.pumpWidget(app(conversation(controller, 'oc-xru')));
       await settle(tester);
-      await tester.tap(key('team-run-more'));
+      await tester.tap(key('team-conversation-menu'));
       await tester.pumpAndSettle();
-      expect(find.text('Stop run'), findsOneWidget);
-      await tester.tap(find.text('Stop run'));
+      await tester.tap(key('team-conversation-stop'));
       await tester.pumpAndSettle();
-      expect(key('team-run-cancel-confirm'), findsOneWidget);
+      expect(key('team-conversation-stop-confirm'), findsOneWidget);
       expect(gateway.calls, isEmpty);
-      await tester.tap(key('team-run-cancel-confirm-action'));
+      await tester.tap(key('team-conversation-stop-confirm-action'));
       await tester.pumpAndSettle();
       expect(gateway.calls.single.verb, 'cancelRun');
       expect(gateway.calls.single.target, 'oc-xru');
-      expect(key('team-run-receipt'), findsOneWidget);
-      expect(find.text('Stop run · Sent'), findsOneWidget);
-      // The chip sits under the state header, before the progress bar.
-      final chipY = tester.getTopLeft(key('team-run-receipt')).dy;
-      expect(chipY, greaterThan(tester.getTopLeft(key('team-run-state')).dy));
-      expect(chipY, lessThan(tester.getTopLeft(key('team-run-progress')).dy));
+      expect(key('team-conversation-stop-receipt'), findsOneWidget);
+      expect(find.textContaining('Stop task · Sending…'), findsOneWidget);
       await drain(tester);
     });
 
-    testWidgets('Cancel run: backing out sends nothing', (tester) async {
+    testWidgets('Stop task: backing out sends nothing', (tester) async {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot();
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
+      await tester.pumpWidget(app(conversation(controller, 'oc-xru')));
       await settle(tester);
-      await tester.tap(key('team-run-more'));
+      await tester.tap(key('team-conversation-menu'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Stop run'));
+      await tester.tap(key('team-conversation-stop'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Keep going'));
+      await tester.tap(find.text('Keep running'));
       await tester.pumpAndSettle();
       expect(gateway.calls, isEmpty);
-      expect(key('team-run-receipt'), findsNothing);
+      expect(key('team-conversation-stop-receipt'), findsNothing);
     });
 
-    testWidgets('a batch offers Close batch; a finished run offers nothing', (
+    testWidgets('a batch offers Stop task; a finished task offers nothing', (
       tester,
     ) async {
       await size(tester, const Size(400, 900));
@@ -656,95 +703,95 @@ void main() {
           run(id: 'oc-done', state: RunState.completed),
         ],
       );
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
+      await tester.pumpWidget(app(conversation(controller, 'oc-xru')));
       await settle(tester);
-      await tester.tap(key('team-run-more'));
+      await tester.tap(key('team-conversation-menu'));
       await tester.pumpAndSettle();
-      expect(find.text('Close batch'), findsOneWidget);
-      expect(find.text('Stop run'), findsNothing);
+      expect(key('team-conversation-stop'), findsOneWidget);
       await tester.tapAt(Offset.zero);
       await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-done', now: () => clock),
-        ),
-      );
+      await tester.pumpWidget(app(conversation(controller, 'oc-done')));
       await settle(tester);
-      expect(key('team-run-more'), findsNothing);
+      // The menu holds Refresh and Task details only: nothing to stop.
+      await tester.tap(key('team-conversation-menu'));
+      await tester.pumpAndSettle();
+      expect(key('team-conversation-details'), findsOneWidget);
+      expect(key('team-conversation-stop'), findsNothing);
     });
   });
 
   group('message and reassign', () {
-    testWidgets('Message: the sheet sends the text', (tester) async {
-      await size(tester, const Size(400, 900));
-      final (controller, gateway) = await boot();
-      await pumpAgent(tester, controller);
-      await scrollToControls(tester);
-      await tester.tap(key('team-agent-control-message'));
-      await tester.pumpAndSettle();
-      expect(key('team-agent-message-sheet'), findsOneWidget);
-      expect(find.text('Message fox'), findsOneWidget);
-      // Empty text cannot be sent.
-      expect(
-        tester.widget<IconButton>(key('team-agent-message-send')).onPressed,
-        isNull,
-      );
-      await tester.enterText(
-        key('team-agent-message-field'),
-        'Use the offline queue for the tests',
-      );
-      await tester.pump();
-      await tester.tap(key('team-agent-message-send'));
-      await tester.pumpAndSettle();
-      expect(gateway.calls.single.verb, 'message');
-      expect(gateway.calls.single.target, 'fox');
-      expect(gateway.calls.single.arg, 'Use the offline queue for the tests');
-      expect(find.text('Message · Sent'), findsOneWidget);
-      await drain(tester);
-    });
-
-    testWidgets('Reassign: the picker lists ready work and sends assign', (
+    testWidgets('Message: the conversation composer sends the text', (
       tester,
     ) async {
       await size(tester, const Size(400, 900));
       final (controller, gateway) = await boot();
-      await pumpAgent(tester, controller);
-      await scrollToControls(tester);
-      await tester.tap(key('team-agent-control-reassign'));
-      await tester.pumpAndSettle();
-      expect(key('team-agent-reassign-sheet'), findsOneWidget);
-      expect(key('team-agent-reassign-w4'), findsOneWidget);
-      expect(key('team-agent-reassign-w5'), findsNothing);
-      expect(key('team-agent-reassign-w2'), findsNothing);
-      await tester.tap(key('team-agent-reassign-w4'));
-      await tester.pumpAndSettle();
-      expect(gateway.calls.single.verb, 'assign');
-      expect(gateway.calls.single.target, 'w4');
-      expect(gateway.calls.single.arg, 'fox');
-      expect(key('team-agent-assign-receipt'), findsOneWidget);
-      expect(find.text('Reassign work… · Sent'), findsOneWidget);
+      await tester.pumpWidget(
+        app(TeamWatchLiveScreen(team: controller, agentId: 'fox')),
+      );
+      await settle(tester);
+      // The composer addresses the worker; empty text cannot be sent.
+      expect(key('chat-watching-composer'), findsOneWidget);
+      expect(find.text('Message Worker…'), findsWidgets);
+      await tester.tap(key('chat-watching-message-send'));
+      await tester.pump();
+      expect(gateway.calls, isEmpty);
+      await tester.enterText(
+        key('chat-watching-message-field'),
+        'Use the offline queue for the tests',
+      );
+      await tester.pump();
+      await tester.tap(key('chat-watching-message-send'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(gateway.calls.single.verb, 'message');
+      expect(gateway.calls.single.target, 'fox');
+      expect(gateway.calls.single.arg, 'Use the offline queue for the tests');
+      // Taken: the field is cleared and the receipt is above the composer.
+      expect(key('chat-watching-message-receipt'), findsOneWidget);
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: key('chat-watching-message-field'),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
+        isEmpty,
+      );
+      await tester.pumpWidget(const SizedBox());
       await drain(tester);
     });
 
-    testWidgets('Reassign: nothing ready says so', (tester) async {
-      await size(tester, const Size(400, 900));
-      final (controller, gateway) = await boot(
-        configure: (g) => g.workList = const [
-          WorkItem(id: 'w2', title: 'Sync engine', state: WorkState.working),
-        ],
-      );
-      await pumpAgent(tester, controller);
-      await scrollToControls(tester);
-      await tester.tap(key('team-agent-control-reassign'));
-      await tester.pumpAndSettle();
-      expect(key('team-agent-reassign-empty'), findsOneWidget);
-      expect(gateway.calls, isEmpty);
-    });
+    for (final readyWork in [true, false]) {
+      testWidgets('manual reassign is absent with ready work: $readyWork', (
+        tester,
+      ) async {
+        await size(tester, const Size(400, 900));
+        final (controller, gateway) = await boot(
+          configure: readyWork
+              ? null
+              : (g) => g.workList = const [
+                  WorkItem(
+                    id: 'w2',
+                    title: 'Sync engine',
+                    state: WorkState.working,
+                  ),
+                ],
+        );
+        await pumpAgent(tester, controller);
+        await openMore(tester);
+        // screen-team-1 removed manual reassignment: the dispatcher owns
+        // routing. The menu must not offer a dead or hidden assign path.
+        expect(key('team-agent-control-reassign'), findsNothing);
+        expect(find.text('Reassign work…'), findsNothing);
+        expect(key('team-agent-reassign-sheet'), findsNothing);
+        expect(gateway.calls, isEmpty);
+      });
+    }
   });
 
   group('start a run', () {
@@ -775,21 +822,26 @@ void main() {
       );
       await pumpHome(tester, controller);
       expect(key('team-home-runs-empty'), findsOneWidget);
-      expect(find.text('No runs yet.'), findsOneWidget);
+      expect(find.text('No recent tasks'), findsOneWidget);
       expect(
         find.text(
-          'A run is a job the team works through. Start one and its '
-          'progress shows here.',
+          'Say what you need, and the team splits it into steps and shows '
+          'its progress here.',
         ),
         findsOneWidget,
       );
-      expect(find.text('Start runs from the host for now.'), findsNothing);
-      await tester.tap(
+      expect(find.text('Start tasks on the computer for now.'), findsNothing);
+      // Design standard §2: one primary per screen. The empty state teaches;
+      // Start a run is the button pinned below the list, not a second one
+      // inside the empty state.
+      expect(
         find.descendant(
           of: key('team-home-runs-empty'),
-          matching: find.text('Start a run'),
+          matching: find.text('Give the team a task'),
         ),
+        findsNothing,
       );
+      await tester.tap(key('team-home-start-run'));
       await tester.pumpAndSettle();
       expect(key('team-start-run-sheet'), findsOneWidget);
       expect(gateway.calls, isEmpty);
@@ -807,12 +859,15 @@ void main() {
         await tester.tap(key('team-home-start-run'));
         await tester.pumpAndSettle();
         expect(key('team-start-run-sheet'), findsOneWidget);
-        expect(find.text('Mayor'), findsOneWidget);
+        expect(find.text('Send to the Mayor'), findsOneWidget);
+        expect(find.text('gastown.mayor'), findsNothing);
+        await tapVisible(tester, key('team-start-run-technical'));
+        await tester.pumpAndSettle();
         expect(find.text('gastown.mayor'), findsOneWidget);
         expect(find.text('Boundaries'), findsNothing);
 
         // Empty objective: validation, nothing sent.
-        await tester.tap(key('team-start-run-send'));
+        await tapVisible(tester, key('team-start-run-send'));
         await tester.pumpAndSettle();
         expect(find.text('Write an objective first.'), findsOneWidget);
         expect(gateway.calls, isEmpty);
@@ -821,9 +876,9 @@ void main() {
           key('team-start-run-objective'),
           'Ship offline-first sessions with conflict resolution',
         );
-        await tester.tap(key('team-start-run-supervision-autonomous'));
+        await tapVisible(tester, key('team-start-run-supervision-autonomous'));
         await tester.pump();
-        await tester.tap(key('team-start-run-send'));
+        await tapVisible(tester, key('team-start-run-send'));
         await tester.pumpAndSettle();
 
         expect(gateway.calls, hasLength(1));
@@ -842,17 +897,46 @@ void main() {
         expect(text, contains('inside the host boundaries'));
         expect(text, isNot(contains('Project:')));
 
-        // The home shows the pending card with the planner's output a tap
-        // away.
+        // The task's conversation opens (P0.3); back on the home, the task
+        // is a row of the one list until the planner lists it
+        // (slice-P5.1: no planning card), and the row opens the task's
+        // conversation, whose Why leads to the planner.
         expect(key('team-start-run-sheet'), findsNothing);
-        expect(find.text('Planning… (Mayor)'), findsOneWidget);
+        expect(find.byType(TeamConversationScreen), findsOneWidget);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        expect(key('team-home-planning-key-1'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: key('team-home-planning-key-1'),
+            matching: find.textContaining(
+              'Waiting for a plan',
+              findRichText: true,
+            ),
+          ),
+          findsWidgets,
+        );
         expect(
           find.text('Ship offline-first sessions with conflict resolution'),
           findsOneWidget,
         );
-        await tester.tap(key('team-planning-output'));
+        await tester.tap(key('team-home-planning-key-1'));
         await tester.pumpAndSettle();
-        expect(find.byType(AgentOutputScreen), findsOneWidget);
+        expect(find.byType(TeamConversationScreen), findsOneWidget);
+        // Eight seconds with no plan: the line says why, and its Why
+        // unfolds the ways out in place. The page reads the pinned clock,
+        // so the clock moves with the pump.
+        clock = clock.add(const Duration(seconds: 9));
+        await tester.pump(const Duration(seconds: 9));
+        await tester.pumpAndSettle();
+        await tester.tap(key('team-conversation-now-why'));
+        await tester.pumpAndSettle();
+        await tester.tap(key('team-conversation-now-watch'));
+        await tester.pumpAndSettle();
+        // The planner's conversation, from the team's live output.
+        expect(find.byType(TeamWatchLiveScreen), findsOneWidget);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
         await tester.pageBack();
         await tester.pumpAndSettle();
 
@@ -868,8 +952,7 @@ void main() {
         ];
         await controller.refresh();
         await settle(tester);
-        expect(find.text('Planning… (Mayor)'), findsNothing);
-        expect(key('team-planning-key-1'), findsNothing);
+        expect(key('team-home-planning-key-1'), findsNothing);
         expect(
           find.text('Ship offline-first sessions with conflict resolution'),
           findsOneWidget,
@@ -885,19 +968,21 @@ void main() {
       await tester.tap(key('team-home-start-run'));
       await tester.pumpAndSettle();
       await tester.enterText(key('team-start-run-objective'), 'Add dark mode');
-      await tester.tap(key('team-start-run-project'));
+      await tapVisible(tester, key('team-start-run-project'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('ocproof').last);
       await tester.pumpAndSettle();
-      await tester.tap(key('team-start-run-send'));
+      await tapVisible(tester, key('team-start-run-send'));
       await tester.pumpAndSettle();
       final text = gateway.calls.single.arg! as String;
       expect(text, contains('Project: ocproof'));
-      expect(text, contains('Supervision: Balanced'));
+      // The server's level from What runs by itself: High until chosen
+      // (P6.1, personas-verticals.md §3).
+      expect(text, contains('Supervision: High'));
       await drain(tester);
     });
 
-    testWidgets('a suspended Mayor: host-off copy, nothing sent', (
+    testWidgets('a suspended Mayor: the team can\'t take tasks, nothing sent', (
       tester,
     ) async {
       await size(tester, const Size(400, 900));
@@ -908,10 +993,10 @@ void main() {
       await tester.tap(key('team-home-start-run'));
       await tester.pumpAndSettle();
       expect(key('team-start-run-planner-off'), findsOneWidget);
-      expect(
-        find.text('The planner (Mayor) is off on this host'),
-        findsOneWidget,
-      );
+      // slice-close-team: plain title and words, and a way on.
+      expect(find.text("Team can't take tasks"), findsOneWidget);
+      expect(find.text('The planner is switched off'), findsOneWidget);
+      expect(key('team-start-run-wake'), findsOneWidget);
       expect(key('team-start-run-host-guide'), findsOneWidget);
       expect(key('team-start-run-send'), findsNothing);
       expect(key('team-start-run-objective'), findsNothing);
@@ -990,10 +1075,16 @@ void main() {
         expect(gateway.calls[1].target, 'fx-new-1');
         expect(gateway.calls[1].arg, 'ocproof/gastown.polecat');
 
-        // The sheet closed; the home says the task went out.
+        // The sheet closed on the task's own conversation (P0.3).
         expect(key('team-start-run-sheet'), findsNothing);
-        expect(find.text('Planning… (Mayor)'), findsNothing);
-        expect(find.text('Task sent to an agent · Confirmed'), findsOneWidget);
+        expect(find.byType(TeamConversationScreen), findsOneWidget);
+        expect(
+          find.descendant(
+            of: key('team-conversation-title'),
+            matching: find.text('Add a docstring to add() in calc.py'),
+          ),
+          findsOneWidget,
+        );
         final record = controller.latestMutation(
           kind: MutationKind.createWork,
         )!;
@@ -1029,13 +1120,300 @@ void main() {
       expect(gateway.calls.map((c) => c.verb), ['createWork']);
       expect(key('team-start-run-sheet'), findsOneWidget);
       expect(key('team-start-run-direct-error'), findsOneWidget);
+      // Plain words; the host's own words only under Technical details.
       expect(
-        find.text('The host refused the task: rig ocproof unknown'),
+        find.text('The task wasn’t made. Change it and send it again.'),
         findsOneWidget,
       );
+      expect(find.textContaining('rig ocproof unknown'), findsNothing);
+      await tapVisible(tester, key('team-start-run-direct-error-details'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('rig ocproof unknown'), findsOneWidget);
       expect(
         controller.latestMutation(kind: MutationKind.createWork)?.status,
         MutationStatus.rejected,
+      );
+      // Nothing was made, so nothing is said on the page behind.
+      expect(TeamDispatchAttempts.of(controller).latest, isNull);
+    });
+
+    group('P6.3 dispatch stages', () {
+      Future<void> openDirect(
+        WidgetTester tester,
+        OrchestrationController controller,
+        String title,
+      ) async {
+        await pumpHome(tester, controller);
+        await tester.tap(key('team-home-start-run'));
+        await tester.pumpAndSettle();
+        expect(key('team-start-run-direct'), findsOneWidget);
+        await tester.enterText(key('team-start-run-direct-title'), title);
+        await tester.pump();
+      }
+
+      String textOf(WidgetTester tester, String value) {
+        final text = tester.widget<Text>(
+          find
+              .descendant(
+                of: key(value),
+                matching: find.byType(Text),
+                matchRoot: true,
+              )
+              .first,
+        );
+        return text.data ?? text.textSpan?.toPlainText() ?? '';
+      }
+
+      String stage(WidgetTester tester) =>
+          textOf(tester, 'team-start-run-direct-stage-text');
+
+      String homeLine(WidgetTester tester) =>
+          textOf(tester, 'team-home-dispatch-text');
+
+      OrchestrationAgent worker({bool running = true}) => OrchestrationAgent(
+        id: 'ocproof/polecat-1',
+        name: 'polecat-1',
+        state: AgentState.working,
+        rawState: 'active',
+        pool: 'gastown.polecat',
+        sessionId: 'bl-new',
+        sessionRunning: running,
+        currentWorkId: 'fx-new-1',
+      );
+
+      testWidgets(
+        'the sheet says each stage once the host confirmed it; the home '
+        'status line carries it on; one request per step; timing probe',
+        (tester) async {
+          await size(tester, const Size(412, 915));
+          final createGate = Completer<void>();
+          final assignGate = Completer<void>();
+          final (controller, gateway) = await boot(
+            capabilities: OrchestrationCapabilities.gascityLoopback,
+            configure: (g) {
+              g.agentList = [fox(), mayor(suspended: true)];
+              g.answer = (call) async {
+                if (call.verb == 'createWork') {
+                  await createGate.future;
+                  return created(call);
+                }
+                await assignGate.future;
+                return slung(call);
+              };
+            },
+          );
+          await openDirect(tester, controller, 'Add a docstring');
+          await tester.tap(key('team-start-run-direct-send'));
+          await tester.pump();
+          expect(stage(tester), 'Creating your task…');
+          expect(gateway.calls.map((c) => c.verb), ['createWork']);
+
+          // Timing probe: create receipt -> first visible next stage.
+          final watch = Stopwatch()..start();
+          createGate.complete();
+          await tester.pump();
+          watch.stop();
+          expect(stage(tester), 'Task created · sending it to the team…');
+          debugPrint(
+            'P6.3 timing probe: create receipt -> "Task created" visible in '
+            '1 frame, ${watch.elapsedMicroseconds} µs test time',
+          );
+          expect(gateway.calls.map((c) => c.verb), ['createWork', 'assign']);
+          expect(gateway.calls[1].target, 'fx-new-1');
+
+          assignGate.complete();
+          await tester.pumpAndSettle();
+          // The task's conversation opened; back on the page, the line.
+          expect(find.byType(TeamConversationScreen), findsOneWidget);
+          Navigator.of(
+            tester.element(find.byType(TeamConversationScreen)),
+          ).pop();
+          await tester.pumpAndSettle();
+          expect(key('team-home-dispatch-awaitingWorker'), findsOneWidget);
+          expect(
+            homeLine(tester),
+            'Task sent to the team · waiting for a worker',
+          );
+          expect(
+            find.text('Next: a worker starts · usually within 5 min'),
+            findsOneWidget,
+          );
+
+          // Only a running session on this exact task says more.
+          gateway.agentList = [fox(), mayor(suspended: true), worker()];
+          await controller.refresh();
+          await settle(tester);
+          expect(key('team-home-dispatch-workerObserved'), findsOneWidget);
+          expect(homeLine(tester), 'A worker started your task');
+
+          // Reopening the page sends nothing again.
+          await tester.pumpWidget(const SizedBox());
+          await pumpHome(tester, controller);
+          expect(key('team-home-dispatch-workerObserved'), findsOneWidget);
+          expect(gateway.calls.map((c) => c.verb), ['createWork', 'assign']);
+          await tester.tap(find.byKey(const ValueKey('kit-status-dismiss')));
+          await settle(tester);
+          expect(key('team-home-dispatch-workerObserved'), findsNothing);
+          expect(gateway.calls.length, 2);
+          await drain(tester);
+        },
+      );
+
+      testWidgets(
+        'the task\'s own conversation Now line follows the same attempt: '
+        'nothing claimed before the host answers, then the real stage',
+        (tester) async {
+          await size(tester, const Size(412, 915));
+          final assignGate = Completer<void>();
+          final (controller, gateway) = await boot(
+            capabilities: OrchestrationCapabilities.gascityLoopback,
+            timeout: const Duration(seconds: 5),
+            configure: (g) {
+              g.agentList = [fox(), mayor(suspended: true)];
+              g.answer = (call) async {
+                if (call.verb == 'createWork') return created(call);
+                await assignGate.future;
+                return slung(call);
+              };
+            },
+          );
+          String nowText() => textOf(tester, 'team-conversation-now-text');
+          await openDirect(tester, controller, 'Add a docstring');
+          await tester.tap(key('team-start-run-direct-send'));
+          await tester.pump();
+          await tester.pump();
+          assignGate.complete();
+          await tester.pumpAndSettle();
+          expect(find.byType(TeamConversationScreen), findsOneWidget);
+          expect(nowText(), contains('Waiting for a worker'));
+
+          // Only a running session on this exact task says more.
+          gateway.agentList = [fox(), mayor(suspended: true), worker()];
+          await controller.refresh();
+          await settle(tester);
+          expect(nowText(), contains('Starting a worker'));
+          expect(gateway.calls.map((c) => c.verb), ['createWork', 'assign']);
+          await drain(tester);
+        },
+      );
+
+      testWidgets(
+        'an assignment the host never confirms reads "couldn\'t confirm", '
+        'not sent',
+        (tester) async {
+          await size(tester, const Size(412, 915));
+          final (controller, gateway) = await boot(
+            capabilities: OrchestrationCapabilities.gascityLoopback,
+            timeout: const Duration(seconds: 5),
+            configure: (g) {
+              g.agentList = [fox(), mayor(suspended: true)];
+              g.answer = (call) async =>
+                  call.verb == 'createWork' ? created(call) : slung(call);
+            },
+          );
+          await openDirect(tester, controller, 'Add a docstring');
+          await tester.tap(key('team-start-run-direct-send'));
+          await tester.pumpAndSettle();
+          Navigator.of(
+            tester.element(find.byType(TeamConversationScreen)),
+          ).pop();
+          await tester.pumpAndSettle();
+          expect(key('team-home-dispatch-awaitingWorker'), findsOneWidget);
+          await tester.pump(const Duration(seconds: 6));
+          await settle(tester);
+          expect(key('team-home-dispatch-dispatchUnconfirmed'), findsOneWidget);
+          expect(
+            homeLine(tester),
+            'Task created · couldn’t confirm it reached the team',
+          );
+          expect(gateway.calls.map((c) => c.verb), ['createWork', 'assign']);
+          await drain(tester);
+        },
+      );
+
+      testWidgets(
+        'a refused assignment keeps the task; the host\'s words only under '
+        'Technical details, redacted',
+        (tester) async {
+          await size(tester, const Size(412, 915));
+          const secret = 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789';
+          final (controller, gateway) = await boot(
+            capabilities: OrchestrationCapabilities.gascityLoopback,
+            configure: (g) {
+              g.agentList = [fox(), mayor(suspended: true)];
+              g.answer = (call) async => call.verb == 'createWork'
+                  ? created(call)
+                  : MutationReceipt.rejected(
+                      call.requestId,
+                      'pool suspended (key $secret)',
+                    );
+            },
+          );
+          await openDirect(tester, controller, 'Add a docstring');
+          await tester.tap(key('team-start-run-direct-send'));
+          await tester.pumpAndSettle();
+          // No conversation opens on a task nobody took.
+          expect(find.byType(TeamConversationScreen), findsNothing);
+          expect(key('team-start-run-sheet'), findsNothing);
+          expect(key('team-home-dispatch-assignRefused'), findsOneWidget);
+          expect(
+            homeLine(tester),
+            'Task created, but it could not be sent to the team',
+          );
+          expect(
+            find.text('The task stays on the board, given to no one.'),
+            findsOneWidget,
+          );
+          expect(find.textContaining('pool suspended'), findsNothing);
+          expect(gateway.calls.map((c) => c.verb), ['createWork', 'assign']);
+
+          await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Technical details').last);
+          await tester.pumpAndSettle();
+          expect(key('team-home-dispatch-details-sheet'), findsOneWidget);
+          expect(find.textContaining('fx-new-1'), findsWidgets);
+          expect(find.textContaining('pool suspended'), findsOneWidget);
+          expect(find.textContaining(secret), findsNothing);
+          expect(gateway.calls.length, 2);
+        },
+      );
+
+      testWidgets(
+        'a create with no task ID opens nothing, keeps the words and sends '
+        'nothing more',
+        (tester) async {
+          await size(tester, const Size(412, 915));
+          final (controller, gateway) = await boot(
+            capabilities: OrchestrationCapabilities.gascityLoopback,
+            timeout: const Duration(seconds: 5),
+            configure: (g) {
+              g.agentList = [fox(), mayor(suspended: true)];
+              g.answer = (call) async => MutationReceipt(
+                id: call.requestId,
+                status: MutationReceiptStatus.accepted,
+                upstreamStatus: 202,
+              );
+            },
+          );
+          await openDirect(tester, controller, 'Add a docstring');
+          await tester.tap(key('team-start-run-direct-send'));
+          await tester.pumpAndSettle();
+          expect(find.byType(TeamConversationScreen), findsNothing);
+          expect(key('team-start-run-sheet'), findsNothing);
+          expect(key('team-home-dispatch-createUnconfirmed'), findsOneWidget);
+          expect(
+            homeLine(tester),
+            'Couldn’t confirm whether the task was created',
+          );
+          expect(gateway.calls.map((c) => c.verb), ['createWork']);
+          // The words wait for a deliberate new send.
+          await tester.tap(key('team-home-start-run'));
+          await tester.pumpAndSettle();
+          expect(find.text('Add a docstring'), findsOneWidget);
+          expect(gateway.calls.length, 1);
+          await drain(tester);
+        },
       );
     });
 
@@ -1079,7 +1457,7 @@ void main() {
       await tester.tap(key('team-home-start-run'));
       await tester.pumpAndSettle();
       await tester.enterText(key('team-start-run-objective'), 'Add dark mode');
-      await tester.tap(key('team-start-run-send'));
+      await tapVisible(tester, key('team-start-run-send'));
       await tester.pumpAndSettle();
       expect(gateway.calls.map((c) => c.verb), ['controlAgent', 'message']);
       expect(gateway.calls.first.arg, AgentControlAction.start);
@@ -1087,33 +1465,59 @@ void main() {
       await drain(tester);
     });
 
-    testWidgets('after 30 minutes: Still planning; Dismiss hides it', (
-      tester,
-    ) async {
-      await size(tester, const Size(400, 900));
+    testWidgets('after 31 minutes: a reason and a way out, never "Still '
+        'planning" alone (slice-P5.1)', (tester) async {
+      // Tall enough for the whole start sheet and its Send.
+      await size(tester, const Size(400, 1400));
       final (controller, _) = await boot(timeout: const Duration(seconds: 30));
       await pumpHome(tester, controller);
       await tester.tap(key('team-home-start-run'));
       await tester.pumpAndSettle();
       await tester.enterText(key('team-start-run-objective'), 'Add dark mode');
-      await tester.tap(key('team-start-run-send'));
+      await tapVisible(tester, key('team-start-run-send'));
       await tester.pumpAndSettle();
-      expect(find.text('Planning… (Mayor)'), findsOneWidget);
+      expect(find.byType(TeamConversationScreen), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(key('team-home-planning-key-1'), findsOneWidget);
 
       clock = clock.add(const Duration(minutes: 31));
       await pumpHome(tester, controller);
       expect(
-        find.text('Still planning — check the planner\'s output'),
-        findsOneWidget,
+        find.descendant(
+          of: key('team-home-planning-key-1'),
+          matching: find.textContaining(
+            'Waiting for a plan · 31 min',
+            findRichText: true,
+          ),
+        ),
+        findsWidgets,
       );
-      await tester.tap(key('team-planning-dismiss'));
-      await settle(tester);
-      expect(key('team-planning-key-1'), findsNothing);
+      await tester.tap(key('team-home-planning-key-1'));
+      await tester.pumpAndSettle();
+      // Already 31 minutes old: the reason shows at once, with no
+      // engine word and no "Still planning".
+      expect(
+        find.textContaining(
+          'No plan has been reported yet',
+          findRichText: true,
+        ),
+        findsWidgets,
+      );
+      expect(find.textContaining('Still planning'), findsNothing);
+      await tester.tap(key('team-conversation-now-why'));
+      await tester.pumpAndSettle();
+      await tester.tap(key('team-conversation-now-dismiss'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TeamConversationScreen), findsNothing);
+      expect(key('team-home-planning-key-1'), findsNothing);
       expect(controller.isPlanningDismissed('key-1'), isTrue);
       await drain(tester);
     });
 
-    testWidgets('a refused objective says why', (tester) async {
+    testWidgets('a refused objective stays on the sheet and says why', (
+      tester,
+    ) async {
       await size(tester, const Size(400, 900));
       final (controller, _) = await boot(
         configure: (g) => g.answer = (call) async =>
@@ -1123,10 +1527,16 @@ void main() {
       await tester.tap(key('team-home-start-run'));
       await tester.pumpAndSettle();
       await tester.enterText(key('team-start-run-objective'), 'Add dark mode');
-      await tester.tap(key('team-start-run-send'));
+      await tapVisible(tester, key('team-start-run-send'));
       await tester.pumpAndSettle();
+      expect(key('team-start-run-sheet'), findsOneWidget);
       expect(
-        find.text('The host refused the objective: identity not allowed'),
+        find.descendant(
+          of: key('team-start-run-refused'),
+          matching: find.text(
+            'The host refused the objective: identity not allowed',
+          ),
+        ),
         findsOneWidget,
       );
     });
@@ -1213,18 +1623,16 @@ void main() {
             direction: direction,
             scale: 2.5,
           );
-          await scrollToControls(tester);
+          await openMore(tester);
           expect(key('team-agent-control-nudge'), findsOneWidget);
           expect(tester.takeException(), isNull);
           // Buttons are at least 48dp tall.
           final nudge = tester.getSize(key('team-agent-control-nudge'));
           expect(nudge.height, greaterThanOrEqualTo(48));
-          await tester.tap(key('team-agent-control-message'));
+          await tester.tapAt(Offset.zero);
           await tester.pumpAndSettle();
-          expect(key('team-agent-message-sheet'), findsOneWidget);
-          expect(tester.takeException(), isNull);
-          await tester.tapAt(const Offset(160, 10));
-          await tester.pumpAndSettle();
+          expect(key('team-agent-open-conversation'), findsOneWidget);
+          expect(key('team-agent-control-message'), findsNothing);
 
           await tester.pumpWidget(
             app(
@@ -1252,8 +1660,12 @@ void main() {
           expect(key('team-start-run-send'), findsOneWidget);
           expect(tester.takeException(), isNull);
           if (direction == TextDirection.rtl) {
+            await tapVisible(tester, key('team-start-run-technical'));
+            await tester.pumpAndSettle();
             expect(
-              tester.widget<Text>(find.text('gastown.mayor')).textDirection,
+              tester
+                  .widget<EditableText>(find.text('gastown.mayor'))
+                  .textDirection,
               TextDirection.ltr,
             );
           }

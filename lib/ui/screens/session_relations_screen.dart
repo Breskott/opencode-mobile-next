@@ -1,15 +1,21 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../l10n/app_localizations.dart';
 
 import '../../api/product_repository.dart';
+import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../widgets/product_states.dart';
-import '../widgets/session_handoff.dart';
-import '../app_iconography.dart';
+import '../app_theme.dart';
 import '../early_l10n.dart';
+import '../kit/kit.dart';
+import '../widgets/product_states.dart' show productErrorText;
+import '../widgets/relative_time.dart';
+import '../widgets/session_handoff.dart';
+import '../widgets/session_title.dart';
 
+/// The conversation a subagent was started from and the subagents it
+/// started (map page session-relations): one list ordered by urgency, each
+/// row saying its state in words, opening its transcript on tap.
 class SessionRelationsScreen extends StatefulWidget {
   final ConnectionController controller;
   final String sessionID;
@@ -28,6 +34,10 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
   Session? _parent;
   List<Session>? _children;
   Object? _error;
+
+  /// A pin or stop that failed, shown over the kept rows.
+  String? _actionFailure;
+  DateTime? _loadStartedAt;
   int _generation = 0;
   int _routeOperationGeneration = 0;
   int _dataRefreshRevision = 0;
@@ -49,9 +59,7 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
       _generation++;
       setState(
         () => _error = StateError(
-          _sharedCopy(
-            context,
-          ).e7SharedSessionLocationChangedReturnAndReopenRelated,
+          _copy(context).e7SharedSessionLocationChangedReturnAndReopenRelated,
         ),
       );
       return;
@@ -77,6 +85,7 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
     _parent = null;
     _children = null;
     _error = null;
+    _actionFailure = null;
     _selecting = false;
     widget.controller.addListener(_controllerChanged);
     unawaited(_load());
@@ -104,6 +113,7 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
     final sessionID = widget.sessionID;
     final routeGeneration = _routeOperationGeneration;
     final generation = ++_generation;
+    _loadStartedAt = DateTime.now();
     setState(() => _error = null);
     try {
       _scope.check(controller);
@@ -143,7 +153,7 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
   }
 
   Future<void> _select(Session session) async {
-    final copy = _sharedCopy(context);
+    final copy = _copy(context);
     if (_selecting) return;
     final controller = widget.controller;
     final sessionID = widget.sessionID;
@@ -186,13 +196,14 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
   }
 
   Future<void> _pin(Session session) async {
-    final copy = _sharedCopy(context);
+    final copy = _copy(context);
     final controller = widget.controller;
     final sessionID = widget.sessionID;
     final routeGeneration = _routeOperationGeneration;
     final scope = _scope;
     bool routeIsCurrent() =>
         _routeIsCurrent(routeGeneration, controller, sessionID);
+    setState(() => _actionFailure = null);
     try {
       scope.check(controller);
       final repository = await controller.prepareActionRepository();
@@ -224,124 +235,273 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
       );
     } catch (_) {
       if (mounted && routeIsCurrent()) {
-        showProductError(context, copy.e7SharedCouldNotUpdateThePinReturnAnd);
+        setState(
+          () => _actionFailure = copy.e7SharedCouldNotUpdateThePinReturnAnd,
+        );
       }
     }
   }
 
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: Text(_sharedCopy(context).usageSubagents),
-      actions: [
-        IconButton(
-          tooltip: _sharedCopy(context).e7SharedRefreshSubagentSessions,
-          onPressed: _load,
-          icon: const Icon(AppIconography.retry),
-        ),
-      ],
-    ),
-    body: _body(),
-  );
+  /// Stops a working subagent after a question that names it; the stop
+  /// runs inside the question, so a failure keeps it open with Try again.
+  Future<void> _stop(Session session, String title) async {
+    final l10n = _copy(context);
+    final controller = widget.controller;
+    final scope = _scope;
+    await showKitConfirm(
+      context,
+      title: l10n.sessionRelationsStopTitle(title),
+      body: l10n.sessionRelationsStopBody,
+      confirmLabel: l10n.sessionRelationsStopConfirm,
+      kind: KitConfirmKind.stop,
+      icon: AppIconography.stopCircle,
+      action: () async {
+        scope.check(controller);
+        final api = await controller.prepareActionTransport();
+        scope.check(controller);
+        if (api == null) {
+          throw StateError(l10n.e7SharedOpenCodeIsReconnectingTryAgain);
+        }
+        await api.abort(session.id);
+      },
+    );
+  }
 
-  Widget _body() {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _copy(context);
+    return KitScreen(
+      topBar: KitTopBar(
+        title: l10n.sessionRelationsTitle,
+        actions: [
+          KitAction(
+            label: l10n.e7SharedRefreshSubagentSessions,
+            icon: AppIconography.retry,
+            onPressed: _load,
+          ),
+        ],
+      ),
+      width: KitScreenWidth.list,
+      body: _body(context, l10n),
+    );
+  }
+
+  Widget _body(BuildContext context, AppLocalizations l10n) {
     final parent = _parent;
     final children = _children;
-    if (_error != null &&
+    final error = _error;
+    if (error != null &&
         (parent == null || !_scope.matches(widget.controller))) {
-      return ProductErrorState(
-        message: productErrorText(_error!),
-        onRetry: _load,
+      return KitStateView.error(
+        key: const ValueKey('session-relations-failed'),
+        title: l10n.sessionRelationsFailedTitle,
+        body: productErrorText(error, l10n: l10n),
+        error: error,
+        retry: KitAction(label: l10n.commonRetry, onPressed: _load),
       );
     }
-    if (parent == null || children == null) return const LoadingList(rows: 5);
+    if (parent == null || children == null) {
+      return KitStateView(
+        key: const ValueKey('session-relations-loading'),
+        icon: AppIconography.nested,
+        title: l10n.sessionRelationsLoading,
+        progress: const KitProgress.waiting(),
+        since: _loadStartedAt,
+        onSlow: [KitAction(label: l10n.commonRetry, onPressed: _load)],
+      );
+    }
 
     return ListenableBuilder(
       listenable: widget.controller,
-      builder: (context, _) => RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            _SessionFamilyHeader(parent: parent, childCount: children.length),
-            SectionLabel(_sharedCopy(context).e7SharedParentSession),
-            _SessionRelationTile(
-              session: parent,
-              current: widget.sessionID == parent.id,
-              busy: widget.controller.busySessions.contains(parent.id),
-              icon: AppIconography.chat,
-              onTap: () => _select(parent),
-              onHandoff: () => showSessionHandoff(
-                context,
-                controller: widget.controller,
-                sessionID: parent.id,
-                projectID: parent.projectID,
-              ),
-              enabled: !_selecting,
-              pinned: widget.controller.isSessionPinned(parent.id),
-              onPin: widget.controller.canPinSessions
-                  ? () => _pin(parent)
-                  : null,
+      builder: (context, _) {
+        final tokens = KitTokens.of(context);
+        final failure = error != null
+            ? l10n.e7SharedDetail514(productErrorText(error, l10n: l10n))
+            : _actionFailure;
+        final ordered = _byUrgency(children);
+        return KitRefresh(
+          onRefresh: _load,
+          child: ListView(
+            key: const ValueKey('session-relations-list'),
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsetsDirectional.only(
+              top: tokens.space2,
+              bottom: KitScreen.endPadding(context),
             ),
-            const Divider(height: 1, indent: 64),
-            SectionLabel(
-              _sharedCopy(context).e7SharedSubagents,
-              trailing: Text(
-                '${children.length}',
-                style: Theme.of(context).textTheme.bodyMedium,
+            children: [
+              KitReveal(
+                child: failure == null
+                    ? null
+                    : Padding(
+                        padding: EdgeInsetsDirectional.symmetric(
+                          horizontal: tokens.gutter,
+                          vertical: tokens.space2,
+                        ),
+                        child: KitNotice(
+                          key: const ValueKey('session-relations-notice'),
+                          tone: AppStatusTone.failure,
+                          message: failure,
+                          actions: [
+                            KitAction(
+                              label: l10n.commonRetry,
+                              onPressed: () {
+                                setState(() => _actionFailure = null);
+                                unawaited(_load());
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
               ),
-            ),
-            if (children.isEmpty)
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, 24, 16, 32),
-                child: ProductEmptyState(
-                  icon: AppIconography.branch,
-                  title: _sharedCopy(context).e7SharedNoSubagentSessionsYet,
-                  message: _sharedCopy(
-                    context,
-                  ).e7SharedDelegatedWorkWillAppearHereWithoutMixing,
-                ),
-              )
-            else
-              for (var index = 0; index < children.length; index++) ...[
-                _SessionRelationTile(
-                  session: children[index],
-                  current: widget.sessionID == children[index].id,
-                  busy: widget.controller.busySessions.contains(
-                    children[index].id,
-                  ),
+              KitRowGroup(
+                label: l10n.sessionRelationsStartedFrom,
+                children: [_row(context, parent, isParent: true)],
+              ),
+              SizedBox(height: tokens.sectionGap),
+              if (children.isEmpty)
+                KitStateView(
+                  key: const ValueKey('session-relations-empty'),
                   icon: AppIconography.nested,
-                  position: index + 1,
-                  total: children.length,
-                  onTap: () => _select(children[index]),
-                  onHandoff: () => showSessionHandoff(
-                    context,
-                    controller: widget.controller,
-                    sessionID: children[index].id,
-                    projectID: children[index].projectID,
-                  ),
-                  enabled: !_selecting,
-                  pinned: widget.controller.isSessionPinned(children[index].id),
-                  onPin: widget.controller.canPinSessions
-                      ? () => _pin(children[index])
-                      : null,
+                  title: l10n.e7SharedNoSubagentSessionsYet,
+                  body: l10n.e7SharedDelegatedWorkWillAppearHereWithoutMixing,
+                  size: KitStateSize.inline,
+                )
+              else
+                KitRowGroup(
+                  label: l10n.sessionRelationsSubagentCount(children.length),
+                  children: [
+                    for (final child in ordered)
+                      _row(context, child, isParent: false),
+                  ],
                 ),
-                if (index < children.length - 1)
-                  const Divider(height: 1, indent: 64),
-              ],
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
-                child: Text(
-                  _sharedCopy(context).e7SharedDetail514(
-                    productErrorText(_error!, l10n: _sharedCopy(context)),
-                  ),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-          ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Needs you first, then working, then the rest newest first (owner rule
+  /// 2026-09-27: one list ordered by urgency, no state sections).
+  List<Session> _byUrgency(List<Session> children) {
+    int rank(Session session) {
+      if (_needsYou(session.id)) return 0;
+      if (widget.controller.busySessions.contains(session.id)) return 1;
+      return 2;
+    }
+
+    int created(Session session) => session.time?.created ?? 0;
+    final sorted = [...children];
+    sorted.sort((a, b) {
+      final byRank = rank(a).compareTo(rank(b));
+      if (byRank != 0) return byRank;
+      return created(b).compareTo(created(a));
+    });
+    return sorted;
+  }
+
+  bool _needsYou(String sessionID) =>
+      widget.controller.permissionForSession(sessionID) != null ||
+      widget.controller.questionForSession(sessionID) != null;
+
+  Widget _row(BuildContext context, Session session, {required bool isParent}) {
+    final l10n = _copy(context);
+    final controller = widget.controller;
+    final current = widget.sessionID == session.id;
+    final busy = controller.busySessions.contains(session.id);
+    final needsYou = _needsYou(session.id);
+    final title = presentedSessionTitle(
+      session,
+      fallback: isParent
+          ? l10n.e7SharedParentSession
+          : l10n.globalSessionsUntitled,
+      l10n: l10n,
+    );
+    final created = session.time?.created;
+    final when = created == null
+        ? null
+        : relativeTimeLabel(created, l10n: l10n);
+    final Widget leading;
+    final InlineSpan supporting;
+    if (needsYou) {
+      leading = KitNeedsYou.mark();
+      supporting = TextSpan(
+        children: [
+          KitNeedsYou.span(context),
+          TextSpan(text: l10n.sessionRelationsOpenToAnswer),
+        ],
+      );
+    } else {
+      // A resting parent is a conversation, not a finished step: its icon,
+      // not a Done mark, so the mark and the word agree.
+      leading = !busy && isParent
+          ? KitRow.icon(context, AppIconography.chat)
+          : KitStatusMark(
+              state: busy ? KitMarkState.working : KitMarkState.done,
+            );
+      final word = busy
+          ? l10n.globalSessionsWorking
+          : isParent
+          ? l10n.sessionRelationsIdle
+          : KitStatusMark.wordFor(context, KitMarkState.done);
+      supporting = TextSpan(
+        text: [
+          word,
+          ?when,
+          if (current) l10n.sessionRelationsThisConversation,
+        ].join(' · '),
+      );
+    }
+    final pinned = controller.isSessionPinned(session.id);
+    return KitRow(
+      key: ValueKey('session-relation-${session.id}'),
+      leading: leading,
+      title: title,
+      titleMaxLines: 2,
+      supporting: supporting,
+      selected: current,
+      enabled: !_selecting,
+      disabledReason: _selecting ? l10n.sessionRelationsOpening : null,
+      trailing: current ? null : const KitChevron(),
+      onTap: current || _selecting ? null : () => _select(session),
+      menuLabel: l10n.sessionRelationsRowMenu(title),
+      menu: [
+        if (!current)
+          KitMenuItem(
+            key: const ValueKey('session-relation-open'),
+            label: l10n.sessionRelationsOpen(title),
+            icon: AppIconography.chat,
+            onSelected: () => _select(session),
+          ),
+        KitMenuItem(
+          key: const ValueKey('session-relation-handoff'),
+          label: l10n.sessionRelationsCopyHandoff(title),
+          icon: AppIconography.copy,
+          onSelected: () => showSessionHandoff(
+            context,
+            controller: controller,
+            sessionID: session.id,
+            projectID: session.projectID,
+          ),
         ),
-      ),
+        if (controller.canPinSessions)
+          KitMenuItem(
+            key: const ValueKey('session-relation-pin'),
+            label: pinned
+                ? l10n.sessionRelationsUnpin(title)
+                : l10n.sessionRelationsPin(title),
+            icon: AppIconography.pin,
+            onSelected: () => unawaited(_pin(session)),
+          ),
+        if (busy && !isParent)
+          KitMenuItem(
+            key: const ValueKey('session-relation-stop'),
+            label: l10n.sessionRelationsStop(title),
+            icon: AppIconography.stopCircle,
+            destructive: true,
+            onSelected: () => unawaited(_stop(session, title)),
+          ),
+      ],
     );
   }
 
@@ -354,157 +514,5 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
   }
 }
 
-class _SessionFamilyHeader extends StatelessWidget {
-  final Session parent;
-  final int childCount;
-
-  const _SessionFamilyHeader({required this.parent, required this.childCount});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(
-              AppIconography.branch,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  parent.title?.trim().isNotEmpty == true
-                      ? parent.title!
-                      : _sharedCopy(context).e7SharedParentSession,
-                  style: theme.textTheme.titleMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  childCount == 0
-                      ? _sharedCopy(
-                          context,
-                        ).e7SharedOpenCodeHasNotDelegatedWorkFromThis
-                      : _sharedCopy(context).e7SharedDetail517(childCount),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SessionRelationTile extends StatelessWidget {
-  final Session session;
-  final bool current;
-  final bool busy;
-  final IconData icon;
-  final int? position;
-  final int? total;
-  final VoidCallback onTap;
-  final VoidCallback onHandoff;
-  final bool enabled;
-  final bool pinned;
-  final VoidCallback? onPin;
-
-  const _SessionRelationTile({
-    required this.session,
-    required this.current,
-    required this.busy,
-    required this.icon,
-    required this.onTap,
-    required this.onHandoff,
-    required this.enabled,
-    required this.pinned,
-    this.onPin,
-    this.position,
-    this.total,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final created = session.time?.created;
-    final details = <String>[
-      if (position != null && total != null)
-        _sharedCopy(context).e7SharedDetail518(position!, total!),
-      if (created != null) _relativeTime(created),
-      if (busy) _sharedCopy(context).globalSessionsWorking,
-    ];
-    return ListTile(
-      key: ValueKey('session-relation-${session.id}'),
-      selected: current,
-      leading: busy
-          ? const SizedBox.square(
-              dimension: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Icon(icon),
-      title: Text(
-        session.title?.trim().isNotEmpty == true
-            ? session.title!
-            : _sharedCopy(context).globalSessionsUntitled,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: details.isEmpty ? null : Text(details.join(' · ')),
-      trailing: PopupMenuButton<String>(
-        tooltip: lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).sessionActions,
-        enabled: enabled,
-        onSelected: (value) {
-          if (value == 'handoff') onHandoff();
-          if (value == 'pin') onPin?.call();
-        },
-        itemBuilder: (_) => [
-          PopupMenuItem(
-            value: 'handoff',
-            child: Text(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).sessionCopyHandoff,
-            ),
-          ),
-          if (onPin != null)
-            PopupMenuItem(
-              value: 'pin',
-              child: Text(
-                pinned
-                    ? _sharedCopy(context).e7SharedUnpinSession
-                    : _sharedCopy(context).e7SharedPinSession,
-              ),
-            ),
-        ],
-      ),
-      onTap: current || !enabled ? null : onTap,
-    );
-  }
-}
-
-String _relativeTime(int milliseconds) {
-  final age = DateTime.now().difference(
-    DateTime.fromMillisecondsSinceEpoch(milliseconds),
-  );
-  if (age.inMinutes < 1) return 'Now';
-  if (age.inHours < 1) return '${age.inMinutes}m ago';
-  if (age.inDays < 1) return '${age.inHours}h ago';
-  if (age.inDays < 7) return '${age.inDays}d ago';
-  return '${(age.inDays / 7).floor()}w ago';
-}
-
-AppLocalizations _sharedCopy(BuildContext context) =>
+AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));

@@ -1,0 +1,20 @@
+Tracked-file diff: empty. All changes are new files in the explicit write set.
+README local links: all resolve.
+Final format check: exit 0.
+
+SHA-256 of final Dart files:
+468b5514da852b67d10650fc1d9727838f23363cd9ae787827a1b77951998dd9  lib/domain/quota_answers.dart
+7328f0bef441c7d5b1c279a94d94a75e57f0402c7c76cba66fb96dc7d54a7222  lib/state/quota_answer_preferences.dart
+9dd8961a6370577fa34157a65b2dc60de34465746658231d828942f81256f2ee  lib/state/quota_answers_controller.dart
+3723d9155fc2bb8c351a610dde7d548e22d61b5cf5be0b7860d3f58ba9088267  test/quota_answers_test.dart
+bc40078758d354ee6a12dd42cdd384744e32aa561e599df96415d5f9053c72a1  test/quota_answer_preferences_test.dart
+9492af398fcd598bf423f6606459569a0f955cb56377277c3bc84fc5510573b9  test/quota_answers_controller_test.dart
+
+?? COMMIT_MSG.txt
+?? docs/qa/codex-p54-2026-09-27/
+?? lib/domain/quota_answers.dart
+?? lib/state/quota_answer_preferences.dart
+?? lib/state/quota_answers_controller.dart
+?? test/quota_answer_preferences_test.dart
+?? test/quota_answers_controller_test.dart
+?? test/quota_answers_test.dart

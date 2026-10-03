@@ -1,17 +1,33 @@
 /// The AI Team plugin's identity and Technical details pieces (02-ux §8):
 /// label-over-value identity rows, raw provider values with a copy button
 /// and the side-by-side term rows, shared by the Settings sheet (TEAM-106)
-/// and the host chip on the AI Team home (TEAM-108), which opens
-/// [TeamHostDetailsSheet].
+/// and the info button on the AI Team home (TEAM-108), which opens
+/// [TeamHostDetailsSheet]: everything the home's one-phrase host line
+/// leaves out (address, version, city, access, the host kind's line).
+///
+/// Kit only (shared-team-2): every piece is built from kit parts. The
+/// host sheet is a [showKitSheet]; its technical values sit in one
+/// [KitDetailsFold], each value once (map: team-host-details-sheet
+/// "dedupe values", embedded-team-technical-value "48 dp copy on the
+/// rail").
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
 import '../../state/profiles.dart';
-import '../app_theme.dart';
+import '../app_iconography.dart';
+import '../kit/kit_divider.dart';
+import '../kit/kit_icon_button.dart';
+import '../kit/kit_redact.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_sheet.dart';
+import '../kit/kit_surface.dart';
+import '../kit/kit_technical_value.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
+import 'team_discovery_card.dart' show teamHostDisclaimer, teamHostKindFor;
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -21,22 +37,30 @@ AppLocalizations _copy(BuildContext context) =>
 bool teamReadOnly(OrchestrationConfig config, OrchestrationController? c) =>
     !(config.front || (c?.capabilities.controlRespond ?? false));
 
-/// Opens the host's Technical details as a bottom sheet.
+/// Opens the host's Technical details in the kit's one sheet frame.
 Future<void> showTeamHostDetailsSheet(
   BuildContext context,
   OrchestrationController controller,
-) => showModalBottomSheet<void>(
-  context: context,
-  showDragHandle: true,
-  isScrollControlled: true,
-  useSafeArea: true,
-  builder: (_) => TeamHostDetailsSheet(controller: controller),
-);
+) {
+  final l10n = _copy(context);
+  return showKitSheet<void>(
+    context,
+    title: l10n.teamUiTechnicalDetails,
+    subtitle: l10n.teamUiRowTitle,
+    icon: AppIconography.info,
+    sheetKey: const ValueKey('team-home-host-sheet'),
+    body: (_) => TeamHostDetailsSheet(controller: controller),
+  );
+}
 
-/// The host chip's sheet: who the host is (provider, version, city,
-/// address, where it runs, access), the raw values with copy buttons and
-/// the product-to-provider terms. Read-only; the switches live in
+/// The host sheet's body: where the host runs and what that means, what
+/// the phone may do there, the product-to-provider terms, then the raw
+/// values (provider, version, city, address, the host's last answer) in
+/// one fold, each once and copyable. Read-only; the switches live in
 /// Settings › Plugins.
+///
+/// The fold starts open: the person opened this sheet to read exactly
+/// these values, so a second "Details" tap would only hide them.
 class TeamHostDetailsSheet extends StatelessWidget {
   const TeamHostDetailsSheet({super.key, required this.controller});
 
@@ -45,103 +69,121 @@ class TeamHostDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     final config = controller.config;
     final host = controller.host;
     final hostMode = host?.hostMode ?? config.hostMode;
     final city = config.city.isNotEmpty ? config.city : (host?.city ?? '');
     final readOnly = teamReadOnly(config, controller);
     final provider = host?.provider ?? config.provider.name;
-    return SingleChildScrollView(
-      key: const ValueKey('team-home-host-sheet'),
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(l10n.teamUiTechnicalDetails, style: theme.textTheme.titleLarge),
-          const SizedBox(height: 2),
-          Text(
-            l10n.teamUiRowTitle,
-            style: theme.textTheme.bodySmall?.copyWith(color: muted),
+    final address = host?.url ?? config.url;
+    final version = host?.version;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // A panel set into the sheet (VL §5): the host's two plain facts.
+        KitSurface.inset(
+          padding: KitSurfacePadding.none,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // How this kind of host behaves (03-onboarding §4, TEAM-206):
+              // one line, here with the host's other facts rather than on
+              // the Work tab's section.
+              KitRow(
+                title: l10n.teamUiLabelHost,
+                supporting: TextSpan(
+                  text: switch (hostMode) {
+                    OrchestrationHostMode.computer =>
+                      l10n.teamUiHostModeComputer,
+                    OrchestrationHostMode.phone => l10n.teamUiHostModePhone,
+                  },
+                ),
+                below: KitText(
+                  teamHostDisclaimer(l10n, teamHostKindFor(config, hostMode)),
+                  key: const ValueKey('team-host-disclaimer'),
+                  role: KitTextRole.secondary,
+                ),
+              ),
+              const KitDivider(inset: KitDividerInset.gutter),
+              KitRow(
+                title: l10n.teamUiLabelAccess,
+                supporting: TextSpan(
+                  text: readOnly
+                      ? l10n.teamUiAccessReadOnly
+                      : l10n.teamUiAccessControls,
+                ),
+                below: readOnly
+                    ? KitText(
+                        l10n.teamUiReadOnlyBody,
+                        key: const ValueKey('team-home-host-read-only'),
+                        role: KitTextRole.secondary,
+                      )
+                    : null,
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          TeamIdentityRow(label: l10n.teamUiLabelProvider, value: provider),
-          TeamIdentityRow(
-            label: l10n.teamUiLabelVersion,
-            value: host?.version ?? l10n.teamUiVersionUnknown,
+        ),
+        SizedBox(height: tokens.sectionGap),
+        // The glossary: the product word, then the provider's (engine
+        // words live here, never on the lists).
+        Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: tokens.space1,
+            bottom: tokens.labelGap,
           ),
-          TeamIdentityRow(
-            label: l10n.teamUiLabelCity,
-            value: city.isEmpty ? '—' : city,
+          child: Semantics(
+            header: true,
+            child: KitText(l10n.teamUiTermsHeading, role: KitTextRole.label),
           ),
-          TeamIdentityRow(
-            label: l10n.teamUiLabelAddress,
-            value: host?.url ?? config.url,
-            mono: true,
+        ),
+        KitSurface.inset(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final term in [
+                l10n.teamUiTermTeam,
+                l10n.teamUiTermProject,
+                l10n.teamUiTermRun,
+                l10n.teamUiTermWork,
+                l10n.teamUiTermAgent,
+              ])
+                TeamTermRow(term),
+            ],
           ),
-          TeamIdentityRow(
-            label: l10n.teamUiLabelHost,
-            value: switch (hostMode) {
-              OrchestrationHostMode.computer => l10n.teamUiHostModeComputer,
-              OrchestrationHostMode.phone => l10n.teamUiHostModePhone,
-            },
-          ),
-          TeamIdentityRow(
-            label: l10n.teamUiLabelAccess,
-            value: readOnly
-                ? l10n.teamUiAccessReadOnly
-                : l10n.teamUiAccessControls,
-          ),
-          if (readOnly) ...[
-            const SizedBox(height: 8),
-            Text(
-              l10n.teamUiReadOnlyBody,
-              key: const ValueKey('team-home-host-read-only'),
-              style: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
+        ),
+        SizedBox(height: tokens.sectionGap),
+        KitDetailsFold(
+          label: l10n.teamUiHomeHostRawHeading,
+          initiallyExpanded: true,
+          values: [
+            KitTechnicalValue(l10n.teamUiLabelProvider, provider),
+            KitTechnicalValue(
+              l10n.teamUiLabelVersion,
+              version ?? l10n.teamUiVersionUnknown,
+              copyable: version != null,
             ),
+            if (city.isNotEmpty) KitTechnicalValue(l10n.teamUiLabelCity, city),
+            if (address.isNotEmpty)
+              KitTechnicalValue(l10n.teamUiLabelAddress, address),
           ],
-          const SizedBox(height: 12),
-          Text(
-            l10n.teamUiHomeHostRawHeading,
-            style: theme.textTheme.labelLarge?.copyWith(color: muted),
-          ),
-          const SizedBox(height: 4),
-          TeamTechnicalValue(label: l10n.teamUiLabelProvider, value: provider),
-          TeamTechnicalValue(
-            label: l10n.teamUiLabelAddress,
-            value: host?.url ?? config.url,
-          ),
-          TeamTechnicalValue(label: l10n.teamUiLabelCity, value: city),
-          if (controller.lastError case final error?)
-            TeamTechnicalValue(
-              label: l10n.teamUiTechnicalLastAnswer,
-              value: error.message,
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
-            child: Text(
-              l10n.teamUiTermsHeading,
-              style: theme.textTheme.labelLarge?.copyWith(color: muted),
-            ),
-          ),
-          for (final term in [
-            l10n.teamUiTermTeam,
-            l10n.teamUiTermProject,
-            l10n.teamUiTermRun,
-            l10n.teamUiTermWork,
-            l10n.teamUiTermAgent,
-          ])
-            TeamTermRow(term),
-        ],
-      ),
+          // The host's own words, masked rather than refused: an error
+          // body may quote a header.
+          notes: [
+            if (controller.lastError != null) l10n.teamUiTechnicalLastAnswer,
+          ],
+          text: controller.lastError?.message,
+        ),
+      ],
     );
   }
 }
 
 /// Label above value so the pair still fits at 320dp × 2.5x; ids and URLs
-/// stay LTR in RTL layouts.
+/// stay LTR in RTL layouts ([KitText.mono]).
 class TeamIdentityRow extends StatelessWidget {
   const TeamIdentityRow({
     super.key,
@@ -156,37 +198,39 @@ class TeamIdentityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: tokens.space1),
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 12,
+        spacing: tokens.space3,
         children: [
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
+          KitText(label, role: KitTextRole.secondary),
+          if (mono)
+            KitText.mono(value)
+          else
+            KitText(
+              value,
+              role: KitTextRole.secondary,
+              tone: KitTextTone.primary,
             ),
-          ),
-          Text(
-            value,
-            textDirection: mono ? TextDirection.ltr : null,
-            style: mono
-                ? const TextStyle(
-                    fontFamily: AppTheme.monoFamily,
-                    fontSize: AppTheme.codeFontSize,
-                  )
-                : theme.textTheme.bodyMedium,
-          ),
         ],
       ),
     );
   }
 }
 
-/// A raw provider value with a copy button (02-ux §8).
+/// A raw provider value with its copy button (02-ux §8): the label over
+/// the value in mono, laid out left to right, selectable, and a 48 dp
+/// copy target on the rail at the end. The value is masked by
+/// [KitRedact] where it is shown and copied; copying goes through the
+/// kit's one copy service (a check in place, "Copied" announced once,
+/// never a snackbar).
+///
+/// It draws one value where a screen lists values of its own; a page or
+/// sheet that holds several passes them to [KitDetailsFold] as
+/// [KitTechnicalValue]s instead ([asKit]), so each shows once.
 class TeamTechnicalValue extends StatelessWidget {
   const TeamTechnicalValue({
     super.key,
@@ -197,57 +241,56 @@ class TeamTechnicalValue extends StatelessWidget {
   final String label;
   final String value;
 
+  /// This value as the kit's [KitTechnicalValue], for a [KitDetailsFold].
+  KitTechnicalValue get asKit =>
+      KitTechnicalValue(label, value, copyable: value.isNotEmpty);
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     final l10n = _copy(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.mutedOf(theme),
+    final shown = value.isEmpty ? '—' : KitRedact.text(value);
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: tokens.minTarget),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.space1),
+        child: Row(
+          children: [
+            Expanded(
+              child: Semantics(
+                container: true,
+                label: l10n.kitDetailsValueSpoken(label, KitBidi.ltr(shown)),
+                excludeSemantics: true,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    KitText(label, role: KitTextRole.secondary),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: KitText.mono(shown, selectable: true),
+                    ),
+                  ],
                 ),
               ),
-              SelectableText(
-                value.isEmpty ? '—' : value,
-                textDirection: TextDirection.ltr,
-                style: const TextStyle(
-                  fontFamily: AppTheme.monoFamily,
-                  fontSize: AppTheme.codeFontSize,
-                ),
+            ),
+            if (value.isNotEmpty) ...[
+              SizedBox(width: tokens.space2),
+              KitIconButton.copy(
+                text: () => shown,
+                tooltip: l10n.kitCopyValue(_lowerFirst(label)),
+                size: tokens.smallIconSize,
               ),
             ],
-          ),
+          ],
         ),
-        if (value.isNotEmpty)
-          IconButton(
-            tooltip: l10n.teamUiCopy,
-            iconSize: 18,
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: value));
-              if (!context.mounted) return;
-              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                SnackBar(
-                  content: Text(l10n.teamUiCopied),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-            icon: const Icon(AppIconography.copy),
-          ),
-      ],
+      ),
     );
   }
 }
 
-/// "Product · provider" term pair; the product word leads, the Gas City
-/// term follows in the muted colour.
+/// "Product · provider" term pair; the product word leads in `text1`, the
+/// Gas City term follows in `text2`.
 class TeamTermRow extends StatelessWidget {
   const TeamTermRow(this.term, {super.key});
 
@@ -255,24 +298,34 @@ class TeamTermRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     final parts = term.split(' · ');
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Text.rich(
+      padding: EdgeInsets.symmetric(vertical: tokens.space1),
+      child: KitText.rich(
         TextSpan(
           children: [
-            TextSpan(text: parts.first, style: theme.textTheme.bodyMedium),
+            TextSpan(text: parts.first),
             if (parts.length > 1)
               TextSpan(
                 text: ' · ${parts.sublist(1).join(' · ')}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.mutedOf(theme),
-                ),
+                style: KitText.styleOf(context, KitTextRole.secondary),
               ),
           ],
         ),
+        role: KitTextRole.secondary,
+        tone: KitTextTone.primary,
       ),
     );
   }
+}
+
+/// "Address" → "address" for "Copy address"; an acronym ("URL", "PID")
+/// keeps its case.
+String _lowerFirst(String s) {
+  if (s.length < 2) return s.toLowerCase();
+  final second = s.substring(1, 2);
+  // A capital second letter marks an acronym.
+  if (second.toLowerCase() != second) return s;
+  return s.substring(0, 1).toLowerCase() + s.substring(1);
 }

@@ -4,14 +4,370 @@
 /// error copy of 03-onboarding §5. The Workspace card (TEAM-107) and the
 /// AI Team home (TEAM-108) both read from here so a run never sorts or
 /// reads differently between the two.
+///
+/// The person's words (docs/design/aiteam-redesign-2026-09-24.md): a run
+/// is a "task" with "steps", agents are named by role ([teamAgentRole]),
+/// the host is one short phrase ([teamHostPhrase]) and a task moves through
+/// four stages ([TeamStage]). Gas City's own words stay under Technical
+/// details.
 library;
 
 import 'package:flutter/material.dart';
 
 import '../../domain/orchestration_gateway.dart';
+export '../../domain/team_glance.dart'
+    show teamCompareRuns, teamRunRank, teamVisibleRuns;
+export '../../state/team_glance.dart' show teamGatedRuns;
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
+import '../../state/team_conversation.dart' show teamSessionState;
 import '../app_theme.dart';
+import '../kit/kit_needs_you.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_task_mark.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
+import 'relative_time.dart';
+import 'team_now.dart';
+
+/// How a team state leads its row (docs/design/visual-language-2026-09-26.md,
+/// LOOK-4, LOOK-24): amber means "needs you" and nothing else, so a state
+/// that waits on the person is the kit's one needs-you mark
+/// ([KitNeedsYou.mark]), and every other state is its glyph in its tone. A
+/// held-up, stale or degraded state is neutral, never amber; red is kept
+/// for a failure.
+@immutable
+final class TeamMark {
+  /// A state that does not wait on the person: [icon] in [tone].
+  const TeamMark(this.icon, AppStatusTone this.tone) : needsYou = false;
+
+  /// A state that waits on the person. [icon] is the kind's own glyph, for a
+  /// place that names the kind (a request card's header); a row shows the
+  /// needs-you mark instead.
+  const TeamMark.needsYou(this.icon) : tone = null, needsYou = true;
+
+  final IconData icon;
+
+  /// The glyph's tone; null for [needsYou], whose colour is the kit's.
+  final AppStatusTone? tone;
+
+  final bool needsYou;
+
+  /// The row's leading slot: [KitNeedsYou.mark], or [icon] in its tile
+  /// tinted by [tone].
+  Widget leading(BuildContext context) {
+    final tone = this.tone;
+    if (needsYou || tone == null) return KitNeedsYou.mark();
+    return KitRow.icon(
+      context,
+      icon,
+      color: KitTokens.toneColor(KitTokens.of(context).roles, tone),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The person's words: host phrase, task line, stages, roles
+// ---------------------------------------------------------------------------
+
+/// The computer's name from the team URL ("pop-os"), or null when the URL
+/// names no host or only an address (an IP or `localhost`): an address is
+/// not a name a person would call their computer.
+String? teamComputerName(OrchestrationController controller) {
+  final name =
+      teamHostName(controller.host?.url) ?? teamHostName(controller.config.url);
+  if (name == null) return null;
+  final lower = name.toLowerCase();
+  if (lower == 'localhost' || lower.endsWith('.localhost')) return null;
+  final ipv4 = RegExp(r'^\d{1,3}(\.\d{1,3}){3}$');
+  if (ipv4.hasMatch(name) || name.contains(':')) return null;
+  return name;
+}
+
+/// How long after its last good read a team that is starting a worker may
+/// answer late before it is called "Not answering". Starting OpenCode under
+/// proot saturates the phone, so the app's own reads (30 s) and its live
+/// stream (90 s) time out while the team is fine.
+const teamStartReadGrace = Duration(minutes: 5);
+
+/// True while a worker is starting and the only trouble is lateness: the
+/// team was read within [teamStartReadGrace] and its stream or a read has
+/// merely timed out. A team that failed its probe (not reachable) or has
+/// not been read for longer is not busy, it is not answering.
+bool teamHostBusyStarting(
+  OrchestrationController controller, {
+  required bool startingWorker,
+}) {
+  if (!startingWorker || controller.phase != OrchestrationPhase.ready) {
+    return false;
+  }
+  final late =
+      controller.isStale ||
+      controller.lastError?.kind == OrchestrationErrorKind.readFailed;
+  if (!late) return false;
+  final at = controller.lastRefreshedAt;
+  return at != null && controller.now().difference(at) <= teamStartReadGrace;
+}
+
+/// "Paused" when the agents were switched off on purpose (suspended) and
+/// none is live, "Not answering" when the shown data is old or the host
+/// could not be reached; null otherwise. Agents that are only asleep (they
+/// wake when there is work) are not a pause ([teamRest]). [working] is the
+/// caller's own evidence that the team is at work (a task's worker starting
+/// or working): then it is never "Paused", whatever the agents list says.
+String? teamHostCondition(
+  AppLocalizations l10n,
+  OrchestrationController controller, {
+  bool working = false,
+  bool startingWorker = false,
+  bool teamStarting = false,
+}) {
+  // The team on this phone is coming up (its own steps are on the page):
+  // it is starting, not silent.
+  if (teamStarting &&
+      (controller.isStale ||
+          controller.phase == OrchestrationPhase.failed ||
+          controller.lastError?.kind == OrchestrationErrorKind.readFailed)) {
+    return l10n.teamUiHostPhraseStarting;
+  }
+  if (teamHostBusyStarting(controller, startingWorker: startingWorker)) {
+    return l10n.teamUiHostPhraseBusyStartingWorker;
+  }
+  if (controller.isStale ||
+      (controller.phase == OrchestrationPhase.ready &&
+          controller.lastError?.kind == OrchestrationErrorKind.readFailed)) {
+    return l10n.teamUiHostPhraseNotAnswering;
+  }
+  if (controller.phase == OrchestrationPhase.failed) {
+    return switch (controller.lastError?.kind) {
+      OrchestrationErrorKind.unreachable ||
+      OrchestrationErrorKind.readFailed ||
+      null => l10n.teamUiHostPhraseNotAnswering,
+      OrchestrationErrorKind.notGasCity ||
+      OrchestrationErrorKind.cityNotRunning ||
+      OrchestrationErrorKind.plainHttpRefused => null,
+    };
+  }
+  final snapshot = controller.snapshot;
+  if (!working &&
+      controller.phase == OrchestrationPhase.ready &&
+      snapshot.hasData &&
+      teamRest(snapshot.agents, config: controller.config) == TeamRest.paused) {
+    return l10n.teamUiHostPhrasePaused;
+  }
+  return null;
+}
+
+/// Where the team runs, as one short phrase: "On this phone", "On pop-os"
+/// or "On your computer", then " · Paused" or " · Not answering" when true.
+/// Never an address, a version or the engine's name: those are under the
+/// info button's Technical details. [working]: see [teamHostCondition].
+String teamHostPhrase(
+  AppLocalizations l10n,
+  OrchestrationController controller, {
+  bool working = false,
+  bool startingWorker = false,
+  bool teamStarting = false,
+}) {
+  final place = teamHostPlace(l10n, controller);
+  final condition = teamHostCondition(
+    l10n,
+    controller,
+    working: working,
+    startingWorker: startingWorker,
+    teamStarting: teamStarting,
+  );
+  return condition == null ? place : '$place$teamUsageSeparator$condition';
+}
+
+/// Where the team runs, alone: "On this phone", "On pop-os" or "On your
+/// computer" ([teamHostPhrase] without its condition).
+String teamHostPlace(
+  AppLocalizations l10n,
+  OrchestrationController controller,
+) {
+  final hostMode = controller.host?.hostMode ?? controller.config.hostMode;
+  return switch (hostMode) {
+    OrchestrationHostMode.phone => l10n.teamUiHostPhrasePhone,
+    OrchestrationHostMode.computer => switch (teamComputerName(controller)) {
+      final name? => l10n.teamUiHostPhraseComputerNamed(name),
+      null => l10n.teamUiHostPhraseComputer,
+    },
+  };
+}
+
+/// The four stages a task moves through, in order, each named by its
+/// outcome: Planned, Working, In review, Merged. At most these show, on
+/// the task's Overview only.
+enum TeamStage { waiting, working, reviewing, done }
+
+/// The stage [run] is at: done (Merged) only once it is completed and every
+/// step of it is closed, reviewing while its work is in the merge agent's
+/// hands ([teamRunAwaitsMerge]) or a completed task still has a step open,
+/// working while work moves (held-up work included), waiting before that.
+/// Null for a failed or cancelled task: it left the stages, and its status
+/// line says so.
+TeamStage? teamRunStage(
+  OrchestrationRun run,
+  List<WorkItem> work, {
+  DispatchCycle? Function(String workId)? cycleOf,
+}) {
+  switch (run.state) {
+    case RunState.completed:
+      // Merged means every step landed: a step still open (in review,
+      // say) keeps the task in review.
+      final open = work.any(
+        (item) => item.runId == run.id && teamWorkIsOpen(item.state),
+      );
+      return open ? TeamStage.reviewing : TeamStage.done;
+    case RunState.failed || RunState.cancelled:
+      return null;
+    case RunState.working ||
+        RunState.blocked ||
+        RunState.waiting ||
+        RunState.planning ||
+        RunState.unknown:
+      break;
+  }
+  if (teamRunAwaitsMerge(run, work, cycleOf: cycleOf)) {
+    return TeamStage.reviewing;
+  }
+  return switch (run.state) {
+    RunState.working || RunState.blocked => TeamStage.working,
+    _ => TeamStage.waiting,
+  };
+}
+
+/// The one word for a stage.
+String teamStageWord(AppLocalizations l10n, TeamStage stage) => switch (stage) {
+  TeamStage.waiting => l10n.teamUiRunStageWaiting,
+  TeamStage.working => l10n.teamUiRunStageWorking,
+  TeamStage.reviewing => l10n.teamUiRunStageReviewing,
+  TeamStage.done => l10n.teamUiRunStageDone,
+};
+
+/// A task's leading mark: needs you, then failed, done, stopped
+/// (cancelled), working (planning and the merge wait included) and
+/// waiting (held up or not started).
+///
+/// With [work], a completed task with a step still open is in review, not
+/// done ([teamRunStage]), and its mark says so.
+KitTaskState teamRunMark(
+  OrchestrationRun run, {
+  required bool needsYou,
+  List<WorkItem>? work,
+}) {
+  if (needsYou) return KitTaskState.needsYou;
+  return switch (run.state) {
+    RunState.failed => KitTaskState.failed,
+    RunState.completed
+        when work != null && teamRunStage(run, work) == TeamStage.reviewing =>
+      KitTaskState.working,
+    RunState.completed => KitTaskState.done,
+    RunState.cancelled => KitTaskState.stopped,
+    RunState.working || RunState.planning => KitTaskState.working,
+    RunState.waiting ||
+    RunState.blocked ||
+    RunState.unknown => KitTaskState.waiting,
+  };
+}
+
+/// "3 of 5 steps done", or null for a task of one step or none (its state
+/// says it all).
+String? teamTaskSteps(AppLocalizations l10n, TeamRunProgress progress) =>
+    progress.total <= 1
+    ? null
+    : l10n.teamUiTaskSteps(progress.done, progress.total);
+
+/// A task's one supporting line: "Working · 3 of 5 steps done", "Needs
+/// you · 1 of 5 steps done", "Waiting for a worker", "Reviewing", "Done ·
+/// merged 5h ago".
+String teamTaskLine(
+  AppLocalizations l10n,
+  OrchestrationRun run,
+  List<WorkItem> work, {
+  required bool needsYou,
+  required DateTime now,
+  DispatchCycle? Function(String workId)? cycleOf,
+  bool explainWait = false,
+  Duration? checkEvery,
+  bool paused = false,
+  bool showWaitAge = true,
+}) {
+  final finishedAt = run.finishedAt;
+  if (finishedAt != null &&
+      (run.state == RunState.completed || run.state == RunState.cancelled)) {
+    final when = relativeTimeLabel(
+      finishedAt.millisecondsSinceEpoch,
+      now: now,
+      l10n: l10n,
+    );
+    return switch (run.state) {
+      RunState.cancelled => l10n.teamUiTaskCancelledAgo(when),
+      _ when run.merged => l10n.teamUiTaskMergedAgo(when),
+      _ => l10n.teamUiTaskDoneAgo(when),
+    };
+  }
+  // A task waiting for a worker says for how long and when one starts
+  // (teamWaitLine); the home and the Work tab card ask for it.
+  if (explainWait && !needsYou) {
+    final wait = teamWaitLine(
+      l10n,
+      run,
+      work,
+      now: now,
+      every: checkEvery,
+      paused: paused,
+      showAge: showWaitAge,
+      cycleOf: cycleOf,
+    );
+    if (wait != null) return wait;
+  }
+  final word = needsYou
+      ? l10n.teamUiHomeRunNeedsYou
+      : teamRunStateWordFor(l10n, run, work, cycleOf: cycleOf);
+  final open =
+      run.state != RunState.completed && run.state != RunState.cancelled;
+  final steps = open
+      ? teamTaskSteps(l10n, TeamRunProgress.of(run, work))
+      : null;
+  return [word, ?steps].join(teamUsageSeparator);
+}
+
+/// What an agent does for the team, in plain words. Gas City's own names
+/// (polecat, refinery, mayor…) stay on the agent's Technical details.
+enum TeamAgentRole { worker, reviewer, planner, supervisor, helper, other }
+
+/// The role of [agent], read from its pool (or, for a named agent, its
+/// name): the last part after "/" and ".", without an instance number.
+TeamAgentRole teamAgentRole(OrchestrationAgent agent) {
+  final source = (agent.pool ?? agent.name).toLowerCase();
+  final tail = source
+      .split('/')
+      .last
+      .split('.')
+      .last
+      .replaceFirst(RegExp(r'-\d+$'), '');
+  return switch (tail) {
+    'polecat' || 'polecats' => TeamAgentRole.worker,
+    'refinery' => TeamAgentRole.reviewer,
+    'mayor' => TeamAgentRole.planner,
+    'witness' || 'deacon' || 'boot' => TeamAgentRole.supervisor,
+    'dog' || 'dogs' => TeamAgentRole.helper,
+    _ => TeamAgentRole.other,
+  };
+}
+
+/// The one word for a role.
+String teamAgentRoleWord(AppLocalizations l10n, TeamAgentRole role) =>
+    switch (role) {
+      TeamAgentRole.worker => l10n.teamUiAgentRoleWorker,
+      TeamAgentRole.reviewer => l10n.teamUiAgentRoleReviewer,
+      TeamAgentRole.planner => l10n.teamUiAgentRolePlanner,
+      TeamAgentRole.supervisor => l10n.teamUiAgentRoleSupervisor,
+      TeamAgentRole.helper => l10n.teamUiAgentRoleHelper,
+      TeamAgentRole.other => l10n.teamUiAgentRoleOther,
+    };
 
 /// How much of a run is done, working and blocked, from its work items
 /// when the snapshot has them and from its step counts otherwise.
@@ -83,16 +439,6 @@ class TeamRunProgress {
 // What the person sees (TEAM-115): the host's upkeep and empty slots hidden
 // ---------------------------------------------------------------------------
 
-/// The runs a surface shows by default: the host's own upkeep
-/// ([OrchestrationRun.isUpkeep]) left out unless [includeUpkeep].
-List<OrchestrationRun> teamVisibleRuns(
-  Iterable<OrchestrationRun> runs, {
-  bool includeUpkeep = false,
-}) => [
-  for (final run in runs)
-    if (includeUpkeep || !run.isUpkeep) run,
-];
-
 /// The host's upkeep runs (patrols, chores), for the "Show team upkeep"
 /// reveal.
 List<OrchestrationRun> teamUpkeepRuns(Iterable<OrchestrationRun> runs) => [
@@ -100,10 +446,18 @@ List<OrchestrationRun> teamUpkeepRuns(Iterable<OrchestrationRun> runs) => [
     if (run.isUpkeep) run,
 ];
 
-/// Whether an agent is live: anything but stopped or suspended. Only live
-/// agents are dots on the card and counted as the team.
-bool teamAgentIsLive(OrchestrationAgent agent) =>
-    agent.state != AgentState.stopped && !agent.suspended;
+/// Whether an agent is live: anything but stopped or suspended, with its
+/// session's word first ([teamSessionState], ledger row 21): a running
+/// session is live even on an agent the list calls stopped, and a session
+/// the host reports stopped is not live whatever the list says. An asleep
+/// session leaves the list's word standing. Only live agents are dots on
+/// the card and counted as the team.
+bool teamAgentIsLive(OrchestrationAgent agent) {
+  final state = teamSessionState(agent);
+  if (state == AgentState.working) return true;
+  if (state == AgentState.stopped) return false;
+  return agent.state != AgentState.stopped && !agent.suspended;
+}
 
 /// The live agents, in the given order.
 List<OrchestrationAgent> teamLiveAgents(Iterable<OrchestrationAgent> agents) =>
@@ -155,59 +509,6 @@ String teamHostNameOf(OrchestrationController controller) =>
     controller.host?.provider ??
     controller.config.provider.name;
 
-/// Runs with something waiting on the person: a gate naming the run, a
-/// work item of the run, or an agent working one of its items.
-/// Review-ready is informational and never counts.
-Set<String> teamGatedRuns(OrchestrationSnapshot snapshot) {
-  final runByWork = <String, String>{
-    for (final item in snapshot.work)
-      if (item.runId != null) item.id: item.runId!,
-  };
-  final workByAgent = <String, String>{
-    for (final agent in snapshot.agents)
-      if (agent.currentWorkId case final work?) ...{
-        agent.id: work,
-        ?agent.sessionId: work,
-      },
-  };
-  String? runOf(OrchestrationGate gate) =>
-      gate.runId ??
-      runByWork[gate.workId] ??
-      runByWork[workByAgent[gate.agentId]];
-  return {
-    for (final gate in snapshot.gates)
-      if (gate.kind != GateKind.reviewReady) ?runOf(gate),
-  };
-}
-
-/// Order of runs everywhere: what needs the person, then active, then
-/// waiting; completed runs come last (and collapse on the card).
-int teamRunRank(OrchestrationRun run, Set<String> gated) {
-  if (gated.contains(run.id) || run.state == RunState.failed) return 0;
-  return switch (run.state) {
-    RunState.working => 1,
-    RunState.planning => 2,
-    RunState.blocked => 3,
-    RunState.waiting => 4,
-    RunState.unknown => 5,
-    RunState.cancelled => 6,
-    RunState.failed => 0,
-    RunState.completed => 7,
-  };
-}
-
-/// [teamRunRank] first, then the most recently updated run first.
-int teamCompareRuns(OrchestrationRun a, OrchestrationRun b, Set<String> gated) {
-  final rank = teamRunRank(a, gated).compareTo(teamRunRank(b, gated));
-  if (rank != 0) return rank;
-  final at = a.updatedAt ?? a.startedAt;
-  final bt = b.updatedAt ?? b.startedAt;
-  if (at == null && bt == null) return 0;
-  if (at == null) return 1;
-  if (bt == null) return -1;
-  return bt.compareTo(at);
-}
-
 /// HH:MM of [at] in the device's zone, for "Showing data from 09:41".
 String teamClockLabel(BuildContext context, DateTime at) =>
     MaterialLocalizations.of(context).formatTimeOfDay(
@@ -228,8 +529,57 @@ String teamRunStateWord(AppLocalizations l10n, RunState state) =>
       RunState.unknown => l10n.teamUiCardRunStateUnknown,
     };
 
-/// The run's state word with the merge wait named (TEAM-117): "Waiting
-/// for merge" when [teamRunAwaitsMerge], else [teamRunStateWord].
+/// The host's upkeep in words, one phrase per kind with duplicates
+/// collapsed: "Patrol ×4 · planning; Chore · working". Patrols are the
+/// host checking on its agents; everything else is a chore. Each kind says
+/// its most active state. Never the engine's formula names.
+String teamUpkeepLine(
+  AppLocalizations l10n,
+  Iterable<OrchestrationRun> upkeep,
+) {
+  bool patrol(OrchestrationRun run) => [
+    run.title,
+    run.formula,
+  ].any((name) => name != null && name.toLowerCase().contains('patrol'));
+  const activity = [
+    RunState.working,
+    RunState.planning,
+    RunState.waiting,
+    RunState.blocked,
+    RunState.failed,
+    RunState.unknown,
+    RunState.completed,
+    RunState.cancelled,
+  ];
+  String group(String kind, List<OrchestrationRun> runs) {
+    final state = activity.firstWhere(
+      (state) => runs.any((run) => run.state == state),
+      orElse: () => RunState.unknown,
+    );
+    return l10n.teamHomeUpkeepGroup(
+      runs.length,
+      kind,
+      teamRunStateWord(l10n, state).toLowerCase(),
+    );
+  }
+
+  final patrols = [
+    for (final run in upkeep)
+      if (patrol(run)) run,
+  ];
+  final chores = [
+    for (final run in upkeep)
+      if (!patrol(run)) run,
+  ];
+  return [
+    if (patrols.isNotEmpty) group(l10n.teamHomeUpkeepPatrol, patrols),
+    if (chores.isNotEmpty) group(l10n.teamHomeUpkeepChore, chores),
+  ].join('; ');
+}
+
+/// The run's state word with the merge named: "Waiting for merge" when
+/// [teamRunAwaitsMerge] (TEAM-117), "Done · merged" for a completed run
+/// whose work landed ([OrchestrationRun.merged]), else [teamRunStateWord].
 String teamRunStateWordFor(
   AppLocalizations l10n,
   OrchestrationRun run,
@@ -237,6 +587,13 @@ String teamRunStateWordFor(
   DispatchCycle? Function(String workId)? cycleOf,
 }) => teamRunAwaitsMerge(run, work, cycleOf: cycleOf)
     ? l10n.teamUiCardRunStateWaitingMerge
+    // Done only once every step landed: a completed task with a step still
+    // open is in review, as its stage line says.
+    : teamRunStage(run, work, cycleOf: cycleOf) == TeamStage.reviewing &&
+          run.state == RunState.completed
+    ? l10n.teamUiCardRunStateWaitingMerge
+    : run.state == RunState.completed && run.merged
+    ? l10n.teamUiCardRunStateMerged
     : teamRunStateWord(l10n, run.state);
 
 /// True when [item] is open and waits for the merge agent rather than
@@ -309,12 +666,14 @@ DateTime? teamRunHandoffAt(
   return latest;
 }
 
-/// Glyph and tone per run state: status is never colour-only (§11).
+/// Glyph and tone per run state: status is never colour-only (§11). A
+/// held-up run is neutral: amber means "needs you" only, and the person is
+/// asked through the run's gates, which carry the needs-you mark.
 (IconData, AppStatusTone) teamRunGlyph(RunState state) => switch (state) {
   RunState.planning => (AppIconography.clock, AppStatusTone.neutral),
   RunState.working => (AppIconography.play, AppStatusTone.progress),
   RunState.waiting => (AppIconography.waiting, AppStatusTone.neutral),
-  RunState.blocked => (AppIconography.blocked, AppStatusTone.attention),
+  RunState.blocked => (AppIconography.blocked, AppStatusTone.neutral),
   RunState.failed => (AppIconography.error, AppStatusTone.failure),
   RunState.completed => (AppIconography.check, AppStatusTone.ok),
   RunState.cancelled => (AppIconography.close, AppStatusTone.neutral),
@@ -337,19 +696,48 @@ String teamWorkStateWord(AppLocalizations l10n, WorkState state) =>
       WorkState.unknown => l10n.teamUiWorkStateUnknown,
     };
 
-/// Glyph and tone per work state: status is never colour-only (§11).
-(IconData, AppStatusTone) teamWorkGlyph(WorkState state) => switch (state) {
-  WorkState.queued => (AppIconography.radioEmpty, AppStatusTone.neutral),
-  WorkState.ready => (AppIconography.playCircle, AppStatusTone.neutral),
-  WorkState.working => (AppIconography.play, AppStatusTone.progress),
-  WorkState.waiting => (AppIconography.waiting, AppStatusTone.neutral),
-  WorkState.blocked => (AppIconography.blocked, AppStatusTone.attention),
-  WorkState.needsInput => (AppIconography.question, AppStatusTone.attention),
-  WorkState.review => (AppIconography.review, AppStatusTone.progress),
-  WorkState.failed => (AppIconography.error, AppStatusTone.failure),
-  WorkState.completed => (AppIconography.check, AppStatusTone.ok),
-  WorkState.cancelled => (AppIconography.close, AppStatusTone.neutral),
-  WorkState.unknown => (AppIconography.question, AppStatusTone.neutral),
+/// The mark per work state: status is never colour-only (§11). Only an
+/// item that waits on the person takes the needs-you mark; a blocked one
+/// is held up by other work, not by the person, so it is neutral.
+TeamMark teamWorkMark(WorkState state) => switch (state) {
+  WorkState.queued => const TeamMark(
+    AppIconography.radioEmpty,
+    AppStatusTone.neutral,
+  ),
+  WorkState.ready => const TeamMark(
+    AppIconography.playCircle,
+    AppStatusTone.neutral,
+  ),
+  WorkState.working => const TeamMark(
+    AppIconography.play,
+    AppStatusTone.progress,
+  ),
+  WorkState.waiting => const TeamMark(
+    AppIconography.waiting,
+    AppStatusTone.neutral,
+  ),
+  WorkState.blocked => const TeamMark(
+    AppIconography.blocked,
+    AppStatusTone.neutral,
+  ),
+  WorkState.needsInput => const TeamMark.needsYou(AppIconography.question),
+  WorkState.review => const TeamMark(
+    AppIconography.review,
+    AppStatusTone.progress,
+  ),
+  WorkState.failed => const TeamMark(
+    AppIconography.error,
+    AppStatusTone.failure,
+  ),
+  WorkState.completed => const TeamMark(AppIconography.check, AppStatusTone.ok),
+  WorkState.cancelled => const TeamMark(
+    AppIconography.close,
+    AppStatusTone.neutral,
+  ),
+  WorkState.unknown => const TeamMark(
+    AppIconography.question,
+    AppStatusTone.neutral,
+  ),
 };
 
 /// The Work tab's group order (02-ux §4.2): what needs the person first,
@@ -375,6 +763,18 @@ int teamWorkStateRank(WorkState state) => teamWorkStateOrder.indexOf(state);
 /// Whether an item in [state] still holds up what depends on it.
 bool teamWorkIsOpen(WorkState state) =>
     state != WorkState.completed && state != WorkState.cancelled;
+
+/// The dependencies of [item] that still hold it up: the ones [work] lists
+/// as open. A dependency the host no longer lists is not counted (the board
+/// counts the same way), so a finished step never reads as a wait.
+List<WorkItem> teamOpenDependencies(WorkItem item, List<WorkItem> work) {
+  if (item.dependsOn.isEmpty) return const [];
+  final ids = item.dependsOn.toSet();
+  return [
+    for (final other in work)
+      if (ids.contains(other.id) && teamWorkIsOpen(other.state)) other,
+  ];
+}
 
 /// Whether an item in [state] is stuck: blocked, waiting on the person or
 /// failed. These start the graph's highlighted blocked chain.
@@ -419,18 +819,25 @@ String teamGateKindWord(AppLocalizations l10n, GateKind kind) => switch (kind) {
   GateKind.unknown => l10n.teamUiHomeGateKindUnknown,
 };
 
-/// Glyph and tone per gate kind: a failed run is the only red one.
-(IconData, AppStatusTone) teamGateGlyph(GateKind kind) => switch (kind) {
-  GateKind.choice => (AppIconography.question, AppStatusTone.attention),
-  GateKind.confirmation => (
-    AppIconography.checkCircle,
-    AppStatusTone.attention,
+/// The mark per gate kind. Every question, confirmation, text answer and
+/// gate the person closes takes the kit's one needs-you mark in a row; the
+/// kind's own glyph stays for a place that names the kind (the request
+/// card's header). A failed run keeps the failure glyph, a review that is
+/// ready is neutral.
+TeamMark teamGateMark(GateKind kind) => switch (kind) {
+  GateKind.choice => const TeamMark.needsYou(AppIconography.question),
+  GateKind.confirmation => const TeamMark.needsYou(AppIconography.checkCircle),
+  GateKind.freeText => const TeamMark.needsYou(AppIconography.editNote),
+  GateKind.gateBead => const TeamMark.needsYou(AppIconography.blocked),
+  GateKind.runFailed => const TeamMark(
+    AppIconography.error,
+    AppStatusTone.failure,
   ),
-  GateKind.freeText => (AppIconography.editNote, AppStatusTone.attention),
-  GateKind.gateBead => (AppIconography.blocked, AppStatusTone.attention),
-  GateKind.runFailed => (AppIconography.error, AppStatusTone.failure),
-  GateKind.reviewReady => (AppIconography.review, AppStatusTone.neutral),
-  GateKind.unknown => (AppIconography.warning, AppStatusTone.attention),
+  GateKind.reviewReady => const TeamMark(
+    AppIconography.review,
+    AppStatusTone.neutral,
+  ),
+  GateKind.unknown => const TeamMark.needsYou(AppIconography.warning),
 };
 
 /// The run a gate belongs to: named directly, else through its work item,
@@ -672,21 +1079,19 @@ String teamFailureAction(
 // Agents (02-ux §5.1)
 // ---------------------------------------------------------------------------
 
-/// Context use from which the number takes the attention tone.
-const teamContextAttentionPercent = 75;
+/// Context use from which the number reads in the primary text tone.
+const teamContextHighPercent = 75;
 
-/// Context use from which the number takes the failure tone and the agent
-/// detail says "Recycling soon" (the host's recycle policy threshold).
+/// Context use from which the agent detail says "Recycling soon" (the
+/// host's recycle policy threshold).
 const teamContextRecyclePercent = 90;
 
-/// Tone of a context-use number: neutral, attention from
-/// [teamContextAttentionPercent], failure from [teamContextRecyclePercent].
-AppStatusTone teamContextTone(int percent) =>
-    percent >= teamContextRecyclePercent
-    ? AppStatusTone.failure
-    : percent >= teamContextAttentionPercent
-    ? AppStatusTone.attention
-    : AppStatusTone.neutral;
+/// Tone of a context-use number: secondary text while it is fine, primary
+/// text from [teamContextHighPercent]. Never amber (that means "needs you")
+/// and never red: a full context is the host's to recycle, not a failure.
+KitTextTone teamContextTone(int percent) => percent >= teamContextHighPercent
+    ? KitTextTone.primary
+    : KitTextTone.secondary;
 
 /// Sort of §5.1: needs-you first, then working, idle, stopped; a crashed
 /// agent sits with the exceptions, right after the ones waiting.
@@ -717,15 +1122,35 @@ String teamAgentStateWord(AppLocalizations l10n, AgentState state) =>
       AgentState.unknown => l10n.teamUiHomeAgentStateUnknown,
     };
 
-/// Glyph and tone per agent state: status is never colour-only (§11).
-(IconData, AppStatusTone) teamAgentGlyph(AgentState state) => switch (state) {
-  AgentState.working => (AppIconography.play, AppStatusTone.progress),
-  AgentState.idle => (AppIconography.statusDot, AppStatusTone.neutral),
-  AgentState.waiting => (AppIconography.question, AppStatusTone.attention),
-  AgentState.blocked => (AppIconography.blocked, AppStatusTone.attention),
-  AgentState.stopped => (AppIconography.stopCircle, AppStatusTone.neutral),
-  AgentState.crashed => (AppIconography.error, AppStatusTone.failure),
-  AgentState.unknown => (AppIconography.question, AppStatusTone.neutral),
+/// The mark per agent state: status is never colour-only (§11). An agent
+/// that waits on the person takes the needs-you mark; a blocked one is
+/// held up elsewhere and stays neutral.
+TeamMark teamAgentMark(AgentState state) => switch (state) {
+  AgentState.working => const TeamMark(
+    AppIconography.play,
+    AppStatusTone.progress,
+  ),
+  AgentState.idle => const TeamMark(
+    AppIconography.statusDot,
+    AppStatusTone.neutral,
+  ),
+  AgentState.waiting => const TeamMark.needsYou(AppIconography.question),
+  AgentState.blocked => const TeamMark(
+    AppIconography.blocked,
+    AppStatusTone.neutral,
+  ),
+  AgentState.stopped => const TeamMark(
+    AppIconography.stopCircle,
+    AppStatusTone.neutral,
+  ),
+  AgentState.crashed => const TeamMark(
+    AppIconography.error,
+    AppStatusTone.failure,
+  ),
+  AgentState.unknown => const TeamMark(
+    AppIconography.question,
+    AppStatusTone.neutral,
+  ),
 };
 
 /// "12m", "3h 14m", "2d": an elapsed span in the run's short form.
@@ -740,22 +1165,6 @@ String teamElapsedLabel(AppLocalizations l10n, Duration elapsed) {
     );
   }
   return l10n.teamUiRunElapsedDays(elapsed.inDays);
-}
-
-/// The agents working on a run: those whose current work item belongs to
-/// it, in the fleet order.
-List<OrchestrationAgent> teamAgentsOnRun(
-  OrchestrationSnapshot snapshot,
-  String runId,
-) {
-  final workIds = {
-    for (final item in snapshot.work)
-      if (item.runId == runId) item.id,
-  };
-  return [
-    for (final agent in snapshot.agents)
-      if (workIds.contains(agent.currentWorkId)) agent,
-  ]..sort(teamCompareAgents);
 }
 
 // ---------------------------------------------------------------------------

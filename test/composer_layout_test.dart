@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
@@ -17,6 +18,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:opencode_mobile/state/prompt_photos.dart';
 import 'package:opencode_mobile/ui/app_iconography.dart';
+import 'package:opencode_mobile/ui/kit/kit_row.dart';
+import 'package:opencode_mobile/ui/kit/kit_tappable.dart';
 
 /// Audit UX-P0-03: the composer used to ring the prompt field with five
 /// equal-weight controls, so the field was the least stable element on a
@@ -161,6 +164,8 @@ Future<void> _pumpChat(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(conn)],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         // setSurfaceSize resizes the render surface but leaves the view's
         // reported size at the 800x600 default, and the composer picks its
         // layout from MediaQuery, so both have to say the same thing.
@@ -194,6 +199,19 @@ double _fieldShare(WidgetTester tester) {
     find.byKey(const Key('chat-composer-surface')),
   );
   return field.width / surface.width;
+}
+
+/// The words' column with the editor button in its top corner, which sits
+/// beside the words while there is text (owner Fix "editor in the field
+/// corner", 23f2d0ce): together they still own the row.
+double _wordsColumnShare(WidgetTester tester) {
+  final editable = find.descendant(
+    of: find.byKey(const Key('chat-composer-field')),
+    matching: find.byType(EditableText),
+  );
+  final corner = tester.getSize(find.byKey(const Key('prompt-editor-button')));
+  return (tester.getSize(editable).width + corner.width) /
+      tester.getSize(find.byKey(const Key('chat-composer-surface'))).width;
 }
 
 double _editingShare(WidgetTester tester) {
@@ -242,13 +260,25 @@ void main() {
       await _pumpChat(tester, conn, size: const Size(390, 844), textScale: 1);
       final field = find.byKey(const Key('chat-composer-field'));
       final send = find.byKey(const Key('chat-send-button'));
-      expect(tester.widget<IconButton>(send).onPressed, isNull);
+      // Empty, the one trailing control is the mic (voice builds) or a
+      // disabled Send; with text it is a live Send.
+      bool sendLive() =>
+          send.evaluate().isNotEmpty &&
+          tester
+                  .widget<KitTappable>(
+                    find
+                        .ancestor(of: send, matching: find.byType(KitTappable))
+                        .first,
+                  )
+                  .onTap !=
+              null;
+      expect(sendLive(), isFalse);
       await tester.enterText(field, 'Test draft');
       await tester.pump();
-      expect(tester.widget<IconButton>(send).onPressed, isNotNull);
+      expect(sendLive(), isTrue);
       await tester.enterText(field, '   ');
       await tester.pump();
-      expect(tester.widget<IconButton>(send).onPressed, isNull);
+      expect(sendLive(), isFalse);
       await tester.enterText(field, '/model');
       await tester.pump();
       expect(
@@ -299,7 +329,7 @@ void main() {
         ],
       );
       expect(find.byKey(const Key('attachment-thumbnail')), findsOneWidget);
-      await tester.tap(find.byTooltip('Remove attachment screenshot.png'));
+      await tester.tap(find.bySemanticsLabel('Remove screenshot.png'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('attachment-thumbnail')), findsNothing);
       expect(tester.takeException(), isNull);
@@ -345,13 +375,13 @@ void main() {
       expect(clearText.hitTestable(), findsOneWidget);
       await tester.tap(clearText);
       await tester.pumpAndSettle();
-      expect(tester.widget<TextField>(field).controller!.text, isEmpty);
+      expect(tester.widget<TextField>(_inner(field)).controller!.text, isEmpty);
       expect(find.text('notes.txt'), findsOneWidget);
       await tester.enterText(field, 'New typing');
       await tester.tap(find.text('Undo'));
       await tester.pumpAndSettle();
       expect(
-        tester.widget<TextField>(field).controller!.text,
+        tester.widget<TextField>(_inner(field)).controller!.text,
         'Original draft\n\nNew typing',
       );
       expect(find.text('notes.txt'), findsOneWidget);
@@ -390,10 +420,13 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('reuse-prompt-0')));
       await tester.pumpAndSettle();
       expect(
-        tester.widget<TextField>(field).controller!.text,
+        tester.widget<TextField>(_inner(field)).controller!.text,
         'Keep this\n\nReview the UI',
       );
-      expect(tester.widget<TextField>(field).focusNode!.hasFocus, isTrue);
+      expect(
+        tester.widget<TextField>(_inner(field)).focusNode!.hasFocus,
+        isTrue,
+      );
     },
   );
 
@@ -410,7 +443,7 @@ void main() {
       matching: find.byType(EditableText),
     );
     final state = tester.state<EditableTextState>(editor);
-    final control = tester.widget<TextField>(field).controller!;
+    final control = tester.widget<TextField>(_inner(field)).controller!;
     control.selection = const TextSelection(baseOffset: 2, extentOffset: 5);
     conn.busySessions.add('session-1');
     conn.notifyListeners();
@@ -424,7 +457,7 @@ void main() {
       const TextSelection(baseOffset: 2, extentOffset: 5),
     );
     expect(control.text, 'Still writing');
-    expect(tester.widget<TextField>(field).focusNode!.hasFocus, isTrue);
+    expect(tester.widget<TextField>(_inner(field)).focusNode!.hasFocus, isTrue);
   });
 
   testWidgets(
@@ -442,30 +475,39 @@ void main() {
       );
       await tester.tap(find.byKey(const Key('composer-tools-button')));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(
-        find.byKey(const Key('composer-tools-prompts')),
+      // At 2.5x the sheet scrolls under its header: centre each row first.
+      await Scrollable.ensureVisible(
+        tester.element(find.byKey(const Key('composer-tools-prompts'))),
+        alignment: .5,
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('composer-tools-prompts')));
       await tester.pumpAndSettle();
       final history = find.byKey(const Key('composer-tool-history'));
-      await tester.ensureVisible(history);
+      await Scrollable.ensureVisible(tester.element(history), alignment: .5);
+      await tester.pumpAndSettle();
       await tester.tap(history);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('reuse-prompt-0')),
         160,
-        scrollable: find.descendant(
-          of: find.byKey(const Key('prompt-history-sheet')),
-          matching: find.byType(Scrollable),
-        ),
+        // The sheet's own scroll view, not the search field's.
+        scrollable: find
+            .descendant(
+              of: find.byKey(const Key('prompt-history-sheet')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
       );
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('reuse-prompt-0')));
       await tester.pumpAndSettle();
       expect(
         tester
-            .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+            .widget<TextField>(
+              _inner(find.byKey(const Key('chat-composer-field'))),
+            )
             .controller!
             .text,
         'Review the UI',
@@ -550,13 +592,16 @@ void main() {
     addTearDown(controller.dispose);
     await _pumpChat(tester, controller, size: const Size(360, 760));
 
-    // Only the leading tools button, the model context chip, and Send
-    // surround the field; Attach and Voice moved into the tools sheet.
+    // Only "+", the model chip and the one trailing control (the mic while
+    // the field is empty) surround the field; Attach lives in "+".
     expect(find.byKey(const Key('composer-tools-button')), findsOneWidget);
     expect(find.byKey(const Key('composer-model-context')), findsOneWidget);
-    expect(find.byKey(const Key('chat-send-button')), findsOneWidget);
+    expect(
+      find.byKey(const Key('composer-voice-button')).evaluate().length +
+          find.byKey(const Key('chat-send-button')).evaluate().length,
+      1,
+    );
     expect(find.byIcon(AppIconography.attach), findsNothing);
-    expect(find.byIcon(AppIconography.mic), findsNothing);
 
     expect(_fieldShare(tester), greaterThanOrEqualTo(0.9));
     // Measure the actual typing area, not the decoration that used to
@@ -575,7 +620,6 @@ void main() {
 
     expect(find.byKey(const Key('composer-tools-button')), findsOneWidget);
     expect(find.byIcon(AppIconography.attach), findsNothing);
-    expect(find.byIcon(AppIconography.mic), findsNothing);
     expect(find.byKey(const Key('composer-model-context')), findsOneWidget);
 
     expect(_fieldShare(tester), greaterThanOrEqualTo(0.9));
@@ -644,7 +688,7 @@ void main() {
     );
     await tester.tap(fieldFinder);
     await tester.enterText(fieldFinder, 'Review this draft');
-    final field = tester.widget<TextField>(fieldFinder);
+    final field = tester.widget<TextField>(_inner(fieldFinder));
     field.controller!.selection = const TextSelection.collapsed(offset: 7);
     await tester.pump();
     final editor = tester.state<EditableTextState>(editorFinder);
@@ -658,7 +702,9 @@ void main() {
     expect(tester.testTextInput.hasAnyClients, isTrue);
     expect(field.controller!.text, 'Review this draft');
     expect(field.controller!.selection.baseOffset, 7);
-    expect(_editingShare(tester), greaterThanOrEqualTo(0.85));
+    // With text the editor button takes the field's top corner (23f2d0ce);
+    // the words and their corner still own the row.
+    expect(_wordsColumnShare(tester), greaterThanOrEqualTo(0.85));
     expect(
       tester.getTopLeft(find.byKey(const Key('chat-send-button'))).dy,
       greaterThanOrEqualTo(tester.getBottomLeft(fieldFinder).dy),
@@ -742,8 +788,8 @@ void main() {
   );
 
   testWidgets(
-    'the tools sheet closes Voice while a run is active; Attach stays '
-    'open for the queued send',
+    'the tools sheet keeps Voice and Attach open while a run is active: '
+    'both fill the send that waits for the reply',
     (tester) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
@@ -767,74 +813,65 @@ void main() {
       // carry attachments like any other send.
       expect(
         tester
-            .widget<ListTile>(find.byKey(const Key('composer-tool-attach')))
+            .widget<KitRow>(find.byKey(const Key('composer-tool-attach')))
             .enabled,
         isTrue,
       );
+      // Dictation only fills the draft, so a run does not block it (the
+      // owner: Stop must never cost the person their voice).
       expect(
         tester
-            .widget<ListTile>(find.byKey(const Key('composer-tool-voice')))
+            .widget<KitRow>(find.byKey(const Key('composer-tool-voice')))
             .enabled,
-        isFalse,
+        isTrue,
       );
       // Commands stay available: they do not depend on the run finishing.
       expect(
         tester
-            .widget<ListTile>(find.byKey(const Key('composer-tool-commands')))
+            .widget<KitRow>(find.byKey(const Key('composer-tool-commands')))
             .enabled,
         isTrue,
       );
     },
   );
 
-  testWidgets('a busy run lights the composer surface instead of a transcript '
-      'row', (tester) async {
-    final semantics = tester.ensureSemantics();
+  testWidgets('a busy run writes its status on the composer edge with a '
+      'Stop; the pill keeps its mic', (tester) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
+    (controller.api! as _FakeApi).transcript = [_sentPrompt()];
     await _pumpChat(
       tester,
       controller,
       size: const Size(360, 760),
       textScale: 1,
     );
-    expect(find.byKey(const ValueKey('composer-activity')), findsNothing);
-    expect(find.bySemanticsLabel('Assistant is working'), findsNothing);
+    expect(find.byKey(const Key('chat-stop-button')), findsNothing);
 
     controller.busySessions.add('session-1');
     controller.notifyListeners();
-    // The activity ring animates forever, so pump explicit frames.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.byKey(const ValueKey('composer-activity')), findsOneWidget);
+    // The composer's top edge says what the run is doing and carries Stop;
+    // the pill has no ring, no glow (LOOK-20) and no Stop circle of its own.
+    expect(find.text('Thinking…'), findsOneWidget);
+    expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
+    expect(find.byKey(const ValueKey('kit-composer-stop')), findsNothing);
+    expect(find.byKey(const ValueKey('composer-activity')), findsNothing);
     expect(find.byKey(const ValueKey('typing-indicator')), findsNothing);
-    expect(find.bySemanticsLabel('Assistant is working'), findsOneWidget);
-    // The ring is an overlay on the surface, not a new surface: the prompt
-    // field keeps its place and the surface still bounds the ring.
-    final surface = tester.getRect(
-      find.byKey(const Key('chat-composer-surface')),
-    );
-    final ring = tester.getRect(
-      find.byKey(const ValueKey('composer-activity')),
-    );
-    expect(ring, surface);
     expect(find.byKey(const Key('chat-composer-field')), findsOneWidget);
 
     controller.busySessions.remove('session-1');
     controller.notifyListeners();
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('composer-activity')), findsNothing);
-    expect(find.bySemanticsLabel('Assistant is working'), findsNothing);
-    semantics.dispose();
+    expect(find.byKey(const Key('chat-stop-button')), findsNothing);
   });
 
-  testWidgets('reduced motion keeps a still activity ring while busy', (
-    tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
+  testWidgets('reduced motion settles while busy', (tester) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
+    (controller.api! as _FakeApi).transcript = [_sentPrompt()];
     controller.busySessions.add('session-1');
     await tester.binding.setSurfaceSize(const Size(360, 760));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -842,6 +879,8 @@ void main() {
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
               context,
@@ -852,10 +891,25 @@ void main() {
         ),
       ),
     );
-    // With animations disabled the ring is static, so the tree settles.
+    // No ambient loop in the composer, so the tree settles.
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('composer-activity')), findsOneWidget);
-    expect(find.bySemanticsLabel('Assistant is working'), findsOneWidget);
-    semantics.dispose();
+    expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
   });
 }
+
+/// One sent prompt: the running turn's live line sits under it.
+MessageWithParts _sentPrompt() => MessageWithParts(
+  info: MessageInfo(
+    id: 'u1',
+    sessionID: 'session-1',
+    role: 'user',
+    // Just sent: the live line counts from here.
+    time: MsgTime(created: DateTime.now().millisecondsSinceEpoch),
+  ),
+  parts: [Part(id: 'u1-text', messageID: 'u1', type: 'text', text: 'Hi')],
+);
+
+/// The composer's field is a KitField (a TextFormField); its TextField
+/// holds the controller and focus node.
+Finder _inner(Finder field) =>
+    find.descendant(of: field, matching: find.byType(TextField));

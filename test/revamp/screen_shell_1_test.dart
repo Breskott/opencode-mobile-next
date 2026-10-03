@@ -1,0 +1,619 @@
+// Behaviour of screen-shell-1's pages rebuilt from kit parts (wave 2b): the
+// Inbox (two panes from expanded, Allow once in place, last-seen running
+// work, digest Undo), the question sheet (Send says why it cannot send,
+// Open conversation), the Claude Code gate in search, the desktop drop
+// failure alert, the kit context region and the kit scrollbar.
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart' show kSecondaryMouseButton;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/models.dart';
+import 'package:opencode_mobile/api/product_repository.dart';
+import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/platform/platform_capabilities.dart';
+import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/desktop/file_drop.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
+import 'package:opencode_mobile/ui/navigation/chat_route.dart';
+import 'package:opencode_mobile/ui/screens/activity_screen.dart';
+import 'package:opencode_mobile/ui/search/search_index.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _Repository implements ProductRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _Controller extends ConnectionController {
+  _Controller(super.store);
+
+  bool connected = true;
+  @override
+  bool get isConnected => connected && status == StreamStatus.connected;
+
+  String? answeredPermission;
+  String? reply;
+  List<List<String>>? answers;
+
+  @override
+  Future<void> refreshSessions() async {}
+  @override
+  Future<void> refreshPendingPermissions() async {}
+  @override
+  Future<void> refreshPendingQuestions() async {}
+  @override
+  Future<void> refreshPendingForms() async {}
+
+  @override
+  Future<void> answerPermission(
+    String id,
+    String reply, {
+    String? message,
+    PendingRequestIdentity? expectedRequest,
+  }) async {
+    answeredPermission = id;
+    this.reply = reply;
+  }
+
+  @override
+  Future<void> answerQuestion(
+    String id,
+    List<List<String>> answers, {
+    PendingRequestIdentity? expectedRequest,
+  }) async {
+    this.answers = answers;
+  }
+}
+
+const _question = PendingQuestion(
+  id: 'q-1',
+  sessionID: 'ses_q',
+  prompts: [
+    QuestionPrompt(
+      title: 'Target',
+      question: 'Where should this deploy?',
+      multiple: false,
+      custom: true,
+      choices: [
+        QuestionChoice(label: 'Staging', description: 'Test first'),
+        QuestionChoice(label: 'Production', description: 'Live'),
+      ],
+    ),
+  ],
+);
+
+Future<_Controller> _controller({bool requests = true}) async {
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+  final controller = _Controller(ProfileStore(prefs: prefs))
+    ..repository = _Repository()
+    ..status = StreamStatus.connected;
+  controller.sessionsById = {
+    'ses_run': Session(
+      id: 'ses_run',
+      title: 'Build feature',
+      directory: '/work/oc_app',
+    ),
+  };
+  controller.busySessions = {'ses_run'};
+  if (requests) {
+    controller.permissions = {
+      'perm-1': PermissionRequest(
+        id: 'perm-1',
+        sessionID: 'ses_run',
+        permission: 'edit',
+        patterns: const ['lib/main.dart'],
+      ),
+    };
+    controller.questions = {'q-1': _question};
+  }
+  return controller;
+}
+
+Widget _app(Widget home) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: home,
+);
+
+Future<void> _size(WidgetTester tester, Size size) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+}
+
+/// Bounded pumps: the Running row's live mark never settles.
+Future<void> _settle(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 600));
+}
+
+void desktopTest(
+  String description,
+  Future<void> Function(WidgetTester tester) body,
+) {
+  testWidgets(description, (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    try {
+      await body(tester);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+}
+
+void main() {
+  group('Inbox', () {
+    // P4.2a: on a phone the row lands on the question's card in its
+    // conversation, never on a sheet over the list.
+    testWidgets('on a phone a question row lands on its card in the chat', (
+      tester,
+    ) async {
+      await _size(tester, const Size(412, 915));
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      controller.sessionsById['ses_q'] = Session(
+        id: 'ses_q',
+        directory: '/work/oc_app',
+      );
+      String? landed;
+      Object? arguments;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ActivityScreen(controller: controller),
+          onGenerateRoute: (settings) => MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) {
+              landed = settings.name;
+              arguments = settings.arguments;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await _settle(tester);
+
+      await tester.tap(find.text('Target'));
+      await _settle(tester);
+      expect(find.byKey(const ValueKey('question-sheet')), findsNothing);
+      expect(find.byKey(const ValueKey('activity-detail-pane')), findsNothing);
+      expect(landed, startsWith('/chat/'));
+      expect((arguments as ChatRouteArguments).landOnRequestID, 'q-1');
+    });
+
+    testWidgets('from expanded the pick is answered in the detail pane', (
+      tester,
+    ) async {
+      await _size(tester, const Size(1280, 800));
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(ActivityScreen(controller: controller)));
+      await _settle(tester);
+
+      expect(find.byKey(const ValueKey('activity-list-pane')), findsOneWidget);
+      expect(find.text('Pick a request'), findsOneWidget);
+
+      await tester.tap(find.text('Target'));
+      await _settle(tester);
+      // No sheet: the question fills the detail pane.
+      expect(find.byKey(const ValueKey('question-sheet')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('activity-detail-question-q-1')),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Staging'));
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(const ValueKey('question-send')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('question-send')));
+      await _settle(tester);
+      expect(controller.answers, [
+        ['Staging'],
+      ]);
+
+      // A permission picked there is the answer card, answered in place.
+      await tester.tap(find.text('Edit a file'));
+      await _settle(tester);
+      expect(
+        find.byKey(const ValueKey('activity-detail-permission-perm-1')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('activity-detail-allow')));
+      await _settle(tester);
+      expect(controller.answeredPermission, 'perm-1');
+      expect(controller.reply, 'once');
+    });
+
+    testWidgets('a permission row allows once without a sheet', (tester) async {
+      await _size(tester, const Size(412, 915));
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(ActivityScreen(controller: controller)));
+      await _settle(tester);
+
+      await tester.tap(
+        find.byKey(const ValueKey('activity-permission-allow-perm-1')),
+      );
+      await _settle(tester);
+      expect(controller.answeredPermission, 'perm-1');
+      expect(controller.reply, 'once');
+      expect(find.byKey(const Key('permission-sheet')), findsNothing);
+    });
+
+    testWidgets('while disconnected running work reads as last seen', (
+      tester,
+    ) async {
+      await _size(tester, const Size(412, 915));
+      final controller = await _controller(requests: false)
+        ..connected = false;
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(ActivityScreen(controller: controller)));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Last seen running', findRichText: true),
+        findsOneWidget,
+      );
+      // A still mark, so the page settles: nothing turns as if live.
+      expect(tester.binding.hasScheduledFrame, isFalse);
+    });
+
+    testWidgets('a hidden digest comes back with Undo', (tester) async {
+      await _size(tester, const Size(412, 915));
+      final controller = await _controller(requests: false);
+      controller.busySessions = {};
+      controller.sessionsById = {
+        'ses_done': Session(
+          id: 'ses_done',
+          title: 'Review the migration',
+          time: SessionTime(created: 1, updated: 2, idle: 3),
+        ),
+      };
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _app(
+          Scaffold(
+            body: ActivityScreen(controller: controller, embedded: true),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The finished conversation is a row of the one list (R1).
+      await tester.tap(find.text('Review the migration'));
+      await tester.pumpAndSettle();
+      final dismiss = find.descendant(
+        of: find.byKey(const Key('completion-digest-card')),
+        matching: find.text('Dismiss'),
+      );
+      await tester.ensureVisible(dismiss);
+      await tester.pumpAndSettle();
+      await tester.tap(dismiss);
+      await tester.pumpAndSettle();
+      expect(find.text('Review the migration'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('activity-digest-undo')));
+      await tester.pumpAndSettle();
+      expect(find.text('Review the migration'), findsOneWidget);
+    });
+  });
+
+  group('question sheet', () {
+    testWidgets('Send says why it cannot send until every prompt is answered', (
+      tester,
+    ) async {
+      await _size(tester, const Size(412, 915));
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      var opened = 0;
+      await tester.pumpWidget(
+        _app(
+          Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: KitButton.primary(
+                  label: 'Open',
+                  onPressed: () => showQuestionSheet(
+                    context,
+                    controller,
+                    _question,
+                    onOpenConversation: () => opened++,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Answer every question first.'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'Canary');
+      await tester.pump();
+      expect(find.text('Answer every question first.'), findsNothing);
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('question-open-conversation')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('question-open-conversation')),
+      );
+      await tester.pumpAndSettle();
+      expect(opened, 1);
+      expect(find.byKey(const ValueKey('question-sheet')), findsNothing);
+    });
+
+    testWidgets('without a server the reason says to reconnect', (
+      tester,
+    ) async {
+      await _size(tester, const Size(412, 915));
+      final controller = await _controller();
+      controller.repository = null;
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _app(
+          Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: KitButton.primary(
+                  label: 'Open',
+                  onPressed: () =>
+                      showQuestionSheet(context, controller, _question),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(find.text('Reconnect to the server to answer.'), findsOneWidget);
+    });
+  });
+
+  group('search', () {
+    Future<_Controller> plain() async {
+      final controller = await _controller(requests: false);
+      addTearDown(controller.dispose);
+      return controller;
+    }
+
+    final en = lookupAppLocalizations(const Locale('en'));
+
+    test('Claude Code explains its gate where Termux is missing', () async {
+      final controller = await plain();
+      final desktop = searchIndex(
+        en,
+        SearchScope(
+          controller: controller,
+          platform: const PlatformCapabilities(platform: TargetPlatform.linux),
+          desktop: true,
+        ),
+      ).map((entry) => entry.id);
+      expect(desktop, contains('inside-phone-claude-code-unavailable'));
+      expect(desktop, isNot(contains('inside-phone-claude-code')));
+
+      final phone = searchIndex(
+        en,
+        SearchScope(
+          controller: controller,
+          platform: const PlatformCapabilities.android(),
+          desktop: false,
+        ),
+      ).map((entry) => entry.id);
+      expect(phone, contains('inside-phone-claude-code'));
+      expect(phone, isNot(contains('inside-phone-claude-code-unavailable')));
+    });
+
+    testWidgets('opening it says why and where Claude Code runs', (
+      tester,
+    ) async {
+      final controller = await plain();
+      final scope = SearchScope(
+        controller: controller,
+        platform: const PlatformCapabilities(platform: TargetPlatform.linux),
+        desktop: true,
+      );
+      final entry = searchEntries(
+        en,
+        scope,
+        'claude code',
+      ).firstWhere((e) => e.id == 'inside-phone-claude-code-unavailable');
+      await tester.pumpWidget(
+        _app(
+          Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: KitButton.primary(
+                  label: 'Open',
+                  onPressed: () => entry.open(context, scope),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('search-claude-code-gate')),
+        findsOneWidget,
+      );
+      expect(find.text('Not on this device'), findsOneWidget);
+      expect(find.textContaining('Paseo'), findsOneWidget);
+    });
+  });
+
+  group('desktop', () {
+    desktopTest('a failed drop says so in the kit alert, never the error', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _app(
+          Scaffold(
+            body: DesktopFileDropTarget(
+              onDrop: (_) async => throw StateError('/home/secret/path'),
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      );
+      final state = tester.state<DesktopFileDropTargetState>(
+        find.byType(DesktopFileDropTarget),
+      );
+      unawaited(
+        state.debugHandleDrop([
+          DroppedFile(
+            name: 'a.txt',
+            mimeType: 'text/plain',
+            length: () async => 1,
+            readBytes: () async => Uint8List(1),
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('desktop-drop-failed')), findsOneWidget);
+      expect(find.text('Could not attach dropped files'), findsOneWidget);
+      expect(find.textContaining('/home/secret'), findsNothing);
+    });
+
+    desktopTest('the context region opens the kit menu by click and keys', (
+      tester,
+    ) async {
+      var ran = 0;
+      await tester.pumpWidget(
+        _app(
+          Scaffold(
+            body: Center(
+              child: KitContextRegion(
+                menu: () => [
+                  KitMenuItem(
+                    label: 'Rename',
+                    key: const ValueKey('menu-rename'),
+                    onSelected: () => ran++,
+                  ),
+                ],
+                child: const SizedBox(width: 200, height: 60),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tapAt(
+        tester.getCenter(find.byType(KitContextRegion)),
+        buttons: kSecondaryMouseButton,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('menu-rename')));
+      await tester.pumpAndSettle();
+      expect(ran, 1);
+
+      // Shift+F10 on the focused region opens the same menu.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
+      await tester.sendKeyEvent(LogicalKeyboardKey.f10);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('menu-rename')), findsOneWidget);
+    });
+
+    testWidgets('off desktop the region is the child alone', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          KitContextRegion(
+            menu: () => const [],
+            child: const SizedBox(key: ValueKey('child')),
+          ),
+        ),
+      );
+      expect(
+        find.descendant(
+          of: find.byType(KitContextRegion),
+          matching: find.byType(GestureDetector),
+        ),
+        findsNothing,
+      );
+    });
+
+    desktopTest('KitScrollArea hands a controller and pins one thumb', (
+      tester,
+    ) async {
+      ScrollController? given;
+      await tester.pumpWidget(
+        MaterialApp(
+          scrollBehavior: const KitScrollBehavior(),
+          home: KitScrollArea(
+            builder: (controller) {
+              given = controller;
+              return ListView(
+                controller: controller,
+                children: [
+                  for (var i = 0; i < 60; i++)
+                    SizedBox(height: 40, child: Text('Row $i')),
+                ],
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(given, isNotNull);
+      expect(find.byType(Scrollbar), findsOneWidget);
+      expect(
+        tester.widget<Scrollbar>(find.byType(Scrollbar)).thumbVisibility,
+        isTrue,
+      );
+    });
+
+    testWidgets('off desktop KitScrollArea gives no controller', (
+      tester,
+    ) async {
+      ScrollController? given = ScrollController();
+      addTearDown(given.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: KitScrollArea(
+            builder: (controller) {
+              given = controller;
+              return ListView(children: const [SizedBox(height: 40)]);
+            },
+          ),
+        ),
+      );
+      expect(given, isNull);
+    });
+
+    desktopTest('KitScrollbar keeps one thumb over its own box', (
+      tester,
+    ) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          scrollBehavior: const KitScrollBehavior(),
+          home: KitScrollbar(
+            controller: controller,
+            child: ListView(
+              controller: controller,
+              children: [
+                for (var i = 0; i < 60; i++) const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(Scrollbar), findsOneWidget);
+    });
+  });
+}

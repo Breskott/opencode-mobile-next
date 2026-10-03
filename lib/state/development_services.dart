@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../diagnostics/failed_job_report.dart';
 import '../domain/development_service.dart';
 import '../domain/managed_shell.dart';
 import 'development_service_store.dart';
@@ -30,6 +31,7 @@ class DevelopmentServices extends ChangeNotifier {
   List<DevelopmentService> services = const [];
   final Map<String, ManagedShell> _observed = {};
   final Map<String, String> logs = {};
+  final Map<String, ManagedShell> _logSources = {};
   bool busy = false;
   bool readable = true;
   Object? error;
@@ -79,6 +81,28 @@ class DevelopmentServices extends ChangeNotifier {
 
   int? exitCode(DevelopmentService service) => _observed[service.id]?.exitCode;
 
+  /// Snapshot for an explicit Report action. Call [readLogs] first to load
+  /// the excerpt; observe this model to enable the action after [refresh].
+  /// Null means failure/ownership is unconfirmed or this scope is obsolete.
+  FailedJobReport? failedReport(String id) {
+    if (_disposed || !isCurrent() || !supported() || !readable) return null;
+    final shell = _observed[id];
+    if (shell == null) return null;
+    for (final service in services) {
+      if (service.id == id) {
+        final source = _logSources[id];
+        return FailedJobReport.developmentService(
+          service,
+          shell,
+          logTail: source != null && _matches(service, source)
+              ? logs[id] ?? ''
+              : '',
+        );
+      }
+    }
+    return null;
+  }
+
   bool canStart(DevelopmentService service) =>
       supported() &&
       !busy &&
@@ -97,6 +121,7 @@ class DevelopmentServices extends ChangeNotifier {
     _generation++;
     _observed.clear();
     logs.clear();
+    _logSources.clear();
     busy = false;
     _notify();
   }
@@ -190,6 +215,8 @@ class DevelopmentServices extends ChangeNotifier {
     _check(generation);
     if (shell == null || !_matches(service, shell)) {
       _observed.remove(service.id);
+      logs.remove(service.id);
+      _logSources.remove(service.id);
       return null;
     }
     if (run.shellID == null) {
@@ -260,6 +287,7 @@ class DevelopmentServices extends ChangeNotifier {
     if (_current(generation)) {
       _observed[id] = shell;
       logs.remove(id);
+      _logSources.remove(id);
     }
   }
 
@@ -293,6 +321,7 @@ class DevelopmentServices extends ChangeNotifier {
     );
     _observed.remove(id);
     logs.remove(id);
+    _logSources.remove(id);
     reload();
   }
 
@@ -303,6 +332,8 @@ class DevelopmentServices extends ChangeNotifier {
   });
 
   Future<void> readLogs(String id) => _action((generation) async {
+    logs.remove(id);
+    _logSources.remove(id);
     final gateway = await _gateway(generation);
     final service = _service(id);
     final shell = await _reconcile(service, gateway, generation);
@@ -333,18 +364,21 @@ class DevelopmentServices extends ChangeNotifier {
         .replaceAll(RegExp(r'\x1B\[[0-?]*[ -/]*[@-~]'), '')
         .replaceAll('\r\n', '\n')
         .replaceAll('\r', '\n');
+    _logSources[id] = shell;
   });
 
   Future<void> forgetRun(String id) => _action((generation) async {
     await store.updateRun(id, null);
     _observed.remove(id);
     logs.remove(id);
+    _logSources.remove(id);
   });
 
   Future<void> remove(String id) => _action((generation) async {
     await store.remove(id);
     _observed.remove(id);
     logs.remove(id);
+    _logSources.remove(id);
   });
 
   void _notify() {

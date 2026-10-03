@@ -83,6 +83,13 @@ class VoiceModelManager extends ChangeNotifier {
   bool get isReady =>
       state == VoiceModelState.ready && isInstalled(selectedPack);
 
+  /// Includes device preflight, before progress has entered `downloading`.
+  /// Setup callers must not reinitialize or take over an existing download.
+  bool get downloadInProgress =>
+      _preparingDownload ||
+      state == VoiceModelState.downloading ||
+      state == VoiceModelState.verifying;
+
   String pathFor(VoiceModelFile file) =>
       downloader.filePath(root, selectedPack, file);
 

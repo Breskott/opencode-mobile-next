@@ -1,0 +1,1812 @@
+{
+ "generated": "2026-09-26",
+ "title": "UX system delivery programmes",
+ "note": "An ordered list, which the owner approves one programme at a time. Each slice fits one agent in one worktree (AGENTS.md workflow). 'journeys' holds job ids from journeys.json. Page ids come from map/all.json; the 'new' ids are defined in target-ia.md §1.4. Slice effort: S is at most 1 agent-day, M is 2-3 and L is about a week (split an L before starting where possible). A programme's effortTotal counts S as 1, M as 2.5 and L as 5 agent-days; its size is S up to 3 days, M up to 10, L up to 20 and XL beyond. Proof follows the audit-trail rule: a docs/qa/<feature>-<date>/README.md record with emulator or phone evidence.",
+ "sources": [
+  "docs/ux-system/target-ia.md",
+  "docs/ux-system/map/all.json",
+  "docs/ux-system/journeys.json",
+  "docs/ux-system/capabilities.json",
+  "docs/ux-system/personas-verticals.json",
+  "docs/ux-system/owner-verdicts-2026-09-26.json",
+  "docs/design/principles.md",
+  "docs/design/design-standard.md",
+  "docs/design/team-conversation-2026-09-26.md"
+ ],
+ "pageCount": {
+  "before": 356,
+  "removed": 22,
+  "merged": 78,
+  "new": 8,
+  "after": 264
+ },
+ "programmes": [
+  {
+   "id": "P0",
+   "title": "Critical quick fixes",
+   "oneLine": "Eight small fixes: stop leaking secrets, never lose data, no dead ends, and every team door opens one page.",
+   "why": [
+    "security-privacy: MCP bearer tokens in clear is the map's critical security finding (mcp_setup_screen.dart:586-599)",
+    "capabilities.md dead ends 1, 2 and 4: Claude Code on in-app is unreachable (onOpenPhoneSetup never passed), removing This phone deletes every project (app_en.arb:19025), no CPU/space check before download",
+    "journeys.md inconsistency 2: team-home rows and notifications open RunScreen (team_home_screen.dart:133, main.dart:967), and the conversation cannot stop its task",
+    "journeys.md inconsistency 5: Settings › AI Team opens Plugins (search_index.dart:548)",
+    "notifications vertical: a denied permission is not detected, so the switches read on while nothing can arrive"
+   ],
+   "personas": [
+    "phone-only",
+    "team-delegator",
+    "tinkerer",
+    "newcomer",
+    "remote-lead"
+   ],
+   "journeys": [
+    "add-tool-mcp",
+    "add-phone-tool",
+    "open-team-task",
+    "give-team-task",
+    "stop-task",
+    "turn-on-team",
+    "see-what-needs-me",
+    "manage-phone-server",
+    "setup-phone"
+   ],
+   "pages": {
+    "removed": [],
+    "merged": [],
+    "changed": [
+     "mcp-setup",
+     "embedded-local-agent-onboarding-block",
+     "team-home",
+     "team-conversation",
+     "settings",
+     "notifications-settings",
+     "termux-setup-installed",
+     "phone-setup-start",
+     "phone-setup-customize-sheet"
+    ],
+    "new": []
+   },
+   "kitNeeds": [
+    "KitNotice (exists)",
+    "confirm sheet (exists: lib/ui/widgets/confirm_sheet.dart)"
+   ],
+   "dependsOn": [],
+   "slices": [
+    {
+     "id": "P0.1",
+     "title": "MCP header values are secrets",
+     "finishLine": "The MCP form masks header values (key visible, value obscured, reveal on press), never prefills a saved value, and the values never reach logs or diagnostics.",
+     "nonGoal": "No KitSecretField rollout to other screens (P9); no OAuth changes.",
+     "effort": "S",
+     "acceptance": [
+      "mcp_setup_screen.dart:586-599 header field no longer shows 'Authorization=Bearer …' in clear",
+      "editing an existing MCP server shows 'saved · replace' instead of the value",
+      "a redaction test pushes a fake bearer through save, error and diagnostics paths and finds it nowhere"
+     ],
+     "proof": "Emulator: MCP › Add server with a fake token — screenshot of the masked field and the edit state; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P0.2",
+     "title": "Claude Code is never a dead end",
+     "finishLine": "The Claude Code block always offers the button that does the missing step: phone setup when nothing is installed, 'Set up with Termux' when only the in-app Linux exists (until P1.6), and it never offers Refresh alone.",
+     "nonGoal": "Not the in-app Claude Code component (P1.6).",
+     "effort": "S",
+     "acceptance": [
+      "every caller of LocalAgentOnboarding passes onOpenPhoneSetup (local_agent_onboarding.dart:202,779-800)",
+      "on an in-app-only phone the copy says plainly that Claude Code needs Termux today and offers that path",
+      "the search result for Claude Code (search_index.dart:979-990) lands on the same block"
+     ],
+     "proof": "Emulator A15 with in-app Linux only: search 'Claude Code' → block → the button opens phone setup (Use Termux); recording in docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P0.3",
+     "title": "A team task opens one page from every door",
+     "finishLine": "Team-home task rows, the team notification and team-home's 'Give the team a task' all land in the task conversation, just as Work rows and board cards already do.",
+     "nonGoal": "Not deleting RunScreen or its tabs (P3.5); no visual change to team-home.",
+     "effort": "S",
+     "acceptance": [
+      "TeamHomeScreen._openRun falls back to TeamConversation.open instead of RunScreen (team_home_screen.dart:132-143), so the three callers (workspace_screen.dart:1190, chat/team_conversation_view.dart:184, search_index.dart:1163) need no change",
+      "the team notification link (main.dart ~967) opens TeamConversation.open",
+      "team-home's start (team_home_screen.dart:177) calls TeamConversation.start and lands on the conversation",
+      "widget test: tapping a team-home row pushes the conversation, not RunScreen",
+      "team-home opened from a conversation pops back to that same task instead of stacking a second copy"
+     ],
+     "proof": "Emulator with the spike city: tap a task on team-home, tap a team notification, give a task from team-home — all three land on the conversation; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P0.4",
+     "title": "Stop the task from its conversation",
+     "finishLine": "The team conversation's menu has 'Stop task'. It opens the confirm sheet 'Stop this task?' (cancel: 'Keep running'), calls cancelRun and shows a receipt in the conversation.",
+     "nonGoal": "No worker-level stop from the family strip (P3.6); no auto-heal.",
+     "effort": "S",
+     "acceptance": [
+      "menu entry is present only while the task can be stopped",
+      "the confirm uses the existing confirm sheet, names the task and says what happens to the running workers",
+      "the receipt reads Confirmed or the host's refusal"
+     ],
+     "proof": "Emulator: start a task, stop it from the conversation; the board shows it cancelled; recording in docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P0.5",
+     "title": "Settings › AI Team opens the team page",
+     "finishLine": "The AI Team row and search entry open team-home when the team is on (team-intro when off), never Plugins.",
+     "nonGoal": "Not merging team-plugin-sheet (P3.4).",
+     "effort": "S",
+     "acceptance": [
+      "search_index.dart:548 routes to TeamHomeScreen when orchestration != null",
+      "search test covers both the on and off states"
+     ],
+     "proof": "Emulator: Settings › AI Team with the team on → the team page; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P0.6",
+     "title": "Notifications say when Android blocks them",
+     "finishLine": "Notifications settings shows a KitNotice 'Notifications are off for this app' with 'Open Android settings' when POST_NOTIFICATIONS is denied or the app is muted. The switches read as blocked, and 'Send a test notification' proves delivery.",
+     "nonGoal": "No notification preset or router (P6.7).",
+     "effort": "S",
+     "acceptance": [
+      "reads notificationGranted from the oc/background status (MainActivity.kt:754-757; live_background.dart:566)",
+      "the Android-settings intent is added to both halves of oc/background (one owner)",
+      "the test notification arrives in the 'needs you' channel"
+     ],
+     "proof": "Emulator A15: revoke the notification permission in system settings → the page shows the notice; grant it → the test arrives; screenshots in docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P0.7",
+     "title": "Removing This phone keeps projects by default",
+     "finishLine": "The remove confirm says what survives. Its default 'Remove OpenCode, keep my projects' removes the runtime and tools but keeps the project folders. 'Delete everything' needs the typed name. phoneServerCardRemoveBody no longer says that everything goes unless that path is chosen.",
+     "nonGoal": "No per-component remove (P1.4); no Termux-to-in-app project move.",
+     "effort": "M",
+     "acceptance": [
+      "feasibility first: where projects live in the rootfs and whether they can survive a runtime removal; if they can't, the sheet offers 'Export projects first' (zip to Downloads) before the delete",
+      "copy names the size freed in each choice",
+      "after keeping projects, running setup again shows the old projects"
+     ],
+     "proof": "Emulator: create a project, remove choosing keep, set up again, the project is still listed; recording in docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P0.8",
+     "title": "Pre-flight before any download",
+     "finishLine": "Phone setup checks the CPU (arm64 or x86_64), free space against the chosen set's installed size plus margin, and total RAM before the button. An unsupported phone is told why before anything downloads, and low space names how much to free and links Storage.",
+     "nonGoal": "No DeviceBudget service (P6); no voice changes.",
+     "effort": "S",
+     "acceptance": [
+      "reuses the device info already collected for voice (lib/voice/device.dart; MainActivity.kt:779-793 supportedAbis, availableStorageBytes, totalMemoryMb)",
+      "the 32-bit and low-space states render on phone-setup-start and in Add tools",
+      "unit tests for the thresholds; golden for each state"
+     ],
+     "proof": "Emulator with a small data partition: the low-space state names the MB to free; docs/qa/<slice>-<date>/README.md"
+    }
+   ],
+   "risks": [
+    "P0.3 touches main.dart and P0.4 the chat library (team_conversation_view.dart is a chat part file): both are single-owner, so run them in separate worktrees one after the other",
+    "P0.7 may prove projects cannot survive a rootfs removal; the fallback is export-first, not a hidden delete",
+    "P0.6 edits both halves of oc/background"
+   ],
+   "effortTotal": "M (7S + 1M; about 9.5 agent-days)"
+  },
+  {
+   "id": "P1",
+   "title": "One installer",
+   "oneLine": "Everything installable on the phone (OpenCode, Termux host, AI Team, Claude Code, extras) goes through phone setup v2, and every component can be removed.",
+   "why": [
+    "owner: 'Unify all installation into v2', 'Align with v2' (8 termux-setup verdicts), 'Incorporate in installa v2'",
+    "owner on local-agent-page: 'inline with installation v2 … users who started with opencode and now wants to mix both'",
+    "journeys.md: three installers, four progress surfaces, two success moments; 17 ledger edges into termux-setup against 3 into phone-setup-start",
+    "capabilities.md §3: the engine already takes any component set; claude, the person steps and Termux as a host are the target"
+   ],
+   "personas": [
+    "phone-only",
+    "newcomer",
+    "tinkerer",
+    "team-delegator"
+   ],
+   "journeys": [
+    "setup-phone",
+    "add-phone-tool",
+    "manage-phone-server",
+    "turn-on-team"
+   ],
+   "pages": {
+    "removed": [
+     "termux-setup-start-installed-sheet",
+     "termux-setup-unchecked-install-sheet",
+     "builtin-server-remove-confirm-sheet",
+     "embedded-managed-server-health",
+     "embedded-team-phone-reoffer-card"
+    ],
+    "merged": [
+     "builtin-server-setup -> phone-setup-start",
+     "termux-setup-unsupported -> phone-setup-start",
+     "termux-setup-choose -> phone-setup-customize-sheet",
+     "team-phone-onboarding-offer -> phone-setup-customize-sheet",
+     "termux-setup-installing -> phone-setup-progress",
+     "termux-setup-checking -> phone-setup-progress",
+     "termux-setup-get-termux -> phone-setup-progress",
+     "termux-setup-connect-termux -> phone-setup-progress",
+     "termux-setup-failed -> phone-setup-progress",
+     "termux-setup-update-sheet -> phone-setup-progress",
+     "embedded-local-agent-onboarding-block -> phone-setup-progress",
+     "team-phone-onboarding-steps -> phone-setup-progress",
+     "team-phone-onboarding-failed -> phone-setup-progress",
+     "termux-setup-connected -> phone-setup-ready",
+     "team-phone-onboarding-success -> phone-setup-ready",
+     "termux-setup -> termux-setup-installed (This phone)",
+     "local-agent-page -> phone-component-sheet",
+     "local-agent-project-sheet -> project-folder-open-dialog",
+     "team-phone-onboarding-project-sheet -> workspace-folder-chooser",
+     "embedded-team-phone-section -> team-home",
+     "team-phone-onboarding-killed -> team-home",
+     "team-phone-tips-sheet -> keep-running"
+    ],
+    "changed": [
+     "phone-setup-start",
+     "phone-setup-customize-sheet",
+     "phone-setup-progress",
+     "phone-setup-ready",
+     "termux-setup-installed",
+     "servers",
+     "server-switcher-sheet",
+     "embedded-local-agent-server-entry",
+     "embedded-termux-running-server-entry",
+     "termux-setup-switch-runtime-sheet",
+     "termux-setup-replace-installed-sheet",
+     "team-phone-stop-sheet",
+     "team-phone-remove-sheet",
+     "termux-storage",
+     "embedded-setup-terminal",
+     "builtin-server-log-sheet",
+     "keep-running"
+    ],
+    "new": [
+     "phone-component-sheet",
+     "remove-from-phone-sheet"
+    ]
+   },
+   "kitNeeds": [
+    "KitChecklist (v2, promote)",
+    "KitActionStep (person-step row)",
+    "KitCostLine",
+    "KitLogPanel",
+    "KitConfirmSheet"
+   ],
+   "dependsOn": [
+    "P0"
+   ],
+   "slices": [
+    {
+     "id": "P1.1",
+     "title": "Person-step rows in the checklist",
+     "finishLine": "KitChecklist supports a row that waits on the person (KitActionStep: 'Get Termux' with a button, 'Allow Termux' with a button, 'Sign in to Claude'), marked waiting, done or failed, and it resumes when the app returns.",
+     "nonGoal": "No Termux host yet.",
+     "effort": "S",
+     "acceptance": [
+      "KitActionStep in lib/ui/kit with goldens (dark, light, 200 %)",
+      "the checklist resumes on app resume and re-runs the step's check"
+     ],
+     "proof": "Goldens plus a widget test; the kit gallery screenshot"
+    },
+    {
+     "id": "P1.2",
+     "title": "Termux is a v2 host",
+     "finishLine": "'Use Termux instead' runs the same v2 job with host=termux: the person-steps are rows, the components run through the Termux bridge, failure is a failed row with resume, and success is phone-setup-ready.",
+     "nonGoal": "Not deleting the wizard (P1.3).",
+     "effort": "L",
+     "acceptance": [
+      "phone_setup_start_screen.dart:314 no longer pushes /termux-setup",
+      "engine check scripts treat an existing Termux install as done (upgrade-migration)",
+      "installing, a kill mid-install and resuming all work on the Termux host"
+     ],
+     "proof": "Emulator with Termux sideloaded: a full v2 run on Termux, force-stop mid-install, resume; recording in docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P1.3",
+     "title": "Retire the Termux wizard and the legacy in-app steps",
+     "finishLine": "All 10 /termux-setup call sites and main.dart:1636 builtin-server-setup route to phone-setup-start or This phone. The wizard's step screens, termux-setup-unsupported and embedded-managed-server-health are deleted.",
+     "nonGoal": "No visual redesign of This phone (P1.5).",
+     "effort": "M",
+     "acceptance": [
+      "grep finds no '/termux-setup' push outside tests",
+      "the ledger has no edge into termux-setup-* step pages",
+      "root-connecting (phone stopped), home-shell's phone shortcut and server-settings' managed updates land on v2"
+     ],
+     "proof": "Emulator: every former entry point, walked in turn, lands on v2 or This phone; the list in docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P1.4",
+     "title": "Per-component remove",
+     "finishLine": "This phone lists the installed components. Each one can be removed through its removeScript and is blocked while something depends on it. The confirm says what survives. The in-app AI Team can be turned off and removed.",
+     "nonGoal": "No project migration between hosts.",
+     "effort": "M",
+     "acceptance": [
+      "setup_contract.dart removeScript is called for python and aiteam (components.dart:67,114)",
+      "removing node while aiteam is installed is refused with the reason",
+      "builtin_team.dart gains turn-off and remove (today only stop, l.639-787)"
+     ],
+     "proof": "Emulator: remove Python, remove the AI Team, confirm that disk space is freed (Storage page before and after); docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P1.5",
+     "title": "This phone: one host-neutral page",
+     "finishLine": "termux-setup-installed is reshaped as This phone for both hosts: status, runtime switch, update, Add tools (with size and time totals), components, Storage, Running now, Server log (KitLogPanel), and Remove (remove-from-phone-sheet).",
+     "nonGoal": "No Running-now respec (P5.3).",
+     "effort": "M",
+     "acceptance": [
+      "the same page opens for an in-app and a Termux phone",
+      "Add tools opens the customize sheet in add mode, and progress shows only the new components",
+      "KitCostLine shows before every install"
+     ],
+     "proof": "Emulator with in-app and emulator with Termux: screenshots of both states; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P1.6a",
+     "title": "Spike: Claude Code under in-app proot",
+     "finishLine": "A go/no-go record: Paseo and Claude Code install and run a turn inside the in-app Ubuntu on arm64 and x86_64, with the time, disk and process count measured.",
+     "nonGoal": "No UI.",
+     "effort": "S",
+     "acceptance": [
+      "the measured numbers replace the '10-20 min' estimate",
+      "a no-go names the blocker and keeps Termux as the Claude host"
+     ],
+     "proof": "Emulator plus a read-only log from the owner's phone; docs/qa/claude-inapp-spike-<date>/README.md"
+    },
+    {
+     "id": "P1.6b",
+     "title": "Claude Code as a v2 component",
+     "finishLine": "A 'claude' component (Paseo daemon plus Claude Code, depending on node) appears in Customize and Add tools on either host. A 'Sign in to Claude' person-step ends the checklist. The job saves 'This phone · Claude Code' next to 'This phone · OpenCode', and the switcher lists both.",
+     "nonGoal": "No Claude commands catalogue (P10).",
+     "effort": "L",
+     "acceptance": [
+      "local-agent-page merged into phone-component-sheet; local-agent-project-sheet uses the shared project dialog",
+      "a process-budget line warns when OpenCode, a team and Claude together approach 32",
+      "remove keeps projects and the Claude sign-in unless 'forget sign-in' is chosen"
+     ],
+     "proof": "Emulator: OpenCode set up first, then Add tools › Claude Code, sign in, send one prompt to each profile; recording in docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P1.7",
+     "title": "AI Team on the phone through v2",
+     "finishLine": "The team page's 'On this phone' opens Add tools › AI Team. The team-phone-onboarding steps, success and failure run as the v2 aiteam component on both hosts, and the ready page ends with 'Give the team a first task'.",
+     "nonGoal": "No team page redesign (P3.4).",
+     "effort": "M",
+     "acceptance": [
+      "team_intro_screen.dart:190 no longer goes through the Termux wizard",
+      "a 64-bit-only or manifest-missing phone is told by pre-flight, never hidden (team_discover.dart:186-190)",
+      "a team killed by Android shows on the team page (merged team-phone-onboarding-killed)"
+     ],
+     "proof": "Emulator A15: off → On this phone → progress → ready → the first task lands in its conversation; docs/qa/<slice>-<date>/README.md"
+    }
+   ],
+   "risks": [
+    "Claude Code under in-app proot is unproven, so P1.6a is a go/no-go gate before P1.6b",
+    "the Termux bridge is single-owner (oc/termux, both halves); P1.2 and P1.6b must not run in parallel",
+    "existing installs must be adopted by check scripts with no reinstall (upgrade-migration); old Termux installs are the riskiest",
+    "the 32-process phantom-kill limit (A14 at 40) when OpenCode, a team and Claude run together"
+   ],
+   "effortTotal": "XL (2S + 4M + 2L; about 22 agent-days)"
+  },
+  {
+   "id": "P2",
+   "title": "Setup-assistant agent",
+   "oneLine": "An agent-driven path next to every technical one: tell it what you want (an MCP, a provider, a setting) and approve what it changes.",
+   "why": [
+    "owner on settings: 'can an agent become my opencode configuration assistant help me figure it out … same as the mcp agent I mentioned'",
+    "owner on mcp-setup: 'two options, one technical users and one driven by ai agents … or connect with an oss mcp provider and show the mcp … as toggles'",
+    "automation-first vertical: every setting is manual today; capabilities rule 9 'Ask the agent' beside the form"
+   ],
+   "personas": [
+    "newcomer",
+    "tinkerer",
+    "remote-lead"
+   ],
+   "journeys": [
+    "add-tool-mcp",
+    "find-setting",
+    "sign-in-provider",
+    "stop-being-asked"
+   ],
+   "pages": {
+    "removed": [],
+    "merged": [],
+    "changed": [
+     "settings",
+     "integrations",
+     "mcp-setup",
+     "capabilities",
+     "chat"
+    ],
+    "new": [
+     "mcp-add-sheet",
+     "mcp-catalog",
+     "embedded-config-change-card"
+    ]
+   },
+   "kitNeeds": [
+    "KitSearchField (search miss offers the assistant)",
+    "KitRequestCard change variant",
+    "KitReceipt"
+   ],
+   "dependsOn": [
+    "P0"
+   ],
+   "slices": [
+    {
+     "id": "P2.1",
+     "title": "Spike: what the assistant can change, per server",
+     "finishLine": "A decision record listing, for OC1, OC2, Codex and Paseo, which configuration the app can write (mcpConfigWrites, mcpRuntimeAdds, provider auth, permissions, plugins) and which only an agent working on the host's config file can. It also picks the assistant's form: a normal conversation on the connected server with a seeded brief whose edits arrive as permission cards.",
+     "nonGoal": "No UI.",
+     "effort": "S",
+     "acceptance": [
+      "every write path is cited file:line or named as missing",
+      "credential rule: the assistant never reads or echoes provider keys (/config/providers)"
+     ],
+     "proof": "docs/qa/setup-assistant-spike-<date>/README.md with one live OC2 transcript (password never recorded)"
+    },
+    {
+     "id": "P2.2",
+     "title": "Ask the setup assistant",
+     "finishLine": "Settings shows 'Ask the setup assistant' under search, also offered when a search finds nothing. It opens a conversation in the current project, seeded with the person's goal and the app's capability facts, and edits arrive as the normal permission cards.",
+     "nonGoal": "No catalogue; no custom change card yet.",
+     "effort": "M",
+     "acceptance": [
+      "needs server.any and model.auth; when either is missing the row explains and offers the enable flow",
+      "the brief contains no secrets; a redaction test covers it",
+      "the conversation carries an 'Assistant' mark in Work"
+     ],
+     "proof": "Emulator against OC1: 'add the filesystem MCP server' → permission card → approved → the MCP appears in Tools; recording in docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P2.3",
+     "title": "Config change card",
+     "finishLine": "When a change goes through the gateway (not the agent's shell), the assistant's proposal shows as embedded-config-change-card: a before/after diff, Apply, and a receipt. Providers and models reload once afterwards.",
+     "nonGoal": "No automatic apply.",
+     "effort": "M",
+     "acceptance": [
+      "uses the KitRequestCard shape (or the existing permission card until P4.1a lands)",
+      "an OC2 runtime-only add warns that it is lost on restart"
+     ],
+     "proof": "Emulator: a proposed MCP add, Apply, receipt, then it appears in the list; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P2.4",
+     "title": "MCP Add chooser",
+     "finishLine": "MCP › Add opens mcp-add-sheet: Browse a catalogue · Ask the setup assistant · Enter manually (the existing mcp-setup).",
+     "nonGoal": "No catalogue source (P2.5).",
+     "effort": "S",
+     "acceptance": [
+      "the Browse row explains when there is no catalogue for this server",
+      "the manual form keeps P0.1's secret handling"
+     ],
+     "proof": "Widget tests plus an emulator screenshot"
+    },
+    {
+     "id": "P2.5",
+     "title": "MCP catalogue as toggles",
+     "finishLine": "mcp-catalog lists servers from one registry or provider source as toggle rows with a description, cost and needs (Node or Python component on the phone). Turning one on runs the same write path as manual entry.",
+     "nonGoal": "No OAuth provider onboarding beyond what the manual path has.",
+     "effort": "M",
+     "acceptance": [
+      "feasibility first: a callable registry contract with no credentials needed to list, or the slice stops (AGENTS.md rule 2)",
+      "on a phone host, a server that needs Node offers Add tools › Node"
+     ],
+     "proof": "Emulator: turn one catalogue server on and off; docs/qa/<slice>-<date>/README.md"
+    }
+   ],
+   "risks": [
+    "provider credentials: /config/providers returns keys, so the assistant brief and transcript must never include them",
+    "OC2 runtime MCP adds are lost on restart; the card must say so",
+    "Codex and Paseo have no config write path; the row must explain, not vanish",
+    "the assistant spends the person's tokens; show that before the first run"
+   ],
+   "effortTotal": "M (2S + 3M; about 9.5 agent-days)"
+  },
+  {
+   "id": "P3",
+   "title": "Remove and merge pages",
+   "oneLine": "Delete 14 pages and fold 50 into the page that owns their job, so each job has one landing.",
+   "why": [
+    "owner notes: context-capsule 'I would kill it', info-label 'Kill if not needed or show tooltip', legacy-drafts 'Do we even need this?', team-agent-reassign 'Why manual', pending photo 'you decide'",
+    "journeys.json: 21 removals and 68 merges cover every remove or merge proposal in the map",
+    "principles P1: one thing appears once; X9 tap depth (Settings was four layers deep)"
+   ],
+   "personas": [
+    "newcomer",
+    "team-delegator",
+    "remote-lead",
+    "tinkerer"
+   ],
+   "journeys": [
+    "reuse-text",
+    "change-model",
+    "open-team-task",
+    "watch-worker",
+    "message-team",
+    "reassign-work",
+    "merge-team-task",
+    "review-changes",
+    "undo-prompt",
+    "read-file",
+    "add-computer",
+    "display-settings",
+    "privacy-and-notices",
+    "organise-conversations",
+    "technical-details",
+    "continue-elsewhere",
+    "sign-in-provider",
+    "outside-agent",
+    "follow-progress",
+    "turn-on-team",
+    "give-team-task",
+    "write-prompt",
+    "run-command"
+   ],
+   "pages": {
+    "removed": [
+     "embedded-info-label",
+     "info-label-sheet",
+     "context-capsule",
+     "plugins-mapping-dialog",
+     "plugins-clear-mappings-sheet",
+     "embedded-session-inventory-footer",
+     "embedded-team-card",
+     "appearance-picker-sheet",
+     "chat-pending-photo-sheet",
+     "chat-stash-restore-confirm-sheet",
+     "prompt-stash-delete-sheet",
+     "team-agent-reassign-sheet",
+     "team-merge-approve-sheet",
+     "workspace-archive-session-sheet"
+    ],
+    "merged": [
+     "legacy-drafts -> prompt-stash-sheet",
+     "legacy-drafts-review-sheet -> prompt-stash-sheet",
+     "legacy-drafts-delete-sheet -> prompt-stash-sheet",
+     "catalog -> model-picker-sheet",
+     "model-picker-sheet-agent-dialog -> model-picker-sheet",
+     "model-picker-sheet-options-dialog -> model-picker-sheet",
+     "model-picker-sheet-unloaded-providers-dialog -> model-picker-sheet",
+     "team-home-runs-tab -> team-home",
+     "team-home-agents-tab -> team-home",
+     "team-home-needs-you-tab -> team-home",
+     "team-plugin-sheet -> team-home",
+     "team-intro -> team-home",
+     "team-run -> team-conversation",
+     "team-run-overview-tab -> team-conversation",
+     "team-run-work-tab -> team-conversation",
+     "team-run-agents-tab -> team-conversation",
+     "team-run-timeline-tab -> team-conversation",
+     "embedded-team-planning-card -> team-conversation",
+     "team-cycle-how-sheet -> team-conversation",
+     "team-agent-message-sheet -> team-conversation",
+     "team-board-add-sheet -> start-run-sheet",
+     "team-cycle-stop-confirm-sheet -> team-agent-stop-confirm-sheet",
+     "team-agent-output -> chat",
+     "team-agent-details-sheet -> team-agent",
+     "diff-view -> review-workspace",
+     "files-changes-sheet -> review-workspace",
+     "chat-revert-confirm-sheet -> stage-revert-sheet",
+     "files-file-viewer-sheet -> file-preview-sheet",
+     "files-row-actions-sheet -> files",
+     "agent-choice -> profile-editor",
+     "connection-help -> profile-editor",
+     "settings-transcript-display-sheet -> settings",
+     "about-privacy-tab -> privacy-settings",
+     "voice-notices -> about-open-source-tab",
+     "plugins-settings -> capabilities",
+     "external-agents -> capabilities",
+     "session-handoff-dialog -> continue-on-computer-sheet",
+     "chat-message-error-details-dialog -> chat-prompt-error-details-dialog",
+     "integrations-oauth-code-dialog -> integrations-mcp-oauth-code-dialog",
+     "integrations-forget-uncertain-auth-sheet -> integrations-forget-pending-auth-sheet",
+     "command-auth-sheet-confirm-sheet -> command-auth-sheet",
+     "skills-preview-sheet -> skill-activation-sheet",
+     "provider-quota-enroll-dialog -> provider-quota",
+     "workspace-directory-details-dialog -> workspace-context-sheet",
+     "workspace-session-details-sheet -> session-context",
+     "question-sheet-dismiss-dialog -> confirm-sheet",
+     "shell-output-stop-dialog -> confirm-sheet",
+     "manage-project -> project-hub",
+     "todos-sheet -> embedded-message-view",
+     "workspace-archived-sheet -> global-sessions"
+    ],
+    "changed": [
+     "team-home",
+     "team-conversation",
+     "team-agent",
+     "team-agents",
+     "start-run-sheet",
+     "review-workspace",
+     "stage-revert-sheet",
+     "file-preview-sheet",
+     "files",
+     "profile-editor",
+     "session-link-server-missing-banner",
+     "settings",
+     "capabilities",
+     "privacy-settings",
+     "about-open-source-tab",
+     "model-picker-sheet",
+     "prompt-stash-sheet",
+     "global-sessions",
+     "workspace",
+     "confirm-sheet"
+    ],
+    "new": []
+   },
+   "kitNeeds": [
+    "KitDiffView",
+    "KitFileViewer",
+    "KitConfirmSheet",
+    "KitUndoSnackbar",
+    "KitDetailsFold",
+    "tooltip term (KitTermTip)",
+    "KitSheet"
+   ],
+   "dependsOn": [
+    "P0"
+   ],
+   "slices": [
+    {
+     "id": "P3.1",
+     "title": "Delete dead weight",
+     "finishLine": "The info label and its sheet become a tooltip on the term. context-capsule, the plugin command links (dialog and clear sheet), the session inventory footer, the Work team card and the appearance picker sheet are gone, and each of their jobs lands where target-ia §1.4 says.",
+     "nonGoal": "No new features.",
+     "effort": "S",
+     "acceptance": [
+      "the ledger and search index have no entry for the removed pages",
+      "the ui_glossary test still passes; tooltips are labelled for screen readers"
+     ],
+     "proof": "Emulator: before and after screenshots of each former host screen; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P3.2",
+     "title": "Saved prompts absorb drafts",
+     "finishLine": "Older drafts migrate once into Saved prompts (MigrationRunner), and the legacy screens are deleted. Restoring or deleting a saved prompt acts at once with Undo. A recovered photo attaches to its own conversation's draft (no pending-photo sheet).",
+     "nonGoal": "No queued-message bubble (P4.3).",
+     "effort": "M",
+     "acceptance": [
+      "the migration test uses old-prefs fixtures; the keys stay oc.<what>.<profileId>",
+      "Undo restores exactly; deletion sweep test still passes"
+     ],
+     "proof": "Emulator upgraded from a 1.0.44 build with legacy drafts: they appear in Saved prompts; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P3.3",
+     "title": "One model sheet",
+     "finishLine": "Settings › Model and the composer chip open the same model-picker-sheet (default mode from Settings). Agent, thinking and options sit in its footer, and 'providers not loaded' is a row in it, so no dialog opens over the sheet.",
+     "nonGoal": "No price tiers (P5.4).",
+     "effort": "M",
+     "acceptance": [
+      "catalog screen removed from navigation",
+      "at most hub → page → sheet depth"
+     ],
+     "proof": "Emulator screenshots of both doors showing the same sheet"
+    },
+    {
+     "id": "P3.4",
+     "title": "The team page is one page",
+     "finishLine": "team-home has no tabs. It shows the overview (Now, Needs you, a few tasks landing in their conversations, where the team runs, on/off, speed and cost). When the team is off, the intro and discovery live on the same page. team-plugin-sheet is gone.",
+     "nonGoal": "No Now-line engine (P5.1).",
+     "effort": "M",
+     "acceptance": [
+      "team-intro and team-plugin-sheet routes point to team-home",
+      "heat pause is distinct from person pause (row 20)"
+     ],
+     "proof": "Emulator: team off, team on and paused-by-heat states captured; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P3.5",
+     "title": "Retire RunScreen",
+     "finishLine": "team-run and its four tabs are deleted. Task details is a sheet in the conversation menu, steps are tappable in the transcript, the planning card is a lead line, the board's add sheet is the one 'Give the team a task' sheet (Start now / Keep in backlog), and the reassign and merge-approve sheets are gone.",
+     "nonGoal": "No automatic merge (P6.4).",
+     "effort": "M",
+     "acceptance": [
+      "no route pushes RunScreen",
+      "every former RunScreen fact is present in the conversation or Task details",
+      "the team_home and board tests are updated to the conversation landing"
+     ],
+     "proof": "Emulator: a full task from give → merge without leaving the conversation; recording in docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P3.6",
+     "title": "A worker is its conversation",
+     "finishLine": "Tapping a worker in the family strip or team-agents opens the chat in watching mode (live output when the session store is unreadable). Messaging a worker happens in the conversation composer, and team-agent becomes a short status page whose primary action opens the conversation.",
+     "nonGoal": "No lead agent.",
+     "effort": "M",
+     "acceptance": [
+      "team-agent-output and team-agent-message-sheet routes removed",
+      "the worker state comes from the session, not the agents list (row 21)"
+     ],
+     "proof": "Owner's phone (read-only adb) or emulator: watch a live worker; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P3.7a",
+     "title": "One diff component",
+     "finishLine": "KitDiffView serves review-workspace (scoped) and read-only callers (merge changes, request 'See the change', run result). diff-view and files-changes-sheet are deleted.",
+     "nonGoal": "No Undo flow changes.",
+     "effort": "M",
+     "acceptance": [
+      "one 'Change 1 of N' navigator",
+      "directional paddings (review had 13 non-directional)"
+     ],
+     "proof": "Goldens in dark, light and RTL; emulator screenshots from three doors"
+    },
+    {
+     "id": "P3.7b",
+     "title": "One 'Undo from here' flow",
+     "finishLine": "Both OC1 and OC2 go through stage-revert-sheet. The flow quotes the prompt and lists the files. It is staged when the server allows, and otherwise an honest one-step confirm. chat-revert-confirm-sheet is gone.",
+     "nonGoal": "No new revert capabilities on the server.",
+     "effort": "M",
+     "acceptance": [
+      "chat_screen.dart:4689/4712 both route to the same flow",
+      "the same act gets the same model from long-press and from the menu"
+     ],
+     "proof": "Emulator against OC1 and OC2: undo from a prompt on each; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P3.8",
+     "title": "One file viewer",
+     "finishLine": "files-file-viewer-sheet merges into file-preview-sheet (KitFileViewer), and file row actions move into a row menu.",
+     "nonGoal": "No editor.",
+     "effort": "S",
+     "acceptance": [
+      "Close, one labelled action (Attach in chat) and overflow (Copy, Save, Open in Files)"
+     ],
+     "proof": "Emulator screenshots from Files, a chat path link and a tool card"
+    },
+    {
+     "id": "P3.9",
+     "title": "Add a computer in one path",
+     "finishLine": "agent-choice and connection-help fold into profile-editor steps (kind → address or pairing → check → ready), with Tailscale as a step. The session-link banner becomes a prefilled 'Add this server?' sheet, and profile-monitor folds into server rows.",
+     "nonGoal": "No new server kinds.",
+     "effort": "M",
+     "acceptance": [
+      "'Add server' and 'Connect OpenCode 2' start the same flow",
+      "a check over 8 s offers Cancel",
+      "the flow ends in a ready moment"
+     ],
+     "proof": "Emulator against a live OC2 (password never recorded): pair by QR and by typed address; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P3.10",
+     "title": "Settings IA",
+     "finishLine": "The Settings hub has the 22 rows in target-ia §1.3. Transcript display becomes two switches, About's privacy tab merges into Privacy and data, the voice licences go under About › Open source, plugins-settings and external-agents move inside Tools, and Import conversation moves to Work.",
+     "nonGoal": "No setup assistant (P2.2); no search engine upgrade (P9.4).",
+     "effort": "M",
+     "acceptance": [
+      "no duplicate pairs; at most 5 rows per group",
+      "gated rows show one 'N settings need a newer server · Why' line",
+      "search aliases updated (no dead 'Older drafts' or 'font text size')"
+     ],
+     "proof": "Goldens of the hub in dark, light and 200 % text; an emulator screenshot"
+    },
+    {
+     "id": "P3.11",
+     "title": "Small merges",
+     "finishLine": "The remaining pairs become one: the handoff dialog becomes continue-on-computer; one error-details dialog; one OAuth-code dialog; one forget-auth sheet; the auth confirm merges into the auth sheet; skills preview merges into activation; quota enrol merges into provider-quota; the directory and session detail dialogs merge into the context sheets; the question-dismiss and shell-stop dialogs use the confirm sheet; manage-project merges into project-hub; the todos sheet merges into the transcript checklist.",
+     "nonGoal": "No visual redesign beyond the merge.",
+     "effort": "M",
+     "acceptance": [
+      "each removed route is gone from the ledger and search",
+      "tests assert the surviving landing"
+     ],
+     "proof": "Emulator screenshots, one per merged pair, listed in the QA README"
+    },
+    {
+     "id": "P3.12",
+     "title": "Conversations list: archive with Undo everywhere",
+     "finishLine": "Archive acts at once with Undo from the swipe and from the menu. The archived list is a filter of All conversations (search-first), and workspace-archive-session-sheet and workspace-archived-sheet are gone.",
+     "nonGoal": "No new sorting.",
+     "effort": "S",
+     "acceptance": [
+      "workspace_screen.dart:1497-1503 swipe and menu share one path",
+      "restore from the Archived filter"
+     ],
+     "proof": "Emulator recording: archive, undo, archive, restore"
+    }
+   ],
+   "risks": [
+    "P3.2, P3.7b and P3.12 touch the chat library (single owner); serialise them",
+    "legacy-drafts migration must not lose a draft; keep a backup key for one release",
+    "P3.5 must land after P0.3 so that nothing still routes to RunScreen when it is deleted",
+    "large ARB churn: a three-way merge per slice, generating l10n once"
+   ],
+   "effortTotal": "XL (3S + 10M; about 28 agent-days)"
+  },
+  {
+   "id": "P4",
+   "title": "Home and chat core",
+   "oneLine": "The daily loop: answer in one tap on one card, one 'Needs you' list, queued messages as one bubble, one honest connection status, one way to start.",
+   "why": [
+    "owner on embedded-pending-sends-strip: 'All the queued messages should be merged in one bubble … the design should follow the theme'",
+    "owner on attention-overview: 'deleting is an option if it's not required'; on workspace and home-shell: Rethink",
+    "journeys.md inconsistencies 1 and 4: answering lands in two places in three shapes; four answers to 'what needs me'",
+    "top-15 fixes #1, #4, #5, #9 and #15"
+   ],
+   "personas": [
+    "remote-lead",
+    "team-delegator",
+    "phone-only",
+    "newcomer"
+   ],
+   "journeys": [
+    "answer-agent",
+    "see-what-needs-me",
+    "queued-messages",
+    "recover-connection",
+    "start-conversation",
+    "switch-server",
+    "where-it-runs"
+   ],
+   "pages": {
+    "removed": [
+     "attention-overview"
+    ],
+    "merged": [
+     "connection-status-details-sheet -> root-connecting",
+     "embedded-completion-digest-card -> activity",
+     "profile-monitor -> servers"
+    ],
+    "changed": [
+     "activity",
+     "workspace",
+     "home-shell",
+     "chat",
+     "embedded-permission-attention-card",
+     "embedded-question-attention-card",
+     "embedded-question-options",
+     "permission-sheet",
+     "question-sheet",
+     "form-sheet",
+     "gate-sheet",
+     "embedded-team-receipt-chip",
+     "embedded-pending-sends-strip",
+     "chat-discard-queued-draft-sheet",
+     "chat-cancel-inbox-send-sheet",
+     "embedded-connection-status-banner",
+     "root-connecting",
+     "server-switcher-sheet",
+     "embedded-profile-monitor-inbox",
+     "servers",
+     "isolated-task-sheet"
+    ],
+    "new": [
+     "new-conversation-sheet"
+    ]
+   },
+   "kitNeeds": [
+    "KitRequestCard family",
+    "KitRequestSheet",
+    "KitReceipt",
+    "KitQueuedMessage",
+    "KitStatusLine (auto-escalating)",
+    "KitStatusMark word+mark"
+   ],
+   "dependsOn": [],
+   "slices": [
+    {
+     "id": "P4.1a",
+     "title": "KitRequestCard family and KitReceipt",
+     "finishLine": "The kit has one request card with permission, question, form, gate and change variants that answers the common case in place (Allow once / Reject; an option sends with Undo; 'Something else' for text), one KitRequestSheet for Details, and one KitReceipt.",
+     "nonGoal": "No screen adoption.",
+     "effort": "M",
+     "acceptance": [
+      "goldens for every variant in dark, light, RTL and 200 %",
+      "48 dp targets; receipt announced once"
+     ],
+     "proof": "Kit gallery goldens"
+    },
+    {
+     "id": "P4.1b",
+     "title": "Chat answers in place",
+     "finishLine": "Chat's permission, question and form cards and ```choices``` are the KitRequestCard. Details opens the one sheet, every answer leaves a receipt, and the work line says 'Waiting for you' (never 'Running tools') while the agent waits.",
+     "nonGoal": "No team gates.",
+     "effort": "M",
+     "acceptance": [
+      "two taps and a sheet become one tap for Allow once",
+      "an OC1 question and an OC2 form look the same"
+     ],
+     "proof": "Emulator against OC1 and OC2: permission, question and form answered in place; recording in docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P4.1c",
+     "title": "Team gates on the same card",
+     "finishLine": "Gas City gates in the team conversation use KitRequestCard and KitReceipt. Both TeamReceiptChip classes (team_controls.dart:52, team_receipt.dart:101) and the gate sheet's _Receipt are gone.",
+     "nonGoal": "No supervision changes.",
+     "effort": "M",
+     "acceptance": [
+      "gate-sheet is only the Details variant",
+      "one receipt class in the codebase"
+     ],
+     "proof": "Emulator with the spike city: answer a gate in the conversation; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P4.2a",
+     "title": "Inbox rows land on the card",
+     "finishLine": "Every Inbox row, the Work 'N need you' line and notifications open the conversation scrolled to the card (switching server first). An answered request disappears everywhere, and one tapped after it was answered says so instead of showing an empty Inbox. attention-overview is deleted.",
+     "nonGoal": "No cross-server rows (P4.2b).",
+     "effort": "M",
+     "acceptance": [
+      "activity_screen.dart:766,809 and profile_monitor_screen.dart:65,75 no longer open a sheet over a list",
+      "the landing-contract test covers the Inbox, Work, notification and header"
+     ],
+     "proof": "Emulator: a permission request raised while the app is closed, answered from the notification; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P4.2b",
+     "title": "Other servers in the one list",
+     "finishLine": "The Inbox lists other servers' requests as rows naming their server. profile-monitor folds into the server rows and switcher, which carry a status word, and Work keeps a single 'N need you' line. The badge counts each request once.",
+     "nonGoal": "No background monitoring changes.",
+     "effort": "M",
+     "acceptance": [
+      "embedded-completion-digest-card is an Inbox 'finished' row",
+      "profile-monitor route removed"
+     ],
+     "proof": "Emulator with two saved servers: a request on the other server is answered from the Inbox; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P4.3",
+     "title": "'Waiting to send' bubble",
+     "finishLine": "Queued messages show as one themed bubble above the composer ('Waiting to send · 3') with Send now, Edit and Remove. Withdrawing a message returns it to the draft with Undo, and a confirm appears only when text would be deleted.",
+     "nonGoal": "No offline queue engine changes.",
+     "effort": "M",
+     "acceptance": [
+      "the chips and two withdraw sheets are gone",
+      "the bubble reconciles with the server transcript",
+      "icon-only actions are labelled"
+     ],
+     "proof": "Emulator in airplane mode: queue three, reconnect, watch them send; recording in docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P4.4",
+     "title": "One connection status",
+     "finishLine": "One status source feeds the header word, the shell's one prioritised status line and chat. It uses fixed stages ('Reconnecting to Laptop…', then after 8 s 'Laptop isn't answering' with Try again / Restart / Switch server). connection-status-details-sheet merges into root-connecting's diagnosed card.",
+     "nonGoal": "No reconnect engine rewrite.",
+     "effort": "M",
+     "acceptance": [
+      "unreachable servers never look reachable; status never stays green while reconnecting",
+      "only one notice line at a time (connection > app killed > heat > update)"
+     ],
+     "proof": "Emulator: stop the server, watch the stages and the 8 s escape; restart it; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P4.5",
+     "title": "New conversation chooser",
+     "finishLine": "Work has one New conversation button, and its chooser (new-conversation-sheet) offers Solo · Team · In a separate copy · On a cloud machine where the server supports each. The choice is remembered per server, and every start ends in a conversation.",
+     "nonGoal": "No worktree management changes.",
+     "effort": "M",
+     "acceptance": [
+      "three ways to start become one",
+      "Team when the team is missing opens the team page's off state",
+      "isolated-task-sheet is reached only from the chooser"
+     ],
+     "proof": "Emulator screenshots of each choice's landing"
+    }
+   ],
+   "risks": [
+    "P4.1b and P4.3 are chat library work (single owner); P4.4 owns lib/state/connection.dart; serialise these",
+    "OC2's volatile event stream: reconcile by refetch after a reconnect, never replay (docs/opencode2-protocol-notes.md)",
+    "the notification landing needs main.dart (single owner), which is shared with P0.3"
+   ],
+   "effortTotal": "L (8M; about 20 agent-days)"
+  },
+  {
+   "id": "P5",
+   "title": "Answers instead of engine data",
+   "oneLine": "Team, running processes and quota screens answer the person's question in plain words; engine data moves under Details.",
+   "why": [
+    "owner on termux-processes: 'Good screen respec and make proper tool'; on provider-quota: 'Feature itself needs a lot of work'; on team-home: 'You decide and rethink'",
+    "honest-state vertical (188/153 flagged): agent 'Working' while stopped (row 21), 'Connecting…' forever (row 22), idle team 'Paused' (row 20)",
+    "team-delegator: 'about 6 min to first output … with nothing on screen explaining it'"
+   ],
+   "personas": [
+    "team-delegator",
+    "phone-only",
+    "tinkerer",
+    "remote-lead"
+   ],
+   "journeys": [
+    "follow-progress",
+    "see-running",
+    "usage-quota",
+    "watch-worker",
+    "turn-on-team"
+   ],
+   "pages": {
+    "removed": [],
+    "merged": [
+     "embedded-team-cycle-strip -> team-conversation"
+    ],
+    "changed": [
+     "team-conversation",
+     "team-home",
+     "team-agents",
+     "team-agent",
+     "termux-processes",
+     "termux-processes-stop-one-sheet",
+     "termux-processes-stop-group-sheet",
+     "termux-processes-details-sheet",
+     "running-work-sheet",
+     "usage-hub",
+     "usage",
+     "provider-quota",
+     "agent-account",
+     "workspace",
+     "activity"
+    ],
+    "new": []
+   },
+   "kitNeeds": [
+    "KitNowLine",
+    "KitCostLine",
+    "KitStatusMark word+mark",
+    "KitDetailsFold",
+    "KitIconButton (48 dp, labelled)"
+   ],
+   "dependsOn": [
+    "P3"
+   ],
+   "slices": [
+    {
+     "id": "P5.1",
+     "title": "Team Now line",
+     "finishLine": "The team conversation has one KitNowLine: what is happening, since when, what is next and how long it usually takes ('Starting a worker · usually under a minute'). It says so honestly after 8 s and unfolds the 'why' in place, replacing the dispatch cycle strip.",
+     "nonGoal": "No dispatch speed change (P6.3).",
+     "effort": "M",
+     "acceptance": [
+      "never 'Still planning' for 31 min without a reason and a way out",
+      "no engine words above Details"
+     ],
+     "proof": "Owner's phone (read-only adb) or emulator: a task from pending to the first worker output; recording in docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P5.2",
+     "title": "The team page answers questions",
+     "finishLine": "The team page answers 'Is my team working? Where does it run? What does it cost?'. Agent states come from sessions (row 21), an idle team is never 'Paused' (row 20), a heat pause says so, and cost is shown per task and per day.",
+     "nonGoal": "No budget enforcement.",
+     "effort": "M",
+     "acceptance": [
+      "ledger rows 18, 20 and 21 closed",
+      "cost comes from the real per-session usage, not one agent's"
+     ],
+     "proof": "Emulator: idle, working, heat-paused (thermal override recipe) and stopped states; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P5.3",
+     "title": "Running on this phone",
+     "finishLine": "termux-processes is respecified as the host-neutral tool 'Running on this phone'. It groups by what runs (OpenCode server, AI Team, Claude Code, dev services, terminals, helpers), with labelled marks, 'busy' instead of an unexplained 'CPU 108 %', memory in MB, a budget line ('18 of 32 background processes') and one stop confirm per kind.",
+     "nonGoal": "No automatic cleanup (P6).",
+     "effort": "M",
+     "acceptance": [
+      "state is never colour alone; stop targets are labelled and 48 dp",
+      "running-work-sheet keeps conversations; this tool keeps processes"
+     ],
+     "proof": "Emulator with the server, team and a terminal running: screenshot plus a TalkBack walk; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P5.4",
+     "title": "Quota as answers",
+     "finishLine": "Usage shows Spent · Remaining as sentences ('About 40 % left this week · resets Tue'). The Codex account is its Remaining source, the last known value keeps its age when offline, 'Alert me at 80 %' is on by default, and a missing collector says 'needs the quota collector on {server}' with how to get it.",
+     "nonGoal": "No collector packaging.",
+     "effort": "M",
+     "acceptance": [
+      "provider-quota's enrol dialog is gone (P3.11)",
+      "the '30 days' vs 'Sep 2–6' mismatch is fixed"
+     ],
+     "proof": "Emulator against OC2 with the collector absent and with fixtures present; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P5.5",
+     "title": "Rows say what the work is doing",
+     "finishLine": "Work and Inbox rows for chats and team tasks carry one state line ('Working · 2 of 5 steps · 3 min', 'Needs you', 'Done 4 min ago') from the same source as the header word, with static last-seen marks while disconnected.",
+     "nonGoal": "No layout redesign.",
+     "effort": "S",
+     "acceptance": [
+      "no green live dot while disconnected",
+      "the same words as the header and notifications"
+     ],
+     "proof": "Goldens plus an emulator screenshot"
+    }
+   ],
+   "risks": [
+    "team speed and cost truth depends on Gas City data available on the host; a computer without its host front is read-only",
+    "the process budget counts differ between the in-app and Termux hosts"
+   ],
+   "effortTotal": "L (1S + 4M; about 11 agent-days)"
+  },
+  {
+   "id": "P6",
+   "title": "Automation first",
+   "oneLine": "The app does what it safely can, says so afterwards with Undo, and interrupts only under the 'Needs you' contract.",
+   "why": [
+    "owner 2026-09-26: 'Why manual it's all about automated dev right'",
+    "personas-verticals.md §3: 197 elements could be automatic, about 40 already are and only need their manual control demoted; the 'Needs you' contract",
+    "team-conversation-2026-09-26.md speed targets: a worker within 5 s, first output within about 20 s"
+   ],
+   "personas": [
+    "team-delegator",
+    "remote-lead",
+    "phone-only",
+    "newcomer"
+   ],
+   "journeys": [
+    "reassign-work",
+    "merge-team-task",
+    "stop-being-asked",
+    "keep-alive",
+    "recover-connection",
+    "see-what-needs-me",
+    "give-team-task"
+   ],
+   "pages": {
+    "removed": [
+     "embedded-return-brief-panel",
+     "embedded-return-brief-panel-status-dialog"
+    ],
+    "merged": [],
+    "changed": [
+     "activity",
+     "saved-permissions",
+     "session-approvals-sheet",
+     "permission-sheet-always-dialog",
+     "embedded-auto-approval-indicator",
+     "team-conversation",
+     "embedded-team-merge-section",
+     "team-agent",
+     "keep-running",
+     "notifications-settings",
+     "root-connecting",
+     "bootstrap-gate",
+     "home-shell"
+    ],
+    "new": [
+     "automation-settings"
+    ]
+   },
+   "kitNeeds": [
+    "KitAutoLine",
+    "KitRiskSwitch (scope, expiry, indicator)",
+    "KitUndoSnackbar"
+   ],
+   "dependsOn": [
+    "P4",
+    "P5"
+   ],
+   "slices": [
+    {
+     "id": "P6.1",
+     "title": "What runs by itself",
+     "finishLine": "A per-server AutomationPolicy and the 'What runs by itself' page (automation-settings) hold supervision, auto-approve rules (Always allowed actions inside), housekeeping consents and background monitoring. Each automatic behaviour can be turned off.",
+     "nonGoal": "No new automatic behaviours.",
+     "effort": "M",
+     "acceptance": [
+      "stored as oc.automation.<profileId> and covered by the deletion sweep",
+      "defaults follow the automation contract (personas-verticals.md §3)"
+     ],
+     "proof": "Emulator screenshots plus a unit test of the policy defaults"
+    },
+    {
+     "id": "P6.2",
+     "title": "Every automatic act reported: While you were away",
+     "finishLine": "KitAutoLine reports every automatic act in one line with Undo where possible. The Inbox's 'While you were away' collects them together with finished work, replacing the return-brief panel.",
+     "nonGoal": "No new triggers.",
+     "effort": "M",
+     "acceptance": [
+      "embedded-return-brief-panel and its dialog removed",
+      "never-a-Needs-you items (reconnects, restarts, heat, updates) appear here only"
+     ],
+     "proof": "Emulator: background the app, let a reconnect and a finished run happen, reopen; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P6.3",
+     "title": "The team starts work at once",
+     "finishLine": "A new task reaches a worker within 5 s (dispatch at once instead of waiting for the patrol), and the app wakes a stalled pool and reports it afterwards.",
+     "nonGoal": "No warm worker (it needs a device memory experiment first).",
+     "effort": "M",
+     "acceptance": [
+      "measured: task created → worker session under 5 s on the emulator",
+      "the Now line shows the real stage"
+     ],
+     "proof": "Timestamps on the owner's phone (read-only adb) against the 2026-09-25 baseline (2 min); docs/qa/team-speed-<date>/README.md"
+    },
+    {
+     "id": "P6.4",
+     "title": "Merge on green, levers in overflow",
+     "finishLine": "Under Balanced or Autonomous, a task whose checks pass merges by itself and shows 'Merged · Reopen'. Nudge, restart, stop, pause and refresh move into the worker's overflow next to what automation already did.",
+     "nonGoal": "No change to High supervision (it still asks).",
+     "effort": "M",
+     "acceptance": [
+      "the merge is reported with a receipt and is reversible where git allows",
+      "no primary manual lever on team pages"
+     ],
+     "proof": "Emulator with the spike city: an Autonomous task merges without a tap; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P6.5",
+     "title": "The phone server heals itself",
+     "finishLine": "The phone's server starts on tap, restarts after a force stop or crash, and after Android kills the app the next open says so in one line ('Android stopped the app at 14:02 · everything is back'). LifecycleReport is proven on a device.",
+     "nonGoal": "No background budget changes (the 6 h dataSync cap stays).",
+     "effort": "M",
+     "acceptance": [
+      "force-stop, reboot and airplane recipes pass",
+      "nothing assumes unbounded background lifetime"
+     ],
+     "proof": "Owner's phone or emulator: force-stop from settings, reopen, one line and the server back; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P6.6",
+     "title": "Defaults instead of questions",
+     "finishLine": "The app skips any picker with one option, uses the only or last-used project ('my-app' on first run), picks the server's default model by name after the first sign-in, picks the voice pack by RAM and the voice by locale, uses Queue over Steer, and picks the review scope that has changes.",
+     "nonGoal": "No new settings.",
+     "effort": "S",
+     "acceptance": [
+      "each default announced once where it matters",
+      "the Settings row shows the default and allows a change"
+     ],
+     "proof": "Emulator first-run recording from install to first reply"
+    },
+    {
+     "id": "P6.7",
+     "title": "Consent once, in flow",
+     "finishLine": "Consent is asked at the moment it matters: the battery exemption and maker auto-start at the phone server's first start, the notification preset 'Tell me when the agent needs me', downloads over 50 MB on mobile data, and 'Always allow this' after the third identical ask.",
+     "nonGoal": "No NotificationRouter rewrite beyond dedupe and cancel-on-answer.",
+     "effort": "M",
+     "acceptance": [
+      "each consent is asked at most once per server and remembered",
+      "a denied consent explains itself on its Settings row"
+     ],
+     "proof": "Emulator: a fresh install walked through each consent moment; docs/qa/<slice>-<date>/README.md"
+    }
+   ],
+   "risks": [
+    "auto-merge is a server-destructive act; it needs the explicit supervision consent and a Reopen path",
+    "Android 15+ caps dataSync at 6 h per 24 h: monitoring must show the budget, never promise more",
+    "dispatch-at-once depends on Gas City's API; if it has no trigger, the slice stops at the feasibility note"
+   ],
+   "effortTotal": "L (1S + 6M; about 16 agent-days)"
+  },
+  {
+   "id": "P7",
+   "title": "Honest state and data safety",
+   "oneLine": "Never lose typed work, never contradict the screen, and never let a feature vanish without saying why and how to get it.",
+   "why": [
+    "principles P3 and P10; critical X2 'nothing typed or queued is lost'",
+    "personas-verticals.md: data-safety (24 pages; team objective, review comment, agent message lost on swipe, critical) and discoverability (whenMissing: 285 hidden vs 18 offers-enable)",
+    "honest-state is the most flagged vertical (188/153)"
+   ],
+   "personas": [
+    "phone-only",
+    "remote-lead",
+    "team-delegator",
+    "newcomer",
+    "tinkerer"
+   ],
+   "journeys": [
+    "reuse-text",
+    "queued-messages",
+    "forget-server",
+    "instruct-from-review",
+    "message-team",
+    "give-team-task",
+    "sign-in-provider",
+    "recover-connection"
+   ],
+   "pages": {
+    "removed": [],
+    "merged": [],
+    "changed": [
+     "start-run-sheet",
+     "review-comment-sheet",
+     "form-sheet",
+     "development-services-editor-sheet",
+     "servers-remove-server-sheet",
+     "embedded-composer",
+     "embedded-product-states",
+     "project-hub",
+     "workspace",
+     "server-capabilities",
+     "embedded-message-view",
+     "team-agent"
+    ],
+    "new": []
+   },
+   "kitNeeds": [
+    "KitDiscardGuard",
+    "DraftStore",
+    "KitCapabilityRow",
+    "KitStateView/KitStatusLine `since`"
+   ],
+   "dependsOn": [],
+   "slices": [
+    {
+     "id": "P7.1",
+     "title": "Nothing typed is lost",
+     "finishLine": "Every input sheet keeps its draft on back, swipe, crash or a lost server: the team objective, review comment, agent message, dev-service editor, form answers and unsent voice transcript. It uses KitDiscardGuard and a DraftStore keyed oc.draft.<target>.<profileId>.",
+     "nonGoal": "No sync across devices.",
+     "effort": "M",
+     "acceptance": [
+      "a harness test types, swipes and reopens every input sheet",
+      "the profile deletion sweep removes the drafts"
+     ],
+     "proof": "Emulator: type in each sheet, swipe it away, reopen; recording in docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P7.2",
+     "title": "Queued prompts survive server removal",
+     "finishLine": "Removing a server with queued prompts says how many there are and offers to keep them as drafts or move them to another server. Nothing is deleted silently.",
+     "nonGoal": "No queue engine changes.",
+     "effort": "S",
+     "acceptance": [
+      "the forget-server confirm names the count",
+      "kept drafts appear in Saved prompts"
+     ],
+     "proof": "Emulator: queue offline, remove the server, find the drafts"
+    },
+    {
+     "id": "P7.3",
+     "title": "Explain instead of vanish: the parts",
+     "finishLine": "A capability-explainer registry (capability → why · which host can · enable flow) and KitCapabilityRow ('Not on this server · why · Turn it on').",
+     "nonGoal": "No screen adoption.",
+     "effort": "S",
+     "acceptance": [
+      "the registry covers the 21 enable flows in capabilities.json",
+      "goldens for the row"
+     ],
+     "proof": "Kit goldens"
+    },
+    {
+     "id": "P7.4",
+     "title": "Explain instead of vanish: the top gates",
+     "finishLine": "The most-hit hidden gates explain or offer the enable flow: Project, Files, Terminal, Review, MCP and Providers on Codex or Paseo; Team on 32-bit Termux; Spent on OC1; Claude Code in search; Terminal › This phone without Linux; 'No project selected' with a chooser.",
+     "nonGoal": "Not every one of the 285 hidden gates.",
+     "effort": "M",
+     "acceptance": [
+      "home_screen.dart:120-132 and chat_screen.dart:5070 say why",
+      "project_hub_screen.dart:301 offers the chooser"
+     ],
+     "proof": "Emulator against Codex or Paseo and OC1: screenshots of each explained gate; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P7.5",
+     "title": "Words never contradict the state",
+     "finishLine": "The known contradictions are gone: 'Running tools' while the agent waits, 'Choose model' while a model answers, the team's 'Working' while stopped, 'Connecting…' forever, and termux-setup-failed's three contradictions (now in v2). The glossary test gains contradiction pairs.",
+     "nonGoal": "No new states.",
+     "effort": "M",
+     "acceptance": [
+      "ledger rows 19-22 closed",
+      "the contradiction-pair test runs on goldens"
+     ],
+     "proof": "Goldens plus emulator screenshots of each corrected state"
+    },
+    {
+     "id": "P7.6",
+     "title": "Waits escalate by themselves",
+     "finishLine": "KitStateView and KitStatusLine take `since` and after 8 s say so, with the way out (Retry, Restart for an owned server, or Leave it running). A disabled button never stands in for progress.",
+     "nonGoal": "No per-screen copy rewrite.",
+     "effort": "S",
+     "acceptance": [
+      "a lint or test bans a disabled button with a spinner",
+      "tests use a fake clock"
+     ],
+     "proof": "Widget tests plus one emulator recording"
+    },
+    {
+     "id": "P7.7",
+     "title": "Sign in before the first send",
+     "finishLine": "With no model signed in, the composer's model chip reads 'Sign in to a model' and opens the provider row, so a failed reply is never the first discovery.",
+     "nonGoal": "No provider onboarding redesign.",
+     "effort": "S",
+     "acceptance": [
+      "message_view.dart:1993's auth error card is no longer the first path",
+      "Codex points to its account page, and Paseo says the sign-in happens on its host"
+     ],
+     "proof": "Emulator on a fresh OC server with no providers"
+    }
+   ],
+   "risks": [
+    "the chat library owns the composer and the transcript: P7.5 and P7.7 must be serialised with P4 and P10",
+    "draft keys must follow oc.<what>.<profileId> or the deletion sweep misses them (security invariant)"
+   ],
+   "effortTotal": "L (4S + 3M; about 11.5 agent-days)"
+  },
+  {
+   "id": "P8",
+   "title": "Help and feedback",
+   "oneLine": "Report a problem from any error in two taps, with persisted, redacted diagnostics the person can preview.",
+   "why": [
+    "owner on app-diagnostics: 'We need a first grade page that users willingly will use to raise bugs and also this page should be accessible when errors happen across app'",
+    "help-feedback vertical 18/16: the log is in memory only (max 20), the bug report carries only the version, chat errors cannot be copied",
+    "journeys.md: Report a bug goes to GitHub with the version only, while diagnostics go to the person's own server log"
+   ],
+   "personas": [
+    "tinkerer",
+    "newcomer",
+    "phone-only",
+    "remote-lead"
+   ],
+   "journeys": [
+    "report-problem",
+    "technical-details",
+    "read-log"
+   ],
+   "pages": {
+    "removed": [],
+    "merged": [],
+    "changed": [
+     "app-diagnostics",
+     "app-diagnostics-clear-sheet",
+     "embedded-product-states",
+     "chat-prompt-error-details-dialog",
+     "embedded-prompt-error-banner",
+     "phone-setup-progress",
+     "gate-sheet",
+     "about",
+     "settings"
+    ],
+    "new": [
+     "report-problem-preview-sheet"
+    ]
+   },
+   "kitNeeds": [
+    "KitReportAction",
+    "KitStateView error variant with Copy and Report",
+    "KitLogPanel",
+    "KitTechnicalValue"
+   ],
+   "dependsOn": [],
+   "slices": [
+    {
+     "id": "P8.1",
+     "title": "Persisted, redacted diagnostics",
+     "finishLine": "A ReportProblem service keeps a persisted ring buffer (errors, OCTRACE timings, android exit reasons, thermal events) that survives a crash and a restart, redacted at write time.",
+     "nonGoal": "No UI.",
+     "effort": "M",
+     "acceptance": [
+      "a redaction test with fake keys through diagnostics, reports, notifications and logs",
+      "size-bounded, and the app's clear-data action erases it"
+     ],
+     "proof": "Unit tests plus an emulator crash-and-reopen log excerpt (redacted)"
+    },
+    {
+     "id": "P8.2",
+     "title": "A 'Report a problem' page people want to use",
+     "finishLine": "app-diagnostics becomes Report a problem: describe the problem, attach the error and recent diagnostics (preview sheet), optionally a screenshot, then send as a prefilled GitHub issue through openExternalLink, or copy or share it. The two old paths (GitHub with the version only, the own server log) merge into this one.",
+     "nonGoal": "No in-app ticket tracking.",
+     "effort": "M",
+     "acceptance": [
+      "report-problem-preview-sheet shows exactly what is sent",
+      "one Settings row, with an error-count badge"
+     ],
+     "proof": "Emulator: trigger an error, report it, the GitHub form opens prefilled (not submitted); docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P8.3",
+     "title": "Report from any error",
+     "finishLine": "openReportProblem(context, error:) is wired into KitStateView's and KitNotice's error tones, so every failure offers Copy and 'Report this' with the error attached. A classifier offers a fix instead for network errors and timeouts.",
+     "nonGoal": "No per-screen error copy rewrite.",
+     "effort": "M",
+     "acceptance": [
+      "chat error details can be copied",
+      "the report is within 2 taps of any error"
+     ],
+     "proof": "Emulator screenshots from chat, setup and team error states"
+    },
+    {
+     "id": "P8.4",
+     "title": "Failed jobs carry their log",
+     "finishLine": "A failed setup row, a failed team job and a failed dev service offer Report with the job's log (KitLogPanel excerpt, redacted).",
+     "nonGoal": "No automatic upload.",
+     "effort": "S",
+     "acceptance": [
+      "the v2 failed row and the gate 'Run failed' both offer it"
+     ],
+     "proof": "Emulator: force a setup failure (airplane mode mid-download), then Report"
+    }
+   ],
+   "risks": [
+    "credentials: /config/providers keys must never reach a report; the redaction test is the gate",
+    "GitHub prefill URL length limits: attach diagnostics as copy or share when too long",
+    "never publish or submit an issue during tests"
+   ],
+   "effortTotal": "M (1S + 3M; about 8.5 agent-days)"
+  },
+  {
+   "id": "P9",
+   "title": "Kit v2 migration",
+   "oneLine": "Every UI component comes from the kit, adaptive for phone, tablet and PC, and the G16 gate keeps it that way.",
+   "why": [
+    "owner 2026-09-26: 'No UI component to be used should remain outside our kit. All is coming from our library only.' (kit-v2.md §9)",
+    "owner 2026-09-26 on P9: 'Ideally I would build this first and it should support tablet, PC, phones etc.' (kit-v2.md §8)",
+    "owner 2026-09-24: 'every screen looks different and adhoc'; the design standard rule",
+    "consistency-kit vertical 277/248 (widest): at least 8 AlertDialogs bypass the confirm sheet; chat mostly hand-built; termux-setup has 4 Scaffolds",
+    "parts ranked by map demand: KitConfirmSheet 78, KitSheet 33, KitSegmented 15, KitLogPanel 13, KitChoiceRow 11, KitSearchField 10"
+   ],
+   "personas": [
+    "newcomer",
+    "tinkerer",
+    "phone-only",
+    "remote-lead",
+    "team-delegator"
+   ],
+   "journeys": [
+    "technical-details",
+    "read-log",
+    "find-setting",
+    "forget-server",
+    "stop-task",
+    "share-conversation"
+   ],
+   "pages": {
+    "removed": [],
+    "merged": [],
+    "changed": [
+     "confirm-sheet",
+     "settings",
+     "language-sheet",
+     "embedded-setup-terminal",
+     "builtin-server-log-sheet",
+     "development-services-logs-sheet",
+     "run-result-output-sheet",
+     "saved-permissions-revoke-dialog",
+     "managed-workspaces-remove-dialog",
+     "worktrees-remove-dialog",
+     "worktrees-reset-dialog"
+    ],
+    "new": []
+   },
+   "kitNeeds": [
+    "KitConfirmSheet",
+    "KitSheet",
+    "KitSegmented",
+    "KitChoiceRow",
+    "KitInputDialog",
+    "KitLogPanel",
+    "KitDetailsFold",
+    "KitTechnicalValue",
+    "KitSearchField",
+    "KitIconButton",
+    "KitSecretField",
+    "KitText",
+    "KitIcon",
+    "KitSurface",
+    "KitTappable",
+    "KitDivider",
+    "KitScaffold",
+    "KitPageRoute",
+    "kit/chat parts",
+    "one-off surface parts"
+   ],
+   "dependsOn": [],
+   "slices": [
+    {
+     "id": "P9.1",
+     "title": "KitConfirmSheet everywhere",
+     "finishLine": "confirm_sheet.dart is promoted to KitConfirmSheet (question title naming the thing, error tone only when destructive, typed-name guard, 'Keep running' for stops) and the undo-vs-confirm rule is applied. The eight or more AlertDialogs are migrated, and design_standard_test bans AlertDialog.",
+     "nonGoal": "No copy rewrite beyond titles.",
+     "effort": "M",
+     "acceptance": [
+      "78 map elements asking for it are covered or listed",
+      "destructive is never green"
+     ],
+     "proof": "Goldens plus a test run of design_standard_test"
+    },
+    {
+     "id": "P9.2",
+     "title": "Sheets and choices",
+     "finishLine": "The kit gains KitSheet, KitSegmented, KitChoiceRow and KitInputDialog, and the top screens by map demand migrate to them.",
+     "nonGoal": "No new sheets.",
+     "effort": "M",
+     "acceptance": [
+      "ListTile, ExpansionTile and SwitchListTile banned in migrated screens"
+     ],
+     "proof": "Goldens"
+    },
+    {
+     "id": "P9.3",
+     "title": "Logs and technical values",
+     "finishLine": "KitLogPanel replaces the five hand-built log views. KitDetailsFold and KitTechnicalValue give mono values, LTR isolation and 48 dp copy.",
+     "nonGoal": "No log sources change.",
+     "effort": "M",
+     "acceptance": [
+      "one log viewer in the codebase",
+      "every raw value copyable"
+     ],
+     "proof": "Goldens in RTL and at 200 %"
+    },
+    {
+     "id": "P9.4",
+     "title": "Search that finds any setting",
+     "finishLine": "KitSearchField plus the search index upgrade: typo tolerance, rows inside pages, arrival with a highlight, dead aliases fixed, and effects, keep running and crash indexed.",
+     "nonGoal": "No assistant (P2).",
+     "effort": "M",
+     "acceptance": [
+      "'vibration', 'heat', 'crash' and 'battery' find the right rows",
+      "bilingual aliases kept"
+     ],
+     "proof": "Unit tests on the index plus an emulator recording"
+    },
+    {
+     "id": "P9.5",
+     "title": "Accessibility by construction",
+     "finishLine": "KitIconButton (48 dp, required label) and KitStatusMark (word plus mark) are adopted across migrated screens, with 200 % text goldens and a TalkBack walk recorded per release.",
+     "nonGoal": "No new screens.",
+     "effort": "M",
+     "acceptance": [
+      "the info-label 24 dp target and chat Stop/Send 8 dp gap fixed",
+      "no state shown by colour alone"
+     ],
+     "proof": "Goldens plus a TalkBack walk recorded in docs/qa"
+    },
+    {
+     "id": "P9.6",
+     "title": "RTL and localisation ratchet",
+     "finishLine": "l10n_coverage_test is green and ratchets, the lint bans EdgeInsets.only(left/right), and the language sheet says 'partly translated (N %)'.",
+     "nonGoal": "No full Arabic translation.",
+     "effort": "S",
+     "acceptance": [
+      "team_now.dart coverage failure fixed",
+      "Arabic goldens for migrated screens"
+     ],
+     "proof": "Goldens plus a test run"
+    },
+    {
+     "id": "P9.7",
+     "title": "Text, icons and surfaces from the kit",
+     "finishLine": "KitText, KitIcon, KitSurface, KitTappable, KitDivider, KitScaffold and KitPageRoute exist with galleries at the §8.4 sizes; lib/ui outside the kit has no Text, Icon, Container, Card, DecoratedBox, Material, InkWell, GestureDetector, Divider, Scaffold or AppBar left (G16 baseline for these is zero).",
+     "nonGoal": "No visual redesign: the migration keeps each screen's look except where the kit role differs; no chat-library parts (P9.8).",
+     "effort": "L",
+     "acceptance": [
+      "G16 baseline has no entries for the listed widgets",
+      "goldens re-rendered and reviewed",
+      "text scale 2.0 and RTL galleries pass"
+     ],
+     "proof": "Emulator phone and tablet: census re-render of 20 sample screens before/after; docs/qa/kit-v2-text-surfaces-<date>/README.md"
+    },
+    {
+     "id": "P9.8",
+     "title": "Chat parts into the kit",
+     "finishLine": "KitTurn, KitMessage, KitMarkdown, KitToolRow, KitWorkLine, KitComposer, KitQueuedMessage and KitAgentStrip live in lib/ui/kit/chat/ with galleries; the chat library and the team conversation only arrange them; G16 baseline for chat files is zero.",
+     "nonGoal": "No change to the turn model (docs/design chat turn model) or protocol code.",
+     "effort": "L",
+     "acceptance": [
+      "chat_screen.dart and chat/*.dart construct no framework widget outside the allowlist",
+      "team conversation uses the same parts",
+      "chat goldens re-rendered and reviewed"
+     ],
+     "proof": "Emulator: a streamed OC1 and OC2 conversation with a tool call, a question and a queued message, phone and tablet; docs/qa/kit-v2-chat-<date>/README.md"
+    },
+    {
+     "id": "P9.9",
+     "title": "One-off surfaces into the kit",
+     "finishLine": "KitTerminalView, KitScanner, KitWorkGraph, KitNavRail, KitLevelMeter, KitBoardLane, KitTaskCard, KitSwatch, KitQr, KitBreadcrumb and KitDateTimePicker exist with galleries and replace their screen-local builds.",
+     "nonGoal": "No new behaviour in the terminal, scanner or board.",
+     "effort": "M",
+     "acceptance": [
+      "G16 baseline zero for the owning files",
+      "galleries at §8.4 sizes"
+     ],
+     "proof": "Emulator: terminal, pairing scanner, board and appearance screens on phone and tablet"
+    },
+    {
+     "id": "P9.10",
+     "title": "G16 goes absolute",
+     "finishLine": "The G16 baseline is empty and the gate fails on any framework widget outside the allowlist; MaterialPageRoute leaves the allowlist once KitPageRoute is used everywhere.",
+     "nonGoal": "None beyond the gate.",
+     "effort": "S",
+     "acceptance": [
+      "test/kit_ratchet_baseline.json is {}",
+      "kit_ratchet_test absolute mode passes"
+     ],
+     "proof": "Test output recorded in docs/qa/kit-v2-done-<date>/README.md"
+    }
+   ],
+   "risks": [
+    "the kit parts the earlier programmes need are built inside those programmes; P9 migrates the rest, so avoid building a part twice by checking lib/ui/kit first",
+    "golden churn: regenerate only with the pinned Flutter 3.47.1"
+   ],
+   "effortTotal": "XL (2S + 6M + 2L; about 27 agent-days)"
+  },
+  {
+   "id": "P10",
+   "title": "Conversation tools: commands, menus, voice",
+   "oneLine": "One command sheet for every backend, one Go to / Do menu, and voice as a composer mode without the 30-second cap.",
+   "why": [
+    "owner on command-launcher-sheet: 'We need a better UI … what about using Claude or codex will this support their commands?'",
+    "owner on voice-composer-sheet: 'Why only 30 seconds, this needs rework'; on session-menu-sheet and voice-model-setup-sheet: Rethink",
+    "top-15 fixes #13 and #14"
+   ],
+   "personas": [
+    "tinkerer",
+    "remote-lead",
+    "phone-only"
+   ],
+   "journeys": [
+    "run-command",
+    "conversation-actions",
+    "voice",
+    "follow-subagents"
+   ],
+   "pages": {
+    "removed": [],
+    "merged": [
+     "voice-composer-sheet -> embedded-composer",
+     "embedded-voice-conversation-controls -> embedded-composer"
+    ],
+    "changed": [
+     "command-launcher-sheet",
+     "run-command-dialog",
+     "session-menu-sheet",
+     "chat-message-actions-sheet",
+     "embedded-composer",
+     "voice-model-setup-sheet",
+     "commands"
+    ],
+    "new": []
+   },
+   "kitNeeds": [
+    "KitSheet",
+    "KitSearchField",
+    "KitRowMenu",
+    "KitProgressView"
+   ],
+   "dependsOn": [
+    "P4"
+   ],
+   "slices": [
+    {
+     "id": "P10.1",
+     "title": "Command sheet with per-backend catalogues",
+     "finishLine": "The command sheet is redesigned as one sheet that shows the current backend's commands (OpenCode, Claude Code through Paseo, Codex) in plain words, grouped and searchable, and runs them in the current conversation. Shell commands are '!' in the composer with an output card.",
+     "nonGoal": "No plugin command links (removed in P3.1).",
+     "effort": "M",
+     "acceptance": [
+      "feasibility first: which Claude and Codex commands their servers expose; missing ones are named, not faked",
+      "the Library commands row and the chat '/' open the same sheet"
+     ],
+     "proof": "Emulator against OC1 and Paseo: run a command from each catalogue; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P10.2",
+     "title": "Session menu: Go to / Do",
+     "finishLine": "The title menu is one KitRow menu with Go to (Changes, Timeline, Find, Subagents, Details) and Do (Share, Compact, Fork, Rename, Continue on computer, Stop task for team). The launcher lists commands only.",
+     "nonGoal": "No new actions.",
+     "effort": "S",
+     "acceptance": [
+      "fork lands in one place",
+      "the same menu from the Work row"
+     ],
+     "proof": "Emulator screenshots"
+    },
+    {
+     "id": "P10.3",
+     "title": "Voice as a composer mode",
+     "finishLine": "The mic turns the composer into voice mode: continuous recording in 30 s chunks with no cap (audio.dart:11), the transcript appears in the draft (kept by DraftStore), and voice conversation is the same mode. The voice-composer sheet and separate controls are gone.",
+     "nonGoal": "No new speech engines.",
+     "effort": "M",
+     "acceptance": [
+      "a 3-minute dictation is transcribed",
+      "mic denied is explained inside the mode"
+     ],
+     "proof": "Emulator with the audio loopback: a 3-minute dictation recording; docs/qa/<slice>-<date>/README.md"
+    },
+    {
+     "id": "P10.4",
+     "title": "Automatic voice setup",
+     "finishLine": "The first mic tap picks the pack for this phone by total RAM, shows its size (and asks on mobile data), downloads with progress and a notification, and starts listening when ready. Settings › Voice holds the packs and voices.",
+     "nonGoal": "No new packs.",
+     "effort": "S",
+     "acceptance": [
+      "memory gate on total RAM, never memoryClass",
+      "no 'Whisper INT8, MiB' above Details"
+     ],
+     "proof": "Emulator first-mic recording"
+    }
+   ],
+   "risks": [
+    "chat library single ownership: P10 runs after P4's chat slices",
+    "the command surface of Claude Code and Codex may be small or absent; show what exists and say what doesn't"
+   ],
+   "effortTotal": "M (2S + 2M; about 7 agent-days)"
+  }
+ ]
+}

@@ -50,15 +50,21 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../domain/orchestration_gateway.dart';
+import '../orchestration/adapters/inapp/phone_engine_gateway.dart';
 import '../orchestration/adapters/fixture/fixture_gateway.dart';
+import '../orchestration/adapters/fixture/project_fixture_gateway.dart';
 import '../orchestration/adapters/gascity/gascity_gateway.dart';
 import '../orchestration/adapters/gascity/gascity_mappers.dart'
     show mapStreamFrame;
 import '../orchestration/adapters/gascity/gascity_probe.dart';
 import '../orchestration/client/sse.dart';
 import '../orchestration/dispatch.dart';
+import 'automation_policy.dart';
 import 'orchestration_store.dart';
 import 'profiles.dart';
+import 'team_worker_start.dart';
+import 'team_project_controller.dart';
+import 'team_project_persistence.dart';
 
 export '../orchestration/adapters/gascity/gascity_probe.dart'
     show
@@ -73,6 +79,7 @@ export '../orchestration/dispatch.dart'
     show deriveDispatchCycle, isRefineryName, workHandedToMerge;
 export 'mutation_store.dart'
     show MutationKind, MutationRecord, MutationRequest, MutationStatus;
+export 'orchestration_store.dart' show TeamLastKnown;
 
 /// Mints one idempotency key per mutation.
 typedef MutationKeyMinter = String Function();
@@ -321,8 +328,32 @@ class OrchestrationController extends ChangeNotifier {
     this.mutationTimeout = const Duration(seconds: 60),
     this.cycleTick = const Duration(seconds: 30),
   }) : _store = store,
-       _gatewayFactory = gatewayFactory ?? defaultGatewayFactory,
-       _probe = probe ?? defaultProbe,
+       _gatewayFactory =
+           gatewayFactory ??
+           ((config, found) =>
+               config.provider == OrchestrationProvider.fixture &&
+                   config.url == 'fixture://project-demo'
+               ? ProjectFixtureGateway(
+                   persistence: SharedPreferencesTeamProjectPersistence(
+                     store.prefs,
+                     profile.id,
+                   ),
+                   now: now,
+                   tickInterval: const Duration(seconds: 8),
+                 )
+               : defaultGatewayFactory(
+                   config,
+                   found,
+                   profileId: profile.id,
+                   bearerToken: profile.teamEngineAuth,
+                 )),
+       _probe =
+           probe ??
+           ((config) => defaultProbe(
+             config,
+             profileId: profile.id,
+             bearerToken: profile.teamEngineAuth,
+           )),
        _now = now ?? DateTime.now,
        _mintKey = mintKey ?? mintMutationKey;
 
@@ -352,6 +383,10 @@ class OrchestrationController extends ChangeNotifier {
   final MutationKeyMinter _mintKey;
 
   OrchestrationGateway? _gateway;
+  TeamProjectController? _projectController;
+
+  /// Project lifecycle support is optional; older engines keep their task UI.
+  TeamProjectController? get projectController => _projectController;
   OrchestrationSseClient? _sse;
   StreamSubscription<OrchestrationEvent>? _events;
   StreamSubscription<OrchestrationStreamStatus>? _status;
@@ -394,12 +429,21 @@ class OrchestrationController extends ChangeNotifier {
   OrchestrationPhase _phase = OrchestrationPhase.idle;
   OrchestrationHostIdentity? _host;
   OrchestrationCapabilities _capabilities = OrchestrationCapabilities.none;
+  String _boundaryTier = '';
   OrchestrationSnapshot _snapshot = const OrchestrationSnapshot();
   OrchestrationStreamStatus _streamStatus = OrchestrationStreamStatus.closed;
   OrchestrationError? _lastError;
   DateTime? _lastEventAt;
 
   String get profileId => profile.id;
+
+  /// The last worker start measured on this phone for this profile.
+  TeamWorkerStartStore get workerStarts => TeamWorkerStartStore(_store.prefs);
+
+  /// This server's local automation choices (Settings › What runs by
+  /// itself): the shared controller, never a second writer.
+  AutomationPolicyController get automation =>
+      AutomationPolicyController.forProfile(_store.prefs, profileId);
   OrchestrationPhase get phase => _phase;
 
   /// Identity of the host: from the probe, then the gateway once it
@@ -408,7 +452,25 @@ class OrchestrationController extends ChangeNotifier {
 
   /// [OrchestrationCapabilities.none] until the gateway is built.
   OrchestrationCapabilities get capabilities => _capabilities;
+
+  /// The proven file boundary of the phone engine (`proot`, `landlock`) once
+  /// it can run work; empty when unknown or the engine is read-only.
+  String get boundaryTier => _boundaryTier;
   OrchestrationSnapshot get snapshot => _snapshot;
+
+  /// The team as the app last read it (this run or an earlier one, from
+  /// the device), for a page that shows it dimmed while the team is
+  /// stopped; null before any read. Never acted on.
+  TeamLastKnown? get lastKnown {
+    if (!_lastKnownRead) {
+      _lastKnownRead = true;
+      _lastKnown = _store.readLastKnown(profile.id);
+    }
+    return _lastKnown;
+  }
+
+  TeamLastKnown? _lastKnown;
+  bool _lastKnownRead = false;
   OrchestrationStreamStatus get streamStatus => _streamStatus;
   OrchestrationError? get lastError => _lastError;
 
@@ -444,6 +506,10 @@ class OrchestrationController extends ChangeNotifier {
     return at == null || _now().difference(at) > staleAfter;
   }
 
+  /// The controller's clock (host time; tests pin it), for lines that age
+  /// against the team's own evidence, e.g. a task row's stall.
+  DateTime now() => _now();
+
   /// What needs the person: pending interactions (choice, confirmation,
   /// free text and unrecognised kinds), open gate beads and failed runs.
   /// Review-ready items are informational and not counted.
@@ -471,11 +537,16 @@ class OrchestrationController extends ChangeNotifier {
 
   /// Probes, builds the adapter, subscribes and refreshes every scope.
   /// Idempotent; a failed probe leaves [phase] failed and [lastError] set.
-  Future<void> start() async {
+  Future<void>? _starting;
+
+  Future<void> start() => _starting ??= _start();
+
+  Future<void> _start() async {
     if (_started || _disposed) return;
     _started = true;
     _cursor = _store.readCursor(profile.id);
     await _loadMutations();
+    if (_stoppedMeanwhile) return;
     _setPhase(OrchestrationPhase.probing);
 
     final ProbeVerdict verdict;
@@ -493,6 +564,7 @@ class OrchestrationController extends ChangeNotifier {
       return;
     }
     _host = verdict.host;
+    _boundaryTier = verdict.readOnly ? '' : verdict.boundaryTier;
     _setPhase(OrchestrationPhase.connecting);
 
     final OrchestrationGateway gateway;
@@ -516,6 +588,18 @@ class OrchestrationController extends ChangeNotifier {
     _gateway = gateway;
     _capabilities = gateway.capabilities;
     _host = gateway.host ?? _host;
+    if (gateway is OrchestrationProjectGateway &&
+        _capabilities.projectLifecycle) {
+      final projects = TeamProjectController(
+        gateway as OrchestrationProjectGateway,
+        profileId: profile.id,
+        ownsGateway: false,
+        preferences: _store.prefs,
+      )..addListener(_notify);
+      _projectController = projects;
+      await projects.load();
+      if (_stoppedMeanwhile) return;
+    }
     _subscribe(gateway);
     _setPhase(OrchestrationPhase.ready);
     await refresh();
@@ -528,6 +612,7 @@ class OrchestrationController extends ChangeNotifier {
       return Future.value();
     }
     _started = false;
+    _starting = null;
     _lastError = null;
     return start();
   }
@@ -542,7 +627,11 @@ class OrchestrationController extends ChangeNotifier {
   }
 
   /// Closes the stream and the gateway and persists the cursor. Idempotent.
-  Future<void> stop() async {
+  Future<void>? _stopping;
+
+  Future<void> stop() => _stopping ??= _stop();
+
+  Future<void> _stop() async {
     if (_phase == OrchestrationPhase.stopped) return;
     _phase = OrchestrationPhase.stopped;
     _debounce?.cancel();
@@ -570,10 +659,16 @@ class OrchestrationController extends ChangeNotifier {
     }
     _cycleProbes.clear();
     _cycles.clear();
+    final projects = _projectController;
+    _projectController = null;
+    projects?.removeListener(_notify);
+    projects?.dispose();
+    await projects?.drainEditorDrafts();
     await _unsubscribe();
     final gateway = _gateway;
     _gateway = null;
     if (gateway != null) await gateway.close();
+    await _starting;
     _setStreamStatus(OrchestrationStreamStatus.closed);
     await _store.saveCursor(profile.id, _cursor);
     _notify();
@@ -604,9 +699,33 @@ class OrchestrationController extends ChangeNotifier {
   /// `oc.orchestration.<profileId>.` key and secret. Returns the keys the
   /// store refused to drop.
   Future<Set<String>> remove() async {
+    final failures = <String>{};
+    final projects = _projectController;
+    if (projects != null) {
+      try {
+        await projects.deleteLocalData();
+      } catch (_) {
+        failures.add('oc.teamWorkspace.${profile.id}');
+      }
+    }
     await stop();
     await _store.drain(profile.id);
-    return _store.sweep(profile.id);
+    for (final key in [
+      'oc.teamWorkspace.${profile.id}',
+      'oc.teamEditorDrafts.${profile.id}',
+    ]) {
+      try {
+        if (!await _store.prefs.remove(key)) {
+          failures.add(key);
+        } else {
+          failures.remove(key);
+        }
+      } catch (_) {
+        failures.add(key);
+      }
+    }
+    failures.addAll(await _store.sweep(profile.id));
+    return failures;
   }
 
   @override
@@ -1004,6 +1123,14 @@ class OrchestrationController extends ChangeNotifier {
     _snapshot = next;
     _lastError = failure;
     if (succeeded) {
+      final lastKnown = TeamLastKnown.of(
+        asOf: next.refreshedAt!,
+        runs: next.runs,
+        agents: next.agents,
+      );
+      _lastKnown = lastKnown;
+      _lastKnownRead = true;
+      unawaited(_store.saveLastKnown(profile.id, lastKnown));
       unawaited(_store.saveSnapshot(profile.id, next.toCache()));
       unawaited(_store.saveCursor(profile.id, _cursor));
     }
@@ -1114,11 +1241,17 @@ class OrchestrationController extends ChangeNotifier {
   /// `<rig>/gastown.polecat`). Work and runs are fetched again afterwards
   /// so the new item shows without waiting for the stream. `assigned` is
   /// null when the create was refused or came back without an id.
+  ///
+  /// [onCreated] hears the create's record as soon as the host answered
+  /// it, before the assignment is sent (P6.3): the per-attempt signal a
+  /// caller shows as "Task created · sending it to the team", never
+  /// inferred from elapsed time.
   Future<({MutationRecord created, MutationRecord? assigned})> giveTask({
     required String title,
     String? description,
     required String projectId,
     required String agentId,
+    ValueChanged<MutationRecord>? onCreated,
   }) async {
     final created = await createWork(
       title: title,
@@ -1127,6 +1260,7 @@ class OrchestrationController extends ChangeNotifier {
     );
     final receipt = created.receipt;
     final workId = receipt?.createdId;
+    onCreated?.call(created);
     MutationRecord? assigned;
     if (receipt != null && receipt.isAccepted && workId != null) {
       assigned = await assignWork(workId, agentId: agentId);
@@ -1860,8 +1994,14 @@ class OrchestrationController extends ChangeNotifier {
 
   /// Gas City: [GasCityProbe] on the config's URL and city. Fixture: found
   /// at once, the recordings answer for the host.
-  static Future<ProbeVerdict> defaultProbe(OrchestrationConfig config) {
+  static Future<ProbeVerdict> defaultProbe(
+    OrchestrationConfig config, {
+    String profileId = '',
+    String bearerToken = '',
+  }) {
     switch (config.provider) {
+      case OrchestrationProvider.phoneEngine:
+        return _probePhoneEngine(config, profileId, bearerToken);
       case OrchestrationProvider.gascity:
         return GasCityProbe(
           hostMode: config.hostMode,
@@ -1880,6 +2020,33 @@ class OrchestrationController extends ChangeNotifier {
     }
   }
 
+  static Future<ProbeVerdict> _probePhoneEngine(
+    OrchestrationConfig config,
+    String profileId,
+    String bearerToken,
+  ) async {
+    PhoneEngineGateway? gateway;
+    try {
+      gateway = PhoneEngineGateway(
+        baseUrl: config.url,
+        profileId: profileId,
+        bearerToken: bearerToken,
+      );
+      final health = await gateway.probe();
+      return ProbeFound(
+        host: gateway.host,
+        version: health.engineVersion,
+        readOnly: !health.canExecute,
+        capabilities: gateway.capabilities,
+        boundaryTier: health.boundaryTier,
+      );
+    } catch (_) {
+      return const ProbeUnreachable(error: 'Phone engine unavailable');
+    } finally {
+      await gateway?.close();
+    }
+  }
+
   /// [GasCityGateway] for Gas City (the city from the config, else the one
   /// the probe reported; the front's `supervisorUrl` with controls on when
   /// the probe found a front that allows this device to write);
@@ -1887,9 +2054,18 @@ class OrchestrationController extends ChangeNotifier {
   /// fixture.
   static OrchestrationGateway defaultGatewayFactory(
     OrchestrationConfig config,
-    ProbeFound found,
-  ) {
+    ProbeFound found, {
+    String profileId = '',
+    String bearerToken = '',
+  }) {
     switch (config.provider) {
+      case OrchestrationProvider.phoneEngine:
+        return PhoneEngineGateway(
+          baseUrl: config.url,
+          profileId: profileId,
+          bearerToken: bearerToken,
+          probedCapabilities: found.capabilities,
+        );
       case OrchestrationProvider.gascity:
         final front = found.front && found.identityAllowed;
         return GasCityGateway(

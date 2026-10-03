@@ -1,0 +1,226 @@
+{
+ "area": "k-session-misc",
+ "renderedAt": "2026-09-26T02:56:06.806296Z",
+ "declaredShots": [
+  {
+   "page": "session-context",
+   "state": "default"
+  },
+  {
+   "page": "active-context",
+   "state": "loaded"
+  },
+  {
+   "page": "active-context",
+   "state": "filtered"
+  },
+  {
+   "page": "active-context-message",
+   "state": "default"
+  },
+  {
+   "page": "session-relations",
+   "state": "loaded"
+  },
+  {
+   "page": "session-relations",
+   "state": "empty"
+  },
+  {
+   "page": "session-handoff-dialog",
+   "state": "available"
+  },
+  {
+   "page": "session-handoff-dialog",
+   "state": "unavailable"
+  },
+  {
+   "page": "session-export",
+   "state": "default"
+  },
+  {
+   "page": "session-import",
+   "state": "empty"
+  },
+  {
+   "page": "session-import",
+   "state": "review"
+  },
+  {
+   "page": "session-import-destination-sheet",
+   "state": "default"
+  },
+  {
+   "page": "session-note",
+   "state": "saved"
+  },
+  {
+   "page": "session-note",
+   "state": "empty"
+  },
+  {
+   "page": "session-note-discard-dialog",
+   "state": "default"
+  },
+  {
+   "page": "context-capsule",
+   "state": "entry"
+  },
+  {
+   "page": "context-capsule",
+   "state": "review"
+  },
+  {
+   "page": "run-result",
+   "state": "default"
+  },
+  {
+   "page": "run-result-output-sheet",
+   "state": "default"
+  },
+  {
+   "page": "continue-on-computer-sheet",
+   "state": "available"
+  },
+  {
+   "page": "continue-on-computer-sheet",
+   "state": "unavailable"
+  },
+  {
+   "page": "continue-on-phone-sheet",
+   "state": "default"
+  },
+  {
+   "page": "info-label-sheet",
+   "state": "default"
+  },
+  {
+   "page": "embedded-info-label",
+   "state": "default"
+  }
+ ],
+ "notRendered": {},
+ "shots": [
+  {
+   "page": "session-context",
+   "state": "default",
+   "image": "k-session-misc/session-context.png"
+  },
+  {
+   "page": "active-context",
+   "state": "loaded",
+   "image": "k-session-misc/active-context--loaded.png"
+  },
+  {
+   "page": "active-context",
+   "state": "filtered",
+   "image": "k-session-misc/active-context--filtered.png"
+  },
+  {
+   "page": "active-context-message",
+   "state": "default",
+   "image": "k-session-misc/active-context-message.png"
+  },
+  {
+   "page": "session-relations",
+   "state": "loaded",
+   "image": "k-session-misc/session-relations--loaded.png"
+  },
+  {
+   "page": "session-relations",
+   "state": "empty",
+   "image": "k-session-misc/session-relations--empty.png"
+  },
+  {
+   "page": "session-handoff-dialog",
+   "state": "available",
+   "image": "k-session-misc/session-handoff-dialog--available.png"
+  },
+  {
+   "page": "session-handoff-dialog",
+   "state": "unavailable",
+   "image": "k-session-misc/session-handoff-dialog--unavailable.png"
+  },
+  {
+   "page": "session-export",
+   "state": "default",
+   "image": "k-session-misc/session-export.png"
+  },
+  {
+   "page": "session-import",
+   "state": "empty",
+   "image": "k-session-misc/session-import--empty.png"
+  },
+  {
+   "page": "session-import",
+   "state": "review",
+   "image": "k-session-misc/session-import--review.png"
+  },
+  {
+   "page": "session-import-destination-sheet",
+   "state": "default",
+   "image": "k-session-misc/session-import-destination-sheet.png"
+  },
+  {
+   "page": "session-note",
+   "state": "saved",
+   "image": "k-session-misc/session-note--saved.png"
+  },
+  {
+   "page": "session-note",
+   "state": "empty",
+   "image": "k-session-misc/session-note--empty.png"
+  },
+  {
+   "page": "session-note-discard-dialog",
+   "state": "default",
+   "image": "k-session-misc/session-note-discard-dialog.png"
+  },
+  {
+   "page": "context-capsule",
+   "state": "entry",
+   "image": "k-session-misc/context-capsule--entry.png"
+  },
+  {
+   "page": "context-capsule",
+   "state": "review",
+   "image": "k-session-misc/context-capsule--review.png"
+  },
+  {
+   "page": "run-result",
+   "state": "default",
+   "image": "k-session-misc/run-result.png"
+  },
+  {
+   "page": "run-result-output-sheet",
+   "state": "default",
+   "image": "k-session-misc/run-result-output-sheet.png"
+  },
+  {
+   "page": "continue-on-computer-sheet",
+   "state": "available",
+   "image": "k-session-misc/continue-on-computer-sheet--available.png"
+  },
+  {
+   "page": "continue-on-computer-sheet",
+   "state": "unavailable",
+   "image": "k-session-misc/continue-on-computer-sheet--unavailable.png"
+  },
+  {
+   "page": "continue-on-phone-sheet",
+   "state": "default",
+   "image": "k-session-misc/continue-on-phone-sheet.png"
+  },
+  {
+   "page": "info-label-sheet",
+   "state": "default",
+   "image": "k-session-misc/info-label-sheet.png"
+  },
+  {
+   "page": "embedded-info-label",
+   "state": "default",
+   "image": "k-session-misc/embedded-info-label.png",
+   "note": "InfoLabel inline in a stand-in Worktrees row; the real screen belongs to another area."
+  }
+ ]
+}

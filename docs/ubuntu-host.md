@@ -11,14 +11,34 @@ server's actual port.
 ## One-time setup (on the Ubuntu machine)
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Eslamasabry/opencode-mobile-next/master/scripts/host/ubuntu-opencode.sh -o ubuntu-opencode.sh
-bash ubuntu-opencode.sh install
+curl -fsSLo ubuntu-opencode.sh.part \
+  https://raw.githubusercontent.com/Eslamasabry/opencode-mobile-next/c62f159ae3c1741cb4ec0ef92b4941c0ddfc0a18/scripts/host/ubuntu-opencode.sh &&
+echo '1f42642fe92c9a8a46e26f27dfa200ffd2274e9cdf9dfafc08e6a9bc7511d721  ubuntu-opencode.sh.part' | sha256sum -c - &&
+mv ubuntu-opencode.sh.part ubuntu-opencode.sh &&
+OPENCODE_PORT=4096 bash ubuntu-opencode.sh install
 ```
 
-This installs OpenCode with the official installer if it is missing, writes a
-`systemd --user` unit that runs `opencode serve --hostname 127.0.0.1 --port
-4096`, enables it, and starts it. Re-running `install` is safe; it refreshes
-the unit in place.
+The script comes from one published commit (release 1.0.44), not from a
+branch that can change under you, and `sha256sum -c` checks it before it is
+given its real name. If the check fails, nothing runs and no unchecked copy
+is left behind. The app shows the same command, and the pin and checksum
+live in one place: `HostScripts` in `lib/ui/setup_commands.dart`, which
+`test/host_script_pin_test.dart` checks against the script in the
+repository.
+
+This installs OpenCode if it is missing, writes a `systemd --user` unit that
+runs `opencode serve --hostname 127.0.0.1 --port 4096`, enables it, and
+starts it. Re-running `install` is safe; it refreshes the unit in place.
+
+How OpenCode itself is installed depends on the script the pin points at.
+The release 1.0.44 script above still runs OpenCode's own installer
+(`opencode.ai/install`). The script in the repository now installs one
+pinned OpenCode release instead (1.18.32, the version the app pins): it
+downloads the archive for your CPU from OpenCode's GitHub releases, checks
+it against the SHA-256 recorded in the script, and installs it to
+`~/.opencode/bin` only if it matches. The app and this guide move to that
+script once a commit holding it is published; see
+`docs/qa/slice-script-pins-2026-09-28/README.md`.
 
 Want a different port or bind address?
 
@@ -46,12 +66,15 @@ an OpenCode server runs shell commands as your user.
 bash ubuntu-opencode.sh status    # service state + listening check
 bash ubuntu-opencode.sh restart   # restart the server process
 bash ubuntu-opencode.sh logs      # follow the server log (Ctrl-C to stop)
-bash ubuntu-opencode.sh update    # upgrade OpenCode, refresh unit, restart
+bash ubuntu-opencode.sh update    # move OpenCode to the pinned release, refresh unit, restart
 ```
 
 The app's Settings screen remains the primary upgrade path when the server
 itself reports an available update; `update` here is the host-side
-equivalent for servers that don't.
+equivalent for servers that don't. With the pinned script it installs the
+release the script pins (checked the same way as `install`) and never
+downgrades an OpenCode that is already newer; the release 1.0.44 script
+runs `opencode upgrade` instead.
 
 ## Connecting the phone
 

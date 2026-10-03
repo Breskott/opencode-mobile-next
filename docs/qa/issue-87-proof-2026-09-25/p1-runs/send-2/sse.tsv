@@ -1,0 +1,74 @@
+1790366692.514	server.connected	
+1790366697.290	message.updated	info	msg_0da2bc6dc001tjhpNKN6cp6fbc	user
+1790366697.290	message.part.updated	text	msg_0da2bc6dc001tjhpNKN6cp6fbc	22
+1790366697.330	session.updated	info	ses_f25eacd6effeXeCjlalKDWTDEj	
+1790366697.352	session.status	
+1790366697.352	message.updated	info	msg_0da2bc756001Gm8CATgjYfZbn0	assistant
+1790366697.684	session.updated	info	ses_f25eacd6effeXeCjlalKDWTDEj	
+1790366697.684	session.diff	
+1790366697.684	message.updated	info	msg_0da2bc6dc001tjhpNKN6cp6fbc	user
+1790366697.699	session.status	
+1790366698.787	message.part.updated	step-start	msg_0da2bc756001Gm8CATgjYfZbn0	0
+1790366698.787	message.part.updated	reasoning	msg_0da2bc756001Gm8CATgjYfZbn0	0
+1790366698.787	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	4
+1790366698.787	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	1
+1790366698.787	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	4
+1790366698.787	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	5
+1790366698.787	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	6
+1790366698.957	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	3
+1790366698.957	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	3
+1790366698.957	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	6
+1790366698.957	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	5
+1790366698.957	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	4
+1790366698.957	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	5
+1790366699.034	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	2
+1790366699.060	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	2
+1790366699.060	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	2
+1790366699.163	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	2
+1790366699.163	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	3
+1790366699.163	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	8
+1790366699.163	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	5
+1790366699.163	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	5
+1790366699.163	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	3
+1790366699.183	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	4
+1790366699.183	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	9
+1790366699.183	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	8
+1790366699.213	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	1
+1790366699.213	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	4
+1790366699.213	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	5
+1790366699.331	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	3
+1790366699.331	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	7
+1790366699.331	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	6
+1790366699.373	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	1
+1790366699.373	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	2
+1790366699.373	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	3
+1790366699.434	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	5
+1790366699.434	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	7
+1790366699.434	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	2
+1790366699.524	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	2
+1790366699.524	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	1
+1790366699.524	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	6
+1790366699.524	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	3
+1790366699.524	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	10
+1790366699.524	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	1
+1790366699.612	message.part.updated	reasoning	msg_0da2bc756001Gm8CATgjYfZbn0	168
+1790366699.612	message.part.updated	text	msg_0da2bc756001Gm8CATgjYfZbn0	0
+1790366699.612	message.part.delta	delta	msg_0da2bc756001Gm8CATgjYfZbn0	2
+1790366699.784	message.part.updated	text	msg_0da2bc756001Gm8CATgjYfZbn0	2
+1790366700.136	message.part.updated	step-finish	msg_0da2bc756001Gm8CATgjYfZbn0	0
+1790366700.136	message.updated	info	msg_0da2bc756001Gm8CATgjYfZbn0	assistant
+1790366700.446	message.updated	info	msg_0da2bc756001Gm8CATgjYfZbn0	assistant
+1790366700.446	session.status	
+1790366700.446	session.status	
+1790366700.446	session.idle	
+1790366700.446	session.updated	info	ses_f25eacd6effeXeCjlalKDWTDEj	
+1790366700.446	session.diff	
+1790366700.564	message.updated	info	msg_0da2bc6dc001tjhpNKN6cp6fbc	user
+1790366702.513	server.heartbeat	
+1790366712.514	server.heartbeat	
+1790366722.525	server.heartbeat	
+1790366732.526	server.heartbeat	
+1790366742.526	server.heartbeat	
+1790366752.526	server.heartbeat	
+1790366762.528	server.heartbeat	
+1790366772.533	server.heartbeat	

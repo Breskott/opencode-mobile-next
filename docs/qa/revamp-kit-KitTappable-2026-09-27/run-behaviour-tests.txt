@@ -1,0 +1,40 @@
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88da752d-5f7-2/test/kit/kit_tappable_test.dart
+00:00 +0: disabled requires disabledReason (STATE-8, debug assert)
+00:00 +1: onLongPress cannot combine with a non-empty menu
+00:00 +2: 1. a 20×20 child gets a 48×48 hit area
+00:00 +3: 2. Enter and Space fire once; key repeat does not refire
+00:00 +4: 3. disabled: no Tab stop, no hover fill, basic cursor
+00:00 +5: 4. menu: right-click, long-press, Shift+F10, onLongPress hook right-click opens the menu at the click point
+00:00 +6: 4. menu: right-click, long-press, Shift+F10, onLongPress hook long-press opens the same items at the press point
+00:00 +7: 4. menu: right-click, long-press, Shift+F10, onLongPress hook Shift+F10 opens it anchored (position: null)
+00:00 +8: 4. menu: right-click, long-press, Shift+F10, onLongPress hook the Menu key also opens it anchored
+00:00 +9: 4. menu: right-click, long-press, Shift+F10, onLongPress hook onLongPress: a long-press calls it and opens no menu
+00:00 +10: 5. menu items are custom semantics actions
+00:00 +11: 6. empty menu: long-press shows the tooltip, opens nothing
+00:01 +12: 7. hover and pressed fills come from surface steps surface1: hover surface2 in dark, pressed surface3
+00:01 +13: 7. hover and pressed fills come from surface steps surface1: hover surface3 in light, pressed surface3
+00:01 +14: 7. hover and pressed fills come from surface steps surface3: hover and pressed both step down to surface2
+00:01 +15: 7. hover and pressed fills come from surface steps touch (no mouse connected): no hover paint
+00:01 +16: 8. keyboard focus shows the ring; a tap does not
+00:01 +17: 9. the tooltip shows on hover and on keyboard focus
+00:01 +18: 10. no HapticFeedback on tap or long-press
+00:01 +19: 12. selected exposes isSelected in semantics
+00:01 +20: KitTappable (MOT-7) enabled settles at once under system
+00:01 +21: KitTappable (MOT-7) disabled settles at once under system
+00:01 +22: KitTappable (MOT-7) pressed then released changes and settles at once under system
+00:01 +23: KitTappable (MOT-7) enabled settles at once under effectsOff
+00:01 +24: KitTappable (MOT-7) disabled settles at once under effectsOff
+00:01 +25: KitTappable (MOT-7) pressed then released changes and settles at once under effectsOff
+00:01 +26: All tests passed!

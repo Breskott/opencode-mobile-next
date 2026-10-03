@@ -1,0 +1,49 @@
+Golden "kit_confirm_destructive_360x800_dark.png": Pixel test failed, 0.31%, 891px diff detected.
+00:01 +0 -1: kit_confirm destructive · 360x800 · dark [E]
+Golden "kit_confirm_destructive_dark.png": Pixel test failed, 0.24%, 891px diff detected.
+00:01 +0 -2: kit_confirm destructive · 412x915 · dark [E]
+Golden "kit_confirm_destructive_800x1280_dark.png": Pixel test failed, 0.09%, 891px diff detected.
+00:01 +0 -3: kit_confirm destructive · 800x1280 · dark [E]
+Golden "kit_confirm_destructive_1280x800_dark.png": Pixel test failed, 0.09%, 892px diff detected.
+00:02 +0 -4: kit_confirm destructive · 1280x800 · dark [E]
+Golden "kit_confirm_destructive_1600x1000_dark.png": Pixel test failed, 0.06%, 892px diff detected.
+00:02 +0 -5: kit_confirm destructive · 1600x1000 · dark [E]
+Golden "kit_confirm_destructive_text2_dark.png": Pixel test failed, 0.25%, 931px diff detected.
+00:02 +0 -6: kit_confirm destructive · 2.0 text · 412x915 · dark [E]
+Golden "kit_confirm_destructive_ar_dark.png": Pixel test failed, 34.23%, 129040px diff detected.
+00:03 +0 -7: kit_confirm destructive · ar · 412x915 · dark [E]
+Golden "kit_confirm_destructive_text2_1280x800_dark.png": Pixel test failed, 0.04%, 362px diff
+00:03 +0 -8: kit_confirm destructive · 2.0 text · 1280x800 · dark [E]
+Golden "kit_confirm_destructive_ar_1280x800_dark.png": Pixel test failed, 9.96%, 102016px diff
+00:04 +0 -9: kit_confirm destructive · ar · 1280x800 · dark [E]
+Golden "kit_confirm_stop_working_dark.png": Pixel test failed, 0.19%, 733px diff detected.
+00:04 +1 -10: kit_confirm stop, working · dark [E]
+Golden "kit_confirm_failed_dark.png": Pixel test failed, 2.91%, 10953px diff detected.
+00:04 +1 -11: kit_confirm failed · dark [E]
+Golden "kit_confirm_typed_ready_dark.png": Pixel test failed, 0.24%, 891px diff detected.
+00:05 +2 -12: kit_confirm typed name ready · dark [E]
+Golden "kit_confirm_destructive_360x800_light.png": Pixel test failed, 0.31%, 897px diff detected.
+00:05 +2 -13: kit_confirm destructive · 360x800 · light [E]
+Golden "kit_confirm_destructive_light.png": Pixel test failed, 0.24%, 897px diff detected.
+00:05 +2 -14: kit_confirm destructive · 412x915 · light [E]
+Golden "kit_confirm_destructive_800x1280_light.png": Pixel test failed, 0.09%, 897px diff detected.
+00:05 +2 -15: kit_confirm destructive · 800x1280 · light [E]
+Golden "kit_confirm_destructive_1280x800_light.png": Pixel test failed, 0.09%, 908px diff detected.
+00:06 +2 -16: kit_confirm destructive · 1280x800 · light [E]
+Golden "kit_confirm_destructive_1600x1000_light.png": Pixel test failed, 0.06%, 908px diff detected.
+00:06 +2 -17: kit_confirm destructive · 1600x1000 · light [E]
+Golden "kit_confirm_destructive_text2_light.png": Pixel test failed, 0.25%, 937px diff detected.
+00:06 +2 -18: kit_confirm destructive · 2.0 text · 412x915 · light [E]
+Golden "kit_confirm_destructive_ar_light.png": Pixel test failed, 32.50%, 122532px diff detected.
+00:07 +2 -19: kit_confirm destructive · ar · 412x915 · light [E]
+Golden "kit_confirm_destructive_text2_1280x800_light.png": Pixel test failed, 0.04%, 367px diff
+00:07 +2 -20: kit_confirm destructive · 2.0 text · 1280x800 · light [E]
+Golden "kit_confirm_destructive_ar_1280x800_light.png": Pixel test failed, 8.77%, 89849px diff
+00:07 +2 -21: kit_confirm destructive · ar · 1280x800 · light [E]
+Golden "kit_confirm_stop_working_light.png": Pixel test failed, 0.19%, 733px diff detected.
+00:08 +3 -22: kit_confirm stop, working · light [E]
+Golden "kit_confirm_failed_light.png": Pixel test failed, 2.91%, 10986px diff detected.
+00:08 +3 -23: kit_confirm failed · light [E]
+Golden "kit_confirm_typed_ready_light.png": Pixel test failed, 0.24%, 897px diff detected.
+00:08 +4 -24: kit_confirm typed name ready · light [E]
+00:08 +4 -24: Some tests failed.

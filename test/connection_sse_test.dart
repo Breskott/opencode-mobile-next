@@ -1,16 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/background/live_background.dart';
+import 'package:opencode_mobile/builtin/builtin_linux.dart';
+import 'package:opencode_mobile/domain/while_away.dart';
+import 'package:opencode_mobile/state/automatic_activity.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -47,9 +51,15 @@ class _ControlledApi extends OpenCodeApi {
   @override
   Future<Map<String, String>> sessionStatuses() async => const {};
 
+  Completer<ProvidersResponse>? providersResult;
+  int providersCalls = 0;
+
   @override
-  Future<ProvidersResponse> providers() async =>
-      ProvidersResponse(providers: const []);
+  Future<ProvidersResponse> providers() {
+    providersCalls += 1;
+    return providersResult?.future ??
+        Future.value(ProvidersResponse(providers: const []));
+  }
 
   // The v1 catalog load also reads the runtime view; answer it locally so
   // the test never reaches the network.
@@ -164,6 +174,25 @@ class _TestRepository extends SdkProductRepository {
 
   @override
   Future<List<IntegrationInfo>> listIntegrations() async => const [];
+}
+
+/// Integrations answer only when the test completes [integrations]; counts
+/// catalog loads, so a test can see what waits for what.
+class _SlowIntegrationsRepository extends _TestRepository {
+  _SlowIntegrationsRepository(super.api, this.integrations, this.catalogLoads);
+
+  final Completer<List<IntegrationInfo>>? integrations;
+  final List<String> catalogLoads;
+
+  @override
+  Future<List<IntegrationInfo>> listIntegrations() =>
+      integrations?.future ?? Future.value(const []);
+
+  @override
+  Future<CatalogSnapshot> loadCatalog() {
+    catalogLoads.add('catalog');
+    return super.loadCatalog();
+  }
 }
 
 class _LocationRepository extends _TestRepository {
@@ -300,6 +329,157 @@ void main() {
       expect(controller.hasConnectedServer, isTrue);
       await controller.disconnect();
       expect(controller.hasConnectedServer, isFalse);
+    },
+  );
+
+  testWidgets('a reconnect the stream made by itself is filed for While you '
+      'were away; the first connect is not', (tester) async {
+    AutomaticActivityController.resetShared();
+    addTearDown(AutomaticActivityController.resetShared);
+    const secure = MethodChannel(
+      'plugins.it_nomads.com/flutter_secure_storage',
+    );
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(secure, (_) async => null);
+    addTearDown(() => messenger.setMockMethodCallHandler(secure, null));
+    SharedPreferences.setMockInitialValues({
+      'oc.profiles': jsonEncode([
+        {
+          'id': 'laptop',
+          'name': 'Laptop',
+          'baseUrl': 'http://127.0.0.1:1',
+          'username': '',
+        },
+      ]),
+      'oc.activeProfile': 'laptop',
+    });
+    final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+    await store.load();
+    final api = _ControlledApi('laptop');
+    final streams = <_FakeEventStream>[];
+    final controller = ConnectionController(
+      store,
+      apiFactory: (_) => api,
+      repositoryFactory: _repositoryFactory,
+      eventStreamFactory: _streamFactory(streams),
+    );
+    addTearDown(controller.dispose);
+    final connecting = controller.connect(store.profiles.single);
+    await tester.pump();
+    api.healthResult.complete(Health(healthy: true));
+    await connecting;
+    streams.single.emitStatus(StreamStatus.connected);
+    await tester.pump();
+    expect(controller.automaticActsHere, isEmpty);
+
+    streams.single.emitStatus(StreamStatus.reconnecting);
+    expect(controller.automaticActsHere, isEmpty);
+    streams.single.emitStatus(StreamStatus.connected);
+    await tester.pump();
+    final acts = controller.automaticActsHere;
+    expect(acts, hasLength(1));
+    expect(acts.single.kind, AutomaticActKind.reconnect);
+    expect(acts.single.summary, 'Laptop');
+    expect(store.prefs.getString('oc.automaticActivity.laptop'), isNotNull);
+    await controller.disconnect();
+  });
+
+  testWidgets(
+    'disabled reconnect retires transport and never records a recovery',
+    (tester) async {
+      AutomaticActivityController.resetShared();
+      addTearDown(AutomaticActivityController.resetShared);
+      const secure = MethodChannel(
+        'plugins.it_nomads.com/flutter_secure_storage',
+      );
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(secure, (_) async => null);
+      addTearDown(() => messenger.setMockMethodCallHandler(secure, null));
+      SharedPreferences.setMockInitialValues({
+        'oc.profiles': jsonEncode([
+          {
+            'id': 'laptop',
+            'name': 'Laptop',
+            'baseUrl': 'http://127.0.0.1:1',
+            'username': '',
+          },
+        ]),
+        'oc.activeProfile': 'laptop',
+      });
+      final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+      await store.load();
+      final api = _ControlledApi('laptop');
+      final streams = <_FakeEventStream>[];
+      final controller = ConnectionController(
+        store,
+        apiFactory: (_) => api,
+        repositoryFactory: _repositoryFactory,
+        eventStreamFactory: _streamFactory(streams),
+      );
+      addTearDown(controller.dispose);
+      final connecting = controller.connect(store.profiles.single);
+      await tester.pump();
+      api.healthResult.complete(Health(healthy: true));
+      await connecting;
+      streams.single.emitStatus(StreamStatus.connected);
+      await tester.pump();
+      expect(controller.automaticActsHere, isEmpty);
+
+      await AutomationPolicyController.forProfile(
+        store.prefs,
+        'laptop',
+      ).setBehavior(AutomationBehavior.reconnect, false);
+      streams.single.emitStatus(StreamStatus.reconnecting);
+      expect(streams.single.disposed, isTrue);
+      expect(api.closed, isTrue);
+      expect(controller.status, StreamStatus.disconnected);
+      streams.single.emitStatus(StreamStatus.connected);
+      await tester.pump();
+      expect(controller.automaticActsHere, isEmpty);
+      controller.suspendForLifecycle();
+      await controller.resumeFromLifecycle();
+      expect(api.healthCalls, 1);
+      await controller.disconnect();
+    },
+  );
+
+  testWidgets(
+    'policy change during lifecycle health prevents channel restart',
+    (tester) async {
+      final store = await _store();
+      final apis = <_ControlledApi>[];
+      final streams = <_FakeEventStream>[];
+      final controller = ConnectionController(
+        store,
+        apiFactory: (_) {
+          final api = _ControlledApi('server');
+          apis.add(api);
+          return api;
+        },
+        repositoryFactory: _repositoryFactory,
+        eventStreamFactory: _streamFactory(streams),
+      );
+      final connect = controller.connect(_profile('server'));
+      await tester.pump();
+      apis.single.healthResult.complete(Health(healthy: true));
+      await connect;
+      streams.single.emitStatus(StreamStatus.connected);
+      controller.suspendForLifecycle();
+      final resume = controller.resumeFromLifecycle();
+      await tester.pump();
+      expect(apis, hasLength(2));
+      await AutomationPolicyController.forProfile(
+        store.prefs,
+        'server',
+      ).setBehavior(AutomationBehavior.reconnect, false);
+      apis.last.healthResult.complete(Health(healthy: true));
+      await resume;
+      expect(streams, hasLength(1));
+      expect(controller.status, StreamStatus.disconnected);
+      expect(controller.automaticActsHere, isEmpty);
+      controller.dispose();
     },
   );
 
@@ -441,9 +621,36 @@ void main() {
     final forwarded = await worktreeEvent;
     expect(forwarded.directory, '/data/worktree/project-1/mobile-review');
 
+    scopedStreams.single.emitStatus(StreamStatus.connected);
+    globalStreams.single.emitStatus(StreamStatus.reconnecting);
+    await AutomationPolicyController.forProfile(
+      controller.store.prefs,
+      'server',
+    ).setBehavior(AutomationBehavior.reconnect, false);
+    expect(globalStreams.single.disposed, isTrue);
+    expect(scopedStreams.single.disposed, isFalse);
     controller.dispose();
     expect(scopedStreams.single.disposed, isTrue);
     expect(globalStreams.single.disposed, isTrue);
+  });
+
+  testWidgets('retry status can veto EventStream before another request', (
+    tester,
+  ) async {
+    final api = _FailingStreamApi();
+    late EventStream stream;
+    stream = EventStream(
+      api: api,
+      onEvent: (_) {},
+      onStatus: (status) {
+        if (status == StreamStatus.reconnecting) unawaited(stream.dispose());
+      },
+    );
+    stream.start();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 20));
+    expect(api.calls, 1);
+    api.close();
   });
 
   testWidgets('disposing EventStream cancels retry and suppresses callbacks', (
@@ -504,6 +711,127 @@ void main() {
     expect(events.single.workspace, 'workspace-1');
     await stream.dispose();
     api.close();
+  });
+
+  testWidgets('a stream that goes silent after a heartbeat is replaced', (
+    tester,
+  ) async {
+    // OpenCode 1 writes a heartbeat every 10 s. A connection that stops
+    // writing without closing used to read as live forever, and the chat
+    // showed a running reply only once it had finished.
+    final bodies = <StreamController<Uint8List>>[];
+    final api = _StreamApi((_) {
+      final body = StreamController<Uint8List>();
+      bodies.add(body);
+      return body.stream;
+    });
+    final statuses = <StreamStatus>[];
+    final stream = EventStream(
+      api: api,
+      onEvent: (_) {},
+      onStatus: statuses.add,
+    );
+
+    stream.start();
+    await tester.pump();
+    expect(statuses.last, StreamStatus.connected);
+    // Silence before any heartbeat proves nothing: older servers send none.
+    await tester.pump(const Duration(seconds: 40));
+    expect(api.calls, 1);
+
+    bodies.single.add(
+      Uint8List.fromList(
+        utf8.encode(
+          'data: ${jsonEncode({'type': 'server.heartbeat', 'properties': {}})}'
+          '\n\n',
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 30));
+    expect(api.calls, 1, reason: 'still inside the silence limit');
+
+    await tester.pump(const Duration(seconds: 5, milliseconds: 100));
+    expect(statuses.last, StreamStatus.reconnecting);
+    await tester.pump(const Duration(seconds: 2));
+    expect(api.calls, 2);
+    expect(statuses.last, StreamStatus.connected);
+
+    // A cancel settles on a later frame under the test clock.
+    unawaited(stream.dispose());
+    for (final body in bodies) {
+      unawaited(body.close());
+    }
+    // Let the retired connection's backoff-reset timer run out.
+    await tester.pump(const Duration(seconds: 31));
+    api.close();
+  });
+
+  testWidgets('while the folder stream is down, the server-wide stream '
+      'carries that folder’s events live', (tester) async {
+    final apis = <_ControlledApi>[];
+    final scopedStreams = <_FakeEventStream>[];
+    final globalStreams = <_FakeEventStream>[];
+    final controller = ConnectionController(
+      await _store(),
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: _repositoryFactory,
+      eventStreamFactory: _streamFactory(scopedStreams),
+      globalEventStreamFactory: _streamFactory(globalStreams),
+    );
+    final connect = controller.connect(_profile('server'));
+    await tester.pump();
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    await connect;
+    unawaited(controller.selectLocation(directory: '/work/app'));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+    apis.last.healthResult.complete(Health(healthy: true, version: '1'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump();
+    }
+    expect(controller.directory, '/work/app');
+
+    final seen = <EventEnvelope>[];
+    final subscription = controller.events.listen(seen.add);
+    EventEnvelope part(String directory, String text) => EventEnvelope(
+      type: 'message.part.updated',
+      directory: directory,
+      properties: {
+        'sessionID': 'ses_1',
+        'part': {
+          'id': 'prt_1',
+          'messageID': 'msg_1',
+          'sessionID': 'ses_1',
+          'type': 'text',
+          'text': text,
+        },
+      },
+    );
+
+    // The folder stream has not connected: this folder's words arrive
+    // through the server-wide stream; another folder's never do.
+    expect(controller.status, isNot(StreamStatus.connected));
+    globalStreams.last.emit(part('/work/app/', 'live'));
+    globalStreams.last.emit(part('/work/other', 'elsewhere'));
+    await tester.pump();
+    expect(seen.map((event) => event.properties['part']['text']), ['live']);
+
+    // Once the folder stream is up it is the only source, so nothing
+    // arrives twice. (Set directly: the reconnect refreshes that a status
+    // change starts are not what this test is about.)
+    controller.status = StreamStatus.connected;
+    globalStreams.last.emit(part('/work/app', 'twice'));
+    await tester.pump();
+    expect(seen, hasLength(1));
+
+    unawaited(subscription.cancel());
+    controller.dispose();
   });
 
   testWidgets('immediate HTTP 200 closes retain exponential retry backoff', (
@@ -1018,7 +1346,10 @@ void main() {
 
       final failedApiIndex = apis.length;
       final failedRetry = controller.retryConnection();
-      apis[failedApiIndex].healthFailure = ApiException('server unavailable');
+      // The health check is already in flight; it fails on the wire.
+      apis[failedApiIndex].healthResult.completeError(
+        ApiException('server unavailable'),
+      );
       await tester.pump();
       await failedRetry;
       await tester.pump();
@@ -1413,6 +1744,302 @@ void main() {
     expect(await actionApi, same(apis.last));
     expect(controller.version, '2');
     expect(wakeLockCalls, 3);
+    controller.dispose();
+  });
+
+  // Issue #87: a phone-hosted server felt 20 seconds slow to every screen.
+  testWidgets('a slow Termux wake lock does not hold up the health check', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      BackgroundLiveController.preferenceKey: true,
+    });
+    final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+    final backgroundLive = BackgroundLiveController(
+      preferences: store.prefs,
+      invoke: (method, [arguments]) async => const {
+        'enabled': true,
+        'active': true,
+        'notificationGranted': true,
+        'batteryOptimizationIgnored': false,
+      },
+    );
+    final apis = <_ControlledApi>[];
+    // Termux answers RUN_COMMAND slowly, or only at its 10-second timeout.
+    final wakeLock = Completer<void>();
+    var wakeLockCalls = 0;
+    final controller = ConnectionController(
+      store,
+      backgroundLive: backgroundLive,
+      localWakeLockEnsurer: () {
+        wakeLockCalls += 1;
+        return wakeLock.future;
+      },
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: _repositoryFactory,
+      eventStreamFactory: _streamFactory([]),
+    );
+
+    final connect = controller.connect(_profile('server'));
+    await tester.pump();
+    expect(wakeLockCalls, 1);
+    expect(apis.single.healthCalls, 1);
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    await connect;
+    expect(controller.version, '1');
+
+    // Waking the app asks for the lock again but acts without it.
+    controller.suspendForLifecycle();
+    final action = controller.prepareActionTransport();
+    await tester.pump();
+    expect(wakeLockCalls, 2);
+    expect(apis.single.healthCalls, 2);
+    expect(await action, same(apis.single));
+    controller.dispose();
+  });
+
+  // The built-in Linux server runs inside this app, not in Termux: asking
+  // Termux for a wake lock would launch Termux for nothing.
+  testWidgets('the built-in Linux server never asks Termux for a wake lock', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      BackgroundLiveController.preferenceKey: true,
+    });
+    final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+    final backgroundLive = BackgroundLiveController(
+      preferences: store.prefs,
+      invoke: (method, [arguments]) async => const {
+        'enabled': true,
+        'active': true,
+        'notificationGranted': true,
+        'batteryOptimizationIgnored': false,
+      },
+    );
+    final apis = <_ControlledApi>[];
+    var wakeLockCalls = 0;
+    final controller = ConnectionController(
+      store,
+      backgroundLive: backgroundLive,
+      localWakeLockEnsurer: () async => wakeLockCalls += 1,
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: _repositoryFactory,
+      eventStreamFactory: _streamFactory([]),
+    );
+
+    final connect = controller.connect(
+      ServerProfile(
+        id: 'builtin',
+        name: 'builtin',
+        baseUrl: BuiltinLinux.serverUrl,
+      ),
+    );
+    await tester.pump();
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    await connect;
+    controller.suspendForLifecycle();
+    final action = controller.prepareActionTransport();
+    await tester.pump();
+    expect(await action, same(apis.single));
+    expect(wakeLockCalls, 0);
+    controller.dispose();
+  });
+
+  testWidgets('opening another folder does not wait for the catalog', (
+    tester,
+  ) async {
+    final apis = <_ControlledApi>[];
+    final controller = ConnectionController(
+      await _store(),
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        // After the first connect, the catalog never answers: a phone-hosted
+        // OpenCode 1 takes seconds to build its 6 MB provider list.
+        if (apis.isNotEmpty) api.providersResult = Completer();
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: _repositoryFactory,
+      eventStreamFactory: _streamFactory([]),
+    );
+    final connect = controller.connect(_profile('server'));
+    await tester.pump();
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    await connect;
+    await tester.pump();
+    final shownBefore = controller.providers;
+
+    var opened = false;
+    unawaited(
+      controller
+          .selectLocation(directory: '/work/other')
+          .then((_) => opened = true),
+    );
+    for (var i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+    final folderApi = apis.last;
+    folderApi.healthResult.complete(Health(healthy: true, version: '1'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump();
+    }
+
+    // Open with the catalog still loading, and the server's models kept on
+    // screen meanwhile instead of an empty picker.
+    expect(opened, isTrue);
+    expect(controller.locationLoading, isFalse);
+    expect(controller.directory, '/work/other');
+    expect(controller.providers, same(shownBefore));
+    controller.dispose();
+  });
+
+  testWidgets('the first connect does not wait for the one-time provider '
+      'runtime refresh; the catalog loads after it', (tester) async {
+    // Android 15 run, 2026-09-24: 7.5 s of the 12.2 s "Start OpenCode" setup
+    // step was this refresh, before any conversation could load.
+    final apis = <_ControlledApi>[];
+    final integrations = Completer<List<IntegrationInfo>>();
+    final catalogLoads = <String>[];
+    final controller = ConnectionController(
+      await _store(),
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: (api) =>
+          _SlowIntegrationsRepository(api, integrations, catalogLoads),
+      eventStreamFactory: _streamFactory([]),
+    );
+    var connected = false;
+    unawaited(
+      controller.connect(_profile('server')).then((_) => connected = true),
+    );
+    await tester.pump();
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump();
+    }
+    expect(connected, isTrue);
+    expect(apis.single.sessionsCalls, greaterThan(0));
+    expect(catalogLoads, isEmpty);
+
+    integrations.complete(const []);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump();
+    }
+    expect(catalogLoads, isNotEmpty);
+    controller.dispose();
+  });
+
+  testWidgets('a new folder opens before the one-time provider runtime '
+      'refresh, and its catalog loads after it', (tester) async {
+    // Android 15 run, 2026-09-24: creating a project took 7.6 s, 6.8 s of it
+    // this refresh (/api/integration, then /provider) that only the model
+    // list needs.
+    final apis = <_ControlledApi>[];
+    final integrations = Completer<List<IntegrationInfo>>();
+    final catalogLoads = <String>[];
+    final controller = ConnectionController(
+      await _store(),
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: (api) => _SlowIntegrationsRepository(
+        api,
+        apis.length > 1 ? integrations : null,
+        catalogLoads,
+      ),
+      eventStreamFactory: _streamFactory([]),
+    );
+    final connect = controller.connect(_profile('server'));
+    await tester.pump();
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    await connect;
+    await tester.pump();
+
+    var opened = false;
+    unawaited(
+      controller
+          .selectLocation(directory: '/work/new-project')
+          .then((_) => opened = true),
+    );
+    for (var i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+    apis.last.healthResult.complete(Health(healthy: true, version: '1'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump();
+    }
+    expect(opened, isTrue);
+    expect(controller.locationLoading, isFalse);
+    expect(controller.directory, '/work/new-project');
+    final before = catalogLoads.length;
+
+    integrations.complete(const []);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump();
+    }
+    expect(catalogLoads.length, greaterThan(before));
+    controller.dispose();
+  });
+
+  testWidgets('an action after a wake does not wait for the catalog reload', (
+    tester,
+  ) async {
+    final apis = <_ControlledApi>[];
+    final controller = ConnectionController(
+      await _store(),
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: _repositoryFactory,
+      eventStreamFactory: _streamFactory([]),
+    );
+    final connect = controller.connect(_profile('server'));
+    await tester.pump();
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    await connect;
+    await tester.pump();
+
+    controller.suspendForLifecycle();
+    final action = controller.prepareActionTransport();
+    final woken = apis.last;
+    expect(woken, isNot(same(apis.first)));
+    // OpenCode 1's /provider is megabytes a phone-hosted server takes
+    // seconds to build; the sessions list is cheap.
+    woken
+      ..sessionsResult = Completer<List<Session>>()
+      ..providersResult = Completer<ProvidersResponse>();
+    Object? actionApi;
+    unawaited(action.then((value) => actionApi = value));
+    woken.healthResult.complete(Health(healthy: true, version: '1'));
+    await tester.pump();
+
+    expect(actionApi, same(woken));
+    // The catalog waits for the cheap reloads so the single-threaded server
+    // does not make them queue behind it.
+    expect(woken.sessionsCalls, 1);
+    expect(woken.providersCalls, 0);
+    woken.sessionsResult!.complete([Session(id: 'session-1')]);
+    await tester.pump();
+    expect(controller.sessionsById, contains('session-1'));
+    expect(woken.providersCalls, 1);
+    woken.providersResult!.complete(ProvidersResponse(providers: const []));
+    await tester.pump();
+    expect(controller.catalogLoading, isFalse);
     controller.dispose();
   });
 

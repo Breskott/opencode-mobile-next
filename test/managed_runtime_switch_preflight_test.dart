@@ -136,10 +136,28 @@ void main() {
     binding.defaultBinaryMessenger.setMockMethodCallHandler(secure, null);
   });
 
+  // A record as the app has written it since 2de4744d: the shared retry
+  // budget ('attempts') is part of it, and since 6ed0ec26 a record without
+  // a readable budget fails closed.
   Future<void> recoveryOn(String id) => store.prefs.setString(
     ManagedServerRecovery.preferenceKey(id),
-    jsonEncode({'enabled': true}),
+    jsonEncode({
+      'enabled': true,
+      'token': '',
+      'attempts': 0,
+      'operation': '',
+      'pendingOperation': '',
+    }),
   );
+
+  // Since 6ed0ec26 a runtime switch suspends recovery for the managed
+  // profiles without turning off the person's automation policy.
+  bool recoverySuspended(String id) =>
+      (jsonDecode(
+            store.prefs.getString(ManagedServerRecovery.preferenceKey(id))!,
+          )
+          as Map)['manuallySuspended'] ==
+      true;
 
   bool recoveryEnabled(String id) =>
       (jsonDecode(
@@ -172,7 +190,7 @@ void main() {
       expect(jsonEncode(local.toJson()), profileBefore);
       expect(local.password, 'fixture-local-password');
       expect(store.profiles, containsAll([local, remote]));
-      expect(recoveryEnabled(local.id), isFalse);
+      expect(recoverySuspended(local.id), isTrue);
     },
   );
 
@@ -198,8 +216,9 @@ void main() {
     expect(store.activeId, remote.id);
     expect(controller.busySessions, contains('remote-busy'));
     expect(controller.queuedPromptCountForProfile(remote.id), 1);
-    expect(recoveryEnabled(local.id), isFalse);
-    expect(recoveryEnabled(alias.id), isFalse);
+    expect(recoverySuspended(local.id), isTrue);
+    expect(recoverySuspended(alias.id), isTrue);
+    expect(recoverySuspended(remote.id), isFalse);
     expect(recoveryEnabled(remote.id), isTrue);
   });
 
@@ -237,6 +256,7 @@ void main() {
       expect(controller.status, StreamStatus.connected);
       expect(controller.busySessions, contains('private-session'));
       expect(recoveryEnabled(local.id), isTrue);
+      expect(recoverySuspended(local.id), isFalse);
     },
   );
 

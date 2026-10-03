@@ -1,0 +1,43 @@
+00:00 +0: loading test/session_export_test.dart
+00:00 +0: test/session_export_test.dart: exports complete response bytes with default redaction and no location
+00:00 +1: test/session_export_test.dart: byte error 401 retains tag and does not disable export
+00:00 +2: test/session_export_test.dart: byte error 404 retains tag and does not disable export
+00:00 +3: test/session_export_test.dart: byte error 500 retains tag and does not disable export
+00:00 +4: test/session_export_test.dart: absent endpoint is remembered without repeated requests
+00:00 +5: test/session_export_test.dart: JSON defaults to redaction and passes an isolated buffer
+00:00 +6: test/session_export_test.dart: session scope stays frozen when widget updates in place
+00:01 +7: test/session_export_test.dart: scope change while destination picker is open cannot report success
+00:01 +8: test/session_export_test.dart: progress from transport is clamped before rendering
+00:01 +9: test/session_export_test.dart: Markdown uses loaded transcript without a server export
+00:01 +10: test/session_export_test.dart: cancel and changed connection never open a save dialog
+00:01 +11: test/session_export_test.dart: failed export keeps options and allows retry
+00:01 +12: test/session_export_test.dart: export layout at 411.0 with reachable redaction and save
+00:02 +13: test/session_export_test.dart: export layout at 320.0 with reachable redaction and save
+00:02 +14: test/session_export_test.dart: a server without the complete copy explains it and starts on the transcript
+00:02 +15: test/session_export_test.dart: a file the device cannot write says so and allows retry
+00:02 +16: test/session_export_test.dart: redaction says what it keeps and belongs to JSON only
+00:02 +17: test/session_export_test.dart: a server that turns out to lack the copy moves to the transcript
+00:02 +18: test/session_export_test.dart: lays out at 360x800 while downloading
+00:02 +19: test/session_export_test.dart: lays out at 412x915 while downloading
+00:02 +20: test/session_export_test.dart: lays out at 915x412 while downloading
+00:02 +21: test/session_export_test.dart: lays out at 800x1280 while downloading
+00:03 +22: test/session_export_test.dart: lays out at 1280x800 while downloading
+00:03 +23: test/session_export_test.dart: lays out at 1600x1000 while downloading
+00:03 +24: loading test/revamp/screen_chat_3_golden_test.dart
+00:04 +24: test/revamp/screen_chat_3_golden_test.dart: (setUpAll)
+00:04 +24: test/revamp/screen_chat_3_golden_test.dart: session export (dark) choice 412
+00:05 +25: test/revamp/screen_chat_3_golden_test.dart: session export (dark) choice 1280
+00:05 +26: test/revamp/screen_chat_3_golden_test.dart: session export (dark) unredacted
+00:05 +27: test/revamp/screen_chat_3_golden_test.dart: session export (dark) downloading
+00:06 +28: test/revamp/screen_chat_3_golden_test.dart: session export (dark) saved
+00:06 +29: test/revamp/screen_chat_3_golden_test.dart: session export (dark) save failed
+00:06 +30: test/revamp/screen_chat_3_golden_test.dart: session export (dark) no complete copy
+00:06 +31: test/revamp/screen_chat_3_golden_test.dart: session export (light) choice 412
+00:06 +32: test/revamp/screen_chat_3_golden_test.dart: session export (light) choice 1280
+00:06 +33: test/revamp/screen_chat_3_golden_test.dart: session export (light) unredacted
+00:06 +34: test/revamp/screen_chat_3_golden_test.dart: session export (light) downloading
+00:06 +35: test/revamp/screen_chat_3_golden_test.dart: session export (light) saved
+00:06 +36: test/revamp/screen_chat_3_golden_test.dart: session export (light) save failed
+00:07 +37: test/revamp/screen_chat_3_golden_test.dart: session export (light) no complete copy
+00:07 +38: test/revamp/screen_chat_3_golden_test.dart: (tearDownAll)
+00:07 +38: All tests passed!

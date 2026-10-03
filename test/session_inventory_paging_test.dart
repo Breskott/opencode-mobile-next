@@ -7,7 +7,8 @@ import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/widgets/session_inventory_footer.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/ui/widgets/older_sessions_pager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _Api extends OpenCodeApi {
@@ -53,6 +54,29 @@ Future<ConnectionController> _controller(_Api api) async {
 Session _session(String id, {String? title, String? parentID}) =>
     Session(id: id, title: title ?? id, directory: '/one', parentID: parentID);
 
+final _skeletons = find.byKey(const ValueKey('sessions-older-more'));
+
+/// The pager at the end of a list, as the Work tab places it; [above]
+/// pushes it that far below the top of the screen.
+Widget _host(ConnectionController controller, {double above = 0}) =>
+    MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: ListView(
+          children: [
+            SizedBox(height: above),
+            ListenableBuilder(
+              listenable: controller,
+              builder: (context, _) => OlderSessionsPager.showsFor(controller)
+                  ? OlderSessionsPager(controller: controller)
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
+    );
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -77,35 +101,26 @@ void main() {
   );
 
   testWidgets(
-    'initial inventory request shows loading rather than load more advice',
+    'the first request shows no pager: no skeleton, no error, no button',
     (tester) async {
       final pending = Completer<ServerPage<Session>>();
       final api = _Api()..page = (_) => pending.future;
       final controller = await _controller(api);
       final refresh = controller.refreshSessions();
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(body: SessionInventoryFooter(controller: controller)),
-        ),
-      );
-      expect(find.text('Loading conversations…'), findsOneWidget);
-      expect(find.textContaining('Showing loaded sessions.'), findsNothing);
-      expect(
-        tester
-            .widget<TextButton>(
-              find.byKey(const ValueKey('session-inventory-more')),
-            )
-            .onPressed,
-        isNull,
-      );
+      await tester.pumpWidget(_host(controller));
+      expect(OlderSessionsPager.showsFor(controller), isFalse);
+      expect(_skeletons, findsNothing);
+      expect(find.byKey(const ValueKey('sessions-older-error')), findsNothing);
       pending.complete(const ServerPage(items: []));
       await refresh;
       await tester.pumpAndSettle();
-      expect(find.byType(TextButton), findsNothing);
+      expect(_skeletons, findsNothing);
+      expect(api.cursors, [null]);
     },
   );
 
-  testWidgets('status failures leave older sessions reachable', (tester) async {
+  testWidgets('status failures leave older sessions reachable: the list '
+      'pages itself', (tester) async {
     final api = _Api()
       ..page = (cursor) async => cursor == null
           ? ServerPage(items: [_session('recent')], nextCursor: 'older')
@@ -113,16 +128,11 @@ void main() {
     api.statuses = () async => throw ApiException('status unavailable');
     final controller = await _controller(api);
     await controller.refreshSessions();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: SessionInventoryFooter(controller: controller)),
-      ),
-    );
-    expect(find.text('Load more conversations'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('session-inventory-more')));
+    await tester.pumpWidget(_host(controller));
     await tester.pumpAndSettle();
     expect(api.cursors, [null, 'older']);
     expect(controller.sortedSessions().map((s) => s.id), contains('old'));
+    expect(find.text('Load more conversations'), findsNothing);
   });
 
   testWidgets('empty and duplicate inventory pages keep continuation usable', (
@@ -144,18 +154,89 @@ void main() {
     final controller = await _controller(api);
     await controller.refreshSessions();
     expect(controller.sortedSessions(), isEmpty);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: SessionInventoryFooter(controller: controller)),
-      ),
-    );
-    for (var i = 0; i < 3; i++) {
-      await tester.tap(find.byKey(const ValueKey('session-inventory-more')));
+    await tester.pumpWidget(_host(controller));
+    for (var i = 0; i < 4; i++) {
       await tester.pumpAndSettle();
     }
     expect(api.cursors, [null, 'empty', 'duplicate', 'last']);
     expect(controller.sortedSessions().single.id, 'older-root');
     expect(controller.hasMoreSessions, isFalse);
+    expect(_skeletons, findsNothing);
+  });
+
+  testWidgets('an end far below the screen waits until it is scrolled to', (
+    tester,
+  ) async {
+    final api = _Api()
+      ..page = (cursor) async => cursor == null
+          ? ServerPage(items: [_session('recent')], nextCursor: 'older')
+          : ServerPage(items: [_session('old')]);
+    final controller = await _controller(api);
+    await controller.refreshSessions();
+    await tester.pumpWidget(_host(controller, above: 3000));
+    await tester.pumpAndSettle();
+    expect(api.cursors, [null], reason: 'nothing asked while out of reach');
+    await tester.drag(find.byType(ListView), const Offset(0, -3000));
+    await tester.pumpAndSettle();
+    expect(api.cursors, [null, 'older']);
+  });
+
+  testWidgets('a failed older page says so in words, never the raw error, '
+      'and Try again asks for that page again', (tester) async {
+    var fail = true;
+    final api = _Api()
+      ..page = (cursor) async {
+        if (cursor == null) {
+          return ServerPage(items: [_session('recent')], nextCursor: 'older');
+        }
+        if (fail) throw ApiException('upstream said 502 secret-body');
+        return ServerPage(items: [_session('old')]);
+      };
+    final controller = await _controller(api);
+    await controller.refreshSessions();
+    await tester.pumpWidget(_host(controller));
+    await tester.pumpAndSettle();
+    expect(api.cursors, [null, 'older']);
+    final error = find.byKey(const ValueKey('sessions-older-error'));
+    expect(error, findsOneWidget);
+    expect(find.text('Could not load older conversations.'), findsOneWidget);
+    expect(find.textContaining('secret-body'), findsNothing);
+    // It does not ask again by itself.
+    await tester.pumpAndSettle();
+    expect(api.cursors, [null, 'older']);
+    fail = false;
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+    expect(api.cursors, [null, 'older', 'older']);
+    expect(error, findsNothing);
+    expect(controller.sortedSessions().map((s) => s.id), contains('old'));
+  });
+
+  testWidgets('a list that changed while paging offers a refresh from the '
+      'newest page', (tester) async {
+    final api = _Api()
+      ..page = (cursor) async => switch (cursor) {
+        null => ServerPage(items: [_session('recent')], nextCursor: 'loop'),
+        _ => ServerPage(items: [_session('again')], nextCursor: 'loop'),
+      };
+    final controller = await _controller(api);
+    await controller.refreshSessions();
+    await tester.pumpWidget(_host(controller));
+    await tester.pumpAndSettle();
+    expect(controller.sessionsNeedReload, isTrue);
+    expect(
+      find.text(
+        'The conversation list changed on the server. Refresh it to see '
+        'older conversations.',
+      ),
+      findsOneWidget,
+    );
+    api.page = (cursor) async => ServerPage(items: [_session('fresh')]);
+    await tester.tap(find.text('Refresh recent conversations'));
+    await tester.pumpAndSettle();
+    expect(api.cursors.last, isNull);
+    expect(controller.sessionsNeedReload, isFalse);
+    expect(find.byKey(const ValueKey('sessions-older-error')), findsNothing);
   });
 
   test(

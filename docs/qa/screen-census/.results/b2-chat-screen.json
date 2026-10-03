@@ -1,0 +1,139 @@
+{
+ "area": "b2-chat-screen",
+ "renderedAt": "2026-09-26T02:56:06.802367Z",
+ "declaredShots": [
+  {
+   "page": "chat-message-actions-sheet",
+   "state": "prompt"
+  },
+  {
+   "page": "chat-message-actions-sheet",
+   "state": "reply"
+  },
+  {
+   "page": "chat-delete-message-sheet",
+   "state": "default"
+  },
+  {
+   "page": "chat-revert-confirm-sheet",
+   "state": "default"
+  },
+  {
+   "page": "chat-run-shell-dialog",
+   "state": "default"
+  },
+  {
+   "page": "command-launcher-sheet",
+   "state": "commands"
+  },
+  {
+   "page": "command-launcher-sheet",
+   "state": "search"
+  },
+  {
+   "page": "command-launcher-sheet",
+   "state": "delegate"
+  },
+  {
+   "page": "chat-rename-session-dialog",
+   "state": "default"
+  },
+  {
+   "page": "session-menu-sheet",
+   "state": "closed"
+  },
+  {
+   "page": "session-menu-sheet",
+   "state": "actions"
+  },
+  {
+   "page": "session-menu-sheet",
+   "state": "display"
+  },
+  {
+   "page": "chat-leave-unsaved-draft-sheet",
+   "state": "default"
+  }
+ ],
+ "notRendered": {},
+ "shots": [
+  {
+   "page": "chat-message-actions-sheet",
+   "state": "prompt",
+   "image": "b2-chat-screen/chat-message-actions-sheet--prompt.png",
+   "note": "Long-press on your own prompt."
+  },
+  {
+   "page": "chat-message-actions-sheet",
+   "state": "reply",
+   "image": "b2-chat-screen/chat-message-actions-sheet--reply.png",
+   "note": "The ⋯ button under the assistant reply (same sheet as a long-press)."
+  },
+  {
+   "page": "chat-delete-message-sheet",
+   "state": "default",
+   "image": "b2-chat-screen/chat-delete-message-sheet.png",
+   "note": "Long-press a prompt › Delete message."
+  },
+  {
+   "page": "chat-revert-confirm-sheet",
+   "state": "default",
+   "image": "b2-chat-screen/chat-revert-confirm-sheet.png",
+   "note": "Conversation menu › Conversation actions › Revert last prompt (OpenCode 1, no staged revert)."
+  },
+  {
+   "page": "chat-run-shell-dialog",
+   "state": "default",
+   "image": "b2-chat-screen/chat-run-shell-dialog.png",
+   "note": "Conversation menu › Run shell command, with a command typed."
+  },
+  {
+   "page": "command-launcher-sheet",
+   "state": "commands",
+   "image": "b2-chat-screen/command-launcher-sheet--commands.png",
+   "note": "Composer + › Commands."
+  },
+  {
+   "page": "command-launcher-sheet",
+   "state": "search",
+   "image": "b2-chat-screen/command-launcher-sheet--search.png",
+   "note": "Typing filters the commands (and would list \"Go to\" results from the rest of the app when any match)."
+  },
+  {
+   "page": "command-launcher-sheet",
+   "state": "delegate",
+   "image": "b2-chat-screen/command-launcher-sheet--delegate.png",
+   "note": "The Delegate tab with three server subagents."
+  },
+  {
+   "page": "chat-rename-session-dialog",
+   "state": "default",
+   "image": "b2-chat-screen/chat-rename-session-dialog.png",
+   "note": "Commands › /rename."
+  },
+  {
+   "page": "session-menu-sheet",
+   "state": "closed",
+   "image": "b2-chat-screen/session-menu-sheet--closed.png",
+   "note": "The chat app bar overflow, sections folded."
+  },
+  {
+   "page": "session-menu-sheet",
+   "state": "actions",
+   "image": "b2-chat-screen/session-menu-sheet--actions.png",
+   "note": "Conversation actions unfolded."
+  },
+  {
+   "page": "session-menu-sheet",
+   "state": "display",
+   "image": "b2-chat-screen/session-menu-sheet--display.png",
+   "note": "Display and context unfolded (transcript toggles)."
+  },
+  {
+   "page": "chat-leave-unsaved-draft-sheet",
+   "state": "default",
+   "image": "b2-chat-screen/chat-leave-unsaved-draft-sheet.png",
+   "note": "Back while the draft cannot be written (faked storage refusal); the composer shows the unsaved-draft row too."
+  }
+ ]
+}

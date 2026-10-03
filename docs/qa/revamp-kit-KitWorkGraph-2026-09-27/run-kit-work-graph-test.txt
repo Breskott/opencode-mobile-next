@@ -1,0 +1,33 @@
+exit 0
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_cb026353-734-4/test/kit/kit_work_graph_test.dart
+00:00 +0: KitWorkGraphGeometry layers is deterministic and matches the retired layout
+00:00 +1: KitWorkGraphGeometry rows: one id per row in the layers order, every edge under the lane cap
+00:00 +2: KitWorkGraphGeometry one item has no gutter; empty has no rows
+00:00 +3: KitWorkGraph auto 412x915 renders rows (no viewer key)
+00:00 +4: KitWorkGraph auto 1280x800 renders layers with the viewer and Fit
+00:01 +5: KitWorkGraph auto 915x412 (short) renders rows
+00:01 +6: KitWorkGraph open rows: tapping a node calls onOpen with its id once
+00:01 +7: KitWorkGraph open layers: tapping a node calls onOpen with its id once
+00:01 +8: KitWorkGraph open empty shows the inline empty state, never onOpen
+00:01 +9: KitWorkGraph rows a two-line title grows its row, no overflow · text 1.0
+00:01 +10: KitWorkGraph rows a two-line title grows its row, no overflow · text 2.0
+00:01 +11: KitWorkGraph keyboard (desktop capabilities) Tab visits the nodes in geometry order, then the zoom pill; Enter opens the focused node
+00:01 +12: KitWorkGraph keyboard (desktop capabilities) Ctrl+0 restores the fitted transform after a zoom
+00:02 +13: KitWorkGraph keyboard (desktop capabilities) rows: Tab visits the nodes in geometry order
+00:02 +14: KitWorkGraph fit fitted on first layout; the Fit control restores it
+00:02 +15: KitWorkGraph semantics rows: each node is a button labelled "{title}, {state}" with the supporting line as its hint
+00:02 +16: KitWorkGraph semantics layers: node buttons, the viewer label, the zoom buttons and their custom actions
+00:02 +17: KitWorkGraph tones rows: the blocked chain paints no attention colour; only a needs-you node does, with its word
+00:02 +18: KitWorkGraph tones layers: the blocked chain paints no attention colour; only a needs-you node does, with its word
+00:02 +19: KitWorkGraph overflow and motion no overflow at 320x740 · text 1.0
+00:03 +20: KitWorkGraph overflow and motion no overflow at 320x740 · text 2.0
+00:03 +21: KitWorkGraph overflow and motion no overflow at 412x915 · text 1.0
+00:03 +22: KitWorkGraph overflow and motion no overflow at 412x915 · text 2.0
+00:03 +23: KitWorkGraph overflow and motion no overflow at 1280x800 · text 1.0
+00:03 +24: KitWorkGraph overflow and motion no overflow at 1280x800 · text 2.0
+00:03 +25: KitWorkGraph overflow and motion no overflow at 915x412 · text 1.0
+00:03 +26: KitWorkGraph overflow and motion no overflow at 915x412 · text 2.0
+00:03 +27: KitWorkGraph overflow and motion settles after one pump under reduced motion
+00:03 +28: All tests passed!
+
+[exited with code 0]

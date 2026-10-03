@@ -1,0 +1,323 @@
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 1.1.0 (2.0.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 2.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dbus 0.7.15 (0.8.0 available)
+  dio 5.11.0 (5.11.1 available)
+  dio_web_adapter 2.2.1 (2.2.2 available)
+  dynamic_color 1.9.0 (2.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  file_picker 12.2.0 (13.1.0 available)
+  file_picker_darwin 1.1.0 (2.1.2 available)
+  file_picker_linux 1.1.0 (2.0.1 available)
+  file_picker_platform_interface 3.3.0 (4.0.0 available)
+  file_picker_web 3.1.0 (4.0.0 available)
+  flutter_secure_storage 11.0.0 (11.2.0 available)
+  flutter_secure_storage_darwin 0.4.0 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.2 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.3 (2.1.1 available)
+  image_picker_android 0.8.13+22 (0.8.13+23 available)
+  image_picker_ios 0.8.13+7 (0.8.13+8 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mime 2.0.0 (2.1.0 available)
+  mobile_scanner 7.4.0 (7.4.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  record_android 2.1.2 (2.2.0 available)
+  record_linux 2.1.1 (2.1.2 available)
+  record_web 2.1.2 (2.1.3 available)
+  record_windows 2.2.3 (2.3.0 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  sherpa_onnx 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_arm64 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_armeabi 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86_64 1.13.7 (1.13.8 available)
+  sherpa_onnx_ios 1.13.7 (1.13.8 available)
+  sherpa_onnx_linux 1.13.7 (1.13.8 available)
+  sherpa_onnx_macos 1.13.7 (1.13.8 available)
+  sherpa_onnx_web 1.13.7 (1.13.8 available)
+  sherpa_onnx_windows 1.13.7 (1.13.8 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart
+00:00 +0: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: bare pasted addresses gain the right scheme
+00:00 +1: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: first run asks one question with exactly three choices
+00:00 +2: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: setup start leads with the phone drawing at the top of the page
+00:00 +3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: setup start leads with the phone drawing at the top of the page
+00:00 +4: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: setup start leads with the phone drawing at the top of the page
+Pending timers:
+Timer (duration: 0:00:05.000000, periodic: false), created:
+#0      new FakeTimer._ (package:fake_async/fake_async.dart:342:62)
+#1      FakeAsync._createTimer (package:fake_async/fake_async.dart:260:29)
+#2      FakeAsync.run.<anonymous closure> (package:fake_async/fake_async.dart:185:15)
+#6      AndroidVoiceDevicePlatform.getDeviceInfo (package:opencode_mobile/voice/device.dart:95:12)
+#7      _PhoneSetupStartScreenState._probeDevice (package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart:123:74)
+#8      _PhoneSetupStartScreenState._load (package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart:114:15)
+<asynchronous suspension>
+(elided 3 frames from dart:async)
+
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following assertion was thrown running a test:
+A Timer is still pending even after the widget tree was disposed.
+'package:flutter_test/src/binding.dart':
+Failed assertion: line 2543 pos 12: '!timersPending'
+
+When the exception was thrown, this was the stack:
+#2      AutomatedTestWidgetsFlutterBinding._verifyInvariants (package:flutter_test/src/binding.dart:2543:12)
+#3      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1974:7)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 3 frames from class _AssertionError and package:stack_trace)
+
+The test description was:
+  leads with the phone drawing at the top of the page
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +4 -1: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: the phone choice and the demo open their destinations
+00:01 +4 -1: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: setup start leads with the phone drawing at the top of the page [E]
+  Test failed. See exception logs above.
+  The test description was: leads with the phone drawing at the top of the page
+  
+00:01 +4 -1: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: the phone choice and the demo open their destinations
+Pending timers:
+Timer (duration: 0:00:05.000000, periodic: false), created:
+#0      new FakeTimer._ (package:fake_async/fake_async.dart:342:62)
+#1      FakeAsync._createTimer (package:fake_async/fake_async.dart:260:29)
+#2      FakeAsync.run.<anonymous closure> (package:fake_async/fake_async.dart:185:15)
+#6      AndroidVoiceDevicePlatform.getDeviceInfo (package:opencode_mobile/voice/device.dart:95:12)
+#7      _PhoneSetupStartScreenState._probeDevice (package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart:123:74)
+#8      _PhoneSetupStartScreenState._load (package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart:114:15)
+<asynchronous suspension>
+(elided 3 frames from dart:async)
+
+00:01 +4 -1: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: setup start a running setup draws its journey
+Pending timers:
+Timer (duration: 0:00:05.000000, periodic: false), created:
+#0      new FakeTimer._ (package:fake_async/fake_async.dart:342:62)
+#1      FakeAsync._createTimer (package:fake_async/fake_async.dart:260:29)
+#2      FakeAsync.run.<anonymous closure> (package:fake_async/fake_async.dart:185:15)
+#6      AndroidVoiceDevicePlatform.getDeviceInfo (package:opencode_mobile/voice/device.dart:95:12)
+#7      _PhoneSetupStartScreenState._probeDevice (package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart:123:74)
+#8      _PhoneSetupStartScreenState._load (package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart:114:15)
+<asynchronous suspension>
+(elided 3 frames from dart:async)
+
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following assertion was thrown running a test:
+A Timer is still pending even after the widget tree was disposed.
+'package:flutter_test/src/binding.dart':
+Failed assertion: line 2543 pos 12: '!timersPending'
+
+When the exception was thrown, this was the stack:
+#2      AutomatedTestWidgetsFlutterBinding._verifyInvariants (package:flutter_test/src/binding.dart:2543:12)
+#3      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1974:7)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 3 frames from class _AssertionError and package:stack_trace)
+
+The test description was:
+  a running setup draws its journey
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +4 -2: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: the phone choice and the demo open their destinations
+00:01 +4 -2: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: setup start a running setup draws its journey [E]
+  Test failed. See exception logs above.
+  The test description was: a running setup draws its journey
+  
+00:01 +4 -2: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: the phone choice and the demo open their destinations
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following assertion was thrown running a test:
+A Timer is still pending even after the widget tree was disposed.
+'package:flutter_test/src/binding.dart':
+Failed assertion: line 2543 pos 12: '!timersPending'
+
+When the exception was thrown, this was the stack:
+#2      AutomatedTestWidgetsFlutterBinding._verifyInvariants (package:flutter_test/src/binding.dart:2543:12)
+#3      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1974:7)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 3 frames from class _AssertionError and package:stack_trace)
+
+The test description was:
+  the phone choice and the demo open their destinations
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +4 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: setup progress the log opens in view, under a title and bar that stay
+00:01 +4 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: the phone choice and the demo open their destinations [E]
+  Test failed. See exception logs above.
+  The test description was: the phone choice and the demo open their destinations
+  
+00:01 +5 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: setup progress the log opens in view, under a title and bar that stay
+00:01 +6 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: editing inactive server names the save consequence
+00:01 +7 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: editing inactive server names the save consequence
+00:01 +8 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: setup progress Cancel sits with the steps, before the folded Details
+00:01 +9 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: editing active server names the save consequence
+00:01 +10 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: editing active server names the save consequence
+00:01 +11 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: setup ready the celebration plays once and then rests
+00:02 +12 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: welcome fits 320dp at 2.5x text, rtl
+00:02 +13 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: connecting starting the phone server draws the phone, breathing
+00:02 +14 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: welcome fits 320dp at 2.5x text, ltr
+00:02 +15 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: connecting not answering draws the plug short of the portal
+00:02 +16 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: pasting a bare address into the editor fills the scheme
+00:02 +17 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: pasting a bare address into the editor fills the scheme
+00:02 +18 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: pasting a bare address into the editor fills the scheme
+00:02 +19 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: pasting a bare address into the editor fills the scheme
+00:02 +20 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: test connection reports success with the server version
+00:02 +21 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: test connection explains a refused connection
+00:02 +22 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: timeout and refused verdicts point at the host setup guide
+00:03 +23 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/oc2_server_discovery_test.dart: saved labels distinguish confirmed generation from legacy default
+00:03 +24 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/oc2_server_discovery_test.dart: saved labels distinguish confirmed generation from legacy default
+00:03 +25 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/oc2_server_discovery_test.dart: saved labels distinguish confirmed generation from legacy default
+00:03 +26 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/oc2_server_discovery_test.dart: OpenCode 2 entry preserves actual ServerFlavor.v1 autodetection
+00:04 +27 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/phone_setup_welcome_entry_test.dart: no job: nothing extra, and the three choices stay
+00:05 +28 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/phone_setup_welcome_entry_test.dart: no job: nothing extra, and the three choices stay
+00:05 +29 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/oc2_server_discovery_test.dart: mixed-local connection routes runtime choices only when needed
+00:05 +30 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/phone_setup_welcome_entry_test.dart: a running setup leads with its percent and opens its progress as a first setup
+00:05 +31 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/phone_setup_welcome_entry_test.dart: a running setup leads with its percent and opens its progress as a first setup
+00:05 +32 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/oc2_server_discovery_test.dart: mixed-remote connection routes runtime choices only when needed
+00:05 +33 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/phone_setup_welcome_entry_test.dart: a interrupted setup offers Continue, which resumes the same job as a first setup
+00:05 +34 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/oc2_server_discovery_test.dart: editing endpoint clears cached generation evidence
+00:05 +35 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/oc2_server_discovery_test.dart: editing endpoint clears cached generation evidence
+00:05 +36 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/phone_setup_welcome_entry_test.dart: a cancelled setup offers Continue, which resumes the same job as a first setup
+00:06 +37 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/oc2_server_discovery_test.dart: editing endpoint retains cached generation evidence
+00:06 +38 -3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/phone_setup_welcome_entry_test.dart: coming back from phone setup reads the job again
+Pending timers:
+Timer (duration: 0:00:05.000000, periodic: false), created:
+#0      new FakeTimer._ (package:fake_async/fake_async.dart:342:62)
+#1      FakeAsync._createTimer (package:fake_async/fake_async.dart:260:29)
+#2      FakeAsync.run.<anonymous closure> (package:fake_async/fake_async.dart:185:15)
+#6      AndroidVoiceDevicePlatform.getDeviceInfo (package:opencode_mobile/voice/device.dart:95:12)
+#7      _PhoneSetupStartScreenState._probeDevice (package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart:123:74)
+#8      _PhoneSetupStartScreenState._load (package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart:114:15)
+<asynchronous suspension>
+(elided 3 frames from dart:async)
+
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following assertion was thrown running a test:
+A Timer is still pending even after the widget tree was disposed.
+'package:flutter_test/src/binding.dart':
+Failed assertion: line 2543 pos 12: '!timersPending'
+
+When the exception was thrown, this was the stack:
+#2      AutomatedTestWidgetsFlutterBinding._verifyInvariants (package:flutter_test/src/binding.dart:2543:12)
+#3      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1974:7)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 3 frames from class _AssertionError and package:stack_trace)
+
+The test description was:
+  coming back from phone setup reads the job again
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:06 +38 -4: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/oc2_server_discovery_test.dart: known OC1 user reaches phone setup with no runtime forced
+00:06 +38 -4: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/phone_setup_welcome_entry_test.dart: coming back from phone setup reads the job again [E]
+  Test failed. See exception logs above.
+  The test description was: coming back from phone setup reads the job again
+  
+00:06 +39 -4: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/oc2_server_discovery_test.dart: known OC1 user reaches phone setup with no runtime forced
+Pending timers:
+Timer (duration: 0:00:05.000000, periodic: false), created:
+#0      new FakeTimer._ (package:fake_async/fake_async.dart:342:62)
+#1      FakeAsync._createTimer (package:fake_async/fake_async.dart:260:29)
+#2      FakeAsync.run.<anonymous closure> (package:fake_async/fake_async.dart:185:15)
+#6      AndroidVoiceDevicePlatform.getDeviceInfo (package:opencode_mobile/voice/device.dart:95:12)
+#7      _PhoneSetupStartScreenState._probeDevice (package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart:123:74)
+#8      _PhoneSetupStartScreenState._load (package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart:114:15)
+<asynchronous suspension>
+(elided 3 frames from dart:async)
+
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following assertion was thrown running a test:
+A Timer is still pending even after the widget tree was disposed.
+'package:flutter_test/src/binding.dart':
+Failed assertion: line 2543 pos 12: '!timersPending'
+
+When the exception was thrown, this was the stack:
+#2      AutomatedTestWidgetsFlutterBinding._verifyInvariants (package:flutter_test/src/binding.dart:2543:12)
+#3      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1974:7)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 3 frames from class _AssertionError and package:stack_trace)
+
+The test description was:
+  known OC1 user reaches phone setup with no runtime forced
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:06 +39 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/phone_setup_welcome_entry_test.dart: done with nothing saved offers Open, which runs only the job's last step
+00:06 +39 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/oc2_server_discovery_test.dart: known OC1 user reaches phone setup with no runtime forced [E]
+  Test failed. See exception logs above.
+  The test description was: known OC1 user reaches phone setup with no runtime forced
+  
+00:06 +40 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/phone_setup_welcome_entry_test.dart: the welcome never waits for the job to be read
+00:06 +41 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/phone_setup_welcome_entry_test.dart: a read that hangs gives up and leaves the welcome as it is
+00:06 +42 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/phone_setup_welcome_entry_test.dart: a failed Continue says so and keeps the line
+00:06 +43 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/phone_setup_welcome_entry_test.dart: Arabic words and 320dp at 2.5x text fit
+00:07 +44 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: overview the fixture convoy: title, status line, stage, step, details; the Gas City term only in Technical details
+00:08 +45 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: overview TEAM-117: work in the refinery's hands is Reviewing, timed from the hand-off, with nothing working or held up
+00:08 +46 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: overview TEAM-117: the recorded bead has no update time: the hand-off is counted from its creation, steps untimed
+00:08 +47 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: overview answers the five questions top to bottom
+00:08 +48 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: overview names the blocked cause the host gave
+00:08 +49 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: overview the blocked shape: cause from the open dependency
+00:08 +50 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: overview a formula run with stages lists them as its steps
+00:09 +51 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: overview the most urgent needs-you item, answered in place
+00:09 +52 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: overview a host the app can only watch says where to answer
+00:09 +53 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: overview a phone host says where to answer
+00:09 +54 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: overview Details opens the technical sheet with the ids
+00:09 +55 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: overview Work and Agents tabs are real
+00:09 +56 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: timeline lists this run’s events newest first; filters reduce
+00:10 +57 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: timeline a filter that hides every row says so
+00:10 +58 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: timeline events that arrive while scrolled wait behind the pill
+00:10 +59 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: timeline scrolling back to the top releases the held rows
+00:10 +60 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: states a run the host no longer lists, with Back
+00:10 +61 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: states a run that disappears on refresh turns into the state
+00:10 +62 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: states stale shows the card’s line; Refresh clears it
+00:10 +63 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: states before the probe answers: loading
+00:10 +64 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: states a failed probe shows honest copy and Retry recovers
+00:11 +65 -5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: states the home’s run row pushes the run detail
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'team-run'>]: []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart:1326:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart line 1326
+The test description was:
+  the home’s run row pushes the run detail
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:11 +65 -6: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: states the home’s run row pushes the run detail [E]
+  Test failed. See exception logs above.
+  The test description was: the home’s run row pushes the run detail
+  
+00:11 +65 -6: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/team_run_screen_test.dart: states reads in Arabic with the term and ids LTR
+00:11 +66 -6: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/first_run_welcome_test.dart: the phone choice and the demo open their destinations
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: setup start a running setup draws its journey
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/motion_setup_test.dart: setup start leads with the phone drawing at the top of the page
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_374c8cc1-848-2/test/oc2_server_discovery_test.dart: known OC1 user reaches phone setup with no runtime forced
+  ... and 2 more

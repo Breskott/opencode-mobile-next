@@ -1,4 +1,6 @@
-// TEAM-111: the Agents fleet, the Agent detail and the live output page.
+// TEAM-111: the Agents fleet, the Agent detail and the live output page
+// (slice-P3.6: the worker's watching conversation drawn from the team's
+// live output, [TeamWatchLiveScreen]).
 //
 // Fleet rows carry the six status words with their glyphs, sort per 02-ux
 // §5.1 and show "current work · ctx N% · age"; a run's Agents tab shows
@@ -14,6 +16,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
@@ -23,11 +27,12 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamAgentTranscript, TeamConversationScreen, TeamWatchLiveScreen;
 import 'package:opencode_mobile/ui/widgets/team_vocabulary.dart';
+import 'package:opencode_mobile/ui/widgets/tool_card.dart' show ToolCard;
 import 'package:shared_preferences/shared_preferences.dart';
 
 Directory _findFixtureRoot() {
@@ -350,7 +355,7 @@ void main() {
     await size(tester, viewport);
     await tester.pumpWidget(
       app(
-        AgentOutputScreen(controller: controller, agentId: agentId),
+        TeamWatchLiveScreen(team: controller, agentId: agentId),
         locale: locale,
         direction: direction,
         scale: scale,
@@ -362,203 +367,55 @@ void main() {
 
   Finder key(String value) => find.byKey(ValueKey(value));
 
-  double top(WidgetTester tester, Finder finder) =>
-      tester.getTopLeft(finder).dy;
-
-  Color colorOf(WidgetTester tester, Finder text) =>
-      tester.widget<Text>(text).style!.color!;
-
+  // The list's own scrollable (the chat's parts inside it scroll wide
+  // output sideways in scrollables of their own).
   ScrollPosition outputPosition(WidgetTester tester) => tester
       .state<ScrollableState>(
-        find.descendant(
-          of: key('team-agent-output-list'),
-          matching: find.byType(Scrollable),
-        ),
+        find
+            .descendant(
+              of: key('chat-watching-live-list'),
+              matching: find.byType(Scrollable),
+            )
+            .first,
       )
       .position;
 
   group('fleet', () {
-    testWidgets('six status words with glyphs, sorted per §5.1', (
-      tester,
-    ) async {
-      final (controller, _) = await boot(
-        configure: (g) => g
-          ..workOverride = const []
-          ..gatesOverride = const []
-          ..agentsOverride = const [
-            OrchestrationAgent(
-              id: 'a-stopped',
-              name: 'a-stopped',
-              state: AgentState.stopped,
-            ),
-            OrchestrationAgent(
-              id: 'b-idle',
-              name: 'b-idle',
-              state: AgentState.idle,
-            ),
-            OrchestrationAgent(
-              id: 'c-working',
-              name: 'c-working',
-              state: AgentState.working,
-            ),
-            OrchestrationAgent(
-              id: 'd-crashed',
-              name: 'd-crashed',
-              state: AgentState.crashed,
-            ),
-            OrchestrationAgent(
-              id: 'e-blocked',
-              name: 'e-blocked',
-              state: AgentState.blocked,
-            ),
-            OrchestrationAgent(
-              id: 'f-waiting',
-              name: 'f-waiting',
-              state: AgentState.waiting,
-            ),
-          ],
-      );
-      await size(tester, const Size(800, 2000));
-      await tester.pumpWidget(
-        app(TeamHomeScreen(controller: controller, now: () => clock)),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-home-segment-agents'));
-      await tester.pumpAndSettle();
-      // The stopped one sits under the collapsed "Suspended on the host"
-      // group (TEAM-115); open it so every word is on screen.
-      expect(key('team-home-agent-a-stopped'), findsNothing);
-      await tester.tap(key('team-home-suspended-group'));
-      await tester.pumpAndSettle();
-
-      // Needs-you first (blocked and waiting share the rank, by name),
-      // the crashed exception, then working, idle, stopped.
-      final expected = {
-        'e-blocked': ('Blocked', AppIconography.blocked),
-        'f-waiting': ('Waiting (needs input)', AppIconography.question),
-        'd-crashed': ('Crashed', AppIconography.error),
-        'c-working': ('Working', AppIconography.play),
-        'b-idle': ('Idle', AppIconography.statusDot),
-        'a-stopped': ('Stopped', AppIconography.stopCircle),
-      };
-      for (final MapEntry(key: id, value: (word, glyph)) in expected.entries) {
-        final row = key('team-home-agent-$id');
-        expect(
-          find.descendant(of: row, matching: find.text(word)),
-          findsOneWidget,
-          reason: '$id says $word',
+    // P3.5: the run page's Agents tab is retired; the task's conversation
+    // names the agents on it (its strip and worker lines).
+    Widget conversation(OrchestrationController controller) =>
+        TeamConversationScreen(
+          team: controller,
+          runId: 'oc-xru',
+          now: () => clock,
         );
-        expect(
-          find.descendant(of: row, matching: find.byIcon(glyph)),
-          findsOneWidget,
-          reason: '$id carries its glyph',
-        );
-      }
-      final order = expected.keys.toList();
-      for (var i = 1; i < order.length; i++) {
-        expect(
-          top(tester, key('team-home-agent-${order[i - 1]}')),
-          lessThan(top(tester, key('team-home-agent-${order[i]}'))),
-          reason: '${order[i - 1]} above ${order[i]}',
-        );
-      }
-      expect(tester.takeException(), isNull);
-    });
 
-    testWidgets('the second line is current work · ctx N% · age', (
-      tester,
-    ) async {
-      final (controller, _) = await boot(configure: runShape);
-      await size(tester, const Size(800, 2000));
-      await tester.pumpWidget(
-        app(TeamHomeScreen(controller: controller, now: () => clock)),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-home-segment-agents'));
-      await tester.pumpAndSettle();
-      final row = key('team-home-agent-fox');
-      expect(
-        find.descendant(of: row, matching: find.text('Sync engine')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: row, matching: find.text('ctx 63%')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: row, matching: find.text('12m ago')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: row,
-          matching: find.text('gastown.polecat · opencode / openai/gpt-x'),
-        ),
-        findsOneWidget,
-      );
-      // Owl has neither work, context nor activity: just the fallback.
-      expect(
-        find.descendant(
-          of: key('team-home-agent-owl'),
-          matching: find.text('No current work'),
-        ),
-        findsOneWidget,
-      );
-
-      // The row opens the Agent detail by default.
-      await tester.tap(row);
-      await tester.pumpAndSettle();
-      expect(key('team-agent'), findsOneWidget);
-      expect(key('team-agent-title'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('a run’s Agents tab shows only the agents on that run', (
-      tester,
-    ) async {
+    testWidgets('the task lists only the agents on it', (tester) async {
       final (controller, _) = await boot(configure: runShape);
       await size(tester, const Size(800, 1600));
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-run-tab-agents'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-agents-placeholder'), findsNothing);
-      expect(key('team-run-agents-list'), findsOneWidget);
-      expect(key('team-run-agent-fox'), findsOneWidget);
-      expect(key('team-run-agent-wolf'), findsOneWidget);
-      // Bear works w9, which is not on this run; owl has no work.
-      expect(key('team-run-agent-bear'), findsNothing);
-      expect(key('team-run-agent-owl'), findsNothing);
-      // Wolf waits on input and sorts first.
-      expect(
-        top(tester, key('team-run-agent-wolf')),
-        lessThan(top(tester, key('team-run-agent-fox'))),
-      );
-      await tester.tap(key('team-run-agent-fox'));
-      await tester.pumpAndSettle();
-      expect(key('team-agent'), findsOneWidget);
+      await tester.pumpWidget(app(conversation(controller)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(key('team-conversation-family'), findsNothing);
+      expect(key('team-conversation-agent-fox'), findsOneWidget);
+      expect(key('team-conversation-agent-wolf'), findsOneWidget);
+      // Bear works w9, which is not on this task; owl has no work.
+      expect(key('team-conversation-agent-bear'), findsNothing);
+      expect(key('team-conversation-agent-owl'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a run without agents shows the empty state', (tester) async {
+    testWidgets('a task without agents shows no worker row', (tester) async {
       final (controller, _) = await boot(
         configure: (g) => runShape(g, agents: const []),
       );
       await size(tester, const Size(800, 1600));
-      await tester.pumpWidget(
-        app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-run-tab-agents'));
-      await tester.pumpAndSettle();
-      expect(key('team-run-agents-empty'), findsOneWidget);
-      expect(find.text('No agents on this run'), findsOneWidget);
+      await tester.pumpWidget(app(conversation(controller)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(key('team-conversation'), findsOneWidget);
+      expect(key('team-conversation-family'), findsNothing);
+      expect(key('team-conversation-agent-fox'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });
@@ -569,9 +426,17 @@ void main() {
     ) async {
       final (controller, gateway) = await boot(configure: runShape);
       await pumpAgent(tester, controller, 'fox');
-      expect(find.text('fox'), findsWidgets);
-      expect(key('team-agent-term'), findsOneWidget);
-      expect(find.text('Agent · session bl-5qc'), findsOneWidget);
+      // Named by role and short name; the engine's session id is under
+      // Technical details, and the subtitle is the task it works on.
+      expect(key('team-agent-title'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: key('team-agent-title'),
+          matching: find.textContaining(RegExp(r' · fox$')),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Agent · session bl-5qc'), findsNothing);
       expect(key('team-agent-state'), findsOneWidget);
       expect(
         find.descendant(
@@ -580,57 +445,92 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The state row's line: how full its context is and the session age.
+      expect(
+        find.text('Context 63% used · Session 3 h 14 min'),
+        findsOneWidget,
+      );
+      expect(key('team-agent-recycling'), findsNothing);
+      // The output stream was opened for the agent's session: its newest
+      // step and when it was last active are one line of the status.
+      expect(gateway.outputRequests, ['bl-5qc']);
+      final activity = key('team-agent-activity-line');
       expect(
         find.descendant(
-          of: key('team-agent-header'),
-          matching: find.byIcon(AppIconography.play),
+          of: activity,
+          matching: find.textContaining(RegExp(r'^Last step: ')),
         ),
         findsOneWidget,
       );
-      expect(find.text('ctx 63%'), findsOneWidget);
-      expect(find.text('Session 3 h 14 min'), findsOneWidget);
-      expect(key('team-agent-recycling'), findsNothing);
-      // The output stream was opened for the agent's session.
-      expect(gateway.outputRequests, ['bl-5qc']);
+      expect(
+        find.descendant(of: activity, matching: find.text('active 12 min ago')),
+        findsOneWidget,
+      );
 
+      // A short status page: no sections, and no second renderer of the
+      // agent's work (its conversation, or Live output, shows that).
       for (final section in [
         'identity',
         'runtime',
         'work',
         'activity',
         'output',
-        'technical',
       ]) {
-        expect(key('team-agent-$section'), findsOneWidget, reason: section);
+        expect(key('team-agent-$section'), findsNothing, reason: section);
       }
-      expect(find.text('gastown.polecat'), findsOneWidget);
+      expect(key('team-agent-step-group-header'), findsNothing);
+      expect(find.text('Ran 5 commands'), findsNothing);
+      expect(find.textContaining('Branch setup: metadata says'), findsNothing);
+      // The one pinned action is its conversation; with no OpenCode server
+      // to look in here, the reason (the team's live output) is beside it.
+      expect(
+        tester.widget<KitButton>(key('team-agent-open-conversation')).role,
+        KitButtonRole.primary,
+      );
+      expect(key('team-agent-open-output'), findsNothing);
+      expect(key('team-agent-menu-output'), findsNothing);
+      // Messaging moved to the conversation's composer.
+      expect(key('team-agent-control-message'), findsNothing);
+      expect(key('team-agent-conversation-miss'), findsOneWidget);
+      // This read-only host allows no controls, and the page says where
+      // they are.
+      expect(key('team-agent-controls-elsewhere'), findsOneWidget);
+      expect(key('team-agent-control-nudge'), findsNothing);
+
+      // What the host reports is folded under Technical details.
+      expect(find.text('openai/gpt-x'), findsNothing);
+      await tester.tap(key('team-agent-technical'));
+      await tester.pumpAndSettle();
       expect(find.text('openai/gpt-x'), findsOneWidget);
       expect(find.text('OpenCode'), findsOneWidget);
-      expect(find.text('3 h 14 min'), findsOneWidget);
       final workDir = find.text(
         '/home/eslam/city/.gc/worktrees/ocproof/polecats/fox',
       );
       expect(workDir, findsOneWidget);
-      expect(tester.widget<Text>(workDir).textDirection, TextDirection.ltr);
       expect(
-        tester.widget<Text>(workDir).style?.fontFamily,
+        tester.widget<EditableText>(workDir).textDirection,
+        TextDirection.ltr,
+      );
+      expect(
+        tester.widget<EditableText>(workDir).style.fontFamily,
         AppTheme.monoFamily,
       );
-      expect(find.text('polecat/oc-cq6'), findsOneWidget);
-      expect(key('team-agent-work-chip'), findsOneWidget);
-      expect(find.text('Sync engine'), findsOneWidget);
-      expect(find.text('Nothing blocking it'), findsOneWidget);
-      expect(key('team-agent-open-output'), findsOneWidget);
-      expect(find.text('Live output'), findsOneWidget);
+      expect(find.text('polecat/oc-cq6'), findsWidgets);
+      // The task and what holds it up are the subtitle, said once; no task
+      // row repeats it.
+      expect(key('team-agent-work-chip'), findsNothing);
+      expect(
+        find.text('On “Sync engine” · nothing blocking it'),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('the context number changes tone at 75% and 90%', (
       tester,
     ) async {
-      expect(teamContextAttentionPercent, 75);
+      expect(teamContextHighPercent, 75);
       expect(teamContextRecyclePercent, 90);
-      final theme = AppTheme.dark();
       Future<void> at(int percent) async {
         final (controller, _) = await boot(
           configure: (g) => runShape(g, agents: [fox(context: percent)]),
@@ -638,29 +538,20 @@ void main() {
         await pumpAgent(tester, controller, 'fox');
       }
 
-      await at(74);
-      expect(colorOf(tester, find.text('ctx 74%')), AppTheme.mutedOf(theme));
-      expect(key('team-agent-recycling'), findsNothing);
-
-      await at(75);
-      expect(
-        colorOf(tester, find.text('ctx 75%')),
-        AppTheme.statusColor(theme, AppStatusTone.attention),
-      );
-      expect(key('team-agent-recycling'), findsNothing);
-
-      await at(89);
-      expect(
-        colorOf(tester, find.text('ctx 89%')),
-        AppTheme.statusColor(theme, AppStatusTone.attention),
-      );
-      expect(key('team-agent-recycling'), findsNothing);
+      // The number is said in words on the state row; only the recycle
+      // point adds a notice (the tone lives in that notice, not the word).
+      for (final percent in [74, 75, 89]) {
+        await at(percent);
+        expect(
+          find.textContaining('Context $percent% used'),
+          findsOneWidget,
+          reason: '$percent%',
+        );
+        expect(key('team-agent-recycling'), findsNothing);
+      }
 
       await at(90);
-      expect(
-        colorOf(tester, find.text('ctx 90%')),
-        AppTheme.statusColor(theme, AppStatusTone.failure),
-      );
+      expect(find.textContaining('Context 90% used'), findsOneWidget);
       expect(key('team-agent-recycling'), findsOneWidget);
       expect(find.text('Recycling soon · context nearly full'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -675,15 +566,17 @@ void main() {
       await pumpAgent(tester, controller, 'fox');
       expect(key('team-agent-context'), findsNothing);
       expect(key('team-agent-recycling'), findsNothing);
-      expect(find.text('Not reported'), findsWidgets);
+      // Not reported is left out, not listed.
+      expect(find.text('Not reported'), findsNothing);
+      expect(key('team-agent-context-row'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
     testWidgets(
-      'Activity parses the recorded transcript into collapsed groups',
+      'Live output draws the recorded transcript with the chat\'s parts',
       (tester) async {
         final (controller, _) = await boot(configure: runShape);
-        await pumpAgent(tester, controller, 'fox');
+        await pumpOutput(tester, controller, 'fox');
         // The whole polecat recording replayed: 80 markers, eight groups
         // of tool calls with the agent's prose between them.
         final tail = controller.agentOutput('fox');
@@ -706,23 +599,46 @@ void main() {
           reason: 'the read tool call is classified as a read',
         );
 
-        final headers = key('team-agent-step-group-header');
-        expect(headers, findsWidgets);
-        expect(key('team-agent-step-group-body'), findsNothing);
-        expect(find.text('Ran 5 commands'), findsWidgets);
-        expect(key('team-agent-activity-empty'), findsNothing);
+        // The chat's own parts, not a second renderer: the agent's words
+        // are the reply's prose blocks, each run of calls one of the chat's
+        // folded tool lines ("Ran 5 commands"), no frame, and no raw
+        // `[tool: …]` markers or one monospace dump of the transcript.
+        final transcript = key('chat-watching-live-text');
+        expect(tester.widget(transcript), isA<TeamAgentTranscript>());
+        Finder inside(Finder matching) =>
+            find.descendant(of: transcript, matching: matching);
+        expect(
+          inside(find.byKey(const Key('assistant-text-block'))),
+          findsWidgets,
+        );
+        final lines = inside(find.byKey(const Key('work-group-header')));
+        expect(lines, findsWidgets);
+        expect(
+          inside(find.textContaining(RegExp(r'[Rr]an \d+ commands?'))),
+          findsWidgets,
+        );
+        expect(inside(find.byKey(const Key('work-group-steps'))), findsNothing);
+        expect(inside(find.textContaining('[tool:')), findsNothing);
+        expect(key('team-agent-step-group-header'), findsNothing);
 
-        await tester.tap(headers.first);
+        // Opened, the calls are the chat's tool rows: the command in LTR
+        // mono.
+        await tester.ensureVisible(lines.first);
         await tester.pumpAndSettle();
-        expect(key('team-agent-step-group-body'), findsOneWidget);
-        final command = find.textContaining('ls /home/eslam/Storage/Code');
+        await tester.tap(lines.first);
+        await tester.pumpAndSettle();
+        expect(
+          inside(find.byKey(const Key('work-group-steps'))),
+          findsOneWidget,
+        );
+        expect(inside(find.byType(ToolCard)), findsWidgets);
+        final command = inside(
+          // The tool row shortens a long command in the middle.
+          find.textContaining('ls /home/eslam/Storage/C'),
+        );
         expect(command, findsWidgets);
         final text = tester.widget<Text>(command.first);
         expect(text.style?.fontFamily, AppTheme.monoFamily);
-        expect(
-          Directionality.of(tester.element(command.first)),
-          TextDirection.ltr,
-        );
         expect(tester.takeException(), isNull);
       },
     );
@@ -732,39 +648,40 @@ void main() {
     ) async {
       final (controller, gateway) = await boot(configure: runShape);
       await pumpAgent(tester, controller, 'fox');
-      expect(
-        find.descendant(
-          of: key('team-agent-open-output'),
-          matching: find.text('Live'),
-        ),
-        findsOneWidget,
-      );
       gateway.inner.endOutput(
         'bl-5qc',
         reason: 'session bl-5qc has no live output',
       );
       await tester.pumpAndSettle();
-      expect(
-        find.text('Session ended · output no longer on the host'),
-        findsOneWidget,
-      );
       final tail = controller.agentOutput('fox');
       expect(tail.ended, isTrue);
       expect(tail.text, isNotEmpty, reason: 'the cached text stays');
 
-      await tester.tap(key('team-agent-open-output'));
+      await tester.tap(key('team-agent-open-conversation'));
       await tester.pumpAndSettle();
-      expect(key('team-agent-output-page'), findsOneWidget);
+      expect(key('chat-watching-live'), findsOneWidget);
+      // Why the live output and not its conversation.
+      expect(key('chat-watching-live-note'), findsOneWidget);
       expect(
         find.text('Session ended · output no longer on the host'),
         findsOneWidget,
       );
-      expect(key('team-agent-output-text'), findsOneWidget);
-      // Nothing more can arrive: the switch is disabled.
-      final follow = tester.widget<SwitchListTile>(
-        key('team-agent-output-follow'),
+      expect(key('chat-watching-live-text'), findsOneWidget);
+      // The title is the task it works on.
+      expect(
+        find.descendant(
+          of: key('chat-watching-live-title'),
+          matching: find.text('Sync engine'),
+        ),
+        findsOneWidget,
       );
-      expect(follow.onChanged, isNull);
+      // Opened from its own page: Back returns there, no way round again.
+      expect(key('chat-watching-details'), findsNothing);
+      // Nothing more can arrive: no Follow switch, and no jump pill.
+      expect(key('chat-watching-live-jump').hitTestable(), findsNothing);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(key('team-agent'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -774,12 +691,35 @@ void main() {
       final (controller, gateway) = await boot(configure: runShape);
       await pumpAgent(tester, controller, 'owl');
       expect(gateway.outputRequests, isEmpty);
-      expect(find.text('Agent'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: key('team-agent-title'),
+          matching: find.textContaining(RegExp(r'^Agent')),
+        ),
+        findsOneWidget,
+      );
+      // Nothing done yet and no activity: no status line for it.
+      expect(key('team-agent-activity-line'), findsNothing);
+      await tester.tap(key('team-agent-open-conversation'));
+      await tester.pumpAndSettle();
       expect(
         find.text('Live output is not available for this agent'),
         findsOneWidget,
       );
-      expect(key('team-agent-activity-empty'), findsOneWidget);
+      // Nothing said yet: the watching page's own empty state, and no
+      // task to name, so the title says what the page is.
+      expect(key('chat-watching-empty'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: key('chat-watching-live-title'),
+          matching: find.text('Live output'),
+        ),
+        findsOneWidget,
+      );
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.tap(key('team-agent-technical'));
+      await tester.pumpAndSettle();
       expect(key('team-agent-no-work'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -806,12 +746,10 @@ void main() {
       await pumpAgent(tester, controller, 'wolf');
       expect(key('team-agent-gate'), findsOneWidget);
       expect(find.text('Which persistence strategy?'), findsOneWidget);
-      expect(
-        find.textContaining('Answer this on the computer'),
-        findsOneWidget,
-      );
-      expect(key('team-agent-work-dependency'), findsOneWidget);
-      expect(find.text('Blocked'), findsOneWidget);
+      // What the wait costs, named after the agent.
+      expect(find.textContaining('waits until you answer'), findsOneWidget);
+      // What holds its task up ends the subtitle.
+      expect(find.textContaining(' · blocked'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -830,15 +768,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('metadata.rig'), findsOneWidget);
       expect(find.text('ocproof/gastown.polecat'), findsOneWidget);
-      await tester.tap(key('team-agent-details'));
-      await tester.pumpAndSettle();
-      expect(key('team-agent-details-sheet'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
 
   group('output page', () {
-    testWidgets('is LTR mono and follows by default', (tester) async {
+    testWidgets('draws with the chat\'s parts and follows by default', (
+      tester,
+    ) async {
       final (controller, gateway) = await boot(
         configure: (g) {
           runShape(g);
@@ -851,16 +788,31 @@ void main() {
         'fox',
         locale: const Locale('ar'),
         direction: TextDirection.rtl,
+        // Short enough to scroll: the page no longer spends a row on a
+        // Follow switch.
+        viewport: const Size(360, 420),
       );
-      final text = key('team-agent-output-text');
+      final text = key('chat-watching-live-text');
       expect(text, findsOneWidget);
-      expect(tester.widget<Text>(text).style?.fontFamily, AppTheme.monoFamily);
-      expect(Directionality.of(tester.element(text)), TextDirection.ltr);
-      expect(find.text('مباشر'), findsOneWidget);
-      final follow = tester.widget<SwitchListTile>(
-        key('team-agent-output-follow'),
+      // The chat's reply, in the reader's direction (its commands stay LTR
+      // mono inside the chat's tool rows), never a raw mono dump.
+      expect(tester.widget(text), isA<TeamAgentTranscript>());
+      expect(Directionality.of(tester.element(text)), TextDirection.rtl);
+      expect(find.textContaining('[tool:'), findsNothing);
+      // The status line names who is watched (its role, not the generated
+      // name) once words arrived.
+      expect(
+        find.descendant(
+          of: key('chat-watching-banner'),
+          matching: find.textContaining(
+            lookupAppLocalizations(const Locale('ar')).teamUiAgentRoleWorker,
+          ),
+        ),
+        findsOneWidget,
       );
-      expect(follow.value, isTrue);
+      // Built from kit parts: no Follow switch (following is the default,
+      // a drag up stops it and the pill resumes it).
+      expect(find.byType(SwitchListTile), findsNothing);
 
       var position = outputPosition(tester);
       expect(position.maxScrollExtent, greaterThan(0));
@@ -875,27 +827,24 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a drag up stops following; Follow resumes and jumps', (
+    testWidgets('a drag up stops following; the pill resumes and jumps', (
       tester,
     ) async {
       final (controller, gateway) = await boot(
         configure: (g) {
           runShape(g);
-          g.inner.outputReplay = 6;
+          g.inner.outputReplay = 24;
         },
       );
       await pumpOutput(tester, controller, 'fox');
-      expect(key('team-agent-output-jump'), findsNothing);
+      final jump = key('chat-watching-live-jump').hitTestable();
+      expect(jump, findsNothing);
 
-      await tester.drag(key('team-agent-output-list'), const Offset(0, 400));
+      await tester.drag(key('chat-watching-live-list'), const Offset(0, 400));
       await tester.pumpAndSettle();
       var position = outputPosition(tester);
       expect(position.pixels, lessThan(position.maxScrollExtent - 24));
-      expect(
-        tester.widget<SwitchListTile>(key('team-agent-output-follow')).value,
-        isFalse,
-      );
-      expect(key('team-agent-output-jump'), findsOneWidget);
+      expect(jump, findsOneWidget);
 
       final held = position.pixels;
       gateway.inner.emitOutput('bl-5qc', 4);
@@ -904,23 +853,11 @@ void main() {
       expect(position.pixels, held, reason: 'new text does not move it');
       expect(position.pixels, lessThan(position.maxScrollExtent));
 
-      await tester.tap(key('team-agent-output-follow'));
-      await tester.pumpAndSettle();
-      position = outputPosition(tester);
-      expect(
-        tester.widget<SwitchListTile>(key('team-agent-output-follow')).value,
-        isTrue,
-      );
-      expect(position.pixels, position.maxScrollExtent);
-      expect(key('team-agent-output-jump'), findsNothing);
-
-      // The pill does the same.
-      await tester.drag(key('team-agent-output-list'), const Offset(0, 400));
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-agent-output-jump'));
+      await tester.tap(jump);
       await tester.pumpAndSettle();
       position = outputPosition(tester);
       expect(position.pixels, position.maxScrollExtent);
+      expect(jump, findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -962,13 +899,29 @@ void main() {
         String list,
         Finder target,
       ) async {
-        await tester.scrollUntilVisible(
-          target,
-          120,
-          scrollable: find
-              .descendant(of: key(list), matching: find.byType(Scrollable))
-              .first,
-        );
+        // Scrolled by position, not by drag: at 2.5x a drag can land on
+        // selectable notice text and select it instead of scrolling.
+        final position = tester
+            .state<ScrollableState>(
+              find
+                  .descendant(of: key(list), matching: find.byType(Scrollable))
+                  .first,
+            )
+            .position;
+        // The kit list builds lazily. A return to an earlier section must
+        // scroll back before looking for its now-unmounted row.
+        if (target.evaluate().isEmpty) {
+          position.jumpTo(0);
+          await tester.pump();
+        }
+        while (target.evaluate().isEmpty &&
+            position.pixels < position.maxScrollExtent) {
+          position.jumpTo(
+            math.min(position.pixels + 120, position.maxScrollExtent),
+          );
+          await tester.pump();
+        }
+        await tester.ensureVisible(target);
         await tester.pumpAndSettle();
         expect(target, findsOneWidget);
         final rect = tester.getRect(target);
@@ -990,29 +943,20 @@ void main() {
           viewport: const Size(320, 740),
         );
         expect(tester.getSize(key('team-agent')).width, 320);
-        expect(key('team-agent-header'), findsOneWidget);
         expect(key('team-agent-recycling'), findsOneWidget);
-        for (final section in [
-          'identity',
-          'runtime',
-          'work',
-          'activity',
-          'open-output',
+        // The primary sits pinned under the list.
+        expect(key('team-agent-open-conversation'), findsOneWidget);
+        for (final part in [
+          'header',
+          'activity-line',
+          'controls-elsewhere',
           'technical',
         ]) {
-          await reveal(tester, 'team-agent-list', key('team-agent-$section'));
-          if (section == 'activity') {
-            // The list builds lazily: the first group sits right under
-            // the heading, so it exists now.
-            final header = key('team-agent-step-group-header').first;
-            await reveal(tester, 'team-agent-list', header);
-            await tester.tap(header);
-            await tester.pumpAndSettle();
-            expect(key('team-agent-step-group-body'), findsOneWidget);
-          }
+          await reveal(tester, 'team-agent-list', key('team-agent-$part'));
         }
         await tester.tap(key('team-agent-technical'));
         await tester.pumpAndSettle();
+        await reveal(tester, 'team-agent-list', key('team-agent-header'));
         expect(tester.takeException(), isNull);
       });
 
@@ -1032,23 +976,26 @@ void main() {
           scale: 2.5,
           viewport: const Size(320, 740),
         );
-        expect(tester.getSize(key('team-agent-output-page')).width, 320);
-        expect(key('team-agent-output-status'), findsOneWidget);
-        expect(key('team-agent-output-follow'), findsOneWidget);
-        expect(key('team-agent-output-text'), findsOneWidget);
-        var position = outputPosition(tester);
-        expect(position.pixels, position.maxScrollExtent);
-        await tester.drag(key('team-agent-output-list'), const Offset(0, 300));
-        await tester.pumpAndSettle();
-        expect(key('team-agent-output-jump'), findsOneWidget);
-        final pill = tester.getRect(key('team-agent-output-jump'));
-        expect(pill.left, greaterThanOrEqualTo(0));
-        expect(pill.right, lessThanOrEqualTo(320));
+        expect(tester.getSize(key('chat-watching-live')).width, 320);
+        expect(key('chat-watching-banner'), findsOneWidget);
+        // The composer stays in the window at this size (it scrolls within
+        // its room): its field is in reach, nothing overflows.
+        expect(key('chat-watching-composer'), findsOneWidget);
+        final field = tester.getRect(key('chat-watching-message-field'));
+        expect(field.bottom, lessThanOrEqualTo(740));
+        // The transcript is in the list, which the large text leaves
+        // little room; no Follow switch.
+        expect(
+          find.byKey(
+            const ValueKey('chat-watching-live-text'),
+            skipOffstage: false,
+          ),
+          findsOneWidget,
+        );
+        expect(key('chat-watching-live-follow'), findsNothing);
         gateway.inner.endOutput('bl-5qc');
         await tester.pumpAndSettle();
-        expect(key('team-agent-output-jump'), findsNothing);
-        position = outputPosition(tester);
-        expect(position.viewportDimension, greaterThan(0));
+        expect(key('chat-watching-live-jump').hitTestable(), findsNothing);
         expect(tester.takeException(), isNull);
       });
     }

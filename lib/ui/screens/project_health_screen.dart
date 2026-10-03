@@ -5,9 +5,26 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 
 import '../../api/product_repository.dart';
-import '../widgets/product_states.dart';
 import '../app_iconography.dart';
+import '../app_theme.dart' show AppStatusTone;
+import '../kit/kit.dart';
+import '../widgets/product_states.dart' show productErrorText;
 
+/// Project health (map pages project-health and
+/// project-health-git-init-dialog; revamp unit screen-work-3): the branch
+/// and changed files, the language servers and the formatters the server
+/// reports, each on one [KitRowGroup].
+///
+/// Built from kit parts only: a [KitScreen] page with its title (pull to
+/// refresh reloads every section) and the one loading bar. The rows say
+/// each item's state, so the section labels carry no counts. Each section loads on its own: skeleton rows
+/// while it loads, an inline [KitNotice.error] with Try again when its read
+/// fails, an empty state that says what would be there, and its rows. A
+/// section the server cannot report is not shown (and not asked for);
+/// Initialize Git, where the server cannot run it, stays as a dimmed row
+/// that says where to run it. Where it can, it is a "Set up" row that
+/// confirms first ([showKitConfirm]) and says so in place when it is done or
+/// when it failed.
 class ProjectHealthScreen extends StatefulWidget {
   final ServerOperationsGateway repository;
   final Future<ServerOperationsGateway?> Function()? repositoryResolver;
@@ -36,9 +53,13 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
   String? _languageServicesError;
   String? _formattersError;
   String? _gitInitializationError;
+  bool _gitInitialized = false;
   bool _refreshing = false;
   bool _initializingGit = false;
   int _generation = 0;
+
+  AppLocalizations get _l10n =>
+      lookupAppLocalizations(Localizations.localeOf(context));
 
   @override
   void initState() {
@@ -58,9 +79,7 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
     final repository = await _resolveRepository();
     if (!mounted || generation != _generation) return;
     if (repository == null) {
-      final message = lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).e7LibraryOpenCodeIsReconnectingTryAgainShortly;
+      final message = _l10n.e7LibraryOpenCodeIsReconnectingTryAgainShortly;
       setState(() {
         _versionControlError = message;
         _languageServicesError = message;
@@ -87,44 +106,30 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
       widget.repositoryResolver?.call() ?? widget.repository;
 
   Future<void> _initializeGit() async {
-    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final l10n = _l10n;
     if (_initializingGit) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(actionL10n.e7LibraryInitializeGitRepository),
-        content: Text(actionL10n.e7LibraryOpenCodeWillRunGitInitInThe),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(actionL10n.projectFolderCancel),
-          ),
-          FilledButton(
-            key: const ValueKey('confirm-git-initialization'),
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(actionL10n.e7LibraryInitializeGit),
-          ),
-        ],
-      ),
+    final confirmed = await showKitConfirm(
+      context,
+      title: l10n.e7LibraryInitializeGitRepository,
+      body: l10n.e7LibraryOpenCodeWillRunGitInitInThe,
+      confirmLabel: l10n.e7LibraryInitializeGit,
+      icon: AppIconography.branch,
+      confirmKey: const ValueKey('confirm-git-initialization'),
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     setState(() {
       _initializingGit = true;
       _gitInitializationError = null;
+      _gitInitialized = false;
     });
     try {
       final repository = await _resolveRepository();
       if (repository == null) {
-        throw ProductException(
-          actionL10n.e7LibraryOpenCodeIsReconnectingTryAgain,
-        );
+        throw ProductException(l10n.e7LibraryOpenCodeIsReconnectingTryAgain);
       }
       await repository.initializeGitRepository();
       await _load();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(actionL10n.e7LibraryGitRepositoryInitialized)),
-      );
+      if (mounted) setState(() => _gitInitialized = true);
     } catch (error) {
       if (mounted) {
         setState(() => _gitInitializationError = productErrorText(error));
@@ -184,320 +189,279 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryProjectHealth,
-        ),
-        actions: [
-          IconButton(
-            tooltip: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryRefreshProjectHealth,
-            onPressed: _refreshing || _initializingGit ? null : _load,
-            icon: _refreshing
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(AppIconography.retry),
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
+    final l10n = _l10n;
+    return KitScreen(
+      // A status page read like settings: centred at the reading width.
+      width: KitScreenWidth.reading,
+      topBar: KitTopBar(title: l10n.e7LibraryProjectHealth),
+      loading: _refreshing,
+      loadingLabel: l10n.e7LibraryLoading(l10n.e7LibraryProjectHealth),
+      body: KitRefresh(
         onRefresh: _load,
         child: ListView(
           key: const ValueKey('project-health-list'),
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 24),
+          padding: EdgeInsetsDirectional.only(
+            bottom: KitScreen.endPadding(context),
+          ),
           children: [
-            SectionLabel(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryVersionControl,
-              trailing: _versionControl == null
-                  ? null
-                  : Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7LibraryChanged(
-                        (_versionControl!.changes.length).toString(),
-                      ),
-                    ),
-            ),
-            ..._versionControlRows(),
-            if (widget.capabilities.languageServiceStatus) ...[
-              SectionLabel(
-                lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryLanguageServices,
-                trailing: _languageServices == null
-                    ? null
-                    : Text(
-                        '${_languageServices!.where((item) => item.connected).length}/${_languageServices!.length}',
-                      ),
-              ),
-              ..._languageServiceRows(),
-            ],
-            if (widget.capabilities.formatterStatus) ...[
-              SectionLabel(
-                lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryFormatters,
-                trailing: _formatters == null
-                    ? null
-                    : Text(
-                        '${_formatters!.where((item) => item.enabled).length}/${_formatters!.length}',
-                      ),
-              ),
-              ..._formatterRows(),
-            ],
+            ..._versionControlSection(l10n),
+            if (widget.capabilities.languageServiceStatus)
+              ..._languageServiceSection(l10n),
+            if (widget.capabilities.formatterStatus) ..._formatterSection(l10n),
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _versionControlRows() {
-    if (_versionControlError != null) {
-      return [
-        _HealthErrorTile(
-          message: _versionControlError!,
-          onRetry: _refreshing ? null : _load,
-        ),
-      ];
+  /// A section's message inside the list's side rails; [top] is the space
+  /// above it (none right under a section label, which keeps its own).
+  Widget _inset(Widget child, {bool top = true}) {
+    final tokens = KitTokens.of(context);
+    return Padding(
+      padding: top
+          ? EdgeInsetsDirectional.only(
+              start: tokens.gutter,
+              top: tokens.space2,
+              end: tokens.gutter,
+            )
+          : EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
+      child: child,
+    );
+  }
+
+  Widget _readFailed(AppLocalizations l10n, String message) => _inset(
+    top: false,
+    KitNotice.error(
+      title: l10n.workUnknown,
+      message: message,
+      retry: KitAction(
+        label: l10n.isolatedTaskRetryOpen,
+        onPressed: _refreshing ? null : () => unawaited(_load()),
+        disabledReason: _refreshing ? l10n.kitWorking : null,
+      ),
+    ),
+  );
+
+  List<Widget> _versionControlSection(AppLocalizations l10n) {
+    final label = l10n.e7LibraryVersionControl;
+    final error = _versionControlError;
+    if (error != null) {
+      return [KitSectionLabel(label), _readFailed(l10n, error)];
     }
     final vcs = _versionControl;
     if (vcs == null) {
-      return [
-        _HealthLoadingTile(
-          label: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryVersionControl2,
-        ),
-      ];
+      return [KitSectionLabel(label), const KitSkeletonRows(count: 2)];
     }
-    if (vcs.setupState == VersionControlSetupState.absent) {
-      return [
-        ListTile(
-          key: ValueKey('git-not-initialized'),
-          leading: Icon(AppIconography.branch),
-          title: Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryGitIsNotInitialized,
-          ),
-          subtitle: Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryInitializeThisProjectToEnableBranchesWorking,
-          ),
-        ),
-        // §7 row 19: health screens explain rather than vanish, so the action
-        // stays visible and says where to run it instead.
-        if (!widget.capabilities.gitInit)
-          GatedRowTile(
-            feature: 'git-init',
-            title: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryInitializeGit,
-            explainer: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryRunGitInitFromATerminal,
-            leading: Icon(AppIconography.terminal),
+    final done = _gitInitialized
+        ? _inset(
+            KitNotice(
+              key: const ValueKey('git-initialized'),
+              message: l10n.e7LibraryGitRepositoryInitialized,
+              tone: AppStatusTone.ok,
+              onDismiss: () => setState(() => _gitInitialized = false),
+            ),
           )
-        else
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 8),
-            child: FilledButton(
-              key: const ValueKey('initialize-git-repository'),
-              onPressed: _initializingGit ? null : _initializeGit,
-              child: _initializingGit
-                  ? const SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7LibraryInitializeGit,
-                    ),
+        : null;
+    if (vcs.setupState == VersionControlSetupState.absent) {
+      final initError = _gitInitializationError;
+      return [
+        // No "0 changed" beside "Git is not initialized".
+        KitRowGroup(
+          label: label,
+          children: [
+            KitRow(
+              key: const ValueKey('git-not-initialized'),
+              leading: KitRowIcon(AppIconography.branch),
+              title: l10n.e7LibraryGitIsNotInitialized,
+              supporting: TextSpan(
+                text:
+                    l10n.e7LibraryInitializeThisProjectToEnableBranchesWorking,
+              ),
+              supportingMaxLines: 2,
             ),
-          ),
-        if (_gitInitializationError != null)
-          ListTile(
-            leading: const Icon(AppIconography.error),
-            title: Text(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibraryGitInitializationFailed,
-            ),
-            subtitle: Text(
-              _gitInitializationError!,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: TextButton(
-              onPressed: _initializingGit ? null : _initializeGit,
-              child: Text(
-                lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).isolatedTaskRetryOpen,
+            // §7 row 19: health screens explain rather than vanish, so the
+            // action stays visible and says where to run it instead.
+            if (!widget.capabilities.gitInit)
+              KitRow.unavailable(
+                key: const ValueKey('gated-git-init'),
+                leading: KitRowIcon(AppIconography.terminal),
+                title: l10n.e7LibraryInitializeGit,
+                reason: l10n.e7LibraryRunGitInitFromATerminal,
+              )
+            else
+              KitRow(
+                key: const ValueKey('initialize-git-repository'),
+                leading: KitRowIcon(AppIconography.add),
+                title: l10n.e7LibraryInitializeGit,
+                supporting: TextSpan(text: l10n.projectHealthGitInitSupporting),
+                supportingMaxLines: 2,
+                trailing: _initializingGit
+                    ? null
+                    : KitRowValue(l10n.projectHealthSetUp),
+                enabled: !_initializingGit,
+                disabledReason: _initializingGit ? l10n.kitWorking : null,
+                onTap: () => unawaited(_initializeGit()),
+              ),
+          ],
+        ),
+        if (initError != null)
+          _inset(
+            KitNotice.error(
+              key: const ValueKey('git-init-error'),
+              title: l10n.e7LibraryGitInitializationFailed,
+              message: initError,
+              retry: KitAction(
+                label: l10n.isolatedTaskRetryOpen,
+                onPressed: _initializingGit
+                    ? null
+                    : () => unawaited(_initializeGit()),
+                disabledReason: _initializingGit ? l10n.kitWorking : null,
               ),
             ),
           ),
+        ?done,
       ];
     }
     final branch = vcs.branch?.trim();
     final defaultBranch = vcs.defaultBranch?.trim();
+    final clean = vcs.changes.isEmpty;
     return [
-      ListTile(
-        leading: const Icon(AppIconography.branch),
-        title: Text(
-          branch?.isNotEmpty == true
-              ? branch!
-              : lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryNoActiveBranch,
-          textDirection: branch?.isNotEmpty == true ? TextDirection.ltr : null,
-        ),
-        subtitle: Text(
-          defaultBranch?.isNotEmpty == true
-              ? lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryDefaultBranch((defaultBranch).toString())
-              : vcs.changes.isEmpty
-              ? lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryWorkingTreeIsClean
-              : lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7LibraryChangedFiles((vcs.changes.length).toString()),
-        ),
-        trailing: vcs.changes.isEmpty
-            ? const Icon(AppIconography.checkCircle)
-            : _ChangeCounts(additions: vcs.additions, deletions: vcs.deletions),
-      ),
-      if (vcs.changes.isEmpty)
-        ListTile(
-          leading: Icon(AppIconography.checks),
-          title: Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryNoUncommittedChanges,
+      ?done,
+      KitRowGroup(
+        label: label,
+        children: [
+          KitRow(
+            key: const ValueKey('project-health-branch'),
+            leading: KitRowIcon(AppIconography.branch),
+            title: branch?.isNotEmpty == true
+                ? branch!
+                : l10n.e7LibraryNoActiveBranch,
+            supporting: TextSpan(
+              text: defaultBranch?.isNotEmpty == true
+                  ? l10n.e7LibraryDefaultBranch(defaultBranch!)
+                  : clean
+                  ? l10n.e7LibraryWorkingTreeIsClean
+                  : l10n.e7LibraryChangedFiles('${vcs.changes.length}'),
+            ),
+            trailing: clean
+                ? null
+                : _ChangeCounts(
+                    additions: vcs.additions,
+                    deletions: vcs.deletions,
+                  ),
           ),
-        )
-      else
-        for (final file in vcs.changes) _VersionControlFileTile(file: file),
+          if (clean)
+            KitRow(
+              leading: KitRowIcon(AppIconography.checks),
+              title: l10n.e7LibraryNoUncommittedChanges,
+            )
+          else
+            for (final file in vcs.changes) _ChangedFileRow(file: file),
+        ],
+      ),
     ];
   }
 
-  List<Widget> _languageServiceRows() {
-    if (_languageServicesError != null) {
-      return [
-        _HealthErrorTile(
-          message: _languageServicesError!,
-          onRetry: _refreshing ? null : _load,
-        ),
-      ];
+  List<Widget> _languageServiceSection(AppLocalizations l10n) {
+    final label = l10n.e7LibraryLanguageServices;
+    final error = _languageServicesError;
+    if (error != null) {
+      return [KitSectionLabel(label), _readFailed(l10n, error)];
     }
     final services = _languageServices;
     if (services == null) {
-      return [
-        _HealthLoadingTile(
-          label: lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryLanguageServices2,
-        ),
-      ];
+      return [KitSectionLabel(label), const KitSkeletonRows(count: 2)];
     }
     if (services.isEmpty) {
       return [
-        ListTile(
-          leading: Icon(Icons.code_off_rounded),
-          title: Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryNoActiveLanguageServices,
-          ),
-          subtitle: Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryOpenCodeActivatesThemWhileItInspectsSupported,
-          ),
+        KitSectionLabel(label),
+        KitStateView(
+          key: const ValueKey('project-health-no-language-services'),
+          size: KitStateSize.inline,
+          icon: AppIconography.code,
+          title: l10n.e7LibraryNoActiveLanguageServices,
+          body: l10n.e7LibraryOpenCodeActivatesThemWhileItInspectsSupported,
         ),
       ];
     }
     return [
-      for (final service in services)
-        ListTile(
-          leading: Icon(
-            service.connected
-                ? AppIconography.checkCircle
-                : AppIconography.error,
-          ),
-          title: Text(service.name, textDirection: TextDirection.ltr),
-          subtitle: Text(
-            service.root.isEmpty
-                ? service.status
-                : '${service.status} · ${service.root}',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
+      KitRowGroup(
+        label: label,
+        children: [
+          for (final service in services)
+            KitRow(
+              leading: KitRowIcon(
+                service.connected
+                    ? AppIconography.checkCircle
+                    : AppIconography.error,
+              ),
+              title: service.name,
+              supporting: TextSpan(
+                text: [
+                  if (service.connected)
+                    l10n.projectHealthRunning
+                  else ...[
+                    l10n.projectHealthNotRunning,
+                    if (service.status.isNotEmpty) service.status,
+                  ],
+                  if (service.root.isNotEmpty) KitBidi.ltr(service.root),
+                ].join(' · '),
+              ),
+              supportingMaxLines: 2,
+            ),
+        ],
+      ),
     ];
   }
 
-  List<Widget> _formatterRows() {
-    if (_formattersError != null) {
-      return [
-        _HealthErrorTile(
-          message: _formattersError!,
-          onRetry: _refreshing ? null : _load,
-        ),
-      ];
+  List<Widget> _formatterSection(AppLocalizations l10n) {
+    final label = l10n.e7LibraryFormatters;
+    final error = _formattersError;
+    if (error != null) {
+      return [KitSectionLabel(label), _readFailed(l10n, error)];
     }
     final formatters = _formatters;
     if (formatters == null) {
-      return const [_HealthLoadingTile(label: 'formatters')];
+      return [KitSectionLabel(label), const KitSkeletonRows(count: 2)];
     }
     if (formatters.isEmpty) {
       return [
-        ListTile(
-          leading: Icon(AppIconography.alignLeft),
-          title: Text(
-            lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryNoFormattersConfigured,
-          ),
+        KitSectionLabel(label),
+        KitStateView(
+          key: const ValueKey('project-health-no-formatters'),
+          size: KitStateSize.inline,
+          icon: AppIconography.alignLeft,
+          title: l10n.e7LibraryNoFormattersConfigured,
         ),
       ];
     }
     return [
-      for (final formatter in formatters)
-        ListTile(
-          leading: Icon(
-            formatter.enabled
-                ? AppIconography.checkCircle
-                : AppIconography.removeCircle,
-          ),
-          title: Text(formatter.name, textDirection: TextDirection.ltr),
-          subtitle: Text(
-            formatter.extensions.isEmpty
-                ? formatter.enabled
-                      ? lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).e7LibraryEnabled
-                      : lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).e7LibraryDisabled
-                : '${formatter.enabled ? lookupAppLocalizations(Localizations.localeOf(context)).e7LibraryEnabled : lookupAppLocalizations(Localizations.localeOf(context)).e7LibraryDisabled} · ${formatter.extensions.join(', ')}',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
+      KitRowGroup(
+        label: label,
+        children: [
+          for (final formatter in formatters)
+            KitRow(
+              leading: KitRowIcon(
+                formatter.enabled
+                    ? AppIconography.checkCircle
+                    : AppIconography.removeCircle,
+              ),
+              title: formatter.name,
+              supporting: TextSpan(
+                text: [
+                  formatter.enabled
+                      ? l10n.e7LibraryEnabled
+                      : l10n.e7LibraryDisabled,
+                  if (formatter.extensions.isNotEmpty)
+                    KitBidi.ltr(formatter.extensions.join(', ')),
+                ].join(' · '),
+              ),
+              supportingMaxLines: 2,
+            ),
+        ],
+      ),
     ];
   }
 
@@ -508,35 +472,30 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
   }
 }
 
-class _VersionControlFileTile extends StatelessWidget {
+/// One changed file: its path, its change word, and its line counts.
+class _ChangedFileRow extends StatelessWidget {
   final VersionControlFile file;
 
-  const _VersionControlFileTile({required this.file});
+  const _ChangedFileRow({required this.file});
 
   @override
-  Widget build(BuildContext context) => ListTile(
-    minTileHeight: 54,
-    leading: Icon(_statusIcon(file.status), size: 20),
-    title: Text(
-      file.path,
-      textDirection: TextDirection.ltr,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    ),
-    subtitle: Text(file.status),
+  Widget build(BuildContext context) => KitRow(
+    leading: KitRowIcon(switch (file.status) {
+      'added' => AppIconography.addCircle,
+      'deleted' => AppIconography.removeCircle,
+      _ => AppIconography.edit,
+    }),
+    title: file.path,
+    supporting: TextSpan(text: file.status),
     trailing: _ChangeCounts(
       additions: file.additions,
       deletions: file.deletions,
     ),
   );
-
-  static IconData _statusIcon(String status) => switch (status) {
-    'added' => AppIconography.addCircle,
-    'deleted' => AppIconography.removeCircle,
-    _ => AppIconography.edit,
-  };
 }
 
+/// "+24 -3": added lines in the success tone with their sign, removed
+/// lines muted with theirs; read out as words.
 class _ChangeCounts extends StatelessWidget {
   final int additions;
   final int deletions;
@@ -544,61 +503,30 @@ class _ChangeCounts extends StatelessWidget {
   const _ChangeCounts({required this.additions, required this.deletions});
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Text(
-        '+$additions',
-        style: TextStyle(color: Theme.of(context).colorScheme.primary),
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tokens = KitTokens.of(context);
+    return Semantics(
+      label: l10n.projectHealthLineCounts(additions, deletions),
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          KitText(
+            '+$additions',
+            role: KitTextRole.secondary,
+            tone: KitTextTone.success,
+            tabular: true,
+          ),
+          SizedBox(width: tokens.space2),
+          KitText(
+            '-$deletions',
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
+            tabular: true,
+          ),
+        ],
       ),
-      const SizedBox(width: 8),
-      Text(
-        '-$deletions',
-        style: TextStyle(color: Theme.of(context).colorScheme.error),
-      ),
-    ],
-  );
-}
-
-class _HealthLoadingTile extends StatelessWidget {
-  final String label;
-
-  const _HealthLoadingTile({required this.label});
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    leading: const SizedBox.square(
-      dimension: 20,
-      child: CircularProgressIndicator(strokeWidth: 2),
-    ),
-    title: Text(
-      lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).e7LibraryLoading((label).toString()),
-    ),
-  );
-}
-
-class _HealthErrorTile extends StatelessWidget {
-  final String message;
-  final VoidCallback? onRetry;
-
-  const _HealthErrorTile({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    leading: const Icon(AppIconography.error),
-    title: Text(
-      lookupAppLocalizations(Localizations.localeOf(context)).workUnknown,
-    ),
-    subtitle: Text(message, maxLines: 3, overflow: TextOverflow.ellipsis),
-    trailing: TextButton(
-      onPressed: onRetry,
-      child: Text(
-        lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).isolatedTaskRetryOpen,
-      ),
-    ),
-  );
+    );
+  }
 }

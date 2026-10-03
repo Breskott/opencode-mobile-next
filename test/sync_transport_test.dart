@@ -94,7 +94,9 @@ void main() {
   });
 
   test(
-    'declared steal errors surface OpenCode detail as the product message',
+    // Since 0436b230 (keep server error prose out of product messages) the
+    // OpenCode detail stays in the cause for redacted Details only.
+    'declared steal errors keep OpenCode detail in the technical cause',
     () async {
       await HttpOverrides.runZoned(() async {
         final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -122,11 +124,17 @@ void main() {
           await expectLater(
             repository.stealSessionIntoWorkspace('session-7'),
             throwsA(
-              isA<ProductException>().having(
-                (error) => error.message,
-                'message',
-                'session belongs to another project',
-              ),
+              isA<ProductException>()
+                  .having(
+                    (error) => error.message,
+                    'message',
+                    'Could not steal the session into this workspace',
+                  )
+                  .having(
+                    (error) => error.cause.toString(),
+                    'original cause preserved',
+                    contains('session belongs to another project'),
+                  ),
             ),
           );
         } finally {

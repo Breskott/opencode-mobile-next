@@ -1,0 +1,6524 @@
+[
+ {
+  "pageId": "team-home",
+  "area": "i1-team-core",
+  "title": "AI Team",
+  "kind": "screen",
+  "file": "lib/ui/screens/team/team_home_screen.dart",
+  "journey": [
+   "delegate",
+   "approve"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "offers-enable:team intro → setup per server kind"
+  },
+  "personas": [
+   "team-delegator",
+   "remote-lead",
+   "phone-only"
+  ],
+  "personaNotes": {
+   "team-delegator": "what the team is doing now, what needs me, what finished; one tap to give a task",
+   "phone-only": "is the team burning battery/heat; paused by the heat guard?"
+  },
+  "states": [
+   {
+    "id": "loaded",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-home--loaded.png"
+   },
+   {
+    "id": "empty",
+    "how": "rendered:…team-home--empty.png"
+   },
+   {
+    "id": "error",
+    "how": "rendered:…team-home--error.png"
+   },
+   {
+    "id": "not-answering",
+    "how": "rendered:…team-home--not-answering.png"
+   },
+   {
+    "id": "paused/asleep/stuck",
+    "how": "codeOnly:lib/ui/screens/team/team_home_screen.dart:427,642,646"
+   }
+  ],
+  "statesMissing": [
+   "paused by the heat guard (thermal) is not distinguished from paused by the person"
+  ],
+  "info": [
+   "Now line",
+   "Needs you question",
+   "tasks with step progress",
+   "done today",
+   "agents count"
+  ],
+  "infoMissing": [
+   "time/cost so far per task"
+  ],
+  "actions": [
+   "answer a question in place",
+   "open a task",
+   "open the board",
+   "open agents",
+   "Give the team a task"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "workspace/team-door|team rows",
+   "team-conversation/team page",
+   "settings AI Team row"
+  ],
+  "exit": [
+   "team-conversation",
+   "team-board",
+   "team-agents",
+   "start-run-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "give the team a task",
+    "here": "team-home-start-run (showStartRunSheet, l.177)",
+    "elsewhere": "workspace/Solo·Team → TeamConversation.start; team-board/+",
+    "landsOn": "team-home stays (here) vs team-conversation (elsewhere) — INCONSISTENT"
+   },
+   {
+    "job": "see tasks",
+    "here": "Tasks list",
+    "elsewhere": "team-board columns; workspace team rows",
+    "landsOn": "team-conversation"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-now-line",
+    "kind": "status-line",
+    "kit": "KitStatusLine+custom",
+    "kitGap": "KitNowLine",
+    "couldBeAutomatic": "no",
+    "note": "'Working on … · a reviewer checks it next' — a pattern reused by the team conversation"
+   },
+   {
+    "id": "needs-you",
+    "kind": "request-card",
+    "kit": "KitRequestCard",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "answered in place + wave illustration"
+   },
+   {
+    "id": "task-row",
+    "kind": "row",
+    "kit": "KitRow+KitTaskMark",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "agents-row",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: agents are managed by the team; the row is status, not a control centre",
+    "note": ""
+   },
+   {
+    "id": "team-home-board",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "icon action in the header"
+   },
+   {
+    "id": "team-home-start-run",
+    "kind": "primary-action",
+    "kit": "KitButton",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "opens the old start sheet, not the conversation"
+   }
+  ],
+  "ledgerStale": [
+   "team-home-segments",
+   "team-home-segments-menu",
+   "team-home-segments-menu-item",
+   "team-home-host-chip"
+  ],
+  "proposal": "redesign",
+  "rationale": "The owner: 'You decide and rethink'. With tasks as conversations and a board, the home should be the team's overview (Now, Needs you, a few tasks) whose every task and 'Give a task' land in the task conversation; one task list model shared with the board and Work tab.",
+  "verticals": {
+   "automation-first": "agents list is a control surface; should be status",
+   "honest-state": "heat-guard pause indistinct",
+   "consistency-kit": "Now line is a new pattern — make it kit"
+  },
+  "evidence": [
+   "lib/ui/screens/team/team_home_screen.dart:177",
+   "lib/ui/screens/team/team_home_screen.dart:270",
+   "lib/ui/screens/team/team_home_screen.dart:427",
+   "lib/ui/screens/team/team_home_screen.dart:467",
+   "docs/qa/screen-census/i1-team-core/team-home--loaded.png"
+  ]
+ },
+ {
+  "pageId": "team-home-runs-tab",
+  "area": "i1-team-core",
+  "title": "Runs ({count})",
+  "kind": "tab",
+  "file": "lib/ui/screens/team/team_home_screen.dart",
+  "journey": [
+   "observe"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden (page unreachable; Work tab shows the discover door)",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "team-delegator",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "team-delegator": "scan what runs and what waits, open one",
+   "remote-lead": "find a task by name fast when many"
+  },
+  "states": [
+   {
+    "id": "tasks",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-home--loaded.png"
+   },
+   {
+    "id": "filtered",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-home-runs-tab--filtered.png"
+   },
+   {
+    "id": "search-open",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-home-runs-tab--search-open.png"
+   },
+   {
+    "id": "done-expanded",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-home-runs-tab--done-expanded.png"
+   },
+   {
+    "id": "filtered-empty",
+    "how": "codeOnly:lib/ui/screens/team/team_home_screen.dart:509"
+   },
+   {
+    "id": "upkeep-shown",
+    "how": "codeOnly:lib/ui/screens/team/team_home_screen.dart:544"
+   }
+  ],
+  "statesMissing": [
+   "search active while Needs you stays unfiltered (critic)"
+  ],
+  "info": [
+   "task title (2 lines)",
+   "state line: 'Working · 2 of 4 steps done' / waits with 'no worker has started'"
+  ],
+  "infoMissing": [
+   "which tasks the team will pick up next (queue order)"
+  ],
+  "actions": [
+   "open task",
+   "search",
+   "filter menu",
+   "show more done",
+   "show upkeep"
+  ],
+  "actionsMissing": [
+   "open the task's conversation directly (row opens RunScreen, the conversation is one more tap)"
+  ],
+  "entry": [
+   "team-home"
+  ],
+  "exit": [
+   "team-run"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "open a task",
+    "here": "",
+    "elsewhere": "team-home/task-row → RunScreen (team_home_screen.dart:132,397); workspace/team row → TeamConversation.open (workspace_screen.dart:1241); team-board/card → TeamConversation.open (team_board_screen.dart:59)",
+    "landsOn": "team-run (home) vs team-conversation (Work tab, board) — INCONSISTENT"
+   },
+   {
+    "job": "see tasks",
+    "here": "team-home-tasks",
+    "elsewhere": "team-board columns; workspace team rows",
+    "landsOn": "team-run (home) vs team-conversation (board, Work)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "task-row",
+    "kind": "row",
+    "kit": "KitRow+KitTaskMark",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "working rows spin (KitStatusMark working = CircularProgressIndicator)"
+   },
+   {
+    "id": "team-home-search",
+    "kind": "field",
+    "kit": "none",
+    "kitGap": "KitSearchBar",
+    "couldBeAutomatic": "no",
+    "note": "TextField + PopupMenu filter"
+   },
+   {
+    "id": "team-home-upkeep-toggle",
+    "kind": "switch",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: upkeep is host bookkeeping; never show it to the person",
+    "note": "raw SwitchListTile.adaptive"
+   },
+   {
+    "id": "team-home-completed-more",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [
+   "team-home-runs-filter-chips (chips replaced by one filter menu)",
+   "Start a run (label now 'Give the team a task', pinned on the home, not per segment)"
+  ],
+  "proposal": "merge-into:team-home",
+  "rationale": "It is no longer a tab but the home's Tasks section (pilot: the home keeps a few tasks); fix it there: a task row must land in the task conversation like the Work tab and board do, and search/filter move to the board where every task is.",
+  "verticals": {
+   "automation-first": "ok",
+   "consistency-kit": "issue: hand-built search bar and switch",
+   "a11y": "issue: scrolled Now line half-clipped under a transparent top bar (critic)",
+   "honest-state": "issue: wait lines repeat themselves ('Waiting for a worker · 34 min · no worker has started')"
+  },
+  "evidence": [
+   "lib/ui/screens/team/team_home_screen.dart:132",
+   "lib/ui/screens/team/team_home_screen.dart:397",
+   "lib/ui/screens/team/team_home_screen.dart:544",
+   "lib/ui/kit/kit_status_mark.dart:37",
+   "docs/qa/screen-census/i1-team-core/team-home-runs-tab--filtered.png"
+  ]
+ },
+ {
+  "pageId": "team-home-agents-tab",
+  "area": "i1-team-core",
+  "title": "Agents ({count})",
+  "kind": "tab",
+  "file": "lib/ui/screens/team/team_home_screen.dart",
+  "journey": [
+   "observe"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "team-delegator",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "which agent is stuck",
+   "team-delegator": "is anyone working"
+  },
+  "states": [
+   {
+    "id": "awake",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-home--loaded.png"
+   },
+   {
+    "id": "asleep/paused",
+    "how": "codeOnly:lib/ui/screens/team/team_home_screen.dart:639"
+   },
+   {
+    "id": "old-agents-tab-render",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-home-agents-tab.png"
+   }
+  ],
+  "statesMissing": [
+   "agents crashed / not starting summarised in the row"
+  ],
+  "info": [
+   "agent count",
+   "working count",
+   "asleep/paused rest word"
+  ],
+  "infoMissing": [
+   "which agent needs attention (the row never flags a stuck agent)"
+  ],
+  "actions": [
+   "open team-agents"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "team-home"
+  ],
+  "exit": [
+   "team-agents"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see who works on a task",
+    "here": "",
+    "elsewhere": "team-agents list; team-run-agents-tab; team-conversation/team-conversation-family + agent cards",
+    "landsOn": "team-agent (lists, tab) vs chat watching mode (conversation) — INCONSISTENT"
+   }
+  ],
+  "elements": [
+   {
+    "id": "agents-row",
+    "kind": "row",
+    "kit": "KitRow+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: agents are managed by the team; the row is status, not a control centre",
+    "note": "hand-built chevron instead of KitChevron (team_home_screen.dart:659)"
+   }
+  ],
+  "ledgerStale": [
+   "team-home-segments",
+   "team-home-segments-menu-item",
+   "agents fleet rows on the home (moved to team-agents)"
+  ],
+  "proposal": "merge-into:team-home",
+  "rationale": "Already one status row on the home (pilot: agents-row is status); nothing remains of the tab.",
+  "verticals": {
+   "consistency-kit": "issue: chevron not KitChevron",
+   "honest-state": "ok: asleep vs paused worded",
+   "automation-first": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/team/team_home_screen.dart:566",
+   "lib/ui/screens/team/team_home_screen.dart:639",
+   "docs/qa/screen-census/i1-team-core/team-home-agents-tab.png"
+  ]
+ },
+ {
+  "pageId": "team-home-needs-you-tab",
+  "area": "i1-team-core",
+  "title": "Needs you ({count})",
+  "kind": "tab",
+  "file": "lib/ui/screens/team/team_home_screen.dart",
+  "journey": [
+   "approve",
+   "observe"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "team-delegator",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "answer from the lock screen/Inbox without opening the team",
+   "team-delegator": "why the team is asking at all"
+  },
+  "states": [
+   {
+    "id": "one-question-inline",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-home--loaded.png"
+   },
+   {
+    "id": "several",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-home-needs-you-tab--several.png"
+   },
+   {
+    "id": "receipt-unconfirmed",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/embedded-team-receipt-chip--unconfirmed.png"
+   },
+   {
+    "id": "receipt-refused",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/embedded-team-receipt-chip--not-accepted.png"
+   }
+  ],
+  "statesMissing": [
+   "answered, waiting for host (row leaves only on confirm) has no time bound"
+  ],
+  "info": [
+   "gate title, kind, task, age",
+   "receipt state"
+  ],
+  "infoMissing": [
+   "why the team asks (supervision rule that triggered it)"
+  ],
+  "actions": [
+   "answer inline",
+   "open gate sheet"
+  ],
+  "actionsMissing": [
+   "answer again after refusal from the row",
+   "undo an answer"
+  ],
+  "entry": [
+   "team-home"
+  ],
+  "exit": [
+   "gate-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "answer the team",
+    "here": "",
+    "elsewhere": "team-home/needs-you (inline KitRequestCard); team-conversation gate cards (inline); activity gate tile → gate-sheet; notification → activity → gate-sheet; team-run-overview-tab card",
+    "landsOn": "stays in place (inline) vs gate-sheet — consistent receipts, different containers"
+   }
+  ],
+  "elements": [
+   {
+    "id": "needs-you",
+    "kind": "request-card",
+    "kit": "KitRequestCard",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "answered in place + wave illustration"
+   },
+   {
+    "id": "team-home-gate-row",
+    "kind": "row",
+    "kit": "KitRow+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "TeamReceiptChip trailing crushes text"
+   },
+   {
+    "id": "receipt",
+    "kind": "chip",
+    "kit": "none",
+    "kitGap": "KitReceipt",
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [
+   "team-home-segments (Needs you is now a section, not a segment)"
+  ],
+  "proposal": "merge-into:team-home",
+  "rationale": "Now the home's first section; keep it (pilot) but the gate rows should use one receipt pattern and the supervision level should decide which gates reach the person.",
+  "verticals": {
+   "notifications": "ok: gates notify",
+   "consistency-kit": "issue: receipt chip is an ActionChip",
+   "honest-state": "issue: 'Unconfirmed' bookkeeping word",
+   "automation-first": "issue: every gate reaches the person regardless of chosen supervision"
+  },
+  "evidence": [
+   "lib/ui/screens/team/team_home_screen.dart:457",
+   "lib/ui/screens/team/team_home_screen.dart:467",
+   "lib/ui/widgets/team_receipt.dart:80",
+   "docs/qa/screen-census/i1-team-core/team-home-needs-you-tab--several.png"
+  ]
+ },
+ {
+  "pageId": "team-run",
+  "area": "i1-team-core",
+  "title": "<run title> (Run · convoy | Run · formula)",
+  "kind": "screen",
+  "file": "lib/ui/screens/team/run_screen.dart",
+  "journey": [
+   "inspect",
+   "observe"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden (deep link falls back to Inbox, main.dart _pushTeamDestination)",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "team-delegator",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "steps, graph, raw timeline",
+   "team-delegator": "is it done, what's next — the conversation answers this better"
+  },
+  "states": [
+   {
+    "id": "formula",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run--formula.png"
+   },
+   {
+    "id": "batch",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run--batch.png"
+   },
+   {
+    "id": "error",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run--error.png"
+   },
+   {
+    "id": "missing",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run--missing.png"
+   },
+   {
+    "id": "loading",
+    "how": "codeOnly:lib/ui/screens/team/team_states.dart:78"
+   },
+   {
+    "id": "not-answering",
+    "how": "codeOnly:lib/ui/screens/team/team_states.dart:71"
+   },
+   {
+    "id": "stale",
+    "how": "codeOnly:lib/ui/screens/team/team_states.dart:137"
+   }
+  ],
+  "statesMissing": [
+   "task finished and archived (after Done window) vs removed",
+   "cancel sent but unconfirmed only as a chip on Overview"
+  ],
+  "info": [
+   "title, state word, steps done, elapsed",
+   "stage strip",
+   "steps",
+   "merge readiness",
+   "timeline",
+   "agents"
+  ],
+  "infoMissing": [
+   "what the team will do next and when (the conversation's Now line has it; this page does not)"
+  ],
+  "actions": [
+   "refresh",
+   "Technical details",
+   "Stop task / Close batch (confirmed)",
+   "open conversation",
+   "tabs"
+  ],
+  "actionsMissing": [
+   "message the team (only in the conversation)",
+   "retry a failed task",
+   "undo stop"
+  ],
+  "entry": [
+   "team-home task row",
+   "notification/deep link (TeamLinkKind.run)",
+   "team-conversation menu 'Task details'"
+  ],
+  "exit": [
+   "team-conversation",
+   "work-sheet",
+   "gate-sheet",
+   "team-agent",
+   "team-run-details-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "open a task",
+    "here": "",
+    "elsewhere": "team-home/task-row → RunScreen (team_home_screen.dart:132,397); workspace/team row → TeamConversation.open (workspace_screen.dart:1241); team-board/card → TeamConversation.open (team_board_screen.dart:59)",
+    "landsOn": "team-run (home) vs team-conversation (Work tab, board) — INCONSISTENT"
+   },
+   {
+    "job": "stop a task",
+    "here": "",
+    "elsewhere": "team-run/team-run-cancel (cancelRun, run_screen.dart:232); gate-sheet/Cancel work (run failed); team-board-move-sheet/team-board-move-cancel (bead close, Backlog/Ready only); team-conversation: none",
+    "landsOn": "team-run receipt chip | gate-sheet receipt | team-board Done column — conversation cannot stop its own task"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-run-appbar",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": "KitTopBar",
+    "couldBeAutomatic": "no",
+    "note": "no title on Overview (run_screen.dart:292)"
+   },
+   {
+    "id": "team-run-tabs",
+    "kind": "tabbar",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "raw TabBar, 4 tabs"
+   },
+   {
+    "id": "team-run-refresh",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: the page follows the controller; refresh is automatic",
+    "note": ""
+   },
+   {
+    "id": "team-run-more",
+    "kind": "menu",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "PopupMenu: Technical details, Stop task (error colour)"
+   },
+   {
+    "id": "team-run-missing",
+    "kind": "state",
+    "kit": "KitStateView+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "cloud-off icon for a removed task, only Back"
+   }
+  ],
+  "ledgerStale": [
+   "team-run-details icon-button (now an overflow menu item)"
+  ],
+  "proposal": "merge-into:team-conversation",
+  "rationale": "Owner Fix, applied under the decided model: the conversation is the task's page, so this shrinks to its 'Task details' (title in the bar, steps inline, Details, Stop), and Agents/Timeline are already the family strip and lead lines. Until then the home's task rows land here while every other door lands in the conversation.",
+  "verticals": {
+   "honest-state": "issue: stage strip marks 'Waiting' as done and 'Done' while review pends",
+   "automation-first": "issue: manual refresh icon on a live page",
+   "consistency-kit": "issue: raw TabBar and PopupMenu",
+   "rtl-l10n": "ok: localized; tabs scroll",
+   "reliability": "ok: stale data dims"
+  },
+  "evidence": [
+   "lib/ui/screens/team/run_screen.dart:292",
+   "lib/ui/screens/team/run_screen.dart:301",
+   "lib/ui/screens/team/run_screen.dart:327",
+   "lib/ui/screens/team/run_screen.dart:374",
+   "lib/ui/screens/chat/team_conversation_view.dart:189",
+   "docs/qa/screen-census/i1-team-core/team-run--formula.png",
+   "docs/qa/screen-census/i1-team-core/team-run--missing.png"
+  ]
+ },
+ {
+  "pageId": "team-run-overview-tab",
+  "area": "i1-team-core",
+  "title": "Overview",
+  "kind": "tab",
+  "file": "lib/ui/screens/team/run_screen.dart",
+  "journey": [
+   "inspect",
+   "review"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "team-delegator",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "merge readiness and one decision",
+   "team-delegator": "progress and what blocks"
+  },
+  "states": [
+   {
+    "id": "working",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run--formula.png"
+   },
+   {
+    "id": "stalled",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-overview-tab--stalled.png"
+   },
+   {
+    "id": "merged",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-overview-tab--merged.png"
+   },
+   {
+    "id": "stop-unconfirmed",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-overview-tab--stop-unconfirmed.png"
+   },
+   {
+    "id": "details-open",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-overview-tab--details-open.png"
+   },
+   {
+    "id": "merge-ready",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-merge-section--ready.png"
+   }
+  ],
+  "statesMissing": [
+   "failed task with next step",
+   "blocked by a dependency outside the task"
+  ],
+  "info": [
+   "objective + state + steps + elapsed",
+   "Open conversation row",
+   "stage line",
+   "stall sentence",
+   "Needs you card",
+   "merge section",
+   "steps (5 + see all)",
+   "Details: counts, team usage, policy"
+  ],
+  "infoMissing": [
+   "expected time to finish",
+   "per-task cost (only team-wide usage exists)"
+  ],
+  "actions": [
+   "open conversation",
+   "open step",
+   "answer gate",
+   "merge/approve",
+   "see all steps",
+   "toggle details"
+  ],
+  "actionsMissing": [
+   "'Start one now' when a step stalls past its window (only Why?)",
+   "ask the team to fix a failure"
+  ],
+  "entry": [
+   "team-run"
+  ],
+  "exit": [
+   "team-conversation",
+   "work-sheet",
+   "gate-sheet",
+   "team-merge-*"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "follow a task",
+    "here": "team-run-overview",
+    "elsewhere": "team-conversation (Now line, steps fold, gates, merge)",
+    "landsOn": "team-run vs team-conversation — same blocks twice"
+   }
+  ],
+  "elements": [
+   {
+    "id": "overview-objective",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "display-type title + state line"
+   },
+   {
+    "id": "team-run-open-conversation",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-run-stage-line",
+    "kind": "progress",
+    "kit": "none",
+    "kitGap": "KitStageStrip",
+    "couldBeAutomatic": "no",
+    "note": "4 stages; 'Waiting' ticked as done"
+   },
+   {
+    "id": "team-run-stall",
+    "kind": "notice",
+    "kit": "KitNotice",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: wake the pool/nudge automatically after the usual window, then say so",
+    "note": "no action"
+   },
+   {
+    "id": "team-run-merge",
+    "kind": "card-panel",
+    "kit": "KitPanel+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "TeamMergeSection"
+   },
+   {
+    "id": "team-run-steps",
+    "kind": "list",
+    "kit": "KitRow+KitStatusMark",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-run-summary",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "_DetailsRow hand-built expander (run_screen.dart:1104)"
+   },
+   {
+    "id": "team-merged-celebration",
+    "kind": "illustration",
+    "kit": "KitIllustration",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [
+   "team-run-overview-cycle-* buttons (Refresh/How/Output/Stop/Nudge are on the work sheet's strip, not the overview)",
+   "policy block now inside Details"
+  ],
+  "proposal": "merge-into:team-conversation",
+  "rationale": "Every block here already renders in the conversation (steps fold, gate cards, merge section, Now line); what remains unique (Details, policy) becomes the conversation's Task details sheet.",
+  "verticals": {
+   "honest-state": "issue: merged task shows disabled Merge/Approve; stall offers no action",
+   "automation-first": "issue: stalled step waits for the person; the app could wake the pool itself",
+   "perf": "ok: celebration once, obeys KitEffects",
+   "consistency-kit": "issue: hand-built details row"
+  },
+  "evidence": [
+   "lib/ui/screens/team/run_screen.dart:758",
+   "lib/ui/screens/team/run_screen.dart:776",
+   "lib/ui/screens/team/run_screen.dart:782",
+   "lib/ui/screens/team/run_screen.dart:806",
+   "lib/ui/screens/team/run_screen.dart:861",
+   "docs/qa/screen-census/i1-team-core/team-run-overview-tab--stalled.png",
+   "docs/qa/screen-census/i1-team-core/team-run-overview-tab--merged.png"
+  ]
+ },
+ {
+  "pageId": "team-run-work-tab",
+  "area": "i1-team-core",
+  "title": "Steps",
+  "kind": "tab",
+  "file": "lib/ui/screens/team/run_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "tinkerer",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "tinkerer": "dependency graph for a big task"
+  },
+  "states": [
+   {
+    "id": "list",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-work-tab--list.png"
+   },
+   {
+    "id": "graph",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-work-tab--graph.png"
+   },
+   {
+    "id": "empty",
+    "how": "codeOnly:lib/ui/screens/team/run_screen.dart:1285"
+   }
+  ],
+  "statesMissing": [
+   "loading skeleton for the tab itself"
+  ],
+  "info": [
+   "steps grouped Needs input…Cancelled",
+   "waits on N",
+   "age",
+   "owner initial circle"
+  ],
+  "infoMissing": [
+   "owner name (only an initial)",
+   "why blocked in words"
+  ],
+  "actions": [
+   "open step",
+   "toggle list/graph"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "team-run tabs",
+   "Overview 'See all N steps'"
+  ],
+  "exit": [
+   "work-sheet",
+   "embedded-work-graph"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see a task's steps",
+    "here": "team-run-work-list",
+    "elsewhere": "team-run-overview-tab/team-run-steps; team-conversation/team-conversation-steps",
+    "landsOn": "work-sheet (tab, overview) vs nothing (conversation step rows are not tappable)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-run-work-view",
+    "kind": "segmented",
+    "kit": "KitTabSwitcher",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-run-work-group",
+    "kind": "section-label",
+    "kit": "SectionLabel+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "header repeats the row icon"
+   },
+   {
+    "id": "team-run-work-row",
+    "kind": "row",
+    "kit": "KitRow+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "trailing owner initial circle"
+   }
+  ],
+  "ledgerStale": [
+   "tab label is 'Steps' (ledger: Work)"
+  ],
+  "proposal": "merge-into:team-conversation",
+  "rationale": "Tasks have a handful of steps; a whole tab duplicates the Overview list and the conversation's steps fold (critic: show steps inline). The graph stays one row away from the steps fold for the rare large task.",
+  "verticals": {
+   "consistency-kit": "issue: initials circle, header icons",
+   "rtl-l10n": "ok",
+   "honest-state": "issue: 'Waits on 1 step' in accent reads as a link"
+  },
+  "evidence": [
+   "lib/ui/screens/team/run_screen.dart:1258",
+   "lib/ui/screens/team/run_screen.dart:1510",
+   "docs/qa/screen-census/i1-team-core/team-run-work-tab--list.png"
+  ]
+ },
+ {
+  "pageId": "team-run-agents-tab",
+  "area": "i1-team-core",
+  "title": "Agents",
+  "kind": "tab",
+  "file": "lib/ui/screens/team/run_screen.dart",
+  "journey": [
+   "observe"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "tinkerer": "who is on this task"
+  },
+  "states": [
+   {
+    "id": "list",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-agents-tab.png"
+   },
+   {
+    "id": "empty",
+    "how": "codeOnly:lib/ui/screens/team/run_screen.dart:505"
+   }
+  ],
+  "statesMissing": [
+   "agent crashed on this task"
+  ],
+  "info": [
+   "role, state"
+  ],
+  "infoMissing": [
+   "agent name (both rows 'Worker')"
+  ],
+  "actions": [
+   "open agent"
+  ],
+  "actionsMissing": [
+   "open the agent's conversation directly"
+  ],
+  "entry": [
+   "team-run tabs"
+  ],
+  "exit": [
+   "team-agent"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see who works on a task",
+    "here": "",
+    "elsewhere": "team-agents list; team-run-agents-tab; team-conversation/team-conversation-family + agent cards",
+    "landsOn": "team-agent (lists, tab) vs chat watching mode (conversation) — INCONSISTENT"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-run-agents-list",
+    "kind": "list",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "TeamAgentRow"
+   },
+   {
+    "id": "team-run-agents-empty",
+    "kind": "state",
+    "kit": "KitStateView",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:team-conversation",
+  "rationale": "Owner Fix; the critic's own fix is to replace the tab with a row, and the conversation's family strip already lists this task's workers and opens each one's session in watching mode.",
+  "verticals": {
+   "consistency-kit": "ok: kit rows",
+   "honest-state": "issue: two rows called 'Worker'",
+   "automation-first": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/team/run_screen.dart:481",
+   "lib/ui/screens/team/run_screen.dart:505",
+   "docs/qa/screen-census/i1-team-core/team-run-agents-tab.png"
+  ]
+ },
+ {
+  "pageId": "team-run-timeline-tab",
+  "area": "i1-team-core",
+  "title": "Timeline",
+  "kind": "tab",
+  "file": "lib/ui/screens/team/run_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "exact order of events"
+  },
+  "states": [
+   {
+    "id": "all",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-timeline-tab--all.png"
+   },
+   {
+    "id": "filtered",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-timeline-tab--work.png"
+   },
+   {
+    "id": "empty",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-timeline-tab--empty.png"
+   },
+   {
+    "id": "held-with-jump",
+    "how": "codeOnly:lib/ui/screens/team/run_screen.dart:1921"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "event lines with time",
+   "filters All/Work/Agents/Decisions"
+  ],
+  "infoMissing": [
+   "what changed in 'updated' events"
+  ],
+  "actions": [
+   "filter",
+   "jump to latest"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "team-run tabs"
+  ],
+  "exit": [],
+  "sameJobElsewhere": [
+   {
+    "job": "see what happened",
+    "here": "team-run-timeline",
+    "elsewhere": "team-conversation/team-conversation-lead (teamLeadLines)",
+    "landsOn": "team-run vs team-conversation — two wordings of one history"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-run-timeline-filter",
+    "kind": "chip",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "4 chips, shown even when empty"
+   },
+   {
+    "id": "team-run-event",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-run-timeline-jump",
+    "kind": "badge",
+    "kit": "none",
+    "kitGap": "KitJumpPill",
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:team-conversation",
+  "rationale": "The lead's reply in the conversation is this timeline written in plain words; keeping both tells the same story twice with different wording.",
+  "verticals": {
+   "honest-state": "issue: generic 'updated' events",
+   "consistency-kit": "issue: pill and chips hand-built"
+  },
+  "evidence": [
+   "lib/ui/screens/team/run_screen.dart:1791",
+   "lib/ui/screens/team/run_screen.dart:1812",
+   "lib/ui/screens/team/run_screen.dart:1921",
+   "lib/ui/screens/chat/team_conversation_view.dart:478"
+  ]
+ },
+ {
+  "pageId": "team-run-details-sheet",
+  "area": "i1-team-core",
+  "title": "Technical details",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/run_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "copy ids for the host"
+  },
+  "states": [
+   {
+    "id": "open",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-details-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "term pair, state, started/updated, raw fields with copy"
+  ],
+  "infoMissing": [
+   "human date format (ms timestamps)"
+  ],
+  "actions": [
+   "copy value"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "team-run overflow"
+  ],
+  "exit": [
+   "dismiss"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see technical details",
+    "here": "",
+    "elsewhere": "team-run-details-sheet; team-agent-details-sheet + team-agent Technical details fold; team-host-details-sheet; work-sheet fold; gate-sheet fold",
+    "landsOn": "five folds/sheets with different title styles"
+   }
+  ],
+  "elements": [
+   {
+    "id": "run-details-values",
+    "kind": "list",
+    "kit": "none",
+    "kitGap": "KitDetailsFold",
+    "couldBeAutomatic": "no",
+    "note": "TeamTechnicalValue rows"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "keep",
+  "rationale": "The right home for engine words and ids; it becomes the conversation menu's 'Task details' once team-run folds in. Only the shared details fold should come from the kit.",
+  "verticals": {
+   "security-privacy": "ok: no credentials",
+   "consistency-kit": "issue: sheet title style differs; values duplicated"
+  },
+  "evidence": [
+   "lib/ui/screens/team/run_screen.dart:1964",
+   "docs/qa/screen-census/i1-team-core/team-run-details-sheet.png"
+  ]
+ },
+ {
+  "pageId": "team-run-cancel-confirm-sheet",
+  "area": "i1-team-core",
+  "title": "Cancel this run? / Close this batch?",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/run_screen.dart",
+  "journey": [
+   "recover"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "team-delegator": "what stops and what is kept"
+  },
+  "states": [
+   {
+    "id": "formula",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-cancel-confirm-sheet--formula.png"
+   },
+   {
+    "id": "batch",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-cancel-confirm-sheet--batch.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "what stops, what stays"
+  ],
+  "infoMissing": [
+   "which task by name"
+  ],
+  "actions": [
+   "Stop task",
+   "Keep going"
+  ],
+  "actionsMissing": [
+   "undo/reopen after stopping"
+  ],
+  "entry": [
+   "team-run overflow"
+  ],
+  "exit": [
+   "team-run with receipt chip"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "stop a task",
+    "here": "",
+    "elsewhere": "team-run/team-run-cancel (cancelRun, run_screen.dart:232); gate-sheet/Cancel work (run failed); team-board-move-sheet/team-board-move-cancel (bead close, Backlog/Ready only); team-conversation: none",
+    "landsOn": "team-run receipt chip | gate-sheet receipt | team-board Done column — conversation cannot stop its own task"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-run-cancel-confirm",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": "confirmTeamControl → showConfirmSheet (widgets/confirm_sheet.dart), 'Keep going'"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner Fix: say 'task' not run/batch, align the cancel label, and make it reachable from the conversation's menu (today the conversation has no Stop).",
+  "verticals": {
+   "honest-state": "ok",
+   "consistency-kit": "issue: confirm helper lives outside the kit; cancel labels differ across team sheets",
+   "rtl-l10n": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/team/run_screen.dart:232",
+   "lib/ui/widgets/team_controls.dart:277",
+   "docs/qa/screen-census/i1-team-core/team-run-cancel-confirm-sheet--batch.png"
+  ]
+ },
+ {
+  "pageId": "team-agents",
+  "area": "i1-team-core",
+  "title": "Agents",
+  "kind": "screen",
+  "file": "lib/ui/screens/team/team_agents_screen.dart",
+  "journey": [
+   "observe",
+   "inspect"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "tinkerer",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "tinkerer": "which agent is off/stuck and why",
+   "team-delegator": "a glance; the team manages itself"
+  },
+  "states": [
+   {
+    "id": "loaded",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agents--loaded.png"
+   },
+   {
+    "id": "suspended-open",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agents--suspended-open.png"
+   },
+   {
+    "id": "empty",
+    "how": "codeOnly:lib/ui/screens/team/team_agents_screen.dart:157"
+   },
+   {
+    "id": "error/not-answering",
+    "how": "codeOnly:lib/ui/screens/team/team_agents_screen.dart:134"
+   }
+  ],
+  "statesMissing": [
+   "freshness ('checked 20 s ago')"
+  ],
+  "info": [
+   "role, state, what it works on"
+  ],
+  "infoMissing": [
+   "agent name when two share a role",
+   "which agents are pool vs fixed"
+  ],
+  "actions": [
+   "open agent",
+   "pull to refresh",
+   "expand suspended"
+  ],
+  "actionsMissing": [
+   "wake/start a suspended agent from the list"
+  ],
+  "entry": [
+   "team-home agents row"
+  ],
+  "exit": [
+   "team-agent"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see who works on a task",
+    "here": "",
+    "elsewhere": "team-agents list; team-run-agents-tab; team-conversation/team-conversation-family + agent cards",
+    "landsOn": "team-agent (lists, tab) vs chat watching mode (conversation) — INCONSISTENT"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-agent-row",
+    "kind": "row",
+    "kit": "KitRow+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "four leading icon styles at one level"
+   },
+   {
+    "id": "team-home-suspended-group",
+    "kind": "row",
+    "kit": "KitExpandRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-agents-pull",
+    "kind": "other",
+    "kit": "KitRefresh",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: the list follows the controller",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [
+   "page reached from team-home-runs-tab (now team-home agents row)"
+  ],
+  "proposal": "fix",
+  "rationale": "Owner Fix and pilot: the agents are status, not a control centre — name rows 'fox · Worker', one mark style, 'Asleep' not 'Suspended on the host'; a row opens the worker's conversation (watching) rather than a control page.",
+  "verticals": {
+   "consistency-kit": "issue: four leading icon styles at one level",
+   "honest-state": "issue: 'Suspended on the host' engine word",
+   "automation-first": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/team/team_agents_screen.dart:74",
+   "lib/ui/screens/team/team_agents_screen.dart:169",
+   "docs/qa/screen-census/i1-team-core/team-agents--loaded.png"
+  ]
+ },
+ {
+  "pageId": "team-agent",
+  "area": "i1-team-core",
+  "title": "<agent name> (Agent · session {id})",
+  "kind": "screen",
+  "file": "lib/ui/screens/team/agent_screen.dart",
+  "journey": [
+   "inspect",
+   "recover"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "tinkerer",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "tinkerer": "context %, model, working dir, controls",
+   "team-delegator": "just 'watch it' and 'tell it'",
+   "phone-only": "memory per worker on the phone"
+  },
+  "states": [
+   {
+    "id": "top",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agent--top.png"
+   },
+   {
+    "id": "controls",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agent--controls.png"
+   },
+   {
+    "id": "stopped",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agent--stopped.png"
+   },
+   {
+    "id": "unconfirmed",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agent--unconfirmed.png"
+   },
+   {
+    "id": "missing",
+    "how": "codeOnly:lib/ui/screens/team/agent_screen.dart:299"
+   },
+   {
+    "id": "did-not-start",
+    "how": "codeOnly:lib/ui/screens/team/agent_screen.dart:407"
+   },
+   {
+    "id": "no-session-found (Live output primary)",
+    "how": "codeOnly:lib/ui/screens/team/agent_screen.dart:378"
+   }
+  ],
+  "statesMissing": [
+   "crashed/restarting automatically",
+   "context recycling in progress (only 'Recycling soon')"
+  ],
+  "info": [
+   "role · name, what it works on",
+   "session state, context %, elapsed",
+   "last step",
+   "Needs you",
+   "Technical details fold"
+  ],
+  "infoMissing": [
+   "this agent's own cost",
+   "model in plain words above Details"
+  ],
+  "actions": [
+   "Open conversation (primary) or Live output",
+   "Message",
+   "Nudge",
+   "Pause/Resume",
+   "Stop",
+   "Restart",
+   "Reassign work…",
+   "copy values"
+  ],
+  "actionsMissing": [
+   "undo pause/stop as a snackbar"
+  ],
+  "entry": [
+   "team-agents row",
+   "team-run-agents-tab",
+   "gate-sheet 'Restart or reassign'",
+   "activity blocked-agent tile"
+  ],
+  "exit": [
+   "chat (watching mode)",
+   "team-agent-output",
+   "team-agent-*-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "message a worker",
+    "here": "",
+    "elsewhere": "team-agent/team-agent-control-message (_MessageSheet, agent_screen.dart:788); chat watching mode/chat-watching-message-sheet (team_conversation_view.dart:1328); team-conversation/team-conversation-composer (messageAgent to worker or planner)",
+    "landsOn": "team-agent receipt | chat (watching) receipt | team-conversation sent line"
+   },
+   {
+    "job": "stop a worker",
+    "here": "",
+    "elsewhere": "team-agent/team-agent-control-stop (agent_screen.dart:750); embedded-team-cycle-strip/Stop on provider limit (team_cycle_strip.dart:249)",
+    "landsOn": "team-agent-stop-confirm-sheet | team-cycle-stop-confirm-sheet (two confirms, two titles)"
+   },
+   {
+    "job": "put work in a worker's hands",
+    "here": "",
+    "elsewhere": "team-agent-reassign-sheet (assignWork to one agent, agent_screen.dart:807); team-board-move-sheet/Start now (assignWork to the pool); gate-sheet/Retry (re-sling)",
+    "landsOn": "team-agent | team-board Ready | gate-sheet receipt"
+   },
+   {
+    "job": "watch a worker work",
+    "here": "",
+    "elsewhere": "team-agent/Open conversation → chat watching mode; team-agent/Live output → team-agent-output; embedded-team-cycle-strip/Open agent output; gate-sheet/View logs → team-agent-output; embedded-team-planning-card/Planner output",
+    "landsOn": "chat (session readable) vs team-agent-output (fallback) — decided per door, not per session"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-agent-header",
+    "kind": "status-line",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "_Header state · ctx · age"
+   },
+   {
+    "id": "team-agent-open-conversation",
+    "kind": "primary-action",
+    "kit": "KitActionBlock",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "primary: the worker's session in watching mode"
+   },
+   {
+    "id": "team-agent-control-message",
+    "kind": "secondary-action",
+    "kit": "KitAction",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-agent-control-nudge",
+    "kind": "tertiary-action",
+    "kit": "KitAction",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: nudge automatically when a claimed step shows no output past its window",
+    "note": ""
+   },
+   {
+    "id": "team-agent-control-pause",
+    "kind": "tertiary-action",
+    "kit": "KitAction",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: the heat guard already pauses/resumes the team; per-agent pause only as fallback",
+    "note": ""
+   },
+   {
+    "id": "team-agent-control-stop",
+    "kind": "tertiary-action",
+    "kit": "KitAction",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: hold the worker automatically on a provider usage limit; manual stop stays in overflow",
+    "note": ""
+   },
+   {
+    "id": "team-agent-control-restart",
+    "kind": "tertiary-action",
+    "kit": "KitAction",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: restart on crash and recycle at the context threshold (host already recycles)",
+    "note": ""
+   },
+   {
+    "id": "team-agent-control-reassign",
+    "kind": "tertiary-action",
+    "kit": "KitAction",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: the dispatcher routes ready work to free workers",
+    "note": ""
+   },
+   {
+    "id": "team-agent-did-not-start",
+    "kind": "notice",
+    "kit": "KitNotice",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: wake the agent automatically, then say so",
+    "note": "teamUnstickAction 'Start it'"
+   },
+   {
+    "id": "team-agent-technical",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": "KitDetailsFold",
+    "couldBeAutomatic": "no",
+    "note": "ExpansionTile"
+   },
+   {
+    "id": "team-agent-refresh",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: page follows the controller",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [
+   "team-agent-details icon-button (now overflow item)",
+   "Tools list-tile and Live output row (Live output is now the fallback primary / overflow item)"
+  ],
+  "proposal": "fix",
+  "rationale": "Owner Fix. Keep a short worker status page whose primary is its conversation; automation-first: Nudge, Restart and reassign become the team's own reactions (auto-wake on stall, auto-restart on crash/context), leaving Message and an overflow Stop as the fallback.",
+  "verticals": {
+   "automation-first": "issue: six manual levers (Nudge, Pause, Restart, Reassign…) for what the dispatcher should do itself",
+   "honest-state": "issue: census shows 'Working' + 'waiting on one other step' together; team-wide cost shown as the agent's",
+   "security-privacy": "ok: no provider keys; paths only under details in current source",
+   "consistency-kit": "issue: ExpansionTile, hand header"
+  },
+  "evidence": [
+   "lib/ui/screens/team/agent_screen.dart:371",
+   "lib/ui/screens/team/agent_screen.dart:407",
+   "lib/ui/screens/team/agent_screen.dart:741",
+   "lib/ui/screens/team/agent_screen.dart:744",
+   "lib/ui/screens/team/agent_screen.dart:750",
+   "lib/ui/screens/team/agent_screen.dart:766",
+   "lib/ui/screens/team/agent_screen.dart:804",
+   "lib/ui/screens/team/agent_screen.dart:807",
+   "docs/qa/screen-census/i1-team-core/team-agent--top.png",
+   "docs/qa/screen-census/i1-team-core/team-agent--controls.png"
+  ]
+ },
+ {
+  "pageId": "team-agent-details-sheet",
+  "area": "i1-team-core",
+  "title": "Technical details",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/agent_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "copy raw values"
+  },
+  "states": [
+   {
+    "id": "open",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agent-details-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "curated rows + raw values with copy"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "copy"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "team-agent overflow"
+  ],
+  "exit": [
+   "dismiss"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see technical details",
+    "here": "",
+    "elsewhere": "team-run-details-sheet; team-agent-details-sheet + team-agent Technical details fold; team-host-details-sheet; work-sheet fold; gate-sheet fold",
+    "landsOn": "five folds/sheets with different title styles"
+   }
+  ],
+  "elements": [
+   {
+    "id": "agent-details-values",
+    "kind": "list",
+    "kit": "none",
+    "kitGap": "KitDetailsFold",
+    "couldBeAutomatic": "no",
+    "note": "each value twice (curated + raw key)"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:team-agent",
+  "rationale": "The page already ends with the same Technical details fold; a sheet repeating it (and repeating each value under its raw key) is duplication.",
+  "verticals": {
+   "consistency-kit": "issue: headline-size sheet title",
+   "security-privacy": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/team/agent_screen.dart:1358",
+   "docs/qa/screen-census/i1-team-core/team-agent-details-sheet.png"
+  ]
+ },
+ {
+  "pageId": "team-agent-message-sheet",
+  "area": "i1-team-core",
+  "title": "Message {agent}",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/agent_screen.dart",
+  "journey": [
+   "converse"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "team-delegator",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "a quick steer from the phone, never lost"
+  },
+  "states": [
+   {
+    "id": "typed",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agent-message-sheet.png"
+   },
+   {
+    "id": "sending",
+    "how": "codeOnly:lib/ui/screens/team/agent_screen.dart:791"
+   }
+  ],
+  "statesMissing": [
+   "sent/confirmed receipt inside the sheet"
+  ],
+  "info": [
+   "field + Send"
+  ],
+  "infoMissing": [
+   "when the agent will read it"
+  ],
+  "actions": [
+   "send"
+  ],
+  "actionsMissing": [
+   "draft kept on dismiss (lost today)",
+   "undo/cancel a sent message"
+  ],
+  "entry": [
+   "team-agent Message"
+  ],
+  "exit": [
+   "team-agent with receipt"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "message a worker",
+    "here": "",
+    "elsewhere": "team-agent/team-agent-control-message (_MessageSheet, agent_screen.dart:788); chat watching mode/chat-watching-message-sheet (team_conversation_view.dart:1328); team-conversation/team-conversation-composer (messageAgent to worker or planner)",
+    "landsOn": "team-agent receipt | chat (watching) receipt | team-conversation sent line"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-agent-message-field",
+    "kind": "field",
+    "kit": "none",
+    "kitGap": "KitComposerField",
+    "couldBeAutomatic": "no",
+    "note": "TeamComposerField; draft lost on dismiss"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:team-conversation",
+  "rationale": "Owner Fix; two message sheets and a composer already send the same message; one place (the conversation composer, addressed to the worker) with a kept draft fixes the critical loss.",
+  "verticals": {
+   "reliability": "issue: typed message discarded on swipe (critical)",
+   "automation-first": "ok",
+   "consistency-kit": "issue: duplicate composer widgets"
+  },
+  "evidence": [
+   "lib/ui/screens/team/agent_screen.dart:788",
+   "lib/ui/screens/team/agent_screen.dart:926",
+   "lib/ui/screens/chat/team_conversation_view.dart:1328",
+   "docs/qa/screen-census/i1-team-core/team-agent-message-sheet.png"
+  ]
+ },
+ {
+  "pageId": "team-agent-reassign-sheet",
+  "area": "i1-team-core",
+  "title": "Reassign work to {agent}",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/agent_screen.dart",
+  "journey": [
+   "delegate"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "only when the dispatcher is wrong"
+  },
+  "states": [
+   {
+    "id": "list",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agent-reassign-sheet.png"
+   },
+   {
+    "id": "empty",
+    "how": "codeOnly:lib/ui/screens/team/agent_screen.dart:1023"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "ready work items (title + 'Work · bead id')"
+  ],
+  "infoMissing": [
+   "which one is most urgent"
+  ],
+  "actions": [
+   "tap = assign at once"
+  ],
+  "actionsMissing": [
+   "confirm",
+   "undo"
+  ],
+  "entry": [
+   "team-agent overflow",
+   "gate-sheet 'Restart or reassign'"
+  ],
+  "exit": [
+   "team-agent with assign receipt"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "put work in a worker's hands",
+    "here": "",
+    "elsewhere": "team-agent-reassign-sheet (assignWork to one agent, agent_screen.dart:807); team-board-move-sheet/Start now (assignWork to the pool); gate-sheet/Retry (re-sling)",
+    "landsOn": "team-agent | team-board Ready | gate-sheet receipt"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-agent-reassign-row",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: the dispatcher routes ready work; on a stall the app wakes the pool",
+    "note": "one tap assigns, no confirm or undo"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "remove",
+  "rationale": "Owner: 'Why manual it's all about automated dev right'. The dispatcher routes ready work to free workers; when a step stalls the app should wake the pool itself and the board's 'Start now' remains the one manual fallback.",
+  "verticals": {
+   "automation-first": "issue: manual routing of work the host should route",
+   "honest-state": "issue: acts on one tap with no confirmation"
+  },
+  "evidence": [
+   "lib/ui/screens/team/agent_screen.dart:804",
+   "lib/ui/screens/team/agent_screen.dart:807",
+   "lib/ui/screens/team/agent_screen.dart:1036",
+   "docs/qa/screen-census/i1-team-core/team-agent-reassign-sheet.png"
+  ]
+ },
+ {
+  "pageId": "team-agent-stop-confirm-sheet",
+  "area": "i1-team-core",
+  "title": "Stop {agent}?",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/agent_screen.dart",
+  "journey": [
+   "recover"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "which worker, on what task"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agent-stop-confirm-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "what stops, what stays"
+  ],
+  "infoMissing": [
+   "the worker by role and task"
+  ],
+  "actions": [
+   "Stop agent",
+   "Keep going"
+  ],
+  "actionsMissing": [
+   "start again from the receipt"
+  ],
+  "entry": [
+   "team-agent Stop"
+  ],
+  "exit": [
+   "team-agent"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "stop a worker",
+    "here": "",
+    "elsewhere": "team-agent/team-agent-control-stop (agent_screen.dart:750); embedded-team-cycle-strip/Stop on provider limit (team_cycle_strip.dart:249)",
+    "landsOn": "team-agent-stop-confirm-sheet | team-cycle-stop-confirm-sheet (two confirms, two titles)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-agent-stop-confirm",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "yes: on a provider limit the team holds the worker itself",
+    "note": "confirmTeamControl, 'Keep going'"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Stopping a worker stays as the manual fallback; name it by role and task, use the one cancel label, and make it the only stop confirmation (the cycle strip's copy folds into it).",
+  "verticals": {
+   "consistency-kit": "issue: cancel label 'Keep going' vs 'Keep'",
+   "honest-state": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/team/agent_screen.dart:750",
+   "docs/qa/screen-census/i1-team-core/team-agent-stop-confirm-sheet.png"
+  ]
+ },
+ {
+  "pageId": "team-agent-restart-confirm-sheet",
+  "area": "i1-team-core",
+  "title": "Restart {agent}?",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/agent_screen.dart",
+  "journey": [
+   "recover"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "force a fresh context"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agent-restart-confirm-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "loses context, picks work up again"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Restart agent",
+   "Keep going"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "team-agent overflow"
+  ],
+  "exit": [
+   "team-agent"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "team-agent-restart-confirm",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "yes: restart on crash and at the context threshold",
+    "note": "error tone for a non-destructive act"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Restart should normally happen by itself (crash or context recycle); keep the manual confirm as a fallback with a tonal, not error, primary.",
+  "verticals": {
+   "automation-first": "issue: restart is manual; the host already recycles at a context threshold",
+   "consistency-kit": "issue: destructive tone for a non-destructive act"
+  },
+  "evidence": [
+   "lib/ui/screens/team/agent_screen.dart:766",
+   "docs/qa/screen-census/i1-team-core/team-agent-restart-confirm-sheet.png"
+  ]
+ },
+ {
+  "pageId": "team-agent-output",
+  "area": "i1-team-core",
+  "title": "Live output",
+  "kind": "screen",
+  "file": "lib/ui/screens/team/agent_output_screen.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "tinkerer",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "the team runs on a computer whose sessions the phone can't read — this is the only view",
+   "tinkerer": "copy output"
+  },
+  "states": [
+   {
+    "id": "live",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agent-output--live.png"
+   },
+   {
+    "id": "scrolled-up",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agent-output--scrolled-up.png"
+   },
+   {
+    "id": "ended",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-agent-output--ended.png"
+   },
+   {
+    "id": "quiet-after-8s",
+    "how": "codeOnly:lib/ui/screens/team/agent_output_screen.dart:80"
+   },
+   {
+    "id": "not-running",
+    "how": "codeOnly:lib/ui/screens/team/agent_output_screen.dart:148"
+   }
+  ],
+  "statesMissing": [
+   "ended: still shows an empty list rather than a way forward (critic)"
+  ],
+  "info": [
+   "status line",
+   "transcript in chat parts"
+  ],
+  "infoMissing": [
+   "which task this output belongs to"
+  ],
+  "actions": [
+   "follow switch",
+   "jump to latest",
+   "copy output",
+   "wake/why"
+  ],
+  "actionsMissing": [
+   "open the agent's conversation"
+  ],
+  "entry": [
+   "team-agent (when no session)",
+   "gate-sheet View logs",
+   "planning card 'Planner output'",
+   "cycle strip"
+  ],
+  "exit": [
+   "back"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "watch a worker work",
+    "here": "",
+    "elsewhere": "team-agent/Open conversation → chat watching mode; team-agent/Live output → team-agent-output; embedded-team-cycle-strip/Open agent output; gate-sheet/View logs → team-agent-output; embedded-team-planning-card/Planner output",
+    "landsOn": "chat (session readable) vs team-agent-output (fallback) — decided per door, not per session"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-agent-output-status",
+    "kind": "status-line",
+    "kit": "KitStatusLine",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-agent-output-follow",
+    "kind": "switch",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: follow is on by default; the jump pill already resumes it",
+    "note": "SwitchListTile band"
+   },
+   {
+    "id": "team-agent-output-text",
+    "kind": "transcript",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "TeamAgentTranscript in chat parts"
+   },
+   {
+    "id": "team-agent-output-jump",
+    "kind": "badge",
+    "kit": "none",
+    "kitGap": "KitJumpPill",
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [
+   "'Live tail of terminal output' — now drawn with the chat's parts"
+  ],
+  "proposal": "merge-into:chat",
+  "rationale": "Owner Rethink: this is the worker's conversation when the session store is unreadable; watching mode on the chat page should render this transcript itself so there is one place to watch a worker.",
+  "verticals": {
+   "honest-state": "issue: ended vs empty",
+   "perf": "ok: follow uses one clock",
+   "consistency-kit": "issue: SwitchListTile band"
+  },
+  "evidence": [
+   "lib/ui/screens/team/agent_output_screen.dart:183",
+   "lib/ui/screens/team/agent_output_screen.dart:263",
+   "lib/ui/screens/team/agent_output_screen.dart:286",
+   "docs/qa/screen-census/i1-team-core/team-agent-output--ended.png"
+  ]
+ },
+ {
+  "pageId": "team-cycle-how-sheet",
+  "area": "i1-team-core",
+  "title": "How the host dispatches",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_cycle_strip.dart",
+  "journey": [
+   "learn"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "newcomer",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "newcomer": "is waiting normal"
+  },
+  "states": [
+   {
+    "id": "open",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-cycle-how-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "patrol cadence, start time, 2–6 min normal"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Got it"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "cycle strip",
+   "overview stall"
+  ],
+  "exit": [
+   "dismiss"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "know how long the wait is",
+    "here": "team-cycle-how",
+    "elsewhere": "team-conversation/team-conversation-now; team-home/team-now-line",
+    "landsOn": "sheet over sheet vs the Now line in place"
+   }
+  ],
+  "elements": [
+   {
+    "id": "cycle-how-body",
+    "kind": "other",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "engine words; right-aligned 'Got it'"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:team-conversation",
+  "rationale": "Owner Fix; the expectation it sets now belongs in the one Now line where the wait is shown, unfolding in place (KitReveal) instead of a sheet over a sheet.",
+  "verticals": {
+   "honest-state": "ok: sets an expectation",
+   "consistency-kit": "issue: stacked sheet, right-aligned button"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_cycle_strip.dart:82",
+   "docs/qa/screen-census/i1-team-core/team-cycle-how-sheet.png"
+  ]
+ },
+ {
+  "pageId": "team-cycle-stop-confirm-sheet",
+  "area": "i1-team-core",
+  "title": "Stop {agent}?",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_cycle_strip.dart",
+  "journey": [
+   "recover"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "stop the agent burning a limited provider"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-cycle-stop-confirm-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [],
+  "infoMissing": [
+   "which agent (title is 'shopfront/gastown.furiosa')"
+  ],
+  "actions": [
+   "Stop",
+   "Keep going"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "cycle strip Stop"
+  ],
+  "exit": [
+   "work-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "stop a worker",
+    "here": "",
+    "elsewhere": "team-agent/team-agent-control-stop (agent_screen.dart:750); embedded-team-cycle-strip/Stop on provider limit (team_cycle_strip.dart:249)",
+    "landsOn": "team-agent-stop-confirm-sheet | team-cycle-stop-confirm-sheet (two confirms, two titles)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "cycle-stop-confirm",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "yes: hold the worker until the limit resets",
+    "note": "title is 'Stop shopfront/gastown.furiosa?'"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:team-agent-stop-confirm-sheet",
+  "rationale": "Same act as stopping a worker; one confirmation with the role-and-task title removes the engine address. On a usage limit the team should hold the worker itself until the limit resets.",
+  "verticals": {
+   "honest-state": "issue: engine address as title (critical copy)",
+   "automation-first": "issue: provider limit needs a person to stop the agent"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_cycle_strip.dart:249",
+   "docs/qa/screen-census/i1-team-core/team-cycle-stop-confirm-sheet.png"
+  ]
+ },
+ {
+  "pageId": "embedded-team-cycle-strip",
+  "area": "i1-team-core",
+  "title": "[Dispatch cycle strip]",
+  "kind": "overlay",
+  "file": "lib/ui/widgets/team_cycle_strip.dart",
+  "journey": [
+   "observe"
+  ],
+  "module": "team",
+  "chrome": "none (embedded in work-sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "team-delegator",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "team-delegator": "which of four stages",
+   "tinkerer": "the raw dispatch steps (belong in Details)"
+  },
+  "states": [
+   {
+    "id": "working",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/embedded-team-cycle-strip--working.png"
+   },
+   {
+    "id": "host-not-started",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/embedded-team-cycle-strip--host-not-started.png"
+   },
+   {
+    "id": "provider-limit",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/embedded-team-cycle-strip--provider-limit.png"
+   },
+   {
+    "id": "merged (no ticker)",
+    "how": "codeOnly:lib/ui/widgets/team_cycle_strip.dart:16"
+   }
+  ],
+  "statesMissing": [
+   "blocked shown as a stage"
+  ],
+  "info": [
+   "7 stages with times",
+   "stall sentence",
+   "owner address"
+  ],
+  "infoMissing": [
+   "the 4 outcome stages the task uses"
+  ],
+  "actions": [
+   "Refresh",
+   "How",
+   "Open agent output",
+   "Stop",
+   "Nudge refinery"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "work-sheet",
+   "overview (batch)"
+  ],
+  "exit": [
+   "team-agent-output",
+   "team-cycle-how-sheet",
+   "team-cycle-stop-confirm-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "stop a worker",
+    "here": "",
+    "elsewhere": "team-agent/team-agent-control-stop (agent_screen.dart:750); embedded-team-cycle-strip/Stop on provider limit (team_cycle_strip.dart:249)",
+    "landsOn": "team-agent-stop-confirm-sheet | team-cycle-stop-confirm-sheet (two confirms, two titles)"
+   },
+   {
+    "job": "watch a worker work",
+    "here": "",
+    "elsewhere": "team-agent/Open conversation → chat watching mode; team-agent/Live output → team-agent-output; embedded-team-cycle-strip/Open agent output; gate-sheet/View logs → team-agent-output; embedded-team-planning-card/Planner output",
+    "landsOn": "chat (session readable) vs team-agent-output (fallback) — decided per door, not per session"
+   },
+   {
+    "job": "see where a step is",
+    "here": "cycle stages",
+    "elsewhere": "team-run-overview-tab/team-run-stage-line; team-board columns; team-conversation steps fold",
+    "landsOn": "three stage vocabularies (7 / 4 / 5 columns)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "cycle-stages",
+    "kind": "progress",
+    "kit": "none",
+    "kitGap": "KitStageStrip",
+    "couldBeAutomatic": "no",
+    "note": "7 engine stages wrapping"
+   },
+   {
+    "id": "team-cycle-action-refresh",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: the controller watches cycles (watchCycles)",
+    "note": ""
+   },
+   {
+    "id": "team-cycle-action-nudge",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: nudge the refinery automatically after its window",
+    "note": ""
+   },
+   {
+    "id": "team-cycle-action-stop",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: hold on provider limit",
+    "note": "green Stop beside Open output"
+   },
+   {
+    "id": "team-cycle-action-output",
+    "kind": "secondary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [
+   "TeamCard compact form (TeamCard no longer mounted)"
+  ],
+  "proposal": "redesign",
+  "rationale": "Owner Rethink: one KitStageStrip with the task's four outcome stages and one state source; no buttons — refresh is automatic, the refinery is nudged by the app on a stall, and Stop lives in the worker's overflow.",
+  "verticals": {
+   "automation-first": "issue: Refresh and Nudge refinery are manual chores",
+   "honest-state": "issue: stage and status disagree",
+   "perf": "ok: pulse stops under reduced motion",
+   "consistency-kit": "issue: raw buttons, destructive in accent"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_cycle_strip.dart:235",
+   "lib/ui/widgets/team_cycle_strip.dart:249",
+   "lib/ui/widgets/team_cycle_strip.dart:263",
+   "lib/ui/widgets/team_cycle_strip.dart:732",
+   "docs/qa/screen-census/i1-team-core/embedded-team-cycle-strip--provider-limit.png"
+  ]
+ },
+ {
+  "pageId": "embedded-team-card",
+  "area": "i1-team-core",
+  "title": "AI Team · Gas City",
+  "kind": "overlay",
+  "file": "lib/ui/widgets/team_card.dart",
+  "journey": [
+   "observe"
+  ],
+  "module": "work",
+  "chrome": "none (was embedded in workspace)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "team-delegator"
+  ],
+  "personaNotes": {},
+  "states": [
+   {
+    "id": "unmounted",
+    "how": "codeOnly:lib/ui/screens/workspace_screen.dart:596 (Work tab builds TeamTaskRow rows and team-work-door at :945 instead)"
+   }
+  ],
+  "statesMissing": [],
+  "info": [],
+  "infoMissing": [],
+  "actions": [],
+  "actionsMissing": [],
+  "entry": [],
+  "exit": [
+   "team-home"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see the team on the Work tab",
+    "here": "team-card",
+    "elsewhere": "workspace/team rows (TeamTaskRow) + team-work-door",
+    "landsOn": "team-conversation / team-home"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-card",
+    "kind": "card-panel",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "TeamCard only referenced from tests"
+   }
+  ],
+  "ledgerStale": [
+   "embedded-team-card-open",
+   "Refresh",
+   "hero percentage/progress bar/constellation (the whole page)"
+  ],
+  "proposal": "remove",
+  "rationale": "The Work tab now shows team tasks as conversations and one quiet door row; TeamCard is only referenced by tests and the census could not render it.",
+  "verticals": {
+   "consistency-kit": "issue: dead widget kept alive by tests"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_card.dart:52",
+   "lib/ui/screens/workspace_screen.dart:596",
+   "lib/ui/screens/workspace_screen.dart:945"
+  ]
+ },
+ {
+  "pageId": "embedded-team-receipt-chip",
+  "area": "i1-team-core",
+  "title": "[Gate answer receipt chip]",
+  "kind": "overlay",
+  "file": "lib/ui/widgets/team_receipt.dart",
+  "journey": [
+   "approve"
+  ],
+  "module": "team",
+  "chrome": "none (embedded in rows)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "remote-lead",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "remote-lead": "did my answer arrive, from the Inbox"
+  },
+  "states": [
+   {
+    "id": "unconfirmed",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/embedded-team-receipt-chip--unconfirmed.png"
+   },
+   {
+    "id": "not-accepted",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/embedded-team-receipt-chip--not-accepted.png"
+   },
+   {
+    "id": "sent",
+    "how": "codeOnly:lib/ui/widgets/team_receipt.dart:80"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "receipt word"
+  ],
+  "infoMissing": [
+   "who refused and what to do"
+  ],
+  "actions": [
+   "tap opens gate sheet"
+  ],
+  "actionsMissing": [
+   "answer again from the row"
+  ],
+  "entry": [
+   "needs-you rows",
+   "Inbox tiles",
+   "run overview"
+  ],
+  "exit": [
+   "gate-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see whether a change arrived",
+    "here": "receipt chip",
+    "elsewhere": "team-run/team-run-receipt; team-board 'Moving to…' flag; team-conversation sent line; team-agent receipts",
+    "landsOn": "five receipt looks"
+   }
+  ],
+  "elements": [
+   {
+    "id": "receipt",
+    "kind": "chip",
+    "kit": "none",
+    "kitGap": "KitReceipt",
+    "couldBeAutomatic": "yes: retry an unconfirmed answer once automatically before asking",
+    "note": "ActionChip with refresh glyph"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner Fix: one KitReceipt (mark + word in the supporting line) for every write the phone sends — gate answers, moves, messages, stop — so 'sent / not confirmed yet / refused · answer again' reads the same everywhere.",
+  "verticals": {
+   "honest-state": "issue: 'Unconfirmed' bookkeeping word",
+   "a11y": "issue: truncates titles to a few letters",
+   "consistency-kit": "issue: ActionChip"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_receipt.dart:66",
+   "lib/ui/widgets/team_receipt.dart:80",
+   "docs/qa/screen-census/i1-team-core/embedded-team-receipt-chip--unconfirmed.png"
+  ]
+ },
+ {
+  "pageId": "team-intro",
+  "area": "i1-team-core",
+  "title": "AI Team",
+  "kind": "screen",
+  "file": "lib/ui/screens/team/team_intro_screen.dart",
+  "journey": [
+   "learn",
+   "install"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "server.any": "hidden (no profile → no door)",
+   "phone.termux": "explains (unsupported notice + 'Run it on a computer')",
+   "network.tailscale": "offers-enable:team-host-sheet (Enter its address)"
+  },
+  "personas": [
+   "newcomer",
+   "phone-only",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "newcomer": "what a team is, what it costs",
+   "phone-only": "can this phone run it; memory and battery",
+   "remote-lead": "is it already on my computer"
+  },
+  "states": [
+   {
+    "id": "looking",
+    "how": "codeOnly:lib/ui/screens/team/team_intro_screen.dart:386"
+   },
+   {
+    "id": "in-app",
+    "how": "codeOnly:lib/ui/screens/team/team_intro_screen.dart:239"
+   },
+   {
+    "id": "termux",
+    "how": "codeOnly:lib/ui/screens/team/team_intro_screen.dart:246"
+   },
+   {
+    "id": "termux-unsupported",
+    "how": "codeOnly:lib/ui/screens/team/team_intro_screen.dart:392"
+   },
+   {
+    "id": "computer-found",
+    "how": "codeOnly:lib/ui/screens/team/team_intro_screen.dart:438"
+   },
+   {
+    "id": "computer-not-found",
+    "how": "codeOnly:lib/ui/screens/team/team_intro_screen.dart:262"
+   }
+  ],
+  "statesMissing": [
+   "no census render: layout unreviewed",
+   "offline while looking"
+  ],
+  "info": [
+   "drawing",
+   "four steps (plans, works, checks, merges)",
+   "what it needs: download size, battery, project"
+  ],
+  "infoMissing": [
+   "time the first setup takes (8–10 min measured)",
+   "memory cost per worker (~550 MB) on a phone"
+  ],
+  "actions": [
+   "Set it up",
+   "Turn on",
+   "Enter its address",
+   "Run it on a computer"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "embedded-team-discover",
+   "settings AI Team row",
+   "search index",
+   "New conversation 'Team' when off (conversation doc)"
+  ],
+  "exit": [
+   "plugins-settings",
+   "termux-setup",
+   "team-host-sheet",
+   "team-host-guide-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "turn the AI Team on",
+    "here": "",
+    "elsewhere": "embedded-team-discover → team-intro; team-intro Set it up/Turn on/Enter its address; embedded-team-discovery-card Turn on; embedded-team-phone-reoffer-card Set up → termux-setup; team-phone-onboarding-offer; team-host-sheet; phone-setup-customize-sheet Add tools › AI Team",
+    "landsOn": "plugins-settings | termux-setup | team-plugin-sheet | phone setup — five doors, three flows"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-intro-drawing",
+    "kind": "illustration",
+    "kit": "KitIllustration",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-intro-steps",
+    "kind": "list",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-intro-needs",
+    "kind": "notice",
+    "kit": "KitNotice",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-intro-set-up",
+    "kind": "primary-action",
+    "kit": "KitActionBlock",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: in-app path could install via the v2 engine directly instead of sending to Settings",
+    "note": ""
+   },
+   {
+    "id": "team-intro-address",
+    "kind": "secondary-action",
+    "kit": "KitAction",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "manual fallback to discovery"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Built on the kit with one primary per kind; add the time and memory expectation and route the in-app path to phone setup v2's 'Add tools › AI Team' so turning the team on is one guided, resumable flow.",
+  "verticals": {
+   "automation-first": "ok: discovers the host itself",
+   "honest-state": "issue: no time estimate",
+   "battery-heat": "issue: memory/battery cost not stated",
+   "a11y": "unknown: no render"
+  },
+  "evidence": [
+   "lib/ui/screens/team/team_intro_screen.dart:239",
+   "lib/ui/screens/team/team_intro_screen.dart:255",
+   "lib/ui/screens/team/team_intro_screen.dart:267",
+   "lib/ui/screens/team/team_intro_screen.dart:392"
+  ]
+ },
+ {
+  "pageId": "embedded-team-discover",
+  "area": "i1-team-core",
+  "title": "AI Team (off)",
+  "kind": "overlay",
+  "file": "lib/ui/widgets/team_discover.dart",
+  "journey": [
+   "learn"
+  ],
+  "module": "work",
+  "chrome": "none (embedded in workspace)",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "team.on": "offers-enable:team-intro",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "newcomer",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "newcomer": "learn the team exists without being pushed"
+  },
+  "states": [
+   {
+    "id": "first-time",
+    "how": "codeOnly:lib/ui/widgets/team_discover.dart:230"
+   },
+   {
+    "id": "folded",
+    "how": "codeOnly:lib/ui/widgets/team_discover.dart:143"
+   }
+  ],
+  "statesMissing": [
+   "no census render"
+  ],
+  "info": [
+   "one line of value"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "open intro",
+   "Not now"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "workspace (after the person's conversations)"
+  ],
+  "exit": [
+   "team-intro"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "turn the AI Team on",
+    "here": "",
+    "elsewhere": "embedded-team-discover → team-intro; team-intro Set it up/Turn on/Enter its address; embedded-team-discovery-card Turn on; embedded-team-phone-reoffer-card Set up → termux-setup; team-phone-onboarding-offer; team-host-sheet; phone-setup-customize-sheet Add tools › AI Team",
+    "landsOn": "plugins-settings | termux-setup | team-plugin-sheet | phone setup — five doors, three flows"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-discover-entry",
+    "kind": "row",
+    "kit": "KitRow+KitIllustration",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "keep",
+  "rationale": "A quiet door that never pushes the person's work down; with Solo · Team on New conversation it is the discoverability pair the owner asked for.",
+  "verticals": {
+   "consistency-kit": "ok",
+   "a11y": "unknown: no render"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_discover.dart:141",
+   "lib/ui/widgets/team_discover.dart:210",
+   "lib/ui/screens/workspace_screen.dart:956"
+  ]
+ },
+ {
+  "pageId": "team-board",
+  "area": "i1-team-core",
+  "title": "Board",
+  "kind": "screen",
+  "file": "lib/ui/screens/team/team_board_screen.dart",
+  "journey": [
+   "delegate",
+   "observe"
+  ],
+  "module": "team",
+  "chrome": "title-header",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "team.control (proposed)": "explains (read-only status line, no ⋯ or +)",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "team-delegator",
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "team-delegator": "what is queued and what the team does next; hold or start backlog",
+   "remote-lead": "counts at a glance, open what needs me"
+  },
+  "states": [
+   {
+    "id": "loading",
+    "how": "codeOnly:lib/ui/screens/team/team_board_screen.dart:497"
+   },
+   {
+    "id": "not-answering",
+    "how": "codeOnly:lib/ui/screens/team/team_board_screen.dart:484"
+   },
+   {
+    "id": "failed",
+    "how": "codeOnly:lib/ui/screens/team/team_board_screen.dart:468"
+   },
+   {
+    "id": "empty",
+    "how": "codeOnly:lib/ui/screens/team/team_board_screen.dart:522"
+   },
+   {
+    "id": "column-empty",
+    "how": "codeOnly:lib/ui/screens/team/team_board_screen.dart:612"
+   },
+   {
+    "id": "loaded (opens on Working)",
+    "how": "codeOnly:lib/ui/screens/team/team_board_screen.dart:556"
+   },
+   {
+    "id": "moving",
+    "how": "codeOnly:lib/ui/screens/team/team_board_screen.dart:285"
+   },
+   {
+    "id": "move-refused",
+    "how": "codeOnly:lib/ui/screens/team/team_board_screen.dart:442"
+   },
+   {
+    "id": "read-only",
+    "how": "codeOnly:lib/ui/screens/team/team_board_screen.dart:362"
+   },
+   {
+    "id": "stale",
+    "how": "codeOnly:lib/ui/screens/team/team_board_screen.dart:546"
+   }
+  ],
+  "statesMissing": [
+   "no census render",
+   "offline phone"
+  ],
+  "info": [
+   "five columns with counts and a Working attention dot",
+   "card: mark, title, meta (priority/type/who/age), flag (needs you/blocked/epic)",
+   "project switcher"
+  ],
+  "infoMissing": [
+   "what the team will pick next from Ready (order)"
+  ],
+  "actions": [
+   "open card (conversation, else work sheet)",
+   "⋯ / long-press move sheet",
+   "add to backlog",
+   "switch project",
+   "pull to refresh",
+   "swipe/tap columns"
+  ],
+  "actionsMissing": [
+   "Undo after a move (snackbar) — the reverse move exists but is two sheets away",
+   "filter/search across columns"
+  ],
+  "entry": [
+   "team-home board icon and row"
+  ],
+  "exit": [
+   "team-conversation",
+   "work-sheet",
+   "team-board-move-sheet",
+   "team-board-add-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "give the team a task",
+    "here": "(none here)",
+    "elsewhere": "team-home/team-home-start-run (showStartRunSheet, team_home_screen.dart:177); workspace/New conversation Team (TeamConversation.start, workspace_screen.dart:1237); team-board/team-board-add (showTeamBoardAddSheet, team_board_screen.dart:312)",
+    "landsOn": "team-home stays + planning card | team-conversation (pending) | team-board Backlog — INCONSISTENT"
+   },
+   {
+    "job": "open a task",
+    "here": "",
+    "elsewhere": "team-home/task-row → RunScreen (team_home_screen.dart:132,397); workspace/team row → TeamConversation.open (workspace_screen.dart:1241); team-board/card → TeamConversation.open (team_board_screen.dart:59)",
+    "landsOn": "team-run (home) vs team-conversation (Work tab, board) — INCONSISTENT"
+   },
+   {
+    "job": "stop a task",
+    "here": "",
+    "elsewhere": "team-run/team-run-cancel (cancelRun, run_screen.dart:232); gate-sheet/Cancel work (run failed); team-board-move-sheet/team-board-move-cancel (bead close, Backlog/Ready only); team-conversation: none",
+    "landsOn": "team-run receipt chip | gate-sheet receipt | team-board Done column — conversation cannot stop its own task"
+   },
+   {
+    "job": "put work in a worker's hands",
+    "here": "",
+    "elsewhere": "team-agent-reassign-sheet (assignWork to one agent, agent_screen.dart:807); team-board-move-sheet/Start now (assignWork to the pool); gate-sheet/Retry (re-sling)",
+    "landsOn": "team-agent | team-board Ready | gate-sheet receipt"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-board-tabs",
+    "kind": "tabbar",
+    "kit": "none",
+    "kitGap": "KitCountTabs",
+    "couldBeAutomatic": "no",
+    "note": "TeamBoardTabs: counts + needs-you dot"
+   },
+   {
+    "id": "team-board-pages",
+    "kind": "list",
+    "kit": "none",
+    "kitGap": "KitPagedColumns",
+    "couldBeAutomatic": "no",
+    "note": "PageView of lanes, next one peeking"
+   },
+   {
+    "id": "team-board-card",
+    "kind": "card-panel",
+    "kit": "KitPanel+KitTaskMark+custom",
+    "kitGap": "KitTaskCard",
+    "couldBeAutomatic": "no",
+    "note": "meta + flag lines + ⋯"
+   },
+   {
+    "id": "team-board-read-only",
+    "kind": "status-line",
+    "kit": "KitStatusLine",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-board-failure",
+    "kind": "notice",
+    "kit": "KitNotice+KitReveal",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-board-empty",
+    "kind": "state",
+    "kit": "KitStateView+KitIllustration",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-board-add",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "top-bar +; Add to backlog, stays on the board"
+   },
+   {
+    "id": "team-board-project",
+    "kind": "menu",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "PopupMenu under the title"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "keep",
+  "rationale": "New and on-spec: counts at a glance, opens on Working, a card opens its conversation, moves are menu-based and confirmed — the manual lane is only for what the team has not started. Add Undo after a move and a census render.",
+  "verticals": {
+   "automation-first": "ok: Working/Review/Done are the team's; the person only holds or starts backlog",
+   "honest-state": "ok: 'Moving to Ready…' until the host shows it; refusal said",
+   "a11y": "unknown: no render; gestures have the ⋯ alternative",
+   "perf": "ok: no ambient loop",
+   "consistency-kit": "issue: tabs, lanes and card are team-only widgets",
+   "reliability": "ok: 30 s hold then trusts the host"
+  },
+  "evidence": [
+   "lib/ui/screens/team/team_board_screen.dart:59",
+   "lib/ui/screens/team/team_board_screen.dart:61",
+   "lib/ui/screens/team/team_board_screen.dart:285",
+   "lib/ui/screens/team/team_board_screen.dart:312",
+   "lib/ui/screens/team/team_board_screen.dart:362",
+   "lib/ui/screens/team/team_board_screen.dart:484",
+   "lib/ui/widgets/team_board_move_sheet.dart:264"
+  ],
+  "proposals": [
+   {
+    "type": "capability",
+    "id": "team.control",
+    "meaning": "the team host takes writes from this phone (host front on a computer or the phone's loopback supervisor); today split across controlMessage/controlAgent/controlAssign/controlCancelRun/controlCreateWork"
+   }
+  ]
+ },
+ {
+  "pageId": "team-board-move-sheet",
+  "area": "i1-team-core",
+  "title": "<task title>",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_board_move_sheet.dart",
+  "journey": [
+   "delegate"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.control (proposed)": "explains (read-only note, only Open)",
+   "server.any": "hidden",
+   "team.on": "hidden"
+  },
+  "personas": [
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "team-delegator": "start, hold or cancel what the team hasn't started"
+  },
+  "states": [
+   {
+    "id": "moves",
+    "how": "codeOnly:lib/ui/widgets/team_board_move_sheet.dart:106"
+   },
+   {
+    "id": "team-moves-this",
+    "how": "codeOnly:lib/ui/widgets/team_board_move_sheet.dart:133"
+   },
+   {
+    "id": "read-only",
+    "how": "codeOnly:lib/ui/widgets/team_board_move_sheet.dart:132"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "each move with its consequence",
+   "where the card is"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Start now",
+   "Back to backlog",
+   "Priority",
+   "Cancel task",
+   "Reopen",
+   "Open conversation/details"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "board card ⋯ or long press"
+  ],
+  "exit": [
+   "team-board",
+   "team-board-priority-sheet",
+   "team-board-cancel-confirm-sheet",
+   "team-conversation"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "put work in a worker's hands",
+    "here": "",
+    "elsewhere": "team-agent-reassign-sheet (assignWork to one agent, agent_screen.dart:807); team-board-move-sheet/Start now (assignWork to the pool); gate-sheet/Retry (re-sling)",
+    "landsOn": "team-agent | team-board Ready | gate-sheet receipt"
+   },
+   {
+    "job": "stop a task",
+    "here": "",
+    "elsewhere": "team-run/team-run-cancel (cancelRun, run_screen.dart:232); gate-sheet/Cancel work (run failed); team-board-move-sheet/team-board-move-cancel (bead close, Backlog/Ready only); team-conversation: none",
+    "landsOn": "team-run receipt chip | gate-sheet receipt | team-board Done column — conversation cannot stop its own task"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-board-move-startNow",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no (the person's hold/queue decision; Ready is then picked up automatically)",
+    "note": ""
+   },
+   {
+    "id": "team-board-move-backToBacklog",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-board-move-priority",
+    "kind": "row",
+    "kit": "KitRow+KitChevron",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-board-move-cancel",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "destructive: true"
+   },
+   {
+    "id": "team-board-move-open",
+    "kind": "row",
+    "kit": "KitRow+KitChevron",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "keep",
+  "rationale": "The accessible alternative to drag (WCAG 2.5.7) with every move named; nothing to remove.",
+  "verticals": {
+   "a11y": "ok",
+   "automation-first": "ok",
+   "consistency-kit": "issue: sheet frame not from the kit"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_board_move_sheet.dart:76",
+   "lib/ui/widgets/team_board_move_sheet.dart:106",
+   "lib/ui/widgets/team_board_move_sheet.dart:170"
+  ],
+  "proposals": [
+   {
+    "type": "capability",
+    "id": "team.control",
+    "meaning": "the team host takes writes from this phone (host front on a computer or the phone's loopback supervisor); today split across controlMessage/controlAgent/controlAssign/controlCancelRun/controlCreateWork"
+   }
+  ]
+ },
+ {
+  "pageId": "team-board-priority-sheet",
+  "area": "i1-team-core",
+  "title": "Priority",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_board_move_sheet.dart",
+  "journey": [
+   "delegate"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "server.any": "hidden",
+   "team.on": "hidden"
+  },
+  "personas": [
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "team-delegator": "reorder what the team takes next"
+  },
+  "states": [
+   {
+    "id": "choice",
+    "how": "codeOnly:lib/ui/widgets/team_board_move_sheet.dart:191"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "five levels, current checked"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "pick level"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "team-board-move-sheet"
+  ],
+  "exit": [
+   "team-board"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "team-board-priority-row",
+    "kind": "row",
+    "kit": "KitRow+custom",
+    "kitGap": "KitChoiceList",
+    "couldBeAutomatic": "no",
+    "note": "TeamBoardPriorityGlyph painter"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "keep",
+  "rationale": "A plain choice list; it only needs the shared choice-list part.",
+  "verticals": {
+   "consistency-kit": "issue: custom priority painter",
+   "a11y": "ok: words beside glyph"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_board_move_sheet.dart:191",
+   "lib/ui/widgets/team_board_card.dart:345"
+  ]
+ },
+ {
+  "pageId": "team-board-add-sheet",
+  "area": "i1-team-core",
+  "title": "Add to backlog",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_board_move_sheet.dart",
+  "journey": [
+   "delegate"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.control (proposed)": "hidden (no + without create)",
+   "server.any": "hidden",
+   "team.on": "hidden"
+  },
+  "personas": [
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "team-delegator": "park an idea without starting it"
+  },
+  "states": [
+   {
+    "id": "empty/typed",
+    "how": "codeOnly:lib/ui/widgets/team_board_move_sheet.dart:280"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "one field + note"
+  ],
+  "infoMissing": [
+   "project it lands in when several"
+  ],
+  "actions": [
+   "Add to backlog"
+  ],
+  "actionsMissing": [
+   "draft kept on dismiss",
+   "start now instead of backlog"
+  ],
+  "entry": [
+   "board + icon",
+   "board empty state"
+  ],
+  "exit": [
+   "team-board (Backlog selected)"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "give the team a task",
+    "here": "(none here)",
+    "elsewhere": "team-home/team-home-start-run (showStartRunSheet, team_home_screen.dart:177); workspace/New conversation Team (TeamConversation.start, workspace_screen.dart:1237); team-board/team-board-add (showTeamBoardAddSheet, team_board_screen.dart:312)",
+    "landsOn": "team-home stays + planning card | team-conversation (pending) | team-board Backlog — INCONSISTENT"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-board-add-field",
+    "kind": "field",
+    "kit": "none",
+    "kitGap": "KitComposerField",
+    "couldBeAutomatic": "no",
+    "note": "TextField; draft lost on dismiss"
+   },
+   {
+    "id": "team-board-add-button",
+    "kind": "primary-action",
+    "kit": "KitButton",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:start-run-sheet",
+  "rationale": "Two task composers with different words; one 'Give the team a task' sheet with a 'Keep in backlog / Start now' choice keeps a single, draft-safe entry.",
+  "verticals": {
+   "reliability": "issue: typed title lost on swipe",
+   "consistency-kit": "issue: duplicate composer"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_board_move_sheet.dart:264",
+   "lib/ui/widgets/team_board_move_sheet.dart:338",
+   "lib/ui/screens/team/team_board_screen.dart:318"
+  ],
+  "proposals": [
+   {
+    "type": "capability",
+    "id": "team.control",
+    "meaning": "the team host takes writes from this phone (host front on a computer or the phone's loopback supervisor); today split across controlMessage/controlAgent/controlAssign/controlCancelRun/controlCreateWork"
+   }
+  ]
+ },
+ {
+  "pageId": "team-board-cancel-confirm-sheet",
+  "area": "i1-team-core",
+  "title": "Cancel “{title}”?",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_board_move_sheet.dart",
+  "journey": [
+   "delegate",
+   "recover"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "server.any": "hidden",
+   "team.on": "hidden"
+  },
+  "personas": [
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "team-delegator": "cancel is recoverable (Reopen)"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "codeOnly:lib/ui/widgets/team_board_move_sheet.dart:248"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "what cancelling does"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Cancel task",
+   "Keep it"
+  ],
+  "actionsMissing": [
+   "Undo snackbar (Reopen exists)"
+  ],
+  "entry": [
+   "team-board-move-sheet"
+  ],
+  "exit": [
+   "team-board"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "stop a task",
+    "here": "",
+    "elsewhere": "team-run/team-run-cancel (cancelRun, run_screen.dart:232); gate-sheet/Cancel work (run failed); team-board-move-sheet/team-board-move-cancel (bead close, Backlog/Ready only); team-conversation: none",
+    "landsOn": "team-run receipt chip | gate-sheet receipt | team-board Done column — conversation cannot stop its own task"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-board-cancel-confirm",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": "showConfirmSheet destructive, 'Keep it'"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "keep",
+  "rationale": "Correct error-toned confirm; the host can reopen, so an Undo snackbar would make it recoverable in one tap.",
+  "verticals": {
+   "consistency-kit": "issue: third cancel wording ('Keep it')",
+   "honest-state": "ok"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_board_move_sheet.dart:248"
+  ]
+ },
+ {
+  "pageId": "team-conversation",
+  "area": "i1-team-core",
+  "title": "<task title>",
+  "kind": "screen",
+  "file": "lib/ui/screens/chat/team_conversation_view.dart",
+  "journey": [
+   "delegate",
+   "observe"
+  ],
+  "module": "chat",
+  "chrome": "title-header+composer",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "team.control (proposed)": "explains (composer note 'can't message from this phone')",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "team-delegator",
+   "remote-lead",
+   "phone-only"
+  ],
+  "personaNotes": {
+   "team-delegator": "one place: what the team does now, its workers, what needs me, merge",
+   "remote-lead": "answer and merge from the notification",
+   "phone-only": "how long the cold start takes on the phone (Now line says so)"
+  },
+  "states": [
+   {
+    "id": "pending",
+    "how": "codeOnly:lib/ui/screens/chat/team_conversation_view.dart:676"
+   },
+   {
+    "id": "loading",
+    "how": "codeOnly:lib/ui/screens/chat/team_conversation_view.dart:304"
+   },
+   {
+    "id": "working",
+    "how": "codeOnly:lib/ui/screens/chat/team_conversation_view.dart:722"
+   },
+   {
+    "id": "needs-you",
+    "how": "codeOnly:lib/ui/screens/chat/team_conversation_view.dart:691"
+   },
+   {
+    "id": "review",
+    "how": "codeOnly:lib/ui/screens/chat/team_conversation_view.dart:728"
+   },
+   {
+    "id": "finished",
+    "how": "codeOnly:lib/ui/screens/chat/team_conversation_view.dart:686"
+   },
+   {
+    "id": "not-answering",
+    "how": "codeOnly:lib/ui/screens/chat/team_conversation_view.dart:660"
+   },
+   {
+    "id": "composer-cannot",
+    "how": "codeOnly:lib/ui/screens/chat/team_conversation_view.dart:1109"
+   },
+   {
+    "id": "composer-nobody",
+    "how": "codeOnly:lib/ui/screens/chat/team_conversation_view.dart:1111"
+   }
+  ],
+  "statesMissing": [
+   "host error / offline as a page state",
+   "task cancelled or removed",
+   "planner refused (pending never binds)",
+   "still planning after N min with an action"
+  ],
+  "info": [
+   "prompt (task + description)",
+   "lead lines from real events, earlier folded",
+   "Now line",
+   "family strip",
+   "steps fold",
+   "worker cards with session state",
+   "gates",
+   "merge section",
+   "sent messages with receipts",
+   "subtitle: where it runs"
+  ],
+  "infoMissing": [
+   "cost/time so far",
+   "who the composer message goes to before typing (note under field only)"
+  ],
+  "actions": [
+   "message the team",
+   "open worker (watching)",
+   "answer gate",
+   "merge/approve",
+   "open team page",
+   "Task details (RunScreen)",
+   "retry when not answering"
+  ],
+  "actionsMissing": [
+   "Stop task (menu has only Task details)",
+   "open a step (step rows are not tappable)",
+   "edit and resend a refused task",
+   "draft kept when leaving",
+   "undo a message"
+  ],
+  "entry": [
+   "workspace team rows",
+   "workspace New conversation 'Team'",
+   "team-board card",
+   "team-board-move-sheet",
+   "team-run Open conversation"
+  ],
+  "exit": [
+   "chat (worker in watching mode)",
+   "gate-sheet",
+   "team-home",
+   "team-run",
+   "team-merge-*"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "give the team a task",
+    "here": "(none here)",
+    "elsewhere": "team-home/team-home-start-run (showStartRunSheet, team_home_screen.dart:177); workspace/New conversation Team (TeamConversation.start, workspace_screen.dart:1237); team-board/team-board-add (showTeamBoardAddSheet, team_board_screen.dart:312)",
+    "landsOn": "team-home stays + planning card | team-conversation (pending) | team-board Backlog — INCONSISTENT"
+   },
+   {
+    "job": "open a task",
+    "here": "",
+    "elsewhere": "team-home/task-row → RunScreen (team_home_screen.dart:132,397); workspace/team row → TeamConversation.open (workspace_screen.dart:1241); team-board/card → TeamConversation.open (team_board_screen.dart:59)",
+    "landsOn": "team-run (home) vs team-conversation (Work tab, board) — INCONSISTENT"
+   },
+   {
+    "job": "stop a task",
+    "here": "",
+    "elsewhere": "team-run/team-run-cancel (cancelRun, run_screen.dart:232); gate-sheet/Cancel work (run failed); team-board-move-sheet/team-board-move-cancel (bead close, Backlog/Ready only); team-conversation: none",
+    "landsOn": "team-run receipt chip | gate-sheet receipt | team-board Done column — conversation cannot stop its own task"
+   },
+   {
+    "job": "message a worker",
+    "here": "",
+    "elsewhere": "team-agent/team-agent-control-message (_MessageSheet, agent_screen.dart:788); chat watching mode/chat-watching-message-sheet (team_conversation_view.dart:1328); team-conversation/team-conversation-composer (messageAgent to worker or planner)",
+    "landsOn": "team-agent receipt | chat (watching) receipt | team-conversation sent line"
+   },
+   {
+    "job": "see who works on a task",
+    "here": "",
+    "elsewhere": "team-agents list; team-run-agents-tab; team-conversation/team-conversation-family + agent cards",
+    "landsOn": "team-agent (lists, tab) vs chat watching mode (conversation) — INCONSISTENT"
+   },
+   {
+    "job": "answer the team",
+    "here": "",
+    "elsewhere": "team-home/needs-you (inline KitRequestCard); team-conversation gate cards (inline); activity gate tile → gate-sheet; notification → activity → gate-sheet; team-run-overview-tab card",
+    "landsOn": "stays in place (inline) vs gate-sheet — consistent receipts, different containers"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-conversation-title",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": "KitTopBar",
+    "couldBeAutomatic": "no",
+    "note": "title + host subtitle; agent icon → team-home, menu → Task details only"
+   },
+   {
+    "id": "team-conversation-now",
+    "kind": "status-line",
+    "kit": "KitStatusLine+KitReveal",
+    "kitGap": "KitNowLine",
+    "couldBeAutomatic": "no",
+    "note": "shared with team-home's Now line"
+   },
+   {
+    "id": "team-conversation-family",
+    "kind": "chip",
+    "kit": "none",
+    "kitGap": "KitAgentStrip",
+    "couldBeAutomatic": "no",
+    "note": "KitStatusMark scaled .8"
+   },
+   {
+    "id": "team-conversation-prompt",
+    "kind": "transcript",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "chat _MessageView"
+   },
+   {
+    "id": "team-conversation-lead",
+    "kind": "transcript",
+    "kit": "KitExpandRow+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "earlier lines folded"
+   },
+   {
+    "id": "team-conversation-steps",
+    "kind": "list",
+    "kit": "KitExpandRow+KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "rows not tappable"
+   },
+   {
+    "id": "team-conversation-agent",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "sub-agent card → watching mode"
+   },
+   {
+    "id": "team-conversation-gate",
+    "kind": "request-card",
+    "kit": "KitRequestCard",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-conversation-merge",
+    "kind": "card-panel",
+    "kit": "KitPanel+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-conversation-composer",
+    "kind": "field",
+    "kit": "none",
+    "kitGap": "KitComposerField",
+    "couldBeAutomatic": "no",
+    "note": "TeamComposerField + recipient note; draft not kept"
+   }
+  ],
+  "ledgerStale": [
+   "team-conversation-retry is a KitStatusLine action, not a button"
+  ],
+  "proposal": "fix",
+  "rationale": "This is the decided home of a team task and should absorb Task details, timeline and agents; fix the missing Stop, tappable steps, kept draft, and a designed error/offline/refused state so it never depends on RunScreen.",
+  "verticals": {
+   "automation-first": "ok: narrates the team's own events; person only messages or answers",
+   "honest-state": "issue: no page state for host error/removed task; pending can wait forever",
+   "reliability": "issue: composer draft lost on back",
+   "rtl-l10n": "ok: localized lead lines",
+   "notifications": "ok: gates notify via Inbox",
+   "consistency-kit": "issue: family strip and composer team-only",
+   "perf": "ok: 30 s tick for elapsed times only"
+  },
+  "evidence": [
+   "lib/ui/screens/team_conversation/team_conversation.dart:36",
+   "lib/ui/screens/team_conversation/team_conversation.dart:55",
+   "lib/ui/screens/chat/team_conversation_view.dart:181",
+   "lib/ui/screens/chat/team_conversation_view.dart:189",
+   "lib/ui/screens/chat/team_conversation_view.dart:290",
+   "lib/ui/screens/chat/team_conversation_view.dart:362",
+   "lib/ui/screens/chat/team_conversation_view.dart:1087",
+   "lib/ui/screens/workspace_screen.dart:1237",
+   "lib/ui/screens/team/team_board_screen.dart:59"
+  ],
+  "proposals": [
+   {
+    "type": "capability",
+    "id": "team.control",
+    "meaning": "the team host takes writes from this phone (host front on a computer or the phone's loopback supervisor); today split across controlMessage/controlAgent/controlAssign/controlCancelRun/controlCreateWork"
+   }
+  ]
+ },
+ {
+  "pageId": "gate-sheet",
+  "area": "i2-team-sheets",
+  "title": "<gate title> (Decision / Confirmation / Free text / Gate / Run failed / Review ready)",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/gate_sheet.dart",
+  "journey": [
+   "approve",
+   "recover"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "team.control (proposed)": "explains ('Answer this on the host' + How)",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "remote-lead",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "remote-lead": "decide in seconds with enough context",
+   "team-delegator": "why the team needs me (supervision)"
+  },
+  "states": [
+   {
+    "id": "decision",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/gate-sheet--decision.png"
+   },
+   {
+    "id": "confirmation",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/gate-sheet--confirmation.png"
+   },
+   {
+    "id": "free-text",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/gate-sheet--free-text.png"
+   },
+   {
+    "id": "run-failed",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/gate-sheet--run-failed.png"
+   },
+   {
+    "id": "missing/answered-elsewhere",
+    "how": "codeOnly:lib/ui/screens/team/gate_sheet.dart:159"
+   },
+   {
+    "id": "receipts",
+    "how": "codeOnly:lib/ui/screens/team/gate_sheet.dart:17"
+   }
+  ],
+  "statesMissing": [
+   "failed with a doable next step from the phone"
+  ],
+  "info": [
+   "kind, task, age",
+   "question and options",
+   "work chips",
+   "Technical details"
+  ],
+  "infoMissing": [
+   "what the team will do after each answer"
+  ],
+  "actions": [
+   "Send",
+   "Approve",
+   "Deny",
+   "Mark done",
+   "Retry",
+   "Restart or reassign",
+   "View logs",
+   "Cancel work",
+   "How",
+   "Close"
+  ],
+  "actionsMissing": [
+   "draft kept for free text",
+   "'Ask the team to fix it' on failure",
+   "undo an answer"
+  ],
+  "entry": [
+   "team-home Needs you",
+   "activity gate tile",
+   "notification",
+   "team-conversation gate card",
+   "run overview"
+  ],
+  "exit": [
+   "work-sheet",
+   "team-agent",
+   "team-agent-output",
+   "gate-sheet-confirm-sheet",
+   "team-host-guide-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "answer the team",
+    "here": "",
+    "elsewhere": "team-home/needs-you (inline KitRequestCard); team-conversation gate cards (inline); activity gate tile → gate-sheet; notification → activity → gate-sheet; team-run-overview-tab card",
+    "landsOn": "stays in place (inline) vs gate-sheet — consistent receipts, different containers"
+   },
+   {
+    "job": "stop a task",
+    "here": "",
+    "elsewhere": "team-run/team-run-cancel (cancelRun, run_screen.dart:232); gate-sheet/Cancel work (run failed); team-board-move-sheet/team-board-move-cancel (bead close, Backlog/Ready only); team-conversation: none",
+    "landsOn": "team-run receipt chip | gate-sheet receipt | team-board Done column — conversation cannot stop its own task"
+   },
+   {
+    "job": "put work in a worker's hands",
+    "here": "",
+    "elsewhere": "team-agent-reassign-sheet (assignWork to one agent, agent_screen.dart:807); team-board-move-sheet/Start now (assignWork to the pool); gate-sheet/Retry (re-sling)",
+    "landsOn": "team-agent | team-board Ready | gate-sheet receipt"
+   }
+  ],
+  "elements": [
+   {
+    "id": "gate-kicker",
+    "kind": "header",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "kind 3× + interaction id"
+   },
+   {
+    "id": "gate-options",
+    "kind": "picker",
+    "kit": "none",
+    "kitGap": "KitChoiceList",
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "gate-actions",
+    "kind": "primary-action",
+    "kit": "KitActionBlock",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "gate-retry",
+    "kind": "tertiary-action",
+    "kit": "KitAction",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: re-sling a failed step once automatically when the failure is transient",
+    "note": ""
+   },
+   {
+    "id": "gate-restart-or-reassign",
+    "kind": "tertiary-action",
+    "kit": "KitAction",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: restart/reassign is the dispatcher's job; offer 'Ask the team to fix it'",
+    "note": ""
+   },
+   {
+    "id": "gate-work-chip",
+    "kind": "chip",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "ActionChip"
+   },
+   {
+    "id": "gate-details",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": "KitDetailsFold",
+    "couldBeAutomatic": "no",
+    "note": "ExpansionTile"
+   }
+  ],
+  "ledgerStale": [
+   "reachedFrom _NeedsYouSegment (team_home_screen.dart:1125) — segment removed"
+  ],
+  "proposal": "fix",
+  "rationale": "Owner Fix: one kicker line, ids under Details, a doable primary on failure ('Ask the team to fix it'), destructive tone on the risky button, and a kept draft; the supervision level should decide which gates reach the person at all.",
+  "verticals": {
+   "automation-first": "issue: 'Restart or reassign' sends the person to manual levers on failure",
+   "reliability": "issue: free-text draft not kept",
+   "honest-state": "ok: receipts inline",
+   "notifications": "ok",
+   "consistency-kit": "issue: ExpansionTile, ActionChip"
+  },
+  "evidence": [
+   "lib/ui/screens/team/gate_sheet.dart:78",
+   "lib/ui/screens/team/gate_sheet.dart:96",
+   "lib/ui/screens/team/gate_sheet.dart:159",
+   "lib/ui/screens/team/gate_sheet.dart:279",
+   "lib/ui/screens/team/gate_sheet.dart:343",
+   "docs/qa/screen-census/i2-team-sheets/gate-sheet--run-failed.png"
+  ],
+  "proposals": [
+   {
+    "type": "capability",
+    "id": "team.control",
+    "meaning": "the team host takes writes from this phone (host front on a computer or the phone's loopback supervisor); today split across controlMessage/controlAgent/controlAssign/controlCancelRun/controlCreateWork"
+   }
+  ]
+ },
+ {
+  "pageId": "gate-sheet-confirm-sheet",
+  "area": "i2-team-sheets",
+  "title": "Approve this destructive action? / Deny this request? / Cancel this work?",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/gate_sheet.dart",
+  "journey": [
+   "approve"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "server.any": "hidden",
+   "team.on": "hidden"
+  },
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "no accident on a destructive approve"
+  },
+  "states": [
+   {
+    "id": "deny",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/gate-sheet-confirm-sheet--deny.png"
+   },
+   {
+    "id": "cancel-work",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/gate-sheet-confirm-sheet--cancel-work.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "consequence"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "confirm",
+   "Keep"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "gate-sheet"
+  ],
+  "exit": [
+   "gate-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "stop a task",
+    "here": "",
+    "elsewhere": "team-run/team-run-cancel (cancelRun, run_screen.dart:232); gate-sheet/Cancel work (run failed); team-board-move-sheet/team-board-move-cancel (bead close, Backlog/Ready only); team-conversation: none",
+    "landsOn": "team-run receipt chip | gate-sheet receipt | team-board Done column — conversation cannot stop its own task"
+   }
+  ],
+  "elements": [
+   {
+    "id": "gate-confirm",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": "third stacked sheet"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "keep",
+  "rationale": "Right pattern; as a dialog over the gate sheet it would stop the three-sheet stack.",
+  "verticals": {
+   "consistency-kit": "ok",
+   "honest-state": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/team/gate_sheet.dart:279",
+   "docs/qa/screen-census/i2-team-sheets/gate-sheet-confirm-sheet--deny.png"
+  ]
+ },
+ {
+  "pageId": "embedded-team-merge-section",
+  "area": "i2-team-sheets",
+  "title": "Ready to merge / Not ready / Merged",
+  "kind": "overlay",
+  "file": "lib/ui/screens/team/merge_section.dart",
+  "journey": [
+   "review",
+   "approve"
+  ],
+  "module": "team",
+  "chrome": "none (embedded in team-run / team-conversation)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "team.control (proposed)": "hidden (no merge gateway → section absent)",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "remote-lead",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "remote-lead": "merge from the phone with confidence",
+   "team-delegator": "not have to merge at all when checks pass"
+  },
+  "states": [
+   {
+    "id": "ready",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-merge-section--ready.png"
+   },
+   {
+    "id": "not-ready",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-merge-section--not-ready.png"
+   },
+   {
+    "id": "armed",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-merge-section--armed.png"
+   },
+   {
+    "id": "merged",
+    "how": "rendered:docs/qa/screen-census/i1-team-core/team-run-overview-tab--merged.png"
+   }
+  ],
+  "statesMissing": [
+   "merge failed/conflict with next step"
+  ],
+  "info": [
+   "readiness checks",
+   "files and +/-",
+   "merge request id"
+  ],
+  "infoMissing": [
+   "what goes into which branch in words"
+  ],
+  "actions": [
+   "Review changes",
+   "Approve request",
+   "Merge (two-step + sheet)"
+  ],
+  "actionsMissing": [
+   "undo approval"
+  ],
+  "entry": [
+   "team-run overview",
+   "team-conversation"
+  ],
+  "exit": [
+   "team-merge-changes-sheet",
+   "team-merge-approve-sheet",
+   "team-merge-confirm-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "merge a task",
+    "here": "merge section",
+    "elsewhere": "team-run-overview-tab and team-conversation (same widget)",
+    "landsOn": "same widget, two pages"
+   }
+  ],
+  "elements": [
+   {
+    "id": "merge-panel",
+    "kind": "card-panel",
+    "kit": "KitPanel+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "merge-checks",
+    "kind": "list",
+    "kit": "none",
+    "kitGap": "KitChecklist",
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "merge-approve",
+    "kind": "secondary-action",
+    "kit": "KitAction",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: approve automatically when supervision is Balanced/Autonomous and checks pass",
+    "note": ""
+   },
+   {
+    "id": "merge-merge",
+    "kind": "primary-action",
+    "kit": "KitAction",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: merge automatically when supervision allows and every check is green; manual on High",
+    "note": "armed 8 s then sheet"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner Fix: one primary for the next step (Approve, then Merge), one confirmation, pending shown as waiting. Automation-first: under a supervision level that allows it the team merges by itself once every check is green and the person gets the receipt.",
+  "verticals": {
+   "automation-first": "issue: merge always manual, even on Autonomous supervision",
+   "honest-state": "issue: waiting shown as failure; dead buttons after merge",
+   "security-privacy": "ok: no force-merge anywhere",
+   "consistency-kit": "issue: card in card"
+  },
+  "evidence": [
+   "lib/ui/screens/team/merge_section.dart:165",
+   "lib/ui/screens/team/merge_section.dart:185",
+   "lib/ui/screens/team/merge_section.dart:201",
+   "lib/ui/screens/team/merge_section.dart:294",
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-merge-section--ready.png"
+  ],
+  "proposals": [
+   {
+    "type": "capability",
+    "id": "team.control",
+    "meaning": "the team host takes writes from this phone (host front on a computer or the phone's loopback supervisor); today split across controlMessage/controlAgent/controlAssign/controlCancelRun/controlCreateWork"
+   }
+  ]
+ },
+ {
+  "pageId": "team-merge-confirm-sheet",
+  "area": "i2-team-sheets",
+  "title": "Merge into {branch}?",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/merge_section.dart",
+  "journey": [
+   "approve"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "server.any": "hidden",
+   "team.on": "hidden"
+  },
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "what exactly is merged"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-merge-confirm-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "branch, irreversibility"
+  ],
+  "infoMissing": [
+   "task, files, +/-"
+  ],
+  "actions": [
+   "Merge into {branch}",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "merge section"
+  ],
+  "exit": [
+   "merge section receipt"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "merge-confirm",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "yes: see merge section (auto-merge under permissive supervision)",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [
+   "gate: 'Merge button armed' — keep only the sheet"
+  ],
+  "proposal": "fix",
+  "rationale": "Make this the only merge confirmation and say what is merged.",
+  "verticals": {
+   "honest-state": "issue: omits what is merged",
+   "consistency-kit": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/team/merge_section.dart:185",
+   "docs/qa/screen-census/i2-team-sheets/team-merge-confirm-sheet.png"
+  ]
+ },
+ {
+  "pageId": "team-merge-approve-sheet",
+  "area": "i2-team-sheets",
+  "title": "Approve this merge request?",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/merge_section.dart",
+  "journey": [
+   "approve"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "server.any": "hidden",
+   "team.on": "hidden"
+  },
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {},
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-merge-approve-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "merging is a separate step"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Approve",
+   "Cancel"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "merge section"
+  ],
+  "exit": [
+   "merge section"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "approve-confirm",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "yes: approve automatically under Balanced/Autonomous",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "remove",
+  "rationale": "Approving is reversible and not destructive; approve directly with a receipt (and Undo where the host allows), removing a tap from the most common merge path.",
+  "verticals": {
+   "automation-first": "issue: extra manual confirm",
+   "consistency-kit": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/team/merge_section.dart:201",
+   "docs/qa/screen-census/i2-team-sheets/team-merge-approve-sheet.png"
+  ]
+ },
+ {
+  "pageId": "team-merge-changes-sheet",
+  "area": "i2-team-sheets",
+  "title": "Changes",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/merge_section.dart",
+  "journey": [
+   "review"
+  ],
+  "module": "review",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "server.any": "hidden",
+   "team.on": "hidden"
+  },
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "the diff before merging"
+  },
+  "states": [
+   {
+    "id": "list",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-merge-changes-sheet.png"
+   }
+  ],
+  "statesMissing": [
+   "no diff available"
+  ],
+  "info": [
+   "files with +/-",
+   "steps that produced them"
+  ],
+  "infoMissing": [
+   "the diff itself"
+  ],
+  "actions": [
+   "open step"
+  ],
+  "actionsMissing": [
+   "open a file's diff"
+  ],
+  "entry": [
+   "merge section Review changes"
+  ],
+  "exit": [
+   "work-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see what changed",
+    "here": "changes list",
+    "elsewhere": "review module diff viewer",
+    "landsOn": "team-merge-changes-sheet (no diff) vs review"
+   }
+  ],
+  "elements": [
+   {
+    "id": "changes-file-row",
+    "kind": "row",
+    "kit": "KitRow+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "paths wrap mid-segment"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "keep",
+  "rationale": "A compact, honest summary; file rows should open the review module's diff when one exists.",
+  "verticals": {
+   "consistency-kit": "ok",
+   "rtl-l10n": "issue: paths need LTR isolation"
+  },
+  "evidence": [
+   "lib/ui/screens/team/merge_section.dart:225",
+   "docs/qa/screen-census/i2-team-sheets/team-merge-changes-sheet.png"
+  ]
+ },
+ {
+  "pageId": "work-sheet",
+  "area": "i2-team-sheets",
+  "title": "<work item title> (Work · bead <id>)",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/work_sheet.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "tinkerer",
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "tinkerer": "branch, worktree, dependencies",
+   "team-delegator": "who is on it and what blocks it"
+  },
+  "states": [
+   {
+    "id": "working",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/work-sheet--working.png"
+   },
+   {
+    "id": "blocked",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/work-sheet--blocked.png"
+   },
+   {
+    "id": "review",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/work-sheet--review.png"
+   },
+   {
+    "id": "missing",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/work-sheet--missing.png"
+   }
+  ],
+  "statesMissing": [
+   "missing as a designed state",
+   "failed step"
+  ],
+  "info": [
+   "7-stage cycle strip",
+   "state + owner",
+   "description",
+   "depends on / blocks",
+   "branch + worktree",
+   "timestamps",
+   "Technical details"
+  ],
+  "infoMissing": [
+   "the task it belongs to",
+   "the worker's conversation link"
+  ],
+  "actions": [
+   "jump to dependency",
+   "Open session (never on Gas City)",
+   "cycle strip actions"
+  ],
+  "actionsMissing": [
+   "a primary per state: Watch the worker / Open the blocker / Answer"
+  ],
+  "entry": [
+   "team-run steps",
+   "graph node",
+   "gate chips",
+   "merge changes",
+   "board card without a task"
+  ],
+  "exit": [
+   "work-sheet (another)",
+   "team-agent-output",
+   "team-cycle-*"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "open a step",
+    "here": "work-sheet",
+    "elsewhere": "team-run steps/graph, gate chips, merge changes, board card without a task; team-conversation step rows: no action",
+    "landsOn": "work-sheet everywhere except the conversation"
+   }
+  ],
+  "elements": [
+   {
+    "id": "team-work-sheet-cycle",
+    "kind": "progress",
+    "kit": "none",
+    "kitGap": "KitStageStrip",
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "work-dependency-chip",
+    "kind": "chip",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "outlined ActionChip"
+   },
+   {
+    "id": "work-code",
+    "kind": "code-or-log",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "branch/worktree above Details"
+   },
+   {
+    "id": "work-details",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": "KitDetailsFold",
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-work-sheet-missing",
+    "kind": "state",
+    "kit": "KitStateView+custom",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "one line, no action"
+   }
+  ],
+  "ledgerStale": [
+   "'Open session' — never offered on Gas City"
+  ],
+  "proposal": "redesign",
+  "rationale": "Owner Rethink: keep one step sheet, but as 'Step · <task>' with the four stages, code under Details and one primary per state, opened from the conversation's steps and board cards.",
+  "verticals": {
+   "honest-state": "issue: stages contradict status",
+   "automation-first": "ok",
+   "rtl-l10n": "ok: mono paths LTR",
+   "consistency-kit": "issue: ActionChip, ExpansionTile"
+  },
+  "evidence": [
+   "lib/ui/screens/team/work_sheet.dart:217",
+   "lib/ui/screens/team/work_sheet.dart:327",
+   "docs/qa/screen-census/i2-team-sheets/work-sheet--working.png",
+   "docs/qa/screen-census/i2-team-sheets/work-sheet--blocked.png"
+  ]
+ },
+ {
+  "pageId": "embedded-work-graph",
+  "area": "i2-team-sheets",
+  "title": "[Work dependency graph]",
+  "kind": "overlay",
+  "file": "lib/ui/screens/team/work_graph.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "team",
+  "chrome": "none (embedded in team-run-work-tab)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "server.any": "hidden",
+   "team.on": "hidden"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "critical path and blocked chain"
+  },
+  "states": [
+   {
+    "id": "laid-out",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-work-graph.png"
+   }
+  ],
+  "statesMissing": [
+   "large graph on a phone"
+  ],
+  "info": [
+   "nodes by state, critical path, blocked chain"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "pan/zoom",
+   "tap node",
+   "Fit"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "team-run-work-tab"
+  ],
+  "exit": [
+   "work-sheet"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "work-graph",
+    "kind": "viewer",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "CustomPainter + InteractiveViewer; labels truncated"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner Fix: vertical one-node-per-row layout so names are readable, tone per state, fit on open; it stays one row away from the steps.",
+  "verticals": {
+   "a11y": "issue: pinch-only exploration; names cut",
+   "perf": "ok: painter, no loop"
+  },
+  "evidence": [
+   "lib/ui/screens/team/work_graph.dart:433",
+   "docs/qa/screen-census/i2-team-sheets/embedded-work-graph.png"
+  ]
+ },
+ {
+  "pageId": "start-run-sheet",
+  "area": "i2-team-sheets",
+  "title": "Start a run",
+  "kind": "sheet",
+  "file": "lib/ui/screens/team/start_run_sheet.dart",
+  "journey": [
+   "delegate"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.control (proposed)": "explains (planner-off state with Host guide only when no direct path)",
+   "server.any": "hidden",
+   "team.on": "hidden"
+  },
+  "personas": [
+   "team-delegator",
+   "remote-lead",
+   "phone-only"
+  ],
+  "personaNotes": {
+   "team-delegator": "say it once, in own words; don't lose it",
+   "remote-lead": "choose how much the team may do alone",
+   "phone-only": "cold start takes minutes on the phone — say so"
+  },
+  "states": [
+   {
+    "id": "empty",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/start-run-sheet--empty.png"
+   },
+   {
+    "id": "filled",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/start-run-sheet--filled.png"
+   },
+   {
+    "id": "direct-task",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/start-run-sheet--direct-task.png"
+   },
+   {
+    "id": "planner-off",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/start-run-sheet--planner-off.png"
+   },
+   {
+    "id": "planner-missing",
+    "how": "codeOnly:lib/ui/screens/team/start_run_sheet.dart:237"
+   },
+   {
+    "id": "direct-refused",
+    "how": "codeOnly:lib/ui/screens/team/start_run_sheet.dart:206"
+   }
+  ],
+  "statesMissing": [
+   "sending",
+   "refused (back on home as a card)"
+  ],
+  "info": [
+   "objective",
+   "project",
+   "supervision (3 levels)",
+   "planner row",
+   "boundaries"
+  ],
+  "infoMissing": [
+   "how long planning usually takes"
+  ],
+  "actions": [
+   "Send to planner",
+   "Host guide"
+  ],
+  "actionsMissing": [
+   "draft kept on dismiss (critical)",
+   "recovery: edit and resend a refused task",
+   "remembered supervision per server"
+  ],
+  "entry": [
+   "team-home primary",
+   "TeamConversation.start (Work New conversation 'Team')"
+  ],
+  "exit": [
+   "team-conversation (pending)",
+   "team-home planning card"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "give the team a task",
+    "here": "(none here)",
+    "elsewhere": "team-home/team-home-start-run (showStartRunSheet, team_home_screen.dart:177); workspace/New conversation Team (TeamConversation.start, workspace_screen.dart:1237); team-board/team-board-add (showTeamBoardAddSheet, team_board_screen.dart:312)",
+    "landsOn": "team-home stays + planning card | team-conversation (pending) | team-board Backlog — INCONSISTENT"
+   }
+  ],
+  "elements": [
+   {
+    "id": "start-objective",
+    "kind": "field",
+    "kit": "none",
+    "kitGap": "KitComposerField",
+    "couldBeAutomatic": "no",
+    "note": "TextField; lost on dismiss"
+   },
+   {
+    "id": "start-project",
+    "kind": "picker",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: default to the open project",
+    "note": "DropdownButtonFormField"
+   },
+   {
+    "id": "start-supervision",
+    "kind": "picker",
+    "kit": "none",
+    "kitGap": "KitChoiceList",
+    "couldBeAutomatic": "yes: remember per server",
+    "note": ""
+   },
+   {
+    "id": "start-planner",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "engine id row"
+   },
+   {
+    "id": "start-send",
+    "kind": "primary-action",
+    "kit": "KitButton",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "team-start-run-planner-off",
+    "kind": "state",
+    "kit": "KitStateView",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: fall to the direct task automatically",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [
+   "only reached from team-home (_startRun): also TeamConversation.start (team_conversation.dart:55)"
+  ],
+  "proposal": "fix",
+  "rationale": "Owner: 'Give the user recovery options?' — keep the draft, reopen prefilled after a refusal, fall to the direct task automatically when the planner is off, remember the supervision level, and absorb 'Add to backlog' as a 'Keep in backlog' choice.",
+  "verticals": {
+   "automation-first": "issue: supervision chosen every time; planner-off asks the person to fix the host",
+   "reliability": "issue: objective lost on swipe (critical)",
+   "honest-state": "issue: engine planner id",
+   "consistency-kit": "issue: raw radios"
+  },
+  "evidence": [
+   "lib/ui/screens/team/start_run_sheet.dart:92",
+   "lib/ui/screens/team/start_run_sheet.dart:143",
+   "lib/ui/screens/team/start_run_sheet.dart:196",
+   "lib/ui/screens/team/start_run_sheet.dart:243",
+   "lib/ui/screens/team/start_run_sheet.dart:305",
+   "lib/ui/screens/team/team_home_screen.dart:177",
+   "lib/ui/screens/team_conversation/team_conversation.dart:59"
+  ],
+  "proposals": [
+   {
+    "type": "capability",
+    "id": "team.control",
+    "meaning": "the team host takes writes from this phone (host front on a computer or the phone's loopback supervisor); today split across controlMessage/controlAgent/controlAssign/controlCancelRun/controlCreateWork"
+   }
+  ]
+ },
+ {
+  "pageId": "embedded-team-planning-card",
+  "area": "i2-team-sheets",
+  "title": "Planning… (Mayor) / still planning / unconfirmed / refused",
+  "kind": "overlay",
+  "file": "lib/ui/screens/team/start_run_sheet.dart",
+  "journey": [
+   "delegate",
+   "recover"
+  ],
+  "module": "team",
+  "chrome": "none (embedded in team-home)",
+  "needs": [
+   "server.any",
+   "team.on"
+  ],
+  "whenMissing": {
+   "server.any": "hidden",
+   "team.on": "hidden"
+  },
+  "personas": [
+   "team-delegator"
+  ],
+  "personaNotes": {
+   "team-delegator": "is the planner working, and recover if refused"
+  },
+  "states": [
+   {
+    "id": "planning",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-planning-card--planning.png"
+   },
+   {
+    "id": "still-planning",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-planning-card--still-planning.png"
+   },
+   {
+    "id": "unconfirmed",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-planning-card--unconfirmed.png"
+   },
+   {
+    "id": "refused",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-planning-card--refused.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "objective",
+   "status"
+  ],
+  "infoMissing": [
+   "elapsed and usual time"
+  ],
+  "actions": [
+   "Planner output",
+   "Dismiss"
+  ],
+  "actionsMissing": [
+   "Edit and send again",
+   "Message the planner",
+   "Cancel"
+  ],
+  "entry": [
+   "team-home above tasks"
+  ],
+  "exit": [
+   "team-agent-output"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "give the team a task",
+    "here": "(none here)",
+    "elsewhere": "team-home/team-home-start-run (showStartRunSheet, team_home_screen.dart:177); workspace/New conversation Team (TeamConversation.start, workspace_screen.dart:1237); team-board/team-board-add (showTeamBoardAddSheet, team_board_screen.dart:312)",
+    "landsOn": "team-home stays + planning card | team-conversation (pending) | team-board Backlog — INCONSISTENT"
+   },
+   {
+    "job": "follow a just-given task",
+    "here": "planning card",
+    "elsewhere": "team-conversation pending Now line (TeamPendingTask)",
+    "landsOn": "team-home card vs team-conversation — depends on which door gave the task"
+   }
+  ],
+  "elements": [
+   {
+    "id": "planning-card",
+    "kind": "card-panel",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "Card + KitIllustration (ambient only first)"
+   },
+   {
+    "id": "planning-dismiss",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: drop the card when the run appears or after a refusal is resent",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:team-conversation",
+  "rationale": "Owner Fix; TeamConversation.start already opens the task as a pending conversation, so the planning states (with the critic's recovery actions) belong on its Now line rather than a card on the team page.",
+  "verticals": {
+   "honest-state": "issue: 31 min 'still planning' with no expectation",
+   "perf": "ok: one ambient loop",
+   "automation-first": "ok"
+  },
+  "evidence": [
+   "lib/ui/screens/team/start_run_sheet.dart:670",
+   "lib/ui/screens/team/start_run_sheet.dart:712",
+   "lib/ui/screens/team/start_run_sheet.dart:722",
+   "lib/ui/screens/team/team_home_screen.dart:445",
+   "lib/ui/screens/chat/team_conversation_view.dart:676"
+  ]
+ },
+ {
+  "pageId": "team-phone-onboarding-offer",
+  "area": "i2-team-sheets",
+  "title": "Also run an AI team on this phone",
+  "kind": "onboarding-step",
+  "file": "lib/ui/widgets/team_phone_onboarding.dart",
+  "journey": [
+   "install"
+  ],
+  "module": "phone",
+  "chrome": "none (embedded in termux-setup)",
+  "needs": [
+   "phone.termux"
+  ],
+  "whenMissing": {
+   "phone.termux": "hidden (block absent unless the runtime supportsAiTeam)",
+   "project.open": "explains",
+   "team.phone": "explains"
+  },
+  "personas": [
+   "phone-only",
+   "newcomer"
+  ],
+  "personaNotes": {
+   "phone-only": "is it worth ~300 MB, battery and ~550 MB RAM per worker"
+  },
+  "states": [
+   {
+    "id": "offer",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-offer.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "size, battery warning"
+  ],
+  "infoMissing": [
+   "time (8–10 min)",
+   "memory per worker"
+  ],
+  "actions": [
+   "Set up AI team",
+   "Skip for now"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "termux-setup after step 3"
+  ],
+  "exit": [
+   "team-phone-onboarding-project-sheet",
+   "team-phone-onboarding-steps"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "turn the AI Team on",
+    "here": "",
+    "elsewhere": "embedded-team-discover → team-intro; team-intro Set it up/Turn on/Enter its address; embedded-team-discovery-card Turn on; embedded-team-phone-reoffer-card Set up → termux-setup; team-phone-onboarding-offer; team-host-sheet; phone-setup-customize-sheet Add tools › AI Team",
+    "landsOn": "plugins-settings | termux-setup | team-plugin-sheet | phone setup — five doors, three flows"
+   }
+  ],
+  "elements": [
+   {
+    "id": "offer-skip",
+    "kind": "secondary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "filled 'Skip for now'"
+   },
+   {
+    "id": "offer-set-up",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "outlined"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:phone-setup-customize-sheet",
+  "rationale": "Phone setup v2 already lists AI Team as an optional tool of the resumable setup engine; the Termux-only offer card duplicates it with its own words and buttons.",
+  "verticals": {
+   "battery-heat": "issue: memory cost unstated",
+   "consistency-kit": "issue: filled Skip",
+   "upgrade-migration": "issue: Termux path vs v2 engine"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_phone_onboarding.dart:707",
+   "lib/ui/widgets/team_phone_onboarding.dart:712",
+   "docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-offer.png"
+  ]
+ },
+ {
+  "pageId": "team-phone-onboarding-project-sheet",
+  "area": "i2-team-sheets",
+  "title": "Choose a project",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_phone_onboarding.dart",
+  "journey": [
+   "install",
+   "configure"
+  ],
+  "module": "phone",
+  "chrome": "none (sheet)",
+  "needs": [
+   "phone.termux",
+   "project.open"
+  ],
+  "whenMissing": {
+   "phone.termux": "hidden (block absent unless the runtime supportsAiTeam)",
+   "project.open": "explains",
+   "team.phone": "explains"
+  },
+  "personas": [
+   "phone-only"
+  ],
+  "personaNotes": {
+   "phone-only": "the project already open"
+  },
+  "states": [
+   {
+    "id": "list",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-project-sheet.png"
+   },
+   {
+    "id": "none-name-folder",
+    "how": "codeOnly:lib/ui/widgets/team_phone_onboarding.dart:1105"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "folders with paths"
+  ],
+  "infoMissing": [
+   "last opened"
+  ],
+  "actions": [
+   "Continue",
+   "Create and continue"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "offer",
+   "steps",
+   "failed retry"
+  ],
+  "exit": [
+   "team-phone-onboarding-steps"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "choose a project folder",
+    "here": "project sheet",
+    "elsewhere": "workspace-folder-chooser",
+    "landsOn": "two choosers"
+   }
+  ],
+  "elements": [
+   {
+    "id": "project-radio",
+    "kind": "picker",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: use the open/saved workspace project (already done when there is one, :448)",
+    "note": "RadioListTile"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:workspace-folder-chooser",
+  "rationale": "Choosing a project already has one chooser; the team should default to the open project automatically and fall back to the shared chooser.",
+  "verticals": {
+   "automation-first": "issue: asks when the open project is known",
+   "consistency-kit": "issue: RadioListTile"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_phone_onboarding.dart:448",
+   "lib/ui/widgets/team_phone_onboarding.dart:1117",
+   "docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-project-sheet.png"
+  ]
+ },
+ {
+  "pageId": "team-phone-onboarding-steps",
+  "area": "i2-team-sheets",
+  "title": "Setting up the AI team",
+  "kind": "onboarding-step",
+  "file": "lib/ui/widgets/team_phone_onboarding.dart",
+  "journey": [
+   "install"
+  ],
+  "module": "phone",
+  "chrome": "none (embedded in termux-setup)",
+  "needs": [
+   "phone.termux"
+  ],
+  "whenMissing": {
+   "phone.termux": "hidden (block absent unless the runtime supportsAiTeam)",
+   "project.open": "explains",
+   "team.phone": "explains"
+  },
+  "personas": [
+   "phone-only"
+  ],
+  "personaNotes": {
+   "phone-only": "how long, can I leave"
+  },
+  "states": [
+   {
+    "id": "running",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-steps.png"
+   },
+   {
+    "id": "resumed-part-way",
+    "how": "codeOnly:lib/ui/widgets/team_phone_onboarding.dart:375"
+   }
+  ],
+  "statesMissing": [
+   "cancel",
+   "time left"
+  ],
+  "info": [
+   "five steps, live log open"
+  ],
+  "infoMissing": [
+   "bytes/time progress"
+  ],
+  "actions": [
+   "Copy output",
+   "Continue"
+  ],
+  "actionsMissing": [
+   "Cancel",
+   "leave and come back (resume exists but unsaid)"
+  ],
+  "entry": [
+   "offer"
+  ],
+  "exit": [
+   "success/failed/killed"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "install on this phone",
+    "here": "team steps",
+    "elsewhere": "phone-setup-progress (v2 engine)",
+    "landsOn": "two installers"
+   }
+  ],
+  "elements": [
+   {
+    "id": "steps-marks",
+    "kind": "progress",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "numbers + CircularProgressIndicator"
+   },
+   {
+    "id": "steps-log",
+    "kind": "code-or-log",
+    "kit": "none",
+    "kitGap": "KitLogFold",
+    "couldBeAutomatic": "no",
+    "note": "SetupTerminal open by default"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:phone-setup-progress",
+  "rationale": "Owner: 'Align with v2' — run the team install as one more component of the v2 engine so it gets its staged marks, determinate bar, time left, Cancel and folded log.",
+  "verticals": {
+   "honest-state": "issue: no progress numbers",
+   "reliability": "ok: resumes from status",
+   "consistency-kit": "issue: CircularProgressIndicator"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_phone_onboarding.dart:392",
+   "lib/ui/widgets/team_phone_onboarding.dart:779",
+   "lib/ui/widgets/team_phone_onboarding.dart:980",
+   "docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-steps.png"
+  ]
+ },
+ {
+  "pageId": "team-phone-onboarding-success",
+  "area": "i2-team-sheets",
+  "title": "AI team is running on this phone · {n} agents ready",
+  "kind": "onboarding-step",
+  "file": "lib/ui/widgets/team_phone_onboarding.dart",
+  "journey": [
+   "install"
+  ],
+  "module": "phone",
+  "chrome": "none (embedded in termux-setup)",
+  "needs": [
+   "phone.termux",
+   "team.phone"
+  ],
+  "whenMissing": {
+   "phone.termux": "hidden (block absent unless the runtime supportsAiTeam)",
+   "project.open": "explains",
+   "team.phone": "explains"
+  },
+  "personas": [
+   "phone-only"
+  ],
+  "personaNotes": {
+   "phone-only": "the first task"
+  },
+  "states": [
+   {
+    "id": "ready",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-success.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "agents ready",
+   "wake-lock warning"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Open Workspace"
+  ],
+  "actionsMissing": [
+   "give the team a first task"
+  ],
+  "entry": [
+   "steps"
+  ],
+  "exit": [
+   "workspace"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "success-open-work",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "FilledButton, second primary"
+   }
+  ],
+  "ledgerStale": [
+   "'Open Workspace' label"
+  ],
+  "proposal": "merge-into:phone-setup-ready",
+  "rationale": "v2's ready page is the finished moment; the team's ready line and a 'Give the team a first task' action belong there.",
+  "verticals": {
+   "consistency-kit": "issue: two primaries",
+   "battery-heat": "ok: warns"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_phone_onboarding.dart:281",
+   "lib/ui/widgets/team_phone_onboarding.dart:849",
+   "docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-success.png"
+  ]
+ },
+ {
+  "pageId": "team-phone-onboarding-failed",
+  "area": "i2-team-sheets",
+  "title": "The AI team could not be set up.",
+  "kind": "onboarding-step",
+  "file": "lib/ui/widgets/team_phone_onboarding.dart",
+  "journey": [
+   "recover",
+   "install"
+  ],
+  "module": "phone",
+  "chrome": "none (embedded in termux-setup)",
+  "needs": [
+   "phone.termux"
+  ],
+  "whenMissing": {
+   "phone.termux": "hidden (block absent unless the runtime supportsAiTeam)",
+   "project.open": "explains",
+   "team.phone": "explains"
+  },
+  "personas": [
+   "phone-only"
+  ],
+  "personaNotes": {
+   "phone-only": "a fix they can do (DNS, network)"
+  },
+  "states": [
+   {
+    "id": "failed",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-failed.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "plain cause",
+   "last output"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Retry",
+   "Copy output"
+  ],
+  "actionsMissing": [
+   "Setup help"
+  ],
+  "entry": [
+   "steps"
+  ],
+  "exit": [
+   "project sheet (retry)"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "failed-retry",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: retry automatically when the network returns",
+    "note": "right-aligned FilledButton"
+   },
+   {
+    "id": "failed-log",
+    "kind": "code-or-log",
+    "kit": "none",
+    "kitGap": "KitLogFold",
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:phone-setup-progress",
+  "rationale": "Failure copy is good; the v2 engine already has a designed failed state with resume.",
+  "verticals": {
+   "help-feedback": "issue: no report/help action",
+   "honest-state": "ok"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_phone_onboarding.dart:888",
+   "lib/ui/widgets/team_phone_onboarding.dart:897",
+   "docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-failed.png"
+  ]
+ },
+ {
+  "pageId": "team-phone-onboarding-killed",
+  "area": "i2-team-sheets",
+  "title": "[Android stopped the team]",
+  "kind": "onboarding-step",
+  "file": "lib/ui/widgets/team_phone_onboarding.dart",
+  "journey": [
+   "recover"
+  ],
+  "module": "phone",
+  "chrome": "none (embedded in termux-setup)",
+  "needs": [
+   "phone.termux",
+   "team.phone"
+  ],
+  "whenMissing": {
+   "phone.termux": "hidden (block absent unless the runtime supportsAiTeam)",
+   "project.open": "explains",
+   "team.phone": "explains"
+  },
+  "personas": [
+   "phone-only"
+  ],
+  "personaNotes": {
+   "phone-only": "stop it happening"
+  },
+  "states": [
+   {
+    "id": "killed",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-killed.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "'Nothing is lost'"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Start again"
+  ],
+  "actionsMissing": [
+   "prevent it (Keep it running)",
+   "restart automatically"
+  ],
+  "entry": [
+   "termux-setup"
+  ],
+  "exit": [],
+  "sameJobElsewhere": [
+   {
+    "job": "restart the phone team",
+    "here": "Start again",
+    "elsewhere": "embedded-team-phone-section/Start again",
+    "landsOn": "two places"
+   }
+  ],
+  "elements": [
+   {
+    "id": "killed-start-again",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: restart when the app returns, and say so",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:embedded-team-phone-section",
+  "rationale": "One place reports the phone team's life; automation-first: the app restarts the team itself when it returns and says so, with 'Keep it running' as the prevention.",
+  "verticals": {
+   "automation-first": "issue: manual Start again",
+   "reliability": "issue: Android kills (6 h dataSync cap)"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_phone_onboarding.dart:375",
+   "lib/ui/widgets/team_phone_onboarding.dart:938",
+   "docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-killed.png"
+  ]
+ },
+ {
+  "pageId": "embedded-team-phone-section",
+  "area": "i2-team-sheets",
+  "title": "On this phone",
+  "kind": "overlay",
+  "file": "lib/ui/widgets/team_phone_section.dart",
+  "journey": [
+   "configure",
+   "recover"
+  ],
+  "module": "phone",
+  "chrome": "none (embedded in team-plugin-sheet)",
+  "needs": [
+   "phone.termux",
+   "team.phone"
+  ],
+  "whenMissing": {
+   "phone.termux": "explains ('Not available on this server')",
+   "team.phone": "offers-enable:termux-setup (Open phone setup)"
+  },
+  "personas": [
+   "phone-only",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "phone-only": "is it running, what does it cost, keep it alive",
+   "tinkerer": "versions and address under Details"
+  },
+  "states": [
+   {
+    "id": "running",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-phone-section--running.png"
+   },
+   {
+    "id": "killed",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-phone-section--killed.png"
+   },
+   {
+    "id": "not-installed",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-phone-section--not-installed.png"
+   },
+   {
+    "id": "unsupported",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-phone-section--unsupported.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "status + agents",
+   "versions",
+   "project path",
+   "provider/city/address"
+  ],
+  "infoMissing": [
+   "memory and battery use now"
+  ],
+  "actions": [
+   "Stop",
+   "Start/Start again",
+   "Keep it running",
+   "Delete from this phone",
+   "Refresh",
+   "Change"
+  ],
+  "actionsMissing": [
+   "auto-restart toggle"
+  ],
+  "entry": [
+   "team-plugin-sheet"
+  ],
+  "exit": [
+   "team-phone-stop-sheet",
+   "team-phone-remove-sheet",
+   "team-phone-tips-sheet",
+   "termux-setup"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "restart the phone team",
+    "here": "Start again",
+    "elsewhere": "team-phone-onboarding-killed/Start again",
+    "landsOn": "two places"
+   },
+   {
+    "job": "turn the AI Team on",
+    "here": "",
+    "elsewhere": "embedded-team-discover → team-intro; team-intro Set it up/Turn on/Enter its address; embedded-team-discovery-card Turn on; embedded-team-phone-reoffer-card Set up → termux-setup; team-phone-onboarding-offer; team-host-sheet; phone-setup-customize-sheet Add tools › AI Team",
+    "landsOn": "plugins-settings | termux-setup | team-plugin-sheet | phone setup — five doors, three flows"
+   }
+  ],
+  "elements": [
+   {
+    "id": "phone-status",
+    "kind": "status-line",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "three disagreeing lines"
+   },
+   {
+    "id": "phone-stop",
+    "kind": "secondary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: heat guard/idle policy stops and resumes it",
+    "note": "green Stop"
+   },
+   {
+    "id": "phone-start-again",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: restart automatically after an Android kill",
+    "note": ""
+   },
+   {
+    "id": "phone-refresh",
+    "kind": "secondary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: section polls every 2 s already (:146)",
+    "note": ""
+   },
+   {
+    "id": "phone-keep-running",
+    "kind": "row",
+    "kit": "KitRow",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "phone-delete",
+    "kind": "tertiary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "error TextButton"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:team-home",
+  "rationale": "Owner Rethink: where the team runs, whether it's on, and what it costs are the redesigned team page's job; one status per state, Stop/Delete in overflow, engine facts under Details, and restarts done by the app.",
+  "verticals": {
+   "automation-first": "issue: manual Refresh and Start again",
+   "honest-state": "issue: 'On' and 'Stopped' together",
+   "security-privacy": "issue: loopback address above Details",
+   "battery-heat": "issue: cost not shown",
+   "consistency-kit": "issue: raw buttons"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_phone_section.dart:146",
+   "lib/ui/widgets/team_phone_section.dart:302",
+   "lib/ui/widgets/team_phone_section.dart:397",
+   "lib/ui/widgets/team_phone_section.dart:411",
+   "lib/ui/widgets/team_phone_section.dart:444",
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-phone-section--running.png"
+  ]
+ },
+ {
+  "pageId": "team-phone-stop-sheet",
+  "area": "i2-team-sheets",
+  "title": "Stop the team on this phone?",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_phone_section.dart",
+  "journey": [
+   "configure"
+  ],
+  "module": "phone",
+  "chrome": "none (sheet)",
+  "needs": [
+   "team.phone"
+  ],
+  "whenMissing": {
+   "team.phone": "explains"
+  },
+  "personas": [
+   "phone-only"
+  ],
+  "personaNotes": {
+   "phone-only": "save battery now"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-phone-stop-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "nothing is lost"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Stop team",
+   "Keep"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "phone section"
+  ],
+  "exit": [
+   "phone section"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "stop a worker",
+    "here": "",
+    "elsewhere": "team-agent/team-agent-control-stop (agent_screen.dart:750); embedded-team-cycle-strip/Stop on provider limit (team_cycle_strip.dart:249)",
+    "landsOn": "team-agent-stop-confirm-sheet | team-cycle-stop-confirm-sheet (two confirms, two titles)"
+   }
+  ],
+  "elements": [
+   {
+    "id": "phone-stop-confirm",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "yes: heat guard pauses; idle team could sleep itself",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Good copy; use the one stop tone (tonal) the other team stops will use.",
+  "verticals": {
+   "consistency-kit": "issue: tone differs"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_phone_section.dart:193",
+   "docs/qa/screen-census/i2-team-sheets/team-phone-stop-sheet.png"
+  ]
+ },
+ {
+  "pageId": "team-phone-remove-sheet",
+  "area": "i2-team-sheets",
+  "title": "Remove the AI team from this phone?",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_phone_section.dart",
+  "journey": [
+   "configure"
+  ],
+  "module": "phone",
+  "chrome": "none (sheet)",
+  "needs": [
+   "team.phone"
+  ],
+  "whenMissing": {
+   "team.phone": "explains"
+  },
+  "personas": [
+   "phone-only"
+  ],
+  "personaNotes": {
+   "phone-only": "space freed"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-phone-remove-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "what stays"
+  ],
+  "infoMissing": [
+   "space freed"
+  ],
+  "actions": [
+   "Delete",
+   "Keep"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "phone section"
+  ],
+  "exit": [
+   "phone section"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "phone-remove-confirm",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Say what is removed in plain words and how much space it frees; button 'Delete the team'.",
+  "verticals": {
+   "honest-state": "issue: engine part names",
+   "security-privacy": "ok"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_phone_section.dart:209",
+   "docs/qa/screen-census/i2-team-sheets/team-phone-remove-sheet.png"
+  ]
+ },
+ {
+  "pageId": "team-phone-tips-sheet",
+  "area": "i2-team-sheets",
+  "title": "Keep it running",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_phone_section.dart",
+  "journey": [
+   "configure",
+   "recover"
+  ],
+  "module": "phone",
+  "chrome": "none (sheet)",
+  "needs": [
+   "team.phone",
+   "perm.battery"
+  ],
+  "whenMissing": {
+   "perm.battery": "explains (manual steps, no in-app request)",
+   "team.phone": "explains"
+  },
+  "personas": [
+   "phone-only"
+  ],
+  "personaNotes": {
+   "phone-only": "which of the three are done"
+  },
+  "states": [
+   {
+    "id": "open",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-phone-tips-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "three steps",
+   "adb commands + Copy"
+  ],
+  "infoMissing": [
+   "which ones are already done"
+  ],
+  "actions": [
+   "Copy commands"
+  ],
+  "actionsMissing": [
+   "request the battery exemption directly"
+  ],
+  "entry": [
+   "phone section"
+  ],
+  "exit": [
+   "dismiss"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "keep the phone server alive",
+    "here": "tips",
+    "elsewhere": "keep-running page",
+    "landsOn": "two pages"
+   }
+  ],
+  "elements": [
+   {
+    "id": "tips-commands",
+    "kind": "code-or-log",
+    "kit": "none",
+    "kitGap": "KitCommandBlock",
+    "couldBeAutomatic": "yes: request the battery exemption in-app; detect what's done",
+    "note": "cut-off adb block"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "merge-into:keep-running",
+  "rationale": "The app already has a Keep running page; the team's advice should be its section, with the battery exemption requested in-app and each step marked done.",
+  "verticals": {
+   "battery-heat": "issue: Termux-only advice on the in-app path",
+   "automation-first": "issue: manual adb steps"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_phone_section.dart:466",
+   "lib/ui/widgets/team_phone_section.dart:535",
+   "docs/qa/screen-census/i2-team-sheets/team-phone-tips-sheet.png"
+  ]
+ },
+ {
+  "pageId": "embedded-team-phone-reoffer-card",
+  "area": "i2-team-sheets",
+  "title": "Set up AI team on this phone",
+  "kind": "overlay",
+  "file": "lib/ui/widgets/team_phone_section.dart",
+  "journey": [
+   "install"
+  ],
+  "module": "settings",
+  "chrome": "none (embedded in plugins-settings)",
+  "needs": [
+   "phone.termux"
+  ],
+  "whenMissing": {
+   "phone.termux": "hidden (block absent unless the runtime supportsAiTeam)",
+   "project.open": "explains",
+   "team.phone": "explains"
+  },
+  "personas": [
+   "phone-only"
+  ],
+  "personaNotes": {
+   "phone-only": "a second chance"
+  },
+  "states": [
+   {
+    "id": "offer",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-phone-reoffer-card.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [],
+  "infoMissing": [],
+  "actions": [
+   "Set up",
+   "Not now"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "plugins-settings"
+  ],
+  "exit": [
+   "termux-setup"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "turn the AI Team on",
+    "here": "",
+    "elsewhere": "embedded-team-discover → team-intro; team-intro Set it up/Turn on/Enter its address; embedded-team-discovery-card Turn on; embedded-team-phone-reoffer-card Set up → termux-setup; team-phone-onboarding-offer; team-host-sheet; phone-setup-customize-sheet Add tools › AI Team",
+    "landsOn": "plugins-settings | termux-setup | team-plugin-sheet | phone setup — five doors, three flows"
+   }
+  ],
+  "elements": [
+   {
+    "id": "reoffer-card",
+    "kind": "card-panel",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "Card above the 'AI Team · Off' row"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "remove",
+  "rationale": "Owner Fix; the critic's fix is to fold it into the row below it — with the Work tab door and team-intro handling set-up, a second offer card is the duplicate.",
+  "verticals": {
+   "consistency-kit": "issue: two presences"
+  },
+  "evidence": [
+   "lib/ui/screens/settings/plugins_screen.dart:176",
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-phone-reoffer-card.png"
+  ]
+ },
+ {
+  "pageId": "team-host-sheet",
+  "area": "i2-team-sheets",
+  "title": "Add AI Team host",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_host_form.dart",
+  "journey": [
+   "connect"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "server.any",
+   "network.tailscale"
+  ],
+  "whenMissing": {
+   "network.tailscale": "explains (http refused outside loopback/tailnet)",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "remote-lead",
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "remote-lead": "when discovery didn't find it",
+   "tinkerer": "a non-default port or city"
+  },
+  "states": [
+   {
+    "id": "empty",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-host-sheet--empty.png"
+   },
+   {
+    "id": "testing",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-host-sheet--testing.png"
+   },
+   {
+    "id": "not-found",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-host-sheet--not-found.png"
+   }
+  ],
+  "statesMissing": [
+   "cancel while testing"
+  ],
+  "info": [
+   "address",
+   "city",
+   "kind of computer",
+   "verdict"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Test and turn on",
+   "How"
+  ],
+  "actionsMissing": [
+   "Save anyway",
+   "Cancel test"
+  ],
+  "entry": [
+   "servers editor",
+   "team-plugin-sheet",
+   "team-intro 'Enter its address'"
+  ],
+  "exit": [
+   "team-host-guide-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "turn the AI Team on",
+    "here": "",
+    "elsewhere": "embedded-team-discover → team-intro; team-intro Set it up/Turn on/Enter its address; embedded-team-discovery-card Turn on; embedded-team-phone-reoffer-card Set up → termux-setup; team-phone-onboarding-offer; team-host-sheet; phone-setup-customize-sheet Add tools › AI Team",
+    "landsOn": "plugins-settings | termux-setup | team-plugin-sheet | phone setup — five doors, three flows"
+   }
+  ],
+  "elements": [
+   {
+    "id": "host-address",
+    "kind": "field",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": ""
+   },
+   {
+    "id": "host-kind",
+    "kind": "chip",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "yes: infer from the host",
+    "note": "ChoiceChip"
+   },
+   {
+    "id": "host-submit",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "disabled 'Checking the address…'"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner Fix; it is the manual fallback to discovery: progress as progress, raw error under Details, drop the 'kind of computer' question and rename City.",
+  "verticals": {
+   "automation-first": "ok: fallback only",
+   "security-privacy": "ok: http only to loopback/tailnet",
+   "honest-state": "issue: disabled button as progress"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_host_form.dart:141",
+   "lib/ui/widgets/team_host_form.dart:323",
+   "lib/ui/widgets/team_host_form.dart:372",
+   "docs/qa/screen-census/i2-team-sheets/team-host-sheet--testing.png"
+  ]
+ },
+ {
+  "pageId": "team-host-guide-sheet",
+  "area": "i2-team-sheets",
+  "title": "Run an AI team on your computer",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_host_form.dart",
+  "journey": [
+   "learn",
+   "install"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "network.tailscale"
+  ],
+  "whenMissing": {
+   "network.tailscale": "explains"
+  },
+  "personas": [
+   "remote-lead",
+   "newcomer"
+  ],
+  "personaNotes": {
+   "remote-lead": "commands to paste on the computer"
+  },
+  "states": [
+   {
+    "id": "open",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-host-guide-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "four steps in prose"
+  ],
+  "infoMissing": [
+   "copyable commands"
+  ],
+  "actions": [],
+  "actionsMissing": [
+   "Enter the address",
+   "Open the full guide (openExternalLink)"
+  ],
+  "entry": [
+   "gate-sheet How",
+   "start-run planner-off",
+   "host sheet",
+   "team-intro",
+   "plugin sheet"
+  ],
+  "exit": [
+   "dismiss"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "turn the AI Team on",
+    "here": "",
+    "elsewhere": "embedded-team-discover → team-intro; team-intro Set it up/Turn on/Enter its address; embedded-team-discovery-card Turn on; embedded-team-phone-reoffer-card Set up → termux-setup; team-phone-onboarding-offer; team-host-sheet; phone-setup-customize-sheet Add tools › AI Team",
+    "landsOn": "plugins-settings | termux-setup | team-plugin-sheet | phone setup — five doors, three flows"
+   }
+  ],
+  "elements": [
+   {
+    "id": "guide-body",
+    "kind": "other",
+    "kit": "none",
+    "kitGap": "KitCommandBlock",
+    "couldBeAutomatic": "yes: one install command; discovery finds it afterwards",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "redesign",
+  "rationale": "Owner Rethink: steps with copyable command blocks, a link to the published guide through openExternalLink, and 'Enter the address' as the next step; better still, a one-line install command the host runs, after which discovery finds it by itself.",
+  "verticals": {
+   "security-privacy": "ok if the link goes through openExternalLink",
+   "automation-first": "issue: manual multi-step host setup",
+   "honest-state": "issue: points to a repo file"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_host_form.dart:434",
+   "docs/qa/screen-census/i2-team-sheets/team-host-guide-sheet.png"
+  ]
+ },
+ {
+  "pageId": "team-turn-off-sheet",
+  "area": "i2-team-sheets",
+  "title": "Turn off AI Team for {server}?",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_host_form.dart",
+  "journey": [
+   "configure"
+  ],
+  "module": "settings",
+  "chrome": "none (sheet)",
+  "needs": [
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "nothing changes on the host"
+  },
+  "states": [
+   {
+    "id": "confirm",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-turn-off-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "nothing changes on the host"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Turn off",
+   "Keep"
+  ],
+  "actionsMissing": [
+   "turn back on"
+  ],
+  "entry": [
+   "team-plugin-sheet"
+  ],
+  "exit": [
+   "team-plugin-sheet"
+  ],
+  "sameJobElsewhere": [],
+  "elements": [
+   {
+    "id": "turn-off-confirm",
+    "kind": "sheet",
+    "kit": "none",
+    "kitGap": "KitConfirmSheet",
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "keep",
+  "rationale": "A model confirmation.",
+  "verticals": {
+   "consistency-kit": "ok"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_host_form.dart:510",
+   "docs/qa/screen-census/i2-team-sheets/team-turn-off-sheet.png"
+  ]
+ },
+ {
+  "pageId": "embedded-team-discovery-card",
+  "area": "i2-team-sheets",
+  "title": "{server} also runs an AI team. Turn it on?",
+  "kind": "overlay",
+  "file": "lib/ui/widgets/team_discovery_card.dart",
+  "journey": [
+   "connect"
+  ],
+  "module": "settings",
+  "chrome": "none (embedded in plugins-settings)",
+  "needs": [
+   "server.any"
+  ],
+  "whenMissing": {
+   "team.on": "offers-enable:team-plugin-sheet (Turn on)",
+   "server.any": "hidden"
+  },
+  "personas": [
+   "remote-lead"
+  ],
+  "personaNotes": {
+   "remote-lead": "one tap to use the team already on the computer"
+  },
+  "states": [
+   {
+    "id": "offer",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-discovery-card.png"
+   },
+   {
+    "id": "dismissed",
+    "how": "codeOnly:lib/ui/widgets/team_discovery_card.dart:125"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "found, version, access"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "Turn on",
+   "Not now"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "plugins-settings (top)"
+  ],
+  "exit": [
+   "team-plugin-sheet"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "turn the AI Team on",
+    "here": "",
+    "elsewhere": "embedded-team-discover → team-intro; team-intro Set it up/Turn on/Enter its address; embedded-team-discovery-card Turn on; embedded-team-phone-reoffer-card Set up → termux-setup; team-phone-onboarding-offer; team-host-sheet; phone-setup-customize-sheet Add tools › AI Team",
+    "landsOn": "plugins-settings | termux-setup | team-plugin-sheet | phone setup — five doors, three flows"
+   }
+  ],
+  "elements": [
+   {
+    "id": "discovery-card",
+    "kind": "card-panel",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no",
+    "note": "Card( with right-aligned TextButton/FilledButton"
+   },
+   {
+    "id": "discovery-turn-on",
+    "kind": "primary-action",
+    "kit": "none",
+    "kitGap": null,
+    "couldBeAutomatic": "no (consent to connect stays one tap; discovery itself is automatic)",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Owner Fix: fold the offer into the row ('Found on Laptop · Turn on'), plain words, stacked buttons. Automation-first is right here: the app finds the team; turning it on stays one consenting tap.",
+  "verticals": {
+   "automation-first": "ok",
+   "consistency-kit": "issue: Card, right-aligned"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_discovery_card.dart:228",
+   "lib/ui/widgets/team_discovery_card.dart:270",
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-discovery-card.png"
+  ]
+ },
+ {
+  "pageId": "team-host-details-sheet",
+  "area": "i2-team-sheets",
+  "title": "Technical details",
+  "kind": "sheet",
+  "file": "lib/ui/widgets/team_technical_details.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "team",
+  "chrome": "none (sheet)",
+  "needs": [
+   "team.on"
+  ],
+  "whenMissing": {
+   "team.on": "hidden"
+  },
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "address, version, glossary"
+  },
+  "states": [
+   {
+    "id": "open",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/team-host-details-sheet.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "provider, version, city, address, access, terms glossary"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "copy"
+  ],
+  "actionsMissing": [],
+  "entry": [
+   "team-home info"
+  ],
+  "exit": [
+   "dismiss"
+  ],
+  "sameJobElsewhere": [
+   {
+    "job": "see technical details",
+    "here": "",
+    "elsewhere": "team-run-details-sheet; team-agent-details-sheet + team-agent Technical details fold; team-host-details-sheet; work-sheet fold; gate-sheet fold",
+    "landsOn": "five folds/sheets with different title styles"
+   }
+  ],
+  "elements": [
+   {
+    "id": "host-details-values",
+    "kind": "list",
+    "kit": "none",
+    "kitGap": "KitDetailsFold",
+    "couldBeAutomatic": "no",
+    "note": ""
+   }
+  ],
+  "ledgerStale": [
+   "reachedFrom _HostChip (team_home_screen.dart:362) — chip removed; now the info button (team_home_screen.dart:276)"
+  ],
+  "proposal": "keep",
+  "rationale": "The glossary keeps engine words under Details; dedupe values.",
+  "verticals": {
+   "security-privacy": "ok",
+   "consistency-kit": "issue: duplicates"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_technical_details.dart:42",
+   "lib/ui/screens/team/team_home_screen.dart:276",
+   "docs/qa/screen-census/i2-team-sheets/team-host-details-sheet.png"
+  ]
+ },
+ {
+  "pageId": "embedded-team-technical-value",
+  "area": "i2-team-sheets",
+  "title": "[Raw value row with copy]",
+  "kind": "overlay",
+  "file": "lib/ui/widgets/team_technical_details.dart",
+  "journey": [
+   "inspect"
+  ],
+  "module": "team",
+  "chrome": "none (embedded in details)",
+  "needs": [],
+  "whenMissing": {},
+  "personas": [
+   "tinkerer"
+  ],
+  "personaNotes": {
+   "tinkerer": "one-tap copy"
+  },
+  "states": [
+   {
+    "id": "value",
+    "how": "rendered:docs/qa/screen-census/i2-team-sheets/embedded-team-technical-value.png"
+   }
+  ],
+  "statesMissing": [],
+  "info": [
+   "label, mono value"
+  ],
+  "infoMissing": [],
+  "actions": [
+   "copy"
+  ],
+  "actionsMissing": [],
+  "entry": [],
+  "exit": [],
+  "sameJobElsewhere": [
+   {
+    "job": "see technical details",
+    "here": "",
+    "elsewhere": "team-run-details-sheet; team-agent-details-sheet + team-agent Technical details fold; team-host-details-sheet; work-sheet fold; gate-sheet fold",
+    "landsOn": "five folds/sheets with different title styles"
+   }
+  ],
+  "elements": [
+   {
+    "id": "technical-value",
+    "kind": "row",
+    "kit": "none",
+    "kitGap": "KitDetailsFold",
+    "couldBeAutomatic": "no",
+    "note": "copy IconButton off the rail"
+   }
+  ],
+  "ledgerStale": [],
+  "proposal": "fix",
+  "rationale": "Promote to the kit as the details fold's row, deduplicated by value, 48 dp copy on the rail.",
+  "verticals": {
+   "consistency-kit": "issue: not in kit",
+   "a11y": "issue: small copy target"
+  },
+  "evidence": [
+   "lib/ui/widgets/team_technical_details.dart:206",
+   "lib/ui/widgets/team_technical_details.dart:245"
+  ]
+ }
+]

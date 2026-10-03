@@ -1,0 +1,29 @@
+{
+  "base_revision": "e7762e6088a37d9aed4cbecb5155d031da5e3c03",
+  "source_sha256": {
+    "android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/MainActivity.kt": "26c1fad6b5fd6f3a463f137c7f4f24c57ab68680e91b75b0c2eb98ca0fdab51d",
+    "android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/TermuxResultService.kt": "4f571468abe51c64e0085546c01e7e2bae90bea75222be80d40a49b51517428a",
+    "android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/TermuxSetupRunner.kt": "dac8f5e7d21674a7d184157004b2af91d65473e8659d871ad0a2d8a63454a1dd",
+    "android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/TermuxSetupShell.kt": "75e180bf638cba9fad5b0099cf7fdc4f2fc02212a888ea12f73ba5b20bb1440a",
+    "lib/builtin/setup/setup_engine.dart": "3db74459505a4292b0129eb935520a6b9321d44128b9494abd27609ce1f9ece5",
+    "lib/builtin/setup/setup_finish.dart": "1fd20e7b330672ae3d868829c68d2f3c5c1ad68977c090b610cb6efe60d41567",
+    "lib/builtin/setup/termux_setup_host.dart": "266bd21503452678aed807189d131a66cf099eda8670e6e317e5ee9d7f9229f7",
+    "lib/termux/bridge.dart": "7a83b16156e8f81cbd69af89b1ca0e298d8b099b12b04bbbe75b5b1a62979b5a",
+    "test/native/termux_setup_harness.kt": "626da7071e4a7406e44f96b0df23a7c2365bb808654000921952cfd9a4872e5f",
+    "test/setup_finish_host_test.dart": "7ce34dfcac278ff5fdc15cbff59fc0568b5893b8cb16b3c7101192e07c61d3ab",
+    "test/setup_termux_host_test.dart": "b1830eb5478ae4add57ec56420425a77987e15ae635a06628ec25a5fa3f4399f",
+    "test/setup_termux_resume_test.dart": "b13774ff7fcf915074f87b4c8b4f437a892b506f0b385ed3aeaed0b507f78bfd",
+    "test/termux_setup_bridge_test.dart": "348a531382787795ecdea10c40550f280cf867af735c5fd6cdd76c27eaaee526",
+    "test/termux_setup_native_test.dart": "5245f63b7d33dcf09d21d97945e4a7c04c5c68d27f5f09c1634c1e29932b0632"
+  },
+  "checks": {
+    "pinned_dart_format": "passed; flutter_lints package resolution warning",
+    "focused_kotlinc_api37": "passed; MainActivity full app compile not run",
+    "native_shell_scenarios": "all 3 passed; see native-shell-results.txt",
+    "bootstrap_bash_n": "passed",
+    "git_diff_check": "passed",
+    "flutter_tests": "not run by user instruction",
+    "flutter_analyzer": "not run by user instruction",
+    "android_device": "not run"
+  }
+}

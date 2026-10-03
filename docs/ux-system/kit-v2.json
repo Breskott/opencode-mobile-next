@@ -1,0 +1,5064 @@
+{
+ "generated": "2026-09-26",
+ "source": "docs/ux-system/map/all.json (elements with kit \"none\" or a kitGap); journeys.json patterns; personas-verticals.json; docs/design/design-standard.md; docs/design/principles.md; lib/ui/kit/",
+ "doc": "docs/ux-system/kit-v2.md",
+ "totals": {
+  "handBuilt": 817,
+  "withKitGap": 294,
+  "proposedNames": 61,
+  "toNewParts": 452,
+  "toExistingParts": 315,
+  "moduleParts": 50
+ },
+ "new": [
+  {
+   "name": "KitSheet",
+   "purpose": "The one modal bottom-sheet frame: handle, header (title, subtitle, close), scrolling body, pinned action block, draft/dirty guard, RequestRoutes ownership.",
+   "api": "Future<T?> showKitSheet<T>(BuildContext context, {required String title, required WidgetBuilder body, String? subtitle, KitSheetHeight height = KitSheetHeight.content, KitAction? primary, KitAction? secondary, List<KitAction> tertiary = const [], ValueListenable<bool>? dirty, KitDraft? draft, RequestRoutes? routes, bool dismissible = true, Key? sheetKey}); class KitDraft {const KitDraft({required String target, required String profileId});} // key oc.draft.<target>.<profileId>",
+   "merges": [
+    "KitDiscardGuard",
+    "KitSheet"
+   ],
+   "replaces": [
+    {
+     "page": "appearance-picker-sheet",
+     "element": "appearance-sheet"
+    },
+    {
+     "page": "builtin-server-log-sheet",
+     "element": "sheet-frame"
+    },
+    {
+     "page": "chat-message-actions-sheet",
+     "element": "chat-message-actions-sheet"
+    },
+    {
+     "page": "chat-read-aloud-voice-sheet",
+     "element": "chat-read-aloud-voice-sheet"
+    },
+    {
+     "page": "coding-settings-shell-sheet",
+     "element": "shell-sheet"
+    },
+    {
+     "page": "coding-settings-shell-sheet",
+     "element": "shell-sheet-header"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "element": "command-launcher-sheet"
+    },
+    {
+     "page": "connection-status-details-sheet",
+     "element": "connection-status-details-sheet-frame"
+    },
+    {
+     "page": "development-services-editor-sheet",
+     "element": "save"
+    },
+    {
+     "page": "development-services-editor-sheet",
+     "element": "sheet"
+    },
+    {
+     "page": "development-services-logs-sheet",
+     "element": "sheet"
+    },
+    {
+     "page": "files-row-actions-sheet",
+     "element": "files-row-actions-sheet-header"
+    },
+    {
+     "page": "form-sheet",
+     "element": "form-sheet"
+    },
+    {
+     "page": "form-sheet",
+     "element": "form-sheet-submit"
+    },
+    {
+     "page": "isolated-task-sheet",
+     "element": "isolated-task-sheet-frame"
+    },
+    {
+     "page": "language-sheet",
+     "element": "language-sheet"
+    },
+    {
+     "page": "legacy-drafts-review-sheet",
+     "element": "legacy-insert"
+    },
+    {
+     "page": "legacy-drafts-review-sheet",
+     "element": "legacy-review-sheet"
+    },
+    {
+     "page": "model-picker-sheet",
+     "element": "model-picker-sheet"
+    },
+    {
+     "page": "model-picker-sheet-options-dialog",
+     "element": "options-dialog"
+    },
+    {
+     "page": "model-picker-sheet-unloaded-providers-dialog",
+     "element": "unloaded-dialog"
+    },
+    {
+     "page": "permission-sheet",
+     "element": "permission-sheet"
+    },
+    {
+     "page": "plugins-mapping-dialog",
+     "element": "mapping-dialog"
+    },
+    {
+     "page": "plugins-settings",
+     "element": "plugin-details"
+    },
+    {
+     "page": "project-folder-browser",
+     "element": "project-folder-browser-frame"
+    },
+    {
+     "page": "prompt-history-sheet",
+     "element": "prompt-history-sheet"
+    },
+    {
+     "page": "prompt-stash-sheet",
+     "element": "prompt-stash-sheet"
+    },
+    {
+     "page": "prompt-tools-sheet",
+     "element": "prompt-tools-sheet"
+    },
+    {
+     "page": "question-sheet",
+     "element": "question-sheet-frame"
+    },
+    {
+     "page": "review-comment-sheet",
+     "element": "review-comment-sheet-actions"
+    },
+    {
+     "page": "review-comment-sheet",
+     "element": "review-comment-sheet-guard"
+    },
+    {
+     "page": "run-result-output-sheet",
+     "element": "run-result-output-sheet"
+    },
+    {
+     "page": "running-work-sheet",
+     "element": "running-work-sheet-frame"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-frame"
+    },
+    {
+     "page": "session-approvals-sheet",
+     "element": "session-approvals-sheet"
+    },
+    {
+     "page": "session-approvals-sheet",
+     "element": "session-approvals-sheet-done"
+    },
+    {
+     "page": "session-menu-sheet",
+     "element": "session-menu-sheet"
+    },
+    {
+     "page": "session-menu-sheet",
+     "element": "session-menu-sheet-header"
+    },
+    {
+     "page": "settings-transcript-display-sheet",
+     "element": "transcript-sheet"
+    },
+    {
+     "page": "shortcuts-help-dialog",
+     "element": "shortcuts-help-dialog-close"
+    },
+    {
+     "page": "shortcuts-help-dialog",
+     "element": "shortcuts-help-dialog-list"
+    },
+    {
+     "page": "team-cycle-how-sheet",
+     "element": "cycle-how-body"
+    },
+    {
+     "page": "team-plugin-sheet",
+     "element": "team-sheet"
+    },
+    {
+     "page": "team-plugin-sheet",
+     "element": "team-sheet-title"
+    },
+    {
+     "page": "theme-pack-preview-sheet",
+     "element": "theme-sheet"
+    },
+    {
+     "page": "timeline-sheet",
+     "element": "timeline-sheet"
+    },
+    {
+     "page": "voice-composer-sheet",
+     "element": "voice-composer-sheet"
+    },
+    {
+     "page": "voice-composer-sheet",
+     "element": "voice-composer-sheet-actions"
+    },
+    {
+     "page": "voice-model-setup-sheet",
+     "element": "voice-model-setup-sheet"
+    },
+    {
+     "page": "voice-model-setup-sheet",
+     "element": "voice-model-setup-sheet-primary"
+    },
+    {
+     "page": "workspace-archived-sheet",
+     "element": "workspace-archived-sheet-frame"
+    },
+    {
+     "page": "workspace-context-sheet",
+     "element": "workspace-context-sheet-frame"
+    }
+   ],
+   "count": 52
+  },
+  {
+   "name": "KitConfirmSheet",
+   "purpose": "The one confirmation before an irreversible or server-destructive act, or before dropping input that cannot be kept; start-aligned, kinds with fixed tone/icon/cancel words, typed-name guard, consequences, in place when raised from a sheet.",
+   "api": "enum KitConfirmKind {neutral, stop, destructive, discard} Future<bool> showKitConfirm(BuildContext context, {required String title, required String body, required String confirmLabel, KitConfirmKind kind = KitConfirmKind.neutral, String? cancelLabel, IconData? icon, List<String> consequences = const [], String? typedName, KitAction? alternative, List<KitTechnicalValue> details = const [], RequestRoutes? routes, Key? sheetKey, Key? confirmKey});",
+   "merges": [
+    "KitConfirmSheet",
+    "KitDiscardGuard"
+   ],
+   "replaces": [
+    {
+     "page": "app-diagnostics-clear-sheet",
+     "element": "clear-diagnostics-sheet"
+    },
+    {
+     "page": "builtin-server-remove-confirm-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "chat-cancel-inbox-send-sheet",
+     "element": "chat-cancel-inbox-send-sheet"
+    },
+    {
+     "page": "chat-cancel-inbox-send-sheet",
+     "element": "chat-cancel-inbox-send-sheet-cancel"
+    },
+    {
+     "page": "chat-cancel-inbox-send-sheet",
+     "element": "chat-cancel-inbox-send-sheet-confirm"
+    },
+    {
+     "page": "chat-delete-message-sheet",
+     "element": "chat-delete-message-sheet"
+    },
+    {
+     "page": "chat-delete-message-sheet",
+     "element": "chat-delete-message-sheet-cancel"
+    },
+    {
+     "page": "chat-delete-message-sheet",
+     "element": "chat-delete-message-sheet-confirm"
+    },
+    {
+     "page": "chat-discard-queued-draft-sheet",
+     "element": "chat-discard-queued-draft-sheet"
+    },
+    {
+     "page": "chat-discard-queued-draft-sheet",
+     "element": "chat-discard-queued-draft-sheet-cancel"
+    },
+    {
+     "page": "chat-discard-queued-draft-sheet",
+     "element": "chat-discard-queued-draft-sheet-confirm"
+    },
+    {
+     "page": "chat-draft-attachment-recovery-sheet",
+     "element": "chat-draft-attachment-recovery-sheet"
+    },
+    {
+     "page": "chat-draft-attachment-recovery-sheet",
+     "element": "chat-draft-attachment-recovery-sheet-cancel"
+    },
+    {
+     "page": "chat-draft-attachment-recovery-sheet",
+     "element": "chat-draft-attachment-recovery-sheet-confirm"
+    },
+    {
+     "page": "chat-draft-attachment-recovery-sheet",
+     "element": "icon"
+    },
+    {
+     "page": "chat-leave-unsaved-draft-sheet",
+     "element": "chat-leave-unsaved-draft-sheet"
+    },
+    {
+     "page": "chat-leave-unsaved-draft-sheet",
+     "element": "chat-leave-unsaved-draft-sheet-keep-editing"
+    },
+    {
+     "page": "chat-leave-unsaved-draft-sheet",
+     "element": "chat-leave-unsaved-draft-sheet-leave"
+    },
+    {
+     "page": "chat-pending-photo-sheet",
+     "element": "chat-pending-photo-sheet"
+    },
+    {
+     "page": "chat-pending-photo-sheet",
+     "element": "chat-pending-photo-sheet-cancel"
+    },
+    {
+     "page": "chat-pending-photo-sheet",
+     "element": "chat-pending-photo-sheet-confirm"
+    },
+    {
+     "page": "chat-pending-photo-sheet",
+     "element": "icon"
+    },
+    {
+     "page": "chat-read-aloud-consent-sheet",
+     "element": "chat-read-aloud-consent-sheet"
+    },
+    {
+     "page": "chat-resend-queued-draft-sheet",
+     "element": "chat-resend-queued-draft-sheet"
+    },
+    {
+     "page": "chat-resend-queued-draft-sheet",
+     "element": "chat-resend-queued-draft-sheet-cancel"
+    },
+    {
+     "page": "chat-resend-queued-draft-sheet",
+     "element": "chat-resend-queued-draft-sheet-confirm"
+    },
+    {
+     "page": "chat-revert-confirm-sheet",
+     "element": "chat-revert-confirm-sheet"
+    },
+    {
+     "page": "chat-revert-confirm-sheet",
+     "element": "chat-revert-confirm-sheet-cancel"
+    },
+    {
+     "page": "chat-revert-confirm-sheet",
+     "element": "chat-revert-confirm-sheet-confirm"
+    },
+    {
+     "page": "chat-share-confirm-sheet",
+     "element": "chat-share-confirm-sheet"
+    },
+    {
+     "page": "chat-share-confirm-sheet",
+     "element": "chat-share-confirm-sheet-cancel"
+    },
+    {
+     "page": "chat-share-confirm-sheet",
+     "element": "chat-share-confirm-sheet-confirm"
+    },
+    {
+     "page": "chat-stash-attachments-unavailable-sheet",
+     "element": "chat-stash-attachments-unavailable-sheet"
+    },
+    {
+     "page": "chat-stash-attachments-unavailable-sheet",
+     "element": "chat-stash-attachments-unavailable-sheet-cancel"
+    },
+    {
+     "page": "chat-stash-attachments-unavailable-sheet",
+     "element": "chat-stash-attachments-unavailable-sheet-confirm"
+    },
+    {
+     "page": "chat-stash-restore-confirm-sheet",
+     "element": "chat-stash-restore-confirm-sheet"
+    },
+    {
+     "page": "chat-stash-restore-confirm-sheet",
+     "element": "chat-stash-restore-confirm-sheet-cancel"
+    },
+    {
+     "page": "chat-stash-restore-confirm-sheet",
+     "element": "chat-stash-restore-confirm-sheet-confirm"
+    },
+    {
+     "page": "command-auth-sheet-confirm-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "confirm-sheet",
+     "element": "confirm-sheet-cancel"
+    },
+    {
+     "page": "confirm-sheet",
+     "element": "confirm-sheet-confirm"
+    },
+    {
+     "page": "confirm-sheet",
+     "element": "confirm-sheet-frame"
+    },
+    {
+     "page": "console-organization-switch-dialog",
+     "element": "console-organization-switch-dialog-confirm"
+    },
+    {
+     "page": "credential-management-sheet-remove-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "development-services-confirm-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "external-agent-detail-delete-sheet",
+     "element": "external-agent-detail-delete-sheet"
+    },
+    {
+     "page": "external-agents-delete-sheet",
+     "element": "external-agents-delete-sheet"
+    },
+    {
+     "page": "external-link-dialog",
+     "element": "external-link-dialog-cancel"
+    },
+    {
+     "page": "external-link-dialog",
+     "element": "external-link-dialog-host"
+    },
+    {
+     "page": "external-link-dialog",
+     "element": "external-link-dialog-open"
+    },
+    {
+     "page": "external-task-cancel-sheet",
+     "element": "external-task-cancel-sheet"
+    },
+    {
+     "page": "external-task-forget-sheet",
+     "element": "external-task-forget-sheet"
+    },
+    {
+     "page": "form-sheet-dismiss-confirm-sheet",
+     "element": "form-sheet-dismiss-confirm-sheet"
+    },
+    {
+     "page": "gate-sheet-confirm-sheet",
+     "element": "gate-confirm"
+    },
+    {
+     "page": "global-sessions-continue-here-sheet",
+     "element": "global-sessions-continue-here-sheet-confirm"
+    },
+    {
+     "page": "integrations-disconnect-provider-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "integrations-forget-pending-auth-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "integrations-forget-uncertain-auth-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "integrations-remove-mcp-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "legacy-drafts-delete-sheet",
+     "element": "legacy-delete-sheet"
+    },
+    {
+     "page": "managed-workspaces-remove-dialog",
+     "element": "managed-workspaces-remove-dialog-confirm"
+    },
+    {
+     "page": "managed-workspaces-remove-dialog",
+     "element": "managed-workspaces-remove-dialog-confirm-text"
+    },
+    {
+     "page": "permission-sheet-always-dialog",
+     "element": "permission-sheet-always-dialog"
+    },
+    {
+     "page": "phone-setup-progress-stop-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "plugins-clear-mappings-sheet",
+     "element": "clear-mappings-sheet"
+    },
+    {
+     "page": "privacy-settings-clear-drafts-sheet",
+     "element": "clear-drafts-sheet"
+    },
+    {
+     "page": "privacy-settings-clear-queued-sheet",
+     "element": "clear-queued-sheet"
+    },
+    {
+     "page": "profile-editor-discard-sheet",
+     "element": "profile-editor-discard-sheet"
+    },
+    {
+     "page": "profile-monitor-switch-server-dialog",
+     "element": "profile-monitor-switch-server-dialog"
+    },
+    {
+     "page": "project-health-git-init-dialog",
+     "element": "project-health-git-init-dialog-confirm"
+    },
+    {
+     "page": "prompt-editor-discard-sheet",
+     "element": "prompt-editor-discard-sheet"
+    },
+    {
+     "page": "prompt-stash-delete-sheet",
+     "element": "prompt-stash-delete-sheet"
+    },
+    {
+     "page": "provider-quota-clear-dialog",
+     "element": "provider-quota-clear-dialog"
+    },
+    {
+     "page": "provider-quota-enroll-dialog",
+     "element": "provider-quota-enroll-dialog"
+    },
+    {
+     "page": "question-sheet-dismiss-dialog",
+     "element": "question-sheet-dismiss-dialog-confirm"
+    },
+    {
+     "page": "remove-local-agents-confirm-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "restart-local-agents-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "saved-permissions-revoke-dialog",
+     "element": "revoke-dialog"
+    },
+    {
+     "page": "server-settings-upgrade-sheet",
+     "element": "server-settings-upgrade-sheet"
+    },
+    {
+     "page": "servers-remove-server-sheet",
+     "element": "servers-remove-server-sheet"
+    },
+    {
+     "page": "session-destination-confirm-dialog",
+     "element": "session-destination-confirm-dialog-confirm"
+    },
+    {
+     "page": "session-note-discard-dialog",
+     "element": "session-note-discard-dialog"
+    },
+    {
+     "page": "settings-disconnect-sheet",
+     "element": "disconnect-body"
+    },
+    {
+     "page": "settings-disconnect-sheet",
+     "element": "disconnect-sheet"
+    },
+    {
+     "page": "shell-output-stop-dialog",
+     "element": "shell-output-stop-dialog-confirm"
+    },
+    {
+     "page": "stage-revert-sheet",
+     "element": "stage-revert-sheet"
+    },
+    {
+     "page": "staged-revert-confirm-sheet",
+     "element": "staged-revert-confirm-sheet"
+    },
+    {
+     "page": "stop-local-agents-confirm-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "team-agent-restart-confirm-sheet",
+     "element": "team-agent-restart-confirm"
+    },
+    {
+     "page": "team-agent-stop-confirm-sheet",
+     "element": "team-agent-stop-confirm"
+    },
+    {
+     "page": "team-board-cancel-confirm-sheet",
+     "element": "team-board-cancel-confirm"
+    },
+    {
+     "page": "team-cycle-stop-confirm-sheet",
+     "element": "cycle-stop-confirm"
+    },
+    {
+     "page": "team-merge-approve-sheet",
+     "element": "approve-confirm"
+    },
+    {
+     "page": "team-merge-confirm-sheet",
+     "element": "merge-confirm"
+    },
+    {
+     "page": "team-phone-remove-sheet",
+     "element": "phone-remove-confirm"
+    },
+    {
+     "page": "team-phone-stop-sheet",
+     "element": "phone-stop-confirm"
+    },
+    {
+     "page": "team-run-cancel-confirm-sheet",
+     "element": "team-run-cancel-confirm"
+    },
+    {
+     "page": "team-turn-off-sheet",
+     "element": "turn-off-confirm"
+    },
+    {
+     "page": "terminal-remove-sheet",
+     "element": "terminal-remove-sheet"
+    },
+    {
+     "page": "termux-processes-stop-group-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "termux-processes-stop-one-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "termux-setup-replace-installed-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "termux-setup-restart-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "termux-setup-start-installed-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "termux-setup-switch-runtime-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "termux-setup-unchecked-install-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "termux-setup-update-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "termux-storage-clean-sheet",
+     "element": "confirm"
+    },
+    {
+     "page": "usage-budget-clear-dialog",
+     "element": "usage-budget-clear-dialog"
+    },
+    {
+     "page": "voice-model-setup-sheet-delete-dialog",
+     "element": "voice-model-setup-sheet-delete-dialog"
+    },
+    {
+     "page": "workspace-archive-session-sheet",
+     "element": "workspace-archive-session-sheet-confirm"
+    },
+    {
+     "page": "workspace-delete-session-sheet",
+     "element": "workspace-delete-session-sheet-confirm"
+    },
+    {
+     "page": "workspace-share-session-sheet",
+     "element": "workspace-share-session-sheet-confirm"
+    },
+    {
+     "page": "worktrees-remove-dialog",
+     "element": "worktrees-remove-dialog-confirm-text"
+    },
+    {
+     "page": "worktrees-remove-dialog",
+     "element": "worktrees-remove-dialog-warning"
+    },
+    {
+     "page": "worktrees-reset-dialog",
+     "element": "worktrees-reset-dialog-confirm"
+    }
+   ],
+   "count": 116
+  },
+  {
+   "name": "KitDialog",
+   "purpose": "The only two dialogs: one short text entry, and a blocking alert.",
+   "api": "Future<String?> showKitInputDialog(BuildContext context, {required String title, required String label, required String confirmLabel, String? initial, String? helper, KitFieldKind kind = KitFieldKind.text, int? maxLength, String? Function(String)? validate, Future<String?> Function(String)? onSubmit, KitAction? alternative, Key? dialogKey}); Future<void> showKitAlert(BuildContext context, {required String title, required String body, List<KitTechnicalValue> details = const [], KitAction? action, String? closeLabel});",
+   "merges": [
+    "KitEntryDialog",
+    "KitInputDialog"
+   ],
+   "replaces": [
+    {
+     "page": "chat-rename-session-dialog",
+     "element": "chat-rename-session-dialog"
+    },
+    {
+     "page": "chat-rename-session-dialog",
+     "element": "chat-rename-session-dialog-rename"
+    },
+    {
+     "page": "chat-rename-session-dialog",
+     "element": "chat-rename-session-dialog-title-field"
+    },
+    {
+     "page": "chat-run-shell-dialog",
+     "element": "chat-run-shell-dialog"
+    },
+    {
+     "page": "chat-run-shell-dialog",
+     "element": "chat-run-shell-dialog-command-field"
+    },
+    {
+     "page": "chat-run-shell-dialog",
+     "element": "chat-run-shell-dialog-run"
+    },
+    {
+     "page": "credential-management-sheet-rename-dialog",
+     "element": "dialog"
+    },
+    {
+     "page": "external-agent-detail-input-dialog",
+     "element": "external-agent-detail-input-dialog"
+    },
+    {
+     "page": "file-drop-failed-dialog",
+     "element": "file-drop-failed-dialog-close"
+    },
+    {
+     "page": "file-drop-failed-dialog",
+     "element": "file-drop-failed-dialog-dialog"
+    },
+    {
+     "page": "integrations-authorization-launch-dialog",
+     "element": "dialog"
+    },
+    {
+     "page": "integrations-oauth-code-dialog",
+     "element": "dialog"
+    },
+    {
+     "page": "integrations-oauth-inputs-dialog",
+     "element": "dialog"
+    },
+    {
+     "page": "project-folder-new-dialog",
+     "element": "project-folder-new-dialog-name"
+    },
+    {
+     "page": "project-folder-open-dialog",
+     "element": "project-folder-open-dialog-path"
+    },
+    {
+     "page": "projects-rename-dialog",
+     "element": "projects-rename-dialog-name"
+    },
+    {
+     "page": "run-command-dialog",
+     "element": "run-command-dialog"
+    },
+    {
+     "page": "terminal-rename-dialog",
+     "element": "terminal-rename-dialog"
+    },
+    {
+     "page": "usage-budget-dialog",
+     "element": "usage-budget-dialog"
+    },
+    {
+     "page": "workspace-rename-session-dialog",
+     "element": "workspace-rename-session-dialog-title"
+    },
+    {
+     "page": "worktrees-create-dialog",
+     "element": "worktrees-create-dialog-name"
+    }
+   ],
+   "count": 21
+  },
+  {
+   "name": "KitField",
+   "purpose": "One labelled text field (label above, helper, error under, counter from 80 %), with multiline drafts and a secret kind that is never prefilled or echoed.",
+   "api": "enum KitFieldKind {text, multiline, mono, path, url, number, secret} KitField({required String label, TextEditingController? controller, KitFieldKind kind = KitFieldKind.text, String? helper, String? error, int? maxLength, KitDraft? draft, bool enabled = true, String? disabledReason, ValueChanged<String>? onChanged, ValueChanged<String>? onSubmitted, TextInputAction? textInputAction, bool autofocus = false, Key? fieldKey}); KitField.secret({required String label, ...})",
+   "merges": [
+    "KitComposerField",
+    "KitField",
+    "KitSecretField",
+    "KitTextField"
+   ],
+   "replaces": [
+    {
+     "page": "add-agent",
+     "element": "add-agent-bearer"
+    },
+    {
+     "page": "development-services-editor-sheet",
+     "element": "fields"
+    },
+    {
+     "page": "embedded-question-options",
+     "element": "embedded-question-options-custom-answer"
+    },
+    {
+     "page": "form-sheet",
+     "element": "form-sheet-fields"
+    },
+    {
+     "page": "integrations-connect-key-dialog",
+     "element": "key-field"
+    },
+    {
+     "page": "integrations-mcp-oauth-code-dialog",
+     "element": "code-field"
+    },
+    {
+     "page": "integrations-oauth-inputs-dialog",
+     "element": "prompt-field"
+    },
+    {
+     "page": "isolated-task-sheet",
+     "element": "isolated-task-sheet-name"
+    },
+    {
+     "page": "local-agent-project-sheet",
+     "element": "path-field"
+    },
+    {
+     "page": "managed-workspaces-create-dialog",
+     "element": "managed-workspaces-create-dialog-branch"
+    },
+    {
+     "page": "mcp-setup",
+     "element": "fields"
+    },
+    {
+     "page": "mcp-setup",
+     "element": "mcp-headers"
+    },
+    {
+     "page": "permission-sheet",
+     "element": "permission-sheet-reject-message"
+    },
+    {
+     "page": "phone-setup-ready",
+     "element": "name-field"
+    },
+    {
+     "page": "project-folder-browser",
+     "element": "project-folder-browser-name"
+    },
+    {
+     "page": "prompt-editor",
+     "element": "prompt-editor-field"
+    },
+    {
+     "page": "question-sheet",
+     "element": "question-sheet-custom-answer"
+    },
+    {
+     "page": "review-comment-sheet",
+     "element": "review-comment-sheet-field"
+    },
+    {
+     "page": "session-note",
+     "element": "session-note-editor"
+    },
+    {
+     "page": "start-run-sheet",
+     "element": "start-objective"
+    },
+    {
+     "page": "tailscale-setup",
+     "element": "tailscale-setup-address"
+    },
+    {
+     "page": "team-agent-message-sheet",
+     "element": "team-agent-message-field"
+    },
+    {
+     "page": "team-board-add-sheet",
+     "element": "team-board-add-field"
+    },
+    {
+     "page": "team-conversation",
+     "element": "team-conversation-composer"
+    },
+    {
+     "page": "team-host-sheet",
+     "element": "host-address"
+    },
+    {
+     "page": "voice-composer-sheet",
+     "element": "voice-composer-sheet-draft-field"
+    }
+   ],
+   "count": 26
+  },
+  {
+   "name": "KitSearchField",
+   "purpose": "One search field for lists, sheets and viewers: labelled filter, clear, debounced, result count announced once.",
+   "api": "KitSearchField({required String hint, required ValueChanged<String> onChanged, TextEditingController? controller, int? resultCount, List<KitMenuItem> filters = const [], String? activeFilter, bool autofocus = false, Key? fieldKey})",
+   "merges": [
+    "KitField",
+    "KitSearchBar",
+    "KitSearchField"
+   ],
+   "replaces": [
+    {
+     "page": "active-context",
+     "element": "active-context-search"
+    },
+    {
+     "page": "capabilities",
+     "element": "capabilities-search"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "element": "command-launcher-sheet-search"
+    },
+    {
+     "page": "command-palette-dialog",
+     "element": "command-palette-dialog-query"
+    },
+    {
+     "page": "commands",
+     "element": "search"
+    },
+    {
+     "page": "embedded-transcript-find-bar",
+     "element": "embedded-transcript-find-bar"
+    },
+    {
+     "page": "files",
+     "element": "files-search-field"
+    },
+    {
+     "page": "global-sessions",
+     "element": "global-sessions-search"
+    },
+    {
+     "page": "legacy-drafts",
+     "element": "legacy-search"
+    },
+    {
+     "page": "model-picker-sheet",
+     "element": "model-search"
+    },
+    {
+     "page": "projects",
+     "element": "projects-search"
+    },
+    {
+     "page": "session-destination-sheet",
+     "element": "session-destination-sheet-filter"
+    },
+    {
+     "page": "settings",
+     "element": "library-search"
+    },
+    {
+     "page": "team-home-runs-tab",
+     "element": "team-home-search"
+    },
+    {
+     "page": "web-sources",
+     "element": "web-query"
+    }
+   ],
+   "count": 15
+  },
+  {
+   "name": "KitSegmented",
+   "purpose": "A single choice among 2-4 short always-visible options; falls back to a wrapping chip row at large text; selection is a check, not colour only.",
+   "api": "KitSegment<T>({required T value, required String label, IconData? icon, int? count, bool enabled = true, Key? key}); KitSegmented<T>({required List<KitSegment<T>> segments, required T selected, required ValueChanged<T> onChanged, String? semanticsLabel, String? disabledReason})",
+   "merges": [
+    "KitChipRow",
+    "KitFilterBar",
+    "KitSegmented",
+    "KitSplitButton"
+   ],
+   "replaces": [
+    {
+     "page": "active-context",
+     "element": "active-context-chips"
+    },
+    {
+     "page": "appearance-settings",
+     "element": "effects-animations"
+    },
+    {
+     "page": "builtin-server-setup",
+     "element": "runtime-choice"
+    },
+    {
+     "page": "catalog",
+     "element": "tabs"
+    },
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-delivery-toggle"
+    },
+    {
+     "page": "embedded-file-preview-body",
+     "element": "embedded-file-preview-body-mode"
+    },
+    {
+     "page": "embedded-mobile-task-list",
+     "element": "embedded-mobile-task-list-filter"
+    },
+    {
+     "page": "global-sessions",
+     "element": "global-sessions-folder-chip"
+    },
+    {
+     "page": "mcp-setup",
+     "element": "kind-segmented"
+    },
+    {
+     "page": "mcp-setup",
+     "element": "scope-segmented"
+    },
+    {
+     "page": "model-picker-sheet",
+     "element": "model-filters"
+    },
+    {
+     "page": "model-picker-sheet-options-dialog",
+     "element": "options-variant"
+    },
+    {
+     "page": "provider-quota",
+     "element": "provider-quota-chips"
+    },
+    {
+     "page": "review-workspace",
+     "element": "review-workspace-mode"
+    },
+    {
+     "page": "review-workspace",
+     "element": "review-workspace-scope-picker"
+    },
+    {
+     "page": "skill-activation-sheet",
+     "element": "view-toggle"
+    },
+    {
+     "page": "skills-preview-sheet",
+     "element": "view-toggle"
+    },
+    {
+     "page": "team-host-sheet",
+     "element": "host-kind"
+    },
+    {
+     "page": "team-run-timeline-tab",
+     "element": "team-run-timeline-filter"
+    },
+    {
+     "page": "terminal",
+     "element": "terminal-source"
+    },
+    {
+     "page": "theme-pack-preview-sheet",
+     "element": "theme-mode-chips"
+    },
+    {
+     "page": "usage",
+     "element": "usage-range"
+    },
+    {
+     "page": "usage-hub",
+     "element": "usage-range"
+    },
+    {
+     "page": "usage-hub",
+     "element": "usage-scope"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-new-mode"
+    }
+   ],
+   "count": 25
+  },
+  {
+   "name": "KitChoiceList",
+   "purpose": "One way to pick: single (acts on tap, sends with a receipt) or multi choice rows with a selection mark and Current word, \"Something else\" with a field, and KitPickerRow replacing every dropdown.",
+   "api": "KitChoice<T>({required T value, required String title, String? supporting, Widget? leading, bool enabled = true, String? disabledReason, Key? key}); KitChoiceList<T>.single({required List<KitChoice<T>> choices, required T? selected, required ValueChanged<T> onSelected, bool actsOnTap = true, KitChoiceOther? other}); KitChoiceList<T>.multi({required List<KitChoice<T>> choices, required Set<T> selected, required ValueChanged<Set<T>> onChanged}); KitChoiceRow<T>; KitPickerRow<T>({required String title, required List<KitChoice<T>> choices, required T selected, required ValueChanged<T> onSelected, String? sheetTitle, Widget? leading}); Future<T?> showKitChoiceSheet<T>(...)",
+   "merges": [
+    "KitChoiceList",
+    "KitChoiceRow",
+    "KitSegmented"
+   ],
+   "replaces": [
+    {
+     "page": "agent-choice",
+     "element": "agent-choice-row"
+    },
+    {
+     "page": "appearance-picker-sheet",
+     "element": "appearance-choice"
+    },
+    {
+     "page": "chat-read-aloud-voice-sheet",
+     "element": "chat-read-aloud-voice-sheet-voice-row"
+    },
+    {
+     "page": "coding-settings-shell-sheet",
+     "element": "shell-choice"
+    },
+    {
+     "page": "console-organization-sheet",
+     "element": "console-organization-sheet-org"
+    },
+    {
+     "page": "embedded-markdown-text",
+     "element": "embedded-markdown-text-agent-choice"
+    },
+    {
+     "page": "embedded-message-view",
+     "element": "embedded-message-view-choice-option"
+    },
+    {
+     "page": "embedded-question-options",
+     "element": "embedded-question-options-option"
+    },
+    {
+     "page": "gate-sheet",
+     "element": "gate-options"
+    },
+    {
+     "page": "language-sheet",
+     "element": "language-choice"
+    },
+    {
+     "page": "local-agent-project-sheet",
+     "element": "folder-radios"
+    },
+    {
+     "page": "managed-workspaces-create-dialog",
+     "element": "managed-workspaces-create-dialog-adapter"
+    },
+    {
+     "page": "model-picker-sheet-agent-dialog",
+     "element": "agent-dialog"
+    },
+    {
+     "page": "model-picker-sheet-agent-dialog",
+     "element": "agent-dropdown"
+    },
+    {
+     "page": "model-picker-sheet-options-dialog",
+     "element": "options-agent"
+    },
+    {
+     "page": "notifications-settings",
+     "element": "notifications-check-in-minutes"
+    },
+    {
+     "page": "plugins-mapping-dialog",
+     "element": "mapping-checkbox"
+    },
+    {
+     "page": "profile-editor",
+     "element": "profile-editor-backend"
+    },
+    {
+     "page": "question-sheet",
+     "element": "question-sheet-option"
+    },
+    {
+     "page": "question-sheet",
+     "element": "question-sheet-send"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-current"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-profile"
+    },
+    {
+     "page": "servers-welcome",
+     "element": "servers-welcome-choice"
+    },
+    {
+     "page": "session-approvals-sheet",
+     "element": "session-approvals-sheet-mode"
+    },
+    {
+     "page": "session-destination-sheet",
+     "element": "session-destination-sheet-destination"
+    },
+    {
+     "page": "session-export",
+     "element": "session-export-format"
+    },
+    {
+     "page": "session-import-destination-sheet",
+     "element": "session-import-destination-sheet-choice"
+    },
+    {
+     "page": "shell-output-timeout-sheet",
+     "element": "shell-output-timeout-sheet-option"
+    },
+    {
+     "page": "start-run-sheet",
+     "element": "start-project"
+    },
+    {
+     "page": "start-run-sheet",
+     "element": "start-supervision"
+    },
+    {
+     "page": "team-board-priority-sheet",
+     "element": "team-board-priority-row"
+    },
+    {
+     "page": "team-phone-onboarding-project-sheet",
+     "element": "project-radio"
+    },
+    {
+     "page": "termux-setup-choose",
+     "element": "runtime-radios"
+    },
+    {
+     "page": "voice-model-setup-sheet",
+     "element": "voice-model-setup-sheet-language"
+    },
+    {
+     "page": "voice-model-setup-sheet",
+     "element": "voice-model-setup-sheet-pack"
+    },
+    {
+     "page": "web-sources",
+     "element": "web-provider"
+    },
+    {
+     "page": "web-sources",
+     "element": "web-selected"
+    }
+   ],
+   "count": 37
+  },
+  {
+   "name": "KitDetailsFold",
+   "purpose": "The one technical fold at the end of a page, sheet or state: collapsed, mono LTR values deduplicated, a copy button per value, Copy all; plus a standalone raw-error sheet.",
+   "api": "KitTechnicalValue(String label, String value, {bool copyable = true, Key? key}); KitDetailsFold({List<KitTechnicalValue> values = const [], List<String> notes = const [], Widget? child, String? label, bool initiallyOpen = false, Key? foldKey}); Future<void> showKitTechnicalDetails(BuildContext context, {required String title, required String text, List<KitTechnicalValue> values = const []})",
+   "merges": [
+    "KitCopyValue",
+    "KitDetailsFold",
+    "KitDetailsRow",
+    "KitTechnicalDetails"
+   ],
+   "replaces": [
+    {
+     "page": "builtin-server-setup",
+     "element": "address-and-checksum"
+    },
+    {
+     "page": "chat-message-error-details-dialog",
+     "element": "chat-error-details-dialog"
+    },
+    {
+     "page": "chat-prompt-error-details-dialog",
+     "element": "chat-error-details-dialog"
+    },
+    {
+     "page": "connection-status-details-sheet",
+     "element": "connection-status-details-sheet-error"
+    },
+    {
+     "page": "development-services-confirm-sheet",
+     "element": "path-command"
+    },
+    {
+     "page": "embedded-team-technical-value",
+     "element": "technical-value"
+    },
+    {
+     "page": "gate-sheet",
+     "element": "gate-details"
+    },
+    {
+     "page": "gate-sheet",
+     "element": "gate-kicker"
+    },
+    {
+     "page": "isolated-task-sheet",
+     "element": "isolated-task-sheet-path"
+    },
+    {
+     "page": "session-import",
+     "element": "session-import-preview"
+    },
+    {
+     "page": "skills-preview-sheet",
+     "element": "path"
+    },
+    {
+     "page": "team-agent",
+     "element": "team-agent-technical"
+    },
+    {
+     "page": "team-agent-details-sheet",
+     "element": "agent-details-values"
+    },
+    {
+     "page": "team-host-details-sheet",
+     "element": "host-details-values"
+    },
+    {
+     "page": "team-plugin-sheet",
+     "element": "team-sheet-details"
+    },
+    {
+     "page": "team-run-details-sheet",
+     "element": "run-details-values"
+    },
+    {
+     "page": "team-run-overview-tab",
+     "element": "team-run-summary"
+    },
+    {
+     "page": "termux-processes-details-sheet",
+     "element": "command-folder"
+    },
+    {
+     "page": "termux-processes-details-sheet",
+     "element": "pid-subtitle"
+    },
+    {
+     "page": "voice-composer-sheet",
+     "element": "voice-composer-sheet-technical-details"
+    },
+    {
+     "page": "voice-model-setup-sheet",
+     "element": "voice-model-setup-sheet-technical-details"
+    },
+    {
+     "page": "work-sheet",
+     "element": "work-code"
+    },
+    {
+     "page": "work-sheet",
+     "element": "work-details"
+    },
+    {
+     "page": "workspace-directory-details-dialog",
+     "element": "workspace-directory-details-dialog-close"
+    },
+    {
+     "page": "workspace-session-details-sheet",
+     "element": "workspace-session-details-sheet-lines"
+    }
+   ],
+   "count": 25
+  },
+  {
+   "name": "KitCodeBlock",
+   "purpose": "Code, a command to copy and run elsewhere, or tool output: LTR, scrolls instead of clipping, capped with Show all, one copy button, never a real token.",
+   "api": "enum KitCodeKind {code, command, output} KitCodeBlock({required String text, KitCodeKind kind = KitCodeKind.code, String? language, String? caption, int maxLines = 12, VoidCallback? onOpenFull, bool wrap = false, String? copyText})",
+   "merges": [
+    "KitCodeBlock",
+    "KitCommandBlock",
+    "KitCopyValue"
+   ],
+   "replaces": [
+    {
+     "page": "connection-help",
+     "element": "connection-help-examples"
+    },
+    {
+     "page": "continue-on-computer-sheet",
+     "element": "continue-on-computer-command"
+    },
+    {
+     "page": "embedded-markdown-text",
+     "element": "embedded-markdown-text-code"
+    },
+    {
+     "page": "embedded-tool-card",
+     "element": "embedded-tool-card-output"
+    },
+    {
+     "page": "guide",
+     "element": "guide-pair-command"
+    },
+    {
+     "page": "host-management",
+     "element": "host-management-command"
+    },
+    {
+     "page": "markdown-code-reader",
+     "element": "markdown-code-reader-body"
+    },
+    {
+     "page": "permission-sheet",
+     "element": "permission-sheet-command-preview"
+    },
+    {
+     "page": "profile-editor",
+     "element": "profile-editor-command"
+    },
+    {
+     "page": "server-settings-restart-dialog",
+     "element": "server-settings-restart-dialog"
+    },
+    {
+     "page": "session-handoff-dialog",
+     "element": "session-handoff-dialog"
+    },
+    {
+     "page": "team-host-guide-sheet",
+     "element": "guide-body"
+    },
+    {
+     "page": "team-phone-tips-sheet",
+     "element": "tips-commands"
+    },
+    {
+     "page": "tools-detail-sheet",
+     "element": "schema"
+    }
+   ],
+   "count": 14
+  },
+  {
+   "name": "KitIconButton",
+   "purpose": "The one icon-only control: required label, 48 dp, destructive tint, toggle; the copy variant shows an in-place check and announces Copied instead of a snackbar.",
+   "api": "KitIconButton({required IconData icon, required String tooltip, required VoidCallback? onPressed, bool destructive = false, bool working = false, bool? selected}); KitIconButton.copy({required String Function() text, String? tooltip})",
+   "merges": [],
+   "replaces": [
+    {
+     "page": "about",
+     "element": "about-report-bug-icon"
+    },
+    {
+     "page": "attention-overview",
+     "element": "attention-overview-monitor-settings"
+    },
+    {
+     "page": "capabilities",
+     "element": "capabilities-run"
+    },
+    {
+     "page": "chat",
+     "element": "chat-appbar-stop-reading"
+    },
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-open-editor"
+    },
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-tools-button"
+    },
+    {
+     "page": "embedded-message-view",
+     "element": "embedded-message-view-actions-button"
+    },
+    {
+     "page": "embedded-pending-sends-strip",
+     "element": "pending-actions"
+    },
+    {
+     "page": "embedded-team-cycle-strip",
+     "element": "team-cycle-action-refresh"
+    },
+    {
+     "page": "files-changes-sheet",
+     "element": "files-changes-sheet-stage"
+    },
+    {
+     "page": "integrations",
+     "element": "add-mcp"
+    },
+    {
+     "page": "legacy-drafts-review-sheet",
+     "element": "legacy-copy"
+    },
+    {
+     "page": "managed-workspaces",
+     "element": "managed-workspaces-sync"
+    },
+    {
+     "page": "project-health",
+     "element": "project-health-refresh"
+    },
+    {
+     "page": "saved-permissions",
+     "element": "saved-permissions-refresh"
+    },
+    {
+     "page": "team-agent",
+     "element": "team-agent-refresh"
+    },
+    {
+     "page": "team-home",
+     "element": "team-home-board"
+    },
+    {
+     "page": "team-run",
+     "element": "team-run-refresh"
+    },
+    {
+     "page": "terminal-surface",
+     "element": "terminal-surface-header"
+    },
+    {
+     "page": "termux-processes",
+     "element": "stop-orphan"
+    },
+    {
+     "page": "timeline-sheet",
+     "element": "timeline-sheet-row-fork"
+    },
+    {
+     "page": "usage-hub",
+     "element": "usage-refresh"
+    }
+   ],
+   "count": 22
+  },
+  {
+   "name": "KitLogPanel",
+   "purpose": "The one log view: follows new lines unless scrolled up, polls only while visible, redacted, error tone for errors only, folded under Details by default.",
+   "api": "KitLogLine(String text, {AppStatusTone tone = AppStatusTone.neutral, DateTime? at}); KitLogPanel({required ValueListenable<List<KitLogLine>> lines, bool live = false, String? ended, Future<void> Function()? onRefresh, bool follow = true, int maxLines = 2000, String? emptyText, double? height, Key? panelKey})",
+   "merges": [
+    "KitLogFold",
+    "KitLogPanel",
+    "KitLogView"
+   ],
+   "replaces": [
+    {
+     "page": "builtin-server-log-sheet",
+     "element": "inner-header"
+    },
+    {
+     "page": "builtin-server-log-sheet",
+     "element": "log-body"
+    },
+    {
+     "page": "builtin-server-setup",
+     "element": "stop-and-log"
+    },
+    {
+     "page": "development-services-logs-sheet",
+     "element": "log"
+    },
+    {
+     "page": "development-services-logs-sheet",
+     "element": "refresh-status"
+    },
+    {
+     "page": "embedded-local-agent-onboarding-block",
+     "element": "log"
+    },
+    {
+     "page": "embedded-setup-terminal",
+     "element": "log-lines"
+    },
+    {
+     "page": "embedded-setup-terminal",
+     "element": "panel-header"
+    },
+    {
+     "page": "local-agent-page",
+     "element": "live-output"
+    },
+    {
+     "page": "phone-setup-progress",
+     "element": "details"
+    },
+    {
+     "page": "shell-output",
+     "element": "shell-output-log"
+    },
+    {
+     "page": "team-phone-onboarding-failed",
+     "element": "failed-log"
+    },
+    {
+     "page": "team-phone-onboarding-steps",
+     "element": "steps-log"
+    },
+    {
+     "page": "termux-setup",
+     "element": "last-output"
+    },
+    {
+     "page": "termux-setup-failed",
+     "element": "log"
+    },
+    {
+     "page": "termux-setup-installed",
+     "element": "last-output"
+    },
+    {
+     "page": "termux-setup-installing",
+     "element": "live-output"
+    },
+    {
+     "page": "termux-storage",
+     "element": "scan-log"
+    }
+   ],
+   "count": 18
+  },
+  {
+   "name": "KitChecklist",
+   "purpose": "Staged work with person steps: status marks, one bar, estimate and cost before start, Stop/Resume, failure on its own row, folded log; compact one-line stage strip for team cycles. Promotes SetupProgressView.",
+   "api": "KitStep({required String title, required KitMarkState state, String? supporting, KitAction? personAction, KitAction? retry, Key? key}); KitChecklist({required List<KitStep> steps, KitProgress? progress, String? estimate, KitAction? stop, KitAction? resume, KitLogPanel? log, bool compact = false})",
+   "merges": [
+    "KitActionStep",
+    "KitChecklist",
+    "KitStageStrip",
+    "KitStepList",
+    "KitStepRow"
+   ],
+   "replaces": [
+    {
+     "page": "builtin-server-setup",
+     "element": "four-step-list"
+    },
+    {
+     "page": "builtin-server-setup",
+     "element": "step-primaries"
+    },
+    {
+     "page": "embedded-local-agent-onboarding-block",
+     "element": "steps"
+    },
+    {
+     "page": "embedded-mobile-task-list",
+     "element": "embedded-mobile-task-list-progress"
+    },
+    {
+     "page": "embedded-team-cycle-strip",
+     "element": "cycle-stages"
+    },
+    {
+     "page": "embedded-team-merge-section",
+     "element": "merge-checks"
+    },
+    {
+     "page": "guide",
+     "element": "guide-steps"
+    },
+    {
+     "page": "isolated-task-sheet",
+     "element": "isolated-task-sheet-progress"
+    },
+    {
+     "page": "local-agent-page",
+     "element": "install-steps"
+    },
+    {
+     "page": "local-agent-page",
+     "element": "sign-in"
+    },
+    {
+     "page": "phone-setup-progress",
+     "element": "checklist"
+    },
+    {
+     "page": "tailscale-setup",
+     "element": "tailscale-setup-step1"
+    },
+    {
+     "page": "team-phone-onboarding-steps",
+     "element": "steps-marks"
+    },
+    {
+     "page": "team-run-overview-tab",
+     "element": "team-run-stage-line"
+    },
+    {
+     "page": "termux-setup-checking",
+     "element": "progress-line"
+    },
+    {
+     "page": "termux-setup-connected",
+     "element": "steps-done"
+    },
+    {
+     "page": "termux-setup-get-termux",
+     "element": "steps"
+    },
+    {
+     "page": "work-sheet",
+     "element": "team-work-sheet-cycle"
+    }
+   ],
+   "count": 18
+  },
+  {
+   "name": "KitProgressRow",
+   "purpose": "A measured amount in a row (quota window, one download, context used, budget): automatic attention/failure tone with words, last-known age. Named by design standard section 4 but never built.",
+   "api": "KitProgressRow({required String title, required double? value, String? valueLabel, Widget? leading, AppStatusTone? tone, DateTime? asOf, VoidCallback? onTap})",
+   "merges": [
+    "KitMetric",
+    "KitProgressRow"
+   ],
+   "replaces": [
+    {
+     "page": "agent-account",
+     "element": "agent-account-limits"
+    },
+    {
+     "page": "provider-quota",
+     "element": "provider-quota-window"
+    },
+    {
+     "page": "session-context",
+     "element": "session-context-hero"
+    },
+    {
+     "page": "usage",
+     "element": "usage-total"
+    },
+    {
+     "page": "usage-hub",
+     "element": "usage-totals"
+    },
+    {
+     "page": "voice-model-setup-sheet",
+     "element": "voice-model-setup-sheet-progress"
+    }
+   ],
+   "count": 6
+  },
+  {
+   "name": "KitViewer",
+   "purpose": "One viewer for files, full code and documents: one header (name, muted LTR path, one labelled action, overflow), renderers for code/markdown/image/binary, find and wrap.",
+   "api": "enum KitViewerKind {code, markdown, text, image, binary} Future<void> showKitViewer(BuildContext context, {required String name, required KitViewerSource source, String? path, KitAction? primary, List<KitMenuItem> more = const [], bool asPage = false})",
+   "merges": [
+    "KitDocumentView",
+    "KitFileViewer"
+   ],
+   "replaces": [
+    {
+     "page": "about",
+     "element": "about-document"
+    },
+    {
+     "page": "about-open-source-tab",
+     "element": "open-source-notices"
+    },
+    {
+     "page": "about-privacy-tab",
+     "element": "privacy-policy"
+    },
+    {
+     "page": "embedded-file-preview-body",
+     "element": "embedded-file-preview-body-code"
+    },
+    {
+     "page": "file-preview-sheet",
+     "element": "file-preview-sheet-body"
+    },
+    {
+     "page": "file-preview-sheet",
+     "element": "file-preview-sheet-header"
+    },
+    {
+     "page": "files-file-viewer-sheet",
+     "element": "files-file-viewer-sheet-body"
+    },
+    {
+     "page": "files-file-viewer-sheet",
+     "element": "files-file-viewer-sheet-header"
+    },
+    {
+     "page": "markdown-code-reader",
+     "element": "markdown-code-reader"
+    },
+    {
+     "page": "voice-notices",
+     "element": "voice-notices"
+    },
+    {
+     "page": "voice-notices",
+     "element": "voice-notices-body"
+    }
+   ],
+   "count": 11
+  },
+  {
+   "name": "KitDiffView",
+   "purpose": "One diff renderer and one navigator (\"Change 1 of N\") for review, revert, run results and permission previews; unified on phones, +/- glyphs not colour only, virtualised.",
+   "api": "enum KitDiffMode {unified, split} KitDiffView({required List<KitDiffFile> files, KitDiffMode mode = KitDiffMode.unified, String? initialFile, bool selectable = false, ValueChanged<KitDiffSelection>? onComment, ValueChanged<KitDiffSelection>? onAddToPrompt, bool readOnly = true})",
+   "merges": [
+    "KitDiffView"
+   ],
+   "replaces": [
+    {
+     "page": "diff-view",
+     "element": "diff-view-body"
+    },
+    {
+     "page": "review-workspace",
+     "element": "review-workspace-diff"
+    },
+    {
+     "page": "review-workspace",
+     "element": "review-workspace-file-header"
+    },
+    {
+     "page": "review-workspace",
+     "element": "review-workspace-file-strip"
+    },
+    {
+     "page": "review-workspace",
+     "element": "review-workspace-hunk-nav"
+    },
+    {
+     "page": "review-workspace",
+     "element": "review-workspace-selection-bar"
+    }
+   ],
+   "count": 6
+  },
+  {
+   "name": "KitReceipt",
+   "purpose": "The fate of every write the phone sends (answer, message, move, stop, merge, automatic action): sending, sent, confirmed, not confirmed with Retry, refused with reason; Undo where allowed.",
+   "api": "enum KitReceiptState {sending, sent, confirmed, notConfirmed, refused} KitReceipt({required KitReceiptState state, String? reason, DateTime? at, VoidCallback? onRetry, VoidCallback? onUndo, bool automatic = false}); static InlineSpan KitReceipt.span(BuildContext, KitReceiptState, {String? reason})",
+   "merges": [
+    "KitReceipt"
+   ],
+   "replaces": [
+    {
+     "page": "chat",
+     "element": "chat-note-receipt-dismiss"
+    },
+    {
+     "page": "embedded-team-receipt-chip",
+     "element": "receipt"
+    },
+    {
+     "page": "team-home-needs-you-tab",
+     "element": "receipt"
+    }
+   ],
+   "count": 3
+  },
+  {
+   "name": "KitUndo",
+   "purpose": "The only snackbar: done-with-undo, one at a time, 8 s window, persistent under accessible navigation, above the dock and composer.",
+   "api": "void showKitUndo(BuildContext context, {required String message, required VoidCallback onUndo, VoidCallback? onCommit, String? undoLabel, Key? key}); static const Duration KitUndo.window = Duration(seconds: 8)",
+   "merges": [
+    "KitUndoSnackbar"
+   ],
+   "replaces": [
+    {
+     "page": "workspace",
+     "element": "workspace-archive-undo"
+    }
+   ],
+   "count": 1
+  },
+  {
+   "name": "KitTopBar",
+   "purpose": "The screen's header from design standard section 1: title in the person's words, one-line state subtitle, switcher title, at most one icon action plus overflow, grows at 200 % text.",
+   "api": "class KitTopBar extends StatelessWidget implements PreferredSizeWidget {KitTopBar({required String title, String? subtitle, AppStatusTone? subtitleTone, VoidCallback? onTitleTap, KitIconButton? action, List<KitMenuItem> menu = const [], int needsYou = 0, bool brand = false, Widget? leading});}",
+   "merges": [
+    "KitBrandHeader",
+    "KitProjectHeader",
+    "KitShellHeader",
+    "KitTopBar"
+   ],
+   "replaces": [
+    {
+     "page": "about",
+     "element": "about-title"
+    },
+    {
+     "page": "activity",
+     "element": "activity-header"
+    },
+    {
+     "page": "builtin-server-setup",
+     "element": "title-and-duplicate-heading"
+    },
+    {
+     "page": "chat",
+     "element": "chat-appbar-title"
+    },
+    {
+     "page": "demo",
+     "element": "demo-header"
+    },
+    {
+     "page": "diff-view",
+     "element": "diff-view-header"
+    },
+    {
+     "page": "files",
+     "element": "files-back-bar"
+    },
+    {
+     "page": "home-shell",
+     "element": "home-shell-server-switcher"
+    },
+    {
+     "page": "project-hub",
+     "element": "project-hub-files-back"
+    },
+    {
+     "page": "prompt-editor",
+     "element": "prompt-editor"
+    },
+    {
+     "page": "prompt-editor",
+     "element": "prompt-editor-done"
+    },
+    {
+     "page": "servers",
+     "element": "brand-header"
+    },
+    {
+     "page": "servers-welcome",
+     "element": "brand-header"
+    },
+    {
+     "page": "settings",
+     "element": "settings-header"
+    },
+    {
+     "page": "shell-output",
+     "element": "shell-output-title"
+    },
+    {
+     "page": "team-board",
+     "element": "team-board-project"
+    },
+    {
+     "page": "team-conversation",
+     "element": "team-conversation-title"
+    },
+    {
+     "page": "team-run",
+     "element": "team-run-appbar"
+    },
+    {
+     "page": "team-run-overview-tab",
+     "element": "overview-objective"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-project-header"
+    }
+   ],
+   "count": 20
+  },
+  {
+   "name": "KitJumpPill",
+   "purpose": "The floating \"N new · Jump to latest\" pill on transcripts, team output and logs, on KitGlass with KitMotion timings.",
+   "api": "KitJumpPill({required String label, required VoidCallback onPressed, required bool visible, IconData icon = AppIconography.arrowDown})",
+   "merges": [
+    "KitJumpPill"
+   ],
+   "replaces": [
+    {
+     "page": "chat",
+     "element": "chat-earlier-messages-pill"
+    },
+    {
+     "page": "chat",
+     "element": "chat-jump-to-latest"
+    },
+    {
+     "page": "embedded-message-view",
+     "element": "embedded-message-view-jump-to-latest"
+    },
+    {
+     "page": "team-agent-output",
+     "element": "team-agent-output-jump"
+    },
+    {
+     "page": "team-run-timeline-tab",
+     "element": "team-run-timeline-jump"
+    }
+   ],
+   "count": 5
+  },
+  {
+   "name": "KitTerm",
+   "purpose": "An inline term with an in-place tooltip explanation and a 48 dp hit area; replaces the info-label page.",
+   "api": "KitTerm(String term, {required String explanation, KitAction? learnMore, TextStyle? style})",
+   "merges": [
+    "KitTerm"
+   ],
+   "replaces": [
+    {
+     "page": "embedded-info-label",
+     "element": "embedded-info-label-term"
+    },
+    {
+     "page": "info-label-sheet",
+     "element": "info-label-sheet"
+    }
+   ],
+   "count": 2
+  },
+  {
+   "name": "KitNeedsYou",
+   "purpose": "The one \"needs you\" marker fed by one attention source: row mark, supporting-line word, and count badge for tabs, headers and server rows.",
+   "api": "abstract final class KitNeedsYou {static Widget mark(); static TextSpan span(BuildContext context, {int count = 1}); static Widget badge({required int count, required Widget child});}",
+   "merges": [
+    "KitBadge"
+   ],
+   "replaces": [
+    {
+     "page": "activity",
+     "element": "activity-permission-row"
+    },
+    {
+     "page": "activity",
+     "element": "activity-question-row"
+    },
+    {
+     "page": "activity",
+     "element": "activity-saved-servers-row"
+    },
+    {
+     "page": "activity",
+     "element": "activity-team-gate-row"
+    },
+    {
+     "page": "chat",
+     "element": "chat-appbar-running-work"
+    },
+    {
+     "page": "embedded-profile-monitor-inbox",
+     "element": "embedded-profile-monitor-inbox-request-row"
+    },
+    {
+     "page": "embedded-profile-monitor-inbox",
+     "element": "embedded-profile-monitor-inbox-summary"
+    },
+    {
+     "page": "home-shell",
+     "element": "home-shell-badge"
+    },
+    {
+     "page": "profile-monitor",
+     "element": "profile-monitor-request-row"
+    }
+   ],
+   "count": 9
+  }
+ ],
+ "changed": [
+  {
+   "name": "KitRequestCard",
+   "change": "Becomes the one answer card for OC1 permissions/questions, OC2 forms, choices blocks, AI Team gates and external-task replies: kind, who (agent + server), in-place common answer (Allow once/Reject, single choice with Undo, Something else field), phases waiting/sending/answered/answeredElsewhere/expired with an \"answer received\" collapsed row and KitReceipt, since escalation, Details via showKitRequestSheet (KitSheet + RequestRoutes). Always allow moves into the sheet as a risk-scoped switch.",
+   "why": "Three card classes, TeamNeedsYouCard, a Markdown choice-row copy and four sheets answer the same thing differently; chat answers have no receipt; the work line says Running tools while a request waits.",
+   "replaces": [
+    {
+     "page": "integrations",
+     "element": "pending-tiles"
+    },
+    {
+     "page": "question-sheet",
+     "element": "question-sheet-dismiss"
+    }
+   ]
+  },
+  {
+   "name": "KitStateView",
+   "change": "Gains KitStateView.missing(capability, title, why, enable, cost) for the whenMissing modes explains / offers-enable; since + onSlow 8 s escalation inside the kit; error tone adds Copy details and Report a problem (network errors get Retry/Switch server); details slot becomes KitDetailsFold with kit-level l10n keys; ProductErrorState/ProductEmptyState/ProductInlineEmpty become wrappers, then are removed.",
+   "why": "The map gates 285 capabilities as hidden and only 18 as offers-enable; every screen hand-rolls the 8 s rule; the old shared states still render 8 map elements.",
+   "replaces": [
+    {
+     "page": "bootstrap-gate",
+     "element": "bootstrap-gate-failure"
+    },
+    {
+     "page": "demo",
+     "element": "demo-empty"
+    },
+    {
+     "page": "embedded-product-states",
+     "element": "embedded-product-states-empty-action"
+    },
+    {
+     "page": "embedded-product-states",
+     "element": "embedded-product-states-error-retry"
+    },
+    {
+     "page": "embedded-product-states",
+     "element": "embedded-product-states-gated-row"
+    },
+    {
+     "page": "external-agents",
+     "element": "external-agents-empty"
+    },
+    {
+     "page": "files",
+     "element": "files-symbols-hint"
+    },
+    {
+     "page": "files-file-viewer-sheet",
+     "element": "files-file-viewer-sheet-error"
+    },
+    {
+     "page": "isolated-task-sheet",
+     "element": "isolated-task-sheet-failure"
+    },
+    {
+     "page": "pairing-scanner",
+     "element": "pairing-scanner-recovery"
+    },
+    {
+     "page": "prompt-stash-sheet",
+     "element": "prompt-stash-sheet-empty"
+    },
+    {
+     "page": "provider-quota",
+     "element": "provider-quota-setup"
+    },
+    {
+     "page": "review-workspace",
+     "element": "review-workspace-empty-error"
+    },
+    {
+     "page": "running-work-sheet",
+     "element": "running-work-sheet-empty"
+    },
+    {
+     "page": "saved-permissions",
+     "element": "saved-permissions-error"
+    },
+    {
+     "page": "session-context",
+     "element": "session-context-states"
+    },
+    {
+     "page": "session-relations",
+     "element": "session-relations-states"
+    },
+    {
+     "page": "termux-processes",
+     "element": "termux-procs-empty"
+    },
+    {
+     "page": "termux-setup-failed",
+     "element": "failure-line"
+    },
+    {
+     "page": "termux-storage",
+     "element": "termux-storage-intro"
+    },
+    {
+     "page": "todos-sheet",
+     "element": "todos-sheet-empty"
+    },
+    {
+     "page": "todos-sheet",
+     "element": "todos-sheet-error"
+    },
+    {
+     "page": "worktrees",
+     "element": "worktrees-empty-create"
+    }
+   ]
+  },
+  {
+   "name": "KitStatusLine",
+   "change": "Gains since/onSlow escalation, a next line (the team Now line), KitStatusLine.of(status) mapping one status source to words, and a KitScreen slot enforcing one per screen; replaces MaterialBanner and the update/release snackbars.",
+   "why": "Four implementations and three wordings of connection status; banners and snackbars stand in for status lines.",
+   "replaces": [
+    {
+     "page": "chat",
+     "element": "chat-auto-approval-indicator"
+    },
+    {
+     "page": "demo",
+     "element": "demo-disclaimer"
+    },
+    {
+     "page": "desktop-release-notice",
+     "element": "desktop-release-notice-snackbar"
+    },
+    {
+     "page": "development-services",
+     "element": "unsupported-paragraph"
+    },
+    {
+     "page": "embedded-auto-approval-indicator",
+     "element": "embedded-auto-approval-indicator-open"
+    },
+    {
+     "page": "embedded-product-states",
+     "element": "embedded-product-states-refresh-retry"
+    },
+    {
+     "page": "embedded-team-phone-section",
+     "element": "phone-status"
+    },
+    {
+     "page": "embedded-termux-attention-line",
+     "element": "line"
+    },
+    {
+     "page": "external-task",
+     "element": "external-task-status"
+    },
+    {
+     "page": "files",
+     "element": "files-status-notice"
+    },
+    {
+     "page": "model-picker-sheet",
+     "element": "model-footer"
+    },
+    {
+     "page": "model-picker-sheet-options-dialog",
+     "element": "options-capabilities"
+    },
+    {
+     "page": "phone-setup-customize-sheet",
+     "element": "totals"
+    },
+    {
+     "page": "review-workspace",
+     "element": "review-workspace-refresh-banner"
+    },
+    {
+     "page": "session-link-server-missing-banner",
+     "element": "session-link-server-missing-banner-banner"
+    },
+    {
+     "page": "session-link-server-missing-banner",
+     "element": "session-link-server-missing-banner-dismiss"
+    },
+    {
+     "page": "session-link-server-missing-banner",
+     "element": "session-link-server-missing-banner-open-servers"
+    },
+    {
+     "page": "settings",
+     "element": "library-search-summary"
+    },
+    {
+     "page": "share-session-failed-banner",
+     "element": "share-session-failed-banner-banner"
+    },
+    {
+     "page": "share-session-failed-banner",
+     "element": "share-session-failed-banner-retry"
+    },
+    {
+     "page": "shorebird-update-notice",
+     "element": "shorebird-update-notice-got-it"
+    },
+    {
+     "page": "shorebird-update-notice",
+     "element": "shorebird-update-notice-receiving"
+    },
+    {
+     "page": "team-agent",
+     "element": "team-agent-header"
+    },
+    {
+     "page": "team-conversation",
+     "element": "team-conversation-now"
+    },
+    {
+     "page": "team-home",
+     "element": "team-now-line"
+    },
+    {
+     "page": "team-plugin-sheet",
+     "element": "team-sheet-status"
+    },
+    {
+     "page": "terminal",
+     "element": "terminal-refresh-banner"
+    },
+    {
+     "page": "terminal-surface",
+     "element": "terminal-surface-status"
+    },
+    {
+     "page": "termux-processes",
+     "element": "summary"
+    },
+    {
+     "page": "tools",
+     "element": "counters"
+    }
+   ]
+  },
+  {
+   "name": "KitNotice",
+   "change": "Gains KitNotice.cost (the KitCostLine: memory, battery, disk before any install or turn-on); absorbs NudgeCard, _Notice, _FileStatusNotice and discovery cards.",
+   "why": "Battery-heat vertical: costs are unstated; notices are drawn five ways.",
+   "replaces": [
+    {
+     "page": "app-diagnostics",
+     "element": "diagnostics-intro"
+    },
+    {
+     "page": "attention-overview",
+     "element": "attention-overview-disclaimer"
+    },
+    {
+     "page": "catalog",
+     "element": "basic-catalog-banner"
+    },
+    {
+     "page": "chat",
+     "element": "chat-draft-error"
+    },
+    {
+     "page": "chat",
+     "element": "chat-first-reply-notify"
+    },
+    {
+     "page": "chat",
+     "element": "chat-staged-revert-review"
+    },
+    {
+     "page": "connection-help",
+     "element": "connection-help-verdict"
+    },
+    {
+     "page": "credential-management-sheet",
+     "element": "unknown-notice"
+    },
+    {
+     "page": "embedded-session-inventory-footer",
+     "element": "embedded-session-inventory-footer-reload"
+    },
+    {
+     "page": "integrations",
+     "element": "legacy-notice"
+    },
+    {
+     "page": "legacy-drafts",
+     "element": "legacy-intro"
+    },
+    {
+     "page": "local-agent-page",
+     "element": "battery-warning"
+    },
+    {
+     "page": "model-picker-sheet",
+     "element": "basic-catalog-notice"
+    },
+    {
+     "page": "model-picker-sheet",
+     "element": "picker-unloaded-providers"
+    },
+    {
+     "page": "notifications-settings",
+     "element": "notifications-footer"
+    },
+    {
+     "page": "server-capabilities",
+     "element": "capabilities-intro"
+    },
+    {
+     "page": "system",
+     "element": "undeliverable-snackbar"
+    },
+    {
+     "page": "terminal-surface",
+     "element": "terminal-surface-error"
+    },
+    {
+     "page": "termux-setup",
+     "element": "explanation"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-nudge-pin-got-it"
+    }
+   ]
+  },
+  {
+   "name": "KitRow",
+   "change": "Gains KitRow.unavailable(reason, enable) (the KitCapabilityRow), a server label for multi-server rows, swipe: KitSwipeAction (SwipeDeleteBackground moves in; always Undo, always mirrored in the row menu); destructive rows last after a divider.",
+   "why": "193 ListTile-family sites (147 plain) and the hidden-by-default capability gates.",
+   "replaces": [
+    {
+     "page": "about-open-source-tab",
+     "element": "open-source-summary"
+    },
+    {
+     "page": "active-context",
+     "element": "active-context-tile"
+    },
+    {
+     "page": "activity",
+     "element": "activity-background-hint"
+    },
+    {
+     "page": "activity",
+     "element": "activity-digests-toggle"
+    },
+    {
+     "page": "activity",
+     "element": "activity-running-row"
+    },
+    {
+     "page": "app-diagnostics",
+     "element": "diagnostic-entry"
+    },
+    {
+     "page": "app-diagnostics",
+     "element": "perf-slowest-steps"
+    },
+    {
+     "page": "appearance-settings",
+     "element": "appearance-language-row"
+    },
+    {
+     "page": "capabilities",
+     "element": "capabilities-command-row"
+    },
+    {
+     "page": "chat-message-actions-sheet",
+     "element": "chat-message-actions-sheet-copy"
+    },
+    {
+     "page": "chat-message-actions-sheet",
+     "element": "chat-message-actions-sheet-delete"
+    },
+    {
+     "page": "chat-message-actions-sheet",
+     "element": "chat-message-actions-sheet-fork"
+    },
+    {
+     "page": "chat-message-actions-sheet",
+     "element": "chat-message-actions-sheet-read-aloud"
+    },
+    {
+     "page": "chat-message-actions-sheet",
+     "element": "chat-message-actions-sheet-revert"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "element": "command-launcher-sheet-agent-row"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "element": "command-launcher-sheet-command-row"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "element": "command-launcher-sheet-search-result"
+    },
+    {
+     "page": "command-palette-dialog",
+     "element": "command-palette-dialog-row"
+    },
+    {
+     "page": "commands",
+     "element": "command-row"
+    },
+    {
+     "page": "external-agents",
+     "element": "external-agents-row"
+    },
+    {
+     "page": "files",
+     "element": "files-changes-card"
+    },
+    {
+     "page": "files",
+     "element": "files-row"
+    },
+    {
+     "page": "files-changes-sheet",
+     "element": "files-changes-sheet-file"
+    },
+    {
+     "page": "files-row-actions-sheet",
+     "element": "files-row-actions-sheet-item"
+    },
+    {
+     "page": "gate-sheet",
+     "element": "gate-work-chip"
+    },
+    {
+     "page": "global-sessions",
+     "element": "global-sessions-row"
+    },
+    {
+     "page": "guide",
+     "element": "guide-advanced"
+    },
+    {
+     "page": "guide",
+     "element": "guide-connection-help"
+    },
+    {
+     "page": "host-management",
+     "element": "host-management-facts"
+    },
+    {
+     "page": "integrations",
+     "element": "mcp-row"
+    },
+    {
+     "page": "integrations",
+     "element": "provider-row"
+    },
+    {
+     "page": "integrations-connect-method-sheet",
+     "element": "method-rows"
+    },
+    {
+     "page": "legacy-drafts",
+     "element": "legacy-draft-row"
+    },
+    {
+     "page": "manage-project",
+     "element": "manage-project-header"
+    },
+    {
+     "page": "manage-project",
+     "element": "manage-project-rows"
+    },
+    {
+     "page": "managed-workspaces",
+     "element": "managed-workspaces-adapters"
+    },
+    {
+     "page": "managed-workspaces",
+     "element": "managed-workspaces-tile"
+    },
+    {
+     "page": "model-picker-sheet",
+     "element": "model-row"
+    },
+    {
+     "page": "phone-setup-start",
+     "element": "phone-setup-start-other-ways"
+    },
+    {
+     "page": "profile-monitor",
+     "element": "profile-monitor-server"
+    },
+    {
+     "page": "project-health",
+     "element": "project-health-rows"
+    },
+    {
+     "page": "project-hub",
+     "element": "project-hub-context"
+    },
+    {
+     "page": "project-hub",
+     "element": "project-hub-tool-row"
+    },
+    {
+     "page": "projects",
+     "element": "projects-open-folder"
+    },
+    {
+     "page": "projects",
+     "element": "projects-project-tile"
+    },
+    {
+     "page": "prompt-history-sheet",
+     "element": "prompt-history-sheet-prompt-row"
+    },
+    {
+     "page": "prompt-stash-sheet",
+     "element": "prompt-stash-sheet-row"
+    },
+    {
+     "page": "prompt-tools-sheet",
+     "element": "prompt-tools-sheet-advanced"
+    },
+    {
+     "page": "prompt-tools-sheet",
+     "element": "prompt-tools-sheet-clear"
+    },
+    {
+     "page": "prompt-tools-sheet",
+     "element": "prompt-tools-sheet-prompts"
+    },
+    {
+     "page": "prompt-tools-sheet",
+     "element": "prompt-tools-sheet-rows"
+    },
+    {
+     "page": "references",
+     "element": "reference-row"
+    },
+    {
+     "page": "run-result",
+     "element": "run-result-rows"
+    },
+    {
+     "page": "run-result",
+     "element": "run-result-summary"
+    },
+    {
+     "page": "running-work-sheet",
+     "element": "running-work-sheet-agent"
+    },
+    {
+     "page": "running-work-sheet",
+     "element": "running-work-sheet-shell"
+    },
+    {
+     "page": "saved-permissions",
+     "element": "saved-permission-row"
+    },
+    {
+     "page": "server-capabilities",
+     "element": "capability-row"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-add"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-manage"
+    },
+    {
+     "page": "session-approvals-sheet",
+     "element": "session-approvals-sheet-log"
+    },
+    {
+     "page": "session-import",
+     "element": "session-import-destination"
+    },
+    {
+     "page": "session-menu-sheet",
+     "element": "session-menu-sheet-actions"
+    },
+    {
+     "page": "session-menu-sheet",
+     "element": "session-menu-sheet-actions-expander"
+    },
+    {
+     "page": "session-menu-sheet",
+     "element": "session-menu-sheet-display-expander"
+    },
+    {
+     "page": "session-menu-sheet",
+     "element": "session-menu-sheet-go-to-chips"
+    },
+    {
+     "page": "session-relations",
+     "element": "session-relations-row"
+    },
+    {
+     "page": "skills",
+     "element": "skill-row"
+    },
+    {
+     "page": "staged-revert",
+     "element": "staged-revert-file-row"
+    },
+    {
+     "page": "staged-revert",
+     "element": "staged-revert-prompt"
+    },
+    {
+     "page": "start-run-sheet",
+     "element": "start-planner"
+    },
+    {
+     "page": "tailscale-setup",
+     "element": "tailscale-setup-help"
+    },
+    {
+     "page": "terminal",
+     "element": "terminal-process-row"
+    },
+    {
+     "page": "termux-processes",
+     "element": "process-row"
+    },
+    {
+     "page": "termux-storage",
+     "element": "category-rows"
+    },
+    {
+     "page": "timeline-sheet",
+     "element": "timeline-sheet-row"
+    },
+    {
+     "page": "todos-sheet",
+     "element": "todos-sheet-todo-row"
+    },
+    {
+     "page": "tools",
+     "element": "model-header"
+    },
+    {
+     "page": "tools",
+     "element": "tool-row"
+    },
+    {
+     "page": "web-sources",
+     "element": "web-paste"
+    },
+    {
+     "page": "web-sources",
+     "element": "web-result"
+    },
+    {
+     "page": "work-sheet",
+     "element": "work-dependency-chip"
+    },
+    {
+     "page": "workspace-archived-sheet",
+     "element": "workspace-archived-sheet-row"
+    },
+    {
+     "page": "workspace-context-sheet",
+     "element": "workspace-context-sheet-header"
+    },
+    {
+     "page": "workspace-context-sheet",
+     "element": "workspace-context-sheet-local"
+    },
+    {
+     "page": "workspace-context-sheet",
+     "element": "workspace-context-sheet-manage-project"
+    },
+    {
+     "page": "workspace-context-sheet",
+     "element": "workspace-context-sheet-switch-project"
+    },
+    {
+     "page": "workspace-context-sheet",
+     "element": "workspace-context-sheet-workspace"
+    },
+    {
+     "page": "worktrees",
+     "element": "worktrees-primary-tile"
+    },
+    {
+     "page": "worktrees",
+     "element": "worktrees-tile"
+    }
+   ]
+  },
+  {
+   "name": "KitSwitchRow",
+   "change": "Gains risk: KitRisk(scope, until) for risky switches (scope line, duration, status line while on) and locked: \"Always included\" instead of a grey-on switch.",
+   "why": "Server-wide auto-approve has no scope or expiry; disabled-on switches read as off.",
+   "replaces": [
+    {
+     "page": "embedded-transcript-display-toggles",
+     "element": "embedded-transcript-display-toggles"
+    },
+    {
+     "page": "mcp-setup",
+     "element": "detect-oauth"
+    },
+    {
+     "page": "notifications-settings",
+     "element": "notifications-toggle"
+    },
+    {
+     "page": "phone-setup-customize-sheet",
+     "element": "optional-switch"
+    },
+    {
+     "page": "phone-setup-customize-sheet",
+     "element": "required-switches"
+    },
+    {
+     "page": "privacy-settings",
+     "element": "share-session-views"
+    },
+    {
+     "page": "provider-quota",
+     "element": "provider-quota-consent"
+    },
+    {
+     "page": "session-approvals-sheet",
+     "element": "session-approvals-sheet-inherit-switch"
+    },
+    {
+     "page": "session-approvals-sheet",
+     "element": "session-approvals-sheet-server-switch"
+    },
+    {
+     "page": "session-export",
+     "element": "session-export-redact"
+    },
+    {
+     "page": "session-menu-sheet",
+     "element": "session-menu-sheet-display-toggles"
+    },
+    {
+     "page": "settings-transcript-display-sheet",
+     "element": "transcript-toggles"
+    },
+    {
+     "page": "shell-output",
+     "element": "shell-output-follow"
+    },
+    {
+     "page": "skill-activation-sheet",
+     "element": "run-now"
+    },
+    {
+     "page": "stage-revert-sheet",
+     "element": "stage-revert-sheet-apply-files"
+    },
+    {
+     "page": "team-agent-output",
+     "element": "team-agent-output-follow"
+    },
+    {
+     "page": "team-home-runs-tab",
+     "element": "team-home-upkeep-toggle"
+    }
+   ]
+  },
+  {
+   "name": "KitAction / KitActionBlock / KitActionStack",
+   "change": "KitAction.disabledReason rendered under the button; KitActionBlock switches to the stacked layout when any tertiary is destructive; asserts one primary per block and (debug) one per screen.",
+   "why": "Makes \"a disabled button needs a visible reason\" and \"destructive never beside a frequent action\" structural.",
+   "replaces": [
+    {
+     "page": "add-agent",
+     "element": "add-agent-inspect"
+    },
+    {
+     "page": "add-agent",
+     "element": "add-agent-save"
+    },
+    {
+     "page": "appearance-picker-sheet",
+     "element": "appearance-apply"
+    },
+    {
+     "page": "attention-overview",
+     "element": "attention-overview-open-profile"
+    },
+    {
+     "page": "bootstrap-gate",
+     "element": "bootstrap-gate-retry"
+    },
+    {
+     "page": "builtin-server-setup",
+     "element": "remove-ubuntu"
+    },
+    {
+     "page": "catalog",
+     "element": "choice-bar"
+    },
+    {
+     "page": "chat",
+     "element": "chat-background-running-work"
+    },
+    {
+     "page": "chat",
+     "element": "chat-load-older"
+    },
+    {
+     "page": "command-auth-sheet",
+     "element": "check-status"
+    },
+    {
+     "page": "command-auth-sheet",
+     "element": "start"
+    },
+    {
+     "page": "connection-help",
+     "element": "connection-help-explain"
+    },
+    {
+     "page": "context-capsule",
+     "element": "context-capsule-add"
+    },
+    {
+     "page": "continue-on-computer-sheet",
+     "element": "continue-on-computer-export"
+    },
+    {
+     "page": "credential-management-sheet",
+     "element": "account-actions"
+    },
+    {
+     "page": "credential-management-sheet",
+     "element": "refresh"
+    },
+    {
+     "page": "demo",
+     "element": "demo-set-up-server"
+    },
+    {
+     "page": "development-services",
+     "element": "remove-configuration"
+    },
+    {
+     "page": "development-services",
+     "element": "service-buttons"
+    },
+    {
+     "page": "embedded-local-agent-onboarding-block",
+     "element": "needs-ubuntu-refresh"
+    },
+    {
+     "page": "embedded-local-agent-onboarding-block",
+     "element": "try-again"
+    },
+    {
+     "page": "embedded-mobile-task-list",
+     "element": "embedded-mobile-task-list-copy-all"
+    },
+    {
+     "page": "embedded-product-states",
+     "element": "embedded-product-states-error-report-bug"
+    },
+    {
+     "page": "embedded-team-cycle-strip",
+     "element": "team-cycle-action-nudge"
+    },
+    {
+     "page": "embedded-team-cycle-strip",
+     "element": "team-cycle-action-output"
+    },
+    {
+     "page": "embedded-team-cycle-strip",
+     "element": "team-cycle-action-stop"
+    },
+    {
+     "page": "embedded-team-discovery-card",
+     "element": "discovery-turn-on"
+    },
+    {
+     "page": "embedded-team-phone-section",
+     "element": "phone-delete"
+    },
+    {
+     "page": "embedded-team-phone-section",
+     "element": "phone-refresh"
+    },
+    {
+     "page": "embedded-team-phone-section",
+     "element": "phone-start-again"
+    },
+    {
+     "page": "embedded-team-phone-section",
+     "element": "phone-stop"
+    },
+    {
+     "page": "embedded-team-planning-card",
+     "element": "planning-dismiss"
+    },
+    {
+     "page": "external-agent-detail",
+     "element": "external-agent-detail-delete"
+    },
+    {
+     "page": "external-agents",
+     "element": "external-agents-add"
+    },
+    {
+     "page": "external-task",
+     "element": "external-task-actions"
+    },
+    {
+     "page": "files-changes-sheet",
+     "element": "files-changes-sheet-review-all"
+    },
+    {
+     "page": "host-management",
+     "element": "host-management-docs"
+    },
+    {
+     "page": "isolated-task-sheet",
+     "element": "isolated-task-sheet-start"
+    },
+    {
+     "page": "isolated-task-sheet",
+     "element": "isolated-task-sheet-stop-waiting"
+    },
+    {
+     "page": "legacy-drafts-review-sheet",
+     "element": "legacy-delete"
+    },
+    {
+     "page": "local-agent-page",
+     "element": "offer-actions"
+    },
+    {
+     "page": "local-agent-project-sheet",
+     "element": "continue"
+    },
+    {
+     "page": "managed-workspaces",
+     "element": "managed-workspaces-create"
+    },
+    {
+     "page": "mcp-setup",
+     "element": "save"
+    },
+    {
+     "page": "model-picker-sheet",
+     "element": "model-picker-apply-bar"
+    },
+    {
+     "page": "project-health",
+     "element": "project-health-git-init"
+    },
+    {
+     "page": "projects",
+     "element": "projects-project-rename"
+    },
+    {
+     "page": "run-result",
+     "element": "run-result-open"
+    },
+    {
+     "page": "running-work-sheet",
+     "element": "running-work-sheet-run-in-background"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-disconnect"
+    },
+    {
+     "page": "session-export",
+     "element": "session-export-save"
+    },
+    {
+     "page": "session-import",
+     "element": "session-import-submit"
+    },
+    {
+     "page": "session-note",
+     "element": "session-note-remove"
+    },
+    {
+     "page": "session-note",
+     "element": "session-note-save"
+    },
+    {
+     "page": "shell-output",
+     "element": "shell-output-stop"
+    },
+    {
+     "page": "shell-output",
+     "element": "shell-output-timeout"
+    },
+    {
+     "page": "skill-activation-sheet",
+     "element": "add"
+    },
+    {
+     "page": "staged-revert",
+     "element": "staged-revert-actions"
+    },
+    {
+     "page": "tailscale-setup",
+     "element": "tailscale-setup-primaries"
+    },
+    {
+     "page": "team-board",
+     "element": "team-board-add"
+    },
+    {
+     "page": "team-host-sheet",
+     "element": "host-submit"
+    },
+    {
+     "page": "team-phone-onboarding-failed",
+     "element": "failed-retry"
+    },
+    {
+     "page": "team-phone-onboarding-killed",
+     "element": "killed-start-again"
+    },
+    {
+     "page": "team-phone-onboarding-offer",
+     "element": "offer-set-up"
+    },
+    {
+     "page": "team-phone-onboarding-offer",
+     "element": "offer-skip"
+    },
+    {
+     "page": "team-phone-onboarding-success",
+     "element": "success-open-work"
+    },
+    {
+     "page": "team-plugin-sheet",
+     "element": "team-sheet-add"
+    },
+    {
+     "page": "team-plugin-sheet",
+     "element": "team-sheet-turn-off"
+    },
+    {
+     "page": "terminal",
+     "element": "terminal-new-fab"
+    },
+    {
+     "page": "termux-processes",
+     "element": "stop-all"
+    },
+    {
+     "page": "termux-processes-details-sheet",
+     "element": "stop"
+    },
+    {
+     "page": "termux-storage",
+     "element": "clean"
+    },
+    {
+     "page": "theme-pack-preview-sheet",
+     "element": "theme-apply"
+    },
+    {
+     "page": "web-sources",
+     "element": "web-refresh-providers"
+    },
+    {
+     "page": "web-sources",
+     "element": "web-search"
+    },
+    {
+     "page": "web-sources",
+     "element": "web-use-selected"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-isolated-task"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-section-menu"
+    },
+    {
+     "page": "worktrees",
+     "element": "worktrees-create"
+    }
+   ]
+  },
+  {
+   "name": "KitProgress",
+   "change": "Gains KitProgress.staged(step, of, label, eta); jobs over 30 s must use staged or known with a caption.",
+   "why": "Honest-state vertical: long jobs need stages and an estimate.",
+   "replaces": [
+    {
+     "page": "project-folder-open-dialog",
+     "element": "project-folder-open-dialog-progress"
+    }
+   ]
+  },
+  {
+   "name": "KitStatusMark / KitTaskMark",
+   "change": "KitStatusMark reads KitMotion.reduced (today only MediaQuery, so Animations: Off is ignored); new KitMarkState.paused; KitTaskMark.needsYou is what KitNeedsYou.mark returns.",
+   "why": "The only kit part that ignores the Effects choice; heat pause and force-stop resume have no mark.",
+   "replaces": []
+  },
+  {
+   "name": "KitTabSwitcher",
+   "change": "Gains KitTabSwitcher.tabs with a tab strip (labels, counts, needs-you dot with its count).",
+   "why": "Raw TabBars on six pages and TeamBoardTabs; the switcher has no strip.",
+   "replaces": [
+    {
+     "page": "about",
+     "element": "about-tabs"
+    },
+    {
+     "page": "capabilities",
+     "element": "capabilities-tabs"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "element": "command-launcher-sheet-tabs"
+    },
+    {
+     "page": "model-picker-sheet",
+     "element": "model-tabs"
+    },
+    {
+     "page": "team-board",
+     "element": "team-board-tabs"
+    },
+    {
+     "page": "team-run",
+     "element": "team-run-tabs"
+    },
+    {
+     "page": "usage-hub",
+     "element": "usage-tabs"
+    }
+   ]
+  },
+  {
+   "name": "KitExpandRow",
+   "change": "Can be controlled (expanded, onExpansionChanged) so every ExpansionTile moves to it.",
+   "why": "18 ExpansionTile sites.",
+   "replaces": []
+  },
+  {
+   "name": "KitScreen",
+   "change": "Gains topBar (KitTopBar), search (KitSearchField) and status (one KitStatusLine) slots; publishes bottom padding for KitUndo and KitJumpPill; lifts bottom above the keyboard.",
+   "why": "Screens pad and stack headers by hand.",
+   "replaces": []
+  },
+  {
+   "name": "KitHaptics",
+   "change": "Gains commit(context) for a confirmed stop/destructive/discard act, obeying Settings > Vibration.",
+   "why": "Two raw HapticFeedback.mediumImpact calls (confirm_sheet.dart, chat_screen.dart:3749) ignore the Vibration choice.",
+   "replaces": []
+  },
+  {
+   "name": "showConfirmSheet and absorbed widgets",
+   "change": "showConfirmSheet becomes a deprecated wrapper over showKitConfirm, then is deleted; SetupProgressView, TeamTechnicalValue, both TeamReceiptChip, AgentCommandBlock, FilePreviewBody frame, DiffView, QuestionOptionRow, InfoLabel, ProductRefreshBody, NudgeCard, TeamComposerField are absorbed and deleted; kit.dart doc table lists every part.",
+   "why": "One place per job; the kit is the only library screens import for these.",
+   "replaces": []
+  }
+ ],
+ "existingAdoption": {
+  "KitActionBlock": 79,
+  "KitLoadingBar": 11,
+  "KitNotice": 20,
+  "KitPanel": 18,
+  "KitProgress": 1,
+  "KitRequestCard": 2,
+  "KitRow": 90,
+  "KitRowMenu": 11,
+  "KitSkeletonRows": 1,
+  "KitStateView": 23,
+  "KitStatusLine": 30,
+  "KitSwitchRow": 17,
+  "KitTabSwitcher": 7,
+  "SectionLabel": 5
+ },
+ "notInKit": {
+  "chat transcript": {
+   "why": "Single-owner chat library; the team conversation reuses it",
+   "elements": [
+    {
+     "page": "chat",
+     "element": "embedded-message-view"
+    },
+    {
+     "page": "embedded-message-view",
+     "element": "embedded-message-view-prompt"
+    },
+    {
+     "page": "embedded-message-view",
+     "element": "embedded-message-view-tool-group-toggle"
+    },
+    {
+     "page": "embedded-message-view",
+     "element": "embedded-message-view-reasoning-toggle"
+    },
+    {
+     "page": "embedded-voice-conversation-controls",
+     "element": "embedded-voice-conversation-controls"
+    },
+    {
+     "page": "embedded-completion-digest-card",
+     "element": "embedded-completion-digest-card"
+    },
+    {
+     "page": "embedded-markdown-text",
+     "element": "embedded-markdown-text-table"
+    },
+    {
+     "page": "embedded-markdown-text",
+     "element": "embedded-markdown-text-link"
+    },
+    {
+     "page": "embedded-tool-card",
+     "element": "embedded-tool-card-header"
+    },
+    {
+     "page": "embedded-tool-card",
+     "element": "embedded-tool-card-subagent"
+    },
+    {
+     "page": "active-context-message",
+     "element": "active-context-message-parts"
+    },
+    {
+     "page": "demo",
+     "element": "demo-chat"
+    },
+    {
+     "page": "team-agent-output",
+     "element": "team-agent-output-text"
+    },
+    {
+     "page": "team-conversation",
+     "element": "team-conversation-prompt"
+    }
+   ]
+  },
+  "chat composer": {
+   "why": "Single-owner chat library; rebuilt from KitGlass, KitIconButton, KitReceipt",
+   "elements": [
+    {
+     "page": "chat",
+     "element": "chat-pending-photo-row"
+    },
+    {
+     "page": "chat",
+     "element": "embedded-composer"
+    },
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-field"
+    },
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-model-chip"
+    },
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-model-cycle-menu"
+    },
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-send"
+    },
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-stop"
+    },
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-activity"
+    },
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-attachment-chip-preview"
+    },
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-inline-command-row"
+    },
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-context-badge"
+    },
+    {
+     "page": "embedded-pending-sends-strip",
+     "element": "pending-bubble"
+    }
+   ]
+  },
+  "platform (no UI)": {
+   "why": "Shortcuts, intents and routing: no visible part",
+   "elements": [
+    {
+     "page": "chat",
+     "element": "chat-shortcuts"
+    },
+    {
+     "page": "embedded-model-shortcuts",
+     "element": "embedded-model-shortcuts"
+    },
+    {
+     "page": "system",
+     "element": "share-intake"
+    },
+    {
+     "page": "system",
+     "element": "launcher-shortcuts"
+    },
+    {
+     "page": "system",
+     "element": "notification-routing"
+    },
+    {
+     "page": "embedded-desktop-file-drop-target",
+     "element": "embedded-desktop-file-drop-target-drop"
+    },
+    {
+     "page": "global-shortcuts",
+     "element": "global-shortcuts-layer"
+    }
+   ]
+  },
+  "special surface": {
+   "why": "One-off surfaces (terminal, camera, graph, rail, meter, stock pickers)",
+   "elements": [
+    {
+     "page": "form-sheet-date-picker",
+     "element": "form-sheet-date-picker"
+    },
+    {
+     "page": "voice-composer-sheet",
+     "element": "voice-composer-sheet-meter"
+    },
+    {
+     "page": "terminal-surface",
+     "element": "terminal-surface-view"
+    },
+    {
+     "page": "terminal-surface",
+     "element": "terminal-surface-keys"
+    },
+    {
+     "page": "pairing-scanner",
+     "element": "pairing-scanner-camera"
+    },
+    {
+     "page": "session-context",
+     "element": "session-context-makeup"
+    },
+    {
+     "page": "termux-setup-connect-termux",
+     "element": "guide-illustrations"
+    },
+    {
+     "page": "notifications-settings-quiet-time-dialog",
+     "element": "quiet-time-picker"
+    },
+    {
+     "page": "home-shell",
+     "element": "home-shell-rail"
+    },
+    {
+     "page": "embedded-work-graph",
+     "element": "work-graph"
+    }
+   ]
+  },
+  "files": {
+   "why": "Used once (breadcrumb)",
+   "elements": [
+    {
+     "page": "files",
+     "element": "files-breadcrumb"
+    }
+   ]
+  },
+  "handoff": {
+   "why": "Used once (QR code)",
+   "elements": [
+    {
+     "page": "continue-on-phone-sheet",
+     "element": "continue-on-phone-qr"
+    }
+   ]
+  },
+  "appearance": {
+   "why": "Used once (theme swatches, preview)",
+   "elements": [
+    {
+     "page": "appearance-settings",
+     "element": "theme-pack-grid"
+    },
+    {
+     "page": "theme-pack-preview-sheet",
+     "element": "theme-preview-card"
+    }
+   ]
+  },
+  "team board": {
+   "why": "Used once (paged lanes, task card)",
+   "elements": [
+    {
+     "page": "team-board",
+     "element": "team-board-pages"
+    },
+    {
+     "page": "team-board",
+     "element": "team-board-card"
+    }
+   ]
+  },
+  "team conversation": {
+   "why": "Used once (agent strip)",
+   "elements": [
+    {
+     "page": "team-conversation",
+     "element": "team-conversation-family"
+    }
+   ]
+  }
+ },
+ "rules": [
+  "Undo vs confirm vs neither: if a mistaken tap loses nothing, act and show the result (start, harmless restart, settings, choices, copy, refresh); if the app can put it back, act then Undo (archive from swipe AND menu, restore or delete a local saved prompt, withdraw to draft, approve while withdrawable, reopenable board cancel, board move); if nobody can put it back, confirm first (delete conversation, one-step revert, remove server listing its queued prompts, delete phone Ubuntu with typed name, remove worktree/workspace with changes with typed name, stop a task mid-work, clear diagnostics or drafts, revoke a saved permission, disconnect a provider, public share). Never both; never confirm a harmless act; never a destructive swipe without Undo; the same act gets the same model from every door.",
+  "Destructive styling: error colour only for acts that lose data or end running work; never primary on a screen (only inside a destructive/stop/discard KitConfirmSheet); never beside a frequent action (KitActionBlock stacks it); last in row menus after a divider; label is a verb naming the thing; icon trash/stop/edit-off in error tone, never \"?\"; cancel words Keep running / Keep editing / Cancel.",
+  "One details fold: all technical values go into one KitDetailsFold, last and collapsed, each value once, copyable, LTR; engine words, ids, paths and ports only there; a standalone raw error uses showKitTechnicalDetails, never an AlertDialog.",
+  "One log panel: every process output is a KitLogPanel, folded under Details unless the page exists for that log; one panel per source; follows, polls only while visible, redacted, error tone for errors only.",
+  "One needs-you marker: one attention source counted once per request across servers, shown only through KitNeedsYou mark/span/badge with its word; same words on tab, row, server row, header and notification; answered anywhere clears everywhere.",
+  "One container per task: screen = place, KitSheet = choice/short task/confirmation, KitDialog = short text entry or blocking alert, showKitUndo = done-with-undo, KitStatusLine = condition on a working screen, KitNotice = message about one part.",
+  "No sheet on a sheet: a confirmation or choice raised inside a KitSheet replaces its content in place.",
+  "Feedback in place: copy shows its check on the button, a write shows its KitReceipt where it was made, a failure shows a KitNotice on that part; the snackbar is only for Undo.",
+  "Honest waiting lives in the kit: waiting parts take since and escalate after 8 s by themselves; a disabled control always carries a visible reason; a button never shows lasting status.",
+  "Technical text and secrets: every value the app did not write is rendered by a kit part that isolates it LTR and makes it copyable; secrets enter only through KitField.secret and are never displayed again, prefilled, copied, logged or shown in details or code.",
+  "Motion and haptics: only KitMotion durations and curves, nothing moves under KitMotion.reduced, no layout animation in scrolling lists; haptics only send, done and commit through KitHaptics.",
+  "Entry rule: a part joins the kit when two or more pages need it; single-use widgets stay in their module, built from kit parts and covered by the same raw-widget gates."
+ ],
+ "migration": [
+  {
+   "step": "A. One sheet, one confirm",
+   "components": [
+    "KitSheet",
+    "KitConfirmSheet"
+   ],
+   "pages": [
+    "app-diagnostics-clear-sheet",
+    "appearance-picker-sheet",
+    "builtin-server-log-sheet",
+    "builtin-server-remove-confirm-sheet",
+    "chat-cancel-inbox-send-sheet",
+    "chat-delete-message-sheet",
+    "chat-discard-queued-draft-sheet",
+    "chat-draft-attachment-recovery-sheet",
+    "chat-leave-unsaved-draft-sheet",
+    "chat-message-actions-sheet",
+    "chat-pending-photo-sheet",
+    "chat-read-aloud-consent-sheet",
+    "chat-read-aloud-voice-sheet",
+    "chat-resend-queued-draft-sheet",
+    "chat-revert-confirm-sheet",
+    "chat-share-confirm-sheet",
+    "chat-stash-attachments-unavailable-sheet",
+    "chat-stash-restore-confirm-sheet",
+    "coding-settings-shell-sheet",
+    "command-auth-sheet-confirm-sheet",
+    "command-launcher-sheet",
+    "confirm-sheet",
+    "connection-status-details-sheet",
+    "console-organization-switch-dialog",
+    "credential-management-sheet-remove-sheet",
+    "development-services-confirm-sheet",
+    "development-services-editor-sheet",
+    "development-services-logs-sheet",
+    "external-agent-detail-delete-sheet",
+    "external-agents-delete-sheet",
+    "external-link-dialog",
+    "external-task-cancel-sheet",
+    "external-task-forget-sheet",
+    "files-row-actions-sheet",
+    "form-sheet",
+    "form-sheet-dismiss-confirm-sheet",
+    "gate-sheet-confirm-sheet",
+    "global-sessions-continue-here-sheet",
+    "integrations-disconnect-provider-sheet",
+    "integrations-forget-pending-auth-sheet",
+    "integrations-forget-uncertain-auth-sheet",
+    "integrations-remove-mcp-sheet",
+    "isolated-task-sheet",
+    "language-sheet",
+    "legacy-drafts-delete-sheet",
+    "legacy-drafts-review-sheet",
+    "managed-workspaces-remove-dialog",
+    "model-picker-sheet",
+    "model-picker-sheet-options-dialog",
+    "model-picker-sheet-unloaded-providers-dialog",
+    "permission-sheet",
+    "permission-sheet-always-dialog",
+    "phone-setup-progress-stop-sheet",
+    "plugins-clear-mappings-sheet",
+    "plugins-mapping-dialog",
+    "plugins-settings",
+    "privacy-settings-clear-drafts-sheet",
+    "privacy-settings-clear-queued-sheet",
+    "profile-editor-discard-sheet",
+    "profile-monitor-switch-server-dialog",
+    "project-folder-browser",
+    "project-health-git-init-dialog",
+    "prompt-editor-discard-sheet",
+    "prompt-history-sheet",
+    "prompt-stash-delete-sheet",
+    "prompt-stash-sheet",
+    "prompt-tools-sheet",
+    "provider-quota-clear-dialog",
+    "provider-quota-enroll-dialog",
+    "question-sheet",
+    "question-sheet-dismiss-dialog",
+    "remove-local-agents-confirm-sheet",
+    "restart-local-agents-sheet",
+    "review-comment-sheet",
+    "run-result-output-sheet",
+    "running-work-sheet",
+    "saved-permissions-revoke-dialog",
+    "server-settings-upgrade-sheet",
+    "server-switcher-sheet",
+    "servers-remove-server-sheet",
+    "session-approvals-sheet",
+    "session-destination-confirm-dialog",
+    "session-menu-sheet",
+    "session-note-discard-dialog",
+    "settings-disconnect-sheet",
+    "settings-transcript-display-sheet",
+    "shell-output-stop-dialog",
+    "shortcuts-help-dialog",
+    "stage-revert-sheet",
+    "staged-revert-confirm-sheet",
+    "stop-local-agents-confirm-sheet",
+    "team-agent-restart-confirm-sheet",
+    "team-agent-stop-confirm-sheet",
+    "team-board-cancel-confirm-sheet",
+    "team-cycle-how-sheet",
+    "team-cycle-stop-confirm-sheet",
+    "team-merge-approve-sheet",
+    "team-merge-confirm-sheet",
+    "team-phone-remove-sheet",
+    "team-phone-stop-sheet",
+    "team-plugin-sheet",
+    "team-run-cancel-confirm-sheet",
+    "team-turn-off-sheet",
+    "terminal-remove-sheet",
+    "termux-processes-stop-group-sheet",
+    "termux-processes-stop-one-sheet",
+    "termux-setup-replace-installed-sheet",
+    "termux-setup-restart-sheet",
+    "termux-setup-start-installed-sheet",
+    "termux-setup-switch-runtime-sheet",
+    "termux-setup-unchecked-install-sheet",
+    "termux-setup-update-sheet",
+    "termux-storage-clean-sheet",
+    "theme-pack-preview-sheet",
+    "timeline-sheet",
+    "usage-budget-clear-dialog",
+    "voice-composer-sheet",
+    "voice-model-setup-sheet",
+    "voice-model-setup-sheet-delete-dialog",
+    "workspace-archive-session-sheet",
+    "workspace-archived-sheet",
+    "workspace-context-sheet",
+    "workspace-delete-session-sheet",
+    "workspace-share-session-sheet",
+    "worktrees-remove-dialog",
+    "worktrees-reset-dialog"
+   ],
+   "count": 168,
+   "impact": 3,
+   "score": 504,
+   "why": "Critical X2/X3: lost drafts, silent deletes, destructive styling on the wrong acts. `showConfirmSheet` becomes a wrapper first, so 37 files change look in one edit."
+  },
+  {
+   "step": "B. Honest states and technical truth",
+   "components": [
+    "KitStateView",
+    "KitStatusLine",
+    "KitNotice",
+    "KitDetailsFold",
+    "KitCodeBlock",
+    "KitIconButton",
+    "KitLogPanel",
+    "KitLoadingBar",
+    "KitSkeletonRows",
+    "KitProgress"
+   ],
+   "pages": [
+    "about",
+    "activity",
+    "app-diagnostics",
+    "attention-overview",
+    "bootstrap-gate",
+    "builtin-server-log-sheet",
+    "builtin-server-setup",
+    "capabilities",
+    "catalog",
+    "chat",
+    "chat-message-error-details-dialog",
+    "chat-prompt-error-details-dialog",
+    "command-auth-sheet",
+    "command-launcher-sheet",
+    "connection-help",
+    "connection-status-details-sheet",
+    "continue-on-computer-sheet",
+    "credential-management-sheet",
+    "demo",
+    "desktop-release-notice",
+    "development-services",
+    "development-services-confirm-sheet",
+    "development-services-logs-sheet",
+    "embedded-auto-approval-indicator",
+    "embedded-composer",
+    "embedded-local-agent-onboarding-block",
+    "embedded-markdown-text",
+    "embedded-message-view",
+    "embedded-pending-sends-strip",
+    "embedded-product-states",
+    "embedded-session-inventory-footer",
+    "embedded-setup-terminal",
+    "embedded-team-cycle-strip",
+    "embedded-team-phone-section",
+    "embedded-team-technical-value",
+    "embedded-termux-attention-line",
+    "embedded-tool-card",
+    "embedded-transcript-find-bar",
+    "external-agents",
+    "external-task",
+    "files",
+    "files-changes-sheet",
+    "files-file-viewer-sheet",
+    "gate-sheet",
+    "guide",
+    "host-management",
+    "integrations",
+    "isolated-task-sheet",
+    "legacy-drafts",
+    "legacy-drafts-review-sheet",
+    "local-agent-page",
+    "managed-workspaces",
+    "markdown-code-reader",
+    "model-picker-sheet",
+    "model-picker-sheet-options-dialog",
+    "notifications-settings",
+    "pairing-scanner",
+    "permission-sheet",
+    "phone-setup-customize-sheet",
+    "phone-setup-progress",
+    "profile-editor",
+    "project-folder-open-dialog",
+    "project-health",
+    "prompt-stash-sheet",
+    "provider-quota",
+    "review-workspace",
+    "running-work-sheet",
+    "saved-permissions",
+    "server-capabilities",
+    "server-settings-restart-dialog",
+    "session-context",
+    "session-handoff-dialog",
+    "session-import",
+    "session-link-server-missing-banner",
+    "session-relations",
+    "settings",
+    "share-session-failed-banner",
+    "shell-output",
+    "shorebird-update-notice",
+    "skills-preview-sheet",
+    "staged-revert",
+    "system",
+    "team-agent",
+    "team-agent-details-sheet",
+    "team-conversation",
+    "team-home",
+    "team-host-details-sheet",
+    "team-host-guide-sheet",
+    "team-phone-onboarding-failed",
+    "team-phone-onboarding-steps",
+    "team-phone-tips-sheet",
+    "team-plugin-sheet",
+    "team-run",
+    "team-run-details-sheet",
+    "team-run-overview-tab",
+    "terminal",
+    "terminal-surface",
+    "termux-processes",
+    "termux-processes-details-sheet",
+    "termux-setup",
+    "termux-setup-failed",
+    "termux-setup-installed",
+    "termux-setup-installing",
+    "termux-storage",
+    "timeline-sheet",
+    "todos-sheet",
+    "tools",
+    "tools-detail-sheet",
+    "usage-hub",
+    "voice-composer-sheet",
+    "voice-model-setup-sheet",
+    "work-sheet",
+    "workspace",
+    "workspace-directory-details-dialog",
+    "workspace-session-details-sheet",
+    "worktrees"
+   ],
+   "count": 165,
+   "impact": 2,
+   "score": 330,
+   "why": "Honest-state, help-feedback and principle 4; KitStateView v2 needs KitDetailsFold; the copy button retires ~40 snackbars."
+  },
+  {
+   "step": "C. Input and choice",
+   "components": [
+    "KitField",
+    "KitDialog",
+    "KitSearchField",
+    "KitSegmented",
+    "KitChoiceList",
+    "KitTabSwitcher"
+   ],
+   "pages": [
+    "about",
+    "active-context",
+    "add-agent",
+    "agent-choice",
+    "appearance-picker-sheet",
+    "appearance-settings",
+    "builtin-server-setup",
+    "capabilities",
+    "catalog",
+    "chat-read-aloud-voice-sheet",
+    "chat-rename-session-dialog",
+    "chat-run-shell-dialog",
+    "coding-settings-shell-sheet",
+    "command-launcher-sheet",
+    "command-palette-dialog",
+    "commands",
+    "console-organization-sheet",
+    "credential-management-sheet-rename-dialog",
+    "development-services-editor-sheet",
+    "embedded-composer",
+    "embedded-file-preview-body",
+    "embedded-markdown-text",
+    "embedded-message-view",
+    "embedded-mobile-task-list",
+    "embedded-question-options",
+    "embedded-transcript-find-bar",
+    "external-agent-detail-input-dialog",
+    "file-drop-failed-dialog",
+    "files",
+    "form-sheet",
+    "gate-sheet",
+    "global-sessions",
+    "integrations-authorization-launch-dialog",
+    "integrations-connect-key-dialog",
+    "integrations-mcp-oauth-code-dialog",
+    "integrations-oauth-code-dialog",
+    "integrations-oauth-inputs-dialog",
+    "isolated-task-sheet",
+    "language-sheet",
+    "legacy-drafts",
+    "local-agent-project-sheet",
+    "managed-workspaces-create-dialog",
+    "mcp-setup",
+    "model-picker-sheet",
+    "model-picker-sheet-agent-dialog",
+    "model-picker-sheet-options-dialog",
+    "notifications-settings",
+    "permission-sheet",
+    "phone-setup-ready",
+    "plugins-mapping-dialog",
+    "profile-editor",
+    "project-folder-browser",
+    "project-folder-new-dialog",
+    "project-folder-open-dialog",
+    "projects",
+    "projects-rename-dialog",
+    "prompt-editor",
+    "provider-quota",
+    "question-sheet",
+    "review-comment-sheet",
+    "review-workspace",
+    "run-command-dialog",
+    "server-switcher-sheet",
+    "servers-welcome",
+    "session-approvals-sheet",
+    "session-destination-sheet",
+    "session-export",
+    "session-import-destination-sheet",
+    "session-note",
+    "settings",
+    "shell-output-timeout-sheet",
+    "skill-activation-sheet",
+    "skills-preview-sheet",
+    "start-run-sheet",
+    "tailscale-setup",
+    "team-agent-message-sheet",
+    "team-board",
+    "team-board-add-sheet",
+    "team-board-priority-sheet",
+    "team-conversation",
+    "team-home-runs-tab",
+    "team-host-sheet",
+    "team-phone-onboarding-project-sheet",
+    "team-run",
+    "team-run-timeline-tab",
+    "terminal",
+    "terminal-rename-dialog",
+    "termux-setup-choose",
+    "theme-pack-preview-sheet",
+    "usage",
+    "usage-budget-dialog",
+    "usage-hub",
+    "voice-composer-sheet",
+    "voice-model-setup-sheet",
+    "web-sources",
+    "workspace",
+    "workspace-rename-session-dialog",
+    "worktrees-create-dialog"
+   ],
+   "count": 131,
+   "impact": 2,
+   "score": 262,
+   "why": "Contains two critical findings (bearer tokens in clear, a truncated instruction); needs KitSheet from A."
+  },
+  {
+   "step": "D. Answer the agent",
+   "components": [
+    "KitRequestCard",
+    "KitReceipt",
+    "KitNeedsYou",
+    "KitUndo"
+   ],
+   "pages": [
+    "activity",
+    "chat",
+    "embedded-profile-monitor-inbox",
+    "embedded-team-receipt-chip",
+    "home-shell",
+    "integrations",
+    "profile-monitor",
+    "question-sheet",
+    "team-home-needs-you-tab",
+    "workspace"
+   ],
+   "count": 15,
+   "impact": 3,
+   "score": 45,
+   "why": "The top job for remote-lead and team-delegator; built on A (request sheets) and C (choices, fields). Pulled ahead of E-F, see notes."
+  },
+  {
+   "step": "E. Setup and progress",
+   "components": [
+    "KitChecklist",
+    "KitProgressRow"
+   ],
+   "pages": [
+    "agent-account",
+    "builtin-server-setup",
+    "embedded-local-agent-onboarding-block",
+    "embedded-mobile-task-list",
+    "embedded-team-cycle-strip",
+    "embedded-team-merge-section",
+    "guide",
+    "isolated-task-sheet",
+    "local-agent-page",
+    "phone-setup-progress",
+    "provider-quota",
+    "session-context",
+    "tailscale-setup",
+    "team-phone-onboarding-steps",
+    "team-run-overview-tab",
+    "termux-setup-checking",
+    "termux-setup-connected",
+    "termux-setup-get-termux",
+    "usage",
+    "usage-hub",
+    "voice-model-setup-sheet",
+    "work-sheet"
+   ],
+   "count": 24,
+   "impact": 2,
+   "score": 48,
+   "why": "Install journey; promotes SetupProgressView; needs KitLogPanel (B)."
+  },
+  {
+   "step": "F. Viewers and chrome",
+   "components": [
+    "KitViewer",
+    "KitDiffView",
+    "KitTopBar",
+    "KitJumpPill",
+    "KitTerm"
+   ],
+   "pages": [
+    "about",
+    "about-open-source-tab",
+    "about-privacy-tab",
+    "activity",
+    "builtin-server-setup",
+    "chat",
+    "demo",
+    "diff-view",
+    "embedded-file-preview-body",
+    "embedded-info-label",
+    "embedded-message-view",
+    "file-preview-sheet",
+    "files",
+    "files-file-viewer-sheet",
+    "home-shell",
+    "info-label-sheet",
+    "markdown-code-reader",
+    "project-hub",
+    "prompt-editor",
+    "review-workspace",
+    "servers",
+    "servers-welcome",
+    "settings",
+    "shell-output",
+    "team-agent-output",
+    "team-board",
+    "team-conversation",
+    "team-run",
+    "team-run-overview-tab",
+    "team-run-timeline-tab",
+    "voice-notices",
+    "workspace"
+   ],
+   "count": 44,
+   "impact": 1,
+   "score": 44,
+   "why": "Review and inspect journeys; KitTerm fixes a critical 24 dp target."
+  },
+  {
+   "step": "G. Row and action sweep (also rides along with every step)",
+   "components": [
+    "KitRow",
+    "KitActionBlock",
+    "KitSwitchRow",
+    "KitRowMenu",
+    "SectionLabel",
+    "KitPanel"
+   ],
+   "pages": [
+    "about-open-source-tab",
+    "active-context",
+    "activity",
+    "add-agent",
+    "agent-account",
+    "app-diagnostics",
+    "appearance-picker-sheet",
+    "appearance-settings",
+    "attention-overview",
+    "bootstrap-gate",
+    "builtin-server-setup",
+    "capabilities",
+    "catalog",
+    "chat",
+    "chat-message-actions-sheet",
+    "command-auth-sheet",
+    "command-launcher-sheet",
+    "command-palette-dialog",
+    "commands",
+    "connection-help",
+    "console-organization-sheet",
+    "context-capsule",
+    "continue-on-computer-sheet",
+    "credential-management-sheet",
+    "demo",
+    "development-services",
+    "embedded-context-menu-region",
+    "embedded-local-agent-onboarding-block",
+    "embedded-mobile-task-list",
+    "embedded-product-states",
+    "embedded-team-card",
+    "embedded-team-cycle-strip",
+    "embedded-team-discovery-card",
+    "embedded-team-phone-reoffer-card",
+    "embedded-team-phone-section",
+    "embedded-team-planning-card",
+    "embedded-transcript-display-toggles",
+    "external-agent-detail",
+    "external-agents",
+    "external-task",
+    "files",
+    "files-changes-sheet",
+    "files-row-actions-sheet",
+    "gate-sheet",
+    "global-sessions",
+    "guide",
+    "host-management",
+    "integrations",
+    "integrations-connect-method-sheet",
+    "isolated-task-sheet",
+    "legacy-drafts",
+    "legacy-drafts-review-sheet",
+    "local-agent-page",
+    "local-agent-project-sheet",
+    "manage-project",
+    "managed-workspaces",
+    "mcp-setup",
+    "model-picker-sheet",
+    "notifications-settings",
+    "phone-setup-customize-sheet",
+    "phone-setup-start",
+    "plugins-settings",
+    "privacy-settings",
+    "profile-monitor",
+    "project-health",
+    "project-hub",
+    "projects",
+    "prompt-history-sheet",
+    "prompt-stash-sheet",
+    "prompt-tools-sheet",
+    "provider-quota",
+    "references",
+    "review-workspace",
+    "run-result",
+    "running-work-sheet",
+    "saved-permissions",
+    "server-capabilities",
+    "server-switcher-sheet",
+    "session-approvals-sheet",
+    "session-export",
+    "session-import",
+    "session-menu-sheet",
+    "session-note",
+    "session-relations",
+    "settings-transcript-display-sheet",
+    "shell-output",
+    "skill-activation-sheet",
+    "skills",
+    "stage-revert-sheet",
+    "staged-revert",
+    "start-run-sheet",
+    "tailscale-setup",
+    "team-agent-output",
+    "team-board",
+    "team-home-runs-tab",
+    "team-host-sheet",
+    "team-phone-onboarding-failed",
+    "team-phone-onboarding-killed",
+    "team-phone-onboarding-offer",
+    "team-phone-onboarding-success",
+    "team-plugin-sheet",
+    "team-run",
+    "terminal",
+    "termux-processes",
+    "termux-processes-details-sheet",
+    "termux-setup-connect-termux",
+    "termux-storage",
+    "theme-pack-preview-sheet",
+    "timeline-sheet",
+    "todos-sheet",
+    "tools",
+    "usage",
+    "web-sources",
+    "work-sheet",
+    "workspace",
+    "workspace-archived-sheet",
+    "workspace-context-sheet",
+    "worktrees"
+   ],
+   "count": 220,
+   "impact": 1,
+   "score": 220,
+   "why": "No new part needed; each step migrates these on the pages it touches, G mops up the rest and empties the G2 baseline."
+  }
+ ],
+ "gates": [
+  {
+   "id": "G1",
+   "name": "Modal and toast entry points live in the kit",
+   "where": "test/kit_ratchet_test.dart (new)",
+   "checks": "Outside lib/ui/kit/: showDialog(, showModalBottomSheet(, showGeneralDialog(, AlertDialog(, SimpleDialog(, DraggableScrollableSheet(, showSnackBar(, SnackBar(, MaterialBanner(, and (after step A) showConfirmSheet(. Per-file baseline that only shrinks; new files start at zero. showDatePicker/showTimePicker allowed."
+  },
+  {
+   "id": "G2",
+   "name": "Raw widgets and bypasses ratchet",
+   "where": "test/kit_ratchet_test.dart",
+   "checks": "ListTile, ExpansionTile, SwitchListTile, RadioListTile, CheckboxListTile, SegmentedButton, ChoiceChip, FilterChip, ActionChip, DropdownButton/DropdownButtonFormField, TabBar(, TextField(/TextFormField(, IconButton(, PopupMenuButton, Clipboard.setData (only KitIconButton.copy), HapticFeedback. (only KitHaptics), launchUrl (only external_link.dart and launchers passed into openExternalLink, allowlisted with reasons), literal Duration(milliseconds: and AnimatedSize in lib/ui outside the kit."
+  },
+  {
+   "id": "G3",
+   "name": "Migrated pages are clean, not ratcheted",
+   "where": "test/design_standard_test.dart",
+   "checks": "_forbidden gains every G1/G2 pattern for files in _migrated (zero allowed), and each kit v2 step adds its pages to _migrated with dark and light goldens at 412x915."
+  },
+  {
+   "id": "G4",
+   "name": "Every kit part has a gallery",
+   "where": "test/goldens/kit/*_golden_test.dart + a manifest test",
+   "checks": "For every new or changed part: each state (default, loading/working, empty, error, disabled, answered where it exists) x light and dark, plus a 200 % text variant (TextScaler.linear(2)) and an Arabic RTL variant at 1.3x. The manifest test reads kit.dart's exports and fails when a public widget has no gallery or no row in the doc table."
+  },
+  {
+   "id": "G5",
+   "name": "Accessibility guidelines on every gallery",
+   "where": "test/accessibility_guidelines_test.dart (extended)",
+   "checks": "androidTapTargetGuideline, labeledTapTargetGuideline and textContrastGuideline pass on every G4 gallery in both themes."
+  },
+  {
+   "id": "G6",
+   "name": "No overflow at any size",
+   "where": "test/text_scale_overflow_test.dart (extended)",
+   "checks": "Each part pumped at 320 dp and 412 dp wide x text scale 1.0 / 1.3 / 2.0 x LTR / RTL: no RenderFlex overflow or clipped-text exception; KitSegmented and KitAskLine-style parts must reach their stacked layouts."
+  },
+  {
+   "id": "G7",
+   "name": "Directional layout",
+   "where": "test/kit_ratchet_test.dart",
+   "checks": "In lib/ui/kit/ (zero) and lib/ui/ (ratchet): no EdgeInsets.only(left:/right:, asymmetric EdgeInsets.fromLTRB, Alignment.centerLeft/centerRight, TextAlign.left/right, Positioned(left:/right:."
+  },
+  {
+   "id": "G8",
+   "name": "Still under reduced motion",
+   "where": "test/kit_motion_test.dart (new)",
+   "checks": "Every part under MediaQuery(disableAnimations: true) and under Effects Animations: Off settles after one pump() with no running ticker; KitStatusMark shows its still dot under Effects Off (fails today)."
+  },
+  {
+   "id": "G9",
+   "name": "Behaviour contracts per part",
+   "where": "test/kit/*_test.dart (new)",
+   "checks": "KitConfirmSheet: false on back, swipe and cancel; typed name enables confirm only on exact match; commit haptic only for stop/destructive/discard and never with Vibration off; confirm raised from a KitSheet adds no route. KitUndo: one at a time, persists under accessibleNavigation, failure shows a notice. KitRequestCard: answered state announced once; answering elsewhere closes its sheet via RequestRoutes and leaves the receipt. KitStateView/KitStatusLine/KitReceipt: escalate after 8 s with fake async. KitIconButton.copy: clipboard set, \"Copied\" announced, no SnackBar. KitLogPanel: follows unless scrolled up; no polling off screen. KitChoiceList.single: one tap, one callback. KitField.secret: asserts empty controller, obscured, no suggestions."
+  },
+  {
+   "id": "G10",
+   "name": "Drafts survive and are swept",
+   "where": "test/kit/kit_draft_test.dart + test/profile_store_*",
+   "checks": "Every showKitSheet with a KitDraft: type, swipe down, reopen, text kept; back and force-restart keep it; keys are oc.draft.<target>.<profileId> and ProfileStore.profileScopedPreferenceKeys removes them on profile deletion (mock the secure-storage channel per AGENTS.md)."
+  },
+  {
+   "id": "G11",
+   "name": "Copy rules",
+   "where": "test/ui_glossary_test.dart (extended)",
+   "checks": "showKitConfirm titles end with \"?\"; confirm labels are never OK, Yes, Continue or Confirm; cancel labels match the kind; contradiction pairs (Working + stopped, Paused + idle, Connected + reconnecting) never co-occur on a golden fixture; engine words only inside KitDetailsFold/KitLogPanel/KitCodeBlock."
+  },
+  {
+   "id": "G12",
+   "name": "Redaction through every technical part",
+   "where": "test/redaction_test.dart (new)",
+   "checks": "Fake provider keys and bearer tokens fed through KitLogPanel, KitDetailsFold, KitCodeBlock, KitIconButton.copy, diagnostics and the report preview never appear in rendered text, clipboard or test output."
+  },
+  {
+   "id": "G13",
+   "name": "Map stays true",
+   "where": "docs check (tool/ux/ script, no Flutter)",
+   "checks": "Every kit-v2.json replaces entry exists in map/all.json; when a page is re-mapped after a step, its elements' kit names the v2 part and the count of kit: \"none\" only goes down; whenMissing: hidden is allowed only where the capability has no enable flow."
+  }
+ ],
+ "assignment": {
+  "about#about-document": "KitViewer",
+  "about#about-report-bug-icon": "KitIconButton",
+  "about#about-tabs": "KitTabSwitcher",
+  "about#about-title": "KitTopBar",
+  "about-open-source-tab#open-source-notices": "KitViewer",
+  "about-open-source-tab#open-source-summary": "KitRow",
+  "about-privacy-tab#privacy-policy": "KitViewer",
+  "active-context#active-context-chips": "KitSegmented",
+  "active-context#active-context-search": "KitSearchField",
+  "active-context#active-context-tile": "KitRow",
+  "active-context-message#active-context-message-parts": "module:chat transcript",
+  "activity#activity-background-hint": "KitRow",
+  "activity#activity-digests-toggle": "KitRow",
+  "activity#activity-header": "KitTopBar",
+  "activity#activity-loading": "KitLoadingBar",
+  "activity#activity-permission-row": "KitNeedsYou",
+  "activity#activity-question-row": "KitNeedsYou",
+  "activity#activity-running-row": "KitRow",
+  "activity#activity-saved-servers-row": "KitNeedsYou",
+  "activity#activity-team-gate-row": "KitNeedsYou",
+  "add-agent#add-agent-bearer": "KitField",
+  "add-agent#add-agent-card": "KitPanel",
+  "add-agent#add-agent-inspect": "KitActionBlock",
+  "add-agent#add-agent-save": "KitActionBlock",
+  "agent-account#agent-account-limits": "KitProgressRow",
+  "agent-account#agent-account-state": "KitPanel",
+  "agent-choice#agent-choice-row": "KitChoiceList",
+  "app-diagnostics#diagnostic-entry": "KitRow",
+  "app-diagnostics#diagnostics-intro": "KitNotice",
+  "app-diagnostics#perf-slowest-steps": "KitRow",
+  "app-diagnostics-clear-sheet#clear-diagnostics-sheet": "KitConfirmSheet",
+  "appearance-picker-sheet#appearance-apply": "KitActionBlock",
+  "appearance-picker-sheet#appearance-choice": "KitChoiceList",
+  "appearance-picker-sheet#appearance-preview-card": "KitPanel",
+  "appearance-picker-sheet#appearance-sheet": "KitSheet",
+  "appearance-settings#appearance-language-row": "KitRow",
+  "appearance-settings#effects-animations": "KitSegmented",
+  "appearance-settings#theme-pack-grid": "module:appearance",
+  "attention-overview#attention-overview-card": "KitPanel",
+  "attention-overview#attention-overview-disclaimer": "KitNotice",
+  "attention-overview#attention-overview-monitor-settings": "KitIconButton",
+  "attention-overview#attention-overview-open-profile": "KitActionBlock",
+  "bootstrap-gate#bootstrap-gate-failure": "KitStateView",
+  "bootstrap-gate#bootstrap-gate-retry": "KitActionBlock",
+  "bootstrap-gate#bootstrap-gate-spinner": "KitLoadingBar",
+  "builtin-server-log-sheet#inner-header": "KitLogPanel",
+  "builtin-server-log-sheet#log-body": "KitLogPanel",
+  "builtin-server-log-sheet#sheet-frame": "KitSheet",
+  "builtin-server-remove-confirm-sheet#confirm": "KitConfirmSheet",
+  "builtin-server-setup#address-and-checksum": "KitDetailsFold",
+  "builtin-server-setup#four-step-list": "KitChecklist",
+  "builtin-server-setup#remove-ubuntu": "KitActionBlock",
+  "builtin-server-setup#runtime-choice": "KitSegmented",
+  "builtin-server-setup#step-primaries": "KitChecklist",
+  "builtin-server-setup#stop-and-log": "KitLogPanel",
+  "builtin-server-setup#title-and-duplicate-heading": "KitTopBar",
+  "capabilities#capabilities-command-row": "KitRow",
+  "capabilities#capabilities-run": "KitIconButton",
+  "capabilities#capabilities-search": "KitSearchField",
+  "capabilities#capabilities-tabs": "KitTabSwitcher",
+  "catalog#basic-catalog-banner": "KitNotice",
+  "catalog#choice-bar": "KitActionBlock",
+  "catalog#tabs": "KitSegmented",
+  "chat#chat-appbar-running-work": "KitNeedsYou",
+  "chat#chat-appbar-session-menu": "KitRowMenu",
+  "chat#chat-appbar-stop-reading": "KitIconButton",
+  "chat#chat-appbar-title": "KitTopBar",
+  "chat#chat-auto-approval-indicator": "KitStatusLine",
+  "chat#chat-background-running-work": "KitActionBlock",
+  "chat#chat-draft-error": "KitNotice",
+  "chat#chat-earlier-messages-pill": "KitJumpPill",
+  "chat#chat-first-reply-notify": "KitNotice",
+  "chat#chat-jump-to-latest": "KitJumpPill",
+  "chat#chat-load-older": "KitActionBlock",
+  "chat#chat-note-receipt-dismiss": "KitReceipt",
+  "chat#chat-pending-photo-row": "module:chat composer",
+  "chat#chat-shortcuts": "module:platform (no UI)",
+  "chat#chat-staged-revert-review": "KitNotice",
+  "chat#embedded-composer": "module:chat composer",
+  "chat#embedded-message-view": "module:chat transcript",
+  "chat-cancel-inbox-send-sheet#chat-cancel-inbox-send-sheet": "KitConfirmSheet",
+  "chat-cancel-inbox-send-sheet#chat-cancel-inbox-send-sheet-cancel": "KitConfirmSheet",
+  "chat-cancel-inbox-send-sheet#chat-cancel-inbox-send-sheet-confirm": "KitConfirmSheet",
+  "chat-delete-message-sheet#chat-delete-message-sheet": "KitConfirmSheet",
+  "chat-delete-message-sheet#chat-delete-message-sheet-cancel": "KitConfirmSheet",
+  "chat-delete-message-sheet#chat-delete-message-sheet-confirm": "KitConfirmSheet",
+  "chat-discard-queued-draft-sheet#chat-discard-queued-draft-sheet": "KitConfirmSheet",
+  "chat-discard-queued-draft-sheet#chat-discard-queued-draft-sheet-cancel": "KitConfirmSheet",
+  "chat-discard-queued-draft-sheet#chat-discard-queued-draft-sheet-confirm": "KitConfirmSheet",
+  "chat-draft-attachment-recovery-sheet#chat-draft-attachment-recovery-sheet": "KitConfirmSheet",
+  "chat-draft-attachment-recovery-sheet#chat-draft-attachment-recovery-sheet-cancel": "KitConfirmSheet",
+  "chat-draft-attachment-recovery-sheet#chat-draft-attachment-recovery-sheet-confirm": "KitConfirmSheet",
+  "chat-draft-attachment-recovery-sheet#icon": "KitConfirmSheet",
+  "chat-leave-unsaved-draft-sheet#chat-leave-unsaved-draft-sheet": "KitConfirmSheet",
+  "chat-leave-unsaved-draft-sheet#chat-leave-unsaved-draft-sheet-keep-editing": "KitConfirmSheet",
+  "chat-leave-unsaved-draft-sheet#chat-leave-unsaved-draft-sheet-leave": "KitConfirmSheet",
+  "chat-message-actions-sheet#chat-message-actions-sheet": "KitSheet",
+  "chat-message-actions-sheet#chat-message-actions-sheet-copy": "KitRow",
+  "chat-message-actions-sheet#chat-message-actions-sheet-delete": "KitRow",
+  "chat-message-actions-sheet#chat-message-actions-sheet-fork": "KitRow",
+  "chat-message-actions-sheet#chat-message-actions-sheet-read-aloud": "KitRow",
+  "chat-message-actions-sheet#chat-message-actions-sheet-revert": "KitRow",
+  "chat-message-error-details-dialog#chat-error-details-dialog": "KitDetailsFold",
+  "chat-pending-photo-sheet#chat-pending-photo-sheet": "KitConfirmSheet",
+  "chat-pending-photo-sheet#chat-pending-photo-sheet-cancel": "KitConfirmSheet",
+  "chat-pending-photo-sheet#chat-pending-photo-sheet-confirm": "KitConfirmSheet",
+  "chat-pending-photo-sheet#icon": "KitConfirmSheet",
+  "chat-prompt-error-details-dialog#chat-error-details-dialog": "KitDetailsFold",
+  "chat-read-aloud-consent-sheet#chat-read-aloud-consent-sheet": "KitConfirmSheet",
+  "chat-read-aloud-voice-sheet#chat-read-aloud-voice-sheet": "KitSheet",
+  "chat-read-aloud-voice-sheet#chat-read-aloud-voice-sheet-voice-row": "KitChoiceList",
+  "chat-rename-session-dialog#chat-rename-session-dialog": "KitDialog",
+  "chat-rename-session-dialog#chat-rename-session-dialog-rename": "KitDialog",
+  "chat-rename-session-dialog#chat-rename-session-dialog-title-field": "KitDialog",
+  "chat-resend-queued-draft-sheet#chat-resend-queued-draft-sheet": "KitConfirmSheet",
+  "chat-resend-queued-draft-sheet#chat-resend-queued-draft-sheet-cancel": "KitConfirmSheet",
+  "chat-resend-queued-draft-sheet#chat-resend-queued-draft-sheet-confirm": "KitConfirmSheet",
+  "chat-revert-confirm-sheet#chat-revert-confirm-sheet": "KitConfirmSheet",
+  "chat-revert-confirm-sheet#chat-revert-confirm-sheet-cancel": "KitConfirmSheet",
+  "chat-revert-confirm-sheet#chat-revert-confirm-sheet-confirm": "KitConfirmSheet",
+  "chat-run-shell-dialog#chat-run-shell-dialog": "KitDialog",
+  "chat-run-shell-dialog#chat-run-shell-dialog-command-field": "KitDialog",
+  "chat-run-shell-dialog#chat-run-shell-dialog-run": "KitDialog",
+  "chat-share-confirm-sheet#chat-share-confirm-sheet": "KitConfirmSheet",
+  "chat-share-confirm-sheet#chat-share-confirm-sheet-cancel": "KitConfirmSheet",
+  "chat-share-confirm-sheet#chat-share-confirm-sheet-confirm": "KitConfirmSheet",
+  "chat-stash-attachments-unavailable-sheet#chat-stash-attachments-unavailable-sheet": "KitConfirmSheet",
+  "chat-stash-attachments-unavailable-sheet#chat-stash-attachments-unavailable-sheet-cancel": "KitConfirmSheet",
+  "chat-stash-attachments-unavailable-sheet#chat-stash-attachments-unavailable-sheet-confirm": "KitConfirmSheet",
+  "chat-stash-restore-confirm-sheet#chat-stash-restore-confirm-sheet": "KitConfirmSheet",
+  "chat-stash-restore-confirm-sheet#chat-stash-restore-confirm-sheet-cancel": "KitConfirmSheet",
+  "chat-stash-restore-confirm-sheet#chat-stash-restore-confirm-sheet-confirm": "KitConfirmSheet",
+  "coding-settings-shell-sheet#shell-choice": "KitChoiceList",
+  "coding-settings-shell-sheet#shell-sheet": "KitSheet",
+  "coding-settings-shell-sheet#shell-sheet-header": "KitSheet",
+  "command-auth-sheet#check-status": "KitActionBlock",
+  "command-auth-sheet#progress": "KitLoadingBar",
+  "command-auth-sheet#start": "KitActionBlock",
+  "command-auth-sheet-confirm-sheet#confirm": "KitConfirmSheet",
+  "command-launcher-sheet#command-launcher-loading": "KitLoadingBar",
+  "command-launcher-sheet#command-launcher-sheet": "KitSheet",
+  "command-launcher-sheet#command-launcher-sheet-agent-row": "KitRow",
+  "command-launcher-sheet#command-launcher-sheet-command-row": "KitRow",
+  "command-launcher-sheet#command-launcher-sheet-search": "KitSearchField",
+  "command-launcher-sheet#command-launcher-sheet-search-result": "KitRow",
+  "command-launcher-sheet#command-launcher-sheet-tabs": "KitTabSwitcher",
+  "command-palette-dialog#command-palette-dialog-query": "KitSearchField",
+  "command-palette-dialog#command-palette-dialog-row": "KitRow",
+  "commands#command-row": "KitRow",
+  "commands#search": "KitSearchField",
+  "confirm-sheet#confirm-sheet-cancel": "KitConfirmSheet",
+  "confirm-sheet#confirm-sheet-confirm": "KitConfirmSheet",
+  "confirm-sheet#confirm-sheet-frame": "KitConfirmSheet",
+  "connection-help#connection-help-examples": "KitCodeBlock",
+  "connection-help#connection-help-explain": "KitActionBlock",
+  "connection-help#connection-help-verdict": "KitNotice",
+  "connection-status-details-sheet#connection-status-details-sheet-error": "KitDetailsFold",
+  "connection-status-details-sheet#connection-status-details-sheet-frame": "KitSheet",
+  "console-organization-sheet#console-organization-sheet-accounts": "SectionLabel",
+  "console-organization-sheet#console-organization-sheet-org": "KitChoiceList",
+  "console-organization-switch-dialog#console-organization-switch-dialog-confirm": "KitConfirmSheet",
+  "context-capsule#context-capsule-add": "KitActionBlock",
+  "context-capsule#context-capsule-excerpt": "KitPanel",
+  "continue-on-computer-sheet#continue-on-computer-command": "KitCodeBlock",
+  "continue-on-computer-sheet#continue-on-computer-export": "KitActionBlock",
+  "continue-on-phone-sheet#continue-on-phone-qr": "module:handoff",
+  "credential-management-sheet#account-actions": "KitActionBlock",
+  "credential-management-sheet#refresh": "KitActionBlock",
+  "credential-management-sheet#unknown-notice": "KitNotice",
+  "credential-management-sheet-remove-sheet#confirm": "KitConfirmSheet",
+  "credential-management-sheet-rename-dialog#dialog": "KitDialog",
+  "demo#demo-chat": "module:chat transcript",
+  "demo#demo-disclaimer": "KitStatusLine",
+  "demo#demo-empty": "KitStateView",
+  "demo#demo-header": "KitTopBar",
+  "demo#demo-set-up-server": "KitActionBlock",
+  "desktop-release-notice#desktop-release-notice-snackbar": "KitStatusLine",
+  "development-services#busy-bar": "KitLoadingBar",
+  "development-services#hero-card": "KitPanel",
+  "development-services#remove-configuration": "KitActionBlock",
+  "development-services#service-buttons": "KitActionBlock",
+  "development-services#service-card": "KitPanel",
+  "development-services#unsupported-paragraph": "KitStatusLine",
+  "development-services-confirm-sheet#confirm": "KitConfirmSheet",
+  "development-services-confirm-sheet#path-command": "KitDetailsFold",
+  "development-services-editor-sheet#fields": "KitField",
+  "development-services-editor-sheet#save": "KitSheet",
+  "development-services-editor-sheet#sheet": "KitSheet",
+  "development-services-logs-sheet#log": "KitLogPanel",
+  "development-services-logs-sheet#refresh-status": "KitLogPanel",
+  "development-services-logs-sheet#sheet": "KitSheet",
+  "diff-view#diff-view-body": "KitDiffView",
+  "diff-view#diff-view-header": "KitTopBar",
+  "embedded-auto-approval-indicator#embedded-auto-approval-indicator-open": "KitStatusLine",
+  "embedded-completion-digest-card#embedded-completion-digest-card": "module:chat transcript",
+  "embedded-composer#embedded-composer-activity": "module:chat composer",
+  "embedded-composer#embedded-composer-attachment-chip-preview": "module:chat composer",
+  "embedded-composer#embedded-composer-context-badge": "module:chat composer",
+  "embedded-composer#embedded-composer-delivery-toggle": "KitSegmented",
+  "embedded-composer#embedded-composer-field": "module:chat composer",
+  "embedded-composer#embedded-composer-inline-command-row": "module:chat composer",
+  "embedded-composer#embedded-composer-model-chip": "module:chat composer",
+  "embedded-composer#embedded-composer-model-cycle-menu": "module:chat composer",
+  "embedded-composer#embedded-composer-open-editor": "KitIconButton",
+  "embedded-composer#embedded-composer-send": "module:chat composer",
+  "embedded-composer#embedded-composer-stop": "module:chat composer",
+  "embedded-composer#embedded-composer-tools-button": "KitIconButton",
+  "embedded-context-menu-region#embedded-context-menu-region-item": "KitRowMenu",
+  "embedded-desktop-file-drop-target#embedded-desktop-file-drop-target-drop": "module:platform (no UI)",
+  "embedded-file-preview-body#embedded-file-preview-body-code": "KitViewer",
+  "embedded-file-preview-body#embedded-file-preview-body-mode": "KitSegmented",
+  "embedded-info-label#embedded-info-label-term": "KitTerm",
+  "embedded-local-agent-onboarding-block#block-card": "KitPanel",
+  "embedded-local-agent-onboarding-block#log": "KitLogPanel",
+  "embedded-local-agent-onboarding-block#more-menu": "KitRowMenu",
+  "embedded-local-agent-onboarding-block#needs-ubuntu-refresh": "KitActionBlock",
+  "embedded-local-agent-onboarding-block#steps": "KitChecklist",
+  "embedded-local-agent-onboarding-block#try-again": "KitActionBlock",
+  "embedded-markdown-text#embedded-markdown-text-agent-choice": "KitChoiceList",
+  "embedded-markdown-text#embedded-markdown-text-code": "KitCodeBlock",
+  "embedded-markdown-text#embedded-markdown-text-link": "module:chat transcript",
+  "embedded-markdown-text#embedded-markdown-text-table": "module:chat transcript",
+  "embedded-message-view#embedded-message-view-actions-button": "KitIconButton",
+  "embedded-message-view#embedded-message-view-choice-option": "KitChoiceList",
+  "embedded-message-view#embedded-message-view-jump-to-latest": "KitJumpPill",
+  "embedded-message-view#embedded-message-view-prompt": "module:chat transcript",
+  "embedded-message-view#embedded-message-view-reasoning-toggle": "module:chat transcript",
+  "embedded-message-view#embedded-message-view-tool-group-toggle": "module:chat transcript",
+  "embedded-mobile-task-list#embedded-mobile-task-list-copy-all": "KitActionBlock",
+  "embedded-mobile-task-list#embedded-mobile-task-list-filter": "KitSegmented",
+  "embedded-mobile-task-list#embedded-mobile-task-list-label": "SectionLabel",
+  "embedded-mobile-task-list#embedded-mobile-task-list-progress": "KitChecklist",
+  "embedded-model-shortcuts#embedded-model-shortcuts": "module:platform (no UI)",
+  "embedded-pending-sends-strip#pending-actions": "KitIconButton",
+  "embedded-pending-sends-strip#pending-bubble": "module:chat composer",
+  "embedded-product-states#embedded-product-states-empty-action": "KitStateView",
+  "embedded-product-states#embedded-product-states-error-report-bug": "KitActionBlock",
+  "embedded-product-states#embedded-product-states-error-retry": "KitStateView",
+  "embedded-product-states#embedded-product-states-gated-row": "KitStateView",
+  "embedded-product-states#embedded-product-states-refresh-retry": "KitStatusLine",
+  "embedded-profile-monitor-inbox#embedded-profile-monitor-inbox-request-row": "KitNeedsYou",
+  "embedded-profile-monitor-inbox#embedded-profile-monitor-inbox-summary": "KitNeedsYou",
+  "embedded-question-options#embedded-question-options-custom-answer": "KitField",
+  "embedded-question-options#embedded-question-options-option": "KitChoiceList",
+  "embedded-session-inventory-footer#embedded-session-inventory-footer-more": "KitSkeletonRows",
+  "embedded-session-inventory-footer#embedded-session-inventory-footer-reload": "KitNotice",
+  "embedded-setup-terminal#log-lines": "KitLogPanel",
+  "embedded-setup-terminal#panel-header": "KitLogPanel",
+  "embedded-team-card#team-card": "KitPanel",
+  "embedded-team-cycle-strip#cycle-stages": "KitChecklist",
+  "embedded-team-cycle-strip#team-cycle-action-nudge": "KitActionBlock",
+  "embedded-team-cycle-strip#team-cycle-action-output": "KitActionBlock",
+  "embedded-team-cycle-strip#team-cycle-action-refresh": "KitIconButton",
+  "embedded-team-cycle-strip#team-cycle-action-stop": "KitActionBlock",
+  "embedded-team-discovery-card#discovery-card": "KitPanel",
+  "embedded-team-discovery-card#discovery-turn-on": "KitActionBlock",
+  "embedded-team-merge-section#merge-checks": "KitChecklist",
+  "embedded-team-phone-reoffer-card#reoffer-card": "KitPanel",
+  "embedded-team-phone-section#phone-delete": "KitActionBlock",
+  "embedded-team-phone-section#phone-refresh": "KitActionBlock",
+  "embedded-team-phone-section#phone-start-again": "KitActionBlock",
+  "embedded-team-phone-section#phone-status": "KitStatusLine",
+  "embedded-team-phone-section#phone-stop": "KitActionBlock",
+  "embedded-team-planning-card#planning-card": "KitPanel",
+  "embedded-team-planning-card#planning-dismiss": "KitActionBlock",
+  "embedded-team-receipt-chip#receipt": "KitReceipt",
+  "embedded-team-technical-value#technical-value": "KitDetailsFold",
+  "embedded-termux-attention-line#line": "KitStatusLine",
+  "embedded-tool-card#embedded-tool-card-header": "module:chat transcript",
+  "embedded-tool-card#embedded-tool-card-output": "KitCodeBlock",
+  "embedded-tool-card#embedded-tool-card-subagent": "module:chat transcript",
+  "embedded-transcript-display-toggles#embedded-transcript-display-toggles": "KitSwitchRow",
+  "embedded-transcript-find-bar#embedded-transcript-find-bar": "KitSearchField",
+  "embedded-transcript-find-bar#embedded-transcript-find-bar-loading": "KitLoadingBar",
+  "embedded-voice-conversation-controls#embedded-voice-conversation-controls": "module:chat transcript",
+  "embedded-work-graph#work-graph": "module:special surface",
+  "external-agent-detail#external-agent-detail-card": "KitPanel",
+  "external-agent-detail#external-agent-detail-delete": "KitActionBlock",
+  "external-agent-detail-delete-sheet#external-agent-detail-delete-sheet": "KitConfirmSheet",
+  "external-agent-detail-input-dialog#external-agent-detail-input-dialog": "KitDialog",
+  "external-agents#external-agents-add": "KitActionBlock",
+  "external-agents#external-agents-empty": "KitStateView",
+  "external-agents#external-agents-row": "KitRow",
+  "external-agents-delete-sheet#external-agents-delete-sheet": "KitConfirmSheet",
+  "external-link-dialog#external-link-dialog-cancel": "KitConfirmSheet",
+  "external-link-dialog#external-link-dialog-host": "KitConfirmSheet",
+  "external-link-dialog#external-link-dialog-open": "KitConfirmSheet",
+  "external-task#external-task-actions": "KitActionBlock",
+  "external-task#external-task-status": "KitStatusLine",
+  "external-task-cancel-sheet#external-task-cancel-sheet": "KitConfirmSheet",
+  "external-task-forget-sheet#external-task-forget-sheet": "KitConfirmSheet",
+  "file-drop-failed-dialog#file-drop-failed-dialog-close": "KitDialog",
+  "file-drop-failed-dialog#file-drop-failed-dialog-dialog": "KitDialog",
+  "file-preview-sheet#file-preview-sheet-body": "KitViewer",
+  "file-preview-sheet#file-preview-sheet-header": "KitViewer",
+  "files#files-back-bar": "KitTopBar",
+  "files#files-breadcrumb": "module:files",
+  "files#files-changes-card": "KitRow",
+  "files#files-loading": "KitLoadingBar",
+  "files#files-order-menu": "KitRowMenu",
+  "files#files-row": "KitRow",
+  "files#files-search-field": "KitSearchField",
+  "files#files-status-notice": "KitStatusLine",
+  "files#files-symbols-hint": "KitStateView",
+  "files-changes-sheet#files-changes-sheet-file": "KitRow",
+  "files-changes-sheet#files-changes-sheet-review-all": "KitActionBlock",
+  "files-changes-sheet#files-changes-sheet-stage": "KitIconButton",
+  "files-file-viewer-sheet#files-file-viewer-sheet-body": "KitViewer",
+  "files-file-viewer-sheet#files-file-viewer-sheet-error": "KitStateView",
+  "files-file-viewer-sheet#files-file-viewer-sheet-header": "KitViewer",
+  "files-row-actions-sheet#files-row-actions-sheet-header": "KitSheet",
+  "files-row-actions-sheet#files-row-actions-sheet-item": "KitRow",
+  "form-sheet#form-sheet": "KitSheet",
+  "form-sheet#form-sheet-fields": "KitField",
+  "form-sheet#form-sheet-submit": "KitSheet",
+  "form-sheet-date-picker#form-sheet-date-picker": "module:special surface",
+  "form-sheet-dismiss-confirm-sheet#form-sheet-dismiss-confirm-sheet": "KitConfirmSheet",
+  "gate-sheet#gate-details": "KitDetailsFold",
+  "gate-sheet#gate-kicker": "KitDetailsFold",
+  "gate-sheet#gate-options": "KitChoiceList",
+  "gate-sheet#gate-work-chip": "KitRow",
+  "gate-sheet-confirm-sheet#gate-confirm": "KitConfirmSheet",
+  "global-sessions#global-sessions-folder-chip": "KitSegmented",
+  "global-sessions#global-sessions-group": "KitPanel",
+  "global-sessions#global-sessions-row": "KitRow",
+  "global-sessions#global-sessions-row-menu": "KitRowMenu",
+  "global-sessions#global-sessions-search": "KitSearchField",
+  "global-sessions-continue-here-sheet#global-sessions-continue-here-sheet-confirm": "KitConfirmSheet",
+  "global-shortcuts#global-shortcuts-layer": "module:platform (no UI)",
+  "guide#guide-advanced": "KitRow",
+  "guide#guide-connection-help": "KitRow",
+  "guide#guide-pair-command": "KitCodeBlock",
+  "guide#guide-steps": "KitChecklist",
+  "home-shell#home-shell-badge": "KitNeedsYou",
+  "home-shell#home-shell-rail": "module:special surface",
+  "home-shell#home-shell-server-switcher": "KitTopBar",
+  "host-management#host-management-command": "KitCodeBlock",
+  "host-management#host-management-docs": "KitActionBlock",
+  "host-management#host-management-facts": "KitRow",
+  "info-label-sheet#info-label-sheet": "KitTerm",
+  "integrations#add-mcp": "KitIconButton",
+  "integrations#legacy-notice": "KitNotice",
+  "integrations#mcp-row": "KitRow",
+  "integrations#pending-tiles": "KitRequestCard",
+  "integrations#provider-row": "KitRow",
+  "integrations#section-header": "SectionLabel",
+  "integrations-authorization-launch-dialog#dialog": "KitDialog",
+  "integrations-connect-key-dialog#key-field": "KitField",
+  "integrations-connect-method-sheet#method-rows": "KitRow",
+  "integrations-disconnect-provider-sheet#confirm": "KitConfirmSheet",
+  "integrations-forget-pending-auth-sheet#confirm": "KitConfirmSheet",
+  "integrations-forget-uncertain-auth-sheet#confirm": "KitConfirmSheet",
+  "integrations-mcp-oauth-code-dialog#code-field": "KitField",
+  "integrations-oauth-code-dialog#dialog": "KitDialog",
+  "integrations-oauth-inputs-dialog#dialog": "KitDialog",
+  "integrations-oauth-inputs-dialog#prompt-field": "KitField",
+  "integrations-remove-mcp-sheet#confirm": "KitConfirmSheet",
+  "isolated-task-sheet#isolated-task-sheet-failure": "KitStateView",
+  "isolated-task-sheet#isolated-task-sheet-frame": "KitSheet",
+  "isolated-task-sheet#isolated-task-sheet-name": "KitField",
+  "isolated-task-sheet#isolated-task-sheet-path": "KitDetailsFold",
+  "isolated-task-sheet#isolated-task-sheet-progress": "KitChecklist",
+  "isolated-task-sheet#isolated-task-sheet-start": "KitActionBlock",
+  "isolated-task-sheet#isolated-task-sheet-stop-waiting": "KitActionBlock",
+  "language-sheet#language-choice": "KitChoiceList",
+  "language-sheet#language-sheet": "KitSheet",
+  "legacy-drafts#legacy-draft-row": "KitRow",
+  "legacy-drafts#legacy-intro": "KitNotice",
+  "legacy-drafts#legacy-search": "KitSearchField",
+  "legacy-drafts-delete-sheet#legacy-delete-sheet": "KitConfirmSheet",
+  "legacy-drafts-review-sheet#legacy-copy": "KitIconButton",
+  "legacy-drafts-review-sheet#legacy-delete": "KitActionBlock",
+  "legacy-drafts-review-sheet#legacy-insert": "KitSheet",
+  "legacy-drafts-review-sheet#legacy-review-sheet": "KitSheet",
+  "local-agent-page#battery-warning": "KitNotice",
+  "local-agent-page#install-steps": "KitChecklist",
+  "local-agent-page#live-output": "KitLogPanel",
+  "local-agent-page#offer-actions": "KitActionBlock",
+  "local-agent-page#sign-in": "KitChecklist",
+  "local-agent-page#whole-page-card": "KitPanel",
+  "local-agent-project-sheet#continue": "KitActionBlock",
+  "local-agent-project-sheet#folder-radios": "KitChoiceList",
+  "local-agent-project-sheet#path-field": "KitField",
+  "manage-project#manage-project-header": "KitRow",
+  "manage-project#manage-project-rows": "KitRow",
+  "managed-workspaces#managed-workspaces-adapters": "KitRow",
+  "managed-workspaces#managed-workspaces-create": "KitActionBlock",
+  "managed-workspaces#managed-workspaces-sync": "KitIconButton",
+  "managed-workspaces#managed-workspaces-tile": "KitRow",
+  "managed-workspaces#managed-workspaces-tile-menu": "KitRowMenu",
+  "managed-workspaces-create-dialog#managed-workspaces-create-dialog-adapter": "KitChoiceList",
+  "managed-workspaces-create-dialog#managed-workspaces-create-dialog-branch": "KitField",
+  "managed-workspaces-remove-dialog#managed-workspaces-remove-dialog-confirm": "KitConfirmSheet",
+  "managed-workspaces-remove-dialog#managed-workspaces-remove-dialog-confirm-text": "KitConfirmSheet",
+  "markdown-code-reader#markdown-code-reader": "KitViewer",
+  "markdown-code-reader#markdown-code-reader-body": "KitCodeBlock",
+  "mcp-setup#detect-oauth": "KitSwitchRow",
+  "mcp-setup#fields": "KitField",
+  "mcp-setup#kind-segmented": "KitSegmented",
+  "mcp-setup#mcp-headers": "KitField",
+  "mcp-setup#save": "KitActionBlock",
+  "mcp-setup#scope-segmented": "KitSegmented",
+  "model-picker-sheet#basic-catalog-notice": "KitNotice",
+  "model-picker-sheet#model-filters": "KitSegmented",
+  "model-picker-sheet#model-footer": "KitStatusLine",
+  "model-picker-sheet#model-picker-apply-bar": "KitActionBlock",
+  "model-picker-sheet#model-picker-sheet": "KitSheet",
+  "model-picker-sheet#model-row": "KitRow",
+  "model-picker-sheet#model-search": "KitSearchField",
+  "model-picker-sheet#model-tabs": "KitTabSwitcher",
+  "model-picker-sheet#picker-unloaded-providers": "KitNotice",
+  "model-picker-sheet-agent-dialog#agent-dialog": "KitChoiceList",
+  "model-picker-sheet-agent-dialog#agent-dropdown": "KitChoiceList",
+  "model-picker-sheet-options-dialog#options-agent": "KitChoiceList",
+  "model-picker-sheet-options-dialog#options-capabilities": "KitStatusLine",
+  "model-picker-sheet-options-dialog#options-dialog": "KitSheet",
+  "model-picker-sheet-options-dialog#options-variant": "KitSegmented",
+  "model-picker-sheet-unloaded-providers-dialog#unloaded-dialog": "KitSheet",
+  "notifications-settings#notifications-check-in-minutes": "KitChoiceList",
+  "notifications-settings#notifications-footer": "KitNotice",
+  "notifications-settings#notifications-toggle": "KitSwitchRow",
+  "notifications-settings-quiet-time-dialog#quiet-time-picker": "module:special surface",
+  "pairing-scanner#pairing-scanner-camera": "module:special surface",
+  "pairing-scanner#pairing-scanner-recovery": "KitStateView",
+  "permission-sheet#permission-sheet": "KitSheet",
+  "permission-sheet#permission-sheet-command-preview": "KitCodeBlock",
+  "permission-sheet#permission-sheet-reject-message": "KitField",
+  "permission-sheet-always-dialog#permission-sheet-always-dialog": "KitConfirmSheet",
+  "phone-setup-customize-sheet#optional-switch": "KitSwitchRow",
+  "phone-setup-customize-sheet#required-switches": "KitSwitchRow",
+  "phone-setup-customize-sheet#totals": "KitStatusLine",
+  "phone-setup-progress#checklist": "KitChecklist",
+  "phone-setup-progress#details": "KitLogPanel",
+  "phone-setup-progress-stop-sheet#confirm": "KitConfirmSheet",
+  "phone-setup-ready#name-field": "KitField",
+  "phone-setup-start#phone-setup-start-other-ways": "KitRow",
+  "plugins-clear-mappings-sheet#clear-mappings-sheet": "KitConfirmSheet",
+  "plugins-mapping-dialog#mapping-checkbox": "KitChoiceList",
+  "plugins-mapping-dialog#mapping-dialog": "KitSheet",
+  "plugins-settings#builtin-team-section": "KitPanel",
+  "plugins-settings#plugin-details": "KitSheet",
+  "plugins-settings#team-discovery-card": "KitPanel",
+  "privacy-settings#share-session-views": "KitSwitchRow",
+  "privacy-settings-clear-drafts-sheet#clear-drafts-sheet": "KitConfirmSheet",
+  "privacy-settings-clear-queued-sheet#clear-queued-sheet": "KitConfirmSheet",
+  "profile-editor#profile-editor-backend": "KitChoiceList",
+  "profile-editor#profile-editor-command": "KitCodeBlock",
+  "profile-editor-discard-sheet#profile-editor-discard-sheet": "KitConfirmSheet",
+  "profile-monitor#profile-monitor-request-row": "KitNeedsYou",
+  "profile-monitor#profile-monitor-server": "KitRow",
+  "profile-monitor-switch-server-dialog#profile-monitor-switch-server-dialog": "KitConfirmSheet",
+  "project-folder-browser#project-folder-browser-frame": "KitSheet",
+  "project-folder-browser#project-folder-browser-name": "KitField",
+  "project-folder-new-dialog#project-folder-new-dialog-name": "KitDialog",
+  "project-folder-open-dialog#project-folder-open-dialog-path": "KitDialog",
+  "project-folder-open-dialog#project-folder-open-dialog-progress": "KitProgress",
+  "project-health#project-health-git-init": "KitActionBlock",
+  "project-health#project-health-refresh": "KitIconButton",
+  "project-health#project-health-rows": "KitRow",
+  "project-health-git-init-dialog#project-health-git-init-dialog-confirm": "KitConfirmSheet",
+  "project-hub#project-hub-context": "KitRow",
+  "project-hub#project-hub-files-back": "KitTopBar",
+  "project-hub#project-hub-tool-row": "KitRow",
+  "projects#projects-open-folder": "KitRow",
+  "projects#projects-project-rename": "KitActionBlock",
+  "projects#projects-project-tile": "KitRow",
+  "projects#projects-search": "KitSearchField",
+  "projects-rename-dialog#projects-rename-dialog-name": "KitDialog",
+  "prompt-editor#prompt-editor": "KitTopBar",
+  "prompt-editor#prompt-editor-done": "KitTopBar",
+  "prompt-editor#prompt-editor-field": "KitField",
+  "prompt-editor-discard-sheet#prompt-editor-discard-sheet": "KitConfirmSheet",
+  "prompt-history-sheet#prompt-history-sheet": "KitSheet",
+  "prompt-history-sheet#prompt-history-sheet-prompt-row": "KitRow",
+  "prompt-stash-delete-sheet#prompt-stash-delete-sheet": "KitConfirmSheet",
+  "prompt-stash-sheet#prompt-stash-loading": "KitLoadingBar",
+  "prompt-stash-sheet#prompt-stash-sheet": "KitSheet",
+  "prompt-stash-sheet#prompt-stash-sheet-empty": "KitStateView",
+  "prompt-stash-sheet#prompt-stash-sheet-row": "KitRow",
+  "prompt-tools-sheet#prompt-tools-sheet": "KitSheet",
+  "prompt-tools-sheet#prompt-tools-sheet-advanced": "KitRow",
+  "prompt-tools-sheet#prompt-tools-sheet-clear": "KitRow",
+  "prompt-tools-sheet#prompt-tools-sheet-prompts": "KitRow",
+  "prompt-tools-sheet#prompt-tools-sheet-rows": "KitRow",
+  "provider-quota#provider-quota-chips": "KitSegmented",
+  "provider-quota#provider-quota-consent": "KitSwitchRow",
+  "provider-quota#provider-quota-setup": "KitStateView",
+  "provider-quota#provider-quota-window": "KitProgressRow",
+  "provider-quota-clear-dialog#provider-quota-clear-dialog": "KitConfirmSheet",
+  "provider-quota-enroll-dialog#provider-quota-enroll-dialog": "KitConfirmSheet",
+  "question-sheet#question-sheet-custom-answer": "KitField",
+  "question-sheet#question-sheet-dismiss": "KitRequestCard",
+  "question-sheet#question-sheet-frame": "KitSheet",
+  "question-sheet#question-sheet-option": "KitChoiceList",
+  "question-sheet#question-sheet-send": "KitChoiceList",
+  "question-sheet-dismiss-dialog#question-sheet-dismiss-dialog-confirm": "KitConfirmSheet",
+  "references#reference-row": "KitRow",
+  "remove-local-agents-confirm-sheet#confirm": "KitConfirmSheet",
+  "restart-local-agents-sheet#confirm": "KitConfirmSheet",
+  "review-comment-sheet#review-comment-sheet-actions": "KitSheet",
+  "review-comment-sheet#review-comment-sheet-field": "KitField",
+  "review-comment-sheet#review-comment-sheet-guard": "KitSheet",
+  "review-workspace#review-workspace-diff": "KitDiffView",
+  "review-workspace#review-workspace-empty-error": "KitStateView",
+  "review-workspace#review-workspace-file-actions": "KitRowMenu",
+  "review-workspace#review-workspace-file-header": "KitDiffView",
+  "review-workspace#review-workspace-file-strip": "KitDiffView",
+  "review-workspace#review-workspace-hunk-nav": "KitDiffView",
+  "review-workspace#review-workspace-mode": "KitSegmented",
+  "review-workspace#review-workspace-refresh-banner": "KitStatusLine",
+  "review-workspace#review-workspace-scope-picker": "KitSegmented",
+  "review-workspace#review-workspace-selection-bar": "KitDiffView",
+  "run-command-dialog#run-command-dialog": "KitDialog",
+  "run-result#run-result-open": "KitActionBlock",
+  "run-result#run-result-rows": "KitRow",
+  "run-result#run-result-summary": "KitRow",
+  "run-result-output-sheet#run-result-output-sheet": "KitSheet",
+  "running-work-sheet#running-work-sheet-agent": "KitRow",
+  "running-work-sheet#running-work-sheet-empty": "KitStateView",
+  "running-work-sheet#running-work-sheet-frame": "KitSheet",
+  "running-work-sheet#running-work-sheet-run-in-background": "KitActionBlock",
+  "running-work-sheet#running-work-sheet-shell": "KitRow",
+  "saved-permissions#saved-permission-row": "KitRow",
+  "saved-permissions#saved-permissions-error": "KitStateView",
+  "saved-permissions#saved-permissions-loading": "KitLoadingBar",
+  "saved-permissions#saved-permissions-refresh": "KitIconButton",
+  "saved-permissions-revoke-dialog#revoke-dialog": "KitConfirmSheet",
+  "server-capabilities#capabilities-intro": "KitNotice",
+  "server-capabilities#capability-row": "KitRow",
+  "server-settings-restart-dialog#server-settings-restart-dialog": "KitCodeBlock",
+  "server-settings-upgrade-sheet#server-settings-upgrade-sheet": "KitConfirmSheet",
+  "server-switcher-sheet#server-switcher-sheet-add": "KitRow",
+  "server-switcher-sheet#server-switcher-sheet-current": "KitChoiceList",
+  "server-switcher-sheet#server-switcher-sheet-disconnect": "KitActionBlock",
+  "server-switcher-sheet#server-switcher-sheet-frame": "KitSheet",
+  "server-switcher-sheet#server-switcher-sheet-manage": "KitRow",
+  "server-switcher-sheet#server-switcher-sheet-profile": "KitChoiceList",
+  "servers#brand-header": "KitTopBar",
+  "servers-remove-server-sheet#servers-remove-server-sheet": "KitConfirmSheet",
+  "servers-welcome#brand-header": "KitTopBar",
+  "servers-welcome#servers-welcome-choice": "KitChoiceList",
+  "session-approvals-sheet#session-approvals-sheet": "KitSheet",
+  "session-approvals-sheet#session-approvals-sheet-done": "KitSheet",
+  "session-approvals-sheet#session-approvals-sheet-inherit-switch": "KitSwitchRow",
+  "session-approvals-sheet#session-approvals-sheet-log": "KitRow",
+  "session-approvals-sheet#session-approvals-sheet-mode": "KitChoiceList",
+  "session-approvals-sheet#session-approvals-sheet-server-switch": "KitSwitchRow",
+  "session-context#session-context-hero": "KitProgressRow",
+  "session-context#session-context-makeup": "module:special surface",
+  "session-context#session-context-states": "KitStateView",
+  "session-destination-confirm-dialog#session-destination-confirm-dialog-confirm": "KitConfirmSheet",
+  "session-destination-sheet#session-destination-sheet-destination": "KitChoiceList",
+  "session-destination-sheet#session-destination-sheet-filter": "KitSearchField",
+  "session-export#session-export-format": "KitChoiceList",
+  "session-export#session-export-redact": "KitSwitchRow",
+  "session-export#session-export-save": "KitActionBlock",
+  "session-handoff-dialog#session-handoff-dialog": "KitCodeBlock",
+  "session-import#session-import-destination": "KitRow",
+  "session-import#session-import-preview": "KitDetailsFold",
+  "session-import#session-import-submit": "KitActionBlock",
+  "session-import-destination-sheet#session-import-destination-sheet-choice": "KitChoiceList",
+  "session-link-server-missing-banner#session-link-server-missing-banner-banner": "KitStatusLine",
+  "session-link-server-missing-banner#session-link-server-missing-banner-dismiss": "KitStatusLine",
+  "session-link-server-missing-banner#session-link-server-missing-banner-open-servers": "KitStatusLine",
+  "session-menu-sheet#session-menu-sheet": "KitSheet",
+  "session-menu-sheet#session-menu-sheet-actions": "KitRow",
+  "session-menu-sheet#session-menu-sheet-actions-expander": "KitRow",
+  "session-menu-sheet#session-menu-sheet-display-expander": "KitRow",
+  "session-menu-sheet#session-menu-sheet-display-toggles": "KitSwitchRow",
+  "session-menu-sheet#session-menu-sheet-go-to-chips": "KitRow",
+  "session-menu-sheet#session-menu-sheet-header": "KitSheet",
+  "session-note#session-note-editor": "KitField",
+  "session-note#session-note-remove": "KitActionBlock",
+  "session-note#session-note-save": "KitActionBlock",
+  "session-note-discard-dialog#session-note-discard-dialog": "KitConfirmSheet",
+  "session-relations#session-relations-row": "KitRow",
+  "session-relations#session-relations-states": "KitStateView",
+  "settings#library-search": "KitSearchField",
+  "settings#library-search-summary": "KitStatusLine",
+  "settings#settings-header": "KitTopBar",
+  "settings-disconnect-sheet#disconnect-body": "KitConfirmSheet",
+  "settings-disconnect-sheet#disconnect-sheet": "KitConfirmSheet",
+  "settings-transcript-display-sheet#transcript-sheet": "KitSheet",
+  "settings-transcript-display-sheet#transcript-toggles": "KitSwitchRow",
+  "share-session-failed-banner#share-session-failed-banner-banner": "KitStatusLine",
+  "share-session-failed-banner#share-session-failed-banner-retry": "KitStatusLine",
+  "shell-output#shell-output-follow": "KitSwitchRow",
+  "shell-output#shell-output-log": "KitLogPanel",
+  "shell-output#shell-output-stop": "KitActionBlock",
+  "shell-output#shell-output-timeout": "KitActionBlock",
+  "shell-output#shell-output-title": "KitTopBar",
+  "shell-output-stop-dialog#shell-output-stop-dialog-confirm": "KitConfirmSheet",
+  "shell-output-timeout-sheet#shell-output-timeout-sheet-option": "KitChoiceList",
+  "shorebird-update-notice#shorebird-update-notice-got-it": "KitStatusLine",
+  "shorebird-update-notice#shorebird-update-notice-receiving": "KitStatusLine",
+  "shortcuts-help-dialog#shortcuts-help-dialog-close": "KitSheet",
+  "shortcuts-help-dialog#shortcuts-help-dialog-list": "KitSheet",
+  "skill-activation-sheet#add": "KitActionBlock",
+  "skill-activation-sheet#run-now": "KitSwitchRow",
+  "skill-activation-sheet#view-toggle": "KitSegmented",
+  "skills#skill-row": "KitRow",
+  "skills-preview-sheet#path": "KitDetailsFold",
+  "skills-preview-sheet#view-toggle": "KitSegmented",
+  "stage-revert-sheet#stage-revert-sheet": "KitConfirmSheet",
+  "stage-revert-sheet#stage-revert-sheet-apply-files": "KitSwitchRow",
+  "staged-revert#staged-revert-actions": "KitActionBlock",
+  "staged-revert#staged-revert-busy": "KitLoadingBar",
+  "staged-revert#staged-revert-file-row": "KitRow",
+  "staged-revert#staged-revert-prompt": "KitRow",
+  "staged-revert-confirm-sheet#staged-revert-confirm-sheet": "KitConfirmSheet",
+  "start-run-sheet#start-objective": "KitField",
+  "start-run-sheet#start-planner": "KitRow",
+  "start-run-sheet#start-project": "KitChoiceList",
+  "start-run-sheet#start-supervision": "KitChoiceList",
+  "stop-local-agents-confirm-sheet#confirm": "KitConfirmSheet",
+  "system#launcher-shortcuts": "module:platform (no UI)",
+  "system#notification-routing": "module:platform (no UI)",
+  "system#share-intake": "module:platform (no UI)",
+  "system#undeliverable-snackbar": "KitNotice",
+  "tailscale-setup#tailscale-setup-address": "KitField",
+  "tailscale-setup#tailscale-setup-help": "KitRow",
+  "tailscale-setup#tailscale-setup-primaries": "KitActionBlock",
+  "tailscale-setup#tailscale-setup-step1": "KitChecklist",
+  "team-agent#team-agent-header": "KitStatusLine",
+  "team-agent#team-agent-refresh": "KitIconButton",
+  "team-agent#team-agent-technical": "KitDetailsFold",
+  "team-agent-details-sheet#agent-details-values": "KitDetailsFold",
+  "team-agent-message-sheet#team-agent-message-field": "KitField",
+  "team-agent-output#team-agent-output-follow": "KitSwitchRow",
+  "team-agent-output#team-agent-output-jump": "KitJumpPill",
+  "team-agent-output#team-agent-output-text": "module:chat transcript",
+  "team-agent-restart-confirm-sheet#team-agent-restart-confirm": "KitConfirmSheet",
+  "team-agent-stop-confirm-sheet#team-agent-stop-confirm": "KitConfirmSheet",
+  "team-board#team-board-add": "KitActionBlock",
+  "team-board#team-board-card": "module:team board",
+  "team-board#team-board-pages": "module:team board",
+  "team-board#team-board-project": "KitTopBar",
+  "team-board#team-board-tabs": "KitTabSwitcher",
+  "team-board-add-sheet#team-board-add-field": "KitField",
+  "team-board-cancel-confirm-sheet#team-board-cancel-confirm": "KitConfirmSheet",
+  "team-board-priority-sheet#team-board-priority-row": "KitChoiceList",
+  "team-conversation#team-conversation-composer": "KitField",
+  "team-conversation#team-conversation-family": "module:team conversation",
+  "team-conversation#team-conversation-now": "KitStatusLine",
+  "team-conversation#team-conversation-prompt": "module:chat transcript",
+  "team-conversation#team-conversation-title": "KitTopBar",
+  "team-cycle-how-sheet#cycle-how-body": "KitSheet",
+  "team-cycle-stop-confirm-sheet#cycle-stop-confirm": "KitConfirmSheet",
+  "team-home#team-home-board": "KitIconButton",
+  "team-home#team-now-line": "KitStatusLine",
+  "team-home-needs-you-tab#receipt": "KitReceipt",
+  "team-home-runs-tab#team-home-search": "KitSearchField",
+  "team-home-runs-tab#team-home-upkeep-toggle": "KitSwitchRow",
+  "team-host-details-sheet#host-details-values": "KitDetailsFold",
+  "team-host-guide-sheet#guide-body": "KitCodeBlock",
+  "team-host-sheet#host-address": "KitField",
+  "team-host-sheet#host-kind": "KitSegmented",
+  "team-host-sheet#host-submit": "KitActionBlock",
+  "team-merge-approve-sheet#approve-confirm": "KitConfirmSheet",
+  "team-merge-confirm-sheet#merge-confirm": "KitConfirmSheet",
+  "team-phone-onboarding-failed#failed-log": "KitLogPanel",
+  "team-phone-onboarding-failed#failed-retry": "KitActionBlock",
+  "team-phone-onboarding-killed#killed-start-again": "KitActionBlock",
+  "team-phone-onboarding-offer#offer-set-up": "KitActionBlock",
+  "team-phone-onboarding-offer#offer-skip": "KitActionBlock",
+  "team-phone-onboarding-project-sheet#project-radio": "KitChoiceList",
+  "team-phone-onboarding-steps#steps-log": "KitLogPanel",
+  "team-phone-onboarding-steps#steps-marks": "KitChecklist",
+  "team-phone-onboarding-success#success-open-work": "KitActionBlock",
+  "team-phone-remove-sheet#phone-remove-confirm": "KitConfirmSheet",
+  "team-phone-stop-sheet#phone-stop-confirm": "KitConfirmSheet",
+  "team-phone-tips-sheet#tips-commands": "KitCodeBlock",
+  "team-plugin-sheet#team-sheet": "KitSheet",
+  "team-plugin-sheet#team-sheet-add": "KitActionBlock",
+  "team-plugin-sheet#team-sheet-details": "KitDetailsFold",
+  "team-plugin-sheet#team-sheet-status": "KitStatusLine",
+  "team-plugin-sheet#team-sheet-title": "KitSheet",
+  "team-plugin-sheet#team-sheet-turn-off": "KitActionBlock",
+  "team-run#team-run-appbar": "KitTopBar",
+  "team-run#team-run-more": "KitRowMenu",
+  "team-run#team-run-refresh": "KitIconButton",
+  "team-run#team-run-tabs": "KitTabSwitcher",
+  "team-run-cancel-confirm-sheet#team-run-cancel-confirm": "KitConfirmSheet",
+  "team-run-details-sheet#run-details-values": "KitDetailsFold",
+  "team-run-overview-tab#overview-objective": "KitTopBar",
+  "team-run-overview-tab#team-run-stage-line": "KitChecklist",
+  "team-run-overview-tab#team-run-summary": "KitDetailsFold",
+  "team-run-timeline-tab#team-run-timeline-filter": "KitSegmented",
+  "team-run-timeline-tab#team-run-timeline-jump": "KitJumpPill",
+  "team-turn-off-sheet#turn-off-confirm": "KitConfirmSheet",
+  "terminal#terminal-new-fab": "KitActionBlock",
+  "terminal#terminal-process-row": "KitRow",
+  "terminal#terminal-refresh-banner": "KitStatusLine",
+  "terminal#terminal-source": "KitSegmented",
+  "terminal-remove-sheet#terminal-remove-sheet": "KitConfirmSheet",
+  "terminal-rename-dialog#terminal-rename-dialog": "KitDialog",
+  "terminal-surface#terminal-surface-error": "KitNotice",
+  "terminal-surface#terminal-surface-header": "KitIconButton",
+  "terminal-surface#terminal-surface-keys": "module:special surface",
+  "terminal-surface#terminal-surface-status": "KitStatusLine",
+  "terminal-surface#terminal-surface-view": "module:special surface",
+  "termux-processes#process-row": "KitRow",
+  "termux-processes#stop-all": "KitActionBlock",
+  "termux-processes#stop-orphan": "KitIconButton",
+  "termux-processes#summary": "KitStatusLine",
+  "termux-processes#termux-procs-empty": "KitStateView",
+  "termux-processes-details-sheet#command-folder": "KitDetailsFold",
+  "termux-processes-details-sheet#pid-subtitle": "KitDetailsFold",
+  "termux-processes-details-sheet#stop": "KitActionBlock",
+  "termux-processes-stop-group-sheet#confirm": "KitConfirmSheet",
+  "termux-processes-stop-one-sheet#confirm": "KitConfirmSheet",
+  "termux-setup#explanation": "KitNotice",
+  "termux-setup#last-output": "KitLogPanel",
+  "termux-setup-checking#progress-line": "KitChecklist",
+  "termux-setup-choose#runtime-radios": "KitChoiceList",
+  "termux-setup-connect-termux#guide-cards": "KitPanel",
+  "termux-setup-connect-termux#guide-illustrations": "module:special surface",
+  "termux-setup-connected#steps-done": "KitChecklist",
+  "termux-setup-failed#failure-line": "KitStateView",
+  "termux-setup-failed#log": "KitLogPanel",
+  "termux-setup-get-termux#steps": "KitChecklist",
+  "termux-setup-installed#last-output": "KitLogPanel",
+  "termux-setup-installing#live-output": "KitLogPanel",
+  "termux-setup-replace-installed-sheet#confirm": "KitConfirmSheet",
+  "termux-setup-restart-sheet#confirm": "KitConfirmSheet",
+  "termux-setup-start-installed-sheet#confirm": "KitConfirmSheet",
+  "termux-setup-switch-runtime-sheet#confirm": "KitConfirmSheet",
+  "termux-setup-unchecked-install-sheet#confirm": "KitConfirmSheet",
+  "termux-setup-update-sheet#confirm": "KitConfirmSheet",
+  "termux-storage#category-rows": "KitRow",
+  "termux-storage#clean": "KitActionBlock",
+  "termux-storage#scan-log": "KitLogPanel",
+  "termux-storage#termux-storage-intro": "KitStateView",
+  "termux-storage-clean-sheet#confirm": "KitConfirmSheet",
+  "theme-pack-preview-sheet#theme-apply": "KitActionBlock",
+  "theme-pack-preview-sheet#theme-mode-chips": "KitSegmented",
+  "theme-pack-preview-sheet#theme-preview-card": "module:appearance",
+  "theme-pack-preview-sheet#theme-sheet": "KitSheet",
+  "timeline-sheet#timeline-sheet": "KitSheet",
+  "timeline-sheet#timeline-sheet-row": "KitRow",
+  "timeline-sheet#timeline-sheet-row-fork": "KitIconButton",
+  "todos-sheet#todos-sheet-empty": "KitStateView",
+  "todos-sheet#todos-sheet-error": "KitStateView",
+  "todos-sheet#todos-sheet-todo-row": "KitRow",
+  "tools#counters": "KitStatusLine",
+  "tools#model-header": "KitRow",
+  "tools#tool-row": "KitRow",
+  "tools-detail-sheet#schema": "KitCodeBlock",
+  "usage#usage-budgets": "SectionLabel",
+  "usage#usage-range": "KitSegmented",
+  "usage#usage-total": "KitProgressRow",
+  "usage-budget-clear-dialog#usage-budget-clear-dialog": "KitConfirmSheet",
+  "usage-budget-dialog#usage-budget-dialog": "KitDialog",
+  "usage-hub#usage-loading": "KitLoadingBar",
+  "usage-hub#usage-range": "KitSegmented",
+  "usage-hub#usage-refresh": "KitIconButton",
+  "usage-hub#usage-scope": "KitSegmented",
+  "usage-hub#usage-tabs": "KitTabSwitcher",
+  "usage-hub#usage-totals": "KitProgressRow",
+  "voice-composer-sheet#voice-composer-sheet": "KitSheet",
+  "voice-composer-sheet#voice-composer-sheet-actions": "KitSheet",
+  "voice-composer-sheet#voice-composer-sheet-draft-field": "KitField",
+  "voice-composer-sheet#voice-composer-sheet-meter": "module:special surface",
+  "voice-composer-sheet#voice-composer-sheet-technical-details": "KitDetailsFold",
+  "voice-model-setup-sheet#voice-model-setup-sheet": "KitSheet",
+  "voice-model-setup-sheet#voice-model-setup-sheet-language": "KitChoiceList",
+  "voice-model-setup-sheet#voice-model-setup-sheet-pack": "KitChoiceList",
+  "voice-model-setup-sheet#voice-model-setup-sheet-primary": "KitSheet",
+  "voice-model-setup-sheet#voice-model-setup-sheet-progress": "KitProgressRow",
+  "voice-model-setup-sheet#voice-model-setup-sheet-technical-details": "KitDetailsFold",
+  "voice-model-setup-sheet-delete-dialog#voice-model-setup-sheet-delete-dialog": "KitConfirmSheet",
+  "voice-notices#voice-notices": "KitViewer",
+  "voice-notices#voice-notices-body": "KitViewer",
+  "web-sources#web-paste": "KitRow",
+  "web-sources#web-provider": "KitChoiceList",
+  "web-sources#web-query": "KitSearchField",
+  "web-sources#web-refresh-providers": "KitActionBlock",
+  "web-sources#web-result": "KitRow",
+  "web-sources#web-search": "KitActionBlock",
+  "web-sources#web-selected": "KitChoiceList",
+  "web-sources#web-use-selected": "KitActionBlock",
+  "work-sheet#team-work-sheet-cycle": "KitChecklist",
+  "work-sheet#work-code": "KitDetailsFold",
+  "work-sheet#work-dependency-chip": "KitRow",
+  "work-sheet#work-details": "KitDetailsFold",
+  "workspace#workspace-archive-undo": "KitUndo",
+  "workspace#workspace-isolated-task": "KitActionBlock",
+  "workspace#workspace-new-mode": "KitSegmented",
+  "workspace#workspace-nudge-pin-got-it": "KitNotice",
+  "workspace#workspace-project-header": "KitTopBar",
+  "workspace#workspace-section-menu": "KitActionBlock",
+  "workspace#workspace-session-menu": "KitRowMenu",
+  "workspace-archive-session-sheet#workspace-archive-session-sheet-confirm": "KitConfirmSheet",
+  "workspace-archived-sheet#workspace-archived-sheet-frame": "KitSheet",
+  "workspace-archived-sheet#workspace-archived-sheet-menu": "KitRowMenu",
+  "workspace-archived-sheet#workspace-archived-sheet-row": "KitRow",
+  "workspace-context-sheet#workspace-context-sheet-frame": "KitSheet",
+  "workspace-context-sheet#workspace-context-sheet-header": "KitRow",
+  "workspace-context-sheet#workspace-context-sheet-local": "KitRow",
+  "workspace-context-sheet#workspace-context-sheet-manage-project": "KitRow",
+  "workspace-context-sheet#workspace-context-sheet-switch-project": "KitRow",
+  "workspace-context-sheet#workspace-context-sheet-workspace": "KitRow",
+  "workspace-delete-session-sheet#workspace-delete-session-sheet-confirm": "KitConfirmSheet",
+  "workspace-directory-details-dialog#workspace-directory-details-dialog-close": "KitDetailsFold",
+  "workspace-rename-session-dialog#workspace-rename-session-dialog-title": "KitDialog",
+  "workspace-session-details-sheet#workspace-session-details-sheet-lines": "KitDetailsFold",
+  "workspace-share-session-sheet#workspace-share-session-sheet-confirm": "KitConfirmSheet",
+  "worktrees#worktrees-create": "KitActionBlock",
+  "worktrees#worktrees-empty-create": "KitStateView",
+  "worktrees#worktrees-glossary-label": "SectionLabel",
+  "worktrees#worktrees-primary-tile": "KitRow",
+  "worktrees#worktrees-tile": "KitRow",
+  "worktrees#worktrees-tile-menu": "KitRowMenu",
+  "worktrees-create-dialog#worktrees-create-dialog-name": "KitDialog",
+  "worktrees-remove-dialog#worktrees-remove-dialog-confirm-text": "KitConfirmSheet",
+  "worktrees-remove-dialog#worktrees-remove-dialog-warning": "KitConfirmSheet",
+  "worktrees-reset-dialog#worktrees-reset-dialog-confirm": "KitConfirmSheet"
+ }
+}

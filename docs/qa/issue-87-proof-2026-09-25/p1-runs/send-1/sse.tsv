@@ -1,0 +1,71 @@
+1790366487.527	server.connected	
+1790366492.234	session.updated	info	ses_f25eacd6effeXeCjlalKDWTDEj	
+1790366492.235	message.updated	info	msg_0da28a61c001y1y8dNhhEFIvTs	user
+1790366492.242	message.part.updated	text	msg_0da28a61c001y1y8dNhhEFIvTs	22
+1790366492.242	session.updated	info	ses_f25eacd6effeXeCjlalKDWTDEj	
+1790366492.251	session.status	
+1790366492.252	message.updated	info	msg_0da28a64d001DF0pl3TFT7rw6c	assistant
+1790366492.368	session.updated	info	ses_f25eacd6effeXeCjlalKDWTDEj	
+1790366492.368	session.diff	
+1790366492.368	message.updated	info	msg_0da28a61c001y1y8dNhhEFIvTs	user
+1790366492.368	session.status	
+1790366493.967	message.part.updated	step-start	msg_0da28a64d001DF0pl3TFT7rw6c	0
+1790366493.967	message.part.updated	reasoning	msg_0da28a64d001DF0pl3TFT7rw6c	0
+1790366493.967	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	8
+1790366493.967	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	5
+1790366494.116	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	5
+1790366494.225	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	2
+1790366494.225	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	5
+1790366494.225	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	5
+1790366494.225	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	4
+1790366494.225	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	5
+1790366494.225	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	3
+1790366494.225	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	2
+1790366494.226	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	5
+1790366494.226	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	2
+1790366494.236	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	2
+1790366494.243	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	7
+1790366494.295	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	8
+1790366494.295	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	2
+1790366494.295	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	2
+1790366494.322	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	5
+1790366494.322	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	3
+1790366494.322	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	7
+1790366494.416	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	2
+1790366494.416	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	2
+1790366494.416	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	2
+1790366494.416	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	5
+1790366494.416	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	2
+1790366494.416	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	3
+1790366494.539	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	1
+1790366494.545	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	2
+1790366494.558	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	24
+1790366494.628	message.part.updated	reasoning	msg_0da28a64d001DF0pl3TFT7rw6c	130
+1790366494.628	message.part.updated	text	msg_0da28a64d001DF0pl3TFT7rw6c	0
+1790366494.628	message.part.delta	delta	msg_0da28a64d001DF0pl3TFT7rw6c	2
+1790366494.676	message.part.updated	text	msg_0da28a64d001DF0pl3TFT7rw6c	2
+1790366494.783	message.part.updated	step-finish	msg_0da28a64d001DF0pl3TFT7rw6c	0
+1790366494.783	message.updated	info	msg_0da28a64d001DF0pl3TFT7rw6c	assistant
+1790366494.920	message.updated	info	msg_0da28a64d001DF0pl3TFT7rw6c	assistant
+1790366494.920	session.status	
+1790366494.920	session.status	
+1790366494.920	session.idle	
+1790366494.920	session.updated	info	ses_f25eacd6effeXeCjlalKDWTDEj	
+1790366494.920	session.diff	
+1790366495.053	message.updated	info	msg_0da28a61c001y1y8dNhhEFIvTs	user
+1790366497.532	server.heartbeat	
+1790366507.533	server.heartbeat	
+1790366517.533	server.heartbeat	
+1790366527.533	server.heartbeat	
+1790366537.534	server.heartbeat	
+1790366547.539	server.heartbeat	
+1790366557.539	server.heartbeat	
+1790366567.540	server.heartbeat	
+1790366577.547	server.heartbeat	
+1790366587.547	server.heartbeat	
+1790366597.547	server.heartbeat	
+1790366607.548	server.heartbeat	
+1790366617.549	server.heartbeat	
+1790366627.549	server.heartbeat	
+1790366637.550	server.heartbeat	
+1790366647.550	server.heartbeat	

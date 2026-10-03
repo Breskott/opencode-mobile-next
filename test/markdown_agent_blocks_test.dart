@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/widgets/agent_blocks.dart';
+import 'package:opencode_mobile/ui/kit/kit_code_block.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 
 /// Captures Clipboard.setData payloads so tests can assert on copies.
@@ -66,7 +67,7 @@ void main() {
     await tester.tap(find.byKey(const Key('agent-choice-1')));
     await tester.pump();
     expect(chosen, ['Refactor the parser']);
-    expect(find.byType(CodeBlock), findsNothing);
+    expect(find.byType(KitCodeBlock), findsNothing);
   });
 
   testWidgets('```choices without a handler copies the option and says so', (
@@ -74,12 +75,17 @@ void main() {
   ) async {
     final copies = _captureClipboard(tester);
     await _pump(tester, '```CHOICES\nShip it\n```');
+    tester.takeAnnouncements();
 
     await tester.tap(find.byKey(const Key('agent-choice-0')));
     await tester.pumpAndSettle();
 
     expect(copies, ['Ship it']);
-    expect(find.text('Copied. Paste it into the composer'), findsOneWidget);
+    // Said once through the kit's copy service, never a snackbar (KIT-23).
+    expect(tester.takeAnnouncements().map((a) => a.message), [
+      'Copied. Paste it into the composer',
+    ]);
+    expect(find.byType(SnackBar), findsNothing);
   });
 
   testWidgets('```checklist renders read-only items with done state', (
@@ -119,12 +125,14 @@ void main() {
     await tester.tap(copy);
     await tester.pumpAndSettle();
     expect(copies, ['flutter test']);
+    // The copy button confirms in place (KIT-23): no snackbar.
+    expect(find.byType(SnackBar), findsNothing);
   });
 
   testWidgets('unknown fences keep the plain code block', (tester) async {
     await _pump(tester, '```dart\nvoid main() {}\n```');
 
-    expect(find.byType(CodeBlock), findsOneWidget);
+    expect(find.byType(KitCodeBlock), findsOneWidget);
     expect(find.byKey(const Key('agent-choices-block')), findsNothing);
     expect(find.byKey(const Key('agent-checklist-block')), findsNothing);
     expect(find.byKey(const Key('agent-command-block')), findsNothing);

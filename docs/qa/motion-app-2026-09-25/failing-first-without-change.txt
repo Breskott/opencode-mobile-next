@@ -1,0 +1,304 @@
+00:00 +0: loading test/kit_motion_app_test.dart
+00:00 +0: test/kit_motion_app_test.dart: page transitions every platform but iOS uses the one kit transition
+00:00 +0 -1: test/kit_motion_app_test.dart: page transitions every platform but iOS uses the one kit transition [E]
+  Expected: <Instance of 'KitPageTransitionsBuilder'>
+    Actual: <Instance of 'FadeForwardsPageTransitionsBuilder'>
+     Which: is not an instance of 'KitPageTransitionsBuilder'
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/kit_motion_app_test.dart 108:11                main.<fn>.<fn>
+  
+00:00 +0 -1: test/kit_motion_app_test.dart: page transitions a page fades through: the old one clears before the new one slides in, and both rest still
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <0>
+  Actual: <0.11851851851851852>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://test/kit_motion_app_test.dart:124:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/kit_motion_app_test.dart line 124
+The test description was:
+  a page fades through: the old one clears before the new one slides in, and both rest still
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +0 -2: test/kit_motion_app_test.dart: page transitions a page fades through: the old one clears before the new one slides in, and both rest still [E]
+  Test failed. See exception logs above.
+  The test description was: a page fades through: the old one clears before the new one slides in, and both rest still
+  
+00:00 +0 -2: test/kit_motion_app_test.dart: page transitions reduced motion shows the new page at once
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: <1>
+  Actual: <0.047407407407407405>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://test/kit_motion_app_test.dart:156:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/kit_motion_app_test.dart line 156
+The test description was:
+  reduced motion shows the new page at once
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +0 -3: test/kit_motion_app_test.dart: page transitions reduced motion shows the new page at once [E]
+  Test failed. See exception logs above.
+  The test description was: reduced motion shows the new page at once
+  
+00:00 +0 -3: test/kit_motion_app_test.dart: tab switch the tab being left clears before the chosen one fades in, and both keep their state
+00:00 +1 -3: test/kit_motion_app_test.dart: tab switch reduced motion switches in the next frame
+00:00 +2 -3: test/kit_motion_app_test.dart: parts arrive and leave a notice unfolds in, settles, and folds away when it goes
+00:00 +3 -3: test/kit_motion_app_test.dart: parts arrive and leave the first build and reduced motion show it at once
+00:01 +4 -3: test/kit_motion_app_test.dart: parts arrive and leave a notice shown on its own fades in once and settles
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: be in range from 0 (exclusive) to 1 (exclusive)
+  Actual: <1.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://test/kit_motion_app_test.dart:312:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/kit_motion_app_test.dart line 312
+The test description was:
+  a notice shown on its own fades in once and settles
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +4 -4: test/kit_motion_app_test.dart: parts arrive and leave a notice shown on its own fades in once and settles [E]
+  Test failed. See exception logs above.
+  The test description was: a notice shown on its own fades in once and settles
+  
+00:01 +4 -4: test/kit_motion_app_test.dart: parts arrive and leave a status line settles too
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: be in range from 0 (exclusive) to 1 (exclusive)
+  Actual: <1.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://test/kit_motion_app_test.dart:327:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/kit_motion_app_test.dart line 327
+The test description was:
+  a status line settles too
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +4 -5: test/kit_motion_app_test.dart: parts arrive and leave a status line settles too [E]
+  Test failed. See exception logs above.
+  The test description was: a status line settles too
+  
+00:01 +4 -5: test/kit_motion_app_test.dart: state view a new state arrives with a fade; new words in the same state do not replay it
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: be in range from 0 (exclusive) to 1 (exclusive)
+  Actual: <1.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://test/kit_motion_app_test.dart:369:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/kit_motion_app_test.dart line 369
+The test description was:
+  a new state arrives with a fade; new words in the same state do not replay it
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +4 -6: test/kit_motion_app_test.dart: state view a new state arrives with a fade; new words in the same state do not replay it [E]
+  Test failed. See exception logs above.
+  The test description was: a new state arrives with a fade; new words in the same state do not replay it
+  
+00:01 +4 -6: test/kit_motion_app_test.dart: state view details unfold and fold
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.single (dart:core/iterable.dart:694:25)
+#1      WidgetController.getSize (package:flutter_test/src/controller.dart:2178:47)
+#2      main.<anonymous closure>.<anonymous closure> (file://test/kit_motion_app_test.dart:387:26)
+<asynchronous suspension>
+#3      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#4      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  details unfold and fold
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +4 -7: test/kit_motion_app_test.dart: state view details unfold and fold [E]
+  Test failed. See exception logs above.
+  The test description was: details unfold and fold
+  
+00:01 +4 -7: test/kit_motion_app_test.dart: state view reduced motion: no fade and no finish haptic
+00:01 +5 -7: test/kit_motion_app_test.dart: rows a new row unfolds in, a gone row folds away where it was, rows that stay keep their state
+00:01 +6 -7: test/kit_motion_app_test.dart: rows reduced motion: rows come and go at once
+00:01 +7 -7: test/kit_motion_app_test.dart: working button the icon and the spinner crossfade in one slot
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _IconWidgetFinder:<Found 0 widgets with icon "IconData(U+0E047)": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://test/kit_motion_app_test.dart:511:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/kit_motion_app_test.dart line 511
+The test description was:
+  the icon and the spinner crossfade in one slot
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +7 -8: test/kit_motion_app_test.dart: working button the icon and the spinner crossfade in one slot [E]
+  Test failed. See exception logs above.
+  The test description was: the icon and the spinner crossfade in one slot
+  
+00:01 +7 -8: test/kit_motion_app_test.dart: working button without an icon the spinner makes room smoothly
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: be in range from 124.0 (exclusive) to 150.0 (exclusive)
+  Actual: <150.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://test/kit_motion_app_test.dart:536:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/kit_motion_app_test.dart line 536
+The test description was:
+  without an icon the spinner makes room smoothly
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +7 -9: test/kit_motion_app_test.dart: working button without an icon the spinner makes room smoothly [E]
+  Test failed. See exception logs above.
+  The test description was: without an icon the spinner makes room smoothly
+  
+00:01 +7 -9: test/kit_motion_app_test.dart: expand row unfolds its rows and turns its chevron
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.single (dart:core/iterable.dart:694:25)
+#1      WidgetController.widget (package:flutter_test/src/controller.dart:828:30)
+#2      main.<anonymous closure>.<anonymous closure> (file://test/kit_motion_app_test.dart:560:12)
+<asynchronous suspension>
+#3      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#4      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  unfolds its rows and turns its chevron
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +7 -10: test/kit_motion_app_test.dart: expand row unfolds its rows and turns its chevron [E]
+  Test failed. See exception logs above.
+  The test description was: unfolds its rows and turns its chevron
+  
+00:01 +7 -10: test/kit_motion_app_test.dart: pull to refresh draws the portal instead of the stock spinner and settles when the refresh ends
+00:01 +8 -10: test/kit_motion_app_test.dart: haptics send ticks; done confirms unless motion is reduced
+00:02 +9 -10: test/home_navigation_test.dart: (setUpAll)
+00:02 +9 -10: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:03 +10 -10: test/home_navigation_test.dart: navigation stays inside its glass surface at 390.0 and 2.5x (en)
+00:03 +11 -10: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (ar)
+00:04 +12 -10: test/home_navigation_test.dart: Files Back clears search, ascends folders, returns home, then guards exit
+00:04 +13 -10: test/home_navigation_test.dart: inactive Files tab does not consume Back
+00:05 +14 -10: test/home_navigation_test.dart: switching destinations preserves Files search and folder
+00:05 +15 -10: test/home_navigation_test.dart: Inbox Back returns Work before offering exit
+00:05 +16 -10: test/home_navigation_test.dart: reduced motion switches destinations without animation
+00:05 +17 -10: test/home_navigation_test.dart: switching destinations fades through: the tab being left clears before the chosen one shows, never both half-visible
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: Duration:<0:00:00.250000>
+  Actual: Duration:<0:00:00.180000>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file://test/home_navigation_test.dart:427:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/home_navigation_test.dart line 427
+The test description was:
+  switching destinations fades through: the tab being left clears before the chosen one shows, never
+  both half-visible
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:06 +17 -11: test/home_navigation_test.dart: switching destinations fades through: the tab being left clears before the chosen one shows, never both half-visible [E]
+  Test failed. See exception logs above.
+  The test description was: switching destinations fades through: the tab being left clears before the chosen one shows, never both half-visible
+  
+00:06 +17 -11: test/home_navigation_test.dart: frosted dock preserves last file reachability and yields to keyboard
+00:07 +18 -11: test/home_navigation_test.dart: phone shell uses product bottom navigation
+00:07 +19 -11: test/home_navigation_test.dart: one pending badge, on the Inbox destination
+00:07 +20 -11: test/home_navigation_test.dart: the Inbox tab shows cross-session sections
+00:07 +21 -11: test/home_navigation_test.dart: cold start opens where the person is needed nothing waiting: Work
+00:07 +22 -11: test/home_navigation_test.dart: cold start opens where the person is needed something waiting: Inbox, on the request itself
+00:07 +23 -11: test/home_navigation_test.dart: cold start opens where the person is needed the first read of pending requests decides, once
+00:07 +24 -11: test/home_navigation_test.dart: cold start opens where the person is needed a read that finds nothing leaves Work, and a late request does not move the person
+00:08 +25 -11: test/home_navigation_test.dart: cold start opens where the person is needed picking a tab during the read is final
+00:08 +26 -11: test/home_navigation_test.dart: cold start opens where the person is needed an explicit destination is respected
+00:08 +27 -11: test/home_navigation_test.dart: Inbox order: waiting on you, then running, then finished
+00:08 +28 -11: test/home_navigation_test.dart: failed reconnect keeps the product shell and location visible
+00:08 +29 -11: test/home_navigation_test.dart: recovery banner fits a 320dp phone with 2x text
+00:08 +30 -11: test/home_navigation_test.dart: automatic SSE reconnect still offers a manual retry
+00:08 +31 -11: test/home_navigation_test.dart: phone header separates long local server and workspace labels
+00:09 +32 -11: test/home_navigation_test.dart: tablet shell switches to navigation rail
+00:09 +33 -11: test/home_navigation_test.dart: (tearDownAll)
+00:09 +33 -11: Some tests failed.
+
+Failing tests:
+  test/home_navigation_test.dart: switching destinations fades through: the tab being left clears before the chosen one shows, never both half-visible
+  test/kit_motion_app_test.dart: expand row unfolds its rows and turns its chevron
+  test/kit_motion_app_test.dart: page transitions a page fades through: the old one clears before the new one slides in, and both rest still
+  test/kit_motion_app_test.dart: page transitions every platform but iOS uses the one kit transition
+  ... and 7 more

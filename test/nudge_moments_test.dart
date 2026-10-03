@@ -16,10 +16,11 @@ import 'package:opencode_mobile/state/first_run.dart';
 import 'package:opencode_mobile/state/nudges.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart'
+    show KitAction, KitButton, KitNotice;
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/review_workspace.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
-import 'package:opencode_mobile/ui/widgets/nudge_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _Api extends OpenCodeApi with CompleteMessageHistory {
@@ -204,9 +205,15 @@ const _catalog = CatalogSnapshot(
   agents: [],
 );
 
-Finder _nudge(NudgeId id) => find.byKey(ValueKey('nudge-${id.wire}'));
-Finder _action(NudgeId id) => find.byKey(ValueKey('nudge-${id.wire}-action'));
-Finder _dismiss(NudgeId id) => find.byKey(ValueKey('nudge-${id.wire}-dismiss'));
+ValueKey<String> _nudgeKey(NudgeId id) =>
+    ValueKey('nudge-${id == NudgeId.pinConversations ? id.name : id.wire}');
+Finder _nudge(NudgeId id) => find.byKey(_nudgeKey(id));
+Finder _action(NudgeId id) => id == NudgeId.pinConversations
+    ? find.descendant(of: _nudge(id), matching: find.text('Got it'))
+    : find.byKey(ValueKey('nudge-${id.wire}-action'));
+Finder _dismiss(NudgeId id) => id == NudgeId.pinConversations
+    ? find.descendant(of: _nudge(id), matching: find.byTooltip('Hide tip'))
+    : find.byKey(ValueKey('nudge-${id.wire}-dismiss'));
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -515,6 +522,11 @@ void main() {
       );
       await tester.tap(_action(NudgeId.compact));
       await tester.pumpAndSettle();
+      // Asked first: nothing is compacted until the person confirms.
+      expect(find.text('Compact this conversation?'), findsOneWidget);
+      expect(repository.compacted, isEmpty);
+      await tester.tap(find.widgetWithText(KitButton, 'Compact conversation'));
+      await tester.pumpAndSettle();
       expect(repository.compacted, ['session-1']);
       expect(_nudge(NudgeId.compact), findsNothing);
 
@@ -695,14 +707,22 @@ void main() {
             ),
             home: Scaffold(
               body: SingleChildScrollView(
-                child: NudgeCard(
-                  id: NudgeId.approvals,
+                // The offer as the chat's nudge slot draws it.
+                child: KitNotice.offer(
+                  key: _nudgeKey(NudgeId.approvals),
                   // The longest sentence and the longest action label.
                   message: strings.nudgeApprovals(strings.e7PermissionAction4),
-                  actionLabel: strings.chatUiCompactSession,
-                  dismissTooltip: strings.nudgeDismiss,
-                  onAction: () => actions += 1,
+                  icon: AppIconography.idea,
+                  action: KitAction(
+                    key: ValueKey('nudge-${NudgeId.approvals.wire}-action'),
+                    label: strings.chatUiCompactSession,
+                    onPressed: () => actions += 1,
+                  ),
                   onDismiss: () => dismissals += 1,
+                  dismissKey: ValueKey(
+                    'nudge-${NudgeId.approvals.wire}-dismiss',
+                  ),
+                  dismissLabel: strings.nudgeDismiss,
                 ),
               ),
             ),
@@ -737,17 +757,17 @@ void main() {
         expect(sentence.maxLines, isNull);
         expect(sentence.overflow, isNull);
 
-        // Both controls share one row, so a slot that scrolls to its end
-        // shows them together.
+        // R6 places the close beside the first line and the action below
+        // a wrapped sentence. Each remains reachable in the scrollable slot.
         expect(
-          (tester.getCenter(_action(NudgeId.approvals)).dy -
-                  tester.getCenter(_dismiss(NudgeId.approvals)).dy)
-              .abs(),
-          lessThan(1),
+          tester.getCenter(_action(NudgeId.approvals)).dy,
+          greaterThan(tester.getCenter(_dismiss(NudgeId.approvals)).dy),
         );
         await tester.ensureVisible(_action(NudgeId.approvals));
         await tester.pumpAndSettle();
         await tester.tap(_action(NudgeId.approvals));
+        await tester.ensureVisible(_dismiss(NudgeId.approvals));
+        await tester.pumpAndSettle();
         await tester.tap(_dismiss(NudgeId.approvals));
         expect((actions, dismissals), (1, 1));
       });
@@ -796,11 +816,27 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         expect(_nudge(NudgeId.compact), findsOneWidget);
-        // The slot never takes more than a third of the conversation, and
-        // its controls are on screen without scrolling.
+        // The slot ends on the action. R6 keeps the close beside the first
+        // line, so large text may need scrolling to reach it.
         expect(_action(NudgeId.compact).hitTestable(), findsOneWidget);
+        await tester.ensureVisible(_dismiss(NudgeId.compact));
+        await tester.pumpAndSettle();
         expect(_dismiss(NudgeId.compact).hitTestable(), findsOneWidget);
+        await tester.ensureVisible(_action(NudgeId.compact));
+        await tester.pumpAndSettle();
+        expect(_action(NudgeId.compact).hitTestable(), findsOneWidget);
         await tester.tap(_action(NudgeId.compact));
+        await tester.pumpAndSettle();
+        // Compact asks first: nothing happens until the person confirms.
+        expect(repository.compacted, isEmpty);
+        // The nudge steps aside for the sheet, which scrolls at large text.
+        final confirm = find.widgetWithText(
+          KitButton,
+          lookupAppLocalizations(locale).chatUiCompactConfirmAction,
+        );
+        await tester.ensureVisible(confirm);
+        await tester.pumpAndSettle();
+        await tester.tap(confirm);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         expect(repository.compacted, ['session-1']);

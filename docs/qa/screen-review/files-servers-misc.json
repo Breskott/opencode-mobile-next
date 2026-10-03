@@ -1,0 +1,2655 @@
+[
+  {
+    "pageId": "active-context",
+    "area": "k-session-misc",
+    "title": "Active context",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/active-context--loaded.png",
+      "docs/qa/screen-census/k-session-misc/active-context--filtered.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A clean filtered list; the intro speaks engine and the chips run off the edge.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C3",
+        "what": "'Active messages returned by the server after its latest compaction. Message counts are not token counts.'",
+        "fix": "'What the model sees now. Older messages were summarised to save space.'"
+      },
+      {
+        "severity": "medium",
+        "principle": "U3",
+        "what": "Filter chips run off the right edge ('User prompt ·' cut) with no fade.",
+        "fix": "Edge fade or a wrap to two lines; shorter labels ('System', 'You', 'Agent')."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "active-context-message",
+    "area": "k-session-misc",
+    "title": "<message type label> (User / Assistant / System / ...)",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/active-context-message.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "A raw message id as the heading and a disclaimer paragraph before the content.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C3 no ids above Details",
+        "what": "'msg_assistant' is the first line under the title.",
+        "fix": "Remove it; the id goes under Details with copy."
+      },
+      {
+        "severity": "medium",
+        "principle": "C6 / P4",
+        "what": "'Snapshot of available message content. Binary attachment bodies, URLs and internal metadata are not displayed. This is not the complete provider request.'",
+        "fix": "One muted line at the end: 'Attachments and internal data aren't shown.'"
+      },
+      {
+        "severity": "low",
+        "principle": "C3",
+        "what": "Part heading 'Tool output · bash'.",
+        "fix": "'Ran a command'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "context-capsule",
+    "area": "k-session-misc",
+    "title": "Context capsule",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/context-capsule--entry.png",
+      "docs/qa/screen-census/k-session-misc/context-capsule--review.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 2,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "Collected notes and errors are lost on back without a question, and the screen is named after an internal concept.",
+    "issues": [
+      {
+        "severity": "critical",
+        "principle": "X2 nothing typed is lost",
+        "what": "No discard guard on back (context_capsule_screen.dart has no PopScope or confirmation), and the copy admits 'Unapplied edits are kept only while this screen is open.'",
+        "fix": "Confirm on back when items are unapplied ('Discard these notes?' Keep editing / Discard), as Note for the agent does, or keep them as a draft for the conversation."
+      },
+      {
+        "severity": "high",
+        "principle": "C3",
+        "what": "Title 'Context capsule'; 'Build a bundle'; field labels 'Label' and 'Excerpt'.",
+        "fix": "Title 'Add context'. 'Collect notes, errors and code, then add them to your message.' Fields 'Title' and 'Text'."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7 / U5",
+        "what": "A centred layers icon above a left-aligned title; Paste and Remove right-aligned inside the item card; four button styles (outlined chips, outlined, filled, text).",
+        "fix": "Left-align the header or drop the icon; item actions in a KitRowMenu; add-chips as one 'Add ▾' menu."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "run-result",
+    "area": "k-session-misc",
+    "title": "Run results",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/run-result.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "A run summary that leads with what it doesn't know, cuts its own heading to a few letters, and shows raw ids and paths.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "P8 / P-a nothing cut to a few letters",
+        "what": "'Run …ssistant': the run label is cut from the front.",
+        "fix": "Name the run by time or number ('Run at 6:54 · 2 min')."
+      },
+      {
+        "severity": "high",
+        "principle": "C4 / P3",
+        "what": "The state line is 'Outcome not reported · The provider gave no finish reason. Recovered from server history. This phone did not observe the newest step complete.'",
+        "fix": "Lead with what is known: 'Finished · 2 min · 1 file changed · tests passed'. The provenance note goes under Details."
+      },
+      {
+        "severity": "high",
+        "principle": "C3",
+        "what": "'claude-sonnet-4', '/home/dev/shopfront/test/checkout_test.dart' as a row title, 'Exit code 0', 'edit, write and patch tools'.",
+        "fix": "Model display name; the file name as the title with its folder as supporting; 'Passed' instead of exit code 0."
+      },
+      {
+        "severity": "medium",
+        "principle": "C6",
+        "what": "Three disclaimers: 'Not a verified diff of the working tree', 'Exit codes appear only when…', 'Nothing is summarised by a model'.",
+        "fix": "One Details line at the end."
+      },
+      {
+        "severity": "medium",
+        "principle": "standard §2",
+        "what": "'Open conversation' is a half-width tonal button, left-aligned, at the end of the scroll.",
+        "fix": "Full-width pinned primary."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "session-context",
+    "area": "k-session-misc",
+    "title": "Session context",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/session-context.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The ring and '10,332 of 200,000 tokens' are a good hero; the rest is a raw accounting table with a legend that keys nothing.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U2 / U8",
+        "what": "'Estimated input makeup' shows four near-identical green squares as a legend with no chart; the shades can't be told apart.",
+        "fix": "One stacked bar with four distinct tones and labelled segments, or drop the squares and keep the numbers."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3 / P4",
+        "what": "'anthropic/claude-sonnet-4' under the model name; 'Latest assistant request, including cache activity'; rows for Cache read, Cache write and Reasoning above the fold.",
+        "fix": "Hero: '5 % of context used'. The request table goes under a Details fold; the raw model id is dropped."
+      },
+      {
+        "severity": "medium",
+        "principle": "P1",
+        "what": "The 'Active context · Inspect messages after compaction' row sits above the hero figure.",
+        "fix": "Hero first; the messages link below it as 'See what the model sees'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "session-export",
+    "area": "k-session-misc",
+    "title": "Export conversation",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/session-export.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 4
+    },
+    "suggested": "fix",
+    "summary": "Clean choice and a pinned Save; the default redaction silently strips the conversation text.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "P10 / C4",
+        "what": "'Redact sensitive data' is on by default and 'Replaces conversation text and sensitive fields with placeholders', so the default export has no conversation in it.",
+        "fix": "Default off for 'Readable transcript'; if redaction stays default, say what survives ('Keeps structure; replaces your text')."
+      },
+      {
+        "severity": "low",
+        "principle": "P7",
+        "what": "Format choices are tinted cards; Add server uses radio rows for the same kind of choice.",
+        "fix": "One choice-row style."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "session-import",
+    "area": "k-session-misc",
+    "title": "Import conversation",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/session-import--empty.png",
+      "docs/qa/screen-census/k-session-misc/session-import--review.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Reassuring copy and a clear order; the destination is a path, the preview shows a raw id and a plural bug.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C3",
+        "what": "Preview shows '1 message records' and 'ses_transfer'.",
+        "fix": "'1 message' and the conversation title only."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3 / P7",
+        "what": "'Import into' shows '/home/dev/shopfront' while the chooser sheet shows the project name 'shopfront'.",
+        "fix": "Project name with the path as supporting, as in the sheet."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7",
+        "what": "'Change destination' is a centred text button among left-aligned content.",
+        "fix": "Make the destination a KitRow with a chevron."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "session-import-destination-sheet",
+    "area": "k-session-misc",
+    "title": "Import into",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/session-import-destination-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A one-option chooser with no current mark.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "U2 / X9",
+        "what": "The only project isn't marked as current, and with one option the sheet offers no choice.",
+        "fix": "Current mark on the selected row; hide 'Change destination' when there is only one project."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "session-note",
+    "area": "k-session-misc",
+    "title": "Note for the agent",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/session-note--saved.png",
+      "docs/qa/screen-census/k-session-misc/session-note--empty.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A good small editor with a byte counter that counts nothing, a busy-button spinner, and a delete that doesn't ask.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C2",
+        "what": "The empty note shows '2 / 8192 bytes'.",
+        "fix": "Count what the field holds, in characters; show the counter only near the limit."
+      },
+      {
+        "severity": "high",
+        "principle": "X3",
+        "what": "'Delete saved note' is an accent text button that deletes at once (session_note_screen.dart _save(remove: true), no confirmation or undo).",
+        "fix": "Error-coloured, with a snackbar Undo or a confirm."
+      },
+      {
+        "severity": "medium",
+        "principle": "standard §2 busy buttons",
+        "what": "Save shows a spinner inside the disabled button while saving; when unchanged it is dimmed with no reason.",
+        "fix": "Progress in the kit's loading bar; 'No changes to save' near the dimmed button."
+      },
+      {
+        "severity": "low",
+        "principle": "C6",
+        "what": "A three-sentence intro.",
+        "fix": "'A standing instruction for this conversation. The agent reads it at its next step.'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "session-note-discard-dialog",
+    "area": "k-session-misc",
+    "title": "Discard your note changes?",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/session-note-discard-dialog.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The right guard; 'Discard changes' isn't coloured as destructive and there's no body.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "X3",
+        "what": "'Discard changes' is an accent text button beside 'Keep editing'.",
+        "fix": "Error-coloured 'Discard'; body 'Your edits to the note will be lost.'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "session-relations",
+    "area": "k-session-misc",
+    "title": "Subagent sessions",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/session-relations--loaded.png",
+      "docs/qa/screen-census/k-session-misc/session-relations--empty.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Readable parent/child structure; the title is cut, the conversation name appears twice, and the empty state is the old style.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "P8 nothing cut",
+        "what": "The title is truncated: 'Subagent conversatio…'.",
+        "fix": "Title 'Subagents'."
+      },
+      {
+        "severity": "medium",
+        "principle": "U6 / U2",
+        "what": "'Fix flaky checkout test' appears in the header and again as the parent row; the parent row is entirely accent-coloured text.",
+        "fix": "Drop the header row; the parent row uses normal text with a 'Working' status mark."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3",
+        "what": "'(@explore subagent)', '1 of 2'.",
+        "fix": "Supporting line 'Explore agent · 20 min ago'."
+      },
+      {
+        "severity": "medium",
+        "principle": "U5 / U6 (empty)",
+        "what": "Empty uses the old centred icon and says the same thing twice ('OpenCode has not delegated work…' in the header and 'No subagent conversations yet').",
+        "fix": "KitStateView empty once: 'No subagents yet · When the agent hands work off, it shows here.'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "run-result-output-sheet",
+    "area": "k-session-misc",
+    "title": "Recorded tool output",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/run-result-output-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A full-height sheet for a single row.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "U7",
+        "what": "One row ('Edit checkout_test.dart +5 · −2 ✓') with most of the sheet empty.",
+        "fix": "Size the sheet to its content."
+      },
+      {
+        "severity": "low",
+        "principle": "C3",
+        "what": "Title 'Recorded tool output'.",
+        "fix": "'What it did'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "session-handoff-dialog",
+    "area": "k-session-misc",
+    "title": "Copy handoff reference? | Continue on computer",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/session-handoff-dialog--available.png",
+      "docs/qa/screen-census/k-session-misc/session-handoff-dialog--unavailable.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 2,
+      "motion": null,
+      "copy": 1,
+      "principles": 2
+    },
+    "suggested": "rethink",
+    "summary": "A second 'Continue on computer' with different words and command from the sheet, and a fallback that copies a JSON blob of ids.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "P7 / U6 one action, one place",
+        "what": "This dialog and continue-on-computer-sheet both offer 'Continue on computer' with different commands ('opencode attach …' vs 'cd … && opencode --…') and different copy.",
+        "fix": "One sheet for the handoff; remove the dialog."
+      },
+      {
+        "severity": "high",
+        "principle": "C3",
+        "what": "'Run this command in a POSIX shell…', 'Set OPENCODE_SERVER_PASSWORD privately…', 'conversation ID'; the command wraps mid-token inside the dialog.",
+        "fix": "Plain: 'Run this on your computer to open this conversation there.' Command in a horizontally scrolling mono box."
+      },
+      {
+        "severity": "high",
+        "principle": "X5 (unavailable)",
+        "what": "'Copy handoff reference?' is three paragraphs and a JSON object with sessionID and projectID.",
+        "fix": "Remove this path; offer 'Export conversation' and 'Open on another phone' instead."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "continue-on-computer-sheet",
+    "area": "k-session-misc",
+    "title": "Continue on computer",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/continue-on-computer-sheet--available.png",
+      "docs/qa/screen-census/k-session-misc/continue-on-computer-sheet--unavailable.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The better of the two handoffs; the command is cut off and version notes sit in the body.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U3 / P8",
+        "what": "The command shows 'cd '/home/dev/shopfront' && opencode --' and is cut at the edge.",
+        "fix": "Wrap it in the mono box, or scroll with a fade; copy copies it all."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3",
+        "what": "'Verified against opencode 1.18.25, opencode2 beta-19242. If your installed version differs, check opencode --help for the --session flag.'",
+        "fix": "Move to Details."
+      },
+      {
+        "severity": "medium",
+        "principle": "U5 / X4 (unavailable)",
+        "what": "A grey tinted box says 'Reload the conversation and try again' with no button.",
+        "fix": "KitNotice with a 'Reload' action."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "continue-on-phone-sheet",
+    "area": "k-session-misc",
+    "title": "Open on another phone",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/continue-on-phone-sheet.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 4
+    },
+    "suggested": "keep",
+    "summary": "Clear and useful: a large QR, what it carries, and what the other phone needs.",
+    "issues": [
+      {
+        "severity": "low",
+        "principle": "C3 / P8",
+        "what": "'this saved server's ID and the conversation ID'; the link line is cut mid-token ('profile=laptop&').",
+        "fix": "'It only points to this conversation: no messages, address or password.' Let the link wrap in mono."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "files",
+    "area": "f-files-review-terminal",
+    "title": "Files",
+    "kind": "tab",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/files--loaded.png",
+      "docs/qa/screen-census/f-files-review-terminal/files--empty.png",
+      "docs/qa/screen-census/f-files-review-terminal/files--error.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A plain, readable list, but two stacked headers, no sense of where you are in the tree, and error and empty states that double up or hide the way out.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U6 / P1 One thing at a time",
+        "what": "Two headers stack at the top: the shell header 'Laptop ▾ / Project' and below it a '← Files' bar. The subtitle says 'Project' while the person is in Files.",
+        "fix": "When Files is pushed inside the Project tab, show one top bar: back, title 'Files', and the folder breadcrumb under it. Keep the server switcher header only on the tab root (Project hub)."
+      },
+      {
+        "severity": "high",
+        "principle": "X5 / P4 Detail on request",
+        "what": "Nothing shows which folder is open. Inside lib/ the screen would look identical to the root, apart from the rows.",
+        "fix": "Add a breadcrumb line under the title ('shopfront › lib › checkout'), each segment tappable to jump up; the title becomes the current folder name."
+      },
+      {
+        "severity": "high",
+        "principle": "U6 / C4 (error state)",
+        "what": "The failure state shows two problems and two 'Try again' buttons at once: a filled banner 'File change indicators are unavailable on this server · Try again' and the page error 'Couldn't open this folder / Could not list files.' The body only repeats the title.",
+        "fix": "When listing fails, hide the change-marks banner. Body says the reason in words ('The server didn't answer.' / 'This folder no longer exists.'), Try again primary, raw error in a collapsed Details row (KitStateView slots)."
+      },
+      {
+        "severity": "high",
+        "principle": "X7 / P3 Honest waiting (empty state)",
+        "what": "The empty folder says only 'Folder is empty / Pull down to refresh this folder.' The only way to act is a hidden gesture.",
+        "fix": "Body: 'Nothing in this folder yet. Hidden files are not shown.' Add a visible tertiary 'Refresh' (KitStateView action) alongside pull-to-refresh."
+      },
+      {
+        "severity": "medium",
+        "principle": "U5 One kit",
+        "what": "The change-marks message is an edge-to-edge filled block with an info icon and a 'Try again' link, not a kit part. Retrying a missing capability never helps.",
+        "fix": "Use KitStatusLine: 'Change marks aren't available on this server', no action (or dismissible once, since dismissing changes nothing)."
+      },
+      {
+        "severity": "medium",
+        "principle": "P1 / standard §6 one trailing action",
+        "what": "Every row carries a ⋯ button whose sheet only offers Open (the same as tapping the row) and Copy path. Seven identical dots add noise to every line.",
+        "fix": "Drop the visible ⋯; keep a KitRowMenu on long-press with Copy path, Attach to prompt and Review changes (for changed files). Rows that open a folder end in a chevron."
+      },
+      {
+        "severity": "low",
+        "principle": "P2 Plain words",
+        "what": "'.git' is listed first as an ordinary folder.",
+        "fix": "Hide dot-folders by default with a 'Show hidden files' switch in the overflow."
+      },
+      {
+        "severity": "medium",
+        "principle": "U9 / X5",
+        "what": "The search field's magnifier has a dropdown caret with no label; its meaning (names vs contents?) is invisible.",
+        "fix": "Label the mode inside the field ('Names ▾') or move the choice into the overflow; plain magnifier otherwise."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "files-row-actions-sheet",
+    "area": "f-files-review-terminal",
+    "title": "[File row actions: <file name>]",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/files-row-actions-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 2,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A full sheet for two actions, one of which duplicates tapping the row, headed by the same file name twice.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U6 Nothing shown twice",
+        "what": "The sheet header reads 'README.md' over 'README.md': the supporting line repeats the title for any root file.",
+        "fix": "Show the folder as supporting text only when the file is not at the root ('In lib/checkout'); otherwise no second line."
+      },
+      {
+        "severity": "medium",
+        "principle": "X9 / X8 Container fits the task",
+        "what": "The sheet exists for 'Open' (already what a tap does) and 'Copy path'.",
+        "fix": "Replace with a KitRowMenu popup: Copy path, Copy name, Attach to prompt, Review changes (when changed). No 'Open'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "files-changes-sheet",
+    "area": "f-files-review-terminal",
+    "title": "Changes",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/files-changes-sheet.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 4,
+      "principles": 4
+    },
+    "suggested": "keep",
+    "summary": "A clear summary with a good primary; only the rows need to look tappable and stop repeating the file name in the path.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "U6 / U7",
+        "what": "Each row shows the file name, then the full path that ends in the same name ('checkout_bloc.dart' / 'lib/checkout/checkout_bloc.dart · +6 −2'). Rows have no status mark or chevron, so they don't read as tappable.",
+        "fix": "Supporting line: folder only plus counts ('lib/checkout · +6 −2'); lead each row with a status mark (modified/added) and end with KitChevron."
+      },
+      {
+        "severity": "low",
+        "principle": "U2 State not by colour alone",
+        "what": "+51 −4 counts are plain grey; the modified/added split is shown only by section headings.",
+        "fix": "Tint + in success and − in error as the diff does, keeping the sign characters so it is not colour-only."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "files-file-viewer-sheet",
+    "area": "f-files-review-terminal",
+    "title": "<file name>",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/files-file-viewer-sheet--markdown.png",
+      "docs/qa/screen-census/f-files-review-terminal/files-file-viewer-sheet--code.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Content first, which is right, but code runs off the edge by default, copy appears twice, and the action row is a strip of three equal text buttons.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U3 / P8 Nothing cut",
+        "what": "Code lines are cut at the right edge ('Bloc<CheckoutEver', '_repository.applyCou', 'status') with no wrap control visible; the census noted unwrapped is the default.",
+        "fix": "Soft-wrap by default on phones with a hanging indent to the code column; 'Wrap lines' toggle in the viewer's overflow; a right-edge fade when a line scrolls horizontally."
+      },
+      {
+        "severity": "medium",
+        "principle": "U6 Nothing shown twice",
+        "what": "Two copy controls (the sheet's 'Copy' and the code block's copy icon) and an unexplained ⋯ inside the code block; for README the title and subtitle both say 'README.md'.",
+        "fix": "The viewer is the code block: drop the inner block chrome (label, ⋯, copy). Show the folder as subtitle only when not at root."
+      },
+      {
+        "severity": "medium",
+        "principle": "§1 top bar, P1",
+        "what": "Copy · Save · Refresh as three accent text buttons in a row; Refresh is rare for a file you just opened.",
+        "fix": "Header: title, close, one icon action (Copy) and an overflow with Save to phone, Reload, Copy path, Attach to prompt."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7 one leading edge",
+        "what": "The Rendered/Raw toggle floats right-aligned above the content, pushing the document down.",
+        "fix": "Move Rendered/Raw into the overflow ('Show source') or place a compact segmented control left-aligned under the title."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "project-hub",
+    "area": "f-files-review-terminal",
+    "title": "Project",
+    "kind": "tab",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/project-hub.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A tidy menu, but it is only a menu: no row says what needs attention, the top shows an absolute path, and search appears here and again inside Files.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "X5 / P1 purpose in a second",
+        "what": "Six equal rows with static descriptions. Nothing says '3 files changed' or '1 terminal running', so the hub never tells the person where to go.",
+        "fix": "Put live state in the supporting lines: Changes '3 files changed', Terminal '1 running', Health 'Branch main · all good'. Order by use: Changes, Files, Terminal, then the rest."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3 no paths above Details",
+        "what": "The header row's supporting line is '/home/dev/shopfront'.",
+        "fix": "Show branch and state ('main · 3 changed') under the project name; the path goes to a long-press copy or the Health page's Details."
+      },
+      {
+        "severity": "medium",
+        "principle": "U6 Nothing shown twice",
+        "what": "'Search files' row duplicates the search field at the top of Files.",
+        "fix": "Remove the row, or make the hub's header a search field that searches files directly."
+      },
+      {
+        "severity": "medium",
+        "principle": "C6 / P2",
+        "what": "'Branch, changed files, language services, and formatters' wraps to two lines; 'Open persistent project terminals' is engine language.",
+        "fix": "'Checks' with 'All good' / '2 problems'; Terminal 'Shells on Laptop'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "review-workspace",
+    "area": "f-files-review-terminal",
+    "title": "Review changes",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/review-workspace--loaded.png",
+      "docs/qa/screen-census/f-files-review-terminal/review-workspace--empty.png",
+      "docs/qa/screen-census/f-files-review-terminal/review-workspace--error.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 3,
+      "motion": 3,
+      "copy": 3,
+      "principles": 2
+    },
+    "suggested": "rethink",
+    "summary": "The core review surface is dense and repetitive: the file name three times, two navigators, raw git headers, and wrapped code that loses its indentation; empty and error states are the old style.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U6 Nothing shown twice",
+        "what": "'checkout_test.dart' appears three times (chip, file header, diff header) and '+5 −2' three times; there are two navigators ('1 ↑ ↓' beside Unified/Split and '1 hunk ↑ ↓' at the bottom).",
+        "fix": "One sticky file header (name, folder, +/−, ⋯). The chip strip switches files. One bottom navigator 'Change 1 of 3 ↑ ↓' that crosses files."
+      },
+      {
+        "severity": "high",
+        "principle": "C3 / P4 Detail on request",
+        "what": "Raw git headers '--- a/test/checkout_test.dart', '+++ b/test/checkout_test.dart' and '@@ -41,9 +41,12 @@ void…' sit above the code.",
+        "fix": "Hide the ---/+++ lines; show the hunk header as 'Lines 41–52 · void main()'; keep the raw patch header in the file's ⋯ › Details."
+      },
+      {
+        "severity": "high",
+        "principle": "P8 Craft / U3",
+        "what": "Wrapped code continues at the left edge under the line-number gutter ('the total', (tester) async {'), so a continuation reads as a new line of code.",
+        "fix": "Hanging indent: wrapped continuation lines start at the code column, with a subtle continuation mark in the gutter."
+      },
+      {
+        "severity": "high",
+        "principle": "X4 / U5 (empty and error states)",
+        "what": "Empty and error use the old centred icon-and-line style, not KitStateView. The error is one sentence, 'Could not read the diff.', with no title, reason or Details; the refresh icon is dimmed with no reason.",
+        "fix": "KitStateView with the kit illustration: error title 'Couldn't load the changes', body with the reason, Try again primary, raw error under Details. Empty in 'This conversation': offer 'Show uncommitted changes' as the action."
+      },
+      {
+        "severity": "medium",
+        "principle": "U5 / U4",
+        "what": "Unified/Split is a square-cornered block toggle unlike the pill segmented control above it; at 412 dp Split is not usable.",
+        "fix": "Hide Split under 600 dp; move the choice into the file ⋯ menu."
+      },
+      {
+        "severity": "medium",
+        "principle": "M4 KitMotion only",
+        "what": "Off-token motion: the file tab animates at 160 ms and scroll-to-hunk at 220 ms easeOutCubic (review_workspace.dart lines 972, 1681, 1696).",
+        "fix": "Use KitMotion.quick for the tab state and KitMotion.standard with KitMotion.enter for the scroll reveal."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7 one leading edge",
+        "what": "The 'This conversation / Uncommitted' control is centred with a centred caption, while everything else is left-aligned.",
+        "fix": "Left-align it and drop the caption, or turn it into the title's menu ('Changes in this conversation ▾')."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "review-comment-sheet",
+    "area": "f-files-review-terminal",
+    "title": "Comment on change",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/review-comment-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 2,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A simple composer, but a typed comment vanishes on a swipe, and the buttons are a right-aligned dialog cluster inside a sheet.",
+    "issues": [
+      {
+        "severity": "critical",
+        "principle": "X2 nothing typed is lost",
+        "what": "The comment sheet is a plain dismissible modal sheet (review_workspace.dart _openCommentComposer, no PopScope or confirm): a comment typed and then swiped away or backed out of is lost.",
+        "fix": "Guard dismissal when the field is not empty ('Discard this comment?' with Keep editing / Discard), or keep the draft per file and restore it on reopen."
+      },
+      {
+        "severity": "medium",
+        "principle": "standard §2 stacked buttons",
+        "what": "'Cancel' and 'Add to prompt' sit side by side, right-aligned.",
+        "fix": "Full-width primary 'Add to prompt' pinned above the keyboard; no Cancel (drag or scrim closes), or Cancel as a text button under it."
+      },
+      {
+        "severity": "low",
+        "principle": "C3 / P7",
+        "what": "Placeholder names the brand ('What should OpenCode inspect or change?') even on Codex or Claude servers; 'Entire file change' is awkward.",
+        "fix": "'What should the agent change here?' and 'Whole file'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "stage-revert-sheet",
+    "area": "f-files-review-terminal",
+    "title": "Stage a revert from this prompt?",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/stage-revert-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The safety model is right (review before it's permanent) but the words are git mechanics and the quoted prompt floats unlabelled.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C3 / P2 Plain words",
+        "what": "'Stage a revert from this prompt?', 'while the revert is staged', 'Clear can restore the staged files from the saved snapshot'. The title wraps to two lines.",
+        "fix": "Title 'Undo from this message?'. Body: 'Hides this message and everything after it. You can check the result, then keep it or put everything back.' Option: 'Also undo file changes'."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7 / P1",
+        "what": "'Keep the greeting concise.' sits between title and body with no label, reading like an instruction to the person.",
+        "fix": "Show it as a quoted row: label 'Your message', the text in one muted line."
+      },
+      {
+        "severity": "medium",
+        "principle": "U5 One kit",
+        "what": "A trailing checkbox with a two-sentence supporting line, unlike the kit's switch rows.",
+        "fix": "KitSwitchRow with a one-line supporting line."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "staged-revert",
+    "area": "f-files-review-terminal",
+    "title": "Review staged revert",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/staged-revert.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 2,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "The irreversible choice is the green primary, a raw message id shows under the prompt, and the page admits it doesn't know whether files changed.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "X3 / standard §2 destructive never primary",
+        "what": "'Make revert permanent', which cannot be undone, is the filled green primary; the reversible 'Clear staged revert' is the outlined secondary.",
+        "fix": "Present the two outcomes as equals with their consequences: 'Keep the undo' (error-tonal, confirmed) and 'Put everything back' (tonal). Neither green-filled."
+      },
+      {
+        "severity": "high",
+        "principle": "C3 no ids above Details",
+        "what": "'msg_assistant' is printed under the prompt text.",
+        "fix": "Remove it; the message id belongs in a Details fold if at all."
+      },
+      {
+        "severity": "high",
+        "principle": "C2 words match the state",
+        "what": "'These are the file changes reported for this stage. Staging may already have applied them.' The app sent the stage request and should know whether files were reverted.",
+        "fix": "State it: 'Files were put back to before this message' or 'Files were left as they are'."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3 / U7",
+        "what": "File rows use full paths as titles ('lib/checkout/checkout_bloc.dart').",
+        "fix": "File name as the title, folder and counts as the supporting line."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "staged-revert-confirm-sheet",
+    "area": "f-files-review-terminal",
+    "title": "Make this revert permanent? / Clear this staged revert?",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/staged-revert-confirm-sheet--commit.png",
+      "docs/qa/screen-census/f-files-review-terminal/staged-revert-confirm-sheet--clear.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The permanent path is correctly error-coloured; the 'clear' path hides a possible overwrite behind a green button and vague copy, and the sheet style differs from other confirmations.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "X3 / C4",
+        "what": "'Clear this staged revert?' says 'Changes made to those files since staging may be replaced. Queued work may resume.' yet confirms with a green primary.",
+        "fix": "If edits since staging would be overwritten, say which ('2 files changed since then will be replaced') and use error-tonal. 'Queued work may resume' → 'Messages you queued will be sent.'"
+      },
+      {
+        "severity": "medium",
+        "principle": "P7 one language",
+        "what": "These confirm sheets are left-aligned with no icon, while Stop terminal, Remove server and Remove agent are centred with a tonal icon.",
+        "fix": "Pick one confirmation sheet (the kit's) and use it everywhere."
+      },
+      {
+        "severity": "low",
+        "principle": "C6",
+        "what": "Both bodies run three sentences; the title repeats the button label.",
+        "fix": "Two sentences max; button 'Keep the undo' / 'Put it back'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "terminal",
+    "area": "f-files-review-terminal",
+    "title": "Terminal",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/terminal--populated.png",
+      "docs/qa/screen-census/f-files-review-terminal/terminal--empty.png",
+      "docs/qa/screen-census/f-files-review-terminal/terminal--failed.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A readable list, but the empty state offers the same action twice, the error only repeats its title, and each row shows a truncated raw command.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U6 / U4 one primary",
+        "what": "The empty state has a 'New terminal' button and the '+ Terminal' floating button at the same time.",
+        "fix": "Keep one: hide the FAB while the list is empty, or drop the state's button and let the body point to it. Preferably the state's primary only."
+      },
+      {
+        "severity": "medium",
+        "principle": "C4 / X4",
+        "what": "Error: 'Couldn't list the terminals / Could not list terminals.' The body repeats the title; no reason or Details.",
+        "fix": "Body with the reason ('Laptop didn't answer.'), Try again, Details with the raw error."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3 / P8",
+        "what": "Supporting lines are the raw command in mono, cut mid-flag ('flutter build apk --release - …').",
+        "fix": "Supporting line: state and age ('Running · 4 min', 'Exited · code 0 · 2 h ago'); the full command lives in the terminal surface."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7 Craft",
+        "what": "A divider appears under the first row only, inset from the text; the FAB has a dark outline ring unlike the kit's buttons.",
+        "fix": "Consistent KitRow separators (or none); kit FAB styling without the ring."
+      },
+      {
+        "severity": "low",
+        "principle": "C3",
+        "what": "'No terminal processes'.",
+        "fix": "'No terminals yet' / 'Start a shell in shopfront.'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "terminal-rename-dialog",
+    "area": "f-files-review-terminal",
+    "title": "Rename terminal",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/terminal-rename-dialog.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 4,
+      "principles": 4
+    },
+    "suggested": "keep",
+    "summary": "A correct short-input dialog: focused field with the current name, Save as the verb.",
+    "issues": [
+      {
+        "severity": "low",
+        "principle": "C5 / P2",
+        "what": "The field label is 'Title' while the action is 'Rename'.",
+        "fix": "Label 'Name'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "terminal-remove-sheet",
+    "area": "f-files-review-terminal",
+    "title": "Stop terminal? / Remove terminal?",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/terminal-remove-sheet--stop-running.png",
+      "docs/qa/screen-census/f-files-review-terminal/terminal-remove-sheet--remove-exited.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Correctly confirmed and error-coloured; the copy is passive and doesn't say what is lost.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "C5 / X3 say exactly what will happen",
+        "what": "'The running process and its child processes will be terminated.' and 'This terminal record will be removed.' Neither names the terminal nor says whether its output is lost.",
+        "fix": "Titles 'Stop flutter test?' / 'Remove flutter build?'. Bodies: 'Stops it and anything it started. The output stays until you remove it.' / 'Removes it and its output from this list. This can't be undone.'"
+      },
+      {
+        "severity": "medium",
+        "principle": "P7 one language",
+        "what": "Centred icon-circle confirmation, while the staged-revert confirmations on the same area are left-aligned without an icon.",
+        "fix": "One kit confirmation sheet used everywhere."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "terminal-surface",
+    "area": "f-files-review-terminal",
+    "title": "<terminal process title>",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/terminal-surface--connected.png",
+      "docs/qa/screen-census/f-files-review-terminal/terminal-surface--accessible.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The terminal works, but the top bar carries three unexplained icons and the status line shows a PID.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "§1 top bar / U4",
+        "what": "Three icon actions (copy, a person figure, refresh). The figure toggles a text mode but reads as 'accessibility settings'; refresh could mean reload or reconnect.",
+        "fix": "Keep Copy; overflow: 'Text mode for screen readers', 'Reconnect', Rename, Stop."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3 no ids above Details",
+        "what": "'Connected - PID 4821' under the title, with a hyphen for a separator.",
+        "fix": "Show nothing when connected; KitStatusLine only when not connected ('Reconnecting…'). PID in the overflow's Details."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7 / P8",
+        "what": "Text mode insets the output in a darker box with its own rails, mostly empty above the text, and an input field labelled 'Terminal command input'.",
+        "fix": "Full-bleed output, input pinned above the key bar with placeholder 'Type a command'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "diff-view",
+    "area": "f-files-review-terminal",
+    "title": "Review",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/diff-view.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A second diff renderer with its own header, gutter and wording; wrapped lines lose their indentation here too.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "P7 / U6 one language",
+        "what": "Different from Review changes: centred 'Review' title with an X, different file header, '+/−' gutter style.",
+        "fix": "Use one diff component for both; this screen becomes the same file view, titled 'Changes · 2 files'."
+      },
+      {
+        "severity": "high",
+        "principle": "P8 Craft",
+        "what": "Wrapped continuation lines return to the left edge under the numbers ('total', (tester) async {').",
+        "fix": "Hanging indent to the code column."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3",
+        "what": "'40 unchanged lines not included in patch'.",
+        "fix": "'40 unchanged lines' (tappable to expand when the full file is available)."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "file-preview-sheet",
+    "area": "f-files-review-terminal",
+    "title": "<file name>",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/file-preview-sheet--markdown.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Shows the file, but its header is four unlabelled icons over a MIME type, and it's a different viewer from the Files one.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C3 no engine words",
+        "what": "The subtitle is the MIME type 'text/plain', and it is wrong for a Markdown file.",
+        "fix": "Subtitle: folder and size ('shopfront · 1 KB')."
+      },
+      {
+        "severity": "high",
+        "principle": "§1 top bar / U4",
+        "what": "Four icon buttons in the header (copy, paperclip, download, close); the paperclip's meaning (attach to prompt?) is a guess.",
+        "fix": "Close plus one labelled action ('Attach to prompt'); Copy and Save in the overflow."
+      },
+      {
+        "severity": "medium",
+        "principle": "P7 / U6",
+        "what": "A second file viewer beside the Files viewer (icons here, text buttons there), plus a second copy control in the code block.",
+        "fix": "One FilePreview with one header pattern for every entry point."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "embedded-file-preview-body",
+    "area": "f-files-review-terminal",
+    "title": "[File preview body]",
+    "kind": "overlay",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/embedded-file-preview-body.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The JSON body is readable but boxed twice and labelled with MIME and language chrome.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "U5 box in a box",
+        "what": "A bordered code block with its own 'json' label, ⋯ and copy sits inside the preview sheet that already has copy and a title.",
+        "fix": "Render the body full-width without the inner frame; keep syntax colour."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3",
+        "what": "'application/json' as the subtitle.",
+        "fix": "Folder and size instead."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "run-command-dialog",
+    "area": "f-files-review-terminal",
+    "title": "Run /{command}",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/f-files-review-terminal/run-command-dialog.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 4
+    },
+    "suggested": "fix",
+    "summary": "A fine short-input dialog that doesn't say what the arguments are.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "C4 / X5",
+        "what": "'Arguments (optional)' with no hint of what /test accepts.",
+        "fix": "Use the command's description as helper text and an example as the hint ('e.g. test/checkout_test.dart')."
+      },
+      {
+        "severity": "low",
+        "principle": "standard §2",
+        "what": "Cancel and Run right-aligned side by side, like most dialogs in these areas.",
+        "fix": "Decide once whether dialogs follow the stacked rule; if not, record the exception in the standard."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "agent-account",
+    "area": "g-servers",
+    "title": "Codex account",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/agent-account--signed-out.png",
+      "docs/qa/screen-census/g-servers/agent-account--usage.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 4,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The sign-in is one clear action; the message sits in a card, the words are runtime/provider/host jargon, and the usage view uses too many type sizes.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "U5 cards are for content",
+        "what": "'Ready to sign in' / 'Signed in on the host' is a message wrapped in a bordered tinted card.",
+        "fix": "KitStateView inline (icon, title, body) with the primary under it."
+      },
+      {
+        "severity": "high",
+        "principle": "C3 Plain words",
+        "what": "'The official Codex runtime keeps your provider credentials. Account changes apply to this host…', 'Start an official device-code sign-in on this host… provider tokens'.",
+        "fix": "'Sign in with your ChatGPT account. You finish in the browser; this app never sees your password.'"
+      },
+      {
+        "severity": "medium",
+        "principle": "U8 at most three sizes (usage)",
+        "what": "Headline 'Rate limits' and 'Token usage', big numerals, bold labels and body text: five sizes. 'Plan: plus' in raw lowercase; the two stat tiles don't fill the row.",
+        "fix": "SectionLabel headings; 'ChatGPT Plus'; equal-width tiles; bars take the warning tone from 80 %."
+      },
+      {
+        "severity": "low",
+        "principle": "C3",
+        "what": "'Last checked Sep 26, 2026 6:55 AM'.",
+        "fix": "'Checked just now'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "agent-choice",
+    "area": "g-servers",
+    "title": "On my computer",
+    "kind": "onboarding-step",
+    "images": [
+      "docs/qa/screen-census/g-servers/agent-choice.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "The same choice as Add server, with the jargon and order that Add server just removed.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C3 / P7 (contradicts regression row 15)",
+        "what": "'One connection to the Paseo daemon drives every agent installed there. Experimental.' and 'Directly, through Codex app-server. Experimental.', ordered OpenCode, Paseo, Codex, while Add server now says 'Claude Code or Pi · Through Paseo on your computer' and orders OpenCode, Codex, Claude.",
+        "fix": "Reuse Add server's three rows, words and order here, or skip this screen and open Add server with the type choice."
+      },
+      {
+        "severity": "high",
+        "principle": "U9 / U6",
+        "what": "All three cards use the same server icon.",
+        "fix": "The kind icons from Add server."
+      },
+      {
+        "severity": "medium",
+        "principle": "C4",
+        "what": "'add the others any time from the server name at the top' points at hidden UI.",
+        "fix": "'You can add the others later in Servers.'"
+      },
+      {
+        "severity": "medium",
+        "principle": "U7",
+        "what": "Cards are inset 24 dp, off the 16 dp rails.",
+        "fix": "KitRow on the rails."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "connection-help",
+    "area": "g-servers",
+    "title": "Connection help",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/connection-help--empty.png",
+      "docs/qa/screen-census/g-servers/connection-help--explained.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 2,
+      "motion": null,
+      "copy": 1,
+      "principles": 2
+    },
+    "suggested": "rethink",
+    "summary": "A networking manual on a phone: five screens of loopback, reverse proxy, HTTPS origin and SSH tunnels, with the checker's verdict shown as a larger paragraph after the field has scrolled away.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C3 / P2 Plain words",
+        "what": "'Keep the server on its host's loopback', 'reverse proxy with a trusted certificate', 'Support streaming and WebSockets', 'Add the HTTPS origin', 'Tailscale Funnel', 'ssh -N -L 127.0.0.1:4096:127.0.0.1:4096 user@host', '[::1]' as body text.",
+        "fix": "Rethink as a diagnosis: 'Paste the address you tried' → a plain verdict ('This address points at this phone, not your computer.') and one next step. Guides fold into KitExpandRows ('Use Tailscale', 'Use an SSH tunnel') with commands in copyable mono boxes."
+      },
+      {
+        "severity": "high",
+        "principle": "U3 / U5 (explained state)",
+        "what": "The verdict ('Credentials do not belong in a URL…') renders in larger type than the rest, with no icon or tone, and the field it explains has scrolled off above.",
+        "fix": "KitNotice (warning tone) directly under the field; the field stays in view and says 'Cleared'."
+      },
+      {
+        "severity": "high",
+        "principle": "P1 purpose",
+        "what": "A primary 'Explain address' at the top, then a long guide; it's unclear whether the screen is a checker or a manual.",
+        "fix": "One job: check an address. Everything else is folded help."
+      },
+      {
+        "severity": "medium",
+        "principle": "C6",
+        "what": "A four-sentence intro about what is checked, hidden and cleared.",
+        "fix": "'Paste an address to see what's wrong with it. Nothing is sent or saved.'"
+      },
+      {
+        "severity": "low",
+        "principle": "P4",
+        "what": "Commands are set in Roboto, not mono; a placeholder URL ('https://server.example') has a copy button.",
+        "fix": "Mono command boxes; no copy on placeholders."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "external-agents",
+    "area": "g-servers",
+    "title": "External agents",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/external-agents--empty.png",
+      "docs/qa/screen-census/g-servers/external-agents--saved.png",
+      "docs/qa/screen-census/g-servers/external-agents--pending-deletion.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "A second marketing title, A2A jargon, and a filled box instead of the kit's empty state and rows.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C3",
+        "what": "'Connect to an A2A agent', 'an agent's HTTPS address or public Agent Card URL'.",
+        "fix": "'Connect an outside agent by its web address. Only the text you send it is shared.'"
+      },
+      {
+        "severity": "high",
+        "principle": "U5 / X4",
+        "what": "The empty state is a tinted filled box with a sentence, and the saved agent is a card on 24 dp rails, not a KitRow.",
+        "fix": "KitStateView empty (illustration, title 'No agents yet', Add agent). Saved agents as KitRows with chevrons on 16 dp rails."
+      },
+      {
+        "severity": "high",
+        "principle": "P1 / U4",
+        "what": "'Bring an agent you trust.' is a second headline under the app bar's 'External agents', and the filled Add agent sits above the list.",
+        "fix": "Keep the app-bar title only; Add agent pinned at the bottom (or a top-bar +) once agents exist."
+      },
+      {
+        "severity": "medium",
+        "principle": "X4 (pending deletion)",
+        "what": "A card with 'Removal from this phone is incomplete… remaining data' and a centred 'Try removing again'.",
+        "fix": "The agent's row with an error supporting line and 'Finish removing' in its menu."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "external-agents-delete-sheet",
+    "area": "g-servers",
+    "title": "Delete agent",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/g-servers/external-agents-delete-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Clear consequences and a red action; the icon and title don't match the rest of the app's removals.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "U9 one icon per action",
+        "what": "A question-mark icon, while Remove server and Remove terminal use the trash icon.",
+        "fix": "Trash icon in the error-tonal circle."
+      },
+      {
+        "severity": "low",
+        "principle": "C6",
+        "what": "Title 'Remove agent' is not a question and doesn't name it.",
+        "fix": "'Remove Palette agent?'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "add-agent",
+    "area": "g-servers",
+    "title": "Add agent",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/add-agent--address.png",
+      "docs/qa/screen-census/g-servers/add-agent--inspected.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 2,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "rethink",
+    "summary": "Two filled primaries, protocol jargon and three different containers on one form; Save sits at the bottom edge.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U4 one primary",
+        "what": "'Inspect Agent Card' and 'Save agent' are both filled; Save is cut at the bottom edge of the screen.",
+        "fix": "One pinned primary that changes: 'Check agent' until inspected, then 'Save agent'."
+      },
+      {
+        "severity": "high",
+        "principle": "C3",
+        "what": "'A2A 1.0 · JSON-RPC · Text tasks', 'Self-reported Agent Card', 'Supply an HTTP bearer credential… sent only to the inspected origin', 'Agent bearer credential', '0/8192'.",
+        "fix": "'Access key (if the agent needs one)'; 'Only sent to agent.example.' Protocol and version lines in Details."
+      },
+      {
+        "severity": "medium",
+        "principle": "U5 / U6",
+        "what": "A heading 'Inspect before you connect' under the app bar, an agent card, a tinted note card and a field: three container styles.",
+        "fix": "One section: the agent's name and what it does as rows, the key field, the notice as KitNotice."
+      },
+      {
+        "severity": "medium",
+        "principle": "X4 (address state)",
+        "what": "An empty field and an enabled primary with no example of what address to paste.",
+        "fix": "Hint 'https://agent.example.com'; disable the button until the field has an address."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "external-agent-detail",
+    "area": "g-servers",
+    "title": "<agent card name>",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/external-agent-detail.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Useful detail, but Remove is a green text link under Update credential, and the protocol metadata sits above the fold in a card that repeats the title.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "X3 destructive apart and coloured",
+        "what": "'Remove agent' is an accent-green text button directly under 'Update credential'.",
+        "fix": "Move Update credential and Remove into the top-bar overflow; Remove error-coloured and confirmed."
+      },
+      {
+        "severity": "medium",
+        "principle": "U6 / C3",
+        "what": "The card repeats 'Palette agent' from the app bar and lists 'Agent version: 1.2', 'A2A 1.0 · JSON-RPC', 'Self-reported Agent Card'.",
+        "fix": "Header: what it does in one line. Protocol, version and the self-reported note under Details."
+      },
+      {
+        "severity": "medium",
+        "principle": "U8 / C4",
+        "what": "'Saved tasks' in headline type with 'Reopening checks the existing task. It never sends your task again.'",
+        "fix": "SectionLabel 'Tasks'; drop the sentence (reopening is expected to be safe)."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "external-agent-detail-delete-sheet",
+    "area": "g-servers",
+    "title": "Delete agent",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/g-servers/external-agent-detail-delete-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Same sheet as the list's delete, with the same icon and title issues.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "U9",
+        "what": "Question-mark icon for a removal.",
+        "fix": "Trash icon."
+      },
+      {
+        "severity": "low",
+        "principle": "C6",
+        "what": "'Remove agent' without naming it.",
+        "fix": "'Remove Palette agent?'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "external-agent-detail-input-dialog",
+    "area": "g-servers",
+    "title": "New task | Update credential",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/g-servers/external-agent-detail-input-dialog--new-task.png",
+      "docs/qa/screen-census/g-servers/external-agent-detail-input-dialog--update-credential.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Wrong verbs on the buttons, a counter nobody needs, and a dialog that is a detour before the real task screen.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C5 buttons say what happens",
+        "what": "The Update credential dialog confirms with 'Save agent'; both dialogs cancel with 'Back'.",
+        "fix": "'Save key' and 'Cancel'."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3",
+        "what": "'Supply an HTTP bearer credential issued for this agent… inspected origin. No sign-in or credential sharing with other agents is performed.'",
+        "fix": "'Paste the access key Palette agent gave you. It stays in this phone's secure storage and is only sent to agent.example.'"
+      },
+      {
+        "severity": "medium",
+        "principle": "X8 container fits the task",
+        "what": "'New task' opens a dialog with a text field and 'Review task', which then opens the task screen with the same field.",
+        "fix": "'New task' opens the task screen directly as a draft."
+      },
+      {
+        "severity": "low",
+        "principle": "P2",
+        "what": "'0/16000' and '0/8192' counters from the first keystroke.",
+        "fix": "Show the count only near the limit."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "external-task",
+    "area": "g-servers",
+    "title": "Agent task",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/external-task--draft.png",
+      "docs/qa/screen-census/g-servers/external-task--input-required.png",
+      "docs/qa/screen-census/g-servers/external-task--completed.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The flow works, but state lives in a big card, the draft copy is confusing, and Stop and Forget are adjacent green links.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "X3 destructive apart and coloured",
+        "what": "Four stacked actions (Reply, Refresh task, Stop task, Forget saved task); Stop and Forget are adjacent accent text buttons.",
+        "fix": "Reply primary; Refresh as pull-to-refresh and a top-bar icon; Stop and Forget in the overflow, error-coloured and confirmed."
+      },
+      {
+        "severity": "high",
+        "principle": "C2 / C4",
+        "what": "Draft: 'Not sent · Saved locally. Refresh a known task to check its current state.' (nothing was sent to refresh). Other states: 'Checked with the agent this visit.'",
+        "fix": "'Draft · Not sent yet'; 'Updated just now'."
+      },
+      {
+        "severity": "medium",
+        "principle": "U5 / U8",
+        "what": "Status is a card with an icon and a headline; 'Agent output' is a headline; the terms notice repeats the one from the dialog as a tinted card.",
+        "fix": "KitStatusLine at the top ('Needs your reply'); SectionLabel 'Reply from the agent'; the notice once, as KitNotice, only on the draft."
+      },
+      {
+        "severity": "low",
+        "principle": "P4",
+        "what": "'Use a calm blue (#2F6FED)' shows a hex value with no swatch.",
+        "fix": "Render a small swatch next to recognised colour values."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "external-task-cancel-sheet",
+    "area": "g-servers",
+    "title": "Cancel task",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/g-servers/external-task-cancel-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Honest that stopping is a request, but styled as a harmless green confirmation with a question-mark icon.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "X3 / standard §2",
+        "what": "'Ask to stop' is a green filled primary with a '?' icon; title 'Stop task'.",
+        "fix": "Title 'Stop this task?'; stop icon; 'Ask it to stop' error-tonal."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "external-task-forget-sheet",
+    "area": "g-servers",
+    "title": "Forget saved task",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/g-servers/external-task-forget-sheet.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 4
+    },
+    "suggested": "fix",
+    "summary": "Correct weight and honest; one phrase of protocol-speak.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "C3",
+        "what": "'Remote work may continue, including a send whose delivery is unconfirmed.'",
+        "fix": "'The agent may keep working, even on a message that may not have arrived.'"
+      },
+      {
+        "severity": "low",
+        "principle": "U9 / C6",
+        "what": "'?' icon and a title that isn't a question.",
+        "fix": "Trash icon; 'Forget this task?'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "host-management",
+    "area": "g-servers",
+    "title": "Run as a Linux service",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/host-management.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A useful command sheet for power users, but it pipes an unpinned script from a personal repository into bash and assumes Linux for every server.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "P10 Earn trust",
+        "what": "'curl -fsSL https://raw.githubusercontent.com/Eslamasabry/opencode-mobile-next/master/scripts/host/ubuntu-opencode.sh … && bash ubuntu-opencode.sh install' runs a script from a moving branch with no pin, checksum or summary of what it changes.",
+        "fix": "Pin to a release tag, show a checksum, and add a 'What this does' fold (installs OpenCode, adds a systemd user service, sets a password)."
+      },
+      {
+        "severity": "medium",
+        "principle": "X5",
+        "what": "'Laptop' may be a Mac, but every command is Ubuntu/systemd; nothing says Linux only.",
+        "fix": "Say 'Linux computers only' in the header, or ask the OS first and offer launchd for macOS."
+      },
+      {
+        "severity": "medium",
+        "principle": "U6",
+        "what": "Server name, address and version repeat the Server page; an info-icon row is used as a paragraph.",
+        "fix": "Drop the repeats; one line 'Run these on Laptop — the app can't run them for you.'"
+      },
+      {
+        "severity": "medium",
+        "principle": "U3",
+        "what": "The install command wraps mid-URL across seven lines.",
+        "fix": "One-line command boxes that scroll horizontally with a copy button."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "pairing-scanner",
+    "area": "g-servers",
+    "title": "Scan pairing code",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/pairing-scanner--denied.png",
+      "docs/qa/screen-census/g-servers/pairing-scanner--blocked.png",
+      "docs/qa/screen-census/g-servers/pairing-scanner--no-camera.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Honest permission states with a paste fallback; built in the old centred style and naming the command in prose.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "U5 One kit",
+        "what": "Old centred icon + bold line + grey paragraph hugging the top, not a KitStateView page (tonal icon circle, vertically centred).",
+        "fix": "KitStateView page: camera icon in a tonal circle, title, one-sentence body, actions stacked."
+      },
+      {
+        "severity": "medium",
+        "principle": "C5 / C3",
+        "what": "Denied state's primary is 'Try again'; the body names 'opencode2 pair' and 'the server editor' in prose; an em dash and three sentences.",
+        "fix": "Primary 'Allow camera'; body 'Only used to read the code on your computer's screen. You can paste the code instead.'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "profile-monitor-switch-server-dialog",
+    "area": "g-servers",
+    "title": "Switch server to review?",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/g-servers/profile-monitor-switch-server-dialog.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 4
+    },
+    "suggested": "fix",
+    "summary": "A proper blocking question; it should name the servers.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "C4 say exactly what will happen",
+        "what": "'A run is active on the selected server.' doesn't say which server or what will be shown.",
+        "fix": "'Laptop is working on a task. Switching shows Studio Mac here; Laptop keeps working.'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "profile-monitor",
+    "area": "g-servers",
+    "title": "Saved-server attention",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/profile-monitor.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 2,
+      "motion": null,
+      "copy": 1,
+      "principles": 2
+    },
+    "suggested": "rethink",
+    "summary": "An engine report: a green dot for 'Permission needed', 'Current observation', 'attention unknown', and timestamps floating outside their rows.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U2 / C2 colour matches state",
+        "what": "'Permission needed' carries the same green dot as a healthy server.",
+        "fix": "Warning tone and the word 'Needs you'."
+      },
+      {
+        "severity": "high",
+        "principle": "C3",
+        "what": "Title 'Saved-server attention'; 'Current observation'; 'Not monitored · attention unknown'; 'Counts cover each server's last selected project, not every project on that server.'",
+        "fix": "Title 'Other servers'. Rows 'Laptop · 1 needs you · checked 2 min ago', 'Studio Mac · Not watched'."
+      },
+      {
+        "severity": "high",
+        "principle": "U7 / U5",
+        "what": "'Last checked / Next check' lines sit outside the row on a different leading edge; the request is a tinted block with its own indent; 'Notification settings' is indented differently again.",
+        "fix": "One KitRow per server with nested KitRows for its requests; Notification settings in the overflow."
+      },
+      {
+        "severity": "medium",
+        "principle": "X4",
+        "what": "'Not monitored' has no way to start watching.",
+        "fix": "Row action 'Watch this server'."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "embedded-profile-monitor-inbox",
+    "area": "g-servers",
+    "title": "Saved servers",
+    "kind": "overlay",
+    "images": [
+      "docs/qa/screen-census/g-servers/embedded-profile-monitor-inbox.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "The Inbox shows the same pending request twice, marks it green, and labels it with monitor jargon.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U6 Nothing shown twice",
+        "what": "The request row ('Server 1 · Permission needed') and the 'Saved servers · 1 pending' row count the same thing.",
+        "fix": "Keep the request row; the Saved servers row links to the full list without repeating the count."
+      },
+      {
+        "severity": "high",
+        "principle": "U2",
+        "what": "The request's dot is green, the healthy colour.",
+        "fix": "Warning tone plus 'Needs you'."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3 / C2",
+        "what": "'Watched in each server's current project', 'Completion digests', an absolute 'Last checked' time; the header says 'Server 2 · Inbox' while the request is from Server 1.",
+        "fix": "Section 'On Laptop'; 'Finished work'; relative time."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "provider-quota",
+    "area": "g-servers",
+    "title": "Remaining",
+    "kind": "tab",
+    "images": [
+      "docs/qa/screen-census/g-servers/provider-quota--setup.png",
+      "docs/qa/screen-census/g-servers/provider-quota--loaded.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 1,
+      "motion": null,
+      "copy": 1,
+      "principles": 1
+    },
+    "suggested": "rethink",
+    "summary": "Fifteen lines of operator policy, a route path and a repository file before any number; when loaded, every number is shown twice.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C3 / P2",
+        "what": "'An optional collector is required' (a contradiction), 'install and protect this route at the same origin', '/ocmn/quota/v1', 'Setup instructions are in tool/quota/README.md in the app repository'. The 'Quota monitoring' paragraph speaks of rotation, cycles, sources and readings.",
+        "fix": "Rethink: without a collector, one KitStateView 'Remaining usage isn't available on Laptop' with 'How to add it' (opens the external guide through openExternalLink). The mechanics go in Details."
+      },
+      {
+        "severity": "high",
+        "principle": "P1 / U6 (loaded)",
+        "what": "'74.5% remaining' and '25.5% used'; 'Primary window / 5-hour window'; 'Snapshot checked Sep 20… / Reported reset Sep 20…' with no word that the reset has passed; a threshold dropdown inside the card; a floating 'Enable quota monitoring' link.",
+        "fix": "One row per provider: 'Codex · 74 % left · resets in 3 h' with a KitProgressRow; tap for detail and the alert threshold."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7",
+        "what": "Provider chips wrap, leaving 'GLM' alone on a second line; the consent checkbox has a large gap before its text.",
+        "fix": "A horizontally scrolling chip row, or a picker row 'Provider · Codex ▾'; KitSwitchRow for consent."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "provider-quota-enroll-dialog",
+    "area": "g-servers",
+    "title": "Monitor this provider source?",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/g-servers/provider-quota-enroll-dialog.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 2,
+      "motion": null,
+      "copy": 1,
+      "principles": 2
+    },
+    "suggested": "rethink",
+    "summary": "A fourteen-line dialog explaining scheduling internals, with the URL centred in the middle.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C6 / C3",
+        "what": "The body explains cycles, sources, foreground and background intervals, 'freshly reported window' and 'Personal page thresholds are separate'.",
+        "fix": "Replace the dialog with a KitSwitchRow 'Alert me at [80 % ▾] used' plus one line: 'Checked every few minutes while the app runs.' Details fold for the rest."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7",
+        "what": "The URL is centred inside left-aligned text; the button label 'Enable quota monitoring' wraps the dialog wide.",
+        "fix": "No URL here; button 'Turn on alerts'."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "provider-quota-clear-dialog",
+    "area": "g-servers",
+    "title": "Clear saved provider thresholds",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/g-servers/provider-quota-clear-dialog.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A destructive clear in green, with a heading that isn't a question and buttons stacked awkwardly.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "X3 destructive coloured",
+        "what": "'Clear saved provider thresholds' is the green filled button.",
+        "fix": "Error-tonal 'Clear alerts'."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7 / C3",
+        "what": "Cancel sits alone, right-aligned, above the long primary; 'attention settings', 'previous accounts', 'Consumption budgets are kept'.",
+        "fix": "'Clear all usage alerts for Laptop? Spending budgets stay.' Buttons stacked full width."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "servers",
+    "area": "g-servers",
+    "title": "OpenCode — Servers",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/servers--loaded.png",
+      "docs/qa/screen-census/g-servers/servers--password-needed.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": 4,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The current-server mark is clear, but rows expose IPs, ports and paths, the top bar has three icons, and 'Connect OpenCode 2' duplicates Add server.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C3 no ports or paths above Details",
+        "what": "Rows read '192.168.1.20:4096', 'studio.tail0c1.ts.net', 'Codex · /work/shopfront · codex.example'.",
+        "fix": "Supporting line = kind and state only ('Connected · OpenCode', 'OpenCode · Not checked'). Address and folder go into the row menu's Details."
+      },
+      {
+        "severity": "high",
+        "principle": "§1 top bar",
+        "what": "Three icon actions: bell, info (i) and help (?); info and help are indistinguishable.",
+        "fix": "One icon (help) plus an overflow; the bell moves to the Inbox tab badge it already has."
+      },
+      {
+        "severity": "high",
+        "principle": "U6 / P1 one entry per action",
+        "what": "'Connect OpenCode 2 · Use a server that is already running' sits beside 'Add server', which already adds OpenCode 1 and 2.",
+        "fix": "Remove the row; Add server is the one way in."
+      },
+      {
+        "severity": "medium",
+        "principle": "C2 / X4 (password-needed state)",
+        "what": "The notice says 'Edit the active server and re-enter it before connecting' with no button, and the row reads 'Password re-entry required · Connected ·' (a trailing dot, and 'Connected' next to a password it can't read).",
+        "fix": "KitNotice with a 'Re-enter password' action; row 'Password needed' in warning tone, without 'Connected'."
+      },
+      {
+        "severity": "medium",
+        "principle": "P1",
+        "what": "'Try demo' stays under the list after servers exist.",
+        "fix": "Show the demo only on the welcome and empty states."
+      },
+      {
+        "severity": "low",
+        "principle": "U9",
+        "what": "Laptop, Studio Mac and the Codex box share one server glyph.",
+        "fix": "Kind-specific icons matching Add server (desktop, </>, robot)."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "servers-remove-server-sheet",
+    "area": "g-servers",
+    "title": "Remove {name}?",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/g-servers/servers-remove-server-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 4,
+      "motion": null,
+      "copy": 3,
+      "principles": 4
+    },
+    "suggested": "fix",
+    "summary": "Honest about what is removed and what isn't; long, centred, with an unexplained gap between the two paragraphs.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "U7 spacing",
+        "what": "A band of empty space separates 'This deletes everything…' from 'Nothing is deleted on the server…'.",
+        "fix": "One body block on the kit spacing (12 dp between paragraphs)."
+      },
+      {
+        "severity": "medium",
+        "principle": "C6 / P2",
+        "what": "Three sentences, centred, mixing 'this device' with the app's 'this phone'.",
+        "fix": "'Removes its password and your choices for it from this phone. Nothing changes on Studio Mac.'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "profile-editor",
+    "area": "g-servers",
+    "title": "Add server | OpenCode 2 | Edit server | Re-enter password | Re-enter connection token | OpenCode | Claude Code or Pi | Codex",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/profile-editor--add-opencode.png",
+      "docs/qa/screen-census/g-servers/profile-editor--add-codex.png",
+      "docs/qa/screen-census/g-servers/profile-editor--first-run-connect.png",
+      "docs/qa/screen-census/g-servers/profile-editor--failed.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": 4,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "The pairing-first form is a big improvement, but the failure puts the error far from its field and names the wrong command, and the Codex path is a raw command that runs off screen.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C2 words match the screen (failed)",
+        "what": "'The connection was refused. Is opencode serve running on that host and port?' while the screen tells the person to run 'opencode2 pair'.",
+        "fix": "'Couldn't reach 192.168.1.20. Check that OpenCode is running on your computer and that both are on the same network.' Raw error in Details."
+      },
+      {
+        "severity": "high",
+        "principle": "X5 (failed)",
+        "what": "The error sits at the top of the form; the address it refers to is under 'Enter the address instead', expanded but hidden under the pinned Save & connect button.",
+        "fix": "Show the verdict as a KitNotice directly under the address field and scroll that field into view."
+      },
+      {
+        "severity": "high",
+        "principle": "C3 / U3 (Codex)",
+        "what": "The Codex command block shows 'ws://127.0.0.1:4141', '--ws-auth capability-token' and '--ws-token-file /absolute/path/codex' cut at the right edge; the helper says 'Use wss:// for remote servers. ws:// is limited to this device.'",
+        "fix": "One-line command box that scrolls horizontally with a fade and a copy button; replace the ws/wss sentence with validation on the field ('Use the secure address your computer prints')."
+      },
+      {
+        "severity": "medium",
+        "principle": "X5 / P1",
+        "what": "'Save & connect' is filled and enabled before any code or address exists.",
+        "fix": "Disable it with a visible reason ('Scan or paste the code first'), or hide it until the form has a code or address."
+      },
+      {
+        "severity": "medium",
+        "principle": "U7 / C6",
+        "what": "Three stacked expanders ('Show the commands', 'Enter the address instead', 'More options') with about 60 dp between them; 'Show the commands' sits under a command that is already shown.",
+        "fix": "Rename to 'Other ways to start it'; KitExpandRow spacing."
+      },
+      {
+        "severity": "low",
+        "principle": "P7",
+        "what": "The Codex choice still draws the OpenCode mark on the laptop; the first-run title is just 'OpenCode'.",
+        "fix": "Draw the chosen agent's mark; title 'Connect your computer'."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "profile-editor-discard-sheet",
+    "area": "g-servers",
+    "title": "Discard server changes?",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/g-servers/profile-editor-discard-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 4,
+      "motion": null,
+      "copy": 4,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Right question, wrong weight: 'Discard' is the green primary.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "X3 / standard §2 destructive",
+        "what": "Discarding unsaved server details uses the filled green primary; 'Keep editing' is a text link.",
+        "fix": "'Discard' error-tonal; 'Keep editing' as the tonal secondary (the safe default)."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "server-settings",
+    "area": "g-servers",
+    "title": "Server",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/server-settings--update-available.png",
+      "docs/qa/screen-census/g-servers/server-settings--pending-restart.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 2,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A useful status page that contradicts itself about the version and dresses a note as an action.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C2 no contradictions",
+        "what": "'Server healthy · Version 1.18.25', then under it 'Current server: unknown. Uses OpenCode's official installer; host restart required.'",
+        "fix": "Use the version the health check reported ('1.18.25 → 1.19.0'); say 'unknown' only when health gave none."
+      },
+      {
+        "severity": "high",
+        "principle": "X5 / C5 (pending restart)",
+        "what": "'Restart OpenCode to use 1.19.0' with a trailing restart icon looks like a button, but tapping only opens a dialog telling the person to restart it on the host.",
+        "fix": "Title 'Restart needed on Laptop', supporting '1.19.0 is installed', trailing chevron to a page with the copyable restart command and 'Check again'."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3",
+        "what": "'http://192.168.1.20:4096' in mono as the first row's supporting line.",
+        "fix": "Supporting 'Connected · OpenCode'; the address in Details."
+      },
+      {
+        "severity": "medium",
+        "principle": "U9 / U6",
+        "what": "The update row shows a download icon on both sides; the server row's trailing refresh icon is ambiguous; 'Run as a Linux service' supporting text is cut with an ellipsis ('rest…').",
+        "fix": "Leading icon only plus chevron; refresh in the top bar; two-line supporting (supportingMaxLines: 2) without ellipsis."
+      },
+      {
+        "severity": "medium",
+        "principle": "X4",
+        "what": "'Authentication · No server password saved' has no action or explanation.",
+        "fix": "'Password · Not needed' or offer 'Add password'."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "server-settings-restart-dialog",
+    "area": "g-servers",
+    "title": "Restart OpenCode on its host",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/g-servers/server-settings-restart-dialog.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 2,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A blocking dialog that asks the person to do something elsewhere and gives them nothing to do it with.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "X5 / P4",
+        "what": "Only a 'Done' button; no command to copy, no way to re-check.",
+        "fix": "A sheet with the restart command in a copyable mono box ('Copy command') and 'I restarted it' that re-checks the version."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3 / C6",
+        "what": "'this server process is still running the previous version. Restart that process on the server host; mobile will reconnect…'; the title wraps.",
+        "fix": "Title 'Restart OpenCode on Laptop'. 'The update is installed. Restart OpenCode there and this app will reconnect.'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "server-settings-upgrade-sheet",
+    "area": "g-servers",
+    "title": "Update remote OpenCode?",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/g-servers/server-settings-upgrade-sheet.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Clear confirmation, but it repeats the 'unknown version' contradiction and doesn't say what happens while it installs.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "C2",
+        "what": "'The current process is running an unknown version.' while the page behind says 1.18.25.",
+        "fix": "'Installs 1.19.0 on Laptop (now 1.18.25).'"
+      },
+      {
+        "severity": "medium",
+        "principle": "P3 / C3",
+        "what": "No expectation of time or downtime; 'using the server's detected installation method', 'remote'.",
+        "fix": "'Takes about a minute. Your conversations stay. Restart OpenCode on Laptop afterwards.' Installer detail in Details."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "tailscale-setup",
+    "area": "g-servers",
+    "title": "Connect with Tailscale",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/tailscale-setup--installed.png",
+      "docs/qa/screen-census/g-servers/tailscale-setup--missing.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 2,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "fix",
+    "summary": "Two primaries, walls of network prose and an ad-hoc card for step 1; the steps are right, the presentation isn't.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "U4 one primary",
+        "what": "'Open Tailscale' and 'Continue to authentication' are both filled primaries on one screen.",
+        "fix": "Step actions tonal; one pinned primary 'Continue' that stays disabled with a reason until an address is entered."
+      },
+      {
+        "severity": "high",
+        "principle": "C3 / C6",
+        "what": "'VPN connection is unverified', 'Use the full HTTPS origin printed by Tailscale Serve', 'a raw HTTP port may not provide a valid certificate', 'Continue to authentication'; three blocks of three to four sentences.",
+        "fix": "Step 1 'Turn on Tailscale on this phone'. Step 2 'Your computer's Tailscale address' with placeholder 'https://my-laptop.tail1234.ts.net'. Details fold for the certificate note."
+      },
+      {
+        "severity": "medium",
+        "principle": "U5 / U7",
+        "what": "Step 1 is wrapped in a card, step 2 is not; a '34/2048' counter sits under the field.",
+        "fix": "Numbered steps with KitStatusMark; no counter."
+      },
+      {
+        "severity": "medium",
+        "principle": "X4",
+        "what": "'Continue to authentication' is enabled with an empty address field.",
+        "fix": "Disable it with a visible reason."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "usage",
+    "area": "g-servers",
+    "title": "Spent",
+    "kind": "tab",
+    "images": [
+      "docs/qa/screen-census/g-servers/usage.png"
+    ],
+    "scores": {
+      "ui": 2,
+      "ux": 2,
+      "motion": null,
+      "copy": 2,
+      "principles": 2
+    },
+    "suggested": "rethink",
+    "summary": "The answer ($3.42) is below the fold under filters, a five-sentence budget explanation and three floating links.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "X5 / P1",
+        "what": "The page opens with a description, period chips, a scope dropdown, 'Personal consumption budgets' prose and three text buttons; the total is at the bottom of the first screen.",
+        "fix": "Lead with the total ('$3.42 in the last 30 days'), then period chips, then the breakdown; budgets become one row 'Budget · None set ›'."
+      },
+      {
+        "severity": "high",
+        "principle": "C3",
+        "what": "'Budgets use all reported consumption for the selected server, project, timezone and date-window start. Model filters do not change them…', 'Totals for the selected report scope', 'returned model records'.",
+        "fix": "'Spending shown by OpenCode on Laptop. It isn't your provider's bill.'"
+      },
+      {
+        "severity": "medium",
+        "principle": "C2",
+        "what": "'30 days' is selected but the range reads 'Sep 2, 2026 – Sep 6, 2026'.",
+        "fix": "If the range is the days with activity, say so ('Activity Sep 2–6'); otherwise show the full 30-day range."
+      },
+      {
+        "severity": "medium",
+        "principle": "U8 / U7",
+        "what": "Five or more type sizes (headline 'Tokens' and 'Providers', the hero number, bold labels, body); the text buttons are indented about 28 dp from the rails.",
+        "fix": "SectionLabel headings; buttons on the rails."
+      }
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "usage-budget-dialog",
+    "area": "g-servers",
+    "title": "Set USD budget | Set token budget",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/g-servers/usage-budget-dialog.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 3,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Three actions in one row including a destructive one, and nothing about what a budget does.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "X3 / standard §2",
+        "what": "'Remove budget', 'Cancel' and 'Save' in one row; Remove is accent-coloured and shown even when no budget exists.",
+        "fix": "Show Remove only when a budget exists, error-coloured, on its own line."
+      },
+      {
+        "severity": "medium",
+        "principle": "C4",
+        "what": "An empty 'Budget amount' field with no currency or effect explained.",
+        "fix": "'$' prefix, number keyboard, helper 'You'll get a notice at this amount. Nothing is stopped.'"
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "usage-budget-clear-dialog",
+    "area": "g-servers",
+    "title": "Clear saved consumption budgets",
+    "kind": "dialog",
+    "images": [
+      "docs/qa/screen-census/g-servers/usage-budget-clear-dialog.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 2,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Same pattern as the provider clear: a destructive green button and jargon.",
+    "issues": [
+      {
+        "severity": "high",
+        "principle": "X3 destructive coloured",
+        "what": "'Clear saved consumption budgets' is the green filled button.",
+        "fix": "Error-tonal 'Clear budgets'."
+      },
+      {
+        "severity": "medium",
+        "principle": "C3 / U7",
+        "what": "'current and past consumption budgets… Provider thresholds are kept.'; Cancel alone above the primary.",
+        "fix": "'Clear all spending budgets for Laptop? Usage alerts stay.' Stacked buttons."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "servers-welcome",
+    "area": "g-servers",
+    "title": "Keep your work moving.",
+    "kind": "screen",
+    "images": [
+      "docs/qa/screen-census/g-servers/servers-welcome.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 4,
+      "principles": 4
+    },
+    "suggested": "keep",
+    "summary": "The strongest first-run screen here: a drawing, one question, three plain choices.",
+    "issues": [
+      {
+        "severity": "low",
+        "principle": "§1 top bar",
+        "what": "A lone info icon in the top bar with no visible purpose.",
+        "fix": "Replace with a text link 'What is this?' under the intro, or drop it."
+      },
+      {
+        "severity": "low",
+        "principle": "P7",
+        "what": "Choices are filled tiles, while the same choice on Add server is a list of radio rows.",
+        "fix": "Acceptable for a hero moment; note it as the welcome exception in the standard."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "embedded-info-label",
+    "area": "k-session-misc",
+    "title": "[Info label: term with info glyph]",
+    "kind": "overlay",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/embedded-info-label.png"
+    ],
+    "scores": {
+      "ui": 3,
+      "ux": 3,
+      "motion": null,
+      "copy": 4,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "A useful inline glossary affordance with a tap target far below 48 dp.",
+    "issues": [
+      {
+        "severity": "critical",
+        "principle": "X1 touch targets 48 dp",
+        "what": "The label is an InkWell with 2 dp padding around one line of text and a 16 dp icon (info_label.dart build), about 24 dp tall.",
+        "fix": "Keep the visual size but give the hit area a 48 dp minimum height (ConstrainedBox minHeight 48, or padded tap target)."
+      },
+      {
+        "severity": "low",
+        "principle": "U1",
+        "what": "The 16 dp info glyph is drawn in the muted colour and may fall under 3:1 on dark.",
+        "fix": "Check contrast; use onSurfaceVariant at full strength."
+      }
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "info-label-sheet",
+    "area": "k-session-misc",
+    "title": "<glossary term> (MCP, Worktree, Provider, Context, Agent, Reasoning, Permission, Variant)",
+    "kind": "sheet",
+    "images": [
+      "docs/qa/screen-census/k-session-misc/info-label-sheet.png"
+    ],
+    "scores": {
+      "ui": 4,
+      "ux": 4,
+      "motion": null,
+      "copy": 4,
+      "principles": 3
+    },
+    "suggested": "fix",
+    "summary": "Good short explanation; the dismiss button is off-standard.",
+    "issues": [
+      {
+        "severity": "medium",
+        "principle": "standard §2 / U5 / U7",
+        "what": "A raw FilledButton.tonal 'Got it', right-aligned; 24 dp side padding and a 10 dp gap, off the 16 dp rails and 4 dp scale.",
+        "fix": "Drop the button (drag and scrim close it) or make it full width; KitScreen rails and spacing."
+      }
+    ],
+    "quickWin": true
+  }
+]

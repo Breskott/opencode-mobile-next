@@ -1,10 +1,13 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show ChangeNotifier, Listenable, TargetPlatform;
 import 'package:flutter/services.dart'
     show MissingPluginException, PlatformException;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../ui/kit/kit_redact.dart';
 
 import '../api/models.dart' show ModelRef;
 import '../api/server_probe.dart' show ServerFlavor;
@@ -13,7 +16,12 @@ import '../domain/orchestration_gateway.dart' show OrchestrationHostMode;
 import '../orchestration/adapters/gascity/gascity_probe.dart'
     show isTailnetHost;
 import '../platform/platform_capabilities.dart';
+// A plain value type (no widgets): the person's effect choices.
+import 'effects.dart' show KitEffects, KitMotionLevel;
 import 'model_library.dart';
+import 'interaction_defaults.dart';
+import 'setup_audit_store.dart';
+import 'session_link_bindings.dart';
 
 export '../api/server_probe.dart' show ServerFlavor;
 export '../domain/loopback_host.dart' show isLoopbackHost;
@@ -38,12 +46,19 @@ enum OrchestrationProvider {
   gascity,
 
   /// The recorded fixture in `tool/qa/gascity_fixture` (tests and demos).
-  fixture;
+  fixture,
+
+  /// Native phone-resident durable project engine.
+  phoneEngine;
 
   /// Maps a stored name; unknown names fall back to [gascity] so an old
   /// profile never loses its host.
   static OrchestrationProvider fromName(Object? name) =>
-      name == fixture.name ? fixture : gascity;
+      name == phoneEngine.name
+      ? phoneEngine
+      : name == fixture.name
+      ? fixture
+      : gascity;
 }
 
 /// The kind of machine an AI Team host runs on, chosen by the person when
@@ -233,6 +248,9 @@ class ServerProfile {
   /// its own key and is intentionally excluded from profile JSON.
   String codexToken;
 
+  /// Phone engine bearer auth, runtime-only and never included in JSON.
+  String teamEngineAuth;
+
   /// Codex project directory stored as profile metadata, never as a secret.
   String codexDirectory;
 
@@ -260,6 +278,7 @@ class ServerProfile {
     this.password = '',
     this.requiresPasswordReentry = false,
     this.codexToken = '',
+    this.teamEngineAuth = '',
     this.codexDirectory = '',
     this.requiresCodexTokenReentry = false,
     this.flavor = ServerFlavor.v1,
@@ -289,7 +308,7 @@ class ServerProfile {
 
   static ServerProfile fromJson(Map<String, dynamic> j) => ServerProfile(
     id: j['id'] as String,
-    name: (j['name'] ?? '').toString(),
+    name: plainServerName((j['name'] ?? '').toString()),
     baseUrl: (j['baseUrl'] ?? '').toString(),
     backend: switch (j['backend']) {
       'codex' => ServerBackend.codex,
@@ -304,6 +323,25 @@ class ServerProfile {
     serverVersion: j['serverVersion']?.toString(),
     orchestration: OrchestrationConfig.fromJson(j['orchestration']),
   );
+}
+
+/// A server's name as people should read it: a bare IP address (what the
+/// name defaulted to before) becomes "Computer at 192.168.1.5"; a host name
+/// or a name the person typed is kept as is.
+String plainServerName(String name) {
+  final value = name.trim();
+  // This device by any of its names is "This phone", never "Computer at
+  // 127.0.0.1": a loopback address is not somewhere else.
+  if (isLoopbackHost(value.replaceAll(RegExp(r'[\[\]]'), ''))) {
+    return 'This phone';
+  }
+  final ipv4 = RegExp(r'^\d{1,3}(?:\.\d{1,3}){3}$').hasMatch(value);
+  final ipv6 =
+      value.contains(':') && RegExp(r'^[0-9a-fA-F:.\[\]]+$').hasMatch(value);
+  if (ipv4 || ipv6) {
+    return 'Computer at ${value.replaceAll(RegExp(r'[\[\]]'), '')}';
+  }
+  return name;
 }
 
 // `isLoopbackHost` lives in `lib/domain/loopback_host.dart` (Flutter-free)
@@ -654,6 +692,19 @@ class SecureStorageUnavailable implements Exception {
   String toString() => message;
 }
 
+/// A scoped sign-in reset was not fully confirmed. Some sign-ins may already
+/// have been removed; retrying completes the same operation safely.
+class SavedSignInResetException implements Exception {
+  const SavedSignInResetException();
+
+  @override
+  String toString() => 'Could not reset saved sign-ins. Try again.';
+}
+
+class _ProfileStoreChanges extends ChangeNotifier {
+  void changed() => notifyListeners();
+}
+
 /// Persists server profiles. Metadata in SharedPreferences, secrets in the
 /// Android Keystore via flutter_secure_storage.
 class ProfileStore {
@@ -661,6 +712,7 @@ class ProfileStore {
   static const _activeKey = 'oc.activeProfile';
   static const _passwordKey = 'pw.';
   static const _codexTokenKey = 'oc.codexToken.';
+  static const teamEngineAuthKey = 'oc.teamEngineAuth.';
   static const _modelKey = 'oc.model.'; // + profileId -> "providerID|modelID"
   static const _modelExplicitKey = 'oc.modelExplicit.'; // + profileId
   static const _agentKey = 'oc.agent.'; // + profileId
@@ -681,6 +733,9 @@ class ProfileStore {
   static const _transcriptTimestampsKey = 'oc.transcript.timestampsVisible';
   static const _appearanceKey = 'oc.appearance';
   static const _themePackKey = 'oc.themePack';
+  // App-wide (no profile id segment, so the deletion sweep never matches).
+  static const _effectsMotionKey = 'oc.effectsMotion';
+  static const _effectsCelebrationsKey = 'oc.effectsCelebrations';
   static const _providerRuntimeRefreshVersion = 'v1';
 
   final SharedPreferences prefs;
@@ -692,7 +747,104 @@ class ProfileStore {
   List<ServerProfile> _cache = [];
   List<ServerProfile> get profiles => List.unmodifiable(_cache);
 
+  final _changes = _ProfileStoreChanges();
+
+  /// Fires after a profile is saved. Profiles are also changed in place
+  /// (phone setup renames the in-app one to "This phone" while the app is
+  /// connected to it), and nothing else tells the screens that show a name:
+  /// without this the app bar kept the old name until a restart.
+  Listenable get changes => _changes;
+
+  /// Bootstrap recovery only: removes saved profile sign-ins and the active
+  /// selection without loading or rewriting profiles, drafts, queues or settings.
+  /// The caller must exclude concurrent bootstrap loads and live connections.
+  /// Enumerating secure keys includes orphaned sign-ins, while unrelated secure
+  /// entries remain untouched. A partial failure is retryable, never success.
+  Future<void> resetSavedSignIns() async {
+    // Invalidate retained references even if storage fails part-way through.
+    // Keep redaction registrations: late diagnostics can still contain a secret.
+    for (final profile in _cache) {
+      profile.requiresPasswordReentry =
+          !profile.usesAgentSocket &&
+          (profile.password.isNotEmpty || profile.requiresPasswordReentry);
+      profile.requiresCodexTokenReentry =
+          profile.usesAgentSocket &&
+          (profile.agentSocketSecretRequired ||
+              profile.codexToken.isNotEmpty ||
+              profile.requiresCodexTokenReentry);
+      profile.password = '';
+      profile.codexToken = '';
+      profile.teamEngineAuth = '';
+    }
+    bool ownsKey(String key) =>
+        key.startsWith(_passwordKey) ||
+        key.startsWith(_codexTokenKey) ||
+        key.startsWith(teamEngineAuthKey);
+    try {
+      final secrets = await secure.readAll();
+      final owned = <String>[
+        for (final entry in secrets.entries)
+          if (ownsKey(entry.key)) entry.key,
+      ];
+      for (final key in owned) {
+        KitRedact.registerKnownSecret(secrets[key]!);
+      }
+      // Confirm selection removal before deleting secrets. A preferences
+      // refusal leaves all durable sign-ins available for another attempt.
+      if (!await prefs.remove(_activeKey)) {
+        throw const SavedSignInResetException();
+      }
+      for (final key in owned) {
+        await secure.delete(key: key);
+      }
+      final remaining = await secure.readAll();
+      for (final entry in remaining.entries) {
+        if (ownsKey(entry.key)) {
+          KitRedact.registerKnownSecret(entry.value);
+        }
+      }
+      if (remaining.keys.any(ownsKey)) {
+        throw const SavedSignInResetException();
+      }
+      await prefs.reload();
+      if (prefs.containsKey(_activeKey)) {
+        throw const SavedSignInResetException();
+      }
+    } catch (_) {
+      // SharedPreferences changes its cache before platform confirmation.
+      try {
+        await prefs.reload();
+      } catch (_) {}
+      // Never retain a keyring exception: it may echo any stored credential.
+      throw const SavedSignInResetException();
+    } finally {
+      _changes.changed();
+    }
+  }
+
+  /// Where the retired personal quota budgets were kept, per profile
+  /// (`oc.budgets.<profileId>`). Quota monitoring's own threshold replaced
+  /// them and nothing reads or writes them any more.
+  static const retiredQuotaBudgetsPrefix = 'oc.budgets.';
+
+  /// Drops what the retired quota budgets left on the device. It runs on
+  /// every load, but only the first finds anything. A key the store refuses
+  /// to drop stays for the next load, and profile deletion's sweep still
+  /// matches it as an `oc.<what>.<profileId>` key.
+  Future<void> _retireQuotaBudgets() async {
+    final keys = [
+      for (final key in prefs.getKeys())
+        if (key.startsWith(retiredQuotaBudgetsPrefix)) key,
+    ];
+    for (final key in keys) {
+      try {
+        await prefs.remove(key);
+      } catch (_) {}
+    }
+  }
+
   Future<List<ServerProfile>> load() async {
+    await _retireQuotaBudgets();
     final raw = prefs.getString(_profilesKey);
     if (raw == null) {
       _cache = [];
@@ -707,39 +859,55 @@ class ProfileStore {
     } catch (_) {
       _cache = [];
     }
-    // Restore secrets.
-    for (final p in _cache) {
-      try {
-        if (p.usesAgentSocket) {
-          p.codexToken = await secure.read(key: '$_codexTokenKey${p.id}') ?? '';
-          p.requiresCodexTokenReentry =
-              p.agentSocketSecretRequired && p.codexToken.isEmpty;
-          p.password = '';
-          p.requiresPasswordReentry = false;
-        } else {
-          p.password = await secure.read(key: '$_passwordKey${p.id}') ?? '';
-          p.requiresPasswordReentry = false;
-          p.codexToken = '';
-          p.requiresCodexTokenReentry = false;
-        }
-      } catch (_) {
-        // Keystore entries can become unreadable after a device restore or a
-        // lock-screen security change. Keep the non-secret profile usable so
-        // the user can re-enter its password instead of failing app startup.
-        if (p.usesAgentSocket) {
-          p.codexToken = '';
-          p.requiresCodexTokenReentry = true;
-          p.password = '';
-          p.requiresPasswordReentry = false;
-        } else {
-          p.password = '';
-          p.requiresPasswordReentry = true;
-          p.codexToken = '';
-          p.requiresCodexTokenReentry = false;
-        }
-      }
+    // Independent Keystore reads can overlap. Bound the fan-out so many
+    // saved servers do not flood the platform channel. Await every secret
+    // (and its redaction registration) before bootstrap may expose the shell.
+    const batchSize = 4;
+    for (var start = 0; start < _cache.length; start += batchSize) {
+      await Future.wait(_cache.skip(start).take(batchSize).map(_restoreSecret));
     }
     return _cache;
+  }
+
+  Future<void> _restoreSecret(ServerProfile p) async {
+    try {
+      p.teamEngineAuth =
+          await secure.read(key: '$teamEngineAuthKey${p.id}') ?? '';
+      KitRedact.registerKnownSecret(p.teamEngineAuth);
+    } catch (_) {
+      p.teamEngineAuth = '';
+    }
+    try {
+      if (p.usesAgentSocket) {
+        p.codexToken = await secure.read(key: '$_codexTokenKey${p.id}') ?? '';
+        KitRedact.registerKnownSecret(p.codexToken);
+        p.requiresCodexTokenReentry =
+            p.agentSocketSecretRequired && p.codexToken.isEmpty;
+        p.password = '';
+        p.requiresPasswordReentry = false;
+      } else {
+        p.password = await secure.read(key: '$_passwordKey${p.id}') ?? '';
+        KitRedact.registerKnownSecret(p.password);
+        p.requiresPasswordReentry = false;
+        p.codexToken = '';
+        p.requiresCodexTokenReentry = false;
+      }
+    } catch (_) {
+      // Keystore entries can become unreadable after a device restore or a
+      // lock-screen security change. Keep the non-secret profile usable so
+      // the user can re-enter its password instead of failing app startup.
+      if (p.usesAgentSocket) {
+        p.codexToken = '';
+        p.requiresCodexTokenReentry = true;
+        p.password = '';
+        p.requiresPasswordReentry = false;
+      } else {
+        p.password = '';
+        p.requiresPasswordReentry = true;
+        p.codexToken = '';
+        p.requiresCodexTokenReentry = false;
+      }
+    }
   }
 
   String _encode(List<ServerProfile> profiles) =>
@@ -755,6 +923,10 @@ class ProfileStore {
   }
 
   Future<void> upsert(ServerProfile profile) async {
+    // Register before persistence: a failing keyring may echo its input.
+    KitRedact.registerKnownSecret(profile.password);
+    KitRedact.registerKnownSecret(profile.codexToken);
+    KitRedact.registerKnownSecret(profile.teamEngineAuth);
     final previousRaw = prefs.getString(_profilesKey);
     final next = List<ServerProfile>.of(_cache);
     final i = _cache.indexWhere((p) => p.id == profile.id);
@@ -766,7 +938,20 @@ class ProfileStore {
     if (!await prefs.setString(_profilesKey, _encode(next))) {
       throw StateError('Could not save the server profile');
     }
+    var teamEngineAuth = profile.teamEngineAuth;
     try {
+      if (teamEngineAuth.isEmpty) {
+        // Editors reconstruct profiles without the engine's private token.
+        // An ordinary metadata save must preserve the separate Keystore key.
+        teamEngineAuth =
+            await secure.read(key: '$teamEngineAuthKey${profile.id}') ?? '';
+        KitRedact.registerKnownSecret(teamEngineAuth);
+      } else {
+        await secure.write(
+          key: '$teamEngineAuthKey${profile.id}',
+          value: teamEngineAuth,
+        );
+      }
       if (profile.usesAgentSocket) {
         if (profile.codexToken.isEmpty) {
           await secure.delete(key: '$_codexTokenKey${profile.id}');
@@ -796,7 +981,18 @@ class ProfileStore {
     }
     profile.requiresPasswordReentry = false;
     profile.requiresCodexTokenReentry = false;
+    profile.teamEngineAuth = teamEngineAuth;
     _cache = next;
+    _changes.changed();
+  }
+
+  /// Explicit credential removal; a normal profile edit leaves it untouched.
+  Future<void> clearTeamEngineAuth(String profileId) async {
+    await secure.delete(key: '$teamEngineAuthKey$profileId');
+    for (final profile in _cache) {
+      if (profile.id == profileId) profile.teamEngineAuth = '';
+    }
+    _changes.changed();
   }
 
   /// flutter_secure_storage reports a missing or locked keyring as a
@@ -855,9 +1051,26 @@ class ProfileStore {
   /// model, agent, and location on the device while the user was told the
   /// server had been removed. The caller decides what to do about a
   /// non-empty result; this method only refuses to lie about it.
-  Future<Set<String>> removeScopedPreferences(String profileId) async {
+  Future<Set<String>> removeScopedPreferences(
+    String profileId, {
+    Set<String> excluding = const {},
+  }) async {
+    if (profileId.isEmpty) return const {};
+    // This method already runs inside the controller's deletion transaction.
+    // Drain before key discovery so a late platform write cannot resurrect data.
+    final defaultsDrain = InteractionDefaultsStore.closeProfile(
+      prefs,
+      profileId,
+    );
+    final auditDrain = SetupAuditStore.closeProfile(prefs, profileId);
+    await Future.wait([
+      defaultsDrain,
+      auditDrain,
+      SessionLinkBindings.closeProfile(prefs, profileId),
+    ]);
     final failed = <String>{};
     for (final key in profileScopedPreferenceKeys(profileId)) {
+      if (excluding.contains(key)) continue;
       try {
         if (!await prefs.remove(key)) failed.add(key);
       } catch (_) {
@@ -876,7 +1089,7 @@ class ProfileStore {
   /// the keys are orphaned regardless, so a failure there cannot resurrect a
   /// deleted server. [ConnectionController.deleteProfileAndLocalData] sweeps
   /// them *before* calling this and verifies the result, so on that path the
-  /// sweep below finds nothing left to do.
+  /// sweep below finds only owners intentionally retained until this commit.
   ///
   /// This clears only what [ProfileStore] owns. Queued prompts, drafts, and
   /// the home-screen widget snapshot live in shared blobs; the full cascade
@@ -901,6 +1114,7 @@ class ProfileStore {
     try {
       if (previousActive == id) await setActiveId(null);
       await secure.delete(key: secretKey);
+      await secure.delete(key: '$teamEngineAuthKey$id');
     } catch (error) {
       await _restoreProfiles(previousRaw);
       if (previousActive == id &&
@@ -1103,6 +1317,50 @@ class ProfileStore {
     }
   }
 
+  String _providerRuntimeUnloadableKey(
+    String profileId, {
+    String? directory,
+    String? workspace,
+  }) {
+    final location = Uri.encodeComponent(
+      '${directory ?? '<default>'}\n${workspace ?? '<default>'}',
+    );
+    return 'oc.providerRuntimeUnloadable.$profileId.$location';
+  }
+
+  /// Providers that stayed unloaded after a provider runtime refresh at this
+  /// location, as a sorted comma-joined id list. A later start that finds the
+  /// same set unloaded knows another refresh cannot load them.
+  String? providerRuntimeUnloadable(
+    String profileId, {
+    String? directory,
+    String? workspace,
+  }) => prefs.getString(
+    _providerRuntimeUnloadableKey(
+      profileId,
+      directory: directory,
+      workspace: workspace,
+    ),
+  );
+
+  Future<void> setProviderRuntimeUnloadable(
+    String profileId,
+    String? providers, {
+    String? directory,
+    String? workspace,
+  }) async {
+    final key = _providerRuntimeUnloadableKey(
+      profileId,
+      directory: directory,
+      workspace: workspace,
+    );
+    if (providers == null || providers.isEmpty) {
+      await prefs.remove(key);
+    } else {
+      await prefs.setString(key, providers);
+    }
+  }
+
   // ----- per-profile model/agent selection -----
 
   ModelLibrary modelLibraryFor(String profileId) {
@@ -1262,6 +1520,53 @@ class ProfileStore {
         appearance.name,
         'Could not save the appearance preference',
       );
+
+  /// Settings › Appearance › Motion: one choice. Full plays animations and
+  /// celebrations, Calm is reduced with no celebrations, Off is none. Glass
+  /// and vibration are fixed parts of the design ([KitEffects.defaults]).
+  /// Older installs stored animations and celebrations separately; those
+  /// keys are read here and folded into the one choice (Full with
+  /// celebrations switched off reads as Calm). Unknown values read as Full.
+  KitEffects get effects {
+    final stored = prefs.getString(_effectsMotionKey);
+    var level = KitMotionLevel.values.firstWhere(
+      (level) => level.name == stored,
+      orElse: () => KitMotionLevel.full,
+    );
+    bool? celebrations;
+    try {
+      celebrations = prefs.getBool(_effectsCelebrationsKey);
+    } catch (_) {
+      celebrations = null;
+    }
+    if (level == KitMotionLevel.full && celebrations == false) {
+      level = KitMotionLevel.calm;
+    }
+    return KitEffects(
+      motion: level,
+      celebrations: level == KitMotionLevel.full,
+    );
+  }
+
+  Future<void> setEffects(KitEffects effects) async {
+    const error = 'Could not save the effects preference';
+    final before = this.effects;
+    if (effects.motion != before.motion) {
+      await _saveDisplayPreference(
+        _effectsMotionKey,
+        effects.motion.name,
+        error,
+      );
+    }
+    // The old separate celebrations key would otherwise turn a saved Full
+    // into Calm on the next start.
+    if (effects.motion == KitMotionLevel.full &&
+        prefs.containsKey(_effectsCelebrationsKey)) {
+      try {
+        await prefs.remove(_effectsCelebrationsKey);
+      } catch (_) {}
+    }
+  }
 
   Future<void> _saveDisplayPreference(
     String key,

@@ -18,10 +18,6 @@
      "element": "embedded-permission-attention-card-review"
     },
     {
-     "page": "embedded-return-brief-panel",
-     "element": "embedded-return-brief-panel-request-answer"
-    },
-    {
      "page": "?",
      "element": null,
      "widget": "ProfileMonitorScreen",
@@ -52,7 +48,7 @@
      "type": "icon-button",
      "label": "Copy command",
      "key": null,
-     "line": 654,
+     "line": 600,
      "action": "copy",
      "target": null,
      "effect": "Clipboard.setData with the pending shell command (_CommandPreview/_CopyButton).",
@@ -60,14 +56,15 @@
       "permission.commandPreview != null",
       "widget.allowDeviceActions (= !controller.isIsolated)"
      ],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/kit/kit_code_block.dart"
     },
     {
      "id": "permission-sheet-copy-file-path",
      "type": "icon-button",
      "label": "Copy {resource}",
      "key": null,
-     "line": 710,
+     "line": 600,
      "action": "copy",
      "target": null,
      "effect": "Clipboard.setData with the file path the request concerns (_FilePathRow/_CopyButton).",
@@ -75,185 +72,85 @@
       "permission.filePath != null",
       "widget.allowDeviceActions"
      ],
-     "destructive": false
-    },
-    {
-     "id": "permission-sheet-see-full-diff",
-     "type": "button",
-     "label": "See full diff",
-     "key": "permission-see-full-diff",
-     "line": 764,
-     "action": "navigate",
-     "target": "diff-view",
-     "targetWidget": "DiffView.single",
-     "effect": "_openFullDiff: pushes a fullscreenDialog MaterialPageRoute with DiffView.single(pending diff, allowCopy: allowDeviceActions); route is owned by RequestRoutes so it closes when the request resolves.",
-     "gates": [
-      "permission.permission in {edit, write, multiedit, patch} and metadata['diff'|'patch'|'preview'] is a non-empty String"
-     ],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/kit/kit_code_block.dart"
     },
     {
      "id": "permission-sheet-copy-resource",
      "type": "icon-button",
      "label": "Copy {resource}",
      "key": null,
-     "line": 451,
+     "line": 600,
      "action": "copy",
      "target": null,
-     "effect": "Clipboard.setData with one requested pattern row of the resources card (one button per pattern).",
+     "effect": "Copies the full command, path or patterns from the request sheet code block.",
      "gates": [
       "widget.allowDeviceActions",
       "pattern not already shown as command/file preview"
      ],
-     "destructive": false
-    },
-    {
-     "id": "permission-sheet-source-chip",
-     "type": "chip",
-     "label": "From tool call",
-     "key": "permission-source-chip",
-     "line": 377,
-     "action": "dismiss",
-     "target": null,
-     "effect": "_routes.close() dismisses the sheet, then runs widget.onShowSource (ChatScreen passes _jumpToMessage(tool.messageID)).",
-     "gates": [
-      "widget.onShowSource != null && permission.tool != null"
-     ],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/kit/kit_code_block.dart"
     },
     {
      "id": "permission-sheet-allow-once",
      "type": "button",
      "label": "Allow once",
-     "key": "permission-allow-once",
-     "line": 516,
+     "key": "permission-card-allow",
+     "line": 347,
      "action": "mutate",
      "target": null,
-     "effect": "_reply('once') -> widget.onReply -> controller.answerPermission(permission.id, 'once', expectedRequest: request); closes the sheet on success, shows inline 'Reply failed' error otherwise.",
+     "effect": "Answers 'once' through answerPermissionRequest; the request sheet closes and the receipt is carried by the conversation card.",
      "gates": [
-      "disabled while _replying"
+      "request is still pending"
      ],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/screens/chat/permission_sheet.dart"
     },
     {
      "id": "permission-sheet-reject",
      "type": "button",
-     "label": "Reject… (v2) / Reject (v1)",
-     "key": "permission-reject",
-     "line": 524,
+     "label": "Reject",
+     "key": "permission-card-reject",
+     "line": 348,
      "action": "mutate",
      "target": null,
-     "effect": "_startReject: when supportsRejectMessage is false calls _reply('reject') -> controller.answerPermission(..., 'reject') directly; otherwise sets _rejecting=true to swap the apply bar to the rejection-message pane.",
+     "effect": "Answers 'reject' through answerPermissionRequest with the saved note where the server supports it; there is no second rejection pane.",
      "gates": [
-      "disabled while _replying",
-      "label depends on controller.permissionSupportsRejectMessage(permission.id)"
+      "request is still pending"
      ],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/screens/chat/permission_sheet.dart"
     },
     {
      "id": "permission-sheet-allow-always",
-     "type": "button",
+     "type": "toggle",
      "label": "Always allow",
      "key": "permission-allow-always",
-     "line": 557,
-     "action": "open-dialog",
-     "target": "permission-sheet-always-dialog",
-     "targetWidget": "_confirmAlways",
-     "effect": "_reply('always'): first awaits _confirmAlways() dialog; on confirm calls controller.answerPermission(..., 'always').",
+     "line": 274,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "KitRequestAlwaysAllow shows the scope before its risky switch; selecting it answers always through the controller.",
      "gates": [
-      "widget.allowPersistentPermission (= controller.capabilities.persistentPermissionGrants)",
-      "disabled while _replying"
+      "controller.capabilities.persistentPermissionGrants"
      ],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/screens/chat/permission_sheet.dart"
     },
     {
      "id": "permission-sheet-reject-message",
      "type": "text-field",
      "label": "Tell the agent why, or what to do instead (optional)",
      "key": "permission-reject-message",
-     "line": 573,
+     "line": 366,
      "action": "other",
      "target": null,
      "effect": "Optional rejection reason held in _rejectMessage; autofocus; sent by Send rejection.",
      "gates": [
       "_rejecting (after Reject… on a server that supports reject messages)"
      ],
-     "destructive": false
-    },
-    {
-     "id": "permission-sheet-reject-send",
-     "type": "button",
-     "label": "Send rejection",
-     "key": "permission-reject-send",
-     "line": 585,
-     "action": "mutate",
-     "target": null,
-     "effect": "_sendRejection -> _reply('reject', message: trimmed text or null) -> controller.answerPermission(..., 'reject', message:).",
-     "gates": [
-      "_rejecting",
-      "disabled while _replying"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "permission-sheet-reject-back",
-     "type": "button",
-     "label": "Back",
-     "key": null,
-     "line": 598,
-     "action": "other",
-     "target": null,
-     "effect": "setState(_rejecting = false): returns the apply bar to the Reject / Allow once triad.",
-     "gates": [
-      "_rejecting",
-      "disabled while _replying"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "permission-sheet-always-dialog",
-   "title": "Confirm broader access",
-   "kind": "dialog",
-   "file": "lib/ui/screens/chat/permission_sheet.dart",
-   "widget": "_confirmAlways",
-   "presentedBy": [],
-   "line": 192,
-   "purpose": "Second-step confirmation before a persistent \"always allow\" grant, listing the patterns it would cover.",
-   "reachedFrom": [
-    {
-     "page": "permission-sheet",
-     "element": "permission-sheet-allow-always"
-    }
-   ],
-   "gates": [
-    "widget.allowPersistentPermission"
-   ],
-   "elements": [
-    {
-     "id": "permission-sheet-always-dialog-keep-asking",
-     "type": "button",
-     "label": "Keep asking",
-     "key": null,
-     "line": 234,
-     "action": "dismiss",
-     "target": null,
-     "effect": "Navigator.pop(context, false): no reply is sent, the sheet stays open.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "permission-sheet-always-dialog-confirm",
-     "type": "button",
-     "label": "Confirm always allow",
-     "key": null,
-     "line": 238,
-     "action": "mutate",
-     "target": null,
-     "effect": "Navigator.pop(context, true); the sheet then calls widget.onReply('always') -> controller.answerPermission(permission.id, 'always') creating a saved grant.",
-     "gates": [],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/screens/chat/permission_sheet.dart"
     }
    ]
   },
@@ -357,7 +254,7 @@
    "file": "lib/ui/screens/chat/approvals_sheet.dart",
    "widget": "_AutoApprovalIndicator",
    "presentedBy": [],
-   "line": 330,
+   "line": 257,
    "purpose": "Persistent strip in the chat attention slot above the composer while automatic approval is on for the session.",
    "reachedFrom": [],
    "gates": [
@@ -371,7 +268,7 @@
      "label": "Approving automatically / Auto-approval paused (semantics: \"… Open approval settings\")",
      "key": "auto-approval-indicator",
      "file": "lib/ui/screens/chat/approvals_sheet.dart",
-     "line": 375,
+     "line": 303,
      "action": "open-sheet",
      "target": "session-approvals-sheet",
      "targetWidget": "showSessionApprovalsSheet",
@@ -478,7 +375,7 @@
      "type": "icon-button",
      "label": "Fork from this prompt",
      "key": "timeline-fork-<messageID>",
-     "line": 291,
+     "line": 251,
      "action": "mutate",
      "target": null,
      "effect": "Navigator.pop(_TimelineSelection(message, fork: true)) -> ChatScreen._forkFromMessage(message) forks the session at that prompt.",
@@ -486,58 +383,8 @@
       "widget.forkAvailable (_conn.capabilities.sessionFork) && _isForkable(message) (user role, non-local id, has non-synthetic text)",
       "!widget.forkMode"
      ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "todos-sheet",
-   "title": "Todo list",
-   "kind": "sheet",
-   "file": "lib/ui/screens/chat/session_sheets.dart",
-   "widget": "_TodosSheet",
-   "presentedBy": [
-    "_showTodos"
-   ],
-   "line": 3,
-   "purpose": "Read-only list of the session's todos fetched with api.todos(sessionID).",
-   "reachedFrom": [
-    {
-     "page": "session-menu-sheet",
-     "element": "session-menu-sheet-todos"
-    }
-   ],
-   "gates": [
-    "_conn.capabilities.sessionTodos"
-   ],
-   "elements": [
-    {
-     "id": "todos-sheet-retry",
-     "type": "button",
-     "label": "[ProductErrorState retry]",
-     "key": null,
-     "line": 49,
-     "action": "other",
-     "target": null,
-     "effect": "_fetch(): re-requests widget.conn.prepareActionTransport().todos(sessionID).",
-     "gates": [
-      "_error != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "todos-sheet-todo-row",
-     "type": "toggle",
-     "label": "<todo content>",
-     "key": null,
-     "line": 70,
-     "action": "other",
-     "target": null,
-     "effect": "CheckboxListTile with onChanged: null: display only, never interactive.",
-     "gates": [
-      "always disabled (onChanged: null)"
-     ],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/screens/chat/timeline_sheet.dart"
     }
    ]
   },
@@ -756,17 +603,18 @@
     {
      "id": "session-menu-sheet-todos",
      "type": "chip",
-     "label": "Todos",
+     "label": "Tasks",
      "key": null,
-     "line": 611,
-     "action": "open-sheet",
-     "target": "todos-sheet",
-     "targetWidget": "_showTodos",
-     "effect": "Navigator.pop(context, 'todos'); ChatScreen._openSessionMenu then calls _showTodos().",
+     "line": 28,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Tasks now opens the latest plan in the transcript via _openPlan; there is no Tasks sheet (chat/session_sheets.dart).",
      "gates": [
       "todosAvailable: _conn.capabilities.sessionTodos"
      ],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/screens/chat/session_sheets.dart"
     },
     {
      "id": "session-menu-sheet-subagents",
@@ -1103,10 +951,10 @@
      "key": null,
      "file": "lib/ui/screens/chat/voice_conversation.dart",
      "line": 488,
-     "action": "open-sheet",
-     "target": "voice-composer-sheet",
-     "targetWidget": "showVoiceComposerResultSheet",
-     "effect": "_openVoice (chat_screen.dart ~2800): opens the voice model setup sheet if the model is not ready, then showVoiceComposerResultSheet(conversation: true) and merges the transcript into the composer.",
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onVoice -> ChatScreen._openVoice(): the voice model setup sheet when no model is ready; otherwise voice is a composer mode (slice-P10.3, 3273d7ef) and dictation lands in the draft; no voice sheet opens.",
      "gates": [
       "disabled when _voiceOpening || _sending || !_conversationCanSend"
      ],
@@ -1173,10 +1021,6 @@
    "line": 33,
    "purpose": "Choose, download, re-download or delete the on-device speech model pack and pick the transcription language.",
    "reachedFrom": [
-    {
-     "page": "voice-composer-sheet",
-     "element": "voice-composer-sheet-model-settings"
-    },
     {
      "page": "?",
      "element": null,
@@ -1330,204 +1174,6 @@
    ]
   },
   {
-   "id": "voice-composer-sheet",
-   "title": "[Voice input] (status: Ready for local voice input / Listening …)",
-   "kind": "sheet",
-   "file": "lib/voice/voice_ui.dart",
-   "widget": "_VoiceComposerSheet",
-   "presentedBy": [
-    "showVoiceComposerResultSheet",
-    "showVoiceComposerSheet"
-   ],
-   "line": 598,
-   "purpose": "Record speech on device, transcribe it locally, review the transcript and insert (or insert and send) it into the chat composer.",
-   "reachedFrom": [
-    {
-     "page": "?",
-     "element": null,
-     "widget": "_ChatScreenState._openVoice (composer onVoice)",
-     "file": "lib/ui/screens/chat_screen.dart",
-     "line": 2844
-    },
-    {
-     "page": "embedded-voice-conversation-controls",
-     "element": "embedded-voice-conversation-controls-listen"
-    }
-   ],
-   "gates": [
-    "platformCapabilities.supportsVoice",
-    "voice.models.isReady (else the model setup sheet opens first)"
-   ],
-   "elements": [
-    {
-     "id": "voice-composer-sheet-dismiss-gesture",
-     "type": "gesture",
-     "label": "[drag down / tap outside / back]",
-     "key": null,
-     "line": 683,
-     "action": "dismiss",
-     "target": null,
-     "effect": "PopScope.onPopInvokedWithResult -> controller.cancel() so no capture outlives the sheet.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-interrupted-close",
-     "type": "button",
-     "label": "Close voice input",
-     "key": null,
-     "line": 697,
-     "action": "dismiss",
-     "target": null,
-     "effect": "_close(): controller.cancel() then Navigator.pop.",
-     "gates": [
-      "!_current (scope changed, app backgrounded or route covered)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-stop-recording",
-     "type": "button",
-     "label": "Stop recording",
-     "key": "stop-voice-recording",
-     "line": 983,
-     "action": "other",
-     "target": null,
-     "effect": "controller.stopListening(): ends capture and starts transcription.",
-     "gates": [
-      "controller.state == VoiceComposerState.listening"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-draft-field",
-     "type": "text-field",
-     "label": "Review transcript",
-     "key": "voice-draft-field",
-     "line": 734,
-     "action": "other",
-     "target": null,
-     "effect": "Editable transcript (_draft) before inserting.",
-     "gates": [
-      "controller.state == VoiceComposerState.draft"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-technical-details",
-     "type": "list-tile",
-     "label": "Technical details",
-     "key": null,
-     "line": 1046,
-     "action": "other",
-     "target": null,
-     "effect": "ExpansionTile: expands raw error text.",
-     "gates": [
-      "controller.state == VoiceComposerState.error && controller.error != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-open-settings",
-     "type": "button",
-     "label": "Open app settings",
-     "key": null,
-     "line": 770,
-     "action": "external-link",
-     "target": null,
-     "effect": "voiceDevicePlatform.openAppSettings(): leaves to the OS app settings for the microphone permission.",
-     "gates": [
-      "controller.error is VoicePermissionDenied && permanent"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-retry",
-     "type": "button",
-     "label": "Try again",
-     "key": null,
-     "line": 778,
-     "action": "other",
-     "target": null,
-     "effect": "controller.startListening().",
-     "gates": [
-      "controller.state == VoiceComposerState.error"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-start-listening",
-     "type": "button",
-     "label": "Start listening",
-     "key": null,
-     "line": 786,
-     "action": "other",
-     "target": null,
-     "effect": "controller.startListening().",
-     "gates": [
-      "controller.state == VoiceComposerState.idle"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": "voice-composer-cancel",
-     "line": 798,
-     "action": "dismiss",
-     "target": null,
-     "effect": "_close(): controller.cancel() then Navigator.pop (null result). Same key in draft and non-draft layouts (lines 798 and 824).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-insert",
-     "type": "button",
-     "label": "Insert",
-     "key": "insert-voice-draft",
-     "line": 804,
-     "action": "submit",
-     "target": null,
-     "effect": "_insert(send: false): pops VoiceComposerResult(text); ChatScreen._openVoice merges it into the composer via mergeVoiceDraft.",
-     "gates": [
-      "controller.state == VoiceComposerState.draft"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-insert-send",
-     "type": "button",
-     "label": "Insert & send",
-     "key": "insert-voice-draft-send",
-     "line": 813,
-     "action": "submit",
-     "target": null,
-     "effect": "_insert(send: true): pops VoiceComposerResult(text, send: true); ChatScreen._openVoice inserts and then calls _send().",
-     "gates": [
-      "controller.state == VoiceComposerState.draft",
-      "!widget.conversation"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "voice-composer-sheet-model-settings",
-     "type": "button",
-     "label": "<model pack> · <language>",
-     "key": null,
-     "line": 831,
-     "action": "open-sheet",
-     "target": "voice-model-setup-sheet",
-     "targetWidget": "showVoiceModelSetupSheet",
-     "effect": "showVoiceModelSetupSheet(context, controller.models); setState on return.",
-     "gates": [
-      "disabled while listening / initializing / loading / finishingCancellation / transcribing"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "voice-notices",
    "title": "Voice licenses and provenance",
    "kind": "screen",
@@ -1632,7 +1278,7 @@
      "label": "See all · {count} lines",
      "key": "tool-body-see-all",
      "file": "lib/ui/widgets/tool_card.dart",
-     "line": 1821,
+     "line": 1487,
      "action": "open-sheet",
      "target": "file-preview-sheet",
      "targetWidget": "showFilePreviewSheet",
@@ -1648,7 +1294,7 @@
      "label": "See all · {count} lines",
      "key": "tool-body-see-all",
      "file": "lib/ui/widgets/tool_card.dart",
-     "line": 2287,
+     "line": 953,
      "action": "open-sheet",
      "target": "file-preview-sheet",
      "targetWidget": "showFilePreviewSheet",
@@ -1664,7 +1310,7 @@
      "label": "Retry image preview",
      "key": null,
      "file": "lib/ui/widgets/tool_card.dart",
-     "line": 2010,
+     "line": 1583,
      "action": "other",
      "target": null,
      "effect": "onRetry -> _retryPreview(file): re-runs _loadPreview (data URL or widget.filePreviewLoader).",
@@ -1679,7 +1325,7 @@
      "label": "Preview generated image {filename}",
      "key": null,
      "file": "lib/ui/widgets/tool_card.dart",
-     "line": 2037,
+     "line": 1590,
      "action": "open-sheet",
      "target": "file-preview-sheet",
      "targetWidget": "showFilePreviewSheet",
@@ -1695,7 +1341,7 @@
      "label": "Open generated file {filename}",
      "key": "tool-output-file",
      "file": "lib/ui/widgets/tool_card.dart",
-     "line": 2165,
+     "line": 1665,
      "action": "open-sheet",
      "target": "file-preview-sheet",
      "targetWidget": "showFilePreviewSheet",
@@ -1731,8 +1377,8 @@
      "type": "link",
      "label": "[label](url)",
      "key": null,
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 749,
+     "file": "lib/ui/kit/chat/kit_markdown.dart",
+     "line": 1223,
      "action": "external-link",
      "target": null,
      "targetWidget": "openExternalLink",
@@ -1747,8 +1393,8 @@
      "type": "link",
      "label": "<inline code file path>",
      "key": "path-link-<code>",
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 986,
+     "file": "lib/ui/kit/chat/kit_markdown.dart",
+     "line": 1389,
      "action": "open-sheet",
      "target": "file-preview-sheet",
      "targetWidget": "showFilePreviewSheet",
@@ -1761,45 +1407,16 @@
      "destructive": false
     },
     {
-     "id": "embedded-markdown-text-code-menu",
-     "type": "icon-button",
-     "label": "Code options",
-     "key": null,
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 1285,
-     "action": "other",
-     "target": null,
-     "effect": "Opens overflow menu (PopupMenuButton) on a code block.",
-     "gates": [
-      "MarkdownInteractionScope enabled",
-      "widget.canExpand"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-markdown-text-code-menu-wrap",
-     "type": "menu-item",
-     "label": "Wrap lines / Scroll lines",
-     "key": null,
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 1302,
-     "action": "toggle-setting",
-     "target": null,
-     "effect": "saveReaderPreferences(context, wrapCode: !wrap) when a ReaderPreferencesScope exists (persisted), else local setState(_wrap).",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "embedded-markdown-text-code-menu-expand",
      "type": "menu-item",
-     "label": "Full screen",
-     "key": null,
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 1311,
+     "label": "Open full output",
+     "key": "kit-code-open-full",
+     "file": "lib/ui/kit/kit_code_block.dart",
+     "line": 824,
      "action": "navigate",
      "target": "markdown-code-reader",
      "targetWidget": "_openReader",
-     "effect": "_openReader(): pushes a MaterialPageRoute Scaffold \"Code reader\" showing a snapshot CodeBlock(canExpand: false).",
+     "effect": "KitCodeBlock.onOpenFull calls the markdown host onOpenCode callback, opening its full-screen code reader.",
      "gates": [],
      "destructive": false
     },
@@ -1808,8 +1425,8 @@
      "type": "icon-button",
      "label": "Wrap lines / Scroll lines",
      "key": null,
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 1320,
+     "file": "lib/ui/kit/kit_code_block.dart",
+     "line": 594,
      "action": "toggle-setting",
      "target": null,
      "effect": "Same wrap toggle as the menu entry, shown as a plain IconButton when the block cannot expand (reader view, file previews).",
@@ -1823,8 +1440,8 @@
      "type": "icon-button",
      "label": "Copy code",
      "key": null,
-     "file": "lib/ui/widgets/markdown.dart",
-     "line": 1339,
+     "file": "lib/ui/kit/kit_code_block.dart",
+     "line": 600,
      "action": "copy",
      "target": null,
      "effect": "_copy(originalSource ?? code): Clipboard.setData + \"copied\" snackbar; on failure a snackbar with a Retry action (line 1112) re-invokes _copy.",
@@ -1852,7 +1469,7 @@
      "label": "Copy command",
      "key": "agent-command-copy-<index>",
      "file": "lib/ui/widgets/agent_blocks.dart",
-     "line": 310,
+     "line": 282,
      "action": "copy",
      "target": null,
      "effect": "AgentCommandBlock._copy: Clipboard.setData(command) + snackbar. Also hosted directly by session_handoff_sheets.dart:70.",
@@ -1881,7 +1498,7 @@
    "presentedBy": [
     "_openReader"
    ],
-   "line": 1137,
+   "line": 195,
    "purpose": "Full-screen snapshot of one code block with wrap and copy controls.",
    "reachedFrom": [
     {
@@ -1898,36 +1515,39 @@
      "type": "icon-button",
      "label": "Wrap lines / Scroll lines",
      "key": null,
-     "line": 1320,
+     "line": 232,
      "action": "toggle-setting",
      "target": null,
      "effect": "saveReaderPreferences(wrapCode) or local _wrap toggle.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/widgets/markdown.dart"
     },
     {
      "id": "markdown-code-reader-copy",
      "type": "icon-button",
      "label": "Copy code",
      "key": null,
-     "line": 1339,
+     "line": 237,
      "action": "copy",
      "target": null,
      "effect": "Clipboard.setData(original source); controls retire when the source row disposes (_readerPermission).",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/widgets/markdown.dart"
     },
     {
      "id": "markdown-code-reader-back",
      "type": "icon-button",
      "label": "[AppBar back]",
      "key": null,
-     "line": 1144,
+     "line": 226,
      "action": "dismiss",
      "target": null,
      "effect": "Implicit AppBar back button pops the route.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/widgets/markdown.dart"
     }
    ]
   },
@@ -1964,7 +1584,7 @@
      "label": "Your answer",
      "key": null,
      "file": "lib/ui/widgets/question_options.dart",
-     "line": 151,
+     "line": 86,
      "action": "other",
      "target": null,
      "effect": "TextField with host-provided onChanged / onSubmitted.",
@@ -2069,136 +1689,6 @@
    ]
   },
   {
-   "id": "embedded-return-brief-panel",
-   "title": "Unreviewed work",
-   "kind": "overlay",
-   "file": "lib/ui/widgets/return_brief_panel.dart",
-   "widget": "ReturnBriefPanel",
-   "presentedBy": [],
-   "line": 14,
-   "purpose": "Return brief above the workspace session list: sessions blocked on a request and unreviewed finished runs (ReturnBriefPanel builds the snapshot, ReturnBriefCard renders it).",
-   "reachedFrom": [],
-   "gates": [
-    "c.isProfileReadable(scope.$1)",
-    "hidden when the brief is empty, read state known, not stale"
-   ],
-   "elements": [
-    {
-     "id": "embedded-return-brief-panel-status-unknown",
-     "type": "button",
-     "label": "Review status unknown",
-     "key": null,
-     "file": "lib/ui/widgets/return_brief_card.dart",
-     "line": 60,
-     "action": "open-dialog",
-     "target": "embedded-return-brief-panel-status-dialog",
-     "targetWidget": "ReturnBriefCard",
-     "effect": "showDialog AlertDialog explaining that the server does not report read state.",
-     "gates": [
-      "brief.isEmpty && !stale && !brief.readStateKnown",
-      "!widget.unknownStatusInParent (panel hides it otherwise)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-return-brief-panel-request-answer",
-     "type": "button",
-     "label": "Answer",
-     "key": null,
-     "file": "lib/ui/widgets/return_brief_card.dart",
-     "line": 180,
-     "action": "open-sheet",
-     "target": "permission-sheet",
-     "targetWidget": "showPermissionSheet | showQuestionSheet | presentConnectionForm",
-     "effect": "onAnswer(request) -> _ReturnBriefPanelState._answer: showPermissionSheet / showQuestionSheet / presentConnectionForm depending on request.blocker (forms need c.capabilities.forms).",
-     "gates": [
-      "one per brief.requests entry"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-return-brief-panel-run-review",
-     "type": "button",
-     "label": "Review results",
-     "key": null,
-     "file": "lib/ui/widgets/return_brief_card.dart",
-     "line": 198,
-     "action": "navigate",
-     "target": "run-result",
-     "targetWidget": "RunResultScreen",
-     "effect": "onReview(run) -> _review: pushes RunResultScreen(controller, sessionID) under a RequestRoutes guard.",
-     "gates": [
-      "one per brief.unreviewed entry"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-return-brief-panel-run-continue",
-     "type": "button",
-     "label": "Continue",
-     "key": null,
-     "file": "lib/ui/widgets/return_brief_card.dart",
-     "line": 202,
-     "action": "navigate",
-     "target": "chat",
-     "targetWidget": "/chat/<id>",
-     "effect": "onContinue(id) -> Navigator.pushNamed('/chat/<id>').",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "embedded-return-brief-panel-dismiss",
-     "type": "button",
-     "label": "Dismiss shown items / Saving dismissal...",
-     "key": null,
-     "file": "lib/ui/widgets/return_brief_card.dart",
-     "line": 233,
-     "action": "mutate",
-     "target": null,
-     "effect": "onDismiss -> _dismiss -> controller.dismissReturnBrief(shown, expectedScope: scope); inline error on failure.",
-     "gates": [
-      "!brief.isEmpty",
-      "disabled while saving"
-     ],
-     "destructive": false
-    }
-   ],
-   "embeddedIn": [
-    "WorkspaceScreen (workspace_screen.dart:610)"
-   ]
-  },
-  {
-   "id": "embedded-return-brief-panel-status-dialog",
-   "title": "Review status unknown",
-   "kind": "dialog",
-   "file": "lib/ui/widgets/return_brief_card.dart",
-   "widget": "ReturnBriefCard",
-   "presentedBy": [],
-   "line": 67,
-   "purpose": "Explains why review status is unknown.",
-   "reachedFrom": [
-    {
-     "page": "embedded-return-brief-panel",
-     "element": "embedded-return-brief-panel-status-unknown"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "embedded-return-brief-panel-status-dialog-close",
-     "type": "button",
-     "label": "Close",
-     "key": null,
-     "line": 73,
-     "action": "dismiss",
-     "target": null,
-     "effect": "Navigator.of(context).pop().",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
    "id": "form-sheet",
    "title": "<form title>",
    "kind": "sheet",
@@ -2211,10 +1701,6 @@
    "line": 95,
    "purpose": "Renders a server Form.Info request: a bottom sheet for up to four short fields, otherwise a full-screen dialog route (formPrefersFullScreen); Send answers / Dismiss in a pinned apply bar.",
    "reachedFrom": [
-    {
-     "page": "embedded-return-brief-panel",
-     "element": "embedded-return-brief-panel-request-answer"
-    },
     {
      "page": "?",
      "element": null,
@@ -2454,7 +1940,7 @@
      "type": "button",
      "label": "Dismiss",
      "key": "form-dismiss-confirm-button",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 447,
      "action": "mutate",
      "target": null,
@@ -2467,7 +1953,7 @@
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 443,
      "action": "dismiss",
      "target": null,
@@ -2527,7 +2013,6 @@
   "lib/ui/screens/chat/attention_card.dart:441 _RetryAttentionCard and :466 _ComposerNote have no interactive elements (display-only banners in ChatScreen attention slot).",
   "lib/ui/screens/chat/attention_card.dart:499 SessionMenuSheet rows only pop a string; targets were resolved by reading ChatScreen._openSessionMenu (chat_screen.dart:5500-5619). Target ids for chat-owned confirm surfaces (chat-revert-confirm-sheet, chat-share-confirm-sheet, chat-run-shell-dialog, chat-command-launcher-sheet) are guesses; resolve by targetWidget method name.",
   "lib/ui/widgets/agent_blocks.dart: AgentChoicesBlock / AgentCommandBlock elements are attached to embedded-markdown-text (they are only built by markdown.dart:364-370, plus AgentCommandBlock directly in session_handoff_sheets.dart:70). AgentChecklistBlock is display-only.",
-  "lib/ui/widgets/return_brief_card.dart elements are attached to embedded-return-brief-panel (its only host is ReturnBriefPanel, return_brief_panel.dart:150).",
   "lib/ui/widgets/markdown.dart:749 and form_renderer.dart:1132 call openExternalLink (lib/ui/widgets/external_link.dart:48, not assigned to me) which shows its own confirmation dialog at external_link.dart:68; that dialog page belongs to whoever owns external_link.dart.",
   "Target id file-preview-sheet (showFilePreviewSheet, lib/ui/widgets/file_preview.dart:161) and run-result (RunResultScreen), review-workspace, session-relations, session-context, skills, session-note, running-work-sheet, question-sheet, continue-on-*-sheet ids are derived by the naming rule; resolve by targetWidget.",
   "form_renderer.dart line numbers for field controls were taken from the interaction grep (656, 678, 756, 805, 873, 891, 931, 994, 1007, 1047, 1091, 1131); field labels are server-provided."

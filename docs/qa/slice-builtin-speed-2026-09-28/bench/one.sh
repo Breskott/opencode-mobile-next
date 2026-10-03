@@ -1,0 +1,3 @@
+N='/data/app/~~8739N6ZdB7P5jC764LedXg==/io.github.eslamasabry.opencode_mobile-6DISM-Y71ha9C38yylu3_A==/lib/x86_64'; F=/data/data/io.github.eslamasabry.opencode_mobile/files; R=/data/data/io.github.eslamasabry.opencode_mobile/files/linux/ubuntu; T=/data/data/io.github.eslamasabry.opencode_mobile/cache/bench-proot-tmp; mkdir -p $T
+export PROOT_LOADER="$N/libproot-loader.so" PROOT_TMP_DIR="$T" LD_LIBRARY_PATH="$N"
+exec "$N/libproot.so" --root-id --kill-on-exit --link2symlink -L --sysvipc --rootfs=$R --bind=/dev --bind=/proc --bind=/sys --bind=$R/tmp:/dev/shm --bind=$F/projects:/root/projects --cwd=/root /usr/bin/env -i HOME=/root LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin TERM=xterm-256color TMPDIR=/tmp /bin/sh -c "$1"

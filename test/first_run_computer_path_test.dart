@@ -6,14 +6,14 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/agent_choice_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/tailscale_setup_screen.dart';
 import 'package:opencode_mobile/ui/setup_commands.dart';
-import 'package:opencode_mobile/ui/widgets/first_run_choice.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 /// Saved profiles without the secure-storage channel, which is unmocked in
 /// widget tests and would hang a real load.
@@ -64,8 +64,27 @@ Widget _app(
   ),
 );
 
+/// The command block showing exactly [text] (a long command is laid out a
+/// line at a time, so its words are not one text widget).
+Finder _codeBlock(String text) =>
+    find.byWidgetPredicate((w) => w is KitCodeBlock && w.text == text);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('password commands prompt privately and pass SEC-4 unchanged', () {
+    for (final entry in {
+      'OPENCODE_SERVER_PASSWORD': SetupCommands.legacyServe,
+      'PASEO_PASSWORD': SetupCommands.paseoStartPrivateNetwork,
+    }.entries) {
+      expect(KitRedact.text(entry.value), entry.value);
+      expect(entry.value, contains('IFS= read -rsp '));
+      expect(entry.value, contains('test -n "\$${entry.key}" &&'));
+      expect(entry.value, contains('export ${entry.key} &&'));
+      expect(entry.value, isNot(contains('${entry.key}=')));
+    }
+  });
+
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   const termux = MethodChannel('oc/termux');
@@ -96,7 +115,7 @@ void main() {
     messenger.setMockMethodCallHandler(SystemChannels.platform, null);
   });
 
-  testWidgets('"On my computer" asks which agent, with three answers', (
+  testWidgets('"On my computer" opens Add server at its first step', (
     tester,
   ) async {
     final (store, controller) = await _state();
@@ -105,16 +124,17 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
     await tester.pumpAndSettle();
 
-    expect(find.byType(AgentChoiceScreen), findsOneWidget);
-    expect(find.text('Which agent first?'), findsOneWidget);
-    // Not alternatives: the screen says they run side by side.
+    // One path (P3.9): the editor itself, asking what runs there.
+    expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
+    expect(find.byKey(const ValueKey('server-kind-step')), findsOneWidget);
+    expect(find.text('Step 1 of 4 · What runs there'), findsOneWidget);
+    // Not alternatives: the step says they run side by side.
     expect(
       find.byKey(const ValueKey('agent-choice-side-by-side')),
       findsOneWidget,
     );
-    expect(find.byType(FirstRunChoice), findsNWidgets(3));
-    expect(find.text('OpenCode'), findsOneWidget);
-    expect(find.text('Claude Code, Codex, Pi and more'), findsOneWidget);
+    expect(find.text('OpenCode on a computer'), findsOneWidget);
+    expect(find.text('Claude Code or Pi'), findsOneWidget);
     expect(find.text('Codex'), findsOneWidget);
   });
 
@@ -147,12 +167,13 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(store, controller));
       await openFirstRunConnect(tester, agent: agent);
+      await openServerManualAddress(tester);
 
       expect(
         find.byKey(const ValueKey('server-profile-editor')),
         findsOneWidget,
       );
-      expect(find.widgetWithText(AppBar, want.title), findsOneWidget);
+      expect(find.widgetWithText(KitTopBar, want.title), findsOneWidget);
       expect(
         find.byKey(const ValueKey('server-backend-selector')),
         findsNothing,
@@ -172,16 +193,17 @@ void main() {
       // The one command for this agent, above the fields, and it copies.
       final command = find.byKey(const ValueKey('connect-command'));
       expect(command, findsOneWidget);
-      expect(
-        find.descendant(of: command, matching: find.text(want.command)),
-        findsOneWidget,
-      );
+      expect(tester.widget<KitCodeBlock>(command).text, want.command);
       expect(
         tester.getRect(command).bottom,
         lessThanOrEqualTo(tester.getRect(find.byKey(ValueKey(want.field))).top),
       );
+      // R3 moved Copy onto the command's first line.
       await tester.tap(
-        find.descendant(of: command, matching: find.byType(IconButton)),
+        find.descendant(
+          of: command,
+          matching: find.byKey(const ValueKey('kit-code-copy')),
+        ),
       );
       await tester.pump();
       expect(copied, [want.command]);
@@ -201,18 +223,18 @@ void main() {
     });
   }
 
-  testWidgets('Back from the connect screen returns to the agent question', (
+  testWidgets('Back from the connect step returns to the first step', (
     tester,
   ) async {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester, agent: 'paseo');
-    await tester.tap(find.byTooltip('Close server editor'));
+    await tester.tap(find.byKey(const ValueKey('server-editor-back')));
     await tester.pumpAndSettle();
 
-    expect(find.byType(AgentChoiceScreen), findsOneWidget);
-    expect(find.byKey(const ValueKey('server-profile-editor')), findsNothing);
+    expect(find.byKey(const ValueKey('server-kind-step')), findsOneWidget);
+    expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
   });
 
   testWidgets('"Show the commands" holds the guide\'s other commands', (
@@ -223,21 +245,22 @@ void main() {
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester, agent: 'codex');
 
-    expect(find.text(SetupCommands.codexToken), findsNothing);
+    expect(_codeBlock(SetupCommands.codexToken), findsNothing);
     await tester.tap(find.text('Show the commands'));
     await tester.pumpAndSettle();
-    expect(find.text(SetupCommands.codexToken), findsOneWidget);
-    expect(find.text(SetupCommands.codexUsb), findsOneWidget);
+    expect(_codeBlock(SetupCommands.codexToken), findsOneWidget);
+    expect(_codeBlock(SetupCommands.codexUsb), findsOneWidget);
   });
 
   for (final agent in ['opencode', 'paseo']) {
-    testWidgets('"Not on the same network?" opens Tailscale setup ($agent)', (
+    testWidgets('"Not on the same network?" leads to Tailscale ($agent)', (
       tester,
     ) async {
       final (store, controller) = await _state();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(store, controller));
       await openFirstRunConnect(tester, agent: agent);
+      await openServerManualAddress(tester);
 
       final link = find.byKey(const ValueKey('connect-not-same-network'));
       await tester.scrollUntilVisible(
@@ -258,11 +281,23 @@ void main() {
         tester.getRect(link).top,
         greaterThanOrEqualTo(tester.getRect(address).bottom),
       );
+      await tester.ensureVisible(link);
+      await tester.pumpAndSettle();
       await tester.tap(link);
       for (var i = 0; i < 6; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
-      expect(find.byType(TailscaleSetupScreen), findsOneWidget);
+      // OpenCode: the flow's Tailscale step. Paseo listens on ws://, so
+      // the Tailscale page opens for its guidance.
+      if (agent == 'opencode') {
+        expect(
+          find.byKey(const ValueKey('server-tailscale-step')),
+          findsOneWidget,
+        );
+        expect(find.byType(TailscaleSetupScreen), findsNothing);
+      } else {
+        expect(find.byType(TailscaleSetupScreen), findsOneWidget);
+      }
     });
   }
 
@@ -274,6 +309,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     expect(
       find.byKey(const ValueKey('connect-not-same-network')),
@@ -283,7 +319,7 @@ void main() {
     expect(find.text('Then paste the code it prints.'), findsOneWidget);
   });
 
-  testWidgets('"Add server" beside saved servers still asks the type', (
+  testWidgets('"Add server" beside saved servers starts the same flow', (
     tester,
   ) async {
     final (store, controller) = await _state(
@@ -304,16 +340,33 @@ void main() {
       find.byKey(const ValueKey('server-backend-selector')),
       findsOneWidget,
     );
-    expect(find.widgetWithText(ChoiceChip, 'OpenCode 1 or 2'), findsOneWidget);
+    // The same first step as "On my computer": one row per type (ledger
+    // row 15), none chosen yet.
+    expect(find.byKey(const ValueKey('server-kind-step')), findsOneWidget);
     expect(
-      find.widgetWithText(ChoiceChip, 'Codex (experimental)'),
+      find.byKey(const ValueKey('server-backend-opencode')),
       findsOneWidget,
     );
+    expect(find.byKey(const ValueKey('server-backend-codex')), findsOneWidget);
     expect(find.byKey(const ValueKey('server-backend-paseo')), findsOneWidget);
-    expect(find.byKey(const ValueKey('connect-command')), findsNothing);
+    expect(find.text('OpenCode on a computer'), findsOneWidget);
+    // The chosen type's command leads the next step; back and another type
+    // shows its own.
+    await chooseServerKind(tester);
+    final command = find.byKey(const ValueKey('connect-command'));
     expect(
-      find.byKey(const ValueKey('connect-not-same-network')),
-      findsNothing,
+      find.descendant(of: command, matching: find.text(SetupCommands.pair)),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('server-editor-back')));
+    await tester.pumpAndSettle();
+    await chooseServerKind(tester, kind: 'paseo');
+    expect(
+      find.descendant(
+        of: command,
+        matching: find.text(SetupCommands.paseoStart),
+      ),
+      findsOneWidget,
     );
   });
 
@@ -333,6 +386,11 @@ void main() {
           final computer = find.byKey(
             const ValueKey('welcome-choice-computer'),
           );
+          await tester.scrollUntilVisible(
+            computer,
+            120,
+            scrollable: find.byType(Scrollable).first,
+          );
           await tester.ensureVisible(computer);
           await tester.pumpAndSettle();
           await tester.tap(computer);
@@ -340,7 +398,7 @@ void main() {
           expect(tester.takeException(), isNull);
 
           for (final key in ['opencode', 'paseo', 'codex']) {
-            final choice = find.byKey(ValueKey('agent-choice-$key'));
+            final choice = find.byKey(ValueKey('server-backend-$key'));
             await tester.scrollUntilVisible(
               choice,
               120,
@@ -350,7 +408,7 @@ void main() {
             expect(rect.left, greaterThanOrEqualTo(0), reason: key);
             expect(rect.right, lessThanOrEqualTo(320), reason: key);
           }
-          final choice = find.byKey(ValueKey('agent-choice-$agent'));
+          final choice = find.byKey(ValueKey('server-backend-$agent'));
           await tester.ensureVisible(choice);
           await tester.pumpAndSettle();
           // A choice can be taller than the space left at this text size, so
@@ -368,10 +426,13 @@ void main() {
           final command = find.byKey(const ValueKey('connect-command'));
           expect(tester.getRect(command).left, greaterThanOrEqualTo(0));
           expect(tester.getRect(command).right, lessThanOrEqualTo(320));
-          final disclosure = find.descendant(
-            of: find.byKey(const ValueKey('connect-show-commands')),
-            matching: find.byType(ListTile),
-          );
+          final disclosure = find
+              .descendant(
+                of: find.byKey(const ValueKey('connect-show-commands')),
+                // Its header: the fold's first line of words, in any locale.
+                matching: find.byType(Text),
+              )
+              .first;
           await tester.scrollUntilVisible(disclosure, 120, scrollable: list);
           await tester.ensureVisible(disclosure);
           await tester.pumpAndSettle();
@@ -381,10 +442,24 @@ void main() {
           expect(
             find.descendant(
               of: find.byKey(const ValueKey('connect-computer-command')),
-              matching: find.byType(SelectableText),
+              matching: find.byType(KitCodeBlock),
             ),
             findsAtLeast(2),
           );
+          // OpenCode keeps the address (and this link) under "Enter the
+          // address instead".
+          final manual = find.byKey(const ValueKey('server-manual-address'));
+          if (manual.evaluate().isNotEmpty) {
+            await tester.scrollUntilVisible(manual, 160, scrollable: list);
+            await tester.ensureVisible(manual);
+            await tester.pumpAndSettle();
+            // Like the kind rows, this label can be taller than the viewport
+            // at 2.5x. Its visible leading edge remains a full row target.
+            await tester.tapAt(
+              tester.getTopLeft(manual) + const Offset(24, 24),
+            );
+            await tester.pumpAndSettle();
+          }
           final link = find.byKey(const ValueKey('connect-not-same-network'));
           await tester.scrollUntilVisible(link, 160, scrollable: list);
           final rect = tester.getRect(link);

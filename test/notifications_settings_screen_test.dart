@@ -13,8 +13,6 @@ import 'package:opencode_mobile/state/profile_monitor.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/provider_quota_monitor.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/screens/attention_overview_screen.dart';
-import 'package:opencode_mobile/ui/screens/profile_monitor_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -36,6 +34,8 @@ const _legacyQuotaRules = QuotaMonitorRules(
 Future<ConnectionController> _controller({
   Map<String, Object> legacy = const {},
   int servers = 2,
+  bool notificationGranted = true,
+  void Function(String method)? onInvoke,
 }) async {
   SharedPreferences.setMockInitialValues({
     BackgroundLiveController.preferenceKey: true,
@@ -58,11 +58,17 @@ Future<ConnectionController> _controller({
   final live = BackgroundLiveController(
     preferences: preferences,
     liveStatusDebounce: Duration.zero,
-    invoke: (method, [arguments]) async => {
-      'enabled': method != 'disable',
-      'active': method != 'disable',
-      'notificationGranted': true,
-      'batteryOptimizationIgnored': false,
+    invoke: (method, [arguments]) async {
+      onInvoke?.call(method);
+      if (method == 'showCodingAlert') {
+        return {'shown': notificationGranted};
+      }
+      return {
+        'enabled': method != 'disable',
+        'active': method != 'disable',
+        'notificationGranted': notificationGranted,
+        'batteryOptimizationIgnored': false,
+      };
     },
   );
   await live.restore();
@@ -129,7 +135,9 @@ void main() {
     await tester.pump();
 
     var previous = double.negativeInfinity;
-    for (final slug in ['what', 'quiet', 'background', 'servers']) {
+    // The merged page: what notifies, quiet hours, saved servers, then the
+    // background connection.
+    for (final slug in ['what', 'quiet', 'servers', 'background']) {
       final section = _key('notifications-section-$slug');
       expect(section, findsOneWidget, reason: slug);
       final top = tester.getTopLeft(section).dy;
@@ -164,7 +172,8 @@ void main() {
       expect(inside('servers', key), findsOneWidget, reason: key);
     }
     // Exactly one of each shared control on the whole screen.
-    expect(find.text(_en.monitorQuiet), findsNWidgets(2)); // header + switch
+    // The switch names itself; no section header repeats it (R4).
+    expect(find.text(_en.monitorQuiet), findsOneWidget);
     expect(find.text(_en.notifyWifiOnly), findsOneWidget);
     // "Check in after" and "Notify" appear only once they apply.
     expect(_key('notify-check-in-after'), findsNothing);
@@ -277,7 +286,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, '11');
     await tester.enterText(find.byType(TextField).last, '30');
-    await tester.tap(find.text('OK'));
+    // The picker's button says what it does (477e2075): "Set".
+    await tester.tap(find.text(_en.notifyQuietSet));
     await tester.pumpAndSettle();
     final start = prefs.getInt(NotificationPreferences.quietStartKey)!;
     expect(start % 720, 11 * 60 + 30);
@@ -362,7 +372,8 @@ void main() {
     expect(toggle('notify-quota-alerts').value, isTrue);
     expect(toggle('notify-check-ins').value, isTrue);
     expect(_key('notify-check-in-after'), findsOneWidget);
-    expect(find.text(_en.monitorMinutes(60)), findsOneWidget);
+    // KitPickerRow isolates the value's direction (477e2075).
+    expect(find.textContaining(_en.monitorMinutes(60)), findsOneWidget);
 
     await _tapSwitch(tester, 'notify-wifi-only');
     expect(controller.notificationPreferences.migrated, isTrue);
@@ -424,29 +435,6 @@ void main() {
     await _finish(tester, controller);
   });
 
-  testWidgets('the live attention list links to Notification settings', (
-    tester,
-  ) async {
-    final controller = await _controller();
-    await tester.pumpWidget(
-      _app(AttentionOverviewScreen(controller: controller)),
-    );
-    await tester.pump();
-    // The old entry point still opens the list...
-    await tester.tap(find.byType(IconButton).first);
-    await tester.pumpAndSettle();
-    expect(find.byType(ProfileMonitorScreen), findsOneWidget);
-    // ...which no longer holds settings of its own.
-    expect(find.byType(Switch), findsNothing);
-    expect(find.text(_en.monitorQuiet), findsNothing);
-
-    await tester.tap(_key('monitor-notification-settings'));
-    await tester.pumpAndSettle();
-    expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
-    expect(_key('monitor-enabled-profile-1'), findsOneWidget);
-    await _finish(tester, controller);
-  });
-
   testWidgets('the hub row opens this screen', (tester) async {
     final controller = await _controller();
     await tester.pumpWidget(_app(SettingsScreen(controller: controller)));
@@ -466,6 +454,146 @@ void main() {
     expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
     expect(_key('notifications-settings'), findsOneWidget);
     await _finish(tester, controller);
+  });
+
+  group('P0.6: Android blocking this app\'s notifications', () {
+    testWidgets('shows the notice, blocks the switches, and Open Android '
+        'settings calls the platform', (tester) async {
+      tester.view.physicalSize = const Size(400, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final calls = <String>[];
+      final controller = await _controller(
+        notificationGranted: false,
+        onInvoke: calls.add,
+      );
+      await tester.pumpWidget(
+        _app(NotificationsSettingsScreen(controller: controller)),
+      );
+      await tester.pump();
+
+      expect(_key('notifications-blocked-notice'), findsOneWidget);
+      // Said once, in the notice (R3); each switch keeps its own line.
+      expect(find.text(_en.notifyBlockedTitle), findsOneWidget);
+      expect(find.text(_en.notifyFinishedRunsDetail), findsOneWidget);
+      expect(find.text(_en.notifyTurnOnInAndroid), findsOneWidget);
+      // The row is a KitSwitchRow since 477e2075; its switch is the control.
+      final finishedRuns = tester.widget<Switch>(
+        find.descendant(
+          of: _key('notify-finished-runs'),
+          matching: find.byType(Switch),
+        ),
+      );
+      expect(finishedRuns.onChanged, isNull);
+
+      await tester.ensureVisible(_key('notifications-open-settings'));
+      await tester.pump();
+      await tester.tap(_key('notifications-open-settings'));
+      await tester.pump();
+      expect(calls, contains('openAppSettings'));
+      await _finish(tester, controller);
+    });
+
+    testWidgets('is absent and the switches work once granted', (tester) async {
+      tester.view.physicalSize = const Size(400, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final controller = await _controller();
+      await tester.pumpWidget(
+        _app(NotificationsSettingsScreen(controller: controller)),
+      );
+      await tester.pump();
+      expect(_key('notifications-blocked-notice'), findsNothing);
+      // The row is a KitSwitchRow since 477e2075; its switch is the control.
+      final finishedRuns = tester.widget<Switch>(
+        find.descendant(
+          of: _key('notify-finished-runs'),
+          matching: find.byType(Switch),
+        ),
+      );
+      expect(finishedRuns.onChanged, isNotNull);
+      await _finish(tester, controller);
+    });
+
+    testWidgets('re-checks on resume, the honest state rule', (tester) async {
+      tester.view.physicalSize = const Size(400, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      SharedPreferences.setMockInitialValues({
+        BackgroundLiveController.preferenceKey: true,
+      });
+      final preferences = await SharedPreferences.getInstance();
+      final store = ProfileStore(prefs: preferences);
+      await store.load();
+      // Flips as if the person granted the permission in Android settings
+      // and returned to the app; the fake platform reports whatever this
+      // is set to on every call, exactly like the real one would.
+      var granted = false;
+      final live = BackgroundLiveController(
+        preferences: preferences,
+        liveStatusDebounce: Duration.zero,
+        invoke: (method, [arguments]) async => {
+          'enabled': true,
+          'active': true,
+          'notificationGranted': granted,
+          'batteryOptimizationIgnored': false,
+        },
+      );
+      await live.restore();
+      final controller = ConnectionController(
+        store,
+        backgroundLive: live,
+        monitorGatewayFactory: (_) => (
+          gateway: MonitorTestGateway(),
+          operations: MonitorTestOperations(),
+        ),
+      );
+      await tester.pumpWidget(
+        _app(NotificationsSettingsScreen(controller: controller)),
+      );
+      await tester.pump();
+      expect(_key('notifications-blocked-notice'), findsOneWidget);
+
+      granted = true;
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(_key('notifications-blocked-notice'), findsNothing);
+      await _finish(tester, controller);
+    });
+
+    testWidgets('Send a test notification proves delivery', (tester) async {
+      tester.view.physicalSize = const Size(400, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final calls = <String>[];
+      final controller = await _controller(onInvoke: calls.add);
+      await tester.pumpWidget(
+        _app(NotificationsSettingsScreen(controller: controller)),
+      );
+      await tester.pump();
+      expect(find.text(_en.notifySendTest), findsOneWidget);
+      await tester.ensureVisible(_key('notify-send-test'));
+      await tester.pump();
+      await tester.tap(_key('notify-send-test'));
+      await tester.pumpAndSettle();
+      expect(calls, contains('showCodingAlert'));
+      await _finish(tester, controller);
+    });
+
+    testWidgets('proves the block too: blocked, nothing is shown', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final controller = await _controller(notificationGranted: false);
+      await tester.pumpWidget(
+        _app(NotificationsSettingsScreen(controller: controller)),
+      );
+      await tester.pump();
+      expect(await controller.backgroundLive.sendTestNotification(), isFalse);
+      await _finish(tester, controller);
+    });
   });
 
   group('layout at 320 dp and 2.5x text', () {

@@ -1,0 +1,32 @@
+09-24 12:20:14.154 26787 26787 I flutter : OCTRACE 13145ms setup.component id=linux
+09-24 12:22:24.995 26787 26787 I flutter : OCTRACE 130771ms setup.component id=essentials
+09-24 12:23:26.341 26787 26787 I flutter : OCTRACE 61307ms setup.component id=python
+09-24 12:24:00.316 26787 26787 I flutter : OCTRACE 34197ms setup.component id=node
+09-24 12:24:54.675 26787 26787 I flutter : OCTRACE 54244ms setup.component id=opencode
+09-24 12:25:53.510 26787 26787 I flutter : OCTRACE 58841ms setup.component id=aiteam
+09-24 12:25:58.678 26787 26787 I flutter : OCTRACE 618ms http oc1 GET /api/integration status=200 bytes=95 parent=provider_runtime.refresh
+09-24 12:26:01.142 26787 26787 I flutter : OCTRACE 2453ms http oc1 GET /provider/auth status=200 bytes=737 parent=provider_runtime.refresh
+09-24 12:26:05.323 26787 26787 I flutter : OCTRACE 4158ms http oc1 GET /provider status=200 bytes=378136 parent=provider_runtime.refresh
+09-24 12:26:05.537 26787 26787 I flutter : OCTRACE 7477ms provider_runtime.refresh parent=connect
+09-24 12:26:05.600 26787 26787 I flutter : OCTRACE 12228ms setup.component id=start
+09-24 12:26:05.600 26787 26787 I flutter : OCTRACE 364744ms setup.job state=done
+09-24 12:26:51.915 26787 26787 I flutter : OCTRACE 37ms events.first.global api=oc1 attempt=0 parent=location.select
+09-24 12:26:54.356 26787 26787 I flutter : OCTRACE 2479ms http oc1 GET /event status=200 parent=location.select
+09-24 12:26:54.357 26787 26787 I flutter : OCTRACE mark events.connected at=483618ms parent=location.select
+09-24 12:26:54.358 26787 26787 I flutter : OCTRACE 2480ms events.first api=oc1 attempt=0 parent=location.select
+09-24 12:26:54.956 26787 26787 I flutter : OCTRACE 3046ms http oc1 GET /api/integration status=200 bytes=4429 parent=provider_runtime.refresh
+09-24 12:26:54.967 26787 26787 I flutter : OCTRACE 611ms permissions.refresh parent=location.select
+09-24 12:26:54.968 26787 26787 I flutter : OCTRACE 610ms questions.refresh parent=location.select
+09-24 12:26:55.029 26787 26787 I flutter : OCTRACE 70ms http oc1 GET /provider/auth status=200 bytes=737 parent=provider_runtime.refresh
+09-24 12:26:58.443 26787 26787 I flutter : OCTRACE 3413ms http oc1 GET /provider status=200 bytes=378136 parent=provider_runtime.refresh
+09-24 12:26:58.751 26787 26787 I flutter : OCTRACE 6841ms provider_runtime.refresh parent=location.select
+09-24 12:26:59.465 26787 26787 I flutter : OCTRACE 713ms permissions.refresh parent=location.select
+09-24 12:26:59.466 26787 26787 I flutter : OCTRACE 715ms questions.refresh parent=location.select
+09-24 12:26:59.515 26787 26787 I flutter : OCTRACE 764ms sessions.refresh parent=location.select
+09-24 12:26:59.516 26787 26787 I flutter : OCTRACE 7640ms location.select
+09-24 12:27:01.540 26787 26787 I flutter : OCTRACE 2016ms http oc1 POST /session status=200 bytes=339 parent=session.create
+09-24 12:27:01.544 26787 26787 I flutter : OCTRACE 2028ms session.create
+09-24 12:27:04.458 26787 26787 I flutter : OCTRACE 4943ms catalog.load parent=location.select
+09-24 12:27:28.805 26787 26787 I flutter : OCTRACE 176ms http oc1 POST /session status=200 bytes=339 parent=session.create
+09-24 12:27:28.805 26787 26787 I flutter : OCTRACE 184ms session.create
+09-24 13:34:51.467 26787 26787 I flutter : OCTRACE 44ms session.create

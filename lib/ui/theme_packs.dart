@@ -5,6 +5,9 @@ import '../state/profiles.dart' show ThemePackId;
 export '../state/profiles.dart' show ThemePackId;
 
 import 'theme_packs_generated.dart';
+import 'theme_roles.dart';
+
+export 'theme_roles.dart';
 
 /// Holds the Material You pack once main harvests the system palette; null
 /// when unavailable (below Android 12, desktop, tests).
@@ -16,20 +19,40 @@ ThemePack effectiveThemePack(ThemePackId id) => id == ThemePackId.dynamic
     ? (harvestedDynamicPack.value ?? themePack(ThemePackId.opencode))
     : themePack(id);
 
-/// One brightness variant of a pack: a fully-resolved scheme plus the three
-/// app-level colors the component system needs beyond Material's scheme.
+/// One brightness variant of a pack: the pack's own colours (a scheme plus
+/// the three app-level colors beyond it), from which the visual language's
+/// [ThemeRoles] are derived, unless the pack spells them out ([roles]).
 class ThemePalette {
   final ColorScheme scheme;
   final Color background;
   final Color navigation;
   final Color success;
 
+  /// The pack's own roles; null derives them ([themeRoles]).
+  final ThemeRoles? roles;
+
   const ThemePalette({
     required this.scheme,
     required this.background,
     required this.navigation,
     required this.success,
+    this.roles,
   });
+
+  /// The whole role set: [roles], or derived from the pack's accent,
+  /// ground, text, error and success with the contrast floors built in.
+  /// Meaning stays with the role in every pack (attention is "needs you",
+  /// danger destroys or stops); only the hue follows the pack.
+  ThemeRoles get themeRoles =>
+      roles ??
+      deriveRoles(
+        accent: scheme.primary,
+        ground: background,
+        brightness: scheme.brightness,
+        text: scheme.onSurface,
+        danger: scheme.error,
+        success: success,
+      );
 }
 
 class ThemePack {
@@ -73,7 +96,7 @@ const curatedThemePacks = [
 ];
 
 final themePackLabels = <ThemePackId, String>{
-  ThemePackId.opencode: 'OpenCode',
+  ThemePackId.opencode: 'Graphite',
   ThemePackId.catppuccin: 'Catppuccin',
   ThemePackId.gruvbox: 'Gruvbox',
   ThemePackId.solarized: 'Solarized',
@@ -106,80 +129,26 @@ ThemePack dynamicThemePack({
 );
 
 // ---------------------------------------------------------------------------
-// OpenCode — the app's own identity. These builders are the pre-pack scheme
-// definitions with deliberate role-level refinements to the default identity.
+// Graphite — the default (ThemePackId.opencode, stored by that name): the
+// visual language's own palette (docs/design/visual-language-2026-09-26.md
+// §3), one neutral ground with a green accent. Its roles are spelled out;
+// every other pack derives them from its accent and ground.
 // ---------------------------------------------------------------------------
 
 final ThemePack _opencode = ThemePack(
   id: ThemePackId.opencode,
   label: themePackLabels[ThemePackId.opencode]!,
-  tagline: 'Terminal green, the default',
-  dark: ThemePalette(
-    scheme:
-        ColorScheme.fromSeed(
-          seedColor: const Color(0xFF83CDAA),
-          brightness: Brightness.dark,
-        ).copyWith(
-          primary: const Color(0xFF83CDAA),
-          onPrimary: const Color(0xFF052117),
-          primaryContainer: const Color(0xFF183B2D),
-          onPrimaryContainer: const Color(0xFFB6EBD2),
-          secondary: const Color(0xFFA8CBB9),
-          onSecondary: const Color(0xFF10231A),
-          secondaryContainer: const Color(0xFF253A30),
-          onSecondaryContainer: const Color(0xFFD7E9DE),
-          surface: const Color(0xFF151A17),
-          onSurface: const Color(0xFFE3E8E4),
-          onSurfaceVariant: const Color(0xFF929E97),
-          outline: const Color(0xFF7F8A83),
-          outlineVariant: const Color(0xFF3B443F),
-          error: const Color(0xFFFFB4AB),
-          onError: const Color(0xFF690005),
-          errorContainer: const Color(0xFF4B1518),
-          onErrorContainer: const Color(0xFFFFDAD6),
-          surfaceContainerLowest: const Color(0xFF0C0F0D),
-          surfaceContainerLow: const Color(0xFF171C19),
-          surfaceContainer: const Color(0xFF1B211D),
-          surfaceContainerHigh: const Color(0xFF222824),
-          surfaceContainerHighest: const Color(0xFF29302B),
-        ),
-    background: const Color(0xFF101310),
-    navigation: const Color(0xFF131714),
-    success: const Color(0xFF86D8A5),
-  ),
-  light: ThemePalette(
-    scheme:
-        ColorScheme.fromSeed(
-          seedColor: const Color(0xFF176B4B),
-          brightness: Brightness.light,
-        ).copyWith(
-          primary: const Color(0xFF176B4B),
-          onPrimary: Colors.white,
-          primaryContainer: const Color(0xFFD0F2DF),
-          onPrimaryContainer: const Color(0xFF083923),
-          secondary: const Color(0xFF4F6A5D),
-          onSecondary: Colors.white,
-          secondaryContainer: const Color(0xFFD7E8DE),
-          onSecondaryContainer: const Color(0xFF243A30),
-          surface: const Color(0xFFFFFFFF),
-          onSurface: const Color(0xFF172019),
-          onSurfaceVariant: const Color(0xFF5B6760),
-          outline: const Color(0xFF68776E),
-          outlineVariant: const Color(0xFFC5D0C8),
-          error: const Color(0xFFBA1A1A),
-          onError: Colors.white,
-          errorContainer: const Color(0xFFFFDAD6),
-          onErrorContainer: const Color(0xFF410002),
-          surfaceContainerLowest: Colors.white,
-          surfaceContainerLow: const Color(0xFFF0F5F1),
-          surfaceContainer: const Color(0xFFEAF0EB),
-          surfaceContainerHigh: const Color(0xFFE3EAE5),
-          surfaceContainerHighest: const Color(0xFFDCE4DE),
-        ),
-    background: const Color(0xFFF6F9F6),
-    navigation: const Color(0xFFF0F5F1),
-    success: const Color(0xFF1E7A44),
-  ),
+  tagline: 'Neutral graphite, green accent, the default',
+  dark: _fromRoles(graphiteDark),
+  light: _fromRoles(graphiteLight),
+);
+
+ThemePalette _fromRoles(ThemeRoles roles) => ThemePalette(
+  scheme: schemeFromRoles(roles),
+  background: roles.ground,
+  navigation: roles.surface2,
+  success: roles.success,
+  roles: roles,
 );
 
 // ---------------------------------------------------------------------------

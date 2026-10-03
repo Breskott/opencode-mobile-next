@@ -1,7 +1,9 @@
-// Stable team home (2026-09-13): on a compact phone the section selector
-// and the run filters stay easy to choose at every text size, and the
-// run list keeps its space. Boots the plain fixture gateway, the same
-// data the QA captures use: one waiting convoy, a handful of agents.
+// Stable team home (2026-09-13, redesigned 2026-09-24): on a compact phone
+// the task list keeps its space at every text size. A short list carries
+// no controls at all (no sections, chips or search); the task, the board
+// button and "Give the team a task" stay on screen. Boots the plain
+// fixture gateway, the same data the QA captures use: one waiting convoy,
+// a handful of agents.
 
 import 'dart:io';
 
@@ -16,6 +18,7 @@ import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../tool/capture/fixtures.dart' show captureTheme, loadCaptureFonts;
+import 'team_open_settings.dart';
 
 Directory _findFixtureRoot() {
   var dir = Directory.current;
@@ -40,10 +43,25 @@ void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
 
   const run = ValueKey('team-home-run-oc-xru');
-  const segments = ValueKey('team-home-segments');
-  const segmentsMenu = ValueKey('team-home-segments-menu');
-  const filterMenu = ValueKey('team-home-filter-menu');
-  Finder filter(String name) => find.byKey(ValueKey('team-home-filter-$name'));
+  const start = ValueKey('team-home-start-run');
+  // The top bar's one action beside the menu.
+  const info = ValueKey('team-home-board');
+
+  /// Nothing to choose before the list: no sections, chips or search.
+  void noControls(WidgetTester tester) {
+    expect(find.byType(ChoiceChip), findsNothing);
+    expect(find.byType(SegmentedButton<Object>), findsNothing);
+    expect(find.byKey(const ValueKey('team-home-filter-menu')), findsNothing);
+    expect(find.byKey(const ValueKey('team-home-search-open')), findsNothing);
+  }
+
+  void onScreen(WidgetTester tester, ValueKey<String> key, double width) {
+    final finder = find.byKey(key);
+    expect(finder.hitTestable(), findsOneWidget, reason: key.value);
+    final rect = tester.getRect(finder);
+    expect(rect.left, greaterThanOrEqualTo(0), reason: key.value);
+    expect(rect.right, lessThanOrEqualTo(width), reason: key.value);
+  }
 
   setUp(() async {
     fixturePath = _findFixtureRoot().path;
@@ -110,128 +128,58 @@ void main() {
     );
   }
 
-  testWidgets('390dp normal text: segments and all four filters on one row', (
-    tester,
-  ) async {
+  testWidgets('390dp normal text: a short list has no controls; the task '
+      'and Give the team a task are on screen', (tester) async {
     await pumpHome(tester, size: const Size(390, 844));
-
-    // The segmented button as before, inside the screen.
-    expect(find.byKey(segments), findsOneWidget);
-    expect(find.byKey(segmentsMenu), findsNothing);
-    expect(tester.getRect(find.byKey(segments)).right, lessThanOrEqualTo(390));
-
-    // Every chip fully on screen, all on the same row, no menu.
-    expect(find.byKey(filterMenu), findsNothing);
-    final tops = <double>{};
-    for (final name in ['active', 'blocked', 'completed', 'all']) {
-      final rect = tester.getRect(filter(name));
-      expect(rect.left, greaterThanOrEqualTo(0), reason: name);
-      expect(rect.right, lessThanOrEqualTo(390), reason: name);
-      tops.add(rect.top);
+    noControls(tester);
+    for (final key in [run, start, info]) {
+      onScreen(tester, key, 390);
     }
-    expect(tops, hasLength(1), reason: 'one row of chips');
-
-    // They still filter: the waiting convoy is not completed.
-    expect(find.byKey(run), findsOneWidget);
-    await tester.tap(filter('completed'));
-    await tester.pumpAndSettle();
-    expect(tester.widget<ChoiceChip>(filter('completed')).selected, isTrue);
-    expect(find.byKey(run), findsNothing);
-    await tester.tap(filter('all'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(run), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('320dp normal text: the chip row scrolls, the last chip works', (
+  testWidgets('320dp normal text: the same, nothing pushed sideways', (
     tester,
   ) async {
     await pumpHome(tester, size: const Size(320, 740));
-    expect(find.byKey(segments), findsOneWidget);
-    expect(find.byKey(filterMenu), findsNothing);
-    final all = filter('all');
-    await Scrollable.ensureVisible(tester.element(all), alignment: .5);
-    await tester.pump();
-    expect(all.hitTestable(), findsOneWidget);
-    await tester.tap(filter('completed'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(run), findsNothing);
-    await tester.tap(all);
-    await tester.pumpAndSettle();
-    expect(tester.widget<ChoiceChip>(all).selected, isTrue);
-    expect(find.byKey(run), findsOneWidget);
+    noControls(tester);
+    for (final key in [run, start, info]) {
+      onScreen(tester, key, 320);
+    }
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('320dp 2.5x: one menu each for sections and filters; the run '
-      'row and Start a run stay on screen', (tester) async {
+  testWidgets('320dp 2.5x: the task and Give the team a task stay on '
+      'screen; Technical details open', (tester) async {
     await pumpHome(tester, size: const Size(320, 740), scale: 2.5);
-
-    // No segmented button, no chips: two compact menu buttons instead.
-    expect(find.byKey(segments), findsNothing);
-    expect(find.byType(ChoiceChip), findsNothing);
-    final sections = find.byKey(segmentsMenu);
-    final filters = find.byKey(filterMenu);
-    expect(sections.hitTestable(), findsOneWidget);
-    expect(filters.hitTestable(), findsOneWidget);
-    for (final finder in [sections, filters]) {
-      final rect = tester.getRect(finder);
-      expect(rect.left, greaterThanOrEqualTo(0));
-      expect(rect.right, lessThanOrEqualTo(320));
+    noControls(tester);
+    // The team's Now line heads the list and names the task with what
+    // happens next (docs/qa/team-discover-2026-09-25); at 2.5x the task's
+    // own row is one scroll below it, never pushed sideways.
+    for (final key in [const ValueKey('team-home-now-stuck'), start, info]) {
+      onScreen(tester, key, 320);
     }
-    // The run is reachable without scrolling; the FAB is still offered.
-    expect(find.byKey(run).hitTestable(), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('team-home-start-run')).hitTestable(),
-      findsOneWidget,
-    );
-
-    // Pick a filter from the menu: it reads on the button and applies.
-    await tester.tap(filters);
-    await tester.pumpAndSettle();
-    for (final name in ['active', 'blocked', 'completed', 'all']) {
-      expect(filter(name).hitTestable(), findsOneWidget, reason: name);
-    }
-    await tester.tap(filter('completed'));
-    await tester.pumpAndSettle();
-    expect(filter('completed'), findsNothing, reason: 'menu closed');
-    expect(
-      find.descendant(
-        of: filters,
-        matching: find.text(l10n.teamUiHomeFilterCompleted),
+    await tester.scrollUntilVisible(
+      find.byKey(run),
+      200,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('team-home-runs')),
+        matching: find.byType(Scrollable),
       ),
-      findsOneWidget,
     );
-    expect(find.byKey(run), findsNothing);
+    await tester.pumpAndSettle();
+    onScreen(tester, run, 320);
+    // Technical details open from the page's "how it runs" row (P3.4).
+    const host = ValueKey('team-home-host-row');
+    await openTeamSettingsFromHome(tester);
+    await tester.tap(find.byKey(host));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('team-home-host-sheet')), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('team-home-runs-empty-filtered')),
-      findsOneWidget,
+      find.text(l10n.teamUiTechnicalDetails),
+      findsWidgets,
+      reason: 'the sheet names itself',
     );
-
-    // Pick a section from the menu: Agents, then Needs you, then Runs,
-    // which kept its filter.
-    Future<void> section(String name, String list) async {
-      await tester.tap(sections);
-      await tester.pumpAndSettle();
-      final item = find.byKey(ValueKey('team-home-segment-$name'));
-      expect(item.hitTestable(), findsOneWidget);
-      await tester.tap(item);
-      await tester.pumpAndSettle();
-      expect(find.byKey(ValueKey(list)), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    }
-
-    await section('agents', 'team-home-agents');
-    expect(find.byKey(filterMenu), findsNothing);
-    await section('needs-you', 'team-home-needs-you');
-    await section('runs', 'team-home-runs');
-    expect(
-      find.descendant(
-        of: filters,
-        matching: find.text(l10n.teamUiHomeFilterCompleted),
-      ),
-      findsOneWidget,
-      reason: 'filter kept across sections',
-    );
+    expect(tester.takeException(), isNull);
   });
 }

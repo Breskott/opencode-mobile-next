@@ -12,6 +12,7 @@ import 'package:opencode_mobile/state/agent_account.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/agent_account_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -120,14 +121,15 @@ void main() {
       expect(find.text('Open external link?'), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.text('auth.openai.com'),
+          of: find.byType(KitConfirmSheet),
+          // The host is named in the sheet's sentence (06102116).
+          matching: find.textContaining('auth.openai.com'),
         ),
         findsOneWidget,
       );
       expect(
         find.descendant(
-          of: find.byType(AlertDialog),
+          of: find.byType(KitConfirmSheet),
           matching: find.text('TEST-1234'),
         ),
         findsNothing,
@@ -190,7 +192,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(PopupMenuButton<String>).first);
+      // The saved server's row menu opens on long-press (KitRow, 71417a2f).
+      await tester.longPress(
+        find.byKey(const ValueKey('server-row-account-fixture')),
+      );
       await tester.pumpAndSettle();
       await _tap(tester, 'Codex account');
       expect(find.text('Ready to sign in'), findsOneWidget);
@@ -369,8 +374,9 @@ void main() {
           expect(find.text('Ready to sign in'), findsNothing);
         }
         if (state == 'usage') {
-          expect(find.text('5-hour window'), findsOneWidget);
-          expect(find.text('7-day window'), findsOneWidget);
+          // Each window's row names its bucket and span (82eb38cc).
+          expect(find.text('Codex · 5-hour window'), findsOneWidget);
+          expect(find.text('Codex · 7-day window'), findsOneWidget);
         }
         final out = Platform.environment['CODEX_ACCOUNT_CAPTURE_DIR'];
         if (out != null) {

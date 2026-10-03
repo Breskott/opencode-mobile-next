@@ -815,10 +815,33 @@ class ProductException implements Exception {
   String toString() => message;
 }
 
+/// A provider runtime refresh refused because replies are still running.
+///
+/// Refreshing an OpenCode 1 provider runtime disposes the server instance,
+/// which aborts every reply running in it. Nothing was disposed; retry once
+/// [runningReplies] have finished, or leave the reload to the automatic
+/// retry that runs when the server goes idle.
+class ProviderRuntimeBusyException extends ProductException {
+  final int runningReplies;
+
+  const ProviderRuntimeBusyException(this.runningReplies)
+    : super('Providers reload after the running replies finish');
+}
+
 /// Feature switches for server abilities that depend on the connected
 /// protocol generation. The v1 server exposes every listed feature, so its
 /// gateway reports [allV1]; a v2 gateway narrows these per endpoint support.
 class ServerCapabilities {
+  /// Portable session links remain off until private host, UI consent and
+  /// authorized scoped lookup are verified together. No adapter enables this.
+  final bool sessionAddressHandoff;
+
+  // AI setup assistant: additive capability section (2026-09-27).
+  final bool setupConfigRead;
+  final bool setupConfigWrite;
+  final bool setupMcpInventory;
+  final bool setupAssistantSession;
+
   /// Prompt dispatch preserves an app-authored message ID in the user echo.
   final bool clientPromptMessageID;
 
@@ -849,6 +872,16 @@ class ServerCapabilities {
   final bool sessionImportExport;
   final bool sessionNotes;
   final bool serverCatalog;
+
+  /// The server lists its own slash commands for a conversation and runs
+  /// one there ([CatalogGateway.listCommands], [PromptGateway.slashCommand]).
+  /// True on OpenCode 1 and 2. False on Claude Code through Paseo (daemon
+  /// 0.8.0 has no callable command list the app can use) and on Codex (its
+  /// app-server exposes native compact/review/shell calls, but no command
+  /// catalogue): the command sheet names what is missing instead of
+  /// offering commands that would be sent as plain text
+  /// (docs/qa/slice-P10.1-2-2026-09-28/README.md).
+  final bool slashCommands;
   final bool profileAttentionPolling;
 
   final bool managedWorkspaces;
@@ -915,6 +948,11 @@ class ServerCapabilities {
   final bool cliSessionResume;
 
   const ServerCapabilities({
+    this.sessionAddressHandoff = false,
+    this.setupConfigRead = false,
+    this.setupConfigWrite = false,
+    this.setupMcpInventory = false,
+    this.setupAssistantSession = false,
     this.clientPromptMessageID = false,
     this.agentAccount = false,
     this.promptAttachments = true,
@@ -934,6 +972,7 @@ class ServerCapabilities {
     this.sessionImportExport = true,
     this.sessionNotes = true,
     this.serverCatalog = true,
+    this.slashCommands = true,
     this.profileAttentionPolling = true,
 
     this.managedWorkspaces = true,
@@ -974,7 +1013,11 @@ class ServerCapabilities {
     this.cliSessionResume = true,
   });
 
-  static const allV1 = ServerCapabilities(clientPromptMessageID: true);
+  static const allV1 = ServerCapabilities(
+    clientPromptMessageID: true,
+    setupConfigRead: true,
+    setupMcpInventory: true,
+  );
 }
 
 /// Server health checks.

@@ -275,23 +275,31 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Unconfirmed sign-in: cloud'), findsOneWidget);
-      await tester.tap(find.text('Forget uncertain start'));
-      await tester.pumpAndSettle();
+      // The word, then its way forward, on the provider's (neutral) row.
       expect(
-        find.textContaining('does not cancel sign-in on the server'),
+        find.textContaining('Sign-in may not have started', findRichText: true),
         findsOneWidget,
       );
-      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.tap(find.byKey(const ValueKey('pending-auth-cloud')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('uncertain-auth-forget')));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Nothing is cancelled on the server'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(controller.uncertainIntegrationAuth, hasLength(1));
-      await tester.tap(find.text('Forget uncertain start'));
+      await tester.tap(find.byKey(const ValueKey('pending-auth-cloud')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('uncertain-auth-forget')));
       await tester.pumpAndSettle();
       await tester.tap(
-        find.widgetWithText(FilledButton, 'Forget uncertain start'),
+        find.byKey(const ValueKey('pending-auth-forget-confirm')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Unconfirmed sign-in: cloud'), findsNothing);
+      expect(find.byKey(const ValueKey('pending-auth-cloud')), findsNothing);
       expect(controller.uncertainIntegrationAuth, isEmpty);
       expect(repository.starts, 1);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -320,14 +328,14 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Connect'));
+      await tester.tap(find.byKey(const ValueKey('connect-provider-cloud')));
       await tester.pumpAndSettle();
       // Providers with several methods first show the method chooser.
       if (find.text('Browser sign-in').evaluate().isNotEmpty) {
         await tester.tap(find.text('Browser sign-in'));
         await tester.pumpAndSettle();
       }
-      expect(find.text('Enter code: ABCD-EFGH'), findsOneWidget);
+      expect(find.textContaining('Enter code: ABCD-EFGH'), findsOneWidget);
       expect(browserLaunches, 0);
       await tester.tap(find.text('Open browser'));
       await tester.pumpAndSettle();

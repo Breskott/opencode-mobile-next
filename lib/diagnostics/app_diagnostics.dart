@@ -4,6 +4,11 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import '../ui/kit/kit_redact.dart';
+import '../ui/kit/kit_text.dart' show KitText, KitTextRole;
+import '../ui/kit/kit_tokens.dart' show KitTokens;
+import '../ui/theme_roles.dart' show ThemeRoles;
+
 @immutable
 class AppDiagnosticEntry {
   const AppDiagnosticEntry({
@@ -42,8 +47,8 @@ class AppDiagnosticEntry {
 
 /// Process-local, privacy-bounded diagnostics for handled application errors.
 ///
-/// Entries are never persisted or uploaded automatically. The diagnostics
-/// screen is the only place that can explicitly send a redacted snapshot.
+/// Entries remain in memory unless a ReportProblemCapture is attached to
+/// persist them. Nothing is uploaded automatically.
 class AppDiagnosticsController extends ChangeNotifier {
   AppDiagnosticsController({
     this.maxEntries = 20,
@@ -96,13 +101,14 @@ class AppDiagnosticsController extends ChangeNotifier {
   }
 
   void clear() {
-    if (_entries.isEmpty) return;
     _entries.clear();
+    // Persistence listeners must also erase a restored report when this
+    // process has not recorded an error yet.
     notifyListeners();
   }
 
   String sanitize(String value, {int limit = 12000}) {
-    var safe = value.replaceAllMapped(
+    var safe = KitRedact.text(value).replaceAllMapped(
       RegExp(r'''https?://[^\s<>"']+''', caseSensitive: false),
       (match) {
         final raw = match.group(0)!;
@@ -119,9 +125,12 @@ class AppDiagnosticsController extends ChangeNotifier {
         }
       },
     );
+    // Header syntax (`Authorization: Bearer …`) and the `KEY=VALUE` form an
+    // MCP header uses (mcp_setup_screen.dart, P0.1) both carry a secret in
+    // the same place.
     safe = safe.replaceAllMapped(
       RegExp(
-        r'\b(authorization|proxy-authorization)\s*:\s*[^\r\n]+',
+        r'\b(authorization|proxy-authorization)\s*[:=]\s*[^\r\n]+',
         caseSensitive: false,
       ),
       (match) => '${match.group(1)}: [REDACTED]',
@@ -183,29 +192,66 @@ AppErrorCaptureHandle installAppErrorCapture(
 
   FlutterError.onError = (details) {
     diagnostics.record(details.exception, details.stack, source: 'flutter');
+    final safeDetails = FlutterErrorDetails(
+      exception: diagnostics.sanitize(details.exceptionAsString()),
+      stack: details.stack == null
+          ? null
+          : StackTrace.fromString(
+              diagnostics.sanitize(details.stack.toString()),
+            ),
+      library: details.library == null
+          ? null
+          : diagnostics.sanitize(details.library!),
+      context: details.context == null
+          ? null
+          : ErrorDescription(
+              diagnostics.sanitize(details.context!.toDescription()),
+            ),
+      stackFilter: details.stackFilter == null
+          ? null
+          : (lines) => details.stackFilter!(lines).map(diagnostics.sanitize),
+      informationCollector: details.informationCollector == null
+          ? null
+          : () => details.informationCollector!().map(
+              (node) =>
+                  ErrorDescription(diagnostics.sanitize(node.toDescription())),
+            ),
+      silent: details.silent,
+    );
     final handler = previousFlutter;
     if (handler != null) {
-      handler(details);
+      handler(safeDetails);
     } else {
-      FlutterError.presentError(details);
+      FlutterError.presentError(safeDetails);
     }
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     diagnostics.record(error, stack, source: 'platform');
-    previousPlatform?.call(error, stack);
+    final safeError = diagnostics.sanitize(error.toString());
+    final safeStack = StackTrace.fromString(
+      diagnostics.sanitize(stack.toString()),
+    );
+    // Also to the device log, so `adb logcat -s flutter` shows it.
+    debugPrintSynchronously('Uncaught error: $safeError\n$safeStack');
+    previousPlatform?.call(safeError, safeStack);
     return true;
   };
   ErrorWidget.builder = (details) {
     diagnostics.record(details.exception, details.stack, source: 'widget');
-    return const Directionality(
+    // Drawn wherever the failed widget was, possibly above every theme and
+    // MediaQuery: fixed colours and the body role's style, nothing that
+    // looks anything up.
+    return Directionality(
       textDirection: TextDirection.ltr,
       child: ColoredBox(
-        color: Color(0xFF201A18),
+        color: ThemeRoles.bootErrorGround,
         child: Padding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(KitTokens.panelPadding),
           child: Text(
             'This part of OpenCode hit an error. Open App diagnostics for details.',
-            style: TextStyle(color: Color(0xFFFFDCCB)),
+            style: KitText.styleFor(
+              KitTextRole.body,
+            ).copyWith(color: ThemeRoles.bootErrorText),
           ),
         ),
       ),

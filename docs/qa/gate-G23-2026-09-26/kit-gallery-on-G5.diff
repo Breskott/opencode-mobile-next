@@ -1,0 +1,110 @@
+diff --git a/test/goldens/kit/kit_gallery.dart b/test/goldens/kit/kit_gallery.dart
+index 8f78cd33..5deff1a9 100644
+--- a/test/goldens/kit/kit_gallery.dart
++++ b/test/goldens/kit/kit_gallery.dart
+@@ -17,6 +17,7 @@ import 'dart:convert';
+ import 'dart:io';
+ import 'dart:ui' show FlutterView;
+ 
++import 'package:flutter/foundation.dart';
+ import 'package:flutter/material.dart';
+ import 'package:flutter/rendering.dart';
+ import 'package:flutter/services.dart';
+@@ -28,18 +29,31 @@ import '../../../tool/capture/fixtures.dart'
+ 
+ const _arabicFallback = 'KitGalleryNotoSansArabic';
+ 
+-/// The capture fonts plus the Arabic fallback family.
++/// The capture fonts plus the Arabic fallback family, and the families
++/// AppTheme.forLocale names for Arabic ('sans-serif', which is Roboto on
++/// Android, and 'Noto Sans Arabic'), so a screen rendered through it reads
++/// like the device (TEST-8, gate G23).
+ Future<void> loadKitGalleryFonts() async {
+   await loadCaptureFonts();
+-  final arabic = FontLoader(_arabicFallback);
+-  for (final weight in ['Regular', 'Bold']) {
+-    arabic.addFont(
+-      File(
+-        'test/fixtures/fonts/NotoSansArabic-$weight.ttf',
+-      ).readAsBytes().then(ByteData.sublistView),
+-    );
++  Future<void> load(String family, List<String> paths) async {
++    final loader = FontLoader(family);
++    for (final path in paths) {
++      loader.addFont(File(path).readAsBytes().then(ByteData.sublistView));
++    }
++    await loader.load();
+   }
+-  await arabic.load();
++
++  const noto = [
++    'test/fixtures/fonts/NotoSansArabic-Regular.ttf',
++    'test/fixtures/fonts/NotoSansArabic-Bold.ttf',
++  ];
++  await load(_arabicFallback, noto);
++  await load('Noto Sans Arabic', noto);
++  await load('sans-serif', const [
++    'tool/capture/fonts/Roboto-Regular.ttf',
++    'tool/capture/fonts/Roboto-Medium.ttf',
++    'tool/capture/fonts/Roboto-Bold.ttf',
++  ]);
+ }
+ 
+ /// The capture theme with Arabic falling back to Noto, like a device.
+@@ -94,6 +108,29 @@ const kitGalleryScaledSizes = <Size>[Size(412, 915), Size(1280, 800)];
+ String kitGallerySize(Size size) =>
+     '${size.width.toInt()}x${size.height.toInt()}';
+ 
++/// The TEST-20 golden name for a gallery shot:
++/// `<shot>[_ar][_text2][_<W>x<H>]_<dark|light>`, where [shot] is
++/// `kit_<part>_<state>` and the size is left out for 412x915. Gate G23
++/// (test/golden_harness_test.dart) rejects any other kit golden name.
++String kitGalleryName(
++  String shot,
++  Size size, {
++  required bool light,
++  bool ar = false,
++  bool text2 = false,
++}) {
++  if (!RegExp(r'^kit_[a-z0-9]+(_[a-z0-9]+)+$').hasMatch(shot)) {
++    throw ArgumentError.value(shot, 'shot', 'must be kit_<part>_<state>');
++  }
++  return [
++    shot,
++    if (ar) 'ar',
++    if (text2) 'text2',
++    if (size != const Size(412, 915)) kitGallerySize(size),
++    light ? 'light' : 'dark',
++  ].join('_');
++}
++
+ /// Pumps an empty screen at [size], runs [open] against a context under the
+ /// navigator (it opens the modal part), settles, runs the G5 accessibility
+ /// checks ([expectKitGalleryAccessible]) and compares the whole window with
+@@ -126,12 +163,16 @@ Future<void> kitGalleryShot(
+     );
+   }
+   final stem = name.substring(0, name.length - own.length - 1);
+-  tester.view.physicalSize = size;
+-  tester.view.devicePixelRatio = 1;
++  // TEST-9: DPR 3.0, [size] in logical pixels.
++  tester.view.physicalSize = size * 3.0;
++  tester.view.devicePixelRatio = 3.0;
+   addTearDown(tester.view.reset);
+   final boundary = GlobalKey();
+   // Released before the test ends; a tear-down runs too late for the check.
+   final semantics = tester.ensureSemantics();
++  // ARCH-11: rendered as Android. Cleared in the finally: flutter_test checks
++  // it before tear-downs run, also when a caller catches a failed shot.
++  debugDefaultTargetPlatformOverride = TargetPlatform.android;
+   try {
+     // The other theme first (checks only), then the shot's own theme.
+     for (final pass in [!light, light]) {
+@@ -179,6 +220,7 @@ Future<void> kitGalleryShot(
+       );
+     }
+   } finally {
++    debugDefaultTargetPlatformOverride = null;
+     semantics.dispose();
+   }
+   await expectLater(find.byKey(boundary), matchesGoldenFile('$name.png'));

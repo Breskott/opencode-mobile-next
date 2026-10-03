@@ -1,0 +1,2783 @@
+00:00 +0: loading test/kit_ratchet_test.dart
+00:00 +0: test/design_standard_test.dart: migrated screens use the kit, not raw progress, cards or buttons
+00:00 +1: test/design_standard_test.dart: migrated classes in mixed files use the kit
+00:00 +2: test/design_standard_test.dart: raw parts a migrated screen gave up do not come back
+00:00 +3: test/design_standard_test.dart: every allowlist entry names a migrated file and gives a reason
+00:00 +4: test/design_standard_test.dart: each migrated screen has dark and light goldens at 412x915
+00:00 +5: test/design_standard_test.dart: scenes take their time only from KitIllustration (§10)
+00:00 +6: test/design_standard_test.dart: the kit is the one place raw progress and filled buttons live
+00:00 +7: test/kit_ratchet_test.dart: G1: modal and toast entry points live in the kit
+--- kit_ratchet baseline (commit as test/kit_ratchet_baseline.json if smaller) ---
+{
+  "G1": {
+    "lib/feedback/bug_report.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/main.dart": {
+      "MaterialBanner(": 2,
+      "SnackBar(": 6,
+      "showSnackBar(": 6
+    },
+    "lib/ui/desktop/file_drop.dart": {
+      "AlertDialog(": 1,
+      "showDialog(": 1
+    },
+    "lib/ui/desktop/shortcuts.dart": {
+      "AlertDialog(": 1,
+      "showDialog(": 2
+    },
+    "lib/ui/screens/activity_screen.dart": {
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/screens/app_diagnostics_screen.dart": {
+      "SnackBar(": 3,
+      "showConfirmSheet(": 1,
+      "showSnackBar(": 3
+    },
+    "lib/ui/screens/builtin_server_screen.dart": {
+      "SnackBar(": 1,
+      "showConfirmSheet(": 1,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/chat/approvals_sheet.dart": {
+      "SnackBar(": 2,
+      "showConfirmSheet(": 1,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 2
+    },
+    "lib/ui/screens/chat/chat_states.dart": {
+      "AlertDialog(": 1,
+      "showDialog(": 1
+    },
+    "lib/ui/screens/chat/command_launcher.dart": {
+      "DraggableScrollableSheet(": 1
+    },
+    "lib/ui/screens/chat/composer.dart": {
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/screens/chat/form_flow.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/chat/message_view.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/chat/permission_sheet.dart": {
+      "AlertDialog(": 1,
+      "showDialog(": 1,
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/screens/chat/prompt_editor.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/chat/prompt_stash.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/chat/read_aloud.dart": {
+      "showConfirmSheet(": 1,
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/screens/chat/team_conversation_view.dart": {
+      "SnackBar(": 1,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/chat/timeline_sheet.dart": {
+      "DraggableScrollableSheet(": 1
+    },
+    "lib/ui/screens/chat_screen.dart": {
+      "AlertDialog(": 2,
+      "SnackBar(": 18,
+      "showConfirmSheet(": 11,
+      "showDialog(": 2,
+      "showModalBottomSheet(": 9,
+      "showSnackBar(": 18
+    },
+    "lib/ui/screens/connection_help_screen.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/development_services_screen.dart": {
+      "showConfirmSheet(": 1,
+      "showModalBottomSheet(": 2
+    },
+    "lib/ui/screens/external_agents_screen.dart": {
+      "AlertDialog(": 1,
+      "SnackBar(": 1,
+      "showConfirmSheet(": 4,
+      "showDialog(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/files_screen.dart": {
+      "SnackBar(": 8,
+      "showModalBottomSheet(": 3,
+      "showSnackBar(": 8
+    },
+    "lib/ui/screens/global_sessions_screen.dart": {
+      "SnackBar(": 1,
+      "showConfirmSheet(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/guide_screen.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/home_screen.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/host_management_screen.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/isolated_task_sheet.dart": {
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/screens/keep_running_screen.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/legacy_drafts_screen.dart": {
+      "SnackBar(": 1,
+      "showConfirmSheet(": 1,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/library/command_auth_sheet.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/library/credential_sheet.dart": {
+      "AlertDialog(": 1,
+      "showConfirmSheet(": 1,
+      "showDialog(": 1
+    },
+    "lib/ui/screens/library/integration_tiles.dart": {
+      "AlertDialog(": 3
+    },
+    "lib/ui/screens/library/integrations_screen.dart": {
+      "AlertDialog(": 2,
+      "SnackBar(": 4,
+      "showConfirmSheet(": 2,
+      "showDialog(": 4,
+      "showModalBottomSheet(": 3,
+      "showSnackBar(": 4
+    },
+    "lib/ui/screens/library/pending_auth_recovery.dart": {
+      "SnackBar(": 1,
+      "showConfirmSheet(": 2,
+      "showDialog(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/library/references_screen.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/library/skills_screen.dart": {
+      "showModalBottomSheet(": 2
+    },
+    "lib/ui/screens/local_terminal_screen.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/managed_workspaces_screen.dart": {
+      "AlertDialog(": 1,
+      "SnackBar(": 1,
+      "showDialog(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/perf_trace_section.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/phone_setup/phone_setup_progress_screen.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/profile_monitor_screen.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/project_folder_actions.dart": {
+      "AlertDialog(": 2,
+      "SnackBar(": 1,
+      "showDialog(": 2,
+      "showModalBottomSheet(": 2,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/project_health_screen.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/projects_screen.dart": {
+      "AlertDialog(": 1,
+      "SnackBar(": 1,
+      "showDialog(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/provider_quota_screen.dart": {
+      "AlertDialog(": 1,
+      "SnackBar(": 1,
+      "showDialog(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/review_workspace.dart": {
+      "SnackBar(": 2,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 2
+    },
+    "lib/ui/screens/run_result_screen.dart": {
+      "MaterialBanner(": 1
+    },
+    "lib/ui/screens/running_work_sheet.dart": {
+      "SnackBar(": 3,
+      "showModalBottomSheet(": 2,
+      "showSnackBar(": 3
+    },
+    "lib/ui/screens/saved_permissions_screen.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/servers_screen.dart": {
+      "SnackBar(": 1,
+      "showConfirmSheet(": 2,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/session_destination_sheet.dart": {
+      "SnackBar(": 2,
+      "showModalBottomSheet(": 2,
+      "showSnackBar(": 2
+    },
+    "lib/ui/screens/session_import_screen.dart": {
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/screens/settings/default_shell_row.dart": {
+      "SnackBar(": 1,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/settings/notifications_settings_screen.dart": {
+      "SnackBar(": 2,
+      "showSnackBar(": 2
+    },
+    "lib/ui/screens/settings/personal_settings_screens.dart": {
+      "SnackBar(": 1,
+      "showConfirmSheet(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/settings/plugins_screen.dart": {
+      "SnackBar(": 2,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 2
+    },
+    "lib/ui/screens/settings/server_plugins_section.dart": {
+      "AlertDialog(": 1,
+      "SnackBar(": 1,
+      "showConfirmSheet(": 1,
+      "showDialog(": 1,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/settings/server_settings_screen.dart": {
+      "AlertDialog(": 1,
+      "SnackBar(": 2,
+      "showConfirmSheet(": 1,
+      "showDialog(": 1,
+      "showSnackBar(": 2
+    },
+    "lib/ui/screens/settings_screen.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/staged_revert_screen.dart": {
+      "showModalBottomSheet(": 2
+    },
+    "lib/ui/screens/team/agent_output_screen.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/team/agent_screen.dart": {
+      "showModalBottomSheet(": 3
+    },
+    "lib/ui/screens/team/gate_sheet.dart": {
+      "showConfirmSheet(": 1,
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/screens/team/merge_section.dart": {
+      "DraggableScrollableSheet(": 1,
+      "showConfirmSheet(": 2,
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/screens/team/run_screen.dart": {
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/screens/team/start_run_sheet.dart": {
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/screens/team/team_home_screen.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/team/work_sheet.dart": {
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/screens/terminal_screen.dart": {
+      "AlertDialog(": 1,
+      "MaterialBanner(": 1,
+      "showConfirmSheet(": 1,
+      "showDialog(": 1
+    },
+    "lib/ui/screens/termux_processes_screen.dart": {
+      "showConfirmSheet(": 1,
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/screens/termux_setup_screen.dart": {
+      "SnackBar(": 6,
+      "showConfirmSheet(": 6,
+      "showSnackBar(": 6
+    },
+    "lib/ui/screens/termux_storage_screen.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/screens/tools_screen.dart": {
+      "SnackBar(": 1,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/screens/usage_screen.dart": {
+      "AlertDialog(": 1
+    },
+    "lib/ui/screens/workspace_screen.dart": {
+      "AlertDialog(": 2,
+      "SnackBar(": 2,
+      "showConfirmSheet(": 3,
+      "showDialog(": 2,
+      "showModalBottomSheet(": 3,
+      "showSnackBar(": 2
+    },
+    "lib/ui/screens/worktrees_screen.dart": {
+      "AlertDialog(": 1,
+      "SnackBar(": 1,
+      "showDialog(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/search/search_index.dart": {
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/widgets/agent_blocks.dart": {
+      "SnackBar(": 2,
+      "showSnackBar(": 2
+    },
+    "lib/ui/widgets/appearance_picker.dart": {
+      "showModalBottomSheet(": 2
+    },
+    "lib/ui/widgets/completion_digest.dart": {
+      "SnackBar(": 2,
+      "showSnackBar(": 2
+    },
+    "lib/ui/widgets/confirm_sheet.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/widgets/connection_status_banner.dart": {
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/widgets/diff_view.dart": {
+      "SnackBar(": 2,
+      "showSnackBar(": 2
+    },
+    "lib/ui/widgets/external_link.dart": {
+      "SnackBar(": 3,
+      "showSnackBar(": 3
+    },
+    "lib/ui/widgets/file_preview.dart": {
+      "SnackBar(": 3,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 3
+    },
+    "lib/ui/widgets/first_reply_notify_card.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/widgets/form_renderer.dart": {
+      "showConfirmSheet(": 1,
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/widgets/info_label.dart": {
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/widgets/language_picker.dart": {
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/widgets/local_agent_onboarding.dart": {
+      "SnackBar(": 1,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/widgets/markdown.dart": {
+      "SnackBar(": 2,
+      "showSnackBar(": 2
+    },
+    "lib/ui/widgets/mobile_task_view.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/widgets/phone_server_card.dart": {
+      "SnackBar(": 1,
+      "showConfirmSheet(": 1,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/widgets/phone_server_restart.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/widgets/pickers.dart": {
+      "AlertDialog(": 3,
+      "DraggableScrollableSheet(": 1,
+      "showDialog(": 3,
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/widgets/product_states.dart": {
+      "MaterialBanner(": 1,
+      "SnackBar(": 2,
+      "showSnackBar(": 2
+    },
+    "lib/ui/widgets/quota_monitor_section.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/widgets/reader_preferences.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/widgets/run_command_dialog.dart": {
+      "AlertDialog(": 1,
+      "showDialog(": 1
+    },
+    "lib/ui/widgets/run_result_view.dart": {
+      "DraggableScrollableSheet(": 1,
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/widgets/safety_confirms.dart": {
+      "showConfirmSheet(": 9
+    },
+    "lib/ui/widgets/server_switcher_sheet.dart": {
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/widgets/session_handoff.dart": {
+      "AlertDialog(": 1,
+      "SnackBar(": 1,
+      "showDialog(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/widgets/session_handoff_sheets.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/widgets/team_board_move_sheet.dart": {
+      "showConfirmSheet(": 1,
+      "showModalBottomSheet(": 3
+    },
+    "lib/ui/widgets/team_controls.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/ui/widgets/team_cycle_strip.dart": {
+      "showModalBottomSheet(": 1
+    },
+    "lib/ui/widgets/team_host_form.dart": {
+      "showConfirmSheet(": 1,
+      "showModalBottomSheet(": 2
+    },
+    "lib/ui/widgets/team_now.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/widgets/team_phone_onboarding.dart": {
+      "SnackBar(": 1,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/widgets/team_phone_section.dart": {
+      "SnackBar(": 2,
+      "showConfirmSheet(": 2,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 2
+    },
+    "lib/ui/widgets/team_technical_details.dart": {
+      "SnackBar(": 1,
+      "showModalBottomSheet(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/ui/widgets/work_status_line.dart": {
+      "showConfirmSheet(": 1
+    },
+    "lib/update/desktop_release_check.dart": {
+      "SnackBar(": 1,
+      "showSnackBar(": 1
+    },
+    "lib/update/shorebird_update_notice.dart": {
+      "SnackBar(": 2,
+      "showSnackBar(": 2
+    },
+    "lib/voice/voice_ui.dart": {
+      "showModalBottomSheet(": 2
+    }
+  },
+  "G15": {
+    "lib/ui/screens/files_screen.dart": {
+      "width-literal": 2
+    },
+    "lib/ui/screens/home_screen.dart": {
+      "width-literal": 4
+    },
+    "lib/ui/screens/library/integration_tiles.dart": {
+      "width-literal": 2
+    },
+    "lib/ui/screens/review_workspace.dart": {
+      "width-literal": 2
+    },
+    "lib/ui/screens/session_context_screen.dart": {
+      "width-literal": 2
+    },
+    "lib/ui/screens/team/team_board_screen.dart": {
+      "width-literal": 1
+    },
+    "lib/ui/screens/termux_setup_screen.dart": {
+      "width-literal": 2
+    },
+    "lib/ui/screens/usage_screen.dart": {
+      "width-literal": 1
+    },
+    "lib/ui/screens/workspace_screen.dart": {
+      "width-literal": 1
+    },
+    "lib/ui/widgets/folder_browser.dart": {
+      "width-literal": 1
+    },
+    "lib/ui/widgets/reader_preferences.dart": {
+      "width-literal": 1
+    }
+  },
+  "G16": {
+    "lib/ui/app_iconography.dart": {
+      "Icon": 2,
+      "Opacity": 1
+    },
+    "lib/ui/app_theme.dart": {
+      "AppBarTheme": 1,
+      "InputDecorationTheme": 1
+    },
+    "lib/ui/desktop/context_menu.dart": {
+      "DecoratedBox": 1,
+      "FocusableActionDetector": 1,
+      "GestureDetector": 1,
+      "Icon": 1,
+      "PopupMenuItem": 1,
+      "Text": 1
+    },
+    "lib/ui/desktop/desktop_interaction.dart": {
+      "MouseRegion": 1,
+      "ScrollConfiguration": 1,
+      "SelectionArea": 1
+    },
+    "lib/ui/desktop/file_drop.dart": {
+      "AlertDialog": 1,
+      "DecoratedBox": 1,
+      "Positioned": 1,
+      "Text": 4,
+      "TextButton": 1
+    },
+    "lib/ui/desktop/shortcuts.dart": {
+      "AlertDialog": 1,
+      "Dialog": 1,
+      "Divider": 1,
+      "Icon": 2,
+      "ListTile": 1,
+      "Scrollbar": 1,
+      "SingleChildScrollView": 1,
+      "Text": 8,
+      "TextButton": 1,
+      "TextField": 1
+    },
+    "lib/ui/screens/about_screen.dart": {
+      "AppBar": 1,
+      "DefaultTabController": 1,
+      "Divider": 2,
+      "Icon": 4,
+      "IconButton": 1,
+      "ListTile": 1,
+      "Scaffold": 1,
+      "SelectionArea": 1,
+      "Tab": 2,
+      "TabBar": 1,
+      "TabBarView": 1,
+      "Text": 8
+    },
+    "lib/ui/screens/active_context_screen.dart": {
+      "AppBar": 2,
+      "ChoiceChip": 2,
+      "Divider": 2,
+      "Icon": 5,
+      "IconButton": 3,
+      "LinearProgressIndicator": 1,
+      "ListTile": 1,
+      "Scaffold": 2,
+      "SelectableText": 2,
+      "SingleChildScrollView": 1,
+      "Text": 14,
+      "TextField": 1
+    },
+    "lib/ui/screens/activity_screen.dart": {
+      "AppBar": 1,
+      "Badge": 1,
+      "CircularProgressIndicator": 3,
+      "FilledButton": 1,
+      "Icon": 20,
+      "IconButton": 1,
+      "LinearProgressIndicator": 1,
+      "ListTile": 9,
+      "Scaffold": 1,
+      "Text": 31,
+      "TextButton": 2,
+      "Tooltip": 1
+    },
+    "lib/ui/screens/agent_account_screen.dart": {
+      "AppBar": 2,
+      "Card": 3,
+      "Container": 3,
+      "FilledButton": 2,
+      "Icon": 4,
+      "IconButton": 1,
+      "LinearProgressIndicator": 5,
+      "OutlinedButton": 1,
+      "Scaffold": 2,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "Text": 28
+    },
+    "lib/ui/screens/agent_choice_screen.dart": {
+      "AppBar": 1,
+      "Scaffold": 1,
+      "SingleChildScrollView": 1,
+      "Text": 3
+    },
+    "lib/ui/screens/app_diagnostics_screen.dart": {
+      "AppBar": 1,
+      "Divider": 2,
+      "ExpansionTile": 1,
+      "Scaffold": 1,
+      "SelectionArea": 1,
+      "SnackBar": 3,
+      "Text": 10
+    },
+    "lib/ui/screens/attention_overview_screen.dart": {
+      "AppBar": 1,
+      "Card": 1,
+      "Icon": 1,
+      "IconButton": 1,
+      "OutlinedButton": 1,
+      "Scaffold": 1,
+      "Text": 10
+    },
+    "lib/ui/screens/builtin_server_screen.dart": {
+      "AppBar": 2,
+      "CircleAvatar": 1,
+      "CircularProgressIndicator": 1,
+      "DecoratedBox": 1,
+      "Divider": 2,
+      "FilledButton": 4,
+      "Icon": 10,
+      "IconButton": 1,
+      "Opacity": 1,
+      "OutlinedButton": 1,
+      "Scaffold": 2,
+      "SegmentedButton": 1,
+      "SnackBar": 1,
+      "Text": 30,
+      "TextButton": 2
+    },
+    "lib/ui/screens/capabilities_screen.dart": {
+      "AppBar": 1,
+      "DefaultTabController": 1,
+      "Scaffold": 1,
+      "Tab": 1,
+      "TabBar": 1,
+      "TabBarView": 1,
+      "Text": 1
+    },
+    "lib/ui/screens/chat/approvals_sheet.dart": {
+      "ActionChip": 1,
+      "Container": 1,
+      "Divider": 1,
+      "FilledButton": 1,
+      "Icon": 5,
+      "RadioGroup": 1,
+      "RadioListTile": 2,
+      "SingleChildScrollView": 1,
+      "SnackBar": 2,
+      "SwitchListTile": 2,
+      "Text": 22,
+      "TextButton": 2,
+      "Tooltip": 1
+    },
+    "lib/ui/screens/chat/attention_card.dart": {
+      "ActionChip": 1,
+      "ExpansionTile": 2,
+      "Icon": 1,
+      "SingleChildScrollView": 1,
+      "Text": 7
+    },
+    "lib/ui/screens/chat/chat_states.dart": {
+      "AlertDialog": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "Text": 2,
+      "TextButton": 1
+    },
+    "lib/ui/screens/chat/command_launcher.dart": {
+      "Container": 3,
+      "Divider": 4,
+      "DraggableScrollableSheet": 1,
+      "Icon": 11,
+      "IconButton": 3,
+      "InkWell": 2,
+      "LinearProgressIndicator": 2,
+      "ListTile": 4,
+      "Material": 1,
+      "Tab": 4,
+      "TabBar": 1,
+      "Text": 23,
+      "TextButton": 3,
+      "TextField": 1
+    },
+    "lib/ui/screens/chat/composer.dart": {
+      "AnimatedContainer": 1,
+      "AnimatedSwitcher": 1,
+      "CircularProgressIndicator": 2,
+      "ClipRRect": 2,
+      "ColoredBox": 2,
+      "CustomPaint": 1,
+      "ExpansionTile": 2,
+      "FractionallySizedBox": 1,
+      "GestureDetector": 1,
+      "Icon": 29,
+      "IconButton": 8,
+      "Image": 1,
+      "InkWell": 1,
+      "LinearProgressIndicator": 1,
+      "ListTile": 13,
+      "Material": 2,
+      "Positioned": 1,
+      "SegmentedButton": 1,
+      "SingleChildScrollView": 1,
+      "Text": 40,
+      "TextButton": 2,
+      "TextField": 1,
+      "Tooltip": 5,
+      "TweenAnimationBuilder": 1
+    },
+    "lib/ui/screens/chat/empty_chat.dart": {
+      "ActionChip": 1,
+      "Container": 1,
+      "Opacity": 3,
+      "SingleChildScrollView": 2,
+      "Text": 5,
+      "Transform": 2,
+      "TweenAnimationBuilder": 2
+    },
+    "lib/ui/screens/chat/form_flow.dart": {
+      "SnackBar": 1,
+      "Text": 1
+    },
+    "lib/ui/screens/chat/message_view.dart": {
+      "AnimatedContainer": 2,
+      "AnimatedRotation": 3,
+      "Card": 1,
+      "Chip": 1,
+      "CircularProgressIndicator": 3,
+      "Container": 13,
+      "Divider": 2,
+      "GestureDetector": 1,
+      "Icon": 27,
+      "IconButton": 1,
+      "InkWell": 10,
+      "Material": 2,
+      "Opacity": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "Text": 30,
+      "TextButton": 3,
+      "Theme": 1,
+      "Tooltip": 5,
+      "Transform": 1,
+      "TweenAnimationBuilder": 1
+    },
+    "lib/ui/screens/chat/permission_sheet.dart": {
+      "ActionChip": 1,
+      "AlertDialog": 1,
+      "AnimatedSize": 1,
+      "Container": 2,
+      "Icon": 8,
+      "IconButton": 2,
+      "Material": 2,
+      "SelectableText": 1,
+      "SingleChildScrollView": 4,
+      "Text": 17,
+      "TextButton": 1,
+      "TextField": 1
+    },
+    "lib/ui/screens/chat/prompt_editor.dart": {
+      "AppBar": 1,
+      "Icon": 2,
+      "IconButton": 2,
+      "Scaffold": 1,
+      "Text": 2,
+      "TextButton": 1,
+      "TextField": 1
+    },
+    "lib/ui/screens/chat/prompt_history.dart": {
+      "Divider": 1,
+      "Icon": 2,
+      "ListTile": 1,
+      "Text": 4,
+      "TextField": 1
+    },
+    "lib/ui/screens/chat/prompt_stash.dart": {
+      "Card": 1,
+      "ExpansionTile": 1,
+      "Icon": 4,
+      "IconButton": 1,
+      "LinearProgressIndicator": 1,
+      "SelectableText": 1,
+      "Text": 14,
+      "TextButton": 3,
+      "TextField": 1
+    },
+    "lib/ui/screens/chat/read_aloud.dart": {
+      "ListTile": 1,
+      "Text": 3
+    },
+    "lib/ui/screens/chat/session_sheets.dart": {
+      "CheckboxListTile": 1,
+      "Text": 2
+    },
+    "lib/ui/screens/chat/team_conversation_view.dart": {
+      "AppBar": 1,
+      "Container": 1,
+      "Icon": 5,
+      "IconButton": 1,
+      "InkWell": 2,
+      "Scaffold": 1,
+      "SnackBar": 1,
+      "Text": 10,
+      "Transform": 1
+    },
+    "lib/ui/screens/chat/timeline_sheet.dart": {
+      "Divider": 1,
+      "DraggableScrollableSheet": 1,
+      "Icon": 6,
+      "IconButton": 2,
+      "ListTile": 2,
+      "Material": 1,
+      "Text": 9,
+      "TextButton": 1,
+      "TextField": 1
+    },
+    "lib/ui/screens/chat/transcript_find.dart": {
+      "Icon": 4,
+      "IconButton": 3,
+      "LinearProgressIndicator": 1,
+      "Material": 1,
+      "SingleChildScrollView": 1,
+      "Text": 4,
+      "TextButton": 2,
+      "TextField": 1
+    },
+    "lib/ui/screens/chat/voice_conversation.dart": {
+      "CircularProgressIndicator": 1,
+      "Container": 1,
+      "Icon": 4,
+      "Material": 1,
+      "Scrollbar": 1,
+      "SingleChildScrollView": 1,
+      "SwitchListTile": 1,
+      "Text": 8,
+      "TextButton": 4
+    },
+    "lib/ui/screens/chat/watching.dart": {
+      "Text": 1
+    },
+    "lib/ui/screens/chat_screen.dart": {
+      "ActionChip": 1,
+      "AlertDialog": 2,
+      "AnimatedSize": 1,
+      "AnimatedSwitcher": 1,
+      "AppBar": 2,
+      "Badge": 2,
+      "Chip": 1,
+      "CircularProgressIndicator": 2,
+      "FilledButton": 2,
+      "Icon": 20,
+      "IconButton": 9,
+      "ListTile": 6,
+      "NotificationListener": 1,
+      "Opacity": 1,
+      "OutlinedButton": 1,
+      "Positioned": 2,
+      "Scaffold": 2,
+      "SingleChildScrollView": 3,
+      "SnackBar": 18,
+      "SnackBarAction": 1,
+      "Text": 46,
+      "TextButton": 5,
+      "TextField": 2,
+      "Tooltip": 5
+    },
+    "lib/ui/screens/connection_help_screen.dart": {
+      "AppBar": 1,
+      "FilledButton": 1,
+      "Icon": 1,
+      "IconButton": 1,
+      "Scaffold": 1,
+      "SelectableText": 1,
+      "SnackBar": 1,
+      "Text": 11,
+      "TextField": 1
+    },
+    "lib/ui/screens/context_capsule_screen.dart": {
+      "AppBar": 1,
+      "Card": 2,
+      "CircularProgressIndicator": 1,
+      "FilledButton": 1,
+      "Icon": 7,
+      "ListTile": 1,
+      "OutlinedButton": 2,
+      "Scaffold": 1,
+      "Text": 15,
+      "TextButton": 4,
+      "TextField": 2
+    },
+    "lib/ui/screens/demo_screen.dart": {
+      "Icon": 3,
+      "IconButton": 2,
+      "Scaffold": 1,
+      "SingleChildScrollView": 1,
+      "Text": 5,
+      "TextButton": 1
+    },
+    "lib/ui/screens/development_services_screen.dart": {
+      "AppBar": 1,
+      "Card": 1,
+      "Container": 1,
+      "FilledButton": 3,
+      "Icon": 9,
+      "IconButton": 2,
+      "LinearProgressIndicator": 2,
+      "OutlinedButton": 5,
+      "Scaffold": 1,
+      "SelectableText": 2,
+      "SingleChildScrollView": 1,
+      "Text": 30,
+      "TextButton": 2,
+      "TextField": 3
+    },
+    "lib/ui/screens/external_agents_screen.dart": {
+      "AlertDialog": 1,
+      "AppBar": 4,
+      "Card": 5,
+      "Container": 1,
+      "FilledButton": 6,
+      "Icon": 10,
+      "LinearProgressIndicator": 2,
+      "ListTile": 2,
+      "OutlinedButton": 4,
+      "Scaffold": 4,
+      "SelectableText": 2,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "Text": 48,
+      "TextButton": 5,
+      "TextField": 4
+    },
+    "lib/ui/screens/files_screen.dart": {
+      "ActionChip": 2,
+      "CheckedPopupMenuItem": 3,
+      "Chip": 1,
+      "CircularProgressIndicator": 3,
+      "CloseButton": 1,
+      "Divider": 2,
+      "FilledButton": 1,
+      "GestureDetector": 1,
+      "Icon": 21,
+      "IconButton": 3,
+      "InkWell": 1,
+      "ListTile": 5,
+      "Material": 2,
+      "MouseRegion": 1,
+      "PopupMenuButton": 2,
+      "PopupMenuItem": 1,
+      "SingleChildScrollView": 2,
+      "SnackBar": 8,
+      "Text": 40,
+      "TextButton": 6,
+      "TextField": 1,
+      "VerticalDivider": 2
+    },
+    "lib/ui/screens/global_sessions_screen.dart": {
+      "AppBar": 1,
+      "ChoiceChip": 2,
+      "CircularProgressIndicator": 2,
+      "Container": 3,
+      "DecoratedBox": 1,
+      "FilterChip": 1,
+      "Icon": 6,
+      "IconButton": 1,
+      "InkWell": 1,
+      "ListTile": 1,
+      "OutlinedButton": 1,
+      "PopupMenuButton": 1,
+      "PopupMenuItem": 4,
+      "Scaffold": 1,
+      "SnackBar": 1,
+      "Text": 20,
+      "TextButton": 1,
+      "TextField": 1
+    },
+    "lib/ui/screens/guide_screen.dart": {
+      "AppBar": 1,
+      "CircleAvatar": 1,
+      "Container": 2,
+      "ExpansionTile": 1,
+      "Icon": 5,
+      "IconButton": 1,
+      "ListTile": 1,
+      "Scaffold": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "Text": 23,
+      "Theme": 1
+    },
+    "lib/ui/screens/home_screen.dart": {
+      "AppBar": 1,
+      "Badge": 1,
+      "CustomPaint": 1,
+      "Icon": 3,
+      "InkWell": 1,
+      "NavigationBar": 1,
+      "NavigationBarTheme": 1,
+      "NavigationDestination": 4,
+      "NavigationRail": 1,
+      "Scaffold": 1,
+      "SnackBar": 1,
+      "Text": 5,
+      "Tooltip": 2,
+      "VerticalDivider": 1
+    },
+    "lib/ui/screens/host_management_screen.dart": {
+      "AppBar": 1,
+      "Container": 1,
+      "Icon": 4,
+      "IconButton": 1,
+      "ListTile": 2,
+      "Scaffold": 1,
+      "SelectableText": 2,
+      "SnackBar": 1,
+      "Text": 8,
+      "TextButton": 1
+    },
+    "lib/ui/screens/isolated_task_sheet.dart": {
+      "CircularProgressIndicator": 1,
+      "FilledButton": 4,
+      "Icon": 3,
+      "IconButton": 1,
+      "OutlinedButton": 2,
+      "SingleChildScrollView": 1,
+      "Text": 18,
+      "TextButton": 2,
+      "TextField": 1
+    },
+    "lib/ui/screens/keep_running_screen.dart": {
+      "AppBar": 1,
+      "Icon": 2,
+      "Scaffold": 1,
+      "SnackBar": 1,
+      "Text": 4,
+      "Tooltip": 1
+    },
+    "lib/ui/screens/legacy_drafts_screen.dart": {
+      "AppBar": 1,
+      "FilledButton": 1,
+      "Icon": 4,
+      "IconButton": 1,
+      "ListTile": 1,
+      "OutlinedButton": 1,
+      "Scaffold": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "Text": 10,
+      "TextField": 1
+    },
+    "lib/ui/screens/library/catalog_screen.dart": {
+      "AppBar": 1,
+      "Container": 1,
+      "Scaffold": 1,
+      "Text": 2
+    },
+    "lib/ui/screens/library/command_auth_sheet.dart": {
+      "FilledButton": 2,
+      "LinearProgressIndicator": 1,
+      "Text": 15,
+      "TextButton": 1
+    },
+    "lib/ui/screens/library/commands_screen.dart": {
+      "AppBar": 1,
+      "Divider": 1,
+      "Icon": 3,
+      "ListTile": 1,
+      "Scaffold": 1,
+      "Text": 3,
+      "TextField": 1
+    },
+    "lib/ui/screens/library/credential_sheet.dart": {
+      "AlertDialog": 1,
+      "Card": 1,
+      "FilledButton": 1,
+      "Icon": 2,
+      "LinearProgressIndicator": 1,
+      "ListTile": 1,
+      "SelectableText": 1,
+      "Text": 17,
+      "TextButton": 5,
+      "TextField": 1
+    },
+    "lib/ui/screens/library/integration_tiles.dart": {
+      "AlertDialog": 3,
+      "Chip": 1,
+      "CircularProgressIndicator": 4,
+      "Container": 2,
+      "DropdownButtonFormField": 1,
+      "DropdownMenuItem": 1,
+      "FilledButton": 4,
+      "Form": 1,
+      "Icon": 5,
+      "ListTile": 6,
+      "PopupMenuButton": 1,
+      "PopupMenuItem": 1,
+      "SingleChildScrollView": 2,
+      "Text": 38,
+      "TextButton": 9,
+      "TextField": 2,
+      "TextFormField": 1
+    },
+    "lib/ui/screens/library/integrations_screen.dart": {
+      "AlertDialog": 2,
+      "AppBar": 1,
+      "FilledButton": 2,
+      "Icon": 9,
+      "IconButton": 2,
+      "ListTile": 2,
+      "Scaffold": 1,
+      "SelectableText": 2,
+      "SnackBar": 4,
+      "Text": 27,
+      "TextButton": 6,
+      "TextField": 2
+    },
+    "lib/ui/screens/library/pending_auth_recovery.dart": {
+      "FilledButton": 1,
+      "LinearProgressIndicator": 1,
+      "SnackBar": 1,
+      "Text": 15,
+      "TextButton": 4
+    },
+    "lib/ui/screens/library/references_screen.dart": {
+      "AppBar": 1,
+      "Divider": 1,
+      "Icon": 2,
+      "ListTile": 1,
+      "Scaffold": 1,
+      "SnackBar": 1,
+      "Text": 4
+    },
+    "lib/ui/screens/library/skill_activation.dart": {
+      "CheckboxListTile": 1,
+      "CircularProgressIndicator": 1,
+      "Divider": 2,
+      "FilledButton": 1,
+      "Icon": 2,
+      "IconButton": 1,
+      "ListTile": 1,
+      "SingleChildScrollView": 1,
+      "Text": 7
+    },
+    "lib/ui/screens/library/skills_screen.dart": {
+      "AppBar": 1,
+      "Divider": 2,
+      "Icon": 2,
+      "ListTile": 1,
+      "Scaffold": 1,
+      "SelectableText": 1,
+      "Text": 4
+    },
+    "lib/ui/screens/local_agent_screen.dart": {
+      "AppBar": 1,
+      "Scaffold": 1,
+      "SingleChildScrollView": 1,
+      "Text": 1
+    },
+    "lib/ui/screens/local_terminal_screen.dart": {
+      "AppBar": 1,
+      "CheckedPopupMenuItem": 1,
+      "ColoredBox": 1,
+      "Directionality": 1,
+      "Icon": 2,
+      "IconButton": 1,
+      "PopupMenuButton": 1,
+      "PopupMenuDivider": 1,
+      "PopupMenuItem": 4,
+      "PreferredSize": 1,
+      "Scaffold": 1,
+      "Text": 6
+    },
+    "lib/ui/screens/manage_project_screen.dart": {
+      "AppBar": 1,
+      "Divider": 1,
+      "Icon": 11,
+      "ListTile": 6,
+      "Scaffold": 1,
+      "Text": 13
+    },
+    "lib/ui/screens/managed_workspaces_screen.dart": {
+      "AlertDialog": 1,
+      "AppBar": 1,
+      "CircularProgressIndicator": 4,
+      "DropdownButtonFormField": 1,
+      "DropdownMenuItem": 1,
+      "FilledButton": 2,
+      "FloatingActionButton": 1,
+      "Icon": 12,
+      "IconButton": 5,
+      "LinearProgressIndicator": 1,
+      "ListTile": 5,
+      "PopupMenuButton": 1,
+      "PopupMenuItem": 2,
+      "Scaffold": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "Text": 23,
+      "TextButton": 1,
+      "TextField": 1
+    },
+    "lib/ui/screens/mcp_setup_screen.dart": {
+      "AppBar": 1,
+      "CircularProgressIndicator": 1,
+      "Divider": 1,
+      "FilledButton": 1,
+      "Form": 1,
+      "Icon": 7,
+      "IconButton": 1,
+      "OutlinedButton": 1,
+      "Scaffold": 1,
+      "SegmentedButton": 2,
+      "SwitchListTile": 1,
+      "Text": 18,
+      "TextFormField": 7
+    },
+    "lib/ui/screens/pairing_scanner_screen.dart": {
+      "AppBar": 1,
+      "CircularProgressIndicator": 2,
+      "Container": 1,
+      "FilledButton": 1,
+      "Icon": 2,
+      "IconButton": 1,
+      "Scaffold": 1,
+      "Text": 7,
+      "TextButton": 1
+    },
+    "lib/ui/screens/perf_trace_section.dart": {
+      "SnackBar": 1,
+      "Text": 7
+    },
+    "lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart": {
+      "Divider": 1,
+      "Icon": 1,
+      "ListTile": 1,
+      "SwitchListTile": 2,
+      "Text": 8
+    },
+    "lib/ui/screens/phone_setup/phone_setup_hero.dart": {
+      "SingleChildScrollView": 1,
+      "Text": 2
+    },
+    "lib/ui/screens/phone_setup/phone_setup_progress_screen.dart": {
+      "AppBar": 1,
+      "Scaffold": 1
+    },
+    "lib/ui/screens/phone_setup/phone_setup_ready_screen.dart": {
+      "AppBar": 1,
+      "Icon": 1,
+      "IconButton": 1,
+      "Scaffold": 1,
+      "TextField": 1
+    },
+    "lib/ui/screens/phone_setup/phone_setup_start_screen.dart": {
+      "AnimatedSwitcher": 1,
+      "AppBar": 1,
+      "Divider": 1,
+      "Icon": 2,
+      "Opacity": 1,
+      "Scaffold": 1,
+      "Text": 3,
+      "TextButton": 1,
+      "Transform": 1,
+      "TweenAnimationBuilder": 1
+    },
+    "lib/ui/screens/profile_monitor_screen.dart": {
+      "AppBar": 1,
+      "Divider": 1,
+      "Icon": 8,
+      "IconButton": 1,
+      "ListTile": 4,
+      "Material": 1,
+      "Scaffold": 1,
+      "SnackBar": 1,
+      "Text": 17,
+      "TextButton": 1
+    },
+    "lib/ui/screens/project_folder_actions.dart": {
+      "AlertDialog": 2,
+      "FilledButton": 3,
+      "LinearProgressIndicator": 1,
+      "SnackBar": 1,
+      "Text": 10,
+      "TextButton": 2,
+      "TextField": 2
+    },
+    "lib/ui/screens/project_health_screen.dart": {
+      "AppBar": 1,
+      "CircularProgressIndicator": 3,
+      "FilledButton": 1,
+      "Icon": 13,
+      "IconButton": 1,
+      "ListTile": 11,
+      "Scaffold": 1,
+      "SnackBar": 1,
+      "Text": 29,
+      "TextButton": 2
+    },
+    "lib/ui/screens/project_hub_screen.dart": {
+      "Divider": 1,
+      "Icon": 4,
+      "IconButton": 1,
+      "ListTile": 3,
+      "Text": 5,
+      "TickerMode": 2
+    },
+    "lib/ui/screens/projects_screen.dart": {
+      "AlertDialog": 1,
+      "AppBar": 2,
+      "CircularProgressIndicator": 1,
+      "FilledButton": 1,
+      "Icon": 11,
+      "IconButton": 4,
+      "LinearProgressIndicator": 1,
+      "ListTile": 5,
+      "Scaffold": 2,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "Text": 20,
+      "TextButton": 1,
+      "TextField": 2
+    },
+    "lib/ui/screens/provider_quota_screen.dart": {
+      "AlertDialog": 1,
+      "AppBar": 1,
+      "Card": 1,
+      "CheckboxListTile": 1,
+      "ChoiceChip": 1,
+      "Divider": 1,
+      "DropdownButton": 2,
+      "DropdownMenuItem": 3,
+      "FilledButton": 2,
+      "Icon": 2,
+      "IconButton": 1,
+      "LinearProgressIndicator": 2,
+      "Scaffold": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "SwitchListTile": 1,
+      "Text": 42,
+      "TextButton": 5
+    },
+    "lib/ui/screens/review_workspace.dart": {
+      "AnimatedContainer": 1,
+      "AppBar": 1,
+      "CircularProgressIndicator": 1,
+      "Container": 18,
+      "Divider": 3,
+      "FilledButton": 2,
+      "Icon": 20,
+      "IconButton": 12,
+      "InkWell": 8,
+      "IntrinsicHeight": 2,
+      "ListTile": 3,
+      "Material": 1,
+      "OverflowBar": 1,
+      "PopupMenuButton": 1,
+      "PopupMenuItem": 3,
+      "RotatedBox": 2,
+      "Scaffold": 1,
+      "Scrollbar": 3,
+      "SegmentedButton": 1,
+      "SingleChildScrollView": 5,
+      "SnackBar": 2,
+      "Text": 51,
+      "TextButton": 9,
+      "TextField": 1,
+      "Tooltip": 1,
+      "VerticalDivider": 2
+    },
+    "lib/ui/screens/run_result_screen.dart": {
+      "AppBar": 1,
+      "CircularProgressIndicator": 1,
+      "FilledButton": 1,
+      "MaterialBanner": 1,
+      "Scaffold": 1,
+      "Text": 7,
+      "TextButton": 1
+    },
+    "lib/ui/screens/running_work_sheet.dart": {
+      "AppBar": 1,
+      "CircularProgressIndicator": 1,
+      "Container": 2,
+      "FilledButton": 1,
+      "Icon": 10,
+      "IconButton": 4,
+      "InkWell": 1,
+      "LinearProgressIndicator": 1,
+      "ListTile": 1,
+      "NotificationListener": 1,
+      "OutlinedButton": 1,
+      "Scaffold": 1,
+      "SelectableText": 2,
+      "SnackBar": 3,
+      "SwitchListTile": 1,
+      "Text": 25,
+      "TextButton": 4
+    },
+    "lib/ui/screens/saved_permissions_screen.dart": {
+      "AppBar": 1,
+      "CircularProgressIndicator": 2,
+      "Icon": 4,
+      "IconButton": 2,
+      "ListTile": 2,
+      "Scaffold": 1,
+      "SelectableText": 1,
+      "SnackBar": 1,
+      "Text": 6
+    },
+    "lib/ui/screens/server_capabilities_screen.dart": {
+      "AppBar": 1,
+      "Icon": 1,
+      "ListTile": 1,
+      "Scaffold": 1,
+      "Text": 5
+    },
+    "lib/ui/screens/servers_screen.dart": {
+      "AppBar": 2,
+      "Divider": 2,
+      "ExpansionTile": 2,
+      "Icon": 10,
+      "IconButton": 8,
+      "ListTileTheme": 1,
+      "Scaffold": 2,
+      "SingleChildScrollView": 2,
+      "SnackBar": 1,
+      "Text": 21,
+      "TextField": 8,
+      "Theme": 1
+    },
+    "lib/ui/screens/session_context_screen.dart": {
+      "AppBar": 1,
+      "CircularProgressIndicator": 1,
+      "ClipRRect": 1,
+      "ColoredBox": 1,
+      "Container": 4,
+      "Icon": 4,
+      "IconButton": 1,
+      "ListTile": 1,
+      "Scaffold": 1,
+      "Text": 19,
+      "TextButton": 2
+    },
+    "lib/ui/screens/session_destination_sheet.dart": {
+      "AppBar": 2,
+      "FractionallySizedBox": 2,
+      "Icon": 7,
+      "IconButton": 2,
+      "LinearProgressIndicator": 2,
+      "ListTile": 2,
+      "PreferredSize": 2,
+      "Scaffold": 2,
+      "SnackBar": 2,
+      "Text": 16,
+      "TextField": 1
+    },
+    "lib/ui/screens/session_export_screen.dart": {
+      "AppBar": 1,
+      "Card": 1,
+      "FilledButton": 1,
+      "Icon": 3,
+      "LinearProgressIndicator": 1,
+      "ListTile": 1,
+      "Scaffold": 1,
+      "SwitchListTile": 1,
+      "Text": 13,
+      "TextButton": 1
+    },
+    "lib/ui/screens/session_import_screen.dart": {
+      "AppBar": 1,
+      "Card": 1,
+      "FilledButton": 2,
+      "Icon": 4,
+      "LinearProgressIndicator": 1,
+      "ListTile": 3,
+      "OutlinedButton": 1,
+      "Scaffold": 1,
+      "SelectableText": 1,
+      "Text": 23,
+      "TextButton": 1
+    },
+    "lib/ui/screens/session_note_screen.dart": {
+      "AppBar": 1,
+      "CircularProgressIndicator": 1,
+      "FilledButton": 1,
+      "Icon": 1,
+      "LinearProgressIndicator": 1,
+      "Scaffold": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "Text": 8,
+      "TextButton": 2,
+      "TextField": 1
+    },
+    "lib/ui/screens/session_relations_screen.dart": {
+      "AppBar": 1,
+      "CircularProgressIndicator": 1,
+      "Divider": 2,
+      "Icon": 3,
+      "IconButton": 1,
+      "ListTile": 1,
+      "PopupMenuButton": 1,
+      "PopupMenuItem": 2,
+      "Scaffold": 1,
+      "Text": 9
+    },
+    "lib/ui/screens/settings/default_shell_row.dart": {
+      "Icon": 2,
+      "ListTile": 2,
+      "SnackBar": 1,
+      "Text": 5
+    },
+    "lib/ui/screens/settings/notifications_settings_screen.dart": {
+      "AppBar": 1,
+      "DropdownButton": 1,
+      "DropdownMenuItem": 1,
+      "Icon": 5,
+      "Scaffold": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 2,
+      "SwitchListTile": 9,
+      "Text": 19
+    },
+    "lib/ui/screens/settings/personal_settings_screens.dart": {
+      "AppBar": 2,
+      "ClipRRect": 1,
+      "ColoredBox": 1,
+      "Container": 5,
+      "DecoratedBox": 1,
+      "Icon": 3,
+      "InkWell": 1,
+      "Opacity": 1,
+      "Scaffold": 2,
+      "SegmentedButton": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "SwitchListTile": 1,
+      "Text": 9
+    },
+    "lib/ui/screens/settings/plugins_screen.dart": {
+      "AppBar": 1,
+      "ExpansionTile": 1,
+      "FilledButton": 2,
+      "Icon": 3,
+      "OutlinedButton": 1,
+      "Scaffold": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 2,
+      "Text": 20,
+      "TextButton": 2,
+      "Theme": 1
+    },
+    "lib/ui/screens/settings/server_plugins_section.dart": {
+      "AlertDialog": 1,
+      "CheckboxListTile": 1,
+      "Icon": 1,
+      "IconButton": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "Text": 17,
+      "TextButton": 1
+    },
+    "lib/ui/screens/settings/server_settings_screen.dart": {
+      "AlertDialog": 1,
+      "AppBar": 1,
+      "Icon": 2,
+      "IconButton": 1,
+      "Scaffold": 1,
+      "SnackBar": 2,
+      "Text": 6,
+      "TextButton": 1
+    },
+    "lib/ui/screens/settings_screen.dart": {
+      "AppBar": 1,
+      "Icon": 4,
+      "IconButton": 2,
+      "Scaffold": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "Text": 3,
+      "TextField": 1
+    },
+    "lib/ui/screens/staged_revert_screen.dart": {
+      "AppBar": 1,
+      "CheckboxListTile": 1,
+      "FilledButton": 3,
+      "Icon": 1,
+      "LinearProgressIndicator": 1,
+      "ListTile": 1,
+      "OutlinedButton": 1,
+      "Scaffold": 1,
+      "SingleChildScrollView": 2,
+      "Text": 30,
+      "TextButton": 3
+    },
+    "lib/ui/screens/tailscale_setup_screen.dart": {
+      "AppBar": 1,
+      "Card": 1,
+      "ExpansionTile": 1,
+      "FilledButton": 2,
+      "Icon": 3,
+      "OutlinedButton": 1,
+      "Scaffold": 1,
+      "Text": 19,
+      "TextButton": 3,
+      "TextField": 1
+    },
+    "lib/ui/screens/team/agent_output_screen.dart": {
+      "AppBar": 1,
+      "Divider": 1,
+      "Icon": 1,
+      "IconButton": 1,
+      "NotificationListener": 1,
+      "Scaffold": 1,
+      "SnackBar": 1,
+      "SwitchListTile": 1,
+      "Text": 5
+    },
+    "lib/ui/screens/team/agent_screen.dart": {
+      "AppBar": 1,
+      "ExpansionTile": 1,
+      "Icon": 5,
+      "IconButton": 1,
+      "Opacity": 1,
+      "PopupMenuButton": 1,
+      "PopupMenuItem": 2,
+      "Scaffold": 1,
+      "SingleChildScrollView": 1,
+      "Text": 27
+    },
+    "lib/ui/screens/team/gate_sheet.dart": {
+      "ActionChip": 1,
+      "ExpansionTile": 1,
+      "Icon": 6,
+      "InkWell": 1,
+      "SingleChildScrollView": 1,
+      "Text": 22,
+      "TextField": 1,
+      "Theme": 1
+    },
+    "lib/ui/screens/team/merge_section.dart": {
+      "DraggableScrollableSheet": 1,
+      "Icon": 4,
+      "Text": 12
+    },
+    "lib/ui/screens/team/policy_block.dart": {
+      "Chip": 1,
+      "Icon": 2,
+      "Text": 7
+    },
+    "lib/ui/screens/team/run_screen.dart": {
+      "AppBar": 1,
+      "ChoiceChip": 1,
+      "Container": 2,
+      "Icon": 10,
+      "IconButton": 1,
+      "InkWell": 1,
+      "Material": 1,
+      "Opacity": 1,
+      "PopupMenuButton": 1,
+      "PopupMenuItem": 2,
+      "Positioned": 1,
+      "Scaffold": 1,
+      "SegmentedButton": 1,
+      "SingleChildScrollView": 2,
+      "Tab": 1,
+      "TabBar": 1,
+      "TabBarView": 1,
+      "Text": 22
+    },
+    "lib/ui/screens/team/start_run_sheet.dart": {
+      "DropdownButtonFormField": 2,
+      "DropdownMenuItem": 3,
+      "Icon": 5,
+      "InkWell": 1,
+      "SingleChildScrollView": 1,
+      "Text": 15,
+      "TextField": 3
+    },
+    "lib/ui/screens/team/team_agents_screen.dart": {
+      "AppBar": 1,
+      "Icon": 1,
+      "Opacity": 1,
+      "Scaffold": 1,
+      "Text": 2
+    },
+    "lib/ui/screens/team/team_board_screen.dart": {
+      "AppBar": 1,
+      "CheckedPopupMenuItem": 1,
+      "ClipRRect": 1,
+      "DecoratedBox": 1,
+      "Icon": 2,
+      "IconButton": 1,
+      "Opacity": 1,
+      "PageView": 1,
+      "PopupMenuButton": 1,
+      "Scaffold": 1,
+      "Text": 4
+    },
+    "lib/ui/screens/team/team_home_screen.dart": {
+      "AppBar": 1,
+      "CheckedPopupMenuItem": 1,
+      "Icon": 8,
+      "IconButton": 4,
+      "Opacity": 1,
+      "PopupMenuButton": 1,
+      "Scaffold": 1,
+      "SnackBar": 1,
+      "SwitchListTile": 1,
+      "Text": 7,
+      "TextField": 1
+    },
+    "lib/ui/screens/team/team_intro_screen.dart": {
+      "AppBar": 1,
+      "Scaffold": 1,
+      "Text": 3
+    },
+    "lib/ui/screens/team/team_needs_you.dart": {
+      "Icon": 1,
+      "Text": 3
+    },
+    "lib/ui/screens/team/work_graph.dart": {
+      "CustomPaint": 1,
+      "GestureDetector": 1,
+      "Icon": 1,
+      "IconButton": 1,
+      "InteractiveViewer": 1,
+      "Positioned": 1
+    },
+    "lib/ui/screens/team/work_sheet.dart": {
+      "ActionChip": 1,
+      "Container": 1,
+      "ExpansionTile": 1,
+      "Icon": 4,
+      "SingleChildScrollView": 1,
+      "Text": 10,
+      "Theme": 1
+    },
+    "lib/ui/screens/team_conversation/team_conversation.dart": {
+      "Icon": 1
+    },
+    "lib/ui/screens/terminal_screen.dart": {
+      "AlertDialog": 1,
+      "AppBar": 4,
+      "CircularProgressIndicator": 1,
+      "ColoredBox": 1,
+      "Container": 3,
+      "Directionality": 1,
+      "Divider": 1,
+      "FilledButton": 1,
+      "FloatingActionButton": 1,
+      "Icon": 6,
+      "IconButton": 4,
+      "LinearProgressIndicator": 1,
+      "ListTile": 1,
+      "MaterialBanner": 1,
+      "OutlinedButton": 1,
+      "PopupMenuButton": 1,
+      "PopupMenuItem": 2,
+      "PreferredSize": 2,
+      "Scaffold": 4,
+      "SegmentedButton": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "Text": 17,
+      "TextButton": 2,
+      "TextField": 1,
+      "TextFormField": 1
+    },
+    "lib/ui/screens/termux_processes_screen.dart": {
+      "AppBar": 1,
+      "CircularProgressIndicator": 1,
+      "FilledButton": 1,
+      "Icon": 8,
+      "IconButton": 2,
+      "ListTile": 1,
+      "OutlinedButton": 1,
+      "Scaffold": 1,
+      "SelectableText": 2,
+      "SingleChildScrollView": 1,
+      "Text": 18,
+      "TextButton": 1
+    },
+    "lib/ui/screens/termux_setup_screen.dart": {
+      "AppBar": 4,
+      "CircleAvatar": 1,
+      "Container": 4,
+      "DecoratedBox": 2,
+      "Divider": 3,
+      "ExpansionTile": 1,
+      "Icon": 7,
+      "Opacity": 1,
+      "RadioGroup": 1,
+      "RadioListTile": 3,
+      "Scaffold": 4,
+      "SelectableText": 1,
+      "SnackBar": 6,
+      "Text": 54
+    },
+    "lib/ui/screens/termux_storage_screen.dart": {
+      "AppBar": 1,
+      "CircularProgressIndicator": 3,
+      "ExpansionTile": 1,
+      "FilledButton": 2,
+      "Icon": 6,
+      "IconButton": 1,
+      "ListTile": 1,
+      "OutlinedButton": 1,
+      "Scaffold": 1,
+      "Text": 22,
+      "TextButton": 1
+    },
+    "lib/ui/screens/tools_screen.dart": {
+      "AppBar": 1,
+      "Divider": 5,
+      "FractionallySizedBox": 1,
+      "Icon": 7,
+      "IconButton": 4,
+      "InkWell": 2,
+      "Scaffold": 1,
+      "SelectableText": 2,
+      "SingleChildScrollView": 2,
+      "SnackBar": 1,
+      "Text": 12,
+      "TextButton": 1,
+      "TextField": 1
+    },
+    "lib/ui/screens/usage_hub_screen.dart": {
+      "AppBar": 2,
+      "DefaultTabController": 1,
+      "Scaffold": 2,
+      "Tab": 1,
+      "TabBar": 1,
+      "TabBarView": 1,
+      "Text": 1
+    },
+    "lib/ui/screens/usage_screen.dart": {
+      "AlertDialog": 1,
+      "AppBar": 1,
+      "Card": 3,
+      "ChoiceChip": 1,
+      "DropdownButtonFormField": 2,
+      "DropdownMenuItem": 4,
+      "FilledButton": 1,
+      "Form": 1,
+      "Icon": 3,
+      "IconButton": 1,
+      "LinearProgressIndicator": 2,
+      "Scaffold": 1,
+      "SingleChildScrollView": 1,
+      "Text": 61,
+      "TextButton": 6,
+      "TextFormField": 2
+    },
+    "lib/ui/screens/web_sources_screen.dart": {
+      "AppBar": 1,
+      "CheckboxListTile": 1,
+      "Divider": 2,
+      "DropdownButtonFormField": 1,
+      "DropdownMenuItem": 1,
+      "ExpansionTile": 1,
+      "FilledButton": 2,
+      "Icon": 7,
+      "LinearProgressIndicator": 1,
+      "OutlinedButton": 1,
+      "Scaffold": 1,
+      "SelectableText": 1,
+      "Text": 26,
+      "TextButton": 5,
+      "TextField": 4
+    },
+    "lib/ui/screens/workspace_screen.dart": {
+      "AlertDialog": 2,
+      "Container": 2,
+      "Dismissible": 1,
+      "Divider": 1,
+      "FadeTransition": 1,
+      "Icon": 23,
+      "IconButton": 2,
+      "InkWell": 1,
+      "ListTile": 7,
+      "Material": 3,
+      "PopupMenuButton": 3,
+      "PopupMenuDivider": 1,
+      "PopupMenuItem": 12,
+      "SegmentedButton": 1,
+      "SelectableText": 4,
+      "SingleChildScrollView": 3,
+      "SnackBar": 2,
+      "SnackBarAction": 1,
+      "Text": 39,
+      "TextButton": 5,
+      "TextField": 1,
+      "Tooltip": 4
+    },
+    "lib/ui/screens/worktrees_screen.dart": {
+      "AlertDialog": 1,
+      "AppBar": 1,
+      "CircularProgressIndicator": 4,
+      "Divider": 1,
+      "FilledButton": 2,
+      "FloatingActionButton": 1,
+      "Icon": 8,
+      "IconButton": 1,
+      "ListTile": 2,
+      "PopupMenuButton": 1,
+      "PopupMenuItem": 3,
+      "Scaffold": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "Text": 16,
+      "TextButton": 1,
+      "TextField": 1
+    },
+    "lib/ui/search/search_index.dart": {
+      "SingleChildScrollView": 1
+    },
+    "lib/ui/widgets/agent_blocks.dart": {
+      "Container": 1,
+      "Icon": 4,
+      "IconButton": 1,
+      "InkWell": 1,
+      "Material": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 2,
+      "Text": 5
+    },
+    "lib/ui/widgets/appearance_picker.dart": {
+      "ChoiceChip": 1,
+      "DecoratedBox": 1,
+      "FilledButton": 2,
+      "FilterChip": 1,
+      "Icon": 2,
+      "ListTile": 1,
+      "Material": 1,
+      "Text": 16,
+      "TextButton": 1,
+      "Theme": 1
+    },
+    "lib/ui/widgets/builtin_team_section.dart": {
+      "Card": 1,
+      "FilledButton": 3,
+      "Icon": 1,
+      "LinearProgressIndicator": 2,
+      "SelectableText": 1,
+      "Text": 15,
+      "TextButton": 3
+    },
+    "lib/ui/widgets/completion_digest.dart": {
+      "Icon": 2,
+      "SnackBar": 2,
+      "Text": 12,
+      "TextButton": 5
+    },
+    "lib/ui/widgets/confirm_sheet.dart": {
+      "Container": 1,
+      "Icon": 1
+    },
+    "lib/ui/widgets/connection_status_banner.dart": {
+      "Container": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "Text": 2
+    },
+    "lib/ui/widgets/delimited_file_preview.dart": {
+      "Container": 2,
+      "Directionality": 1,
+      "IntrinsicHeight": 1,
+      "Scrollbar": 1,
+      "SelectionArea": 1,
+      "SingleChildScrollView": 2,
+      "Text": 8,
+      "TextButton": 2
+    },
+    "lib/ui/widgets/diff_view.dart": {
+      "AppBar": 1,
+      "CloseButton": 1,
+      "Container": 2,
+      "Icon": 2,
+      "IconButton": 1,
+      "InkWell": 1,
+      "Material": 2,
+      "Scaffold": 1,
+      "SingleChildScrollView": 1,
+      "SliverPersistentHeader": 1,
+      "SnackBar": 2,
+      "Text": 13,
+      "Tooltip": 1
+    },
+    "lib/ui/widgets/entrance.dart": {
+      "Opacity": 1,
+      "Transform": 1,
+      "TweenAnimationBuilder": 1
+    },
+    "lib/ui/widgets/external_link.dart": {
+      "SnackBar": 3,
+      "Text": 3
+    },
+    "lib/ui/widgets/file_preview.dart": {
+      "CircularProgressIndicator": 2,
+      "ColoredBox": 2,
+      "DecoratedBox": 2,
+      "Directionality": 1,
+      "Divider": 1,
+      "Icon": 6,
+      "IconButton": 4,
+      "Image": 1,
+      "InteractiveViewer": 1,
+      "Positioned": 2,
+      "Scaffold": 1,
+      "ScaffoldMessenger": 1,
+      "Scrollbar": 1,
+      "SelectableText": 1,
+      "SelectionArea": 1,
+      "SelectionContainer": 1,
+      "SingleChildScrollView": 3,
+      "SnackBar": 3,
+      "SnackBarAction": 1,
+      "Text": 15,
+      "TextButton": 2
+    },
+    "lib/ui/widgets/first_reply_notify_card.dart": {
+      "SnackBar": 1,
+      "Text": 1
+    },
+    "lib/ui/widgets/first_run_choice.dart": {
+      "Card": 1,
+      "Icon": 2,
+      "ListTile": 1,
+      "Text": 2
+    },
+    "lib/ui/widgets/folder_browser.dart": {
+      "Divider": 1,
+      "Icon": 1,
+      "IconButton": 1,
+      "SingleChildScrollView": 1,
+      "Text": 3,
+      "TextField": 1
+    },
+    "lib/ui/widgets/form_renderer.dart": {
+      "AnimatedSize": 2,
+      "CheckboxListTile": 1,
+      "CircularProgressIndicator": 1,
+      "Divider": 1,
+      "DropdownMenu": 1,
+      "FilledButton": 1,
+      "FilterChip": 1,
+      "Icon": 4,
+      "IconButton": 1,
+      "InkWell": 1,
+      "InputChip": 1,
+      "Material": 4,
+      "RadioGroup": 1,
+      "RadioListTile": 2,
+      "Scaffold": 1,
+      "SingleChildScrollView": 1,
+      "SwitchListTile": 1,
+      "Text": 26,
+      "TextButton": 1,
+      "TextField": 5
+    },
+    "lib/ui/widgets/info_label.dart": {
+      "FilledButton": 1,
+      "Icon": 1,
+      "InkWell": 1,
+      "Text": 4
+    },
+    "lib/ui/widgets/language_picker.dart": {
+      "Icon": 4,
+      "IconButton": 1,
+      "ListTile": 2,
+      "SingleChildScrollView": 1,
+      "Text": 7
+    },
+    "lib/ui/widgets/local_agent_onboarding.dart": {
+      "CircularProgressIndicator": 1,
+      "Container": 1,
+      "FilledButton": 6,
+      "Icon": 9,
+      "LinearProgressIndicator": 2,
+      "OutlinedButton": 2,
+      "PopupMenuButton": 1,
+      "PopupMenuItem": 3,
+      "RadioGroup": 1,
+      "RadioListTile": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "Text": 36,
+      "TextButton": 2,
+      "TextField": 1
+    },
+    "lib/ui/widgets/local_server_row.dart": {
+      "Text": 1
+    },
+    "lib/ui/widgets/managed_server_recovery_option.dart": {
+      "Text": 8
+    },
+    "lib/ui/widgets/markdown.dart": {
+      "AppBar": 1,
+      "CheckedPopupMenuItem": 1,
+      "ClipRRect": 1,
+      "Container": 3,
+      "DataTable": 1,
+      "DecoratedBox": 1,
+      "DefaultTextStyle": 1,
+      "Directionality": 1,
+      "Divider": 1,
+      "ExcludeFocus": 2,
+      "GestureDetector": 1,
+      "Icon": 4,
+      "IconButton": 2,
+      "PopupMenuButton": 1,
+      "PopupMenuItem": 1,
+      "Scaffold": 1,
+      "SelectableText": 2,
+      "SingleChildScrollView": 3,
+      "SnackBar": 2,
+      "SnackBarAction": 1,
+      "Text": 15
+    },
+    "lib/ui/widgets/mobile_task_view.dart": {
+      "ClipRRect": 1,
+      "FilledButton": 1,
+      "Icon": 4,
+      "LinearProgressIndicator": 1,
+      "OutlinedButton": 1,
+      "SnackBar": 1,
+      "Text": 9,
+      "TextButton": 1
+    },
+    "lib/ui/widgets/model_shortcuts.dart": {
+      "Icon": 1,
+      "PopupMenuButton": 1,
+      "PopupMenuItem": 3,
+      "Text": 3
+    },
+    "lib/ui/widgets/other_projects_panel.dart": {
+      "Icon": 2,
+      "IconButton": 1,
+      "PopupMenuItem": 1,
+      "Text": 1
+    },
+    "lib/ui/widgets/other_servers_panel.dart": {
+      "Icon": 2
+    },
+    "lib/ui/widgets/pdf_file_preview.dart": {
+      "CircularProgressIndicator": 1,
+      "Icon": 2,
+      "Image": 1,
+      "InteractiveViewer": 1,
+      "Text": 8,
+      "TextButton": 4
+    },
+    "lib/ui/widgets/phone_server_card.dart": {
+      "Container": 1,
+      "Directionality": 1,
+      "Icon": 1,
+      "PopupMenuButton": 1,
+      "PopupMenuItem": 5,
+      "SnackBar": 1,
+      "Text": 10
+    },
+    "lib/ui/widgets/phone_server_restart.dart": {
+      "SnackBar": 1,
+      "Text": 1
+    },
+    "lib/ui/widgets/pickers.dart": {
+      "AlertDialog": 3,
+      "ChoiceChip": 3,
+      "CircularProgressIndicator": 2,
+      "Container": 2,
+      "DecoratedBox": 1,
+      "Divider": 1,
+      "DraggableScrollableSheet": 1,
+      "DropdownButtonFormField": 2,
+      "DropdownMenuItem": 4,
+      "FilledButton": 2,
+      "Icon": 15,
+      "IconButton": 6,
+      "InkWell": 2,
+      "Material": 4,
+      "SingleChildScrollView": 3,
+      "Text": 37,
+      "TextButton": 7,
+      "TextField": 1
+    },
+    "lib/ui/widgets/product_states.dart": {
+      "Container": 4,
+      "FilledButton": 2,
+      "FractionallySizedBox": 2,
+      "GestureDetector": 1,
+      "Icon": 4,
+      "ListTile": 1,
+      "MaterialBanner": 1,
+      "Opacity": 1,
+      "SingleChildScrollView": 2,
+      "SnackBar": 2,
+      "Text": 15,
+      "TextButton": 3
+    },
+    "lib/ui/widgets/provider_logo.dart": {
+      "ClipRRect": 1,
+      "Container": 1,
+      "Image": 1,
+      "Opacity": 1,
+      "Text": 2,
+      "TweenAnimationBuilder": 1
+    },
+    "lib/ui/widgets/question_options.dart": {
+      "Container": 1,
+      "Icon": 1,
+      "InkWell": 1,
+      "Text": 3,
+      "TextField": 1
+    },
+    "lib/ui/widgets/quota_monitor_section.dart": {
+      "Divider": 1,
+      "DropdownButton": 1,
+      "DropdownMenuItem": 1,
+      "SnackBar": 1,
+      "Text": 15,
+      "TextButton": 3
+    },
+    "lib/ui/widgets/reader_preferences.dart": {
+      "Icon": 1,
+      "IconButton": 1,
+      "SnackBar": 1,
+      "Text": 1
+    },
+    "lib/ui/widgets/run_command_dialog.dart": {
+      "AlertDialog": 1,
+      "DropdownButtonFormField": 1,
+      "DropdownMenuItem": 2,
+      "FilledButton": 1,
+      "Text": 6,
+      "TextButton": 1,
+      "TextField": 1
+    },
+    "lib/ui/widgets/run_result_view.dart": {
+      "DraggableScrollableSheet": 1,
+      "FilledButton": 1,
+      "Icon": 7,
+      "ListTile": 2,
+      "Material": 1,
+      "Text": 26
+    },
+    "lib/ui/widgets/server_switcher_sheet.dart": {
+      "CircleAvatar": 1,
+      "Divider": 2,
+      "Icon": 6,
+      "ListTile": 4,
+      "OutlinedButton": 1,
+      "SingleChildScrollView": 1,
+      "Text": 7
+    },
+    "lib/ui/widgets/session_handoff.dart": {
+      "AlertDialog": 1,
+      "FilledButton": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "Text": 7,
+      "TextButton": 1
+    },
+    "lib/ui/widgets/session_handoff_sheets.dart": {
+      "Container": 3,
+      "CustomPaint": 1,
+      "Divider": 1,
+      "Icon": 4,
+      "IconButton": 1,
+      "OutlinedButton": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 3,
+      "SnackBar": 1,
+      "Text": 12
+    },
+    "lib/ui/widgets/session_inventory_footer.dart": {
+      "LinearProgressIndicator": 1,
+      "Text": 3,
+      "TextButton": 2
+    },
+    "lib/ui/widgets/session_read_state.dart": {
+      "Text": 1
+    },
+    "lib/ui/widgets/setup_progress_view.dart": {
+      "AnimatedSwitcher": 1,
+      "Container": 1,
+      "Directionality": 1,
+      "Divider": 1,
+      "FadeTransition": 1,
+      "Icon": 1,
+      "ScaleTransition": 1,
+      "SingleChildScrollView": 3,
+      "Text": 5,
+      "TextButton": 1,
+      "TweenAnimationBuilder": 1
+    },
+    "lib/ui/widgets/setup_terminal.dart": {
+      "Container": 1,
+      "Icon": 2,
+      "IconButton": 1,
+      "Scrollbar": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "Text": 3
+    },
+    "lib/ui/widgets/svg_file_preview.dart": {
+      "ColoredBox": 1,
+      "Directionality": 1,
+      "InteractiveViewer": 1,
+      "SingleChildScrollView": 1,
+      "Text": 6,
+      "TextButton": 2
+    },
+    "lib/ui/widgets/team_agent_row.dart": {
+      "Text": 1
+    },
+    "lib/ui/widgets/team_board_card.dart": {
+      "CustomPaint": 1,
+      "GestureDetector": 1,
+      "Icon": 3,
+      "IconButton": 1,
+      "Text": 3
+    },
+    "lib/ui/widgets/team_board_move_sheet.dart": {
+      "Divider": 1,
+      "Icon": 1,
+      "SingleChildScrollView": 2,
+      "Text": 6,
+      "TextField": 1
+    },
+    "lib/ui/widgets/team_board_tabs.dart": {
+      "Container": 1,
+      "InkWell": 1,
+      "Material": 1,
+      "ScaleTransition": 1,
+      "SingleChildScrollView": 1,
+      "Text": 2
+    },
+    "lib/ui/widgets/team_card.dart": {
+      "Icon": 1,
+      "InkWell": 2,
+      "Material": 1,
+      "Opacity": 1,
+      "Text": 3
+    },
+    "lib/ui/widgets/team_controls.dart": {
+      "Container": 2,
+      "Icon": 2,
+      "IconButton": 1,
+      "Text": 3,
+      "TextButton": 1,
+      "TextField": 1
+    },
+    "lib/ui/widgets/team_cycle_strip.dart": {
+      "DecoratedBox": 3,
+      "FilledButton": 2,
+      "Icon": 5,
+      "ScaleTransition": 1,
+      "SingleChildScrollView": 1,
+      "Text": 10,
+      "TextButton": 1
+    },
+    "lib/ui/widgets/team_discover.dart": {
+      "Icon": 1,
+      "IconButton": 1,
+      "Material": 1
+    },
+    "lib/ui/widgets/team_discovery_card.dart": {
+      "Card": 1,
+      "FilledButton": 1,
+      "Icon": 1,
+      "Text": 4,
+      "TextButton": 1
+    },
+    "lib/ui/widgets/team_host_form.dart": {
+      "ChoiceChip": 1,
+      "Container": 1,
+      "Directionality": 1,
+      "FilledButton": 1,
+      "Icon": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 2,
+      "Text": 12,
+      "TextButton": 1,
+      "TextField": 2
+    },
+    "lib/ui/widgets/team_moments.dart": {
+      "OverflowBox": 1,
+      "Transform": 1
+    },
+    "lib/ui/widgets/team_now.dart": {
+      "SnackBar": 1,
+      "Text": 1
+    },
+    "lib/ui/widgets/team_phone_onboarding.dart": {
+      "CircularProgressIndicator": 1,
+      "Container": 1,
+      "FilledButton": 7,
+      "Icon": 9,
+      "OutlinedButton": 1,
+      "RadioGroup": 1,
+      "RadioListTile": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "Text": 28,
+      "TextField": 1
+    },
+    "lib/ui/widgets/team_phone_section.dart": {
+      "Card": 1,
+      "Container": 1,
+      "FilledButton": 5,
+      "Icon": 11,
+      "ListTile": 1,
+      "OutlinedButton": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 2,
+      "SnackBar": 2,
+      "Text": 24,
+      "TextButton": 2
+    },
+    "lib/ui/widgets/team_receipt.dart": {
+      "ActionChip": 1,
+      "Icon": 1,
+      "Text": 1
+    },
+    "lib/ui/widgets/team_task_row.dart": {
+      "Container": 1,
+      "Icon": 1,
+      "Material": 1
+    },
+    "lib/ui/widgets/team_technical_details.dart": {
+      "Icon": 1,
+      "IconButton": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "SnackBar": 1,
+      "Text": 11
+    },
+    "lib/ui/widgets/technical_direction.dart": {
+      "Directionality": 1
+    },
+    "lib/ui/widgets/terminal_view.dart": {
+      "Container": 1,
+      "SelectableText": 1,
+      "SingleChildScrollView": 1,
+      "Text": 2,
+      "TextButton": 2
+    },
+    "lib/ui/widgets/tool_card.dart": {
+      "AnimatedContainer": 1,
+      "AnimatedRotation": 1,
+      "CircularProgressIndicator": 4,
+      "ClipRRect": 2,
+      "ClipRect": 1,
+      "ColoredBox": 1,
+      "Container": 15,
+      "DecoratedBox": 1,
+      "Icon": 17,
+      "IconButton": 1,
+      "Image": 1,
+      "InkWell": 3,
+      "IntrinsicWidth": 1,
+      "Material": 1,
+      "Positioned": 1,
+      "SelectableText": 3,
+      "ShaderMask": 1,
+      "SingleChildScrollView": 1,
+      "Text": 32,
+      "TextButton": 3
+    },
+    "lib/ui/widgets/transcript_display_toggles.dart": {
+      "Icon": 2,
+      "SwitchListTile": 2,
+      "Text": 4
+    },
+    "lib/ui/widgets/transcript_highlight.dart": {
+      "Container": 1,
+      "Text": 2
+    }
+  }
+}
+--- end baseline ---
+00:00 +8: test/kit_ratchet_test.dart: G15: no width literals outside the kit
+00:00 +9: test/kit_ratchet_test.dart: G16: every UI component comes from the kit
+00:00 +10: test/kit_ratchet_test.dart: every allowlist entry gives a real reason
+00:00 +11: test/kit_ratchet_test.dart: the Flutter widget catalogue exists and is non-trivial
+00:00 +12: test/kit_ratchet_test.dart: counters on fixture strings (proves the regexes, not just files) G1 matches showDialog<T>( but not showKitDialog( or a comment
+00:00 +13: test/kit_ratchet_test.dart: counters on fixture strings (proves the regexes, not just files) SnackBar( does not count showSnackBar( or KitSnackBar(
+00:00 +14: test/kit_ratchet_test.dart: counters on fixture strings (proves the regexes, not just files) G16 counts real widget constructions, not static members or app classes
+00:00 +15: test/kit_ratchet_test.dart: counters on fixture strings (proves the regexes, not just files) G15 counts a width compared to a literal, not BoxConstraints(maxWidth: n)
+00:01 +16: test/accessibility_guidelines_test.dart: dark: chat meets the accessibility guidelines
+00:02 +17: test/text_scale_overflow_test.dart: chat transcript and composer lay out at 2.5x
+00:02 +18: test/text_scale_overflow_test.dart: chat transcript and composer lay out at 2.5x
+00:02 +19: test/accessibility_guidelines_test.dart: dark: the home shell meets the guidelines
+00:02 +20: test/accessibility_guidelines_test.dart: dark: the home shell meets the guidelines
+00:02 +21: test/text_scale_overflow_test.dart: workspace lays out at 2.5x
+00:02 +22: test/accessibility_guidelines_test.dart: dark: workspace meets the guidelines
+00:02 +23: test/text_scale_overflow_test.dart: the home shell lays out at 2.5x
+00:02 +24: test/text_scale_overflow_test.dart: the home shell lays out at 2.5x
+00:02 +25: test/text_scale_overflow_test.dart: the home shell lays out at 2.5x
+00:03 +26: test/accessibility_guidelines_test.dart: dark: the session-first workspace meets the guidelines
+00:03 +27: test/text_scale_overflow_test.dart: the Settings tab lays out at 2.5x
+00:03 +28: test/text_scale_overflow_test.dart: the Settings tab lays out at 2.5x
+00:03 +29: test/accessibility_guidelines_test.dart: dark: settings meets the guidelines
+00:03 +30: test/text_scale_overflow_test.dart: settings lays out at 2.5x
+00:03 +31: test/accessibility_guidelines_test.dart: dark: servers first run meets the guidelines
+00:03 +32: test/accessibility_guidelines_test.dart: dark: servers first run meets the guidelines
+00:03 +33: test/text_scale_overflow_test.dart: the permission sheet lays out at 2.5x
+00:03 +34: test/accessibility_guidelines_test.dart: dark: the permission sheet meets the guidelines
+00:03 +35: test/text_scale_overflow_test.dart: the form renderer lays out at 2.5x
+00:03 +36: test/accessibility_guidelines_test.dart: dark: the form renderer meets the guidelines
+00:03 +37: test/accessibility_guidelines_test.dart: light: chat meets the accessibility guidelines
+00:03 +38: test/accessibility_guidelines_test.dart: light: the busy chat composer meets the guidelines
+00:03 +39: test/accessibility_guidelines_test.dart: light: the home shell meets the guidelines
+00:04 +40: test/accessibility_guidelines_test.dart: light: workspace meets the guidelines
+00:04 +41: test/accessibility_guidelines_test.dart: light: Activity meets the guidelines
+00:04 +42: test/accessibility_guidelines_test.dart: light: the Settings tab meets the guidelines
+00:04 +43: test/accessibility_guidelines_test.dart: light: the session-first workspace meets the guidelines
+00:04 +44: test/accessibility_guidelines_test.dart: light: manage project meets the guidelines
+00:04 +45: test/accessibility_guidelines_test.dart: light: settings meets the guidelines
+00:04 +46: test/accessibility_guidelines_test.dart: light: servers first run meets the guidelines
+00:04 +47: test/accessibility_guidelines_test.dart: light: the permission sheet meets the guidelines
+00:04 +48: test/accessibility_guidelines_test.dart: light: the form renderer meets the guidelines
+00:05 +49: test/theme_roles_test.dart: Graphite is the default and keeps the spec palette
+00:05 +50: test/theme_roles_test.dart: Graphite meets every contrast floor in both modes
+00:05 +51: test/theme_roles_test.dart: every theme pack supplies the whole role set, readable
+00:05 +52: test/theme_roles_test.dart: a custom accent and ground derive a readable role set
+00:05 +53: test/theme_roles_test.dart: withAccent swaps only the accent and keeps it readable
+00:05 +54: test/theme_roles_test.dart: packs change colours only: shape, space and type are fixed
+00:05 +55: test/theme_roles_test.dart: type sizes are whole pixels and the faces are Geist
+00:05 +56: test/theme_roles_test.dart: the ΔE2000 used for LOOK-39 matches the published reference
+00:05 +57: test/theme_roles_test.dart: Graphite offers green, blue, teal and violet; teal replaced orange
+00:05 +58: test/theme_roles_test.dart: every Graphite accent keeps clear of attention and danger (LOOK-39)
+00:05 +59: test/theme_roles_test.dart: floating glass has its own rim and shadow roles in every theme
+00:05 +60: test/theme_roles_test.dart: every Material type slot is one role, with no other size
+00:05 +61: test/theme_roles_test.dart: a row value is the secondary role and a typed name is mono 13
+00:05 +62: test/app_theme_test.dart: dark theme keeps the app coherent, legible, and touch friendly
+00:05 +63: test/app_theme_test.dart: light theme keeps the same deliberate contrast and touch targets
+00:05 +64: test/app_theme_test.dart: supporting text remains readable on every default surface tier
+00:05 +65: test/app_theme_test.dart: every role carries Geist; the one shadow is the glass shadow
+00:05 +66: test/app_theme_test.dart: no theme elevation lifts content (LOOK-20)
+00:05 +67: test/app_theme_test.dart: the top bar title is the headline role (LOOK-17)
+00:06 +68: test/theme_packs_test.dart: the default pack is Graphite, the visual language palette
+00:06 +69: test/theme_packs_test.dart: every static pack has complete, distinct dark and light palettes
+00:06 +70: test/theme_packs_test.dart: every theme keeps text and controls readable in both modes
+00:06 +71: test/theme_packs_test.dart: a stored theme from before the new ones still loads
+00:06 +72: test/theme_packs_test.dart: theme pack persistence round-trips through the store
+00:06 +73: test/theme_packs_test.dart: switching packs restyles the app live
+00:06 +74: test/kit_glass_test.dart: where the phone cannot run the shader glass is the frosted blur, clipped to its rounded shape
+00:07 +75: test/theme_packs_test.dart: the appearance page picks packs and gates Material You
+00:07 +76: test/theme_packs_test.dart: the appearance page picks packs and gates Material You
+00:07 +77: test/theme_packs_test.dart: the appearance page picks packs and gates Material You
+00:07 +78: test/theme_packs_test.dart: the appearance page picks packs and gates Material You
+00:07 +79: test/theme_packs_test.dart: the appearance page picks packs and gates Material You
+00:07 +80: test/theme_packs_test.dart: the appearance page picks packs and gates Material You
+00:07 +81: test/theme_packs_test.dart: the appearance page picks packs and gates Material You
+00:07 +82: test/theme_packs_test.dart: the appearance page picks packs and gates Material You
+00:07 +83: test/theme_packs_test.dart: the appearance page picks packs and gates Material You
+00:07 +84: test/theme_packs_test.dart: the appearance page picks packs and gates Material You
+00:07 +85: test/theme_packs_test.dart: the appearance page picks packs and gates Material You
+00:07 +85 ~1: test/theme_packs_test.dart: the appearance page picks packs and gates Material You
+00:07 +85 ~2: test/theme_packs_test.dart: the appearance page picks packs and gates Material You
+00:07 +86 ~2: test/theme_packs_test.dart: a harvested Material You pack becomes selectable
+00:08 +87 ~2: test/glass_surface_test.dart: high contrast uses opaque navigation without decorative depth
+00:08 +88 ~2: test/glass_surface_test.dart: accessible navigation uses opaque navigation without decorative depth
+00:08 +89 ~2: test/glass_surface_test.dart: reduced motion uses opaque navigation without decorative depth
+00:08 +90 ~2: test/glass_surface_test.dart: the dock turned to solid by Settings › Appearance › Glass
+00:08 +91 ~2: test/glass_surface_test.dart: frosted material clips a single backdrop filter
+00:08 +92 ~2: test/glass_surface_test.dart: frosted foreground contrast opencode light
+Glass contrast opencode light: 13.60
+00:08 +93 ~2: test/glass_surface_test.dart: frosted foreground contrast opencode dark
+Glass contrast opencode dark: 8.34
+00:08 +94 ~2: test/glass_surface_test.dart: frosted foreground contrast catppuccin light
+Glass contrast catppuccin light: 13.92
+00:08 +95 ~2: test/glass_surface_test.dart: frosted foreground contrast catppuccin dark
+Glass contrast catppuccin dark: 7.86
+00:08 +96 ~2: test/glass_surface_test.dart: frosted foreground contrast gruvbox light
+Glass contrast gruvbox light: 13.69
+00:08 +97 ~2: test/glass_surface_test.dart: frosted foreground contrast gruvbox dark
+Glass contrast gruvbox dark: 7.22
+00:08 +98 ~2: test/glass_surface_test.dart: frosted foreground contrast solarized light
+Glass contrast solarized light: 14.07
+00:08 +99 ~2: test/glass_surface_test.dart: frosted foreground contrast solarized dark
+Glass contrast solarized dark: 8.38
+00:08 +100 ~2: test/glass_surface_test.dart: frosted foreground contrast dracula light
+Glass contrast dracula light: 13.70
+00:08 +101 ~2: test/glass_surface_test.dart: frosted foreground contrast dracula dark
+Glass contrast dracula dark: 5.93
+00:08 +102 ~2: test/glass_surface_test.dart: frosted foreground contrast nord light
+Glass contrast nord light: 13.61
+00:08 +103 ~2: test/glass_surface_test.dart: frosted foreground contrast nord dark
+Glass contrast nord dark: 5.49
+00:08 +104 ~2: test/glass_surface_test.dart: frosted foreground contrast tokyoNight light
+Glass contrast tokyoNight light: 13.42
+00:09 +105 ~2: test/glass_surface_test.dart: frosted foreground contrast tokyoNight dark
+Glass contrast tokyoNight dark: 7.86
+00:09 +106 ~2: test/glass_surface_test.dart: frosted foreground contrast oneDark light
+Glass contrast oneDark light: 13.93
+00:09 +107 ~2: test/glass_surface_test.dart: frosted foreground contrast oneDark dark
+Glass contrast oneDark dark: 6.32
+00:09 +108 ~2: test/glass_surface_test.dart: frosted foreground contrast monokai light
+Glass contrast monokai light: 13.68
+00:09 +109 ~2: test/glass_surface_test.dart: frosted foreground contrast monokai dark
+Glass contrast monokai dark: 6.14
+00:09 +110 ~2: test/glass_surface_test.dart: frosted foreground contrast rosePine light
+Glass contrast rosePine light: 13.97
+00:09 +111 ~2: test/glass_surface_test.dart: frosted foreground contrast rosePine dark
+Glass contrast rosePine dark: 7.72
+00:09 +112 ~2: test/glass_surface_test.dart: frosted foreground contrast everforest light
+Glass contrast everforest light: 14.03
+00:09 +113 ~2: test/glass_surface_test.dart: frosted foreground contrast everforest dark
+Glass contrast everforest dark: 5.70
+00:09 +114 ~2: test/glass_surface_test.dart: frosted foreground contrast kanagawa light
+Glass contrast kanagawa light: 13.68
+00:09 +115 ~2: test/glass_surface_test.dart: frosted foreground contrast kanagawa dark
+Glass contrast kanagawa dark: 7.31
+00:09 +116 ~2: test/glass_surface_test.dart: frosted foreground contrast ayu light
+Glass contrast ayu light: 14.19
+00:09 +117 ~2: test/glass_surface_test.dart: frosted foreground contrast ayu dark
+Glass contrast ayu dark: 9.57
+00:09 +118 ~2: test/glass_surface_test.dart: frosted foreground contrast nightOwl light
+Glass contrast nightOwl light: 14.02
+00:09 +119 ~2: test/glass_surface_test.dart: frosted foreground contrast nightOwl dark
+Glass contrast nightOwl dark: 8.23
+00:09 +120 ~2: test/glass_surface_test.dart: frosted foreground contrast github light
+Glass contrast github light: 13.78
+00:09 +121 ~2: test/glass_surface_test.dart: frosted foreground contrast github dark
+Glass contrast github dark: 8.17
+00:09 +122 ~2: test/glass_surface_test.dart: frosted foreground contrast palenight light
+Glass contrast palenight light: 13.85
+00:09 +123 ~2: test/glass_surface_test.dart: frosted foreground contrast palenight dark
+Glass contrast palenight dark: 6.19
+00:09 +124 ~2: test/glass_surface_test.dart: frosted foreground contrast synthwave light
+Glass contrast synthwave light: 13.58
+00:09 +125 ~2: test/glass_surface_test.dart: frosted foreground contrast synthwave dark
+Glass contrast synthwave dark: 6.89
+00:09 +126 ~2: test/glass_surface_test.dart: frosted foreground contrast cobalt light
+Glass contrast cobalt light: 13.73
+00:09 +127 ~2: test/glass_surface_test.dart: frosted foreground contrast cobalt dark
+Glass contrast cobalt dark: 5.64
+00:09 +128 ~2: test/glass_surface_test.dart: frosted foreground contrast midnight light
+Glass contrast midnight light: 13.59
+00:09 +129 ~2: test/glass_surface_test.dart: frosted foreground contrast midnight dark
+Glass contrast midnight dark: 9.85
+00:09 +130 ~2: test/glass_surface_test.dart: frosted foreground contrast paper light
+Glass contrast paper light: 13.55
+00:09 +131 ~2: test/glass_surface_test.dart: frosted foreground contrast paper dark
+Glass contrast paper dark: 8.17
+00:09 +132 ~2: test/glass_surface_test.dart: frosted foreground contrast forest light
+Glass contrast forest light: 13.67
+00:09 +133 ~2: test/glass_surface_test.dart: frosted foreground contrast forest dark
+Glass contrast forest dark: 7.71
+00:09 +134 ~2: test/glass_surface_test.dart: frosted foreground contrast ocean light
+Glass contrast ocean light: 13.64
+00:09 +135 ~2: test/glass_surface_test.dart: frosted foreground contrast ocean dark
+Glass contrast ocean dark: 7.72
+00:09 +136 ~2: test/glass_surface_test.dart: frosted foreground contrast sunset light
+Glass contrast sunset light: 13.65
+00:09 +137 ~2: test/glass_surface_test.dart: frosted foreground contrast sunset dark
+Glass contrast sunset dark: 7.78
+00:09 +138 ~2: test/glass_surface_test.dart: frosted foreground contrast sakura light
+Glass contrast sakura light: 13.65
+00:09 +139 ~2: test/glass_surface_test.dart: frosted foreground contrast sakura dark
+Glass contrast sakura dark: 7.52
+00:09 +140 ~2: test/glass_surface_test.dart: frosted foreground contrast lavender light
+Glass contrast lavender light: 13.65
+00:09 +141 ~2: test/glass_surface_test.dart: frosted foreground contrast lavender dark
+Glass contrast lavender dark: 7.61
+00:09 +142 ~2: test/glass_surface_test.dart: frosted foreground contrast mint light
+Glass contrast mint light: 13.74
+00:09 +143 ~2: test/glass_surface_test.dart: frosted foreground contrast mint dark
+Glass contrast mint dark: 7.12
+00:09 +144 ~2: test/glass_surface_test.dart: frosted foreground contrast coffee light
+Glass contrast coffee light: 13.63
+00:09 +145 ~2: test/glass_surface_test.dart: frosted foreground contrast coffee dark
+Glass contrast coffee dark: 7.86
+00:09 +146 ~2: test/glass_surface_test.dart: frosted foreground contrast slate light
+Glass contrast slate light: 13.53
+00:09 +147 ~2: test/glass_surface_test.dart: frosted foreground contrast slate dark
+Glass contrast slate dark: 7.70
+00:09 +148 ~2: test/workspace_stable_layout_test.dart: 320dp, 2.0x text, light: the project, its actions, session state and the docked New session stay clear
+00:09 +148 ~2: test/glass_surface_test.dart: frosted foreground contrast amber light
+Glass contrast amber light: 13.76
+00:09 +149 ~2: test/workspace_stable_layout_test.dart: 320dp, 2.0x text, light: the project, its actions, session state and the docked New session stay clear
+00:09 +149 ~2: test/glass_surface_test.dart: frosted foreground contrast amber dark
+Glass contrast amber dark: 7.70
+00:09 +150 ~2: test/workspace_stable_layout_test.dart: 320dp, 2.0x text, light: the project, its actions, session state and the docked New session stay clear
+00:09 +150 ~2: test/glass_surface_test.dart: frosted foreground contrast highContrast light
+Glass contrast highContrast light: 13.40
+00:09 +151 ~2: test/workspace_stable_layout_test.dart: 320dp, 2.0x text, light: the project, its actions, session state and the docked New session stay clear
+00:09 +151 ~2: test/glass_surface_test.dart: frosted foreground contrast highContrast dark
+Glass contrast highContrast dark: 9.38
+00:09 +152 ~2: test/workspace_stable_layout_test.dart: 320dp, 2.0x text, light: the project, its actions, session state and the docked New session stay clear
+00:09 +153 ~2: test/workspace_stable_layout_test.dart: 320dp, 2.0x text, light: the project, its actions, session state and the docked New session stay clear
+00:09 +154 ~2: test/workspace_stable_layout_test.dart: 320dp, 2.0x text, light: the project, its actions, session state and the docked New session stay clear
+00:10 +155 ~2: test/workspace_stable_layout_test.dart: 320dp, 2.0x text, dark: the project, its actions, session state and the docked New session stay clear
+00:10 +156 ~2: test/workspace_stable_layout_test.dart: 320dp, 2.5x text, light: the project, its actions, session state and the docked New session stay clear
+00:11 +157 ~2: test/workspace_stable_layout_test.dart: 320dp, 2.5x text, dark: the project, its actions, session state and the docked New session stay clear
+00:11 +158 ~2: test/workspace_stable_layout_test.dart: 320dp 2.5x RTL: the header and dock lay out without overflow
+00:11 +159 ~2: test/workspace_stable_layout_test.dart: 339dp 2.5x: "shop" keeps the largest title size whose longest segment fits the row (24.0)
+00:11 +160 ~2: test/workspace_stable_layout_test.dart: 339dp 2.5x: "shop-front" keeps the largest title size whose longest segment fits the row (20.0)
+00:11 +161 ~2: test/workspace_stable_layout_test.dart: 339dp 2.5x: "shopfront" keeps the largest title size whose longest segment fits the row (16.0)
+00:11 +162 ~2: test/workspace_stable_layout_test.dart: 320dp 2x: Switch project opens the project list and the name still opens the context sheet
+00:12 +163 ~2: test/workspace_stable_layout_test.dart: session details disclose usage without cluttering the list
+00:12 +164 ~2: test/workspace_stable_layout_test.dart: with the real fonts (setUpAll)
+00:12 +164 ~2: test/workspace_stable_layout_test.dart: with the real fonts 390dp 1x keeps the row header, a two-line facts line and the side-by-side dock
+00:12 +165 ~2: test/workspace_stable_layout_test.dart: with the real fonts (tearDownAll)
+00:12 +165 ~2: All tests passed!

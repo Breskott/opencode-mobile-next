@@ -6,6 +6,7 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/saved_permissions_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -110,8 +111,23 @@ void main() {
     await tester.tap(revoke);
     await tester.pumpAndSettle();
     expect(find.text('Revoke access?'), findsOneWidget);
-    expect(find.text('Edit a file'), findsWidgets);
-    expect(find.text('lib/**'), findsWidgets);
+    // The confirmation names the grant it revokes, under Details.
+    final sheet = find.byType(KitConfirmSheet);
+    await tester.tap(
+      find.descendant(
+        of: sheet,
+        matching: find.byKey(const ValueKey('kit-details-toggle')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: sheet, matching: find.text('Edit a file')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text('lib/**')),
+      findsOneWidget,
+    );
     expect(repository.removeCalls, isEmpty);
 
     await tester.tap(find.text('Revoke access'));
@@ -368,11 +384,12 @@ void main() {
       const ValueKey('revoke-saved-permission-permission-bash'),
     );
     await tester.ensureVisible(revoke);
+    await tester.pumpAndSettle();
     await tester.tap(revoke);
     await tester.pumpAndSettle();
 
     expect(find.text('Revoke access?'), findsOneWidget);
-    expect(find.text('Keep access'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Revoke access'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -394,5 +411,139 @@ void main() {
     expect(find.text('No always allowed actions'), findsOneWidget);
     expect(find.textContaining('Always allow'), findsWidgets);
     expect(tester.takeException(), isNull);
+  });
+
+  group('screen-settings-1', () {
+    testWidgets('says what the page is for and names actions, not grants', (
+      tester,
+    ) async {
+      final repository = _PermissionRepository(permissions: _permissions);
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _app(SavedPermissionsScreen(controller: controller)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('without asking you first'), findsOneWidget);
+      // No count beside the label (R13): each row is one action.
+      expect(find.text('2 actions'), findsNothing);
+      expect(find.textContaining('grant'), findsNothing);
+    });
+
+    testWidgets('R13: no refresh in the top bar, and the list label sits one '
+        'section gap under the intro', (tester) async {
+      final repository = _PermissionRepository(permissions: _permissions);
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _app(SavedPermissionsScreen(controller: controller)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('saved-permissions-refresh')),
+        findsNothing,
+      );
+      final intro = tester.getRect(
+        find.textContaining('without asking you first'),
+      );
+      expect(
+        tester.getTopLeft(find.text('Current project')).dy - intro.bottom,
+        moreOrLessEquals(22, epsilon: 0.01),
+      );
+    });
+
+    testWidgets('a pattern-less action says so in words, not in mono', (
+      tester,
+    ) async {
+      final repository = _PermissionRepository(
+        permissions: const [
+          SavedPermission(
+            id: 'any',
+            projectID: 'project-1',
+            action: 'webfetch',
+            resource: '',
+          ),
+        ],
+      );
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _app(SavedPermissionsScreen(controller: controller)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Anything this kind of action touches'), findsOneWidget);
+      expect(find.text('(all matching resources)'), findsNothing);
+    });
+
+    testWidgets('a revoke is said on the page, never in a snackbar', (
+      tester,
+    ) async {
+      final repository = _PermissionRepository(permissions: _permissions);
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _app(SavedPermissionsScreen(controller: controller)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('revoke-saved-permission-permission-bash')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Revoke access'));
+      await tester.pumpAndSettle();
+
+      expect(repository.removeCalls, ['permission-bash']);
+      expect(find.byType(SnackBar), findsNothing);
+      final notice = find.byKey(const ValueKey('saved-permissions-revoked'));
+      expect(notice, findsOneWidget);
+      expect(
+        find.descendant(
+          of: notice,
+          matching: find.text('Run a shell command now asks you first again.'),
+        ),
+        findsOneWidget,
+      );
+      // The revoked row leaves the list; the other stays.
+      expect(
+        find.byKey(const ValueKey('revoke-saved-permission-permission-bash')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('saved-permissions-group')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the row menu revokes too, after the same confirmation', (
+      tester,
+    ) async {
+      final repository = _PermissionRepository(permissions: _permissions);
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _app(SavedPermissionsScreen(controller: controller)),
+      );
+      await tester.pumpAndSettle();
+      await tester.longPress(
+        find.byKey(const ValueKey('saved-permission-permission-edit')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Revoke access').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Revoke access?'), findsOneWidget);
+      expect(repository.removeCalls, isEmpty);
+
+      await tester.tap(find.text('Revoke access').last);
+      await tester.pumpAndSettle();
+      expect(repository.removeCalls, ['permission-edit']);
+    });
   });
 }

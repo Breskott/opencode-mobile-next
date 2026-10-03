@@ -5,7 +5,9 @@ import 'dart:io';
 import 'package:opencode_sdk/opencode_sdk.dart' as sdk;
 
 import '../domain/server_gateway.dart';
+import '../ui/kit/kit_redact.dart';
 import '../domain/session_command_handoff.dart';
+import '../domain/session_title_text.dart';
 import '../domain/parallel_requests.dart';
 import 'mcp_oauth.dart';
 import 'models.dart';
@@ -451,50 +453,34 @@ class SdkProductRepository extends ProductRepository
   }
 
   @override
-  Future<String> upgradeServer(String target) => _guard(
-    'Could not upgrade OpenCode',
-    () async {
-      final exactTarget = target.trim();
-      if (target != exactTarget || !isExactServerVersion(exactTarget)) {
-        throw const ProductException(
-          'OpenCode supplied an invalid update version',
-        );
-      }
-      final response = await () async {
-        try {
-          return await _client.getGlobalApi().globalUpgrade(
-            globalUpgradeRequest: sdk.GlobalUpgradeRequest(target: exactTarget),
+  Future<String> upgradeServer(String target) =>
+      _guard('Could not upgrade OpenCode', () async {
+        final exactTarget = target.trim();
+        if (target != exactTarget || !isExactServerVersion(exactTarget)) {
+          throw const ProductException(
+            'OpenCode supplied an invalid update version',
           );
-        } on sdk.OpenCodeApiException catch (error) {
-          final payload = error.rawPayload;
-          final detail = payload is Map
-              ? payload['error']?.toString().trim()
-              : null;
-          if (detail?.isNotEmpty == true) throw ProductException(detail!);
-          rethrow;
         }
-      }();
-      final result = response.data?.objectValue;
-      if (result == null) {
-        throw const ProductException(
-          'OpenCode returned an invalid upgrade result',
+        final response = await _client.getGlobalApi().globalUpgrade(
+          globalUpgradeRequest: sdk.GlobalUpgradeRequest(target: exactTarget),
         );
-      }
-      if (result['success'] != true) {
-        final error = result['error']?.toString().trim();
-        throw ProductException(
-          error?.isNotEmpty == true ? error! : 'OpenCode could not upgrade',
-        );
-      }
-      final installed = result['version']?.toString().trim() ?? '';
-      if (installed != exactTarget) {
-        throw const ProductException(
-          'OpenCode did not confirm the requested version',
-        );
-      }
-      return installed;
-    },
-  );
+        final result = response.data?.objectValue;
+        if (result == null) {
+          throw const ProductException(
+            'OpenCode returned an invalid upgrade result',
+          );
+        }
+        if (result['success'] != true) {
+          throw ProductException('Could not upgrade OpenCode', cause: result);
+        }
+        final installed = result['version']?.toString().trim() ?? '';
+        if (installed != exactTarget) {
+          throw const ProductException(
+            'OpenCode did not confirm the requested version',
+          );
+        }
+        return installed;
+      });
 
   @override
   Future<void> writeClientLog({
@@ -1330,11 +1316,18 @@ class SdkProductRepository extends ProductRepository
   @override
   Future<void> removeTerminal(String id) =>
       _guard('Could not stop the terminal', () async {
-        await _client.getPtyApi().ptyRemove(
-          ptyID: id,
-          directory: _directory,
-          workspace: _workspace,
-        );
+        try {
+          await _client.getPtyApi().ptyRemove(
+            ptyID: id,
+            directory: _directory,
+            workspace: _workspace,
+          );
+        } on sdk.OpenCodeApiException catch (error) {
+          // Already gone (the shell exited, or another client closed it):
+          // stopping it is done, not an error to show.
+          if (error.statusCode == 404) return;
+          rethrow;
+        }
       });
 
   @override
@@ -1942,6 +1935,7 @@ class SdkProductRepository extends ProductRepository
   @override
   Future<void> connectIntegrationKey(String id, String key, {String? label}) =>
       _guard('Could not connect the provider', () async {
+        KitRedact.registerKnownSecret(key);
         await _client.getIntegrationsApi().v2IntegrationConnectKey(
           integrationID: id,
           locationLeftSquareBracketDirectoryRightSquareBracket: _directory,
@@ -1959,7 +1953,11 @@ class SdkProductRepository extends ProductRepository
           providerID: id,
           auth: sdk.Auth({'type': 'api', 'key': key}),
         );
-        await refreshProviderRuntime();
+        try {
+          await refreshProviderRuntime();
+        } on ProviderRuntimeBusyException {
+          // The key is saved; the app reloads providers once replies finish.
+        }
       });
 
   @override
@@ -2002,6 +2000,8 @@ class SdkProductRepository extends ProductRepository
         Object? refreshFailure;
         try {
           await refreshProviderRuntime();
+        } on ProviderRuntimeBusyException {
+          // Removed from the store; the runtime drops it once replies finish.
         } catch (error) {
           refreshFailure = error;
         }
@@ -2026,6 +2026,13 @@ class SdkProductRepository extends ProductRepository
   @override
   Future<void> refreshProviderRuntime() =>
       _guard('Could not refresh the provider runtime', () async {
+        // Disposing an instance aborts every reply running in it, and the
+        // transcript then says the person stopped it. Count what is running
+        // in both locations this refresh disposes first and refuse while any
+        // reply runs; an unreadable status also refuses, since losing a reply
+        // costs more than a provider that loads later.
+        final running = await _runningSessionCount();
+        if (running > 0) throw ProviderRuntimeBusyException(running);
         // Provider inventories are cached per server instance. Match
         // OpenCode's own compatibility client: invalidate the selected
         // location and the server-default location so newly authenticated or
@@ -2036,6 +2043,32 @@ class SdkProductRepository extends ProductRepository
         );
         await _client.getInstanceApi().instanceDispose();
       });
+
+  /// Sessions that are not idle in the selected location and in the
+  /// server-default location: the two instances a runtime refresh disposes.
+  Future<int> _runningSessionCount() async {
+    final running = <String>{};
+    for (final location in <Map<String, String>>[
+      {'directory': ?_directory, 'workspace': ?_workspace},
+      const {},
+    ]) {
+      final response = await _client.dio.get<Object>(
+        '/session/status',
+        queryParameters: location,
+      );
+      final data = response.data;
+      if (data is! Map) {
+        throw const ProductException(
+          'Could not read which replies are running',
+        );
+      }
+      data.forEach((id, status) {
+        final type = status is Map ? status['type']?.toString() : null;
+        if (type != null && type != 'idle') running.add(id.toString());
+      });
+    }
+    return running.length;
+  }
 
   @override
   Future<IntegrationAuthLaunch> startIntegrationOAuth(
@@ -2398,6 +2431,22 @@ class SdkProductRepository extends ProductRepository
         if (fork == null) {
           throw const ProductException('Server returned no forked session');
         }
+        // The server dates a fork like a brand-new session; give it a plain
+        // name (best effort: a failed rename never fails the fork).
+        try {
+          final original = await getSessionDetails(id);
+          final title = forkedSessionTitle(original.title);
+          if (title != null) {
+            await _client.getSessionApi().sessionUpdate(
+              sessionID: fork.id,
+              directory: _directory,
+              workspace: _workspace,
+              sessionUpdateRequest: sdk.SessionUpdateRequest(title: title),
+            );
+          }
+        } on Object {
+          // Leave the server's title; the display layer hides its stamp.
+        }
         return fork.id;
       });
 
@@ -2406,8 +2455,8 @@ class SdkProductRepository extends ProductRepository
     required String sessionID,
     required String messageID,
   }) =>
-      // The detail-preserving guard: a declared refusal (for example a message
-      // still owned by an active response) surfaces OpenCode's own words.
+      // A declared refusal (for example a message still owned by an active
+      // response) stays in the cause for redacted Details, never the copy.
       _guardWorktree(
         'Could not delete the message',
         () async => _client.getSessionApi().sessionDeleteMessage(
@@ -2541,30 +2590,11 @@ class SdkProductRepository extends ProductRepository
       return await action();
     } on ProductException {
       rethrow;
-    } on sdk.OpenCodeApiException catch (error) {
-      final detail = _deepErrorMessage(error.rawPayload);
-      if (detail?.isNotEmpty == true) throw ProductException(detail!);
-      throw ProductException(message, cause: error);
     } catch (error) {
+      // A typed server payload is still untrusted prose. Preserve its full
+      // cause for redacted Details, never as the authored product message.
       throw ProductException(message, cause: error);
     }
-  }
-
-  static String? _deepErrorMessage(Object? value) {
-    if (value is Map) {
-      final direct = value['message']?.toString().trim();
-      if (direct?.isNotEmpty == true) return direct;
-      for (final nested in value.values) {
-        final found = _deepErrorMessage(nested);
-        if (found != null) return found;
-      }
-    } else if (value is List) {
-      for (final nested in value) {
-        final found = _deepErrorMessage(nested);
-        if (found != null) return found;
-      }
-    }
-    return null;
   }
 
   static Future<T> _guard<T>(

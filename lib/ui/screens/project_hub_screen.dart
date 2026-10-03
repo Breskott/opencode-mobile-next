@@ -8,17 +8,42 @@ import '../../domain/server_gateway.dart'
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../app_iconography.dart';
-import '../desktop/desktop_interaction.dart';
+import '../kit/kit_buttons.dart' show KitAction;
+import '../kit/kit_capability_explainer.dart';
+import '../kit/kit_menu.dart';
+import '../kit/kit_page_route.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_row_parts.dart' show KitChevron, KitRowMenu;
+import '../kit/kit_screen.dart';
+import '../kit/kit_scrollbar.dart' show KitScrollArea;
+import '../kit/kit_state_view.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
+import '../kit/kit_top_bar.dart';
 import '../widgets/product_states.dart';
+import 'development_services_screen.dart';
 import 'files_screen.dart';
+import 'managed_workspaces_screen.dart';
 import 'project_health_screen.dart';
+import 'projects_screen.dart';
 import 'terminal_screen.dart';
 import 'workspace_screen.dart';
 import 'worktrees_screen.dart';
 
 /// A tool scoped to the current project, in the order the Project tab lists
-/// them.
-enum ProjectTool { files, changes, terminal, health, worktrees, search }
+/// them. Development services and cloud environments came over from the
+/// retired Manage project page (slice-P3.11a), so the project's tools have
+/// one landing.
+enum ProjectTool {
+  files,
+  changes,
+  terminal,
+  health,
+  worktrees,
+  services,
+  workspaces,
+  search,
+}
 
 /// Asks the shell for a tool that lives inside the Project tab (Files and its
 /// search), from a search result on any route.
@@ -36,7 +61,6 @@ Future<void> openProjectTool(
   ProjectTool tool,
 ) async {
   final l10n = _l10n(context);
-  final navigator = Navigator.of(context);
   try {
     switch (tool) {
       case ProjectTool.files || ProjectTool.search:
@@ -45,10 +69,9 @@ Future<void> openProjectTool(
         final prompt = await pushWorkingTreeReview(context, controller);
         if (context.mounted) await deliverReviewPrompt(context, prompt);
       case ProjectTool.terminal:
-        await navigator.push<void>(
-          MaterialPageRoute<void>(
-            builder: (_) => TerminalPage(controller: controller),
-          ),
+        await pushKitPage<void>(
+          context,
+          (_) => TerminalPage(controller: controller),
         );
       case ProjectTool.health:
         final repository = await controller.prepareActionRepository();
@@ -56,16 +79,23 @@ Future<void> openProjectTool(
         if (repository == null) {
           throw ProductException(l10n.e7WorkspaceDisconnected);
         }
-        await navigator.push<void>(
-          MaterialPageRoute<void>(
-            builder: (_) => ProjectHealthScreen(
-              repository: repository,
-              repositoryResolver: controller.prepareActionRepository,
-              capabilities: controller.capabilities,
-            ),
+        await pushKitPage<void>(
+          context,
+          (_) => ProjectHealthScreen(
+            repository: repository,
+            repositoryResolver: controller.prepareActionRepository,
+            capabilities: controller.capabilities,
           ),
         );
-      case ProjectTool.worktrees:
+      case ProjectTool.services:
+        if (controller.directory?.isNotEmpty != true) {
+          throw ProductException(l10n.e7LibraryNoProjectFolderIsOpenChooseOne);
+        }
+        await pushKitPage<void>(
+          context,
+          (_) => DevelopmentServicesScreen(controller: controller),
+        );
+      case ProjectTool.worktrees || ProjectTool.workspaces:
         final repository = await controller.prepareActionRepository();
         if (!context.mounted) return;
         if (repository == null) {
@@ -82,11 +112,14 @@ Future<void> openProjectTool(
         if (project == null) {
           throw ProductException(l10n.e7LibraryNoProjectFolderIsOpenChooseOne);
         }
-        await navigator.push<void>(
-          MaterialPageRoute<void>(
-            builder: (_) =>
-                WorktreesScreen(controller: controller, project: project),
-          ),
+        await pushKitPage<void>(
+          context,
+          (_) => tool == ProjectTool.worktrees
+              ? WorktreesScreen(controller: controller, project: project)
+              : ManagedWorkspacesScreen(
+                  controller: controller,
+                  project: project,
+                ),
         );
     }
   } catch (error) {
@@ -100,9 +133,11 @@ class ProjectHubBackController {
   bool handleBack() => _handler?.call() ?? false;
 }
 
-/// The Project tab: every tool that acts on the current project, one row
-/// each. A row the connected server cannot serve is absent, not disabled, and
-/// the shell drops the whole tab when no row is left (UX plan 5.1, rule 7).
+/// The Project tab: the project's name, then every tool that acts on it, one
+/// row each, Changes first. A row the connected server cannot serve is
+/// absent, and the shell drops the whole tab when no row is left (UX plan
+/// 5.1, rule 7). With no project open the tab says so and offers the
+/// chooser (map project-hub, proposal "fix").
 ///
 /// Files opens inside the tab rather than over it, so the file browser keeps
 /// its folder, search and scroll position across tab switches the way it did
@@ -127,13 +162,17 @@ class ProjectHub extends StatefulWidget {
 
   /// Changes and Search ride on Files' gate: the working-tree review and the
   /// file finder are served by the same file API, and Files was their only
-  /// door before this tab existed.
+  /// door before this tab existed. Search stays a tool (the app's search
+  /// opens it) although the hub lists it inside Files' own field.
   static List<ProjectTool> toolsFor(ServerCapabilities capabilities) => [
     if (capabilities.fileBrowsing) ProjectTool.files,
     if (capabilities.fileBrowsing) ProjectTool.changes,
     if (capabilities.terminal) ProjectTool.terminal,
     if (capabilities.projectManagement) ProjectTool.health,
     if (capabilities.projectManagement) ProjectTool.worktrees,
+    if (capabilities.developmentServices) ProjectTool.services,
+    if (capabilities.projectManagement && capabilities.managedWorkspaces)
+      ProjectTool.workspaces,
     if (capabilities.fileBrowsing) ProjectTool.search,
   ];
 
@@ -154,12 +193,104 @@ class _ProjectHubState extends State<ProjectHub> {
   bool _filesOpen = false;
   bool _opening = false;
 
+  /// The live lines under Changes and Terminal ("3 files changed", "1
+  /// running"): null until read, and left out when a read fails (the tool's
+  /// own page says why). No timer polls them: they are read when the tab
+  /// opens, when the project changes, when a tool closes and when the last
+  /// running conversation finishes, since that is when files change.
+  int? _changedFiles;
+  int? _runningTerminals;
+  int _statusGeneration = 0;
+  (String?, int, String?)? _statusScope;
+  bool _wasBusy = false;
+
+  /// The hub's order: Changes first; Search is Files' own field.
+  static const _hubOrder = [
+    ProjectTool.changes,
+    ProjectTool.files,
+    ProjectTool.terminal,
+    ProjectTool.health,
+    ProjectTool.worktrees,
+    ProjectTool.services,
+    ProjectTool.workspaces,
+  ];
+
   @override
   void initState() {
     super.initState();
     widget.focusSearchSignal?.addListener(_searchFiles);
     widget.openFilesSignal?.addListener(_openFiles);
     widget.backController?._handler = _handleBack;
+    widget.controller.addListener(_followConnection);
+    _wasBusy = widget.controller.busySessions.isNotEmpty;
+    _followConnection();
+  }
+
+  /// Reads the live lines again when the server, location or project
+  /// changed, or when the last busy conversation went idle.
+  void _followConnection() {
+    if (!mounted) return;
+    final controller = widget.controller;
+    final scope = (
+      controller.profile?.id,
+      controller.locationRevision,
+      controller.directory,
+    );
+    final busy = controller.busySessions.isNotEmpty;
+    final finished = _wasBusy && !busy;
+    _wasBusy = busy;
+    if (scope != _statusScope) {
+      _statusScope = scope;
+      _changedFiles = null;
+      _runningTerminals = null;
+      unawaited(_readStatus());
+    } else if (finished) {
+      unawaited(_readStatus());
+    }
+  }
+
+  Future<void> _readStatus() async {
+    final controller = widget.controller;
+    final generation = ++_statusGeneration;
+    final repository = controller.repository;
+    final directory = controller.directory;
+    if (!controller.isConnected ||
+        repository == null ||
+        directory == null ||
+        directory.isEmpty) {
+      return;
+    }
+    final capabilities = controller.capabilities;
+    bool current() =>
+        mounted &&
+        generation == _statusGeneration &&
+        identical(controller.repository, repository);
+    Future<int?> count(Future<int> Function() read) async {
+      try {
+        return await read();
+      } catch (_) {
+        // The row keeps its title only; the tool itself says what failed.
+        return null;
+      }
+    }
+
+    final results = await Future.wait([
+      capabilities.fileBrowsing
+          ? count(() async => (await repository.listFileStatuses()).length)
+          : Future<int?>.value(),
+      capabilities.terminal
+          ? count(
+              () async => (await repository.listTerminals())
+                  .where((terminal) => terminal.running)
+                  .length,
+            )
+          : Future<int?>.value(),
+    ]);
+    if (!current()) return;
+    setState(() {
+      _changedFiles = results[0];
+      _runningTerminals = results[1];
+    });
   }
 
   @override
@@ -177,6 +308,12 @@ class _ProjectHubState extends State<ProjectHub> {
       oldWidget.backController?._handler = null;
       widget.backController?._handler = _handleBack;
     }
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_followConnection);
+      widget.controller.addListener(_followConnection);
+      _statusScope = null;
+      _followConnection();
+    }
   }
 
   @override
@@ -184,6 +321,7 @@ class _ProjectHubState extends State<ProjectHub> {
     widget.focusSearchSignal?.removeListener(_searchFiles);
     widget.openFilesSignal?.removeListener(_openFiles);
     widget.backController?._handler = null;
+    widget.controller.removeListener(_followConnection);
     _focusFilesSearch.dispose();
     super.dispose();
   }
@@ -226,22 +364,43 @@ class _ProjectHubState extends State<ProjectHub> {
     }
   }
 
-  Future<void> _openTool(ProjectTool tool) =>
-      _guard(() => openProjectTool(context, widget.controller, tool));
+  /// Opens [tool]; coming back reads the live lines again, since Changes
+  /// and Terminal are where they change.
+  Future<void> _openTool(ProjectTool tool) => _guard(() async {
+    await openProjectTool(context, widget.controller, tool);
+    if (mounted) unawaited(_readStatus());
+  });
+
+  /// Chooses a project: the Projects list (select one, create or open a
+  /// folder), where the hub used to only say that none was open (map
+  /// project-hub, `whenMissing.project.open`: explains → offers the chooser).
+  Future<void> _chooseProject() => _guard(
+    () => pushKitPage<bool>(
+      context,
+      (_) => ProjectsScreen(
+        controller: widget.controller,
+        selectedProjectID: null,
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     final showFiles = _filesOpen && _canBrowse;
+    // Visibility keeps the hidden side's state and stops its tickers (and
+    // with them its status-line contribution) while it is hidden.
     return Stack(
       children: [
-        Offstage(
-          offstage: showFiles,
-          child: TickerMode(enabled: !showFiles, child: _hub(context)),
+        Visibility(
+          visible: !showFiles,
+          maintainState: true,
+          child: _hub(context),
         ),
         if (_filesBuilt && _canBrowse)
-          Offstage(
-            offstage: !showFiles,
-            child: TickerMode(enabled: showFiles, child: _files(context)),
+          Visibility(
+            visible: showFiles,
+            maintainState: true,
+            child: _files(context),
           ),
       ],
     );
@@ -249,134 +408,222 @@ class _ProjectHubState extends State<ProjectHub> {
 
   Widget _files(BuildContext context) {
     final l10n = _l10n(context);
-    return Column(
-      children: [
-        // A visible way back: system Back does the same, but nothing here is
-        // reachable by a gesture alone.
-        ListTile(
-          key: const ValueKey('project-hub-files-header'),
-          dense: true,
-          contentPadding: const EdgeInsetsDirectional.only(start: 4, end: 16),
-          horizontalTitleGap: 4,
-          leading: IconButton(
-            key: const ValueKey('project-hub-files-back'),
-            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-            onPressed: () => setState(() => _filesOpen = false),
-            icon: const Icon(AppIconography.back),
-          ),
-          title: Text(
-            l10n.readerUiFiles,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-        ),
-        Expanded(
-          child: FilesScreen(
-            controller: widget.controller,
-            focusSearchSignal: _focusFilesSearch,
-            backController: _filesBack,
-          ),
-        ),
-      ],
+    return FilesScreen(
+      controller: widget.controller,
+      focusSearchSignal: _focusFilesSearch,
+      backController: _filesBack,
+      // One top bar: the folder is the title and Back returns to the hub.
+      // System Back does the same, but nothing here is reachable by a
+      // gesture alone.
+      topBar: (folder) => KitTopBar(
+        key: const ValueKey('project-hub-files-header'),
+        title: folder ?? l10n.readerUiFiles,
+        exit: KitTopBarExit.back,
+        exitKey: const ValueKey('project-hub-files-back'),
+        onExit: () => setState(() => _filesOpen = false),
+      ),
     );
   }
 
-  Widget _hub(BuildContext context) {
+  Widget _hub(BuildContext context) => ListenableBuilder(
+    listenable: widget.controller,
+    builder: (context, _) => _hubBody(context),
+  );
+
+  Widget _hubBody(BuildContext context) {
     final l10n = _l10n(context);
+    final tokens = KitTokens.of(context);
     final directory = widget.controller.directory;
-    final tools = ProjectHub.toolsFor(widget.controller.capabilities);
-    return DesktopScrollbarArea(
-      builder: (scrollController) => ListView(
-        controller: scrollController,
-        key: const ValueKey('project-hub'),
-        padding: EdgeInsets.only(
-          bottom: 24 + MediaQuery.paddingOf(context).bottom,
+    final available = ProjectHub.toolsFor(widget.controller.capabilities);
+    final tools = [
+      for (final tool in _hubOrder)
+        // Terminal stays listed on a server without one, dimmed with the
+        // reason, while the tab has other tools to show (slice-P3.11a).
+        if (available.contains(tool) ||
+            (tool == ProjectTool.terminal && available.isNotEmpty))
+          tool,
+    ];
+    return KitScreen(
+      width: KitScreenWidth.list,
+      body: KitScrollArea(
+        builder: (scrollController) => ListView(
+          controller: scrollController,
+          key: const ValueKey('project-hub'),
+          padding: EdgeInsetsDirectional.only(
+            top: tokens.space3,
+            bottom: KitScreen.endPadding(context),
+          ),
+          children: [
+            if (directory != null && directory.isNotEmpty)
+              _projectHeader(context, directory)
+            else
+              Padding(
+                padding: EdgeInsetsDirectional.only(
+                  start: tokens.gutter,
+                  end: tokens.gutter,
+                  bottom: tokens.sectionGap,
+                ),
+                child: KitStateView.missing(
+                  key: const ValueKey('project-hub-context'),
+                  capability: 'project.open',
+                  icon: AppIconography.folderOpen,
+                  title: l10n.e7LibraryNoProjectSelected,
+                  why: l10n.kitCapProjectOpenWhy,
+                  enableKey: const ValueKey('project-hub-choose-project'),
+                  enable: KitAction(
+                    label: l10n.kitCapProjectOpenEnable,
+                    onPressed: () => unawaited(_chooseProject()),
+                  ),
+                ),
+              ),
+            // The tools act on a project: with none open the chooser above
+            // is the only thing on the tab.
+            if (tools.isNotEmpty && directory != null && directory.isNotEmpty)
+              KitRowGroup(
+                children: [
+                  for (final tool in tools) _toolRow(context, l10n, tool),
+                ],
+              ),
+          ],
         ),
+      ),
+    );
+  }
+
+  /// The project's name as the tab's large title. The folder path is not
+  /// repeated under it; it is one Copy away in the menu beside the name,
+  /// with Switch project.
+  Widget _projectHeader(BuildContext context, String directory) {
+    final l10n = _l10n(context);
+    final tokens = KitTokens.of(context);
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.gutter,
+        end: tokens.space1,
+        bottom: tokens.sectionGap,
+      ),
+      child: Row(
         children: [
-          ListTile(
-            key: const ValueKey('project-hub-context'),
-            leading: const Icon(AppIconography.files),
-            title: Text(
-              directory == null || directory.isEmpty
-                  ? l10n.e7LibraryNoProjectSelected
-                  : _basename(directory),
-            ),
-            subtitle: Text(
-              directory == null || directory.isEmpty
-                  ? l10n.e7LibraryNoProjectFolderIsOpenChooseOne
-                  : directory,
-              textDirection: directory == null || directory.isEmpty
-                  ? null
-                  : TextDirection.ltr,
+          Expanded(
+            child: KitText(
+              _basename(directory),
+              key: const ValueKey('project-hub-context'),
+              role: KitTextRole.largeTitle,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const Divider(height: 1),
-          for (final tool in tools)
-            switch (tool) {
-              ProjectTool.files => _row(
-                tool,
-                icon: AppIconography.files,
-                title: l10n.readerUiFiles,
-                subtitle: l10n.projectHubFilesSubtitle,
-                onTap: _openFiles,
+          KitRowMenu(
+            key: const ValueKey('project-hub-menu'),
+            items: [
+              if (widget.controller.capabilities.projectManagement)
+                KitMenuItem(
+                  key: const ValueKey('project-hub-switch'),
+                  label: l10n.e7LibrarySwitchProject,
+                  icon: AppIconography.swap,
+                  onSelected: () => unawaited(_chooseProject()),
+                ),
+              KitMenuItem.copy(
+                key: const ValueKey('project-hub-copy-path'),
+                label: l10n.projectHubCopyFolderPath,
+                text: () => directory,
               ),
-              ProjectTool.changes => _row(
-                tool,
-                icon: AppIconography.review,
-                title: l10n.readerUiChanges,
-                subtitle: l10n.projectHubChangesSubtitle,
-                onTap: () => _openTool(tool),
-              ),
-              ProjectTool.terminal => _row(
-                tool,
-                icon: AppIconography.terminal,
-                title: l10n.libraryTerminalTitle,
-                subtitle: l10n.chatUiOpenPersistentWorkspaceTerminals,
-                onTap: () => _openTool(tool),
-              ),
-              ProjectTool.health => _row(
-                tool,
-                icon: AppIconography.diagnostics,
-                title: l10n.e7LibraryProjectHealth,
-                subtitle: l10n
-                    .e7LibraryBranchChangedFilesLanguageServicesAndFormatters,
-                onTap: () => _openTool(tool),
-              ),
-              ProjectTool.worktrees => _row(
-                tool,
-                icon: AppIconography.branch,
-                title: l10n.e7LibraryWorktrees,
-                subtitle: l10n.e7LibraryCreateAndManageIsolatedGitBranches,
-                onTap: () => _openTool(tool),
-              ),
-              ProjectTool.search => _row(
-                tool,
-                icon: AppIconography.search,
-                title: l10n.readerUiSearchFiles,
-                subtitle: l10n.projectHubSearchSubtitle,
-                onTap: _searchFiles,
-              ),
-            },
+            ],
+          ),
         ],
       ),
     );
   }
 
+  /// Changes and Terminal carry a live line once read ("3 files changed",
+  /// "1 running"); the rest are titles, and Project health keeps one line
+  /// saying what it checks, since its name does not.
+  Widget _toolRow(
+    BuildContext context,
+    AppLocalizations l10n,
+    ProjectTool tool,
+  ) => switch (tool) {
+    ProjectTool.files => _row(
+      tool,
+      icon: AppIconography.files,
+      title: l10n.readerUiFiles,
+      onTap: _openFiles,
+    ),
+    ProjectTool.changes => _row(
+      tool,
+      icon: AppIconography.review,
+      title: l10n.readerUiChanges,
+      subtitle: switch (_changedFiles) {
+        final count? => l10n.projectHubChangedFiles(count),
+        null => null,
+      },
+      onTap: () => _openTool(tool),
+    ),
+    ProjectTool.terminal when !widget.controller.capabilities.terminal =>
+      KitRow.unavailable(
+        key: ValueKey('project-hub-${tool.name}'),
+        leading: KitRow.icon(context, AppIconography.terminal),
+        title: l10n.libraryTerminalTitle,
+        reason: KitCapabilityExplainer.whyOf(context, 'flag:terminal'),
+        capability: 'flag:terminal',
+      ),
+    ProjectTool.terminal => _row(
+      tool,
+      icon: AppIconography.terminal,
+      title: l10n.libraryTerminalTitle,
+      subtitle: switch (_runningTerminals) {
+        final count? when count > 0 => l10n.projectHubTerminalsRunning(count),
+        _ => null,
+      },
+      onTap: () => _openTool(tool),
+    ),
+    ProjectTool.health => _row(
+      tool,
+      icon: AppIconography.diagnostics,
+      title: l10n.e7LibraryProjectHealth,
+      subtitle: l10n.projectHubHealthSubtitle,
+      onTap: () => _openTool(tool),
+    ),
+    ProjectTool.worktrees => _row(
+      tool,
+      icon: AppIconography.branch,
+      title: l10n.e7LibraryWorktrees,
+      onTap: () => _openTool(tool),
+    ),
+    ProjectTool.services => _row(
+      tool,
+      icon: AppIconography.processor,
+      title: l10n.servicesTitle,
+      subtitle: l10n.servicesSubtitle,
+      onTap: () => _openTool(tool),
+    ),
+    ProjectTool.workspaces => _row(
+      tool,
+      icon: AppIconography.cloud,
+      title: l10n.e7LibraryManagedWorkspaces,
+      onTap: () => _openTool(tool),
+    ),
+    ProjectTool.search => _row(
+      tool,
+      icon: AppIconography.search,
+      title: l10n.readerUiSearchFiles,
+      onTap: _searchFiles,
+    ),
+  };
+
   Widget _row(
     ProjectTool tool, {
     required IconData icon,
     required String title,
-    required String subtitle,
     required VoidCallback onTap,
-  }) => ListTile(
+    String? subtitle,
+  }) => KitRow(
     key: ValueKey('project-hub-${tool.name}'),
-    leading: Icon(icon),
-    title: Text(title),
-    subtitle: Text(subtitle),
-    trailing: const Icon(AppIconography.chevronRight),
+    leading: KitRow.icon(context, icon),
+    title: title,
+    supporting: subtitle == null ? null : TextSpan(text: subtitle),
+    supportingMaxLines: 2,
+    trailing: const KitChevron(),
     onTap: onTap,
   );
 

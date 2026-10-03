@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/widgets/saved_server_connection_card.dart';
 
 Widget _card({
@@ -57,8 +58,12 @@ void main() {
         onTermux: () => opened = true,
       ),
     );
-    expect(find.text('Nothing is listening on this device'), findsOneWidget);
-    expect(find.byKey(const ValueKey('saved-server-checks')), findsOneWidget);
+    expect(find.text('Nothing answered on this phone'), findsOneWidget);
+    // What to check is under Details, below the actions (standard §3).
+    await tester.ensureVisible(find.byKey(const ValueKey('kit-state-details')));
+    await tester.tap(find.byKey(const ValueKey('kit-state-details')));
+    await tester.pumpAndSettle();
+    expect(find.text('What to check'), findsOneWidget);
     expect(find.textContaining('Termux'), findsWidgets);
     await tester.ensureVisible(
       find.byKey(const ValueKey('saved-server-open-termux')),
@@ -72,7 +77,7 @@ void main() {
     );
     expect(
       tester.widget(find.byKey(const ValueKey('saved-server-open-termux'))),
-      isA<TextButton>(),
+      isA<KitButton>().having((b) => b.role, 'role', KitButtonRole.tertiary),
     );
   });
 
@@ -103,18 +108,19 @@ void main() {
     await tester.pumpWidget(
       _card(error: 'Health check failed: connection refused'),
     );
-    expect(find.byKey(const ValueKey('saved-server-raw-error')), findsNothing);
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('saved-server-details')),
-    );
-    await tester.tap(find.byKey(const ValueKey('saved-server-details')));
+    expect(find.byKey(const ValueKey('kit-state-details-text')), findsNothing);
+    await tester.ensureVisible(find.byKey(const ValueKey('kit-state-details')));
+    await tester.tap(find.byKey(const ValueKey('kit-state-details')));
     await tester.pumpAndSettle();
     expect(
-      find.byKey(const ValueKey('saved-server-raw-error')),
+      find.byKey(const ValueKey('kit-state-details-text')),
       findsOneWidget,
     );
+    // The address, then the raw error, in mono.
     expect(
-      find.text('Health check failed: connection refused'),
+      find.text(
+        'http://127.0.0.1:4096\nHealth check failed: connection refused',
+      ),
       findsOneWidget,
     );
   });
@@ -194,10 +200,217 @@ void main() {
     expect(find.textContaining('opencode'), findsNothing);
   });
 
+  group('OpenCode inside the app', () {
+    Widget inApp({
+      String? error = 'Health check failed: connection refused',
+      bool starting = false,
+      bool startFailed = false,
+      VoidCallback? onStart,
+      VoidCallback? onSetup,
+      VoidCallback? onTermux,
+    }) => MaterialApp(
+      theme: AppTheme.light(),
+      home: Scaffold(
+        body: SavedServerConnectionCard(
+          profileName: 'This phone, built-in (OpenCode)',
+          baseUrl: 'http://127.0.0.1:4097',
+          error: error,
+          attempts: 1,
+          supportsTermux: false,
+          onChangeServer: () {},
+          onRetry: () {},
+          onOpenTermuxSetup: onTermux,
+          onStartPhoneServer: onStart ?? () {},
+          inAppServer: true,
+          startingInAppServer: starting,
+          inAppStartFailed: startFailed,
+          onOpenInAppSetup: onSetup,
+        ),
+      ),
+    );
+
+    testWidgets('stopped: one Start button, no Termux checklist', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      var started = 0;
+      await tester.pumpWidget(inApp(onStart: () => started++, onTermux: () {}));
+      expect(find.text('OpenCode inside the app is stopped'), findsOneWidget);
+      expect(find.text('Start and connect'), findsOneWidget);
+      expect(find.textContaining('Termux'), findsNothing);
+      expect(find.textContaining('adb'), findsNothing);
+      expect(find.byKey(const ValueKey('saved-server-checks')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('saved-server-open-termux')),
+        findsNothing,
+      );
+      // Start already connects; no second "Try again" beside it.
+      expect(find.byKey(const ValueKey('saved-server-retry')), findsNothing);
+      expect(find.text('http://127.0.0.1:4097'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('saved-server-start-phone')));
+      expect(started, 1);
+    });
+
+    testWidgets('starting: the calm connecting state says so', (tester) async {
+      await tester.pumpWidget(inApp(starting: true));
+      expect(find.text('Starting OpenCode inside the app…'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('saved-server-connect-progress')),
+        findsOneWidget,
+      );
+      expect(find.text('OpenCode inside the app is stopped'), findsNothing);
+    });
+
+    testWidgets('a failed start points at the setup and its log', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      var opened = false;
+      await tester.pumpWidget(
+        inApp(
+          error: 'OpenCode did not answer: the server stopped.',
+          startFailed: true,
+          onSetup: () => opened = true,
+        ),
+      );
+      expect(
+        find.text('OpenCode inside the app did not start'),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('saved-server-open-in-app-setup')),
+      );
+      expect(opened, isTrue);
+    });
+  });
+
   testWidgets('repeated attempts are counted in the connecting title', (
     tester,
   ) async {
     await tester.pumpWidget(_card(attempts: 3));
     expect(find.text('Connecting again (attempt 3)'), findsOneWidget);
   });
+
+  testWidgets('a stopped phone server that is starting says Starting, never '
+      'stopped, and no button stands in for the progress', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: SavedServerConnectionCard(
+            profileName: 'This device (Termux)',
+            baseUrl: 'http://127.0.0.1:4096',
+            error: 'Cannot reach http://127.0.0.1:4096: Connection refused',
+            attempts: 1,
+            supportsTermux: true,
+            onChangeServer: () {},
+            onRetry: () {},
+            onStartPhoneServer: () {},
+            startingPhoneServer: true,
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Starting OpenCode on this phone…'), findsOneWidget);
+    expect(find.textContaining('stopped'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('saved-server-connect-progress')),
+      findsOneWidget,
+    );
+    expect(find.byType(FilledButton), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.text('Switch server'), findsOneWidget);
+  });
+
+  testWidgets('three failed tries lead with Switch server, Try again beside', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _card(
+        error: 'connection refused',
+        url: 'https://work.example',
+        attempts: 3,
+      ),
+    );
+    expect(
+      find.byKey(const ValueKey('saved-server-change-primary')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('saved-server-retry')), findsOneWidget);
+    // The address is under Details, not in the words.
+    expect(find.textContaining('work.example'), findsNothing);
+  });
+
+  testWidgets('a stopped phone server offers Start, never Try again', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: SavedServerConnectionCard(
+            profileName: 'This device (Termux)',
+            baseUrl: 'http://127.0.0.1:4096',
+            error: 'Cannot reach http://127.0.0.1:4096: Connection refused',
+            attempts: 1,
+            supportsTermux: true,
+            onChangeServer: () {},
+            onRetry: () {},
+            onStartPhoneServer: () {},
+          ),
+        ),
+      ),
+    );
+    expect(
+      find.byKey(const ValueKey('saved-server-start-phone')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('saved-server-retry')), findsNothing);
+  });
+
+  testWidgets('a Tailscale address offers its setup when the app has it', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    addTearDown(KitCapabilities.debugReset);
+    KitCapabilities.debugReset();
+    await tester.pumpWidget(
+      _card(error: 'connection refused', url: 'http://100.100.1.2:4096'),
+    );
+    // No flow registered: nothing that leads nowhere.
+    expect(find.byKey(const ValueKey('saved-server-tailscale')), findsNothing);
+
+    KitRequestCount.value = 0;
+    KitCapabilities.registerFlow(
+      KitEnableFlows.tailscaleSetup,
+      (context, request) async => KitRequestCount.value++,
+    );
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(
+      _card(error: 'connection refused', url: 'http://100.100.1.2:4096'),
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('saved-server-tailscale')),
+    );
+    await tester.tap(find.byKey(const ValueKey('saved-server-tailscale')));
+    await tester.pump();
+    expect(KitRequestCount.value, 1);
+  });
+}
+
+/// Counts enable-flow calls in the Tailscale test.
+abstract final class KitRequestCount {
+  static int value = 0;
 }

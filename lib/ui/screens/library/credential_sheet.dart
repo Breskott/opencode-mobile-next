@@ -167,33 +167,65 @@ class _CredentialManagementSheetState
     final route = ModalRoute.of(context);
     bool canFinish() => _current && (route?.isCurrent ?? true);
     setState(() {
-      _busyCredential = id;
       _error = null;
       _message = null;
     });
     var dispatched = false;
     try {
-      String? replacement;
       if (action == _CredentialAction.rename) {
-        replacement = await showDialog<String>(
-          context: context,
-          builder: (_) => _CredentialLabelDialog(initial: connection.label),
-        );
-        if (replacement == null || !canFinish()) return;
-      } else if (action == _CredentialAction.remove) {
-        final confirmed = await showConfirmSheet(
+        // The rename runs inside the dialog: a refused label or a failed
+        // save keeps it open with the reason under the field.
+        final saved = await showKitInputDialog(
           context,
+          title: _l10n.credentialRename,
+          label: _l10n.credentialLabel,
+          confirmLabel: _l10n.credentialSave,
+          initial: connection.label,
+          maxLength: _labelLimit,
+          fieldKey: const ValueKey('credential-label-field'),
+          validate: (value) => _labelError(_l10n, value),
+          onSubmit: (value) async {
+            if (!_current) return _l10n.credentialScopeChanged;
+            dispatched = true;
+            try {
+              await _controller.renameIntegrationCredential(
+                widget.integrationID,
+                id,
+                value.trim(),
+                locationRevision: _location,
+              );
+              return null;
+            } catch (_) {
+              return _l10n.credentialMutationFailed;
+            }
+          },
+        );
+        if (saved == null || !canFinish()) return;
+        setState(() => _message = _l10n.credentialSheetRenamed(saved.trim()));
+        return;
+      }
+      if (action == _CredentialAction.remove) {
+        final confirmed = await showKitConfirm(
+          context,
+          kind: KitConfirmKind.destructive,
           icon: AppIconography.personRemove,
-          title: _l10n.credentialRemoveTitle(label),
-          message: _l10n.credentialRemoveDetail,
-          confirmLabel: _l10n.mcpRemove,
-          cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
-          destructive: true,
+          title: _l10n.credentialRemoveAccountTitle(
+            widget.integrationName,
+            label,
+          ),
+          body: _l10n.credentialSheetRemoveBody(
+            label,
+            _integration?.name ?? widget.integrationName,
+          ),
+          confirmLabel: _l10n.credentialRemoveConfirmNamed(label),
+          confirmKey: const ValueKey('credential-remove-confirm'),
         );
         if (!confirmed || !canFinish()) return;
       }
       if (!canFinish()) return;
       dispatched = true;
+      // The row shows it is working only once the change is on its way.
+      setState(() => _busyCredential = id);
       switch (action) {
         case _CredentialAction.activate:
           await _controller.activateIntegrationCredential(
@@ -202,12 +234,7 @@ class _CredentialManagementSheetState
             locationRevision: _location,
           );
         case _CredentialAction.rename:
-          await _controller.renameIntegrationCredential(
-            widget.integrationID,
-            id,
-            replacement!,
-            locationRevision: _location,
-          );
+          break;
         case _CredentialAction.remove:
           await _controller.removeIntegrationCredential(
             widget.integrationID,
@@ -248,6 +275,8 @@ class _CredentialManagementSheetState
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n;
+    final tokens = KitTokens.of(context);
+    final gap = SizedBox(height: tokens.space3);
     final connections =
         _integration?.connections ?? const <IntegrationConnectionInfo>[];
     final credentials = connections
@@ -255,189 +284,140 @@ class _CredentialManagementSheetState
           (value) => value.type == 'credential' && value.id?.isNotEmpty == true,
         )
         .toList();
-    return SafeArea(
-      top: false,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * .9,
+    final environment = connections.where((value) => value.type == 'env');
+    final working = _loading || _busyCredential != null;
+    // The body of showKitSheet: the frame owns the rails and the scroll.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitText(
+          l10n.credentialMetadataOnly,
+          role: KitTextRole.secondary,
+          tone: KitTextTone.secondary,
         ),
-        child: ListView(
-          shrinkWrap: true,
-          padding: EdgeInsetsDirectional.fromSTEB(
-            16,
-            0,
-            16,
-            24 + MediaQuery.viewInsetsOf(context).bottom,
-          ),
-          children: [
-            Text(
-              _integration?.name ?? widget.integrationName,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(l10n.credentialMetadataOnly),
-            const SizedBox(height: 12),
-            if (!_current)
-              Text(l10n.credentialScopeChanged)
-            else ...[
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  !_activeKnown
-                      ? l10n.credentialActiveUnknown
-                      : _activeID == null
-                      ? l10n.credentialNoneActive
-                      : l10n.credentialActiveObserved,
-                ),
-              ),
-              if (_loading || _busyCredential != null)
-                const LinearProgressIndicator(),
-              if (_error != null)
-                Text(
-                  _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              if (_message != null)
-                Semantics(liveRegion: true, child: Text(_message!)),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton.icon(
-                  onPressed: _loading || _busyCredential != null ? null : _load,
-                  icon: const Icon(AppIconography.retry),
-                  label: Text(l10n.credentialRefresh),
-                ),
-              ),
-              if (!_loading && credentials.isEmpty && _error == null)
-                Text(l10n.credentialEmpty),
-              for (var index = 0; index < credentials.length; index++)
-                _credentialTile(credentials[index], index),
-              for (final connection in connections.where(
-                (value) => value.type == 'env',
-              ))
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(AppIconography.locked),
-                  title: Text(connection.label),
-                  subtitle: Text(l10n.credentialEnvironment),
-                ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _credentialTile(IntegrationConnectionInfo connection, int index) {
-    final label = connection.label.trim().isEmpty
-        ? _l10n.credentialUnnamed(index + 1)
-        : connection.label;
-    final active = _activeKnown && _activeID == connection.id;
-    final style = TextButton.styleFrom(minimumSize: const Size(48, 48));
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SelectableText(
-              label,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            if (active)
-              Text(
-                _l10n.credentialActive,
-                style: TextStyle(
-                  color: AppTheme.statusColor(
-                    Theme.of(context),
-                    AppStatusTone.ok,
-                  ),
-                ),
-              ),
-            Wrap(
-              spacing: 8,
-              children: [
-                TextButton(
-                  style: style,
-                  onPressed: !_canAct || active
-                      ? null
-                      : () =>
-                            _act(connection, label, _CredentialAction.activate),
-                  child: Text(_l10n.credentialSetActive),
-                ),
-                TextButton(
-                  style: style,
-                  onPressed: !_canAct
-                      ? null
-                      : () => _act(connection, label, _CredentialAction.rename),
-                  child: Text(_l10n.credentialRename),
-                ),
-                TextButton(
-                  style: style,
-                  onPressed: !_canAct
-                      ? null
-                      : () => _act(connection, label, _CredentialAction.remove),
-                  child: Text(_l10n.mcpRemove),
+        gap,
+        if (!_current)
+          KitNotice(message: l10n.credentialScopeChanged)
+        else ...[
+          KitLoadingBar(loading: working, label: l10n.credentialSheetLoading),
+          if (_error case final error?) ...[
+            KitNotice(
+              key: const ValueKey('credential-error'),
+              tone: AppStatusTone.failure,
+              message: error,
+              actions: [
+                KitAction(
+                  key: const ValueKey('credential-refresh'),
+                  label: l10n.credentialRefresh,
+                  onPressed: working ? null : _load,
                 ),
               ],
             ),
+            gap,
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CredentialLabelDialog extends StatefulWidget {
-  const _CredentialLabelDialog({required this.initial});
-  final String initial;
-  @override
-  State<_CredentialLabelDialog> createState() => _CredentialLabelDialogState();
-}
-
-class _CredentialLabelDialogState extends State<_CredentialLabelDialog> {
-  late final _label = TextEditingController(text: widget.initial);
-  bool get _valid {
-    final value = _label.text.trim();
-    return value.isNotEmpty &&
-        value.runes.length <= 128 &&
-        !RegExp(r'[\x00-\x1f\x7f-\x9f]').hasMatch(value);
-  }
-
-  @override
-  void dispose() {
-    _label.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return AlertDialog(
-      scrollable: true,
-      title: Text(l10n.credentialRename),
-      content: TextField(
-        controller: _label,
-        autofocus: true,
-        maxLength: 128,
-        textInputAction: TextInputAction.done,
-        decoration: InputDecoration(labelText: l10n.credentialLabel),
-        onChanged: (_) => setState(() {}),
-        onSubmitted: (_) {
-          if (_valid) Navigator.pop(context, _label.text.trim());
-        },
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-        ),
-        FilledButton(
-          onPressed: !_valid
-              ? null
-              : () => Navigator.pop(context, _label.text.trim()),
-          child: Text(l10n.credentialSave),
-        ),
+          if (_message case final message?) ...[
+            KitNotice(tone: AppStatusTone.ok, message: message),
+            gap,
+          ],
+          // Which account is in use shows only as the row's "Active" mark,
+          // set once a server event says so; no paragraph explains an
+          // unknown (slice-P3.11a).
+          if (!_loading && credentials.isEmpty && _error == null)
+            KitStateView(
+              key: const ValueKey('credential-empty'),
+              size: KitStateSize.inline,
+              icon: AppIconography.manageAccount,
+              title: l10n.credentialEmpty,
+              body: l10n.credentialSheetEmptyBody(
+                _integration?.name ?? widget.integrationName,
+              ),
+            ),
+          if (credentials.isNotEmpty || environment.isNotEmpty)
+            KitRowGroup(
+              margin: EdgeInsets.zero,
+              children: [
+                for (var index = 0; index < credentials.length; index++)
+                  _credentialRow(credentials[index], index),
+                for (final connection in environment)
+                  KitRow(
+                    leading: KitRow.icon(context, AppIconography.locked),
+                    title: connection.label,
+                    supporting: TextSpan(text: l10n.credentialEnvironment),
+                    supportingMaxLines: 2,
+                  ),
+              ],
+            ),
+        ],
       ],
     );
   }
+
+  Widget _credentialRow(IntegrationConnectionInfo connection, int index) {
+    final l10n = _l10n;
+    final label = connection.label.trim().isEmpty
+        ? l10n.credentialUnnamed(index + 1)
+        : connection.label;
+    final id = connection.id!;
+    final active = _activeKnown && _activeID == id;
+    final busy = _busyCredential == id;
+    final menu = !_canAct
+        ? const <KitMenuItem>[]
+        : [
+            KitMenuItem(
+              key: ValueKey('credential-use-$id'),
+              label: l10n.credentialSheetUseNamed(label),
+              icon: AppIconography.check,
+              enabled: !active,
+              disabledReason: active ? l10n.credentialSheetInUse : null,
+              onSelected: () =>
+                  _act(connection, label, _CredentialAction.activate),
+            ),
+            KitMenuItem(
+              key: ValueKey('credential-rename-$id'),
+              label: l10n.credentialSheetRenameNamed(label),
+              icon: AppIconography.edit,
+              onSelected: () =>
+                  _act(connection, label, _CredentialAction.rename),
+            ),
+            KitMenuItem(
+              key: ValueKey('credential-remove-$id'),
+              label: l10n.credentialSheetRemoveNamed(label),
+              icon: AppIconography.personRemove,
+              destructive: true,
+              onSelected: () =>
+                  _act(connection, label, _CredentialAction.remove),
+            ),
+          ];
+    return KitRow(
+      key: ValueKey('credential-$id'),
+      leading: KitRow.icon(context, AppIconography.manageAccount),
+      title: label,
+      supporting: active ? TextSpan(text: l10n.credentialActive) : null,
+      // The account's actions are one tap away, and say so.
+      trailing: busy
+          ? const KitTaskMark(state: KitTaskState.working)
+          : KitRowMenu(
+              items: menu,
+              menuLabel: l10n.credentialSheetActions(label),
+              tooltip: l10n.credentialSheetActions(label),
+            ),
+      menuLabel: l10n.credentialSheetActions(label),
+      menu: menu,
+    );
+  }
+}
+
+/// The longest account label the server keeps.
+const _labelLimit = 128;
+
+/// Why [value] cannot be an account label, or null when it can.
+String? _labelError(AppLocalizations l10n, String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return l10n.credentialSheetLabelEmpty;
+  if (trimmed.runes.length > _labelLimit ||
+      RegExp(r'[\x00-\x1f\x7f-\x9f]').hasMatch(trimmed)) {
+    return l10n.credentialSheetLabelInvalid;
+  }
+  return null;
 }

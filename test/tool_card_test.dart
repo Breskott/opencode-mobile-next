@@ -1,6 +1,16 @@
+// ToolCard (embedded-tool-card, chat-2): the host adapter that maps a server
+// ToolState to a KitToolRow and fills its body with kit parts. Asserts what
+// the person sees: the words on the line, the state (never "running" while
+// it waits for them), capped output with "Open full output", exit codes in
+// words, and the plain sub-agent line that opens its conversation.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/chat/kit_tool_row.dart';
+import 'package:opencode_mobile/ui/kit/kit_status_mark.dart';
 import 'package:opencode_mobile/ui/widgets/tool_card.dart';
 
 import 'support/v2_subagent_fixture.dart';
@@ -10,15 +20,32 @@ Future<void> _pumpTool(
   required String name,
   required ToolState state,
   ValueChanged<String>? onOpenSession,
+  ValueChanged<String>? onRerunCommand,
+  bool embedded = false,
+  bool waitingForYou = false,
 }) async {
+  tester.view.physicalSize = const Size(412, 915);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
   await tester.pumpWidget(
     MaterialApp(
+      theme: AppTheme.dark(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: true),
+        child: child!,
+      ),
       home: Scaffold(
         body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
           child: ToolCard(
             toolName: name,
             state: state,
+            embedded: embedded,
+            waitingForYou: waitingForYou,
             onOpenSession: onOpenSession,
+            onRerunCommand: onRerunCommand,
           ),
         ),
       ),
@@ -26,128 +53,294 @@ Future<void> _pumpTool(
   );
 }
 
+Finder _text(String value) => find.textContaining(value, findRichText: true);
+
+ToolState _shell({
+  String status = 'completed',
+  int? exit = 0,
+  String output = 'All tests passed.',
+  String command = 'flutter test',
+}) => ToolState.fromJson({
+  'status': status,
+  'input': {'command': command, 'workdir': '/workspace'},
+  if (status == 'completed') 'output': output,
+  'metadata': {'exit': ?exit},
+}, toolName: 'bash');
+
 void main() {
-  _serverStateTests();
-  _taskToolTests();
-  testWidgets(
-    'v2 asynchronous launch shows its agent and child route without claiming child completion',
-    (tester) async {
-      String? opened;
-      await _pumpTool(
-        tester,
-        name: 'subagent',
-        state: v2SubagentState(),
-        onOpenSession: (id) => opened = id,
-      );
-      await tester.tap(find.text('explore'));
-      await tester.pump();
-      expect(find.byKey(const Key('task-agent-chip')), findsOneWidget);
-      // The summary and expanded result share the localized status label.
-      expect(find.text('Started in background'), findsWidgets);
-      expect(find.byKey(const Key('task-background-badge')), findsOneWidget);
-      expect(find.byKey(const Key('task-working')), findsNothing);
-      expect(find.textContaining('DO NOT sleep'), findsNothing);
-      expect(find.textContaining('Work on non-overlapping'), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('task-open-session')));
-      expect(opened, 'ses_child_v2');
-    },
-  );
+  _shellTests();
+  _stateTests();
+  _editAndTodoTests();
+  _taskTests();
+}
 
-  testWidgets('v2 foreground completion unwraps the actual subagent envelope', (
-    tester,
-  ) async {
-    await _pumpTool(
-      tester,
-      name: 'subagent',
-      state: v2SubagentState(childStatus: 'completed', background: false),
-    );
-    await tester.tap(find.text('explore'));
-    await tester.pump();
-    expect(find.byKey(const Key('task-result')), findsOneWidget);
-    expect(
-      find.textContaining('Validation lives in checkout.dart.'),
-      findsWidgets,
-    );
-    expect(find.textContaining('<subagent'), findsNothing);
-    expect(find.byKey(const Key('task-working')), findsNothing);
-    expect(find.text('Started in background'), findsNothing);
-  });
-
-  testWidgets(
-    'v2 early progress remains foreground work and failures retain the child route',
-    (tester) async {
-      await _pumpTool(
-        tester,
-        name: 'subagent',
-        state: v2SubagentState(status: 'running', background: false),
-      );
-      await tester.tap(find.text('explore'));
-      await tester.pump();
-      expect(find.byKey(const Key('task-working')), findsOneWidget);
-      expect(find.byKey(const Key('task-background-badge')), findsNothing);
-      await tester.pumpWidget(const SizedBox.shrink());
-      await _pumpTool(
-        tester,
-        name: 'subagent',
-        state: v2SubagentState(status: 'error', background: false),
-        onOpenSession: (_) {},
-      );
-      expect(find.textContaining('Subagent cancelled'), findsWidgets);
-      expect(find.text('running'), findsNothing);
-      expect(find.text('Error'), findsOneWidget);
-      expect(find.byKey(const ValueKey('task-open-session')), findsOneWidget);
-      expect(find.byKey(const Key('task-working')), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'a v2 subagent the server did not execute has no launch or child action',
-    (tester) async {
-      await _pumpTool(
-        tester,
-        name: 'subagent',
-        state: v2SubagentState(
-          status: 'running',
-          background: false,
-          executed: false,
-        ),
-        onOpenSession: (_) {},
-      );
-      await tester.tap(find.text('explore'));
-      await tester.pump();
-      expect(find.text('Not run'), findsOneWidget);
-      expect(find.text('Started in background'), findsNothing);
-      expect(find.byKey(const ValueKey('task-open-session')), findsNothing);
-      expect(find.byKey(const Key('task-working')), findsNothing);
-    },
-  );
-
-  testWidgets('renders the OpenCode shell contract without generic sections', (
+void _shellTests() {
+  testWidgets('a passing command says so in words, not "exit 0"', (
     tester,
   ) async {
     await _pumpTool(
       tester,
       name: 'bash',
-      state: ToolState.fromJson(const {
-        'status': 'completed',
-        'input': {'command': 'flutter test', 'workdir': '/workspace'},
-        'output': 'All tests passed.\n<shell_metadata>ignored</shell_metadata>',
-        'metadata': {'exit': 0},
-      }, toolName: 'bash'),
+      state: _shell(
+        output: 'All tests passed.\n<shell_metadata>ignored</shell_metadata>',
+      ),
     );
-
     expect(find.text('Shell'), findsOneWidget);
-    expect(find.text('exit 0'), findsOneWidget);
+    expect(find.text('exit 0'), findsNothing);
+    expect(find.text('Failed'), findsNothing);
     await tester.tap(find.text('Shell'));
     await tester.pump();
-    expect(find.textContaining(r'$ flutter test'), findsOneWidget);
-    expect(find.textContaining('All tests passed.'), findsOneWidget);
-    expect(find.textContaining('shell_metadata'), findsNothing);
-    expect(find.text('INPUT'), findsNothing);
-    expect(find.text('OUTPUT'), findsNothing);
+    expect(find.byKey(const Key('tool-shell-command')), findsOneWidget);
+    expect(_text('All tests passed.'), findsWidgets);
+    expect(_text('Passed · exit code 0'), findsOneWidget);
+    expect(_text('shell_metadata'), findsNothing);
   });
 
-  testWidgets('renders OpenCode edit metadata as a colored diff', (
+  testWidgets('a non-zero exit is a failed step with its code in words', (
+    tester,
+  ) async {
+    await _pumpTool(
+      tester,
+      name: 'bash',
+      state: _shell(exit: 1, output: '1 test failed'),
+    );
+    expect(find.text('Failed'), findsOneWidget);
+    await tester.tap(find.text('Shell'));
+    await tester.pump();
+    expect(_text('Failed · exit code 1'), findsOneWidget);
+  });
+
+  testWidgets('long output is capped at 12 lines with Open full output', (
+    tester,
+  ) async {
+    final output = List.generate(40, (i) => 'line ${i + 1}').join('\n');
+    await _pumpTool(
+      tester,
+      name: 'bash',
+      state: _shell(output: output),
+    );
+    await tester.tap(find.text('Shell'));
+    await tester.pump();
+    expect(_text('line 12'), findsWidgets);
+    expect(_text('line 13'), findsNothing);
+    expect(find.text('Open full output'), findsOneWidget);
+  });
+
+  testWidgets('Run this command again appears only when the host offers it', (
+    tester,
+  ) async {
+    await _pumpTool(tester, name: 'bash', state: _shell());
+    await tester.tap(find.text('Shell'));
+    await tester.pump();
+    expect(find.text('Run this command again'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    final reruns = <String>[];
+    await _pumpTool(
+      tester,
+      name: 'bash',
+      state: _shell(),
+      onRerunCommand: reruns.add,
+    );
+    await tester.tap(find.text('Shell'));
+    await tester.pump();
+    await tester.ensureVisible(find.text('Run this command again'));
+    await tester.tap(find.text('Run this command again'));
+    expect(reruns, ['flutter test']);
+  });
+
+  testWidgets('an embedded failure starts open with the error output', (
+    tester,
+  ) async {
+    await _pumpTool(
+      tester,
+      name: 'bash',
+      embedded: true,
+      state: ToolState.fromJson(const {
+        'status': 'error',
+        'input': {'command': 'npm test'},
+        'error': 'Error: Checkout test failed',
+      }, toolName: 'bash'),
+    );
+    expect(find.byKey(const Key('embedded-tool-row')), findsOneWidget);
+    expect(find.byKey(const Key('embedded-tool-error-output')), findsOneWidget);
+    expect(_text('Checkout test failed'), findsWidgets);
+    expect(_text('Error:'), findsNothing);
+  });
+}
+
+void _stateTests() {
+  test('formatToolDuration uses tenths under a minute and m/ss past it', () {
+    expect(formatToolDuration(const Duration(milliseconds: 800)), '0.8s');
+    expect(formatToolDuration(const Duration(milliseconds: 12400)), '12.4s');
+    expect(formatToolDuration(const Duration(seconds: 65)), '1m 05s');
+    expect(
+      formatToolDuration(const Duration(minutes: 12, seconds: 3)),
+      '12m 03s',
+    );
+  });
+
+  testWidgets('a finished step shows how long it took; a running one not', (
+    tester,
+  ) async {
+    final start = DateTime.fromMillisecondsSinceEpoch(1000);
+    await _pumpTool(
+      tester,
+      name: 'bash',
+      state: ToolState(
+        status: 'completed',
+        input: const {'command': 'ls'},
+        output: 'ok',
+        startedAt: start,
+        completedAt: start.add(const Duration(milliseconds: 12400)),
+      ),
+    );
+    expect(find.text('12 seconds'), findsOneWidget);
+
+    await _pumpTool(
+      tester,
+      name: 'bash',
+      state: ToolState(
+        status: 'running',
+        input: const {'command': 'ls'},
+        startedAt: start,
+      ),
+    );
+    expect(find.text('12 seconds'), findsNothing);
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is KitStatusMark && w.state == KitMarkState.working,
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a call blocked on the person says Waiting for you, no spinner', (
+    tester,
+  ) async {
+    await _pumpTool(
+      tester,
+      name: 'bash',
+      waitingForYou: true,
+      state: ToolState(status: 'running', input: const {'command': 'rm x'}),
+    );
+    expect(find.text('Waiting for you'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is KitStatusMark && w.state == KitMarkState.working,
+      ),
+      findsNothing,
+    );
+
+    // A running question tool always waits for the person's answer.
+    await _pumpTool(
+      tester,
+      name: 'question',
+      state: ToolState(
+        status: 'running',
+        input: const {
+          'questions': [
+            {'question': 'Which branch?'},
+          ],
+        },
+      ),
+    );
+    expect(find.text('Waiting for you'), findsOneWidget);
+  });
+
+  testWidgets('pruned output is said inside the opened step', (tester) async {
+    await _pumpTool(
+      tester,
+      name: 'read',
+      state: ToolState(
+        status: 'completed',
+        input: const {'filePath': '/a/b.txt'},
+        pruned: true,
+      ),
+    );
+    expect(find.byKey(const Key('tool-pruned')), findsNothing);
+    await tester.tap(find.text('Read'));
+    await tester.pump();
+    expect(find.byKey(const Key('tool-pruned')), findsOneWidget);
+    expect(find.text('Output pruned'), findsOneWidget);
+  });
+
+  testWidgets('a call the server never ran says Not run, never failed', (
+    tester,
+  ) async {
+    await _pumpTool(
+      tester,
+      name: 'bash',
+      state: ToolState(
+        status: 'pending',
+        input: const {'command': 'rm -rf build'},
+        executed: false,
+      ),
+    );
+    expect(find.text('Not run'), findsOneWidget);
+    expect(find.text('Failed'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    final row = tester.widget<KitToolRow>(find.byType(KitToolRow));
+    expect(row.status, KitToolStatus.notRun);
+  });
+
+  testWidgets('a produced file stays visible under the folded line', (
+    tester,
+  ) async {
+    await _pumpTool(
+      tester,
+      name: 'render',
+      state: ToolState(
+        status: 'completed',
+        input: const {'target': 'report'},
+        outputFiles: [
+          ToolOutputFile(path: '/tmp/report.csv', mimeType: 'text/csv'),
+        ],
+      ),
+    );
+    expect(find.byKey(const Key('tool-output-file')), findsOneWidget);
+    expect(find.text('report.csv'), findsOneWidget);
+  });
+
+  testWidgets('copying output uses the kit copy of the whole text', (
+    tester,
+  ) async {
+    final writes = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          writes.add((call.arguments as Map)['text'] as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    final output = List.generate(30, (i) => 'row $i').join('\n');
+    await _pumpTool(
+      tester,
+      name: 'bash',
+      state: _shell(output: output),
+    );
+    await tester.tap(find.text('Shell'));
+    await tester.pump();
+    final copies = find.bySemanticsLabel(RegExp('^Copy'));
+    expect(copies, findsWidgets);
+    await tester.tap(copies.last);
+    await tester.pump();
+    expect(writes, contains(output));
+    await tester.pump(const Duration(seconds: 3));
+  });
+}
+
+void _editAndTodoTests() {
+  testWidgets('an edit shows +n −n on the line and its diff when opened', (
     tester,
   ) async {
     await _pumpTool(
@@ -170,17 +363,16 @@ void main() {
         },
       }, toolName: 'edit'),
     );
-
     expect(find.text('Edit'), findsOneWidget);
-    expect(find.text('main.dart'), findsOneWidget);
-    expect(find.text('+1 · −1'), findsOneWidget);
+    expect(_text('+1'), findsWidgets);
+    expect(_text('−1'), findsWidgets);
     await tester.tap(find.text('Edit'));
     await tester.pump();
-    expect(find.text('+new line'), findsOneWidget);
-    expect(find.text('-old line'), findsOneWidget);
+    expect(_text('new line'), findsWidgets);
+    expect(_text('old line'), findsWidgets);
   });
 
-  testWidgets('renders OpenCode todo items as structured task rows', (
+  testWidgets('the plan step reads one count, the same as its list', (
     tester,
   ) async {
     await _pumpTool(
@@ -192,152 +384,30 @@ void main() {
           'todos': [
             {'content': 'Inspect contract', 'status': 'completed'},
             {'content': 'Run simulator', 'status': 'in_progress'},
+            {'content': 'Dropped idea', 'status': 'cancelled'},
           ],
         },
         'output': 'Tasks updated.',
       }, toolName: 'todowrite'),
     );
-
-    expect(find.text('Tasks'), findsOneWidget);
-    expect(find.text('1/2 completed'), findsOneWidget);
-    await tester.tap(find.text('Tasks'));
+    // Cancelled tasks are not tracked: 1 of 2, on the line and in the list.
+    expect(_text('1 of 2 done'), findsOneWidget);
+    await tester.tap(find.byType(KitToolRow));
     await tester.pump();
     expect(find.text('Inspect contract'), findsOneWidget);
     expect(find.text('Run simulator'), findsOneWidget);
-  });
-
-  testWidgets('a running tool card carries a primary left accent', (
-    tester,
-  ) async {
-    await _pumpTool(
-      tester,
-      name: 'bash',
-      state: ToolState.fromJson(const {
-        'status': 'running',
-        'input': {'command': 'flutter test'},
-      }, toolName: 'bash'),
-    );
-    final theme = Theme.of(tester.element(find.byType(ToolCard)));
-    BoxDecoration accent() =>
-        tester
-                .widget<AnimatedContainer>(
-                  find.byKey(const Key('tool-card-accent')),
-                )
-                .decoration!
-            as BoxDecoration;
-    expect(accent().border!.top.width, 0);
-    expect((accent().border! as Border).left.width, 2);
-    expect((accent().border! as Border).left.color, theme.colorScheme.primary);
-
-    await _pumpTool(
-      tester,
-      name: 'bash',
-      state: ToolState.fromJson(const {
-        'status': 'completed',
-        'input': {'command': 'flutter test'},
-        'output': 'ok',
-      }, toolName: 'bash'),
-    );
-    await tester.pumpAndSettle();
-    expect((accent().border! as Border).left.color, Colors.transparent);
+    expect(_text('1 of 2 done'), findsNWidgets(2));
   });
 }
 
-// ---------------------------------------------------------------------------
-// Widened tool state: duration, pruned output, never-run calls.
-// ---------------------------------------------------------------------------
-
-void _serverStateTests() {
-  test('formatToolDuration uses tenths under a minute and m/ss past it', () {
-    expect(formatToolDuration(const Duration(milliseconds: 800)), '0.8s');
-    expect(formatToolDuration(const Duration(milliseconds: 12400)), '12.4s');
-    expect(formatToolDuration(const Duration(seconds: 65)), '1m 05s');
-    expect(
-      formatToolDuration(const Duration(minutes: 12, seconds: 3)),
-      '12m 03s',
-    );
-  });
-
-  testWidgets('completed tools show their run time in the header', (
-    tester,
-  ) async {
-    final start = DateTime.fromMillisecondsSinceEpoch(1000);
-    await _pumpTool(
-      tester,
-      name: 'bash',
-      state: ToolState(
-        status: 'completed',
-        input: const {'command': 'ls'},
-        output: 'ok',
-        startedAt: start,
-        completedAt: start.add(const Duration(milliseconds: 12400)),
-      ),
-    );
-    expect(find.byKey(const Key('tool-duration')), findsOneWidget);
-    expect(find.text('12.4s'), findsOneWidget);
-    expect(find.byKey(const Key('tool-pruned')), findsNothing);
-    expect(find.byKey(const Key('tool-not-run')), findsNothing);
-  });
-
-  testWidgets('running tools show no duration yet', (tester) async {
-    await _pumpTool(
-      tester,
-      name: 'bash',
-      state: ToolState(
-        status: 'running',
-        input: const {'command': 'ls'},
-        startedAt: DateTime.fromMillisecondsSinceEpoch(1000),
-      ),
-    );
-    expect(find.byKey(const Key('tool-duration')), findsNothing);
-  });
-
-  testWidgets('pruned output is announced under the header', (tester) async {
-    await _pumpTool(
-      tester,
-      name: 'read',
-      state: ToolState(
-        status: 'completed',
-        input: const {'filePath': '/a/b.txt'},
-        pruned: true,
-      ),
-    );
-    expect(find.byKey(const Key('tool-pruned')), findsOneWidget);
-    expect(find.text('Output pruned'), findsOneWidget);
-  });
-
-  testWidgets('never-run calls grey out with a Not run state', (tester) async {
-    await _pumpTool(
-      tester,
-      name: 'bash',
-      state: ToolState(
-        status: 'pending',
-        input: const {'command': 'rm -rf build'},
-        executed: false,
-      ),
-    );
-    expect(find.byKey(const Key('tool-not-run')), findsOneWidget);
-    expect(find.text('Not run'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsNothing);
-    final title = tester.widget<Text>(find.text('Shell'));
-    expect(title.style?.decoration, isNot(TextDecoration.lineThrough));
-    final semantics = tester.getSemantics(find.byType(InkWell).first);
-    expect(semantics.label, contains('Not run'));
-  });
-}
-
-// ---------------------------------------------------------------------------
-// `task`: the parent agent delegating to a subagent.
-// ---------------------------------------------------------------------------
-
-void _taskToolTests() {
+void _taskTests() {
   const taskInput = {
     'subagent_type': 'explore',
     'description': 'Find X',
     'prompt': '# Do this\n\nLook at foo',
   };
 
-  testWidgets('task cards show the agent chip, prompt and result', (
+  testWidgets('a sub-agent the host can open is the plain agent line', (
     tester,
   ) async {
     final opened = <String>[];
@@ -351,131 +421,74 @@ void _taskToolTests() {
         'output':
             '<task id="ses_child" state="completed">\n'
             '<task_result>\ndone\n</task_result>\n</task>',
+        'metadata': {'sessionId': 'ses_child'},
+      }, toolName: 'task'),
+    );
+    expect(_text('Delegated to explore · Done'), findsOneWidget);
+    expect(find.text('Find X'), findsOneWidget);
+    expect(find.byKey(const Key('task-prompt')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('task-open-session')));
+    expect(opened, ['ses_child']);
+  });
+
+  testWidgets('a v2 background launch says it runs in the background', (
+    tester,
+  ) async {
+    String? opened;
+    await _pumpTool(
+      tester,
+      name: 'subagent',
+      state: v2SubagentState(),
+      onOpenSession: (id) => opened = id,
+    );
+    expect(_text('Delegated to explore'), findsOneWidget);
+    expect(_text('Started in the background'), findsOneWidget);
+    expect(_text('DO NOT sleep'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('task-open-session')));
+    expect(opened, 'ses_child_v2');
+  });
+
+  testWidgets('without a conversation to open, the step folds prompt and '
+      'result', (tester) async {
+    await _pumpTool(
+      tester,
+      name: 'task',
+      state: ToolState.fromJson(const {
+        'status': 'completed',
+        'input': taskInput,
+        'output': '<task_result>done</task_result>',
         'metadata': {
-          'parentSessionId': 'ses_parent',
           'sessionId': 'ses_child',
           'model': {'providerID': 'anthropic', 'modelID': 'claude-x'},
         },
       }, toolName: 'task'),
     );
-
-    // Collapsed header: agent as title, description as subtitle, and the
-    // child session's state as a trailing detail.
-    expect(find.text('explore'), findsOneWidget);
-    expect(find.text('Find X'), findsOneWidget);
-    expect(find.text('Completed'), findsOneWidget);
-    expect(find.byKey(const Key('task-prompt')), findsNothing);
-
-    await tester.tap(find.text('Find X'));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('task-agent-chip')), findsOneWidget);
+    expect(find.text('Delegated to explore'), findsOneWidget);
+    expect(find.byKey(const ValueKey('task-open-session')), findsNothing);
+    await tester.tap(find.text('Delegated to explore'));
+    await tester.pump();
     expect(find.byKey(const Key('task-description')), findsOneWidget);
-    expect(find.byKey(const Key('task-background-badge')), findsNothing);
+    expect(find.text('Model · claude-x'), findsOneWidget);
     expect(find.text('Prompt from parent agent'), findsOneWidget);
-    expect(find.textContaining('Do this', findRichText: true), findsWidgets);
-    expect(
-      find.textContaining('Look at foo', findRichText: true),
-      findsWidgets,
-    );
-    // Three lines never need the collapse toggle.
-    expect(find.byKey(const Key('task-prompt-toggle')), findsNothing);
+    expect(_text('Look at foo'), findsNothing);
     expect(find.byKey(const Key('task-result')), findsOneWidget);
-    expect(find.textContaining('done', findRichText: true), findsWidgets);
-    expect(find.textContaining('task_result'), findsNothing);
-    expect(find.text('claude-x'), findsOneWidget);
-    expect(find.byKey(const Key('task-working')), findsNothing);
-
-    final open = find.byKey(const ValueKey('task-open-session'));
-    expect(open, findsOneWidget);
-    await tester.tap(open);
-    expect(opened, ['ses_child']);
+    expect(_text('done'), findsWidgets);
+    expect(_text('task_result'), findsNothing);
   });
 
-  testWidgets('task cards hide the open-session action without a handler or '
-      'child id', (tester) async {
-    await _pumpTool(
-      tester,
-      name: 'task',
-      state: ToolState.fromJson(const {
-        'status': 'completed',
-        'input': taskInput,
-        'output': '<task_result>done</task_result>',
-        'metadata': {'sessionId': 'ses_child'},
-      }, toolName: 'task'),
-    );
-    await tester.tap(find.text('Find X'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('task-open-session')), findsNothing);
-
-    // Fresh tree so the second card starts collapsed again.
-    await tester.pumpWidget(const SizedBox());
-    await _pumpTool(
-      tester,
-      name: 'task',
-      onOpenSession: (_) {},
-      state: ToolState.fromJson(const {
-        'status': 'completed',
-        'input': taskInput,
-        'output': '<task_result>done</task_result>',
-      }, toolName: 'task'),
-    );
-    await tester.tap(find.text('Find X'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('task-open-session')), findsNothing);
-  });
-
-  testWidgets('long prompts collapse to a preview with a toggle', (
+  testWidgets('a running delegation says working; a failed one starts open', (
     tester,
   ) async {
-    final prompt = List.generate(14, (i) => 'Line ${i + 1}').join('\n');
     await _pumpTool(
       tester,
-      name: 'task',
-      state: ToolState.fromJson({
-        'status': 'completed',
-        'input': {...taskInput, 'prompt': prompt},
-        'output': '<task_result>done</task_result>',
-      }, toolName: 'task'),
+      name: 'subagent',
+      state: v2SubagentState(status: 'running', background: false),
     );
-    await tester.tap(find.text('Find X'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('14 lines'), findsOneWidget);
-    expect(find.textContaining('Line 8', findRichText: true), findsWidgets);
-    expect(find.textContaining('Line 9', findRichText: true), findsNothing);
-    final toggle = find.byKey(const Key('task-prompt-toggle'));
-    expect(toggle, findsOneWidget);
-    expect(find.text('Show full prompt'), findsOneWidget);
-
-    await tester.tap(toggle);
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Line 14', findRichText: true), findsWidgets);
-    expect(find.text('Show less'), findsOneWidget);
-  });
-
-  testWidgets('a running task shows the subagent working line', (tester) async {
-    await _pumpTool(
-      tester,
-      name: 'task',
-      state: ToolState.fromJson(const {
-        'status': 'running',
-        'input': {...taskInput, 'background': true},
-        'metadata': {'sessionId': 'ses_child', 'background': true},
-      }, toolName: 'task'),
-    );
-    expect(find.text('Background'), findsOneWidget);
-    await tester.tap(find.text('Find X'));
+    await tester.tap(find.byType(KitToolRow));
     await tester.pump();
     expect(find.byKey(const Key('task-working')), findsOneWidget);
-    expect(find.text('Subagent working…'), findsOneWidget);
-    expect(find.byKey(const Key('task-background-badge')), findsOneWidget);
-    expect(find.byKey(const Key('task-result')), findsNothing);
-  });
 
-  testWidgets('a failed task keeps the prompt and shows the error as result', (
-    tester,
-  ) async {
+    await tester.pumpWidget(const SizedBox.shrink());
     await _pumpTool(
       tester,
       name: 'task',
@@ -485,10 +498,27 @@ void _taskToolTests() {
         'error': '<task_error>Agent not found: "explore"</task_error>',
       }, toolName: 'task'),
     );
-    // Error cards start expanded.
+    expect(find.text('Failed'), findsOneWidget);
     expect(find.text('Prompt from parent agent'), findsOneWidget);
-    expect(find.textContaining('Agent not found'), findsOneWidget);
-    expect(find.textContaining('task_error'), findsNothing);
+    expect(_text('Agent not found'), findsWidgets);
+    expect(_text('task_error'), findsNothing);
+  });
+
+  testWidgets('a sub-agent the server did not execute is Not run, no open', (
+    tester,
+  ) async {
+    await _pumpTool(
+      tester,
+      name: 'subagent',
+      state: v2SubagentState(
+        status: 'running',
+        background: false,
+        executed: false,
+      ),
+      onOpenSession: (_) {},
+    );
+    expect(find.text('Not run'), findsOneWidget);
+    expect(find.byKey(const ValueKey('task-open-session')), findsNothing);
   });
 
   test('taskChildSessionId reads the server key and legacy spellings', () {

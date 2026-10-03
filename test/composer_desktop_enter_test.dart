@@ -144,35 +144,38 @@ void main() {
     expect(api.prompts, isEmpty);
   });
 
-  testWidgets('the Stop tooltip is dismissed when Stop is pressed', (
-    tester,
-  ) async {
+  testWidgets('a sent prompt runs at once: status and Stop on the composer '
+      'edge, and the composer keeps its mic or Send', (tester) async {
+    final semantics = tester.ensureSemantics();
     final api = _ComposerApi();
-    final controller = await _pump(tester, api, busy: true);
+    await _pump(tester, api);
 
-    // Stop has its own button next to a live Send while the run is active.
+    await _type(tester, 'go');
+    await tester.tap(find.byKey(const Key('chat-send-button')));
+    await tester.pumpAndSettle();
+    expect(api.prompts, ['go']);
+
+    // The server has not said it is busy yet; the edge still says it runs
+    // (a send that has not been answered reads as thinking).
+    expect(find.text('Thinking…'), findsOneWidget);
     final stop = find.byKey(const Key('chat-stop-button'));
-    expect(tester.widget<IconButton>(stop).tooltip, 'Stop');
-    // Long-press shows the tooltip the way a touch user would see it.
-    await tester.longPress(stop);
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('Stop'), findsOneWidget);
+    expect(stop, findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Stop reply')), findsOneWidget);
+    // The composer has no Stop circle: its one trailing control is still
+    // the mic (voice builds) or Send.
+    expect(
+      find.byKey(const Key('composer-voice-button')).evaluate().length +
+          find.byKey(const Key('chat-send-button')).evaluate().length,
+      1,
+    );
 
     await tester.tap(stop);
-    await tester.pump();
-    expect(api.abortCalls, 1);
-    // The run ends and Stop goes away; nothing may still say Stop.
-    controller.busySessions.remove('session-1');
-    controller.notifyListeners();
     await tester.pumpAndSettle();
-
-    expect(find.text('Stop'), findsNothing);
+    expect(api.abortCalls, 1);
+    // Stopped on purpose: no status, and never "No reply came back".
     expect(stop, findsNothing);
-    expect(
-      tester
-          .widget<IconButton>(find.byKey(const Key('chat-send-button')))
-          .tooltip,
-      'Send',
-    );
+    expect(find.text('Thinking…'), findsNothing);
+    expect(find.text('No reply came back'), findsNothing);
+    semantics.dispose();
   });
 }

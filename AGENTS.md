@@ -6,9 +6,10 @@ Working notes for coding agents in this repo. The human-facing equivalents are
 
 ## Toolchain — pinned, not advisory
 
-- Flutter **3.47.2** from Shorebird's cache:
-  `~/.shorebird/bin/cache/flutter/<rev>/bin/flutter`. A different local Flutter
-  may fail to resolve packages or produce different analyzer results.
+- Flutter **3.47.1** from Shorebird's cache:
+  `~/.shorebird/bin/cache/flutter/91f8bd75076e9c740aa13cf67eb9ec1a093f68f5/bin/flutter`.
+  A different local Flutter may fail to resolve packages or produce different
+  analyzer results.
 - JDK 17 (temurin), Android SDK API 37, Shorebird CLI 1.6.x (release/patch only).
 
 ## Commands and order
@@ -19,13 +20,14 @@ every edit. During development, follow the focused-check ladder below.
 ```bash
 flutter pub get
 flutter analyze                 # must be clean; no new ignores
-flutter test --concurrency=1    # serial — parallel runs are flaky or killed
+flutter test --concurrency=1    # serial in the phone-hosted container; a workstation may use -j 3
 ```
 
 - Single file: `flutter test --concurrency=1 test/offline_queue_test.dart`.
-- If the shell kills long runs, split the suite — do not parallelize:
-  `ls test/*.dart | split -n l/6 - /tmp/chunk_`, then run each chunk.
-  Include nested test directories too; a top-level glob is not the full suite.
+- Fast full run: `tool/qa/run_tests_fast.sh` (4 timing-balanced shards × `--concurrency 2`, one machine_lock slot each; failing files in `build/traycer/fast-*/summary.txt`). CI runs the same runner as 6 shards.
+- If the shell kills long runs, split the suite and run the chunks one after
+  another: `find test -name '*_test.dart' | sort | split -n l/6 - "${TMPDIR:-/tmp}/chunk_"`
+  (this includes nested directories and goldens).
 - Generated SDK package has its own checks: `dart analyze` and `dart test`
   inside `packages/opencode_sdk/`.
 - Optional live-server checks (no emulator):
@@ -57,6 +59,12 @@ flutter test --concurrency=1    # serial — parallel runs are flaky or killed
   `lib/state/` profiles/Keystore, `ConnectionController`, offline queue;
   `lib/termux/`, `lib/background/`, `lib/voice/`, `lib/platform/` native
   bridges; `lib/ui/` screens and widgets.
+- **Kit only (owner rule, 2026-09-26):** every UI component comes from `lib/ui/kit/`.
+  Outside the kit, `lib/ui/` only arranges kit parts with layout, scrolling, builder,
+  semantics and focus widgets (the allowlist is in `docs/ux-system/kit-v2.md` §9).
+  A missing part is added to the kit, even if only one screen uses it; never
+  hand-build it on the screen. `test/kit_ratchet_test.dart` (G16) keeps the count
+  per file going down only.
 - UI talks to the domain gateway only — never `api/` or `api2/` directly.
   Gate features on `ServerCapabilities` flags, never on the flavor enum.
 - Treat as single-owner units (one editor at a time): `lib/state/connection.dart`,
@@ -87,8 +95,8 @@ flutter test --concurrency=1    # serial — parallel runs are flaky or killed
 - Nothing in `lib/background/` may assume unbounded lifetime: Android 15+
   caps `dataSync` foreground services at 6 background hours per rolling 24h,
   and the battery-optimization exemption does not lift that.
-- App is English-only; `l10n.yaml`/`app_en.arb` are wired but most strings are
-  still hardcoded (`docs/localization-todo.md`).
+- Copy lives in `lib/l10n/app_en.arb`, with an Arabic `app_ar.arb`; strings not
+  yet moved out of the code are listed in `docs/localization-todo.md`.
 - Verifying against a live OpenCode 2 beta: `opencode2 serve --port 4097
   --hostname 127.0.0.1`, HTTP Basic user `opencode` with the per-run password
   it prints — never commit or echo that password.
@@ -101,22 +109,24 @@ flutter test --concurrency=1    # serial — parallel runs are flaky or killed
 
 ## Workflow
 
-- Maintainer instruction (2026-09-08): new features use one dedicated branch and
-  Git worktree per agent. That agent owns the complete user journey, implementation,
-  localization, tests, screenshots and local commits. The coordinator reviews the
-  complete branch, resolves integration conflicts and merges after validation.
-  Keep each worktree to one feature; do not edit another agent's checkout. This
-  supersedes direct-on-dev development for new features and file-by-file delegation.
-  Use `[skip ci]` in commits; no automatic pushes, CI, signing or releases. Serialize
-  machine-heavy Flutter/native checks across worktrees, while source work proceeds
-  independently. Shared-library single ownership applies within each worktree.
-
-- Maintainer instruction (2026-09-07): consolidate work in logical staged commit batches directly on `dev`, with `[skip ci]` in every commit message to preserve the CI budget. Do not open PRs or trigger native workflows for this consolidation. Run checks locally; CI/signing runs require a fresh explicit request. This instruction overrides the default PR workflow below for this batch.
-
-- Replacement APKs for the maintainer must keep the installed stable CI signer: `2D010C2103CB2F78ABAACA690EAD4D45F8003A6C0A02082CD2A2AE62FD18D0EC`. Use the Android quality workflow for these updates, verify the APK certificate before delivery, and never substitute or rotate the signer.
-
-- Work lands on `dev` through PRs; `master` is fast-forwarded only at approved
-  milestones — see `docs/verification/` for the branch ledger.
+- Each feature gets its own branch and Git worktree, owned by one agent: the
+  complete user journey, implementation, localization, tests, screenshots and
+  local commits. Keep a worktree to one feature and never edit another agent's
+  checkout; shared-library single ownership applies within each worktree. The
+  coordinator reviews the whole branch, resolves conflicts and merges after
+  validation.
+- CI budget is limited: every commit carries `[skip ci]`, checks run locally,
+  and pushes, PRs, CI runs, signing and releases each need a fresh explicit
+  request. Serialize machine-heavy Flutter/native checks across worktrees.
+- A replacement APK must be signed with the same certificate as the build on
+  the maintainer's phone, or Android refuses the update and only an uninstall
+  (which loses local data) gets past it. Ask for the installed certificate's
+  SHA-256 and compare it with `apksigner verify --print-certs` before delivery.
+  Known signers: stable CI `2D010C2103CB2F78ABAACA690EAD4D45F8003A6C0A02082CD2A2AE62FD18D0EC`,
+  local release key `1DE5BF08146F269BCD9EB5C2FFC94469CE4617D37806285955F978A62494D60C`.
+  Never substitute or rotate a signer.
+- `master` is fast-forwarded only at approved milestones — see
+  `docs/verification/` for the branch ledger.
 - Releases/signing go through `scripts/release.sh` / `scripts/cut-alpha.sh`
   (master-only, clean tree, dry-run by default). Never publish, tag, or use
   signing secrets without explicit maintainer approval.
@@ -145,8 +155,7 @@ flutter test --concurrency=1    # serial — parallel runs are flaky or killed
    arguments, results and errors before parallel editing. Record read/write
    sets, dependency, acceptance and focused checks. Shared libraries remain
    single-owner. Reviewers never launch test processes. If a worker is blocked
-   by quota/permissions, take over that slice; do not spend the session building
-   a nested-worker workaround or claim a foreground tool is background work.
+   by quota or permissions, take over that slice yourself.
 5. **Use a check ladder.** Format changed files; run the new/affected test file
    once the logical change is ready. After a failure, rerun that file or exact
    test (`--plain-name`) until fixed—not the repository. Run the analyzer at an
@@ -158,15 +167,14 @@ flutter test --concurrency=1    # serial — parallel runs are flaky or killed
    including nested goldens. Record candidate revision/diff, commands, completed
    files, skips and failures. If interrupted, resume only uncompleted files for
    the unchanged candidate. Subsequent relevant edits invalidate that coverage;
-   never combine incompatible snapshots into a claimed pass. Do not repeat a
-   40-minute monolithic timeout or call partial coverage a completed gate.
+   never combine incompatible snapshots into a claimed pass, and never call
+   partial coverage a completed gate.
 7. **Keep an evidence budget.** Progress updates should say what now works, what
    remains, and the next concrete action. Append verification results at the
-   slice boundary; do not rewrite the roadmap or produce a new audit packet
-   after each small edit. Record unexpected blockers once and return to code.
+   slice boundary. Record unexpected blockers once and return to code.
 8. **Separate shipping states.** Report implemented / enabled / verified /
    committed / deployed / released distinctly. Lines changed and test counts
    are not user value. Native CI, signing and publication cannot substitute for
    unfinished product integration. “Get shipping” is not permission to touch
    live servers, credentials, tags, signing keys or public releases; obtain the
-   required explicit approval and stay on `dev`.
+   required explicit approval first.

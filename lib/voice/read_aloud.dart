@@ -25,6 +25,29 @@ class ReadAloudVoice {
   final String locale;
 }
 
+/// The reading voice to use when the person has not chosen one (P6.6:
+/// "the voice by locale"): the first offline voice whose language and region
+/// match [locale], else the first in its language, else null (the engine's
+/// own default then reads). Voice locales are BCP 47 tags ("en-US");
+/// underscores and case are tolerated.
+ReadAloudVoice? readAloudVoiceForLocale(
+  List<ReadAloudVoice> voices,
+  Locale locale,
+) {
+  List<String> parts(String tag) =>
+      tag.replaceAll('_', '-').toLowerCase().split('-');
+  final language = locale.languageCode.toLowerCase();
+  final region = locale.countryCode?.toLowerCase();
+  ReadAloudVoice? sameLanguage;
+  for (final voice in voices) {
+    final tag = parts(voice.locale);
+    if (tag.first != language) continue;
+    if (region != null && tag.skip(1).contains(region)) return voice;
+    sameLanguage ??= voice;
+  }
+  return sameLanguage;
+}
+
 class ReadAloudException implements Exception {
   const ReadAloudException(this.failure);
 

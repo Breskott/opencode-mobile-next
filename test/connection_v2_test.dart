@@ -1065,8 +1065,40 @@ void main() {
     final reconciliation = controller.reconcileBusySessionsForTesting();
     api.statusesCompleter!.complete(const {});
     await reconciliation;
+    // Once could be the moment between two steps of a run still going.
+    expect(controller.busySessions, contains('session-1'));
 
+    await controller.reconcileBusySessionsForTesting();
     expect(controller.busySessions, isNot(contains('session-1')));
+  });
+
+  test('a run missing from one status read, between two steps, stays '
+      'running', () async {
+    final api = _V2Api()..statusesCompleter = Completer<Map<String, String>>();
+    final controller = ConnectionController(await _store())
+      ..api = api
+      ..status = StreamStatus.connected;
+    addTearDown(controller.dispose);
+    controller.handleEventForTesting(
+      EventEnvelope(
+        type: 'session.status',
+        properties: const {
+          'sessionID': 'session-1',
+          'status': {'type': 'busy'},
+        },
+      ),
+    );
+
+    final gap = controller.reconcileBusySessionsForTesting();
+    api.statusesCompleter!.complete(const {});
+    await gap;
+    api.statusesCompleter = Completer()..complete({'session-1': 'busy'});
+    await controller.reconcileBusySessionsForTesting();
+    api.statusesCompleter = Completer()..complete(const {});
+    await controller.reconcileBusySessionsForTesting();
+
+    // Idle, busy, idle: never idle twice running, so never ended.
+    expect(controller.busySessions, contains('session-1'));
   });
 
   testWidgets('catalog replaces stale saved model and agent', (tester) async {
@@ -1601,7 +1633,10 @@ void main() {
 
       // A location change refreshes the runtime; the filesystem root is no
       // longer a selectable workspace, so use a project folder.
+      // It runs once the folder is open, just before the catalog.
       await controller.selectLocation(directory: '/root/projects/app');
+      await tester.pump();
+      await tester.pump();
       expect(repository.runtimeRefreshCalls, 2);
       expect(
         store.providerRuntimeWasRefreshed(
@@ -1830,6 +1865,10 @@ void main() {
       expect(unwritableController.lastError, contains('Could not save'));
       expect(unwritableApi.healthCalls, 0);
       expect(unwritableApi.closed, isTrue);
+      // Each attempt keeps its eight-second connection-status grace clock
+      // until it runs out or the controller is disposed (3d64653c); let both
+      // run out inside the test instead of leaving them to tearDown.
+      await tester.pump(const Duration(seconds: 8));
     },
   );
 

@@ -4,6 +4,8 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_swatch.dart';
+import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 import 'package:opencode_mobile/ui/theme_packs.dart';
 import 'package:opencode_mobile/ui/widgets/appearance_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -40,7 +42,7 @@ class _RefusedPlatformStore extends InMemorySharedPreferencesStore {
 Future<void> _open(
   WidgetTester tester,
   ConnectionController controller, {
-  ThemePackId? pack,
+  required ThemePackId pack,
   double scale = 1,
   TextDirection direction = TextDirection.ltr,
 }) async {
@@ -50,21 +52,21 @@ Future<void> _open(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(
-          context,
-        ).copyWith(textScaler: TextScaler.linear(scale)),
+        // Reduced motion: the preview's working mark holds still (G8).
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(scale),
+          disableAnimations: true,
+        ),
         child: Directionality(textDirection: direction, child: child!),
       ),
       home: Builder(
         builder: (context) => Scaffold(
           body: FilledButton(
-            onPressed: () => pack == null
-                ? showAppearancePicker(context, controller: controller)
-                : showThemePackPreview(
-                    context,
-                    controller: controller,
-                    pack: pack,
-                  ),
+            onPressed: () => showThemePackPreview(
+              context,
+              controller: controller,
+              pack: pack,
+            ),
             child: const Text('Open appearance'),
           ),
         ),
@@ -75,10 +77,12 @@ Future<void> _open(
   await tester.pumpAndSettle();
 }
 
-Finder get _scrollable => find.descendant(
-  of: find.byKey(const Key('appearance-picker')),
-  matching: find.byType(Scrollable),
-);
+Finder get _scrollable => find
+    .descendant(
+      of: find.byKey(const Key('appearance-picker')),
+      matching: find.byType(Scrollable),
+    )
+    .first;
 
 /// Scrolls [finder] into view and then centres it: at 2.5x a single tile can
 /// be taller than half the sheet, and a tap lands on its centre.
@@ -136,91 +140,51 @@ void main() {
   }
 
   testWidgets(
-    'appearance selection previews before explicitly applying and persists',
-    (tester) async {
-      final preferences = await SharedPreferences.getInstance();
-      final controller = ConnectionController(ProfileStore(prefs: preferences));
-      addTearDown(controller.dispose);
-      await _open(tester, controller);
-
-      await _reveal(tester, find.byKey(const Key('appearance-light')));
-      await tester.tap(find.byKey(const Key('appearance-light')));
-      await tester.pumpAndSettle();
-      expect(controller.appearance.value, AppAppearance.system);
-      expect(preferences.getString('oc.appearance'), 'system');
-
-      await _reveal(tester, find.text('Apply'));
-      await tester.tap(find.text('Apply'));
-      await tester.pumpAndSettle();
-      expect(controller.appearance.value, AppAppearance.light);
-      expect(preferences.getString('oc.appearance'), 'light');
-      expect(find.byKey(const Key('appearance-picker')), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'closing a preview discards the draft and sample interactions do not apply',
+    'closing a preview discards the draft and previewing light does not apply',
     (tester) async {
       final preferences = await SharedPreferences.getInstance();
       final controller = ConnectionController(ProfileStore(prefs: preferences));
       addTearDown(controller.dispose);
       await _open(tester, controller, pack: ThemePackId.solarized);
-      await tester.tap(find.text('Try a control'));
-      await tester.pump();
-      expect(
-        tester.widget<FilterChip>(find.byType(FilterChip)).selected,
-        isFalse,
-      );
+      expect(find.byType(KitThemePreview), findsOneWidget);
+      await tester.tap(find.byKey(const Key('appearance-preview-light')));
+      await tester.pumpAndSettle();
       expect(controller.themePack.value, ThemePackId.opencode);
-      await _reveal(tester, find.text('Close'));
-      await tester.tap(find.text('Close'));
+      expect(controller.appearance.value, AppAppearance.system);
+      await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
       expect(preferences.getString('oc.themePack'), isNull);
       expect(controller.themePack.value, ThemePackId.opencode);
     },
   );
 
-  for (final packMode in [false, true]) {
-    testWidgets(
-      '${packMode ? 'pack' : 'brightness'} save failure preserves current theme and supports retry',
-      (tester) async {
-        final prefs = await SharedPreferences.getInstance();
-        final store = _FailingStore(prefs: prefs);
-        final controller = ConnectionController(store);
-        addTearDown(controller.dispose);
-        await _open(
-          tester,
-          controller,
-          pack: packMode ? ThemePackId.gruvbox : null,
-        );
-        if (!packMode) {
-          await _reveal(tester, find.byKey(const Key('appearance-dark')));
-          await tester.tap(find.byKey(const Key('appearance-dark')));
-          await tester.pump();
-        }
-        await _reveal(tester, find.text('Apply'));
-        await tester.tap(find.text('Apply'));
-        await tester.pumpAndSettle();
-        expect(
-          find.text(
-            'Could not save the appearance. Your previous setting is unchanged. Try again.',
-          ),
-          findsOneWidget,
-        );
-        expect(controller.appearance.value, AppAppearance.system);
-        expect(controller.themePack.value, ThemePackId.opencode);
-        store.fail = false;
-        await _reveal(tester, find.text('Apply'));
-        await tester.tap(find.text('Apply'));
-        await tester.pumpAndSettle();
-        expect(find.byKey(const Key('appearance-picker')), findsNothing);
-        expect(
-          packMode ? controller.themePack.value : controller.appearance.value,
-          packMode ? ThemePackId.gruvbox : AppAppearance.dark,
-        );
-      },
+  testWidgets('a failed theme save keeps the current theme and supports retry', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final store = _FailingStore(prefs: prefs);
+    final controller = ConnectionController(store);
+    addTearDown(controller.dispose);
+    await _open(tester, controller, pack: ThemePackId.gruvbox);
+    await _reveal(tester, find.text('Apply'));
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Could not save the appearance. Your previous setting is unchanged. Try again.',
+      ),
+      findsOneWidget,
     );
-  }
+    expect(controller.appearance.value, AppAppearance.system);
+    expect(controller.themePack.value, ThemePackId.opencode);
+    store.fail = false;
+    await _reveal(tester, find.text('Apply'));
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('appearance-picker')), findsNothing);
+    expect(controller.themePack.value, ThemePackId.gruvbox);
+    KitUndo.commitPending();
+  });
 
   testWidgets(
     'Material You preview uses the harvested scheme and refuses an unavailable one',
@@ -230,17 +194,15 @@ void main() {
       );
       addTearDown(controller.dispose);
       await _open(tester, controller, pack: ThemePackId.dynamic);
+      // Said once, with nothing to preview or apply (no dead button).
       expect(
         find.text('Material You colors are not available on this device.'),
         findsOneWidget,
       );
-      expect(
-        tester
-            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Apply'))
-            .onPressed,
-        isNull,
-      );
-      await tester.tap(find.text('Close'));
+      expect(find.byType(KitThemePreview), findsNothing);
+      expect(find.text('Apply'), findsNothing);
+      expect(controller.themePack.value, ThemePackId.opencode);
+      await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
       final scheme = ColorScheme.fromSeed(seedColor: Colors.blue);
       harvestedDynamicPack.value = dynamicThemePack(
@@ -248,13 +210,19 @@ void main() {
         darkScheme: scheme.copyWith(brightness: Brightness.dark),
       );
       await _open(tester, controller, pack: ThemePackId.dynamic);
-      final previewContext = tester.element(find.byType(FilterChip));
-      expect(Theme.of(previewContext).colorScheme.primary, scheme.primary);
+      final preview = tester.widget<KitThemePreview>(
+        find.byType(KitThemePreview),
+      );
+      expect(
+        preview.roles.accent,
+        harvestedDynamicPack.value!.light.themeRoles.accent,
+      );
       await _reveal(tester, find.text('Apply'));
       await tester.tap(find.text('Apply'));
       await tester.pumpAndSettle();
       expect(controller.themePack.value, ThemePackId.dynamic);
       harvestedDynamicPack.value = null;
+      KitUndo.commitPending();
     },
   );
 
@@ -270,15 +238,24 @@ void main() {
           ProfileStore(prefs: await SharedPreferences.getInstance()),
         );
         addTearDown(controller.dispose);
-        await _open(tester, controller, scale: 2.5, direction: direction);
-        await _reveal(tester, find.byKey(const Key('appearance-dark')));
-        await tester.tap(find.byKey(const Key('appearance-dark')));
+        await _open(
+          tester,
+          controller,
+          pack: ThemePackId.solarized,
+          scale: 2.5,
+          direction: direction,
+        );
+        await _reveal(tester, find.byKey(const Key('appearance-preview-dark')));
+        await tester.tap(find.byKey(const Key('appearance-preview-dark')));
         await tester.pumpAndSettle();
         await _reveal(tester, find.text('Apply'));
         await tester.tap(find.text('Apply'));
         await tester.pumpAndSettle();
-        expect(controller.appearance.value, AppAppearance.dark);
+        // Previewing dark never changes light or dark itself.
+        expect(controller.appearance.value, AppAppearance.system);
+        expect(controller.themePack.value, ThemePackId.solarized);
         expect(tester.takeException(), isNull);
+        KitUndo.commitPending();
       },
     );
   }

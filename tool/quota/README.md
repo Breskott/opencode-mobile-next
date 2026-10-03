@@ -403,14 +403,11 @@ still required; published plan maxima are not remaining capacity.
 
 ## Personal budgets and attention
 
-The mobile Remaining page offers optional percentage-used thresholds per exact
-collector source, opaque account reference, provider window and duration. Rules
-are stored under `oc.budgets.<profileId>`; measured quota snapshots and raw
-credentials are not persisted. Attention requires a separate opt-in, a fresh
-successful read, and a reached personal threshold. Its durable marker dedupes
-per reported reset; missing reset never rearms by elapsed time. Generic 429,
-stale readings, account changes and missing windows cannot produce attention.
-This is in-page attention only, with no polling or device notifications.
+The Remaining page's per-window percentage budgets (formerly stored under
+`oc.budgets.<profileId>`) are retired: quota monitoring's own threshold took
+their place. The app removes any stored rules on its next start, and profile
+deletion still sweeps the key. Measured quota snapshots and raw credentials are
+not persisted.
 
 Consumption budgets use actual server-reported USD or total tokens, saved in
 `oc.consumptionBudgets.<profileId>`. The scope includes server identity, project,

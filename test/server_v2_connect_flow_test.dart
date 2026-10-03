@@ -8,12 +8,13 @@ import 'package:opencode_mobile/api/server_probe.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/agent_choice_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/kit_field_finders.dart';
+import 'support/server_editor.dart';
 
 class _RecordingProfileStore extends ProfileStore {
   _RecordingProfileStore({required super.prefs});
@@ -32,6 +33,22 @@ class _RecordingProfileStore extends ProfileStore {
       ..clear()
       ..add(profile);
   }
+}
+
+class _ActiveProfileStore extends ProfileStore {
+  _ActiveProfileStore({required super.prefs});
+
+  final studio = ServerProfile(
+    id: 'studio',
+    name: 'Studio',
+    baseUrl: 'https://studio.example.net',
+  );
+
+  @override
+  List<ServerProfile> get profiles => [studio];
+
+  @override
+  String? get activeId => studio.id;
 }
 
 class _StubGateway implements ServerGateway {
@@ -88,6 +105,7 @@ Widget _app(ProfileStore store, ConnectionController controller) =>
 
 Future<void> _openEditor(WidgetTester tester) async {
   await openFirstRunConnect(tester);
+  await openServerManualAddress(tester);
 }
 
 /// The editor's own field list. `.first` because every text field carries its
@@ -150,8 +168,23 @@ void main() {
       await _reveal(tester, testButton);
       await tester.tap(testButton);
       await tester.pump();
+      // The check scrolls the form back to its head, where the drawing and
+      // the verdict are; let that scroll run and finish.
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 300));
       // Avoid settling while the pending probe animates. The fields are
       // mounted in the same editor list and can be scrolled directly.
+      if (fieldKey == 'server-username-field') {
+        // Opening "More options" animates; settling would wait on the
+        // pending probe's spinner, so pump the expansion through instead.
+        final header = find.byKey(
+          const ValueKey('server-editor-more-options-header'),
+        );
+        await tester.ensureVisible(header);
+        await tester.pump();
+        await tester.tap(header);
+        await tester.pump(const Duration(milliseconds: 400));
+      }
       final field = find.byKey(ValueKey(fieldKey));
       await tester.ensureVisible(field);
       await tester.pump();
@@ -166,7 +199,10 @@ void main() {
           needsPassword: true,
         ),
       );
-      await tester.pumpAndSettle();
+      // Look as the stale answer lands, before the first-run screen's own
+      // pause-then-test (autoTestPause) could run a fresh check.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       expect(find.byKey(const ValueKey('server-probe-verdict')), findsNothing);
       expect(find.text('Stale password failure'), findsNothing);
       serverProbe = ({required baseUrl, username, password}) async =>
@@ -202,12 +238,15 @@ void main() {
 
     expect(probedPassword, isEmpty);
     expect(find.byKey(const ValueKey('server-probe-verdict')), findsOneWidget);
-    expect(find.text('This is an OpenCode 2 server.'), findsOneWidget);
+    // A missing password answers 401 on OpenCode 1 and 2 alike, so the
+    // verdict asks for the password without guessing which one it is.
+    expect(find.text('This is an OpenCode 2 server.'), findsNothing);
     expect(
       find.text('This server requires its serve password.'),
       findsOneWidget,
     );
-    final password = tester.widget<TextField>(
+    final password = editableOf(
+      tester,
       find.byKey(const ValueKey('server-password-field')),
     );
     expect(password.focusNode?.hasFocus, isTrue);
@@ -235,9 +274,10 @@ void main() {
 
     expect(find.textContaining('Password rejected'), findsOneWidget);
     // Select-all primes a clean repaste of the rotated password.
-    final controllerText = tester
-        .widget<TextField>(find.byKey(const ValueKey('server-password-field')))
-        .controller!;
+    final controllerText = editableOf(
+      tester,
+      find.byKey(const ValueKey('server-password-field')),
+    ).controller!;
     expect(controllerText.selection.baseOffset, 0);
     expect(controllerText.selection.extentOffset, 'stale-password'.length);
   });
@@ -270,7 +310,7 @@ void main() {
     expect(profile.password, 'the-serve-password');
   });
 
-  testWidgets('a first connection leaves no question screen on top', (
+  testWidgets('a first connection ends on the ready step, then the shell', (
     tester,
   ) async {
     serverProbe = ({required baseUrl, username, password}) async =>
@@ -312,7 +352,12 @@ void main() {
     controller.finishConnect.complete();
     await tester.pumpAndSettle();
 
-    expect(find.byType(AgentChoiceScreen), findsNothing);
+    // The editor, still on top of the new shell, shows the ready moment;
+    // its one way on leaves nothing else on top.
+    expect(find.byKey(const ValueKey('server-ready-step')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('server-ready-open')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('server-profile-editor')), findsNothing);
     expect(find.text('shell'), findsOneWidget);
   });
 
@@ -376,12 +421,10 @@ void main() {
 
     // The copied `server password ` line prefix and whitespace are trimmed.
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('server-password-field')),
-          )
-          .controller!
-          .text,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('server-password-field')),
+      ).controller!.text,
       'abc123DEF456==',
     );
   });
@@ -397,21 +440,19 @@ void main() {
     final toggle = find.byKey(const ValueKey('server-password-visibility'));
     await _reveal(tester, toggle);
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('server-password-field')),
-          )
-          .obscureText,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('server-password-field')),
+      ).obscureText,
       isTrue,
     );
     await tester.tap(toggle);
     await tester.pump();
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('server-password-field')),
-          )
-          .obscureText,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('server-password-field')),
+      ).obscureText,
       isFalse,
     );
   });
@@ -420,7 +461,11 @@ void main() {
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+    // The connection status belongs to a saved server; with none it stays
+    // hidden (3d64653c), so the rejected password names an active one.
+    final store = _ActiveProfileStore(
+      prefs: await SharedPreferences.getInstance(),
+    );
     final controller = ConnectionController(store);
     addTearDown(controller.dispose);
     controller.passwordRejected = true;

@@ -280,6 +280,31 @@ class RunResult {
     );
   }
 
+  /// Paths that COMPLETED edit/write/patch tools in [messages] reported
+  /// touching, first-seen order, at most [max]. Tool evidence only: a shell
+  /// command that changed a file is not in it.
+  static List<String> editedPaths(
+    Iterable<MessageWithParts> messages, {
+    int max = maxChangedFiles,
+  }) {
+    final paths = <String>[];
+    for (final message in messages) {
+      for (final part in message.parts) {
+        if (part.type != 'tool') continue;
+        final tool = (part.toolName ?? '').toLowerCase();
+        if (_changeOf(tool) == null) continue;
+        final state = part.toolState;
+        if (state.status != 'completed' || !state.executed) continue;
+        for (final path in _pathsOf(tool, state)) {
+          if (paths.contains(path)) continue;
+          if (paths.length >= max) return paths;
+          paths.add(path);
+        }
+      }
+    }
+    return paths;
+  }
+
   /// True only when the command TEXT names a common test runner or a
   /// `<tool> test` invocation. A label derived from this must say it came
   /// from the command text.

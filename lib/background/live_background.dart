@@ -38,7 +38,12 @@ enum CodingAlertKind {
 
   /// AI Team: a run completed. The session id is the run id; tapping
   /// opens the run.
-  teamCompleted('team_completed');
+  teamCompleted('team_completed'),
+
+  /// AI Team: the one ongoing, silent progress line while tasks work. The
+  /// session id is the run id a tap opens. Must match the
+  /// `"team_progress"` branch in BackgroundConnectionService.kt.
+  teamProgress('team_progress');
 
   const CodingAlertKind(this.wireValue);
 
@@ -46,7 +51,11 @@ enum CodingAlertKind {
 
   /// One of the four AI Team kinds, whose session id is a gate or run id.
   bool get isTeam => switch (this) {
-    teamDecision || teamRunFailed || teamReview || teamCompleted => true,
+    teamDecision ||
+    teamRunFailed ||
+    teamReview ||
+    teamCompleted ||
+    teamProgress => true,
     permission || question || complete || error || quota || checkIn => false,
   };
 
@@ -303,6 +312,23 @@ class BackgroundLiveController extends ChangeNotifier {
     return succeeded;
   }
 
+  /// Opens this app's Android notification settings (P0.6), so a person the
+  /// Notifications page tells is blocked can flip it back on without
+  /// hunting through system settings. A no-op off Android or without the
+  /// native side (tests, desktop).
+  Future<void> openNotificationSettings() async {
+    if (!platformCapabilities.supportsBackgroundService) return;
+    try {
+      await _invoke('openAppSettings');
+    } on PlatformException {
+      // Nothing to recover: the person is already looking at this screen.
+    } on MissingPluginException {
+      // No Android runner (tests, desktop).
+    } catch (_) {
+      // Never let a settings shortcut break the page around it.
+    }
+  }
+
   /// Shows a privacy-safe Android notification for a background coding event.
   ///
   /// The native side owns all user-visible copy so no prompt, tool input,
@@ -322,6 +348,8 @@ class BackgroundLiveController extends ChangeNotifier {
     String monitorToken = '',
     bool allowActions = true,
     String subtext = '',
+    String title = '',
+    String text = '',
   }) async {
     if (!platformCapabilities.supportsNotifications) return false;
     if (!enabled || !notificationGranted) return false;
@@ -336,6 +364,8 @@ class BackgroundLiveController extends ChangeNotifier {
         if (monitorToken.isNotEmpty) 'monitorToken': monitorToken,
         if (!allowActions) 'allowActions': false,
         if (subtext.isNotEmpty) 'subtext': subtext,
+        if (title.isNotEmpty) 'title': title,
+        if (text.isNotEmpty) 'text': text,
       });
       return result['shown'] == true;
     } on PlatformException {
@@ -346,6 +376,36 @@ class BackgroundLiveController extends ChangeNotifier {
       return false;
     }
   }
+
+  /// Posts one real "needs you" notification so a person can see for
+  /// themselves whether Android is actually letting this app notify them
+  /// (P0.6), independent of whether live background mode is on: unlike
+  /// [showCodingAlert] this never checks [enabled], only that the platform
+  /// can notify at all. The native side still refuses when the OS has
+  /// notifications blocked, so a false result is itself the answer.
+  Future<bool> sendTestNotification() async {
+    if (!platformCapabilities.supportsNotifications) return false;
+    try {
+      final result = await _invoke('showCodingAlert', {
+        'kind': CodingAlertKind.question.wireValue,
+        'sessionID': testNotificationID,
+        'key': testNotificationID,
+        'quickReply': false,
+        'allowActions': false,
+      });
+      return result['shown'] == true;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// The fixed, non-secret id the test alert uses for its session and key;
+  /// never a real session, so tapping it never opens a run.
+  static const testNotificationID = 'oc-test-notification';
 
   Future<bool> Function(CodingAlertAction action)? _actionHandler;
 

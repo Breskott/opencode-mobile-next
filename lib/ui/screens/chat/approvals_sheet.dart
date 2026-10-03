@@ -1,32 +1,27 @@
 part of '../chat_screen.dart';
 
-/// Opens the per-session approval settings: ask each time (default) or let
-/// this phone answer permission requests with "once" while connected, plus
-/// whether subagent sessions inherit that choice.
+/// Opens the per-session approval settings in the one sheet frame: ask each
+/// time (the default) or let this phone answer permission requests with
+/// "Allow once" while connected, whether subagent conversations inherit
+/// that, and the server-wide switch. Both automatic switches are risky
+/// switches (KIT-30): turning one on first states what it covers.
 Future<void> showSessionApprovalsSheet(
   BuildContext context, {
   required ConnectionController controller,
   required String sessionID,
-}) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  showDragHandle: true,
-  useSafeArea: true,
-  builder: (context) => LayoutBuilder(
-    builder: (context, constraints) => ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: constraints.maxHeight * .9),
-      child: SessionApprovalsSheet(
-        controller: controller,
-        sessionID: sessionID,
-      ),
-    ),
-  ),
+}) => showKitSheet<void>(
+  context,
+  title: _chatL10n(context).approvalsUiTitle,
+  icon: AppIconography.permissions,
+  body: (_) =>
+      SessionApprovalsSheet(controller: controller, sessionID: sessionID),
 );
 
 /// The approvals sheet body. Every control writes through the controller and
 /// re-reads the effective setting, so an inheriting child session shows its
-/// parent's choice until it takes one of its own.
-class SessionApprovalsSheet extends StatelessWidget {
+/// parent's choice until it takes one of its own. A save that fails says so
+/// at the top, in place of a snackbar.
+class SessionApprovalsSheet extends StatefulWidget {
   const SessionApprovalsSheet({
     super.key,
     required this.controller,
@@ -36,213 +31,176 @@ class SessionApprovalsSheet extends StatelessWidget {
   final ConnectionController controller;
   final String sessionID;
 
-  Future<void> _write(
-    BuildContext context,
-    SessionAutoApproval? setting,
-  ) async {
-    final strings = _chatL10n(context);
-    final messenger = ScaffoldMessenger.maybeOf(context);
+  @override
+  State<SessionApprovalsSheet> createState() => _SessionApprovalsSheetState();
+}
+
+class _SessionApprovalsSheetState extends State<SessionApprovalsSheet> {
+  String? _error;
+
+  ConnectionController get _controller => widget.controller;
+
+  Future<void> _save(Future<void> Function() write) async {
+    setState(() => _error = null);
     try {
-      await controller.setSessionAutoApproval(sessionID, setting);
+      await write();
     } catch (error) {
-      messenger?.showSnackBar(
-        SnackBar(
-          content: Text(strings.approvalsUiSaveFailed(productErrorText(error))),
-        ),
+      if (!mounted) return;
+      setState(
+        () => _error = _chatL10n(
+          context,
+        ).approvalsUiSaveFailed(productErrorText(error)),
       );
     }
   }
 
-  /// Turning it on is confirmed first: it changes every conversation on the
-  /// server, including ones that do not exist yet. Turning it off is not.
-  Future<void> _setEverything(BuildContext context, bool value) async {
-    final strings = _chatL10n(context);
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (value) {
-      final confirmed = await showConfirmSheet(
-        context,
-        title: strings.approvalsUiEverythingConfirmTitle,
-        message: strings.approvalsUiEverythingConfirmBody,
-        confirmLabel: strings.approvalsUiEverythingConfirmAction,
-        icon: AppIconography.warning,
-        destructive: true,
-        sheetKey: const Key('approvals-everything-confirm'),
-        confirmKey: const Key('approvals-everything-confirm-action'),
-      );
-      if (!confirmed) return;
-    }
-    try {
-      await controller.setApprovesEverything(value);
-    } catch (error) {
-      messenger?.showSnackBar(
-        SnackBar(
-          content: Text(strings.approvalsUiSaveFailed(productErrorText(error))),
-        ),
-      );
-    }
-  }
+  void _write(SessionAutoApproval? setting) => unawaited(
+    _save(() => _controller.setSessionAutoApproval(widget.sessionID, setting)),
+  );
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final strings = _chatL10n(context);
+    final tokens = KitTokens.of(context);
     return ListenableBuilder(
-      listenable: controller,
+      listenable: _controller,
       builder: (context, _) {
-        final effective = controller.autoApprovalFor(sessionID);
+        final effective = _controller.autoApprovalFor(widget.sessionID);
         final setting = effective.setting;
-        final hasParent = controller.sessionsById[sessionID]?.parentID != null;
-        return SingleChildScrollView(
-          key: const Key('session-approvals-sheet'),
-          padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        final hasParent =
+            _controller.sessionsById[widget.sessionID]?.parentID != null;
+        final error = _error;
+        final sections = <Widget>[
+          if (error != null)
+            KitNotice.error(
+              message: error,
+              messageKey: const Key('approvals-save-failed'),
+            ),
+          if (setting.automatic && !_controller.isConnected)
+            KitNotice(
+              key: const Key('approvals-paused'),
+              title: strings.approvalsUiIndicatorPaused,
+              message: strings.approvalsUiPausedDetail,
+              icon: AppIconography.pause,
+            ),
+          if (effective.inherited)
+            KitNotice(
+              key: const Key('approvals-inherited-note'),
+              title: strings.approvalsUiInheritedFrom,
+              message: strings.approvalsUiInheritedDetail,
+              icon: AppIconography.nested,
+              actions: [
+                KitAction(
+                  key: const Key('approvals-override'),
+                  label: strings.approvalsUiOverride,
+                  onPressed: () => _write(setting),
+                ),
+              ],
+            ),
+          if (effective.serverWide)
+            KitNotice(
+              key: const Key('approvals-everything-active'),
+              message: strings.approvalsUiEverythingActive,
+              icon: AppIconography.shield,
+            ),
+          KitRowGroup(
+            margin: EdgeInsets.zero,
+            leadingIcons: false,
             children: [
-              Text(
-                strings.approvalsUiTitle,
-                style: theme.textTheme.titleMedium,
-              ),
-              if (effective.serverWide) ...[
-                const SizedBox(height: 8),
-                Text(
-                  strings.approvalsUiEverythingActive,
-                  key: const Key('approvals-everything-active'),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
+              KitSwitchRow(
+                switchKey: const Key('approvals-mode-auto'),
+                title: strings.approvalsUiAutoTitle,
+                supporting: setting.automatic
+                    ? null
+                    : strings.approvalsUiAskDetail,
+                value: setting.automatic,
+                onChanged: (on) => _write(
+                  on
+                      ? const SessionAutoApproval(
+                          mode: AutoApprovalMode.autoOnce,
+                        )
+                      // Inheritance is meaningless while asking; drop it so
+                      // switching back on starts from the safe default.
+                      : const SessionAutoApproval(mode: AutoApprovalMode.ask),
                 ),
-              ],
-              if (effective.inherited) ...[
-                const SizedBox(height: 12),
-                _ApprovalsInheritedNote(
-                  onOverride: () => unawaited(_write(context, setting)),
-                ),
-              ],
-              const SizedBox(height: 8),
-              RadioGroup<AutoApprovalMode>(
-                groupValue: setting.mode,
-                onChanged: (mode) {
-                  if (mode == null || mode == setting.mode) return;
-                  unawaited(
-                    _write(
-                      context,
-                      SessionAutoApproval(
-                        mode: mode,
-                        // Inheritance is meaningless while asking; drop it so
-                        // switching back on starts from the safe default.
-                        inheritToChildren:
-                            mode == AutoApprovalMode.autoOnce &&
-                            setting.inheritToChildren,
-                      ),
-                    ),
-                  );
-                },
-                child: Column(
-                  children: [
-                    RadioListTile<AutoApprovalMode>(
-                      key: const Key('approvals-mode-ask'),
-                      value: AutoApprovalMode.ask,
-                      title: Text(strings.approvalsUiAskTitle),
-                      subtitle: Text(strings.approvalsUiAskDetail),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    RadioListTile<AutoApprovalMode>(
-                      key: const Key('approvals-mode-auto'),
-                      value: AutoApprovalMode.autoOnce,
-                      title: Text(strings.approvalsUiAutoTitle),
-                      subtitle: Text(strings.approvalsUiAutoDetail),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ],
+                risk: KitRisk(
+                  scope: strings.approvalsUiAutoDetail,
+                  onLabel: strings.approvalsUiIndicatorOn,
+                  icon: AppIconography.shield,
+                  onUntil: (_) {},
                 ),
               ),
-              SwitchListTile(
-                key: const Key('approvals-inherit-switch'),
+              KitSwitchRow(
+                switchKey: const Key('approvals-inherit-switch'),
+                title: strings.approvalsUiInheritTitle,
+                supporting: strings.approvalsUiInheritDetail,
                 value: setting.automatic && setting.inheritToChildren,
                 onChanged: setting.automatic
-                    ? (value) => unawaited(
-                        _write(
-                          context,
-                          SessionAutoApproval(
-                            mode: AutoApprovalMode.autoOnce,
-                            inheritToChildren: value,
-                          ),
+                    ? (value) => _write(
+                        SessionAutoApproval(
+                          mode: AutoApprovalMode.autoOnce,
+                          inheritToChildren: value,
                         ),
                       )
                     : null,
-                title: Text(strings.approvalsUiInheritTitle),
-                subtitle: Text(
-                  setting.automatic
-                      ? strings.approvalsUiInheritDetail
-                      : strings.approvalsUiInheritUnavailable,
-                ),
-                contentPadding: EdgeInsets.zero,
+                disabledReason: strings.approvalsUiInheritUnavailable,
               ),
-              if (effective.explicit && hasParent)
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: TextButton.icon(
-                    key: const Key('approvals-follow-parent'),
-                    onPressed: () => unawaited(_write(context, null)),
-                    icon: const Icon(AppIconography.nested, size: 18),
-                    label: Text(strings.approvalsUiFollowParent),
-                  ),
-                ),
-              const Divider(height: 24),
-              // The saved, server-wide choice. Error-coloured because it is
-              // the one setting here that reaches conversations you are not
-              // looking at.
-              SwitchListTile(
-                key: const Key('approvals-everything-switch'),
-                value: controller.approvesEverything,
-                activeThumbColor: theme.colorScheme.error,
-                onChanged: (value) => unawaited(_setEverything(context, value)),
-                title: Text(strings.approvalsUiEverythingTitle),
-                subtitle: Text(strings.approvalsUiEverythingDetail),
-                contentPadding: EdgeInsets.zero,
+            ],
+          ),
+          if (effective.explicit && hasParent)
+            KitInset(
+              child: KitButton.tertiary(
+                key: const Key('approvals-follow-parent'),
+                icon: AppIconography.nested,
+                label: strings.approvalsUiFollowParent,
+                onPressed: () => _write(null),
               ),
-              if (setting.automatic) ...[
-                const SizedBox(height: 8),
-                _AutoApprovalRecord(
-                  approved: controller.autoApprovedFor(sessionID),
+            ),
+          // The saved, server-wide choice: the one setting here that
+          // reaches conversations you are not looking at.
+          KitRowGroup(
+            margin: EdgeInsets.zero,
+            leadingIcons: false,
+            children: [
+              KitSwitchRow(
+                switchKey: const Key('approvals-everything-switch'),
+                title: strings.approvalsUiEverythingTitle,
+                supporting: strings.approvalsUiEverythingDetail,
+                value: _controller.approvesEverything,
+                onChanged: (value) => unawaited(
+                  _save(() => _controller.setApprovesEverything(value)),
                 ),
-              ],
-              const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    AppIconography.info,
-                    size: 18,
-                    color: AppTheme.mutedOf(theme),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      controller.approvesEverything
-                          ? strings.approvalsUiServerRulesNoteEverything
-                          : strings.approvalsUiServerRulesNote,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.mutedOf(theme),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: FilledButton.tonal(
-                  key: const Key('approvals-done'),
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  child: Text(
-                    MaterialLocalizations.of(context).closeButtonLabel,
-                  ),
+                risk: KitRisk(
+                  scope: strings.approvalsUiEverythingConfirmBody,
+                  onLabel: strings.approvalsUiEverythingActive,
+                  icon: AppIconography.warning,
+                  onUntil: (_) {},
                 ),
               ),
             ],
           ),
+          if (setting.automatic)
+            _AutoApprovalRecord(
+              approved: _controller.autoApprovedFor(widget.sessionID),
+            ),
+          // What holds whatever is chosen above. What new conversations do
+          // is said once, by the "Approve everything" switch.
+          KitNotice(
+            key: const Key('approvals-rules-note'),
+            message: strings.approvalsUiServerRulesNoteEverything,
+            liveRegion: false,
+          ),
+        ];
+        return Column(
+          key: const Key('session-approvals-sheet'),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final (index, section) in sections.indexed) ...[
+              if (index > 0) SizedBox(height: tokens.space4),
+              section,
+            ],
+          ],
         );
       },
     );
@@ -250,7 +208,8 @@ class SessionApprovalsSheet extends StatelessWidget {
 }
 
 /// What this phone approved automatically in the session since connecting:
-/// the transparency half of a setting that removes prompts.
+/// the transparency half of a setting that removes prompts. The latest five,
+/// newest first.
 class _AutoApprovalRecord extends StatelessWidget {
   const _AutoApprovalRecord({required this.approved});
 
@@ -259,128 +218,43 @@ class _AutoApprovalRecord extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final strings = _chatL10n(context);
     final recent = approved.reversed.take(_shown).toList();
-    return Column(
+    final title = strings.approvalsUiRecordTitle(approved.length);
+    if (recent.isEmpty) {
+      return KitNotice(
+        key: const Key('approvals-record'),
+        message: title,
+        liveRegion: false,
+      );
+    }
+    return KitRowGroup(
       key: const Key('approvals-record'),
-      crossAxisAlignment: CrossAxisAlignment.start,
+      margin: EdgeInsets.zero,
+      label: title,
       children: [
-        Text(
-          strings.approvalsUiRecordTitle(approved.length),
-          style: theme.textTheme.labelLarge,
-        ),
         for (final entry in recent)
-          Padding(
-            padding: const EdgeInsetsDirectional.only(top: 6),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Icon(
-                    permissionActionIcon(entry.permission),
-                    size: 16,
-                    color: AppTheme.mutedOf(theme),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        strings.approvalsUiAutoApproved(
-                          permissionRequestTitle(
-                            entry.permission,
-                            l10n: strings,
-                          ),
-                        ),
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      if (entry.patterns.isNotEmpty)
-                        Text(
-                          entry.patterns.join(' · '),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textDirection: TextDirection.ltr,
-                          style: TextStyle(
-                            fontFamily: AppTheme.monoFamily,
-                            fontSize: AppTheme.captionFontSize,
-                            color: AppTheme.mutedOf(theme),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
+          KitRow(
+            leading: KitRowIcon(permissionActionIcon(entry.permission)),
+            title: strings.approvalsUiAutoApproved(
+              permissionRequestTitle(entry.permission, l10n: strings),
             ),
+            supporting: entry.patterns.isEmpty
+                ? null
+                : TextSpan(text: KitBidi.ltr(entry.patterns.join(' · '))),
+            supportingMaxLines: 2,
           ),
       ],
     );
   }
 }
 
-class _ApprovalsInheritedNote extends StatelessWidget {
-  const _ApprovalsInheritedNote({required this.onOverride});
-
-  final VoidCallback onOverride;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final strings = _chatL10n(context);
-    return Container(
-      key: const Key('approvals-inherited-note'),
-      padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Padding(
-                padding: EdgeInsets.only(top: 2),
-                child: Icon(AppIconography.nested, size: 18),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  strings.approvalsUiInheritedFrom,
-                  style: theme.textTheme.titleSmall,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            strings.approvalsUiInheritedDetail,
-            style: theme.textTheme.bodySmall,
-          ),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: TextButton(
-              key: const Key('approvals-override'),
-              onPressed: onOverride,
-              child: Text(strings.approvalsUiOverride),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Quiet, persistent strip above the composer while automatic approval is
+/// A quiet chip in the strip above the composer while automatic approval is
 /// on for this session. Never hidden while the setting is on: it names the
-/// state, the last request answered (or that the session inherits), and —
-/// when the app is disconnected — that approvals are paused. Two lines at
-/// most so it never crowds the composer at large text scales; the full
-/// record lives in the sheet it opens.
+/// state and counts what it approved, and says when approvals are paused
+/// because the app is disconnected. The full wording (the latest approval,
+/// where the setting comes from) is its spoken label; the sheet it opens
+/// holds the record and the switches.
 class _AutoApprovalIndicator extends StatelessWidget {
   const _AutoApprovalIndicator({
     super.key,
@@ -397,14 +271,13 @@ class _AutoApprovalIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final strings = _chatL10n(context);
     final last = approved.lastOrNull;
     final String label;
     final String? detail;
     if (!connected) {
       label = strings.approvalsUiIndicatorPaused;
-      detail = strings.approvalsUiIndicatorPausedDetail;
+      detail = strings.approvalsUiPausedDetail;
     } else {
       label = strings.approvalsUiIndicatorOn;
       detail = last != null
@@ -415,14 +288,8 @@ class _AutoApprovalIndicator extends StatelessWidget {
           ? strings.approvalsUiInheritedFrom
           : null;
     }
-    // A chip, not a bar: it sits in the strip above the composer on every
-    // running turn, so it says its state in a few words and keeps the rest
-    // (what was approved, inheritance, the switches) one tap away. The count
-    // is what changes, which is what makes a glance worth it.
-    // Never silent: once something has been approved, the chip names the
-    // latest and counts them; before that it states the mode.
-    // Short on the chip; the full wording (what was approved last, where
-    // the setting comes from) is the accessibility label and the sheet.
+    // Words, not the glyph alone, carry the state (STATE-9): "paused" is in
+    // the chip's own label.
     final text = !connected
         ? strings.chatStripAutoApprovePaused
         : approved.isEmpty
@@ -432,39 +299,16 @@ class _AutoApprovalIndicator extends StatelessWidget {
       button: true,
       label: [label, ?detail, strings.approvalsUiOpenSettings].join('. '),
       excludeSemantics: true,
-      child: Tooltip(
-        // Long-press says the rest: what was approved last, or where the
-        // setting comes from.
-        message: [label, ?detail].join(' · '),
-        child: ActionChip(
-          key: const Key('auto-approval-indicator'),
-          onPressed: onOpen,
-          materialTapTargetSize: MaterialTapTargetSize.padded,
-          side: BorderSide.none,
-          backgroundColor: connected
-              ? theme.colorScheme.secondaryContainer
-              : theme.colorScheme.surfaceContainerHigh,
-          avatar: Icon(
-            !connected
-                ? AppIconography.permissions
-                : effective.inherited
-                ? AppIconography.nested
-                : AppIconography.shield,
-            size: 16,
-            color: theme.colorScheme.primary,
-          ),
-          label: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width * .62,
-            ),
-            child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelMedium,
-            ),
-          ),
-        ),
+      onTap: onOpen,
+      child: KitChip.action(
+        key: const Key('auto-approval-indicator'),
+        onPressed: onOpen,
+        icon: !connected
+            ? AppIconography.pause
+            : effective.inherited
+            ? AppIconography.nested
+            : AppIconography.shield,
+        label: text,
       ),
     );
   }

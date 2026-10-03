@@ -62,7 +62,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 200));
         expect(find.byType(HomeScreen), findsOneWidget);
         expect(find.byType(NavigationBar), findsOneWidget);
-        expect(find.text('Saved-server attention'), findsOneWidget);
+        expect(find.text('Background checks'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await writePng(
           'docs/qa/profile-monitor/${dark ? 'dark' : 'light'}.png',

@@ -1,109 +1,52 @@
 part of '../chat_screen.dart';
 
-class _TodosSheet extends StatefulWidget {
-  final ConnectionController conn;
-  final String sessionID;
-  const _TodosSheet({required this.conn, required this.sessionID});
+/// The agent's plan has one home: the transcript, where each `todowrite`
+/// call is a Tasks step whose opened body is the checklist (a mark, the
+/// task's words and its state per row). There is no second copy of it in a
+/// sheet. The command sheet's Tasks (/plan) lands on that checklist: it
+/// scrolls to the reply holding the latest plan and opens its work line and
+/// its Tasks step in place.
+extension _ChatPlan on _ChatScreenState {
+  static const _planTools = {'todowrite', 'todo'};
 
-  @override
-  State<_TodosSheet> createState() => _TodosSheetState();
-}
-
-class _TodosSheetState extends State<_TodosSheet> {
-  List<Todo>? _todos;
-  Object? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_fetch());
-  }
-
-  Future<void> _fetch() async {
-    // Runs from initState, so inherited lookups are not yet allowed.
-    final strings = earlyAppLocalizations(context);
-    if (_error != null) setState(() => _error = null);
-    try {
-      final api = await widget.conn.prepareActionTransport();
-      if (api == null) {
-        throw ProductException(strings.chatUiOpenCodeIsReconnectingTryAgain);
+  /// The latest plan in the loaded transcript: the reply that holds it and
+  /// the tool call itself. Null when the agent has not planned here yet.
+  ({MessageWithParts message, Part part})? get _latestPlan {
+    for (final message in _visibleHistory.toList().reversed) {
+      if (message.info.role != 'assistant') continue;
+      for (final part in message.parts.reversed) {
+        if (part.type == 'tool' && _planTools.contains(part.toolName)) {
+          return (message: message, part: part);
+        }
       }
-      final t = await api.todos(widget.sessionID);
-      if (mounted) setState(() => _todos = t);
-    } catch (e) {
-      if (mounted) setState(() => _error = e);
     }
+    return null;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: _error != null
-            ? SizedBox(
-                height: 260,
-                child: ProductErrorState(
-                  message: productErrorText(_error!),
-                  onRetry: _fetch,
-                ),
-              )
-            : _todos == null
-            ? const SizedBox(height: 240, child: LoadingList(rows: 4))
-            : _todos!.isEmpty
-            ? ProductInlineEmpty(
-                icon: AppIconography.checklist,
-                title: _chatL10n(context).chatUiNoTodosInThisSession,
-                message: _chatL10n(context).chatUiWhenTheAssistantPlansWorkAsA,
-              )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SectionLabel.inline(_chatL10n(context).chatUiTodoList),
-                  Flexible(
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: [
-                        for (final t in _todos!)
-                          CheckboxListTile(
-                            dense: true,
-                            value: t.done,
-                            controlAffinity: ListTileControlAffinity.leading,
-                            title: Text(
-                              t.content,
-                              style: TextStyle(
-                                decoration: t.done
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                                color: t.done ? AppTheme.mutedOf(theme) : null,
-                              ),
-                            ),
-                            subtitle:
-                                t.status == 'pending' && t.priority == null
-                                ? null
-                                : Text(
-                                    [
-                                      if (t.status != 'pending')
-                                        t.status.replaceAll('_', ' '),
-                                      if (t.priority != null)
-                                        _chatL10n(
-                                          context,
-                                        ).chatUiPriorityLabel(t.priority ?? ''),
-                                    ].join(' · '),
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: AppTheme.mutedOf(theme),
-                                    ),
-                                  ),
-                            onChanged: null,
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
+  /// Scrolls to the latest plan and opens it: the work line it is folded
+  /// under (the same grouping the transcript draws) and its Tasks step.
+  void _openPlan() {
+    final plan = _latestPlan;
+    if (plan == null) return;
+    final parts = plan.message.parts
+        .where((part) => part.isRenderable || _isFoldedIntoWork(part))
+        .toList();
+    final runs = _groupAssistantParts(parts);
+    for (final stretch in _MessageView._stretches(runs)) {
+      final holdsPlan = stretch.any(
+        (run) => run.parts.any(
+          (part) => part.id == plan.part.id && part.callID == plan.part.callID,
+        ),
+      );
+      if (!holdsPlan) continue;
+      if (stretch.length > 1 || stretch.single.grouped) {
+        final first = stretch.first.parts.first;
+        _transcriptExpansion['work:${first.id ?? first.callID ?? first.messageID}'] =
+            true;
+      }
+      break;
+    }
+    _transcriptExpansion['tool:${plan.part.id ?? plan.part.callID}'] = true;
+    _jumpToMessage(plan.message.info.id);
   }
 }

@@ -1,7 +1,7 @@
 name: opencode_mobile
 description: "OpenCode client for Android - connect to a remote opencode server or one running on-device via Termux."
 publish_to: "none"
-version: 1.0.44+50
+version: 1.1.0+51
 
 environment:
   sdk: ^3.10.0
@@ -13,6 +13,8 @@ dependencies:
     sdk: flutter
   intl: any
   cupertino_icons: ^1.0.8
+  # KitSince reads the time through package:clock so tests can fake it.
+  clock: ^1.1.2
   # Dropping files onto the composer. Flutter exposes no native file-drop
   # channel of its own on desktop, so this is the one dependency the desktop
   # interaction work needs. Pinned exactly, because it registers a platform
@@ -41,11 +43,14 @@ dependencies:
   # deprecated algorithms. Installs that skipped 1.0.31 entirely lose stored
   # server credentials on upgrade and must pair again: acceptable for the
   # alpha line, and called out in the release notes.
-  flutter_secure_storage: 11.0.0
+  flutter_secure_storage: 11.2.0
   crypto: 3.0.7
   image_picker: 1.2.3
   # Scanning the QR that `opencode2 pair` prints. Pinned exactly, because it
   # registers a platform plugin and ships native camera code.
+  # 7.4.2 passes a clean Android release build on the pinned Flutter/AGP
+  # toolchain and no longer triggers Flutter's mobile_scanner KGP warning.
+  # Reproduction evidence: docs/qa/codex-net-2026-09-27/README.md.
   #
   # Why this package: it is the maintained Flutter barcode scanner (160/160
   # pub points, ~1.3M downloads a month, publisher steenbakker.dev), it is
@@ -54,10 +59,6 @@ dependencies:
   # long-dead qr_code_scanner.
   #
   # Known costs, stated rather than hidden:
-  #  * Like desktop_drop, it applies the Kotlin Gradle Plugin, so the Android
-  #    release build now warns "Your app uses the following plugins that
-  #    apply Kotlin Gradle Plugin (KGP): desktop_drop, mobile_scanner". Real,
-  #    and a future Flutter will turn it into an error.
   #  * It defaults to the *bundled* ML Kit barcode model
   #    (com.google.mlkit:barcode-scanning), not the Play-Services download.
   #    That grows the APK, and buys scanning that works with no Play Services
@@ -67,7 +68,7 @@ dependencies:
   #    `platformCapabilities.supportsQrPairing` (Android only) and desktop
   #    never constructs a controller — but the Linux bundle does resolve a
   #    package it cannot use, exactly as record and file_picker already do.
-  mobile_scanner: 7.4.0
+  mobile_scanner: 7.4.2
   opencode_sdk:
     path: packages/opencode_sdk
   path_provider: 2.1.6
@@ -109,6 +110,9 @@ dev_dependencies:
 
 flutter:
   generate: true
+  # KitGlass's liquid glass (lib/ui/kit/glass/, design standard §10).
+  shaders:
+    - shaders/kit_glass.frag
   assets:
     - shorebird.yaml
     - PRIVACY.md
@@ -136,27 +140,19 @@ flutter:
     - family: AppPhosphorFill
       fonts:
         - asset: assets/fonts/phosphor/Phosphor-Fill.ttf
-    # Bundled Space Grotesk for headlines and titles: the one display face that
-    # gives the product an identity beyond the platform default. Body text
-    # stays on the platform face for legibility.
-    - family: AppDisplay
+    # Geist and Geist Mono (SIL OFL 1.1, assets/fonts/geist/OFL.txt): the
+    # visual language's one face for every word, and its mono for code,
+    # commands and paths (docs/design/visual-language-2026-09-26.md §2).
+    # Variable fonts: the engine maps FontWeight onto the wght axis, so the
+    # fractional weights (550, 650) are real.
+    - family: AppSans
       fonts:
-        - asset: assets/fonts/SpaceGrotesk-Regular.ttf
-        - asset: assets/fonts/SpaceGrotesk-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/SpaceGrotesk-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/SpaceGrotesk-Bold.ttf
-          weight: 700
+        - asset: assets/fonts/geist/Geist-Variable.ttf
+        - asset: assets/fonts/geist/Geist-Italic-Variable.ttf
+          style: italic
     - family: AppMono
       fonts:
-        - asset: assets/fonts/JetBrainsMono-Regular.ttf
-        - asset: assets/fonts/JetBrainsMono-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/JetBrainsMono-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/JetBrainsMono-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/JetBrainsMono-Italic.ttf
+        - asset: assets/fonts/geist/GeistMono-Variable.ttf
+        - asset: assets/fonts/geist/GeistMono-Italic-Variable.ttf
           style: italic
   uses-material-design: true

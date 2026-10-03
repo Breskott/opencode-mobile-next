@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'support/complete_message_history.dart';
 
 import 'dart:convert';
@@ -14,11 +15,15 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitButton, KitTappable;
 import 'package:opencode_mobile/ui/screens/about_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_destination_sheet.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
+import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:opencode_mobile/ui/widgets/external_link.dart';
 import 'package:opencode_mobile/ui/widgets/tool_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -144,13 +149,11 @@ Future<void> _pumpSharedChat(
   await tester.pumpAndSettle();
   await tester.tap(find.byTooltip('Conversation menu'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Conversation actions'));
-  await tester.pumpAndSettle();
   await tester.ensureVisible(find.text('Share conversation'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Share conversation'));
   await tester.pumpAndSettle();
-  await tester.tap(find.widgetWithText(FilledButton, 'Share conversation'));
+  await tester.tap(find.widgetWithText(KitButton, 'Share conversation'));
   await tester.pumpAndSettle();
   expect(repository.shared, isTrue);
   expect(repository.unshared, isFalse);
@@ -481,12 +484,16 @@ void main() {
       ),
     );
     await tester.tap(find.text('Blocked'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.textContaining('Link blocked'), findsOneWidget);
+    // The blocked answer is a blocking alert (a snackbar is only for Undo,
+    // KIT-34); it closes before anything else is tapped.
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('HTTP'));
     await tester.pumpAndSettle();
-    expect(find.text('docs.example'), findsOneWidget);
+    expect(find.text('Opens docs.example outside this app.'), findsOneWidget);
     expect(find.text('Open insecure HTTP link?'), findsOneWidget);
     expect(launched, isNull);
     await tester.tap(find.text('Open HTTP link'));
@@ -497,6 +504,22 @@ void main() {
   testWidgets('sharing requires privacy consent and exposes stop sharing', (
     tester,
   ) async {
+    final copiedLinks = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copiedLinks.add((call.arguments as Map)['text'] as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
     final semantics = tester.ensureSemantics();
     final repository = _ReleaseRepository();
     final controller = await _controller(repository: repository);
@@ -510,8 +533,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Conversation actions'));
-    await tester.pumpAndSettle();
     // Sharing sits under Actions in the merged menu; scroll it into view on
     // the short test surface before tapping.
     await tester.ensureVisible(find.text('Share conversation'));
@@ -521,17 +542,20 @@ void main() {
     expect(find.text('Share this conversation?'), findsOneWidget);
     expect(find.textContaining('Anyone with the link'), findsOneWidget);
     expect(repository.shared, isFalse);
-    await tester.tap(find.widgetWithText(FilledButton, 'Share conversation'));
+    await tester.tap(find.widgetWithText(KitButton, 'Share conversation'));
     await tester.pumpAndSettle();
     expect(repository.shared, isTrue);
     expect(
-      find.bySemanticsLabel(
-        RegExp(
-          'Shared conversation link https://share.example/session/session-1',
-        ),
-      ),
+      find.bySemanticsLabel(RegExp('Shared: anyone with the link can view')),
       findsOneWidget,
     );
+    await tester.tap(find.byKey(const ValueKey('chat-status-copy-share-link')));
+    await tester.pumpAndSettle();
+    expect(copiedLinks.last, 'https://share.example/session/session-1');
+    // Chat-6 exposes the public URL through Copy link; stopping lives under
+    // the status line's More menu and still asks before revoking the link.
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
     expect(find.text('Stop sharing'), findsOneWidget);
     // The banner's Stop sharing asks first; the link is live for other people.
     await tester.tap(find.text('Stop sharing'));
@@ -544,6 +568,8 @@ void main() {
     await tester.tap(find.text('Keep sharing'));
     await tester.pumpAndSettle();
     expect(repository.unshared, isFalse);
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
     expect(find.text('Stop sharing'), findsOneWidget);
 
     await tester.tap(find.text('Stop sharing'));
@@ -562,8 +588,6 @@ void main() {
 
     Future<void> chooseFromMenu() async {
       await tester.tap(find.byTooltip('Conversation menu'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Conversation actions'));
       await tester.pumpAndSettle();
       // The banner behind the sheet carries the same label; the sheet row is
       // the later one in the tree.
@@ -603,7 +627,9 @@ void main() {
         '/unshare',
       );
       await tester.pump();
-      await tester.tap(find.byKey(const Key('inline-command-unshare')));
+      // Typed: the conversation menu is Stop sharing's listed home, the
+      // slash word still runs (slice-P10.2).
+      await tester.tap(find.byKey(const Key('chat-send-button')));
       await tester.pumpAndSettle();
     }
 
@@ -646,15 +672,15 @@ void main() {
         repository: _ReleaseRepository(questions: [question]),
       );
       addTearDown(controller.dispose);
-      await tester.pumpWidget(
-        _scaledApp(
-          ActivityScreen(
-            controller: controller,
-            // Use the same route as a notification deep link so the question
-            // sheet opens even when its inbox row is below this short viewport.
-            initialQuestionSessionID: 's1',
-          ),
-          bottomInset: 96,
+      // The sheet as the chat's question card opens it (P4.2a: the
+      // notification deep link now lands on that card, not on this sheet).
+      await tester.pumpWidget(_scaledApp(const Scaffold(), bottomInset: 96));
+      await controller.refreshPendingQuestions();
+      unawaited(
+        showQuestionSheet(
+          tester.element(find.byType(Scaffold).first),
+          controller,
+          controller.questions['q1']!,
         ),
       );
       await tester.pumpAndSettle();
@@ -678,8 +704,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    final send = find.byTooltip('Send');
-    expect(send, findsOneWidget);
+    final microphone = find.byKey(const ValueKey('kit-composer-mic'));
+    expect(microphone.hitTestable(), findsOneWidget);
     expect(find.byKey(const Key('chat-composer-surface')), findsOneWidget);
     // UX-P0-03: Commands, Attach, and Voice collapsed into one leading
     // tools button; all three stay reachable from its sheet.
@@ -694,14 +720,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('chat-workbench')), findsNothing);
     final sendButton = find.byKey(const Key('chat-send-button'));
-    expect(tester.widget<IconButton>(sendButton).onPressed, isNull);
+    expect(sendButton, findsNothing);
     await tester.enterText(
       find.byKey(const Key('chat-composer-field')),
       '/mod',
     );
     await tester.pump();
     expect(find.byKey(const Key('inline-command-suggestions')), findsNothing);
-    expect(tester.widget<IconButton>(sendButton).onPressed, isNotNull);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(
+      tester.getSemantics(sendButton),
+      isSemantics(isEnabled: true, hasTapAction: true),
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -750,7 +780,14 @@ void main() {
       'A draft to expand and finish',
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('prompt-editor-button')));
+    final editor = find.byKey(const Key('prompt-editor-button'));
+    expect(
+      editor.hitTestable(),
+      findsOneWidget,
+      reason:
+          'The prompt editor must be reachable at 320dp with 2x text and the keyboard open. ${_hitTestOwners(tester, editor)}',
+    );
+    await tester.tap(editor);
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('prompt-editor-screen')), findsOneWidget);
@@ -865,13 +902,27 @@ void main() {
         ),
       ),
     );
-    final target = find.byType(InkWell).first;
+    // KitToolRow: the whole line is one KitTappable (48 dp floor) whose
+    // label reads title, command, state in that order.
+    final target = find.byType(KitTappable).first;
     expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
-    expect(find.bySemanticsLabel(RegExp('Shell, Running')), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('Shell, flutter test, Running')),
+      findsOneWidget,
+    );
     expect(find.byType(CircularProgressIndicator), findsNothing);
     await tester.tap(target);
     await tester.pump();
-    expect(find.text(r'$ flutter test'), findsOneWidget);
+    // KitCodeBlock(command) draws the $ prompt outside the command text.
+    final command = find.byKey(const Key('tool-shell-command'));
+    expect(command, findsOneWidget);
+    expect(
+      find.descendant(
+        of: command,
+        matching: find.textContaining('flutter test', findRichText: true),
+      ),
+      findsWidgets,
+    );
     expect(find.text('INPUT'), findsNothing);
     semantics.dispose();
   });
@@ -879,11 +930,15 @@ void main() {
   testWidgets('bundled privacy policy and open source notices render in app', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: AboutScreen()));
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AboutScreen(),
+      ),
+    );
     await tester.pumpAndSettle();
-    expect(find.text('About and open source notices'), findsOneWidget);
-    expect(find.text('Privacy Policy'), findsOneWidget);
-    expect(find.text('Where your data goes'), findsOneWidget);
+    expect(find.text('About'), findsOneWidget);
 
     // Upstream asks third-party projects that use the OpenCode name to say
     // plainly that they are not the official project. It has to be on the tab
@@ -895,18 +950,46 @@ void main() {
       contains('not built, maintained, endorsed by, or affiliated with'),
     );
 
-    await tester.tap(find.text('Open source'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('about-non-affiliation')), findsOneWidget);
-    // The bundled document sits below the build, alpha and original-language
-    // notes, so the lazy list only builds it once the reader scrolls.
+    // P3.10 folded the Open source tab into the About page; the bundled
+    // document opens from its row under Open source (owner review, 2061).
+    final bundled = find.byKey(const ValueKey('about-bundled-components'));
     await tester.scrollUntilVisible(
-      find.text('Third-Party Notices'),
+      bundled,
       200,
       scrollable: find.byType(Scrollable).last,
     );
-    expect(find.text('Third-Party Notices'), findsOneWidget);
-    expect(find.text('sherpa-onnx'), findsWidgets);
+    await tester.tap(bundled);
+    await tester.pumpAndSettle();
+    expect(find.text('Bundled components'), findsWidgets);
+    expect(find.textContaining('sherpa-onnx'), findsWidgets);
+
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PrivacySettingsScreen(controller: controller),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final policy = find.byKey(const ValueKey('privacy-policy'));
+    await tester.scrollUntilVisible(
+      policy,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(policy);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('privacy-policy-viewer')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('privacy-policy-viewer')),
+        matching: find.text('Privacy policy'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Where your data goes'), findsOneWidget);
 
     // The same sentence is the public README's opening claim, so the two
     // cannot drift apart.
@@ -919,7 +1002,9 @@ void main() {
   testWidgets('offline banner states that displayed data may be stale', (
     tester,
   ) async {
-    final controller = await _controller()
+    // The shared status speaks for a selected server only (3d64653c: no
+    // server, no status).
+    final controller = await _controller(savedProfile: true)
       ..status = StreamStatus.disconnected;
     addTearDown(controller.dispose);
     await tester.pumpWidget(
@@ -928,18 +1013,61 @@ void main() {
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: HomeScreen(),
+          // The app root publishes the one connection status every screen's
+          // status slot reads (AppConnectionStatusScope, 3d64653c); this
+          // host mounts the same adapter without the rest of the app.
+          home: _SharedConnectionStatus(child: HomeScreen()),
         ),
       ),
     );
     await tester.pumpAndSettle();
-    // The banner itself is one line; the staleness explanation and the raw
+    // The one status line says it; the staleness explanation and the raw
     // error live behind its Details action.
-    expect(find.text('Connection lost'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 9));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(
+      find.byKey(const ValueKey('connection-status-banner')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
     await tester.pumpAndSettle();
     expect(find.textContaining('may be stale'), findsOneWidget);
     await tester.pumpWidget(const MaterialApp(home: SizedBox()));
     controller.dispose();
   });
+}
+
+String _hitTestOwners(WidgetTester tester, Finder finder) => tester
+    .hitTestOnBinding(tester.getCenter(finder))
+    .path
+    .where((entry) => entry.target is RenderObject)
+    .take(5)
+    .map((entry) => (entry.target as RenderObject).debugCreator)
+    .join('\n');
+
+/// The app root's shared connection status (main.dart
+/// AppConnectionStatusScope) without the rest of the app.
+class _SharedConnectionStatus extends ConsumerWidget {
+  const _SharedConnectionStatus({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.watch(connProvider);
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) => AppConditionsScope(
+        conditions: [
+          connectionKitStatus(
+            context,
+            controller,
+            actionContext: () => context,
+          ),
+        ],
+        child: child,
+      ),
+    );
+  }
 }

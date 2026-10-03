@@ -4,9 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/domain/plugin_inventory.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
-import 'package:opencode_mobile/state/plugin_command_mappings.dart';
-import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_probe.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings/server_plugins_section.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import '../../test/support/setup_capture_preferences.dart';
 import 'fixtures.dart';
@@ -52,7 +50,7 @@ void main() {
   setUpAll(loadCaptureFonts);
   for (final light in [true, false]) {
     testWidgets(
-      'personal plugin links and bundled task view ${light ? 'light' : 'dark'}',
+      'server plugins and bundled task view ${light ? 'light' : 'dark'}',
       (tester) async {
         tester.view.physicalSize = const Size(1170, 2532);
         tester.view.devicePixelRatio = captureDevicePixelRatio;
@@ -114,29 +112,13 @@ void main() {
           repository: _Repository(),
         );
         try {
-          final profile = controller.profile!;
-          final mappings = PluginCommandMappings(
-            controller.store.prefs,
-            profile.id,
-            () => controller.isProfileReadable(profile.id),
-          );
-          await mappings.set(
-            PluginCommandMappings.scope(
-              baseUrl: profile.baseUrl,
-              username: profile.username,
-              directory: controller.directory,
-              workspace: controller.workspace,
-            ),
-            'code-review',
-            ['review', 'test'],
-          );
           final key = GlobalKey();
           await tester.pumpWidget(
             captureApp(
-              home: PluginsSettingsScreen(
-                controller: controller,
-                probe: (url, {city}) async =>
-                    const ProbeUnreachable(error: 'capture'),
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: ServerPluginsSection(controller: controller),
+                ),
               ),
               boundaryKey: key,
               controller: controller,

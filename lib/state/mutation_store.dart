@@ -23,6 +23,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/orchestration_gateway.dart';
+import 'team_storage_redaction.dart';
 
 /// Which [OrchestrationControlGateway] verb a mutation is.
 enum MutationKind {
@@ -50,7 +51,7 @@ enum MutationStatus { sent, confirmed, rejected, unconfirmed }
 
 /// Everything needed to send (or re-send under a new key) one write:
 /// the verb, its target and its arguments. JSON-serialisable so a retry
-/// after a restart has the same content.
+/// after a restart has the saved content (credential-like text is redacted).
 class MutationRequest {
   const MutationRequest._({
     required this.kind,
@@ -360,12 +361,13 @@ class MutationStore {
       : _decode(prefs.getString(keyFor(profileId, key)));
 
   /// Writes [record]; the returned future completes once the preference
-  /// holds it. Callers send only after awaiting this.
+  /// holds its redacted copy. Callers send the original request only after
+  /// awaiting this; a later explicit retry uses the redacted saved text.
   Future<void> save(String profileId, MutationRecord record) async {
     if (profileId.isEmpty) return;
     await prefs.setString(
       keyFor(profileId, record.key),
-      jsonEncode(record.toJson()),
+      jsonEncode(redactTeamStoredValue(record.toJson())),
     );
   }
 

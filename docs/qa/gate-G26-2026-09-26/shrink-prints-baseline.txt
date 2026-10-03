@@ -1,0 +1,166 @@
+# Throwaway: deleted the '// ignore: avoid_print' at test/l10n_coverage_test.dart:209, ran the gate, restored the file.
+# The test passes and prints the per-entry minimum baseline (l10n_coverage_test.dart: 1 comment, one ignore:avoid_print token).
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-6/test/analyzer_suppressions_test.dart
+00:00 +0: G26: no new analyzer suppression comments (PROC-3)
+00:00 +1: G26: no new analysis options suppression (PROC-3)
+00:00 +2: (tearDownAll)
+Shell: --- G26 baseline shrank: commit as test/analyzer_suppressions_baseline.json ---
+Shell: {
+Shell:   "suppressionComments": {
+Shell:     "lib/api/opencode_api.dart": 1,
+Shell:     "lib/l10n/app_localizations.dart": 1,
+Shell:     "lib/l10n/app_localizations_ar.dart": 2,
+Shell:     "lib/l10n/app_localizations_en.dart": 2,
+Shell:     "test/chat_states_standard_test.dart": 1,
+Shell:     "test/goldens/chat_states_golden_test.dart": 1,
+Shell:     "test/kit_ratchet_test.dart": 2,
+Shell:     "test/l10n_coverage_test.dart": 1,
+Shell:     "test/search_index_test.dart": 1,
+Shell:     "tool/capture/capture_test.dart": 1,
+Shell:     "tool/capture/census/areas/a_shell.dart": 1,
+Shell:     "tool/capture/census/areas/c_chat_compose.dart": 1,
+Shell:     "tool/capture/census/areas/d_chat_sheets.dart": 1,
+Shell:     "tool/capture/census/areas/e_workspace.dart": 1,
+Shell:     "tool/capture/census/areas/h_termux.dart": 1,
+Shell:     "tool/capture/census/areas/i1_team_core.dart": 1,
+Shell:     "tool/capture/census/areas/i2_team_sheets.dart": 1,
+Shell:     "tool/capture/census/census_core.dart": 1,
+Shell:     "tool/capture/census/support/e_workspace_fakes.dart": 1,
+Shell:     "tool/capture/census/support/i1_team_core_world.dart": 1,
+Shell:     "tool/capture/chat_states_test.dart": 1,
+Shell:     "tool/capture/isolated_task_test.dart": 1,
+Shell:     "tool/capture/motion_states_test.dart": 1,
+Shell:     "tool/qa/oc2_live_proof_test.dart": 1,
+Shell:     "tool/qa/paseo_live_proof_test.dart": 1
+Shell:   },
+Shell:   "suppressionTokens": {
+Shell:     "lib/api/opencode_api.dart": [
+Shell:       "ignore:deprecated_member_use"
+Shell:     ],
+Shell:     "lib/l10n/app_localizations.dart": [
+Shell:       "ignore_for_file:type=lint"
+Shell:     ],
+Shell:     "lib/l10n/app_localizations_ar.dart": [
+Shell:       "ignore:unused_import",
+Shell:       "ignore_for_file:type=lint"
+Shell:     ],
+Shell:     "lib/l10n/app_localizations_en.dart": [
+Shell:       "ignore:unused_import",
+Shell:       "ignore_for_file:type=lint"
+Shell:     ],
+Shell:     "test/chat_states_standard_test.dart": [
+Shell:       "ignore_for_file:invalid_use_of_protected_member"
+Shell:     ],
+Shell:     "test/goldens/chat_states_golden_test.dart": [
+Shell:       "ignore_for_file:invalid_use_of_protected_member"
+Shell:     ],
+Shell:     "test/kit_ratchet_test.dart": [
+Shell:       "ignore:avoid_print",
+Shell:       "ignore:avoid_print"
+Shell:     ],
+Shell:     "test/l10n_coverage_test.dart": [
+Shell:       "ignore:avoid_print"
+Shell:     ],
+Shell:     "test/search_index_test.dart": [
+Shell:       "ignore:avoid_print"
+Shell:     ],
+Shell:     "tool/capture/capture_test.dart": [
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/capture/census/areas/a_shell.dart": [
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/capture/census/areas/c_chat_compose.dart": [
+Shell:       "ignore_for_file:invalid_use_of_protected_member",
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/capture/census/areas/d_chat_sheets.dart": [
+Shell:       "ignore_for_file:invalid_use_of_protected_member",
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/capture/census/areas/e_workspace.dart": [
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/capture/census/areas/h_termux.dart": [
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/capture/census/areas/i1_team_core.dart": [
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/capture/census/areas/i2_team_sheets.dart": [
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/capture/census/census_core.dart": [
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/capture/census/support/e_workspace_fakes.dart": [
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/capture/census/support/i1_team_core_world.dart": [
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/capture/chat_states_test.dart": [
+Shell:       "ignore_for_file:invalid_use_of_protected_member",
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/capture/isolated_task_test.dart": [
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/capture/motion_states_test.dart": [
+Shell:       "ignore_for_file:invalid_use_of_visible_for_testing_member"
+Shell:     ],
+Shell:     "tool/qa/oc2_live_proof_test.dart": [
+Shell:       "ignore_for_file:avoid_print"
+Shell:     ],
+Shell:     "tool/qa/paseo_live_proof_test.dart": [
+Shell:       "ignore_for_file:avoid_print"
+Shell:     ]
+Shell:   },
+Shell:   "analysisOptions": {
+Shell:     "analysis_options.yaml": {
+Shell:       "include": [
+Shell:         "package:flutter_lints/flutter.yaml"
+Shell:       ],
+Shell:       "analyzer.exclude": [
+Shell:         "android/**",
+Shell:         "build/**",
+Shell:         "ios/**",
+Shell:         "linux/**",
+Shell:         "macos/**",
+Shell:         "tool/sdk/runtime/**",
+Shell:         "web/**",
+Shell:         "windows/**"
+Shell:       ],
+Shell:       "analyzer.errors.ignore": [],
+Shell:       "linter.rules.disabled": []
+Shell:     },
+Shell:     "packages/opencode_sdk/analysis_options.yaml": {
+Shell:       "include": [],
+Shell:       "analyzer.exclude": [
+Shell:         "lib/src/model/*.g.dart",
+Shell:         "test/*.dart"
+Shell:       ],
+Shell:       "analyzer.errors.ignore": [
+Shell:         "deprecated_member_use_from_same_package",
+Shell:         "strict_raw_type",
+Shell:         "unused_import"
+Shell:       ],
+Shell:       "linter.rules.disabled": []
+Shell:     },
+Shell:     "tool/sdk/templates/analysis_options.mustache": {
+Shell:       "include": [],
+Shell:       "analyzer.exclude": [
+Shell:         "lib/src/model/*.g.dart",
+Shell:         "test/*.dart"
+Shell:       ],
+Shell:       "analyzer.errors.ignore": [
+Shell:         "deprecated_member_use_from_same_package",
+Shell:         "strict_raw_type",
+Shell:         "unused_import"
+Shell:       ],
+Shell:       "linter.rules.disabled": []
+Shell:     }
+Shell:   }
+Shell: }
+Shell: --- end baseline ---
+00:00 +2: All tests passed!

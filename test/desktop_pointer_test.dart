@@ -9,6 +9,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/desktop/desktop_interaction.dart';
+import 'package:opencode_mobile/ui/kit/kit_layout.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -83,7 +84,13 @@ void main() {
     expect(cursor, SystemMouseCursors.click);
   });
 
-  testWidgets('android leaves the file link cursor alone', (tester) async {
+  // KitMarkdown (79d941e4) draws file links for every host: a mouse is a
+  // fine pointer wherever it is (kit-v2 §8.1 KitLayout.finePointer:
+  // desktop, or a mouse seen by MouseTracker), so a mouse on Android gets
+  // the same click cursor as on a PC, and touch never sees a cursor at all.
+  testWidgets('a mouse on Android also takes the click cursor on a file link', (
+    tester,
+  ) async {
     await tester.pumpWidget(_linkHost());
     await tester.pumpAndSettle();
 
@@ -91,7 +98,7 @@ void main() {
       tester,
       find.byKey(const Key('path-link-lib/a/b.dart')),
     );
-    expect(cursor, isNot(SystemMouseCursors.click));
+    expect(cursor, SystemMouseCursors.click);
   });
 
   desktopTest('an editable field still reports the text cursor', (
@@ -157,9 +164,11 @@ void main() {
     expect(controller.offset, greaterThan(0));
   });
 
-  desktopTest('the Files split divider resizes and shows a resize cursor', (
-    tester,
-  ) async {
+  // Files is a KitScreen.twoPane since its kit rebuild (6f21d378): the list
+  // pane sits at KitLayout.paneListWidth with one hairline seam, the same
+  // on every platform (kit-v2 §8.2); the Files-only drag splitter
+  // ('files-split-handle') went with it.
+  Future<void> pumpWideFiles(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1200, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -174,34 +183,44 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+  }
 
-    final handle = find.byKey(const ValueKey('files-split-handle'));
-    expect(handle, findsOneWidget);
-    expect(await _cursorOver(tester, handle), SystemMouseCursors.resizeColumn);
+  void expectKitPanes(WidgetTester tester) {
+    final list = tester.getRect(find.byKey(const ValueKey('files-list-pane')));
+    final detail = tester.getRect(
+      find.byKey(const ValueKey('files-detail-pane')),
+    );
+    expect(list.width, KitLayout.paneListWidth);
+    // One hairline between the panes, not a grab strip.
+    expect(detail.left - list.right, inInclusiveRange(0.5, 1));
+    expect(find.byKey(const ValueKey('files-split-handle')), findsNothing);
+  }
 
-    final before = tester.getRect(handle).left;
-    await tester.drag(handle, const Offset(120, 0));
+  desktopTest('the Files panes keep the kit list width with a hairline seam', (
+    tester,
+  ) async {
+    await pumpWideFiles(tester);
+    expectKitPanes(tester);
+    final seam = Offset(
+      tester.getRect(find.byKey(const ValueKey('files-list-pane'))).right,
+      400,
+    );
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: Offset.zero);
+    addTearDown(gesture.removePointer);
+    await tester.pump();
+    await gesture.moveTo(seam);
     await tester.pumpAndSettle();
-    expect(tester.getRect(handle).left, greaterThan(before + 50));
+    expect(
+      RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1),
+      isNot(SystemMouseCursors.resizeColumn),
+    );
   });
 
   testWidgets('android keeps the plain Files hairline divider', (tester) async {
-    tester.view.physicalSize = const Size(1200, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final connection = await _controller();
-    addTearDown(connection.dispose);
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: FilesScreen(controller: connection)),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('files-split-handle')), findsNothing);
-    expect(find.byType(VerticalDivider), findsOneWidget);
+    await pumpWideFiles(tester);
+    expectKitPanes(tester);
+    expect(find.byType(VerticalDivider), findsNothing);
   });
 
   desktopTest('mouse drag selects text rather than scrolling the list', (

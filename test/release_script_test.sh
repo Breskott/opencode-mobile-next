@@ -709,17 +709,24 @@ test_alpha_publish_verifies_the_body_github_stored() {
   assert_output_not_contains 'Alpha 1.0.12+13 is staged as a draft'
 }
 
-test_strict_arguments
-test_git_gates
-test_flutter_toolchain_gate
-test_release_signing_blocker
-test_release_is_dry_run_by_default_and_builds_aab
-test_sideload_requires_public_lineage_and_verifies_apk
-test_quality_gate_failure_prevents_shorebird
-test_patch_targets_exact_version_and_requires_baseline
-test_patch_rejects_native_and_asset_inputs
-test_invalid_version_is_rejected
-test_alpha_notes_body_is_validated_before_publish
-test_alpha_publish_verifies_the_body_github_stored
+# The groups share nothing but the read-only sources: each runs in its own
+# subshell (its own fixture numbers, so its own directories), side by side.
+group_index=0
+pids=()
+for group in test_strict_arguments test_git_gates test_flutter_toolchain_gate \
+  test_release_signing_blocker test_release_is_dry_run_by_default_and_builds_aab \
+  test_sideload_requires_public_lineage_and_verifies_apk \
+  test_quality_gate_failure_prevents_shorebird \
+  test_patch_targets_exact_version_and_requires_baseline \
+  test_patch_rejects_native_and_asset_inputs test_invalid_version_is_rejected \
+  test_alpha_notes_body_is_validated_before_publish \
+  test_alpha_publish_verifies_the_body_github_stored; do
+  group_index=$((group_index + 1))
+  (TEST_NUMBER=$((group_index * 1000)); "$group") &
+  pids+=("$!")
+done
+failed=0
+for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
+[[ "$failed" == 0 ]] || exit 1
 
 echo "PASS: release script safety contract"

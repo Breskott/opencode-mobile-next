@@ -333,12 +333,14 @@ void main() {
     VoidCallback? onConnected,
     VoidCallback? onOpenPhoneSetup,
     bool autoStart = false,
+    Future<bool> Function()? inAppLinuxProbe,
   }) => LocalAgentOnboardingBlock(
     connection: controller,
     runtime: runtime,
     autoStart: autoStart,
     onConnected: onConnected ?? () {},
     onOpenPhoneSetup: onOpenPhoneSetup,
+    inAppLinuxProbe: inAppLinuxProbe,
   );
 
   group('the wizard block', () {
@@ -403,6 +405,35 @@ void main() {
       );
       await tapKey(tester, 'local-agent-open-setup');
       expect(opened, 2);
+      await finish(tester);
+    });
+
+    testWidgets('needs_ubuntu with the in-app Linux already installed offers '
+        'Termux, never Refresh alone', (tester) async {
+      init();
+      var opened = 0;
+      final runtime = _FakeRuntime(_status(LocalAgentPhase.needsUbuntu));
+      await tester.pumpWidget(
+        app(
+          block(
+            runtime,
+            onOpenPhoneSetup: () => opened++,
+            inAppLinuxProbe: () async => true,
+          ),
+        ),
+      );
+      await settle(tester);
+      expect(find.text(l10n.localAgentNeedsTermuxBody), findsOneWidget);
+      expect(find.text(l10n.localAgentNeedsUbuntuBody), findsNothing);
+      expect(find.text(l10n.localAgentOpenSetup), findsNothing);
+      expect(find.text(l10n.localAgentSetUpWithTermux), findsOneWidget);
+      // Refresh is never the only door: the Termux path sits beside it.
+      expect(
+        find.byKey(const ValueKey('local-agent-needs-ubuntu-refresh')),
+        findsOneWidget,
+      );
+      await tapKey(tester, 'local-agent-open-setup');
+      expect(opened, 1);
       await finish(tester);
     });
 
@@ -639,6 +670,59 @@ void main() {
       await finish(tester);
     });
 
+    testWidgets('an older Paseo offers the update that brings new models; '
+        'updating stops, reinstalls and starts again', (tester) async {
+      init();
+      // Installed with 0.8.0, which does not list Claude Opus 5.5.
+      final runtime = _FakeRuntime(_ready())
+        ..results['stop'] = _status(
+          LocalAgentPhase.installed,
+          installed: true,
+          signedIn: LocalAgentSignIn.yes,
+        )
+        ..results['install'] = _status(
+          LocalAgentPhase.installed,
+          installed: true,
+          signedIn: LocalAgentSignIn.yes,
+        )
+        ..results['start'] = _ready();
+      await tester.pumpWidget(app(block(runtime)));
+      await settle(tester);
+      expect(
+        find.byKey(const ValueKey('local-agent-update-available')),
+        findsOneWidget,
+      );
+      await tapKey(tester, 'local-agent-update-now');
+      await settle(tester);
+      expect(runtime.calls, ['stop', 'install', 'start']);
+      await finish(tester);
+    });
+
+    testWidgets('the pinned Paseo offers no update', (tester) async {
+      init();
+      final current = TermuxBridge.localAgentsPins['paseo_version']!;
+      final runtime = _FakeRuntime(
+        LocalAgentStatus(
+          phase: LocalAgentPhase.ready,
+          installed: true,
+          signedIn: LocalAgentSignIn.yes,
+          nodeVersion: 'v24.21.0',
+          paseoVersion: current,
+          claudeVersion: '2.1.280',
+        ),
+      );
+      await tester.pumpWidget(app(block(runtime)));
+      await settle(tester);
+      expect(
+        find.byKey(const ValueKey('local-agent-update-available')),
+        findsNothing,
+      );
+      // Still reachable from the menu: Claude Code itself is not pinned.
+      await tapKey(tester, 'local-agent-menu');
+      expect(find.byKey(const ValueKey('local-agent-update')), findsOneWidget);
+      await finish(tester);
+    });
+
     testWidgets('remove asks first and says what stays', (tester) async {
       init();
       final runtime = _FakeRuntime(
@@ -726,35 +810,35 @@ void main() {
             );
       await tester.pumpWidget(app(card(runtime, busyConversations: 1)));
       await settle(tester);
-      expect(find.text(l10n.localAgentCardStopped), findsOneWidget);
+      expect(find.text(l10n.phoneServerCardStopped), findsOneWidget);
       expect(
         find.byKey(const ValueKey('local-agent-server-connect')),
         findsNothing,
       );
       await tapKey(tester, 'local-agent-server-start');
       expect(runtime.calls, ['start']);
-      expect(find.text(l10n.localAgentReadyTitle), findsOneWidget);
+      expect(find.text(l10n.phoneServerCardRunning), findsOneWidget);
 
+      await tapKey(tester, 'local-agent-server-menu');
       await tapKey(tester, 'local-agent-server-restart');
       expect(find.text(l10n.localAgentRestartTitle), findsOneWidget);
-      expect(find.text(l10n.termuxRestartBusyMessage(1)), findsNothing);
-      expect(
-        find.textContaining(l10n.termuxRestartBusyMessage(1)),
-        findsOneWidget,
-      );
+      // The restart consequence is its own sentence in the kit confirm.
+      expect(find.text(l10n.termuxRestartBusyMessage(1)), findsOneWidget);
       expect(runtime.calls, ['start']);
       await tapKey(tester, 'confirm-restart-local-agents');
       expect(runtime.calls, ['start', 'restart']);
 
+      await tapKey(tester, 'local-agent-server-menu');
       await tapKey(tester, 'local-agent-server-stop');
       expect(find.text(l10n.localAgentStopBody), findsOneWidget);
       await tester.tap(find.text(l10n.safetyStopLocalServerKeep));
       await settle(tester);
       expect(runtime.calls, ['start', 'restart']);
+      await tapKey(tester, 'local-agent-server-menu');
       await tapKey(tester, 'local-agent-server-stop');
       await tapKey(tester, 'confirm-stop-local-agents');
       expect(runtime.calls, ['start', 'restart', 'stop']);
-      expect(find.text(l10n.localAgentCardStopped), findsOneWidget);
+      expect(find.text(l10n.phoneServerCardStopped), findsOneWidget);
       await finish(tester);
     });
 
@@ -795,6 +879,7 @@ void main() {
       expect(connected.single.id, 'claude');
       expect(managed, 1);
 
+      await tapKey(tester, 'local-agent-server-menu');
       await tapKey(tester, 'local-agent-server-restart');
       await tapKey(tester, 'confirm-restart-local-agents');
       expect(
@@ -805,7 +890,7 @@ void main() {
       );
 
       await tapKey(tester, 'local-agent-server-menu');
-      for (final item in ['recheck', 'manage', 'forget']) {
+      for (final item in ['manage', 'forget']) {
         expect(
           find.byKey(ValueKey('local-agent-server-$item')),
           findsOneWidget,

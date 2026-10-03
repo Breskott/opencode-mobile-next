@@ -1,0 +1,2 @@
+$ flutter analyze <5 changed Dart files>  (pinned 3.47.1, coordinator review)
+No issues found! (ran in 0.9s)

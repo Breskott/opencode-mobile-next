@@ -1,22 +1,21 @@
-/// The one-time discovery offer of 02-ux §1.2: when the connected server
-/// has no AI Team config and its own host answers like a Gas City on port
+/// The discovery of 02-ux §1.2: when the connected server has no AI Team
+/// config, its own host is asked whether it answers like a Gas City on port
 /// 8373 (the host front, which gives controls) or 8372 (the bare
-/// supervisor, read-only), a quiet card asks "… also runs an AI team. Turn
-/// it on?". The front port is tried first and preferred. Never a
-/// modal; "Not now" is remembered per server through
-/// [OrchestrationStore.dismissDiscovery]. Absent from the tree in every
-/// other state, so a screen can place it unconditionally (TEAM-107 puts it
-/// on Workspace; Settings › Plugins shows it at the top).
+/// supervisor, read-only); the front port is tried first and preferred.
+/// What it finds is shown where the team already is, never as a card of its
+/// own: the Plugins row says "Found on {server}" with Turn on, and the AI
+/// Team page offers Turn on (review board, embedded-team-discovery-card:
+/// one team, one presence). A dismissal remembered through
+/// [OrchestrationStore.dismissDiscovery] (turning a team off) stops the
+/// asking for that server.
 library;
-
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
-import '../app_theme.dart';
 import 'team_host_form.dart';
 
 /// What discovery found for a profile, shared with the Plugins row so it can
@@ -27,6 +26,15 @@ class TeamDiscoveryResult {
   final String url;
   final ProbeFound found;
 }
+
+/// The addresses discovery probes for [profile]. None for the OpenCode
+/// inside this app: it has its own team (BuiltinTeamSection), and what
+/// answers on this phone's loopback ports is Termux's team, which is
+/// neither a computer nor this server's to adopt.
+List<String> teamDiscoveryUrlsForProfile(ServerProfile profile) =>
+    looksLikeInAppServer(profile)
+    ? const []
+    : teamDiscoveryUrlsFor(profile.baseUrl);
 
 /// Probes the profile's host once per (profile, config-null) and keeps the
 /// answer for the widgets on this screen. One per screen; the card and the
@@ -42,10 +50,18 @@ class TeamDiscovery extends ChangeNotifier {
   bool _running = false;
   bool _probed = false;
   TeamDiscoveryResult? _result;
+  ProbeVerdict? _miss;
 
   /// The found host, null before the probe answered or when nothing was
   /// found.
   TeamDiscoveryResult? get result => _result;
+
+  /// Why nothing was found, once the probe answered without a team: the
+  /// most telling of the answers (a team that is starting, then a refused
+  /// plain address, then a server that is no team, then no answer at all).
+  /// Null while looking, when a team was found, and when no address could
+  /// be tried.
+  ProbeVerdict? get miss => _miss;
 
   /// True once the probe for the current profile answered (found or not).
   bool get probed => _probed;
@@ -68,9 +84,10 @@ class TeamDiscovery extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    final urls = teamDiscoveryUrlsFor(profile.baseUrl);
+    final urls = teamDiscoveryUrlsForProfile(profile);
     _probedProfileId = profile.id;
     _result = null;
+    _miss = null;
     if (urls.isEmpty) {
       _probed = true;
       notifyListeners();
@@ -80,6 +97,7 @@ class TeamDiscovery extends ChangeNotifier {
     _probed = false;
     notifyListeners();
     TeamDiscoveryResult? result;
+    ProbeVerdict? miss;
     for (final url in urls) {
       ProbeVerdict verdict;
       try {
@@ -92,12 +110,24 @@ class TeamDiscovery extends ChangeNotifier {
         result = TeamDiscoveryResult(url: url, found: verdict);
         break;
       }
+      if (miss == null || _missRank(verdict) < _missRank(miss)) {
+        miss = verdict;
+      }
     }
     _running = false;
     _probed = true;
     _result = result;
+    _miss = result == null ? miss : null;
     notifyListeners();
   }
+
+  static int _missRank(ProbeVerdict verdict) => switch (verdict) {
+    ProbeCityNotRunning() => 0,
+    ProbePlainHttpRefused() => 1,
+    ProbeNotGasCity() => 2,
+    ProbeUnreachable() => 3,
+    ProbeFound() => 4,
+  };
 
   void _reset() {
     if (_probedProfileId == null && !_probed && _result == null) return;
@@ -105,6 +135,7 @@ class TeamDiscovery extends ChangeNotifier {
     _probed = false;
     _running = false;
     _result = null;
+    _miss = null;
     notifyListeners();
   }
 
@@ -117,157 +148,27 @@ class TeamDiscovery extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Saves the found host on the profile and starts the plugin.
+  /// Saves the found host on the profile and starts the plugin. A failed
+  /// save leaves the profile as it was and rethrows.
   Future<void> turnOn() async {
     final profile = controller.profile;
     final result = _result;
     if (profile == null || result == null) return;
+    final previous = profile.orchestration;
     profile.orchestration = teamConfigFromVerdict(
       result.found,
       url: result.found.front ? result.found.host.url : result.url,
       city: result.found.city ?? '',
     );
-    await controller.store.upsert(profile);
+    try {
+      await controller.store.upsert(profile);
+    } catch (_) {
+      // Nothing changed: the offer stays and says the save failed.
+      profile.orchestration = previous;
+      rethrow;
+    }
     controller.syncOrchestration();
     _reset();
-  }
-}
-
-/// The card. Renders nothing until [discovery] found a host.
-class TeamDiscoveryCard extends StatefulWidget {
-  const TeamDiscoveryCard({
-    super.key,
-    required this.controller,
-    this.discovery,
-    this.probe,
-  });
-
-  final ConnectionController controller;
-
-  /// A discovery shared with sibling widgets; the card owns one otherwise.
-  final TeamDiscovery? discovery;
-  final TeamHostProbe? probe;
-
-  @override
-  State<TeamDiscoveryCard> createState() => _TeamDiscoveryCardState();
-}
-
-class _TeamDiscoveryCardState extends State<TeamDiscoveryCard> {
-  late TeamDiscovery _discovery;
-  bool _owned = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _adopt();
-  }
-
-  void _adopt() {
-    final shared = widget.discovery;
-    _owned = shared == null;
-    _discovery =
-        shared ?? TeamDiscovery(widget.controller, probe: widget.probe);
-    _discovery.addListener(_changed);
-    widget.controller.addListener(_connectionChanged);
-    _kick();
-  }
-
-  /// Probes after the current frame: [TeamDiscovery] notifies as soon as
-  /// it starts, which must not land inside a build.
-  void _kick() => scheduleMicrotask(() {
-    if (mounted) unawaited(_discovery.ensureProbed());
-  });
-
-  void _release() {
-    _discovery.removeListener(_changed);
-    widget.controller.removeListener(_connectionChanged);
-    if (_owned) _discovery.dispose();
-  }
-
-  @override
-  void didUpdateWidget(TeamDiscoveryCard old) {
-    super.didUpdateWidget(old);
-    if (old.discovery != widget.discovery ||
-        old.controller != widget.controller) {
-      _release();
-      _adopt();
-    }
-  }
-
-  void _changed() {
-    if (mounted) setState(() {});
-  }
-
-  void _connectionChanged() => _kick();
-
-  @override
-  void dispose() {
-    _release();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final result = _discovery.result;
-    final profile = widget.controller.profile;
-    if (result == null || profile == null || profile.orchestration != null) {
-      return const SizedBox.shrink();
-    }
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    return Card(
-      key: const ValueKey('team-discovery-card'),
-      margin: const EdgeInsets.fromLTRB(4, 4, 4, 12),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  AppIconography.extensions,
-                  size: 22,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    l10n.teamUiDiscoveryTitle(profile.name),
-                    style: theme.textTheme.titleMedium?.copyWith(height: 1.3),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              teamFoundCopy(l10n, result.found),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              alignment: WrapAlignment.end,
-              spacing: 4,
-              children: [
-                TextButton(
-                  key: const ValueKey('team-discovery-not-now'),
-                  onPressed: () => unawaited(_discovery.dismiss()),
-                  child: Text(l10n.teamUiDiscoveryNotNow),
-                ),
-                FilledButton(
-                  key: const ValueKey('team-discovery-turn-on'),
-                  onPressed: () => unawaited(_discovery.turnOn()),
-                  child: Text(l10n.teamUiDiscoveryTurnOn),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

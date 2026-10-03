@@ -1,7 +1,7 @@
-/// The receipt a needs-you row and the Gate sheet share (TEAM-203, 02-ux
-/// §6): which [MutationRecord] answers a gate, the copy per status and the
-/// trailing chip. A row leaves the list only once the host confirmed;
-/// nothing here sends.
+/// The receipt a gate's card, its rows and the Gate sheet share (TEAM-203,
+/// 02-ux §6): which [MutationRecord] answers a gate, the copy per status
+/// and the row's receipt span ([teamGateReceiptSpan]). A row leaves the list only once the
+/// host confirmed; nothing here sends.
 library;
 
 import 'package:flutter/material.dart';
@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
-import '../app_theme.dart';
+import '../kit/kit_receipt.dart';
 
 /// The newest record answering [gate] from this device that no retry
 /// superseded: the `respond` on the gate's own id, or — for a failed run —
@@ -74,61 +74,46 @@ String teamReceiptLine(AppLocalizations l10n, MutationRecord record) =>
       },
     };
 
-/// The chip word per status; null for confirmed (the row is gone).
-String? teamReceiptChipLabel(AppLocalizations l10n, MutationRecord record) =>
-    switch (record.status) {
-      MutationStatus.sent => l10n.teamUiGateAnswerChipSent,
-      MutationStatus.unconfirmed => l10n.teamUiGateAnswerChipUnconfirmed,
-      MutationStatus.rejected => l10n.teamUiGateAnswerChipRejected,
-      MutationStatus.confirmed => null,
-    };
-
-/// Glyph and tone per status, never colour-only (02-ux §11).
-(IconData, AppStatusTone) teamReceiptGlyph(MutationStatus status) =>
-    switch (status) {
-      MutationStatus.sent => (AppIconography.clock, AppStatusTone.neutral),
-      MutationStatus.confirmed => (AppIconography.check, AppStatusTone.ok),
-      MutationStatus.unconfirmed => (
-        AppIconography.retry,
-        AppStatusTone.attention,
-      ),
-      MutationStatus.rejected => (AppIconography.error, AppStatusTone.failure),
-    };
-
-/// The trailing chip of a needs-you row: "Sent", "Unconfirmed" (tap to
-/// open the sheet and retry) or "Not accepted". Absent for confirmed and
-/// for a gate never answered from here.
-class TeamReceiptChip extends StatelessWidget {
-  const TeamReceiptChip({
-    super.key,
-    required this.record,
-    required this.onOpen,
-  });
-
-  final MutationRecord record;
-
-  /// Opens the Gate sheet, where the retry lives.
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final label = teamReceiptChipLabel(l10n, record);
-    if (label == null) return const SizedBox.shrink();
-    final theme = Theme.of(context);
-    final (icon, tone) = teamReceiptGlyph(record.status);
-    final color = AppTheme.statusColor(theme, tone);
-    final retry = record.status == MutationStatus.unconfirmed;
-    return Semantics(
-      label: retry ? l10n.teamUiGateAnswerChipUnconfirmedSemantics : null,
-      button: true,
-      child: ActionChip(
-        avatar: Icon(icon, size: 16, color: color),
-        label: Text(label, style: TextStyle(color: color)),
-        side: BorderSide(color: color.withValues(alpha: .5)),
-        visualDensity: VisualDensity.compact,
-        onPressed: onOpen,
-      ),
-    );
-  }
+/// A gate answer's receipt inside a row that points to the gate (the
+/// Activity list, the AI Team lists): the state's glyph and word — "Sending…",
+/// "Not confirmed yet" or "Not accepted" — as a span of the row's
+/// supporting line, right after its first word ("Question · Not confirmed
+/// yet · …"), so the row's trailing slot keeps its chevron and the row
+/// itself opens the gate, where Try again lives. Null for a confirmed
+/// answer (the row leaves the list).
+InlineSpan? teamGateReceiptSpan(BuildContext context, MutationRecord record) {
+  final state = switch (record.status) {
+    MutationStatus.sent => KitReceiptState.sending,
+    MutationStatus.unconfirmed => KitReceiptState.notConfirmed,
+    MutationStatus.rejected => KitReceiptState.refused,
+    MutationStatus.confirmed => null,
+  };
+  if (state == null) return null;
+  return KitReceipt.span(context, state, mark: true);
 }
+
+/// A gate row's supporting line: [parts] joined by " · ", with the answer's
+/// receipt ([teamGateReceiptSpan]) after the first part while the host has
+/// not confirmed it — "Question · Not confirmed yet · Add dark mode · 3 min
+/// ago".
+InlineSpan teamGateRowLine(
+  BuildContext context,
+  List<String> parts, {
+  MutationRecord? record,
+}) {
+  final receipt = record == null ? null : teamGateReceiptSpan(context, record);
+  if (receipt == null || parts.isEmpty) {
+    return TextSpan(text: parts.join(_separator));
+  }
+  final rest = parts.skip(1).join(_separator);
+  return TextSpan(
+    children: [
+      TextSpan(text: '${parts.first}$_separator'),
+      receipt,
+      if (rest.isNotEmpty) TextSpan(text: '$_separator$rest'),
+    ],
+  );
+}
+
+/// The team's one separator (teamUsageSeparator).
+const _separator = ' · ';

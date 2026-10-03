@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
@@ -8,6 +9,7 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/widgets/pickers.dart';
 import 'package:opencode_mobile/ui/widgets/provider_logo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -233,10 +235,33 @@ Widget _app(
   );
 }
 
+Future<void> _reveal(WidgetTester tester, Finder target) async {
+  // Kit search settles its query before updating the catalog; focused fields
+  // also finish their caret scroll before the next action is revealed.
+  await tester.pump(const Duration(milliseconds: 400));
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
+  expect(target.hitTestable(), findsOneWidget);
+}
+
+Future<void> _tap(WidgetTester tester, Finder target) async {
+  await _reveal(tester, target);
+  await tester.tap(target);
+  await tester.pump();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   // Provider logos are fetched favicons; tests render the monogram instead.
   setUpAll(() => ProviderLogo.imageProviderOverride = (_) => null);
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (_) async => null,
+        );
+  });
   tearDownAll(() => ProviderLogo.imageProviderOverride = null);
 
   test('model presentation leads with current model and provider family', () {
@@ -311,13 +336,15 @@ void main() {
   testWidgets('model selector searches and persists a new selection', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller));
 
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
 
     expect(find.text('Choose a model'), findsOneWidget);
@@ -330,16 +357,17 @@ void main() {
       find.byKey(const Key('model-picker-search')),
       'ultra',
     );
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
 
     expect(find.text('Nemotron Ultra'), findsOneWidget);
     expect(find.text('Big Pickle'), findsNothing);
 
-    await tester.tap(find.text('Nemotron Ultra'));
+    await _tap(tester, find.text('Nemotron Ultra'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Use model and mode'));
+    await tester.ensureVisible(find.byKey(const Key('model-picker-apply')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Use model and mode'));
+    await _tap(tester, find.byKey(const Key('model-picker-apply')));
     await tester.pumpAndSettle();
 
     expect(controller.selectedModel?.providerID, 'opencode');
@@ -350,8 +378,10 @@ void main() {
   testWidgets('"Use for this conversation" leaves every other session alone', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     controller.selectedModel = ModelRef(
@@ -366,18 +396,18 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const Key('model-picker-search')),
       'ultra',
     );
     await tester.pump();
-    await tester.tap(find.text('Nemotron Ultra'));
+    await _tap(tester, find.text('Nemotron Ultra'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Use for this conversation'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Use for this conversation'));
+    await _tap(tester, find.text('Use for this conversation'));
     await tester.pumpAndSettle();
 
     expect(
@@ -391,12 +421,33 @@ void main() {
       'nemotron-3.5-lightning-free',
     );
 
+    expect(find.text('Choose a model'), findsNothing);
+
     // Reopening the picker for that session starts from its own choice.
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('model-picker-apply')), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('use-model-opencode-nemotron-3-ultra-free')),
-      findsOneWidget,
+      tester
+          .widget<KitRow>(
+            find.byKey(
+              const ValueKey('model-option-opencode-nemotron-3-ultra-free'),
+            ),
+          )
+          .selected,
+      isTrue,
+    );
+    expect(
+      tester
+          .widget<KitRow>(
+            find.byKey(
+              const ValueKey(
+                'model-option-opencode-nemotron-3.5-lightning-free',
+              ),
+            ),
+          )
+          .selected,
+      isFalse,
     );
   });
 
@@ -407,22 +458,18 @@ void main() {
       ..unloadedProviderIDs = const {'local'};
     await tester.pumpWidget(_app(controller));
 
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('picker-unloaded-providers')), findsOneWidget);
-    await tester.tap(
-      find.text('1 signed-in provider not loaded. View details'),
-    );
-    await tester.pumpAndSettle();
     expect(
-      find.textContaining('signed in to Local models but has not loaded it'),
+      find.textContaining(
+        'Signed in to Local models, but the server has not loaded it',
+      ),
       findsOneWidget,
     );
-
-    await tester.tap(find.text('Done'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('picker-reload-providers')));
+    expect(find.byType(Dialog), findsNothing);
+    await _tap(tester, find.byKey(const Key('picker-reload-providers')));
     await tester.pump();
     expect(controller.reloadCalls, 1);
   });
@@ -432,13 +479,17 @@ void main() {
     () {
       expect(
         unloadedProvidersNotice(['OpenAI']),
-        contains(
-          'signed in to OpenAI but has not loaded it yet, so its models',
-        ),
+        'Signed in to OpenAI, but the server has not loaded it yet, so its '
+        'models cannot answer.',
       );
       expect(
         unloadedProvidersNotice(['OpenAI', 'Anthropic']),
-        contains('Anthropic and OpenAI but has not loaded them yet, so their'),
+        contains('Anthropic and OpenAI, but the server has not loaded them'),
+      );
+      // After a reload that still could not load them: steer to API keys.
+      expect(
+        unloadedProvidersNotice(['Anthropic'], unusable: true),
+        allOf(contains('Add an API key under Providers'), contains('Google')),
       );
     },
   );
@@ -446,8 +497,10 @@ void main() {
   testWidgets('current model and provider family lead the unfiltered catalog', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     final existing = controller.catalog!;
@@ -477,7 +530,7 @@ void main() {
     );
     await tester.pumpWidget(_app(controller));
 
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
 
     final current = find.byKey(
@@ -485,23 +538,25 @@ void main() {
     );
     expect(current, findsOneWidget);
     expect(tester.getTopLeft(current).dy, lessThan(891));
-    expect(find.text('Use model and mode'), findsOneWidget);
+    expect(find.byKey(const Key('model-picker-apply')), findsOneWidget);
   });
 
   testWidgets('explicit fast thinking mode is selected and persisted', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller));
 
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('model-picker-filters')));
+    await _tap(tester, find.byKey(const Key('model-picker-filters')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Fast modes'));
+    await _tap(tester, find.text('Fast modes'));
     await tester.pumpAndSettle();
     // The pinned apply bar also names the drafted (current) model, so the
     // name can appear twice while its row stays unique.
@@ -513,48 +568,51 @@ void main() {
     );
     expect(find.text('Nemotron Ultra'), findsNothing);
 
-    await tester.tap(
+    await _tap(
+      tester,
       find.byKey(
         const Key('model-option-opencode-nemotron-3.5-lightning-free'),
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('model-picker-options')));
+    await _tap(tester, find.byKey(const Key('model-picker-thinking')));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('fast · low effort'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('fast · low effort'));
-    await tester.tap(find.text('Done'));
+    await _tap(tester, find.text('fast · low effort'));
+
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Use model and mode'));
+    await tester.ensureVisible(find.byKey(const Key('model-picker-apply')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Use model and mode'));
+    await _tap(tester, find.byKey(const Key('model-picker-apply')));
     await tester.pumpAndSettle();
 
     expect(controller.selectedVariant, 'fast');
   });
 
-  testWidgets('open options keep variant edits bound to the displayed model', (
+  testWidgets('the thinking menu keeps edits bound to the displayed model', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller));
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('model-picker-options')));
+    await _tap(tester, find.byKey(const Key('model-picker-thinking')));
     await tester.pumpAndSettle();
     await controller.selectModel(
       ModelRef(providerID: 'opencode', modelID: 'big-pickle'),
     );
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('fast · low effort'));
-    await tester.tap(find.text('fast · low effort'));
-    await tester.tap(find.text('Done'));
+    await _tap(tester, find.text('fast · low effort'));
+
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Use model and mode'));
+    await _tap(tester, find.byKey(const Key('model-picker-apply')));
     await tester.pumpAndSettle();
     expect(controller.selectedModel!.modelID, 'nemotron-3.5-lightning-free');
     expect(controller.selectedVariant, 'fast');
@@ -563,44 +621,58 @@ void main() {
   testWidgets('direct agent intent survives loading and opens only once', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     final catalog = controller.catalog;
     controller.catalog = null;
     await tester.pumpWidget(_app(controller, focusAgent: true));
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Choose an agent'), findsNothing);
+    expect(find.byKey(const ValueKey('model-picker-agent-plan')), findsNothing);
     controller.catalog = catalog;
     controller.notifyListeners();
     await tester.pumpAndSettle();
-    expect(find.text('Choose an agent'), findsOneWidget);
-    await tester.tap(find.text('Done'));
+    expect(
+      find.byKey(const ValueKey('model-picker-agent-plan')),
+      findsOneWidget,
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+
     await tester.pumpAndSettle();
     controller.notifyListeners();
     await tester.pumpAndSettle();
-    expect(find.text('Choose an agent'), findsNothing);
+    expect(find.byKey(const ValueKey('model-picker-agent-plan')), findsNothing);
     expect(controller.agentWrites, 0);
   });
 
   testWidgets('direct agent entry opens agent choice without saving', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller, focusAgent: true));
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
-    expect(find.text('Choose an agent'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('model-picker-agent-plan')),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('model-picker-agent')), findsOneWidget);
     expect(controller.agentWrites, 0);
-    await tester.tap(find.text('Done'));
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Close model selector'));
+
+    await tester.pumpAndSettle();
+    await _tap(tester, find.byKey(const ValueKey('kit-sheet-close')));
     await tester.pumpAndSettle();
     expect(controller.selectedAgent, 'build');
   });
@@ -609,29 +681,32 @@ void main() {
     testWidgets('agent and mode are staged until apply: $apply', (
       tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(411, 891));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view.physicalSize = const Size(411, 891);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final controller = await _controller();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller));
-      await tester.tap(find.text('Choose model'));
+      await _tap(tester, find.text('Choose model'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('model-picker-options')));
+      await _tap(tester, find.byKey(const Key('model-picker-thinking')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('fast · low effort'));
-      await tester.tap(find.byKey(const Key('model-picker-agent')));
+      await _tap(tester, find.text('fast · low effort'));
+      await _tap(tester, find.byKey(const Key('model-picker-agent')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('plan · primary').last);
+      await _tap(tester, find.byKey(const ValueKey('model-picker-agent-plan')));
       await tester.pumpAndSettle();
       expect(controller.selectedAgent, 'build');
       expect(controller.selectedVariant, '');
       expect(controller.agentWrites, 0);
-      await tester.tap(find.text('Done'));
+
       await tester.pumpAndSettle();
-      await tester.tap(
+      await _tap(
+        tester,
         apply
-            ? find.text('Use model and mode')
-            : find.byTooltip('Close model selector'),
+            ? find.byKey(const Key('model-picker-apply'))
+            : find.byKey(const ValueKey('kit-sheet-close')),
       );
       await tester.pumpAndSettle();
       expect(controller.selectedAgent, apply ? 'plan' : 'build');
@@ -643,8 +718,10 @@ void main() {
   testWidgets('session apply changes agent only in its target session', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
@@ -654,17 +731,15 @@ void main() {
         sessionID: 'chat',
       ),
     );
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('model-picker-options')));
+    await _tap(tester, find.byKey(const Key('model-picker-agent')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('model-picker-agent')));
+    await _tap(tester, find.byKey(const ValueKey('model-picker-agent-plan')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('plan · primary').last);
+
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Done'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Use for this conversation'));
+    await _tap(tester, find.text('Use for this conversation'));
     await tester.pumpAndSettle();
     expect(controller.agentForSession('chat'), 'plan');
     expect(controller.agentForSession('other'), 'build');
@@ -675,26 +750,26 @@ void main() {
   testWidgets(
     'dismissing after Apply still completes the authorized agent choice',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(411, 891));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view.physicalSize = const Size(411, 891);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final controller = await _controller();
       final pending = Completer<void>();
       controller.waitForModel = pending.future;
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller));
-      await tester.tap(find.text('Choose model'));
+      await _tap(tester, find.text('Choose model'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('model-picker-options')));
+      await _tap(tester, find.byKey(const Key('model-picker-agent')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('model-picker-agent')));
+      await _tap(tester, find.byKey(const ValueKey('model-picker-agent-plan')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('plan · primary').last);
+
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Done'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Use model and mode'));
+      await tester.tap(find.byKey(const Key('model-picker-apply')));
       await tester.pump();
-      await tester.tap(find.byTooltip('Close model selector'));
+      await tester.tap(find.byKey(const ValueKey('kit-sheet-close')));
       await tester.pump(const Duration(seconds: 1));
       pending.complete();
       await tester.pumpAndSettle();
@@ -706,24 +781,26 @@ void main() {
   testWidgets('partial apply names saved model and allows agent retry', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller()
       ..failAgent = true;
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller));
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('model-picker-options')));
+    await _tap(tester, find.byKey(const Key('model-picker-thinking')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('fast · low effort'));
-    await tester.tap(find.byKey(const Key('model-picker-agent')));
+    await _tap(tester, find.text('fast · low effort'));
+    await _tap(tester, find.byKey(const Key('model-picker-agent')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('plan · primary').last);
+    await _tap(tester, find.byKey(const ValueKey('model-picker-agent-plan')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Done'));
+
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Use model and mode'));
+    await _tap(tester, find.byKey(const Key('model-picker-apply')));
     await tester.pumpAndSettle();
     expect(controller.selectedVariant, 'fast');
     expect(controller.selectedAgent, 'build');
@@ -732,36 +809,40 @@ void main() {
       findsOneWidget,
     );
     controller.failAgent = false;
-    await tester.tap(find.text('Use model and mode'));
+    await _tap(tester, find.byKey(const Key('model-picker-apply')));
     await tester.pumpAndSettle();
     expect(controller.selectedAgent, 'plan');
     expect(find.byType(ModelCatalogView), findsNothing);
   });
 
   testWidgets('primary agent picker excludes subagents', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller));
 
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('model-picker-options')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('model-picker-agent')));
+    await _tap(tester, find.byKey(const Key('model-picker-agent')));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('build · primary'), findsWidgets);
-    expect(find.textContaining('plan · primary'), findsOneWidget);
+    expect(find.text('Build'), findsOneWidget);
+    expect(find.text('Edits files and runs commands'), findsOneWidget);
+    expect(find.text('Plan'), findsOneWidget);
+    expect(find.text('Reads and plans; does not change files'), findsOneWidget);
     expect(find.textContaining('explore'), findsNothing);
   });
 
   testWidgets(
     'session picker labels and restores its own current model and mode',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(411, 891));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view.physicalSize = const Size(411, 891);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final controller = await _controller();
       addTearDown(controller.dispose);
       await controller.selectModelForSession(
@@ -782,9 +863,10 @@ void main() {
           sessionID: 'chat',
         ),
       );
-      await tester.tap(find.text('Choose model'));
+      await _tap(tester, find.text('Choose model'));
       await tester.pumpAndSettle();
-      expect(find.text('deep · build'), findsOneWidget);
+      expect(find.text('Thinking: deep · high effort'), findsOneWidget);
+      expect(find.text('Agent: Build'), findsOneWidget);
       await tester.enterText(
         find.byKey(const Key('model-picker-search')),
         'lightning',
@@ -794,16 +876,23 @@ void main() {
         const ValueKey('model-option-opencode-nemotron-3.5-lightning-free'),
       );
       await tester.ensureVisible(row);
-      await tester.tap(row);
+      await _tap(tester, row);
       await tester.pump();
-      await tester.tap(find.byKey(const Key('model-picker-options')));
+      await _tap(tester, find.byKey(const Key('model-picker-thinking')));
       await tester.pumpAndSettle();
-      final mode = tester.widget<ChoiceChip>(
-        find.byKey(
-          const ValueKey('model-variant-nemotron-3.5-lightning-free-deep'),
-        ),
+      final mode = tester.widget<Semantics>(
+        find
+            .ancestor(
+              of: find.byKey(
+                const ValueKey(
+                  'model-variant-nemotron-3.5-lightning-free-deep',
+                ),
+              ),
+              matching: find.byType(Semantics),
+            )
+            .first,
       );
-      expect(mode.selected, isTrue);
+      expect(mode.properties.checked, isTrue);
       expect(controller.selectedModel?.modelID, 'big-pickle');
     },
   );
@@ -811,8 +900,10 @@ void main() {
   testWidgets('favorites have a dedicated list and stage a session choice', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     await controller.toggleModelFavorite(
@@ -825,11 +916,12 @@ void main() {
         sessionID: 'chat',
       ),
     );
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('model-collection-favorites')));
+    await _tap(tester, find.byKey(const Key('model-collection-favorites')));
     await tester.pumpAndSettle();
-    await tester.tap(
+    await _tap(
+      tester,
       find.byKey(const ValueKey('model-option-opencode-nemotron-3-ultra-free')),
     );
     await tester.pumpAndSettle();
@@ -838,7 +930,7 @@ void main() {
       'nemotron-3.5-lightning-free',
     );
     await tester.ensureVisible(find.text('Use for this conversation'));
-    await tester.tap(find.text('Use for this conversation'));
+    await _tap(tester, find.text('Use for this conversation'));
     await tester.pumpAndSettle();
     expect(
       controller.modelForSession('chat')?.modelID,
@@ -851,26 +943,29 @@ void main() {
     expect(controller.selectedModel?.modelID, 'nemotron-3.5-lightning-free');
   });
 
-  testWidgets('an empty search offers a working clear-filters action', (
+  testWidgets('an empty search offers a working clear-search action', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller));
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const Key('model-picker-search')),
       'nothing-matches-this',
     );
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Clear filters'));
+    await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Clear filters'));
+    expect(find.byType(KitSearchNoMatch), findsOneWidget);
+    await _tap(tester, find.text('Clear search'));
     await tester.pumpAndSettle();
-    expect(find.text('No matching models'), findsNothing);
+    expect(find.byType(KitSearchNoMatch), findsNothing);
     expect(
       tester
           .widget<TextField>(find.byKey(const Key('model-picker-search')))
@@ -884,22 +979,22 @@ void main() {
   testWidgets('Z.AI aliases share a filter but retain exact backend routes', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller));
 
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('model-picker-filters')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('model-picker-provider')));
+    await _tap(tester, find.byKey(const Key('model-picker-filters')));
     await tester.pumpAndSettle();
 
     expect(find.text('Z.AI Coding Plan'), findsOneWidget);
     expect(find.text('Zhipu AI Coding Plan'), findsNothing);
-    await tester.tap(find.text('Z.AI Coding Plan'));
+    await _tap(tester, find.text('Z.AI Coding Plan'));
     await tester.pumpAndSettle();
 
     expect(find.text('GLM-5.2'), findsNWidgets(2));
@@ -912,13 +1007,14 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(
+    await _tap(
+      tester,
       find.byKey(const Key('model-option-zhipuai-coding-plan-glm-5.2')),
     );
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Use model and mode'));
+    await tester.ensureVisible(find.byKey(const Key('model-picker-apply')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Use model and mode'));
+    await _tap(tester, find.byKey(const Key('model-picker-apply')));
     await tester.pumpAndSettle();
 
     expect(controller.selectedModel?.providerID, 'zhipuai-coding-plan');
@@ -932,24 +1028,52 @@ void main() {
     testWidgets(
       'search and apply are usable at ${screen.$1.width}dp with ${screen.$2}x text',
       (tester) async {
-        await tester.binding.setSurfaceSize(screen.$1);
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        tester.view.physicalSize = screen.$1;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
         final controller = await _controller();
         addTearDown(controller.dispose);
         await tester.pumpWidget(_app(controller, textScale: screen.$2));
-        await tester.tap(find.text('Choose model'));
+        await _tap(tester, find.text('Choose model'));
         await tester.pumpAndSettle();
         expect(
-          find.byTooltip('Close model selector').hitTestable(),
+          find.byKey(const ValueKey('kit-sheet-close')).hitTestable(),
           findsOneWidget,
         );
+        // At enlarged text the sheet's sliver header scrolls with its
+        // body, which may not build the search until it enters the cache.
+        // Drive that scroll as a user would; Apply must stay pinned.
+        await tester.scrollUntilVisible(
+          find.byKey(const Key('model-picker-search')),
+          100,
+          scrollable: find
+              .descendant(
+                of: find.byType(KitSheet),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tester.pumpAndSettle();
+        final search = find.byKey(const Key('model-picker-search'));
+        final sheetScroll = find
+            .descendant(
+              of: find.byType(KitSheet),
+              matching: find.byType(Scrollable),
+            )
+            .first;
+        final position = tester.state<ScrollableState>(sheetScroll).position;
         expect(
-          find.byKey(const Key('model-picker-search')).hitTestable(),
+          search.hitTestable(),
           findsOneWidget,
+          reason:
+              'Search: ${tester.getRect(search)}; '
+              'scroll: ${tester.getRect(sheetScroll)}; '
+              'offset: ${position.pixels}/${position.maxScrollExtent}; '
+              'actions: ${tester.getRect(find.byKey(const ValueKey('kit-sheet-actions')))}; '
+              'hit: ${tester.hitTestOnBinding(tester.getCenter(search)).path.map((entry) => entry.target.runtimeType).toList()}',
         );
-        final apply = find.byKey(
-          const Key('use-model-opencode-nemotron-3.5-lightning-free'),
-        );
+        final apply = find.byKey(const Key('model-picker-apply'));
         expect(apply.hitTestable(), findsOneWidget);
         expect(
           tester.getBottomRight(apply).dy,
@@ -968,19 +1092,17 @@ void main() {
           150,
           scrollable: find
               .descendant(
-                of: find.byType(ListView).first,
+                of: find.byType(KitSheet),
                 matching: find.byType(Scrollable),
               )
               .first,
         );
         await tester.pumpAndSettle();
-        await tester.tap(row);
+        await _tap(tester, row);
         await tester.pumpAndSettle();
-        final nextApply = find.byKey(
-          const Key('use-model-opencode-nemotron-3-ultra-free'),
-        );
+        final nextApply = find.byKey(const Key('model-picker-apply'));
         expect(nextApply.hitTestable(), findsOneWidget);
-        await tester.tap(nextApply);
+        await _tap(tester, nextApply);
         await tester.pumpAndSettle();
         expect(controller.selectedModel?.modelID, 'nemotron-3-ultra-free');
         expect(tester.takeException(), isNull);
@@ -990,8 +1112,10 @@ void main() {
   testWidgets(
     'opening the keyboard preserves search focus and continued input',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(411, 891));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view.physicalSize = const Size(411, 891);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final controller = await _controller();
       addTearDown(controller.dispose);
       final inset = ValueNotifier(0.0);
@@ -1002,7 +1126,7 @@ void main() {
           builder: (_, value, _) => _app(controller, keyboardInset: value),
         ),
       );
-      await tester.tap(find.text('Choose model'));
+      await _tap(tester, find.text('Choose model'));
       await tester.pumpAndSettle();
       final search = find.byKey(const Key('model-picker-search'));
       await tester.enterText(search, 'ul');
@@ -1028,16 +1152,16 @@ void main() {
   testWidgets('keyboard leaves the apply action above its inset', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller, keyboardInset: 320));
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
-    final apply = find.byKey(
-      const Key('use-model-opencode-nemotron-3.5-lightning-free'),
-    );
+    final apply = find.byKey(const Key('model-picker-apply'));
     expect(apply.hitTestable(), findsOneWidget);
     expect(tester.getBottomRight(apply).dy, lessThanOrEqualTo(891 - 320));
     expect(
@@ -1052,45 +1176,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
   testWidgets('apply bar stays pinned while browsing models', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller));
 
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
 
     // The current model is drafted on open, so its apply action is already
     // visible without scrolling.
-    expect(find.byKey(const Key('model-picker-apply-bar')), findsOneWidget);
+    expect(find.byKey(const ValueKey('kit-sheet-actions')), findsOneWidget);
     expect(
-      find.byKey(const Key('use-model-opencode-nemotron-3.5-lightning-free')),
+      find.text('Use Nemotron Lightning · Build').hitTestable(),
       findsOneWidget,
     );
 
     // Tapping another row re-targets the same pinned bar immediately.
-    await tester.tap(find.text('Nemotron Ultra'));
+    await _tap(tester, find.text('Nemotron Ultra'));
     await tester.pump();
     expect(
-      find.byKey(const Key('use-model-opencode-nemotron-3-ultra-free')),
+      find.text('Use Nemotron Ultra · Build').hitTestable(),
       findsOneWidget,
     );
-    expect(find.byKey(const Key('model-picker-apply-bar')), findsOneWidget);
+    expect(find.byKey(const ValueKey('kit-sheet-actions')), findsOneWidget);
   });
 
   testWidgets('a failed save keeps the picker open and allows retry', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(411, 891));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(411, 891);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final controller = await _controller()
       ..failSelection = true;
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller));
-    await tester.tap(find.text('Choose model'));
+    await _tap(tester, find.text('Choose model'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Use model and mode'));
+    await _tap(tester, find.byKey(const Key('model-picker-apply')));
     await tester.pumpAndSettle();
     expect(
       find.text(
@@ -1098,11 +1226,11 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byTooltip('Close model selector'), findsOneWidget);
+    expect(find.byKey(const ValueKey('kit-sheet-close')), findsOneWidget);
     controller.failSelection = false;
-    await tester.tap(find.text('Use model and mode'));
+    await _tap(tester, find.byKey(const Key('model-picker-apply')));
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Close model selector'), findsNothing);
+    expect(find.byKey(const ValueKey('kit-sheet-close')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

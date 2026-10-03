@@ -74,10 +74,14 @@ class GasCityGateway
     Duration stallTimeout = const Duration(seconds: 90),
     Duration backoffCap = const Duration(seconds: 30),
     Duration backoffBase = const Duration(milliseconds: 500),
+    this.finishedRunsWindow = defaultFinishedRunsWindow,
+    this.finishedRunsLimit = defaultFinishedRunsLimit,
+    DateTime Function()? clock,
     OrchestrationHttpClient? http,
   }) : _stallTimeout = stallTimeout,
        _backoffCap = backoffCap,
-       _backoffBase = backoffBase {
+       _backoffBase = backoffBase,
+       _clock = clock ?? DateTime.now {
     final parsed = Uri.tryParse(url.trim());
     if (parsed == null || !isOrchestrationUrlAllowed(parsed)) {
       throw ArgumentError.value(
@@ -108,7 +112,25 @@ class GasCityGateway
 
   static const _frontRequired = 'front required';
 
+  /// How far back finished runs are listed: a week.
+  static const defaultFinishedRunsWindow = Duration(days: 7);
+
+  /// At most this many finished runs are listed.
+  static const defaultFinishedRunsLimit = 20;
+
   final String city;
+
+  /// Finished runs (closed convoys) older than this are not listed.
+  final Duration finishedRunsWindow;
+
+  /// The most finished runs one read lists (and the page size it asks for).
+  final int finishedRunsLimit;
+  final DateTime Function() _clock;
+
+  /// `GET /convoy/{id}` answers of finished convoys, by id: a closed
+  /// convoy does not change, so each is fetched once. Pruned to the ids
+  /// the latest read listed.
+  final _finishedConvoys = <String, GcConvoy>{};
   final OrchestrationHostMode hostMode;
 
   /// [url] is a host front that allows this device to write: controls are
@@ -216,7 +238,8 @@ class GasCityGateway
     return null;
   }
 
-  /// `/runs` (formula runs) merged with `/convoys` (batches); the work
+  /// `/runs` (formula runs) merged with `/convoys` (batches) and the
+  /// recently finished batches ([_finishedConvoyHistory]); the work
   /// snapshot supplies the tracked items convoys derive their state from.
   /// A `partial` `/runs` answer is surfaced in [partialNotices].
   Future<_RunsSnapshot> _runs() async {
@@ -224,6 +247,7 @@ class GasCityGateway
       _http.getCity('/runs'),
       _http.getCity('/convoys'),
       _workSnapshot(),
+      _finishedConvoyHistory(),
     ]);
     final runsList = mapRunsList(
       GcRunsList.fromJson(results[0] as Map<String, Object?>),
@@ -234,20 +258,140 @@ class GasCityGateway
       GcConvoy.fromJson,
     );
     final snapshot = results[2] as _WorkSnapshot;
+    final history = results[3] as _FinishedConvoys;
+    final finished = await _finishedConvoyDetails(
+      history,
+      openIds: {for (final c in convoys.items) c.id},
+    );
     return _RunsSnapshot([
       ...runsList.items,
       ...mapConvoys(
-        convoys.items,
+        [...convoys.items, ...finished],
         work: snapshot.items,
         context: snapshot.context,
+        closedAt: history.closedAt,
       ),
     ], snapshot);
   }
 
+  /// Gas City's `/convoys` lists open convoys only, so a batch vanished
+  /// the moment it finished. The finished ones come from
+  /// `GET /beads?status=closed&type=convoy&limit=N` (newest first) and
+  /// their close times from `GET /events?type=convoy.closed&since=W`,
+  /// bounded by [finishedRunsLimit] and [finishedRunsWindow]. Both reads
+  /// are optional: history never blanks the open runs.
+  Future<_FinishedConvoys> _finishedConvoyHistory() async {
+    if (finishedRunsLimit <= 0) return const _FinishedConvoys();
+    try {
+      final results = await Future.wait([
+        _optional(
+          '/beads',
+          query: {
+            'status': 'closed',
+            'type': 'convoy',
+            'limit': finishedRunsLimit,
+          },
+        ),
+        _optional(
+          '/events',
+          query: {
+            'type': 'convoy.closed',
+            'since': '${finishedRunsWindow.inMinutes}m',
+            'limit': finishedRunsLimit,
+          },
+        ),
+      ]);
+      return _FinishedConvoys(
+        closed: GcList<GcBead>.fromJson(results[0], GcBead.fromJson).items,
+        closedAt: convoyClosedTimes(GcEventsPage.fromJson(results[1]).items),
+      );
+    } on Object {
+      return const _FinishedConvoys();
+    }
+  }
+
+  /// The finished convoys to list ([selectFinishedConvoys]), each with its
+  /// tracked items from `GET /convoy/{id}` (cached: a closed convoy does
+  /// not change). A detail that cannot be read falls back to the list
+  /// bead, which still shows the run as done.
+  Future<List<GcConvoy>> _finishedConvoyDetails(
+    _FinishedConvoys history, {
+    required Set<String> openIds,
+  }) async {
+    final picked = selectFinishedConvoys(
+      history.closed,
+      now: _clock(),
+      window: finishedRunsWindow,
+      limit: finishedRunsLimit,
+      closedAt: history.closedAt,
+      openIds: openIds,
+    );
+    _finishedConvoys.removeWhere(
+      (id, _) => !picked.any((bead) => bead.id == id),
+    );
+    return Future.wait([
+      for (final bead in picked)
+        () async {
+          final cached = _finishedConvoys[bead.id];
+          if (cached != null) return cached;
+          try {
+            final json = await _http.getCity(
+              '/convoy/${Uri.encodeComponent(bead.id)}',
+            );
+            final detail = GcConvoy.fromJson(json);
+            if (detail.id != bead.id || !detail.bead.isClosed) {
+              return GcConvoy(bead: bead);
+            }
+            return _finishedConvoys[bead.id] = detail;
+          } on Object {
+            return GcConvoy(bead: bead);
+          }
+        }(),
+    ]);
+  }
+
   @override
   Future<List<WorkItem>> work({String? projectId}) async {
-    final snapshot = await _workSnapshot(projectId: projectId);
-    return snapshot.items;
+    final results = await Future.wait<Object>([
+      _workSnapshot(projectId: projectId),
+      _finishedForWork(),
+    ]);
+    final snapshot = results[0] as _WorkSnapshot;
+    final finished = results[1] as List<GcConvoy>;
+    return [
+      ...snapshot.items,
+      ...finishedConvoyWork(
+        finished,
+        listed: {for (final item in snapshot.items) item.id},
+        projectId: projectId,
+      ),
+    ];
+  }
+
+  Future<List<GcConvoy>>? _finishedWorkLoad;
+  DateTime? _finishedWorkLoadedAt;
+
+  /// The recently finished convoys with their tracked items, for [work]:
+  /// `/beads` lists open work only, so a finished run's Work tab was empty.
+  /// Read at most every 30 s (the details themselves are cached).
+  Future<List<GcConvoy>> _finishedForWork() {
+    final now = _clock();
+    final at = _finishedWorkLoadedAt;
+    final load = _finishedWorkLoad;
+    if (load != null &&
+        at != null &&
+        now.difference(at) < const Duration(seconds: 30)) {
+      return load;
+    }
+    _finishedWorkLoadedAt = now;
+    return _finishedWorkLoad = () async {
+      try {
+        final history = await _finishedConvoyHistory();
+        return await _finishedConvoyDetails(history, openIds: const {});
+      } on Object {
+        return const <GcConvoy>[];
+      }
+    }();
   }
 
   @override
@@ -690,6 +834,16 @@ class _RunsSnapshot {
 
   final List<OrchestrationRun> runs;
   final _WorkSnapshot work;
+}
+
+class _FinishedConvoys {
+  const _FinishedConvoys({this.closed = const [], this.closedAt = const {}});
+
+  /// Closed convoy beads, newest first.
+  final List<GcBead> closed;
+
+  /// Convoy id → close time.
+  final Map<String, DateTime> closedAt;
 }
 
 class _WorkSnapshot {

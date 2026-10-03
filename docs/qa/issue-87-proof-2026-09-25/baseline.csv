@@ -1,0 +1,85 @@
+scenario,run,metric,value,unit,method,evidence
+cold_start,1,displayed_ms,1542,ms,am start -W TotalTime (= logcat Displayed),p1-runs/cold-1/am_start.txt
+cold_start,1,connecting_card_s,1.5,s,"launch visible -> ""Connecting to 127.0.0.1"" card; screenrecord 10 fps (frames.py)",p1-runs/cold-1/timeline.csv
+cold_start,1,work_tab_first_frame_s,3.2,s,"launch visible -> Work tab shell (bottom bar, loading); screenrecord 10 fps (frames.py)",p1-runs/cold-1/timeline.csv
+cold_start,1,work_tab_loaded_s,3.4,s,launch visible -> Work tab list loaded and still for 2 s; screenrecord 10 fps (frames.py),p1-runs/cold-1/timeline.csv
+cold_start,2,displayed_ms,1315,ms,am start -W TotalTime (= logcat Displayed),p1-runs/cold-2/am_start.txt
+cold_start,2,connecting_card_s,1.3,s,"launch visible -> ""Connecting to 127.0.0.1"" card; screenrecord 10 fps (frames.py)",p1-runs/cold-2/timeline.csv
+cold_start,2,work_tab_first_frame_s,3.0,s,"launch visible -> Work tab shell (bottom bar, loading); screenrecord 10 fps (frames.py)",p1-runs/cold-2/timeline.csv
+cold_start,2,work_tab_loaded_s,3.2,s,launch visible -> Work tab list loaded and still for 2 s; screenrecord 10 fps (frames.py),p1-runs/cold-2/timeline.csv
+cold_start,3,displayed_ms,1383,ms,am start -W TotalTime (= logcat Displayed),p1-runs/cold-3/am_start.txt
+cold_start,3,connecting_card_s,1.3,s,"launch visible -> ""Connecting to 127.0.0.1"" card; screenrecord 10 fps (frames.py)",p1-runs/cold-3/timeline.csv
+cold_start,3,work_tab_first_frame_s,3.1,s,"launch visible -> Work tab shell (bottom bar, loading); screenrecord 10 fps (frames.py)",p1-runs/cold-3/timeline.csv
+cold_start,3,work_tab_loaded_s,3.4,s,launch visible -> Work tab list loaded and still for 2 s; screenrecord 10 fps (frames.py),p1-runs/cold-3/timeline.csv
+open_project,1,tap_to_loaded_s,1.1,s,tap other-project chip -> that project's Work tab loaded and still 2 s; screenrecord 10 fps (frames.py),p1-runs/project-1/timeline.csv
+open_project,2,tap_to_loaded_s,1.6,s,tap other-project chip -> that project's Work tab loaded and still 2 s; screenrecord 10 fps (frames.py),p1-runs/project-2/timeline.csv
+open_project,3,tap_to_loaded_s,1.7,s,tap other-project chip -> that project's Work tab loaded and still 2 s; screenrecord 10 fps (frames.py),p1-runs/project-3/timeline.csv
+open_settings,1,tap_to_still_s,0.2,s,Settings tab first change -> still 2 s; screenrecord 10 fps (frames.py),p1-runs/settings-1/timeline.csv
+open_settings,2,tap_to_still_s,0.1,s,Settings tab first change -> still 2 s; screenrecord 10 fps (frames.py),p1-runs/settings-2/timeline.csv
+open_settings,3,tap_to_still_s,0.2,s,Settings tab first change -> still 2 s; screenrecord 10 fps (frames.py),p1-runs/settings-3/timeline.csv
+send_ok_free_model,1,tap_to_first_token_visible_s,1.9,s,tap Send -> first reasoning text on screen; screenrecord 10 fps (frames.py),p1-runs/send-1/timeline.csv
+send_ok_free_model,1,tap_to_ok_visible_s,2.8,s,"tap Send -> ""ok"" on screen; screenrecord 10 fps (frames.py)",p1-runs/send-1/timeline.csv
+send_ok_free_model,1,server_first_token_s,1.73,s,"user message event -> first reasoning part event (SSE, PC clock)",p1-runs/send-1/sse.tsv
+send_ok_free_model,1,server_text_s,2.44,s,"user message event -> assistant text event (SSE, PC clock)",p1-runs/send-1/sse.tsv
+send_ok_free_model,2,tap_to_first_token_visible_s,2.0,s,tap Send -> first reasoning text on screen; screenrecord 10 fps (frames.py),p1-runs/send-2/timeline.csv
+send_ok_free_model,2,tap_to_ok_visible_s,2.3,s,"tap Send -> ""ok"" on screen; screenrecord 10 fps (frames.py)",p1-runs/send-2/timeline.csv
+send_ok_free_model,2,server_first_token_s,1.5,s,"user message event -> first reasoning part event (SSE, PC clock)",p1-runs/send-2/sse.tsv
+send_ok_free_model,2,server_text_s,2.49,s,"user message event -> assistant text event (SSE, PC clock)",p1-runs/send-2/sse.tsv
+send_ok_free_model,3,tap_to_first_token_visible_s,3.7,s,tap Send -> first reasoning text on screen; screenrecord 10 fps (frames.py),p1-runs/send-3/timeline.csv
+send_ok_free_model,3,tap_to_ok_visible_s,4.0,s,"tap Send -> ""ok"" on screen; screenrecord 10 fps (frames.py)",p1-runs/send-3/timeline.csv
+send_ok_free_model,3,server_first_token_s,3.17,s,"user message event -> first reasoning part event (SSE, PC clock)",p1-runs/send-3/sse.tsv
+send_ok_free_model,3,server_text_s,3.62,s,"user message event -> assistant text event (SSE, PC clock)",p1-runs/send-3/sse.tsv
+send_ok_mock_model,1,tap_to_ok_visible_s,1.5,s,"tap Send -> ""ok"" on screen (mock model, 300 ms first token); screenrecord 10 fps (frames.py)",p1-runs/mock-send-1/timeline.csv
+send_ok_mock_model,1,server_text_s,1.18,s,user message event -> assistant text event (SSE),p1-runs/mock-send-1/sse.tsv
+send_ok_mock_model,2,tap_to_ok_visible_s,1.5,s,"tap Send -> ""ok"" on screen (mock model, 300 ms first token); screenrecord 10 fps (frames.py)",p1-runs/mock-send-2/timeline.csv
+send_ok_mock_model,2,server_text_s,1.03,s,user message event -> assistant text event (SSE),p1-runs/mock-send-2/sse.tsv
+send_ok_mock_model,3,tap_to_ok_visible_s,1.7,s,"tap Send -> ""ok"" on screen (mock model, 300 ms first token); screenrecord 10 fps (frames.py)",p1-runs/mock-send-3/timeline.csv
+send_ok_mock_model,3,server_text_s,0.92,s,user message event -> assistant text event (SSE),p1-runs/mock-send-3/sse.tsv
+stream_long_reply_mock,1,frames,699,count,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-1/timestats.txt
+stream_long_reply_mock,1,avg_fps,34.673,fps,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-1/timestats.txt
+stream_long_reply_mock,1,p50_frame_interval,29,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-1/timestats.txt
+stream_long_reply_mock,1,p90_frame_interval,44,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-1/timestats.txt
+stream_long_reply_mock,1,p99_frame_interval,58,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-1/timestats.txt
+stream_long_reply_mock,1,over_17ms_pct,82.3,%,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-1/timestats.txt
+stream_long_reply_mock,1,over_34ms_pct,34.2,%,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-1/timestats.txt
+stream_long_reply_mock,2,frames,781,count,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-2/timestats.txt
+stream_long_reply_mock,2,avg_fps,38.883,fps,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-2/timestats.txt
+stream_long_reply_mock,2,p50_frame_interval,26,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-2/timestats.txt
+stream_long_reply_mock,2,p90_frame_interval,40,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-2/timestats.txt
+stream_long_reply_mock,2,p99_frame_interval,48,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-2/timestats.txt
+stream_long_reply_mock,2,over_17ms_pct,76.8,%,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-2/timestats.txt
+stream_long_reply_mock,2,over_34ms_pct,24.2,%,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-2/timestats.txt
+stream_long_reply_mock,3,frames,846,count,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-3/timestats.txt
+stream_long_reply_mock,3,avg_fps,42.315,fps,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-3/timestats.txt
+stream_long_reply_mock,3,p50_frame_interval,22,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-3/timestats.txt
+stream_long_reply_mock,3,p90_frame_interval,38,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-3/timestats.txt
+stream_long_reply_mock,3,p99_frame_interval,44,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-3/timestats.txt
+stream_long_reply_mock,3,over_17ms_pct,69.6,%,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-3/timestats.txt
+stream_long_reply_mock,3,over_34ms_pct,22.1,%,"SurfaceFlinger timestats, Flutter SurfaceView layer, window = assistant text part appears -> session.idle (~20.4 s, 3,501 chars at 5 words/150 ms)",p1-runs/mock-gfx-stream-3/timestats.txt
+scroll_long_chat,1,frames,416,count,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-1/timestats.txt
+scroll_long_chat,1,avg_fps,35.705,fps,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-1/timestats.txt
+scroll_long_chat,1,p50_frame_interval,28,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-1/timestats.txt
+scroll_long_chat,1,p90_frame_interval,40,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-1/timestats.txt
+scroll_long_chat,1,p99_frame_interval,58,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-1/timestats.txt
+scroll_long_chat,1,over_17ms_pct,85.3,%,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-1/timestats.txt
+scroll_long_chat,1,over_34ms_pct,27.2,%,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-1/timestats.txt
+scroll_long_chat,2,frames,506,count,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-2/timestats.txt
+scroll_long_chat,2,avg_fps,45.235,fps,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-2/timestats.txt
+scroll_long_chat,2,p50_frame_interval,21,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-2/timestats.txt
+scroll_long_chat,2,p90_frame_interval,36,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-2/timestats.txt
+scroll_long_chat,2,p99_frame_interval,44,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-2/timestats.txt
+scroll_long_chat,2,over_17ms_pct,69.8,%,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-2/timestats.txt
+scroll_long_chat,2,over_34ms_pct,11.9,%,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-2/timestats.txt
+scroll_long_chat,3,frames,479,count,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-3/timestats.txt
+scroll_long_chat,3,avg_fps,41.808,fps,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-3/timestats.txt
+scroll_long_chat,3,p50_frame_interval,23,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-3/timestats.txt
+scroll_long_chat,3,p90_frame_interval,36,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-3/timestats.txt
+scroll_long_chat,3,p99_frame_interval,50,ms,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-3/timestats.txt
+scroll_long_chat,3,over_17ms_pct,76.6,%,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-3/timestats.txt
+scroll_long_chat,3,over_34ms_pct,14.6,%,"SurfaceFlinger timestats, Flutter SurfaceView layer, 10 flings up + 10 down (120 ms swipes, 0.4 s apart) in an 8-turn ~30k-char chat",p1-runs/gfx-scroll-3/timestats.txt
+stream_long_reply_mock,1,gfxinfo_total_frames,2,count,dumpsys gfxinfo framestats (HWUI only; Flutter frames not counted),p1-runs/mock-gfx-stream-1/summary.txt
+scroll_long_chat,1,gfxinfo_total_frames,0,count,dumpsys gfxinfo framestats (HWUI only; Flutter frames not counted),p1-runs/gfx-scroll-1/summary.txt
+stream_long_reply_mock,2,gfxinfo_total_frames,2,count,dumpsys gfxinfo framestats (HWUI only; Flutter frames not counted),p1-runs/mock-gfx-stream-2/summary.txt
+scroll_long_chat,2,gfxinfo_total_frames,0,count,dumpsys gfxinfo framestats (HWUI only; Flutter frames not counted),p1-runs/gfx-scroll-2/summary.txt
+stream_long_reply_mock,3,gfxinfo_total_frames,2,count,dumpsys gfxinfo framestats (HWUI only; Flutter frames not counted),p1-runs/mock-gfx-stream-3/summary.txt
+scroll_long_chat,3,gfxinfo_total_frames,0,count,dumpsys gfxinfo framestats (HWUI only; Flutter frames not counted),p1-runs/gfx-scroll-3/summary.txt

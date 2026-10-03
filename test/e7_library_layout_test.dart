@@ -9,7 +9,6 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/library_screen.dart';
-import 'package:opencode_mobile/ui/screens/manage_project_screen.dart';
 import 'package:opencode_mobile/ui/screens/managed_workspaces_screen.dart';
 import 'package:opencode_mobile/ui/screens/mcp_setup_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
@@ -167,10 +166,6 @@ void main() {
         await loadCaptureFonts();
       }
       final screens = <String, Widget>{
-        'manage-project': ManageProjectScreen(
-          controller: controller,
-          project: _project,
-        ),
         'worktrees': WorktreesScreen(controller: controller, project: _project),
         'cloud-environments': ManagedWorkspacesScreen(
           controller: controller,
@@ -234,7 +229,10 @@ void main() {
           await tester.tap(action);
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
-          expect(find.text('Cancel'), findsOneWidget);
+          final dismiss = entry.key == 'cloud-environments'
+              ? find.byTooltip('Close')
+              : find.text('Cancel');
+          expect(dismiss, findsOneWidget);
           if (output != null) {
             File(
               '$output/${entry.key}-create-${variant.name}.png',
@@ -242,12 +240,18 @@ void main() {
               await capturePng(tester, boundary, pixelRatio: 1),
             );
           }
-          await tester.tap(find.text('Cancel'));
+          await tester.tap(dismiss);
           await tester.pumpAndSettle();
           expect(repository.mutations, 0);
         }
         if (entry.key == 'permissions') {
-          await tester.tap(find.byTooltip('Revoke bash access'));
+          final revoke = find.byKey(
+            const ValueKey('revoke-saved-permission-layout-permission'),
+          );
+          await tester.ensureVisible(revoke);
+          await tester.pumpAndSettle();
+          expect(revoke.hitTestable(), findsOneWidget);
+          await tester.tap(revoke);
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
           expect(find.text('Revoke access'), findsOneWidget);
@@ -259,8 +263,10 @@ void main() {
               await capturePng(tester, boundary, pixelRatio: 1),
             );
           }
-          await tester.tap(find.text('Keep access'));
+          await tester.ensureVisible(find.text('Cancel'));
+          await tester.tap(find.text('Cancel'));
           await tester.pumpAndSettle();
+          expect(find.text('Revoke access?'), findsNothing);
           expect(repository.mutations, 0);
         }
         if (entry.key == 'mcp-setup') {

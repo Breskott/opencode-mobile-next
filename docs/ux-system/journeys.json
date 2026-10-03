@@ -1,0 +1,4016 @@
+{
+ "generated": "2026-09-26",
+ "inputs": [
+  "docs/ux-system/map/all.json (356 records, 410 sameJobElsewhere entries)",
+  "docs/ux-system/owner-verdicts-2026-09-26.json",
+  "docs/ux-system/taxonomy.md",
+  "docs/design/principles.md",
+  "docs/design/team-conversation-2026-09-26.md",
+  "docs/design/ui-ledger/ledger.json (904 edges)"
+ ],
+ "note": "Every sameJobElsewhere entry is assigned to exactly one job (sources: \"<pageId>#<n>\", n = 1-based order in all.json). pagesRemoved/pagesMerged combine the map proposals of the pages each job touches with the job target.",
+ "jobs": [
+  {
+   "id": "setup-phone",
+   "title": "Set up this phone (run an agent on the phone)",
+   "journey": [
+    "install",
+    "connect"
+   ],
+   "entryPoints": [
+    {
+     "page": "servers-welcome",
+     "element": "servers-welcome-phone",
+     "landsOn": "phone-setup-start"
+    },
+    {
+     "page": "servers",
+     "element": "This phone section (_openPhoneSetup, servers_screen.dart:244)",
+     "landsOn": "phone-setup-start"
+    },
+    {
+     "page": "servers",
+     "element": "servers-termux-setup (_openTermuxSetup, servers_screen.dart:237)",
+     "landsOn": "termux-setup (old wizard)"
+    },
+    {
+     "page": "settings",
+     "element": "settings-on-this-phone",
+     "landsOn": "phone-setup-start"
+    },
+    {
+     "page": "phone-setup-start",
+     "element": "phone-setup-start-use-termux (phone_setup_start_screen.dart:314)",
+     "landsOn": "termux-setup (old wizard)"
+    },
+    {
+     "page": "server-settings",
+     "element": "server-settings-updates-managed (server_settings_screen.dart:159)",
+     "landsOn": "termux-setup"
+    },
+    {
+     "page": "root-connecting",
+     "element": "root-connecting-primary-termux (main.dart:1659)",
+     "landsOn": "termux-setup"
+    },
+    {
+     "page": "home-shell",
+     "element": "phone-server shortcut (home_screen.dart:434)",
+     "landsOn": "termux-setup"
+    },
+    {
+     "page": "builtin-server-setup",
+     "element": "step primaries (builtin_server_screen.dart:160,188)",
+     "landsOn": "builtin-server-setup (legacy, stays on page)"
+    },
+    {
+     "page": "profile-editor",
+     "element": "run an agent on this phone",
+     "landsOn": "phone-setup-start"
+    }
+   ],
+   "inconsistencies": [
+    "Three installers for one job: phone setup v2 (phone-setup-progress), the legacy in-app steps (builtin-server-setup) and the Termux wizard (termux-setup-installing). The ledger has 17 edges into termux-setup and 3 into phone-setup-start; 9 call sites still push /termux-setup.",
+    "Four progress surfaces (phone-setup-progress, termux-setup-installing, the Claude Code block steps, team-phone-onboarding-steps) and two success moments: phone-setup-ready opens a conversation, termux-setup-connected returns to home-shell.",
+    "\"Use Termux instead\" leaves v2 for the old wizard instead of running the same v2 job with Termux as the host.",
+    "Failure: termux-setup-failed restarts the wizard; v2 resumes the checklist from the failed row."
+   ],
+   "target": {
+    "entries": [
+     "servers-welcome/Set up this phone",
+     "servers/This phone row",
+     "settings/On this phone",
+     "root-connecting/Start (phone server stopped)"
+    ],
+    "landsOn": "phone-setup-start -> phone-setup-progress -> phone-setup-ready",
+    "pattern": "One v2 engine. The host (in-app Ubuntu or Termux) is a Customize > Advanced choice; the Termux person-steps (get Termux, allow it) become checklist rows; failure is a failed row with resume; success is always phone-setup-ready."
+   },
+   "pagesRemoved": [
+    "termux-setup-start-installed-sheet",
+    "termux-setup-unchecked-install-sheet"
+   ],
+   "pagesMerged": [
+    "builtin-server-setup -> phone-setup-start",
+    "embedded-local-agent-onboarding-block -> phone-setup-progress",
+    "team-phone-onboarding-steps -> phone-setup-progress",
+    "termux-setup-checking -> phone-setup-progress",
+    "termux-setup-choose -> phone-setup-customize-sheet",
+    "termux-setup-connect-termux -> phone-setup-progress",
+    "termux-setup-connected -> phone-setup-ready",
+    "termux-setup-failed -> phone-setup-progress",
+    "termux-setup-get-termux -> phone-setup-progress",
+    "termux-setup-installing -> phone-setup-progress"
+   ],
+   "sameJobEntries": 19,
+   "sources": [
+    "servers#114",
+    "servers-welcome#117",
+    "profile-editor#124",
+    "builtin-server-setup#160",
+    "builtin-server-setup#161",
+    "builtin-server-setup#162",
+    "phone-setup-start#179",
+    "phone-setup-start#180",
+    "phone-setup-progress#185",
+    "phone-setup-ready#186",
+    "termux-setup#190",
+    "termux-setup#191",
+    "termux-setup#192",
+    "termux-setup-get-termux#197",
+    "termux-setup-get-termux#198",
+    "termux-setup-connected#201",
+    "termux-setup-failed#202",
+    "termux-setup-installing#206",
+    "settings#225"
+   ]
+  },
+  {
+   "id": "add-phone-tool",
+   "title": "Add a tool to this phone (Claude Code, AI Team, extras)",
+   "journey": [
+    "install",
+    "configure"
+   ],
+   "entryPoints": [
+    {
+     "page": "local-agent-page",
+     "element": "set-up-claude-code (local_agent_onboarding.dart:435, claude.sh over TermuxBridge)",
+     "landsOn": "termux-setup-installing"
+    },
+    {
+     "page": "termux-setup-choose",
+     "element": "setup-runtime-claude radio (termux_setup_screen.dart:2625)",
+     "landsOn": "termux-setup-installing"
+    },
+    {
+     "page": "termux-setup-installed",
+     "element": "This phone card > Add tools",
+     "landsOn": "phone-setup-customize-sheet (add mode) -> phone-setup-progress (no Claude Code component)"
+    },
+    {
+     "page": "team-intro",
+     "element": "Set it up on this phone (team_intro_screen.dart:190)",
+     "landsOn": "termux-setup -> team-phone-onboarding-steps"
+    },
+    {
+     "page": "embedded-team-phone-section",
+     "element": "AI Team component (builtin_team_section.dart:66)",
+     "landsOn": "phone-setup-progress"
+    },
+    {
+     "page": "team-phone-onboarding-offer",
+     "element": "Set up",
+     "landsOn": "team-phone-onboarding-steps"
+    }
+   ],
+   "inconsistencies": [
+    "Claude Code installs only through Termux flows and is not a v2 component, so an in-app phone cannot add it from Add tools.",
+    "The AI Team on the phone installs through two different installers depending on the door (v2 engine vs the Termux team checklist).",
+    "Three private install checklists with their own words (Claude Code block, team steps, v2)."
+   ],
+   "target": {
+    "entries": [
+     "This phone page/Add tools",
+     "phone-setup-customize-sheet (first setup)",
+     "team-intro/On this phone",
+     "Solo · Team when the team is missing"
+    ],
+    "landsOn": "phone-setup-customize-sheet (add mode) -> phone-setup-progress -> phone-setup-ready",
+    "pattern": "Every optional tool is a v2 component. The ready page offers the tool's first step (\"Give the team a first task\", \"Start Claude Code\")."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "embedded-local-agent-onboarding-block -> phone-setup-progress",
+    "embedded-team-phone-section -> team-home",
+    "local-agent-page -> component page opened from This phone (redesign)",
+    "team-phone-onboarding-failed -> phone-setup-progress",
+    "team-phone-onboarding-offer -> phone-setup-customize-sheet",
+    "team-phone-onboarding-steps -> phone-setup-progress",
+    "team-phone-onboarding-success -> phone-setup-ready",
+    "termux-setup-choose -> phone-setup-customize-sheet",
+    "termux-setup-installing -> phone-setup-progress"
+   ],
+   "sameJobEntries": 10,
+   "sources": [
+    "local-agent-page#170",
+    "local-agent-page#171",
+    "embedded-local-agent-onboarding-block#173",
+    "embedded-local-agent-onboarding-block#174",
+    "embedded-local-agent-onboarding-block#176",
+    "phone-setup-start#181",
+    "phone-setup-start#182",
+    "phone-setup-customize-sheet#184",
+    "termux-setup-choose#200",
+    "team-phone-onboarding-steps#399"
+   ]
+  },
+  {
+   "id": "manage-phone-server",
+   "title": "Update, switch, reinstall or remove the phone's agent",
+   "journey": [
+    "configure",
+    "install"
+   ],
+   "entryPoints": [
+    {
+     "page": "servers",
+     "element": "phone_server_card menu (in-app host)",
+     "landsOn": "v2 jobs -> phone-setup-progress"
+    },
+    {
+     "page": "embedded-termux-running-server-entry",
+     "element": "menu Manage setup",
+     "landsOn": "termux-setup-installed"
+    },
+    {
+     "page": "embedded-local-agent-server-entry",
+     "element": "menu Manage setup",
+     "landsOn": "termux-setup-installed (not local-agent-page)"
+    },
+    {
+     "page": "termux-setup-installed",
+     "element": "update / other versions / reinstall",
+     "landsOn": "termux-setup-installing"
+    },
+    {
+     "page": "builtin-server-setup",
+     "element": "remove / runtime segmented",
+     "landsOn": "builtin-server-remove-confirm-sheet"
+    },
+    {
+     "page": "server-settings",
+     "element": "server-settings-updates-managed",
+     "landsOn": "termux-setup"
+    }
+   ],
+   "inconsistencies": [
+    "The management surface depends on the host: a card (in-app), a wizard page (Termux), a list row, a legacy page.",
+    "Three controls for one choice (OpenCode 1 or 2): termux-setup-choose radios, builtin-server-setup segmented, phone_server_card switch (phone_server_card.dart:192).",
+    "Update, switch and reinstall run in termux-setup-installing on Termux but as v2 jobs on the in-app host.",
+    "Two remove confirms with different copy (builtin-server-remove-confirm-sheet vs phone_server_card.dart:230) and two restart confirms (termux-setup-restart-sheet vs confirmRestartLocalServer, safety_confirms.dart:76).",
+    "Storage is a bare number on the in-app card but a report page on Termux."
+   ],
+   "target": {
+    "entries": [
+     "servers/This phone row",
+     "server-switcher-sheet/phone row menu"
+    ],
+    "landsOn": "termux-setup-installed reshaped as the host-neutral \"This phone\" page",
+    "pattern": "One page per phone, same controls for both hosts; every change runs as a v2 job in phone-setup-progress; one KitConfirmSheet per act (\"Keep running\" as the cancel word for stops)."
+   },
+   "pagesRemoved": [
+    "builtin-server-remove-confirm-sheet"
+   ],
+   "pagesMerged": [
+    "builtin-server-setup -> phone-setup-start",
+    "embedded-local-agent-onboarding-block -> phone-setup-progress",
+    "termux-setup-choose -> phone-setup-customize-sheet",
+    "termux-setup-installing -> phone-setup-progress",
+    "termux-setup-update-sheet -> phone-setup-progress"
+   ],
+   "sameJobEntries": 17,
+   "sources": [
+    "server-settings#130",
+    "builtin-server-setup#164",
+    "builtin-server-setup#165",
+    "builtin-server-remove-confirm-sheet#167",
+    "local-agent-page#172",
+    "embedded-local-agent-onboarding-block#175",
+    "embedded-local-agent-server-entry#178",
+    "phone-setup-customize-sheet#183",
+    "termux-setup#193",
+    "termux-setup-switch-runtime-sheet#194",
+    "termux-setup-update-sheet#195",
+    "termux-setup-choose#199",
+    "termux-setup-installed#203",
+    "termux-setup-installed#204",
+    "termux-setup-replace-installed-sheet#205",
+    "termux-storage#207",
+    "embedded-termux-running-server-entry#210"
+   ]
+  },
+  {
+   "id": "turn-on-team",
+   "title": "Turn the AI Team on (and keep it on)",
+   "journey": [
+    "install",
+    "delegate"
+   ],
+   "entryPoints": [
+    {
+     "page": "workspace",
+     "element": "embedded-team-discover",
+     "landsOn": "team-intro"
+    },
+    {
+     "page": "workspace",
+     "element": "New conversation > Team when off (workspace_screen.dart:1235)",
+     "landsOn": "team-intro"
+    },
+    {
+     "page": "settings",
+     "element": "settings-ai-team (search_index.dart:536-548)",
+     "landsOn": "team-intro when off; plugins-settings when on"
+    },
+    {
+     "page": "plugins-settings",
+     "element": "plugins-settings-ai-team-row",
+     "landsOn": "team-plugin-sheet"
+    },
+    {
+     "page": "team-intro",
+     "element": "Set it up / Turn on / Enter its address",
+     "landsOn": "plugins-settings | termux-setup | team-host-sheet"
+    },
+    {
+     "page": "embedded-team-discovery-card",
+     "element": "Turn on",
+     "landsOn": "team on (in place)"
+    },
+    {
+     "page": "embedded-team-phone-reoffer-card",
+     "element": "Set up",
+     "landsOn": "termux-setup"
+    },
+    {
+     "page": "phone-setup-customize-sheet",
+     "element": "Add tools > AI Team",
+     "landsOn": "phone-setup-progress"
+    },
+    {
+     "page": "profile-editor",
+     "element": "profile-editor-team-add",
+     "landsOn": "team-host-sheet"
+    },
+    {
+     "page": "team-phone-onboarding-killed",
+     "element": "Start again",
+     "landsOn": "team restarts (also embedded-team-phone-section/Start again)"
+    }
+   ],
+   "inconsistencies": [
+    "Five doors, three flows (plugins-settings, termux-setup, team-plugin-sheet, phone setup v2).",
+    "Settings > AI Team opens Plugins when the team is on, while every other door opens the team page.",
+    "The team's management lives in three places: team-home, team-plugin-sheet (engine name, no primary), embedded-team-phone-section.",
+    "Restarting a killed phone team has two doors with separate states."
+   ],
+   "target": {
+    "entries": [
+     "settings/AI Team",
+     "team-conversation header/team page",
+     "workspace/embedded-team-discover",
+     "New conversation/Team (when off)"
+    ],
+    "landsOn": "team-home (redesigned as the team's own page: where it runs, on/off, agents, speed and cost)",
+    "pattern": "When off, the team page shows the intro with automatic discovery (\"Found on Laptop · Turn on\"); \"On this phone\" hands off to phone setup v2 Add tools > AI Team; \"On my computer\" to the host guide and team-host-sheet; restarts are automatic and reported on the page."
+   },
+   "pagesRemoved": [
+    "embedded-team-phone-reoffer-card"
+   ],
+   "pagesMerged": [
+    "embedded-team-phone-section -> team-home",
+    "team-phone-onboarding-killed -> embedded-team-phone-section",
+    "team-phone-onboarding-offer -> phone-setup-customize-sheet",
+    "team-phone-tips-sheet -> keep-running",
+    "team-plugin-sheet -> team-home"
+   ],
+   "sameJobEntries": 14,
+   "sources": [
+    "profile-editor#123",
+    "settings#228",
+    "plugins-settings#243",
+    "team-plugin-sheet#245",
+    "team-intro#371",
+    "embedded-team-discover#372",
+    "team-phone-onboarding-offer#397",
+    "team-phone-onboarding-killed#400",
+    "embedded-team-phone-section#401",
+    "embedded-team-phone-section#402",
+    "embedded-team-phone-reoffer-card#405",
+    "team-host-sheet#406",
+    "team-host-guide-sheet#407",
+    "embedded-team-discovery-card#408"
+   ]
+  },
+  {
+   "id": "add-computer",
+   "title": "Add a computer (connect a server)",
+   "journey": [
+    "connect"
+   ],
+   "entryPoints": [
+    {
+     "page": "servers",
+     "element": "servers-add",
+     "landsOn": "profile-editor"
+    },
+    {
+     "page": "servers",
+     "element": "servers-connect-opencode2",
+     "landsOn": "profile-editor (OpenCode 2 preset)"
+    },
+    {
+     "page": "servers-welcome",
+     "element": "servers-welcome-connect",
+     "landsOn": "agent-choice -> profile-editor"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-add",
+     "landsOn": "servers -> profile-editor"
+    },
+    {
+     "page": "session-link-server-missing-banner",
+     "element": "open servers",
+     "landsOn": "servers (person must find Add)"
+    },
+    {
+     "page": "pairing-scanner",
+     "element": "scan",
+     "landsOn": "profile-editor"
+    },
+    {
+     "page": "tailscale-setup",
+     "element": "tailscale-setup-continue",
+     "landsOn": "profile-editor"
+    },
+    {
+     "page": "guide",
+     "element": "guide-steps",
+     "landsOn": "explains only"
+    },
+    {
+     "page": "profile-editor",
+     "element": "profile-editor-verdict",
+     "landsOn": "connection-help"
+    }
+   ],
+   "inconsistencies": [
+    "Two Add buttons on Servers for one job.",
+    "First run asks the agent kind twice (agent-choice, then profile-editor's type rows).",
+    "A pairing link for an unknown server drops the person on the Servers list with a banner the owner called \"Screen sucks\".",
+    "connection-help is a separate page that nobody reaches at the moment of failure.",
+    "The guide's button names differ from the Servers page.",
+    "Discard guard differs from the session note's (sheet vs AlertDialog)."
+   ],
+   "target": {
+    "entries": [
+     "servers/Add a computer (one)",
+     "servers-welcome/On my computer",
+     "server-switcher-sheet/Add",
+     "pairing link sheet \"Add this server?\" (prefilled)"
+    ],
+    "landsOn": "profile-editor (type rows first, scan or paste pairing on top, inline address check)",
+    "pattern": "v2-style steps like phone setup: kind -> address or pairing -> check -> connected; Tailscale is a step, not a page; errors explain inline."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "agent-choice -> profile-editor",
+    "connection-help -> profile-editor"
+   ],
+   "sameJobEntries": 13,
+   "sources": [
+    "servers#113",
+    "servers-welcome#116",
+    "agent-choice#118",
+    "profile-editor#120",
+    "profile-editor#121",
+    "profile-editor#122",
+    "profile-editor-discard-sheet#125",
+    "pairing-scanner#126",
+    "connection-help#127",
+    "tailscale-setup#128",
+    "server-settings#131",
+    "session-link-server-missing-banner#265",
+    "server-switcher-sheet#290"
+   ]
+  },
+  {
+   "id": "switch-server",
+   "title": "Switch server",
+   "journey": [
+    "connect"
+   ],
+   "entryPoints": [
+    {
+     "page": "home-shell",
+     "element": "home-shell-server-switcher",
+     "landsOn": "server-switcher-sheet (routes through ServersRouteRequest)"
+    },
+    {
+     "page": "servers",
+     "element": "servers-profile-row",
+     "landsOn": "home-shell"
+    },
+    {
+     "page": "settings",
+     "element": "settings-saved-servers",
+     "landsOn": "servers"
+    },
+    {
+     "page": "root-connecting",
+     "element": "root-connecting-change",
+     "landsOn": "servers"
+    }
+   ],
+   "inconsistencies": [
+    "Two lists with different marks and words (the switcher sheet vs the Servers page); the sheet itself routes through the Servers page.",
+    "The escape is named \"Change\", \"Switch server\" or \"Manage\" depending on the page."
+   ],
+   "target": {
+    "entries": [
+     "header server name",
+     "root-connecting/Switch server"
+    ],
+    "landsOn": "server-switcher-sheet (one list with \"Needs you\" / \"Working\" words per server)",
+    "pattern": "The sheet switches; the Servers page manages. Same name (\"Switch server\") everywhere."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 5,
+   "sources": [
+    "servers#115",
+    "settings#226",
+    "root-connecting#267",
+    "home-shell#283",
+    "server-switcher-sheet#288"
+   ]
+  },
+  {
+   "id": "forget-server",
+   "title": "Disconnect or forget a server",
+   "journey": [
+    "connect",
+    "configure"
+   ],
+   "entryPoints": [
+    {
+     "page": "servers",
+     "element": "row menu Remove",
+     "landsOn": "servers-remove-server-sheet"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-phone-forget",
+     "landsOn": "servers (route request)"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-disconnect",
+     "landsOn": "settings-disconnect-sheet"
+    },
+    {
+     "page": "settings",
+     "element": "disconnect",
+     "landsOn": "settings-disconnect-sheet"
+    }
+   ],
+   "inconsistencies": [
+    "Disconnect has three doors; forget from the switcher detours through Servers."
+   ],
+   "target": {
+    "entries": [
+     "servers/row menu",
+     "server-switcher-sheet/current row menu"
+    ],
+    "landsOn": "KitConfirmSheet in place",
+    "pattern": "One confirm that names the server and what is lost (queued prompts)."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 3,
+   "sources": [
+    "servers-remove-server-sheet#119",
+    "settings-disconnect-sheet#237",
+    "server-switcher-sheet#289"
+   ]
+  },
+  {
+   "id": "sign-in-provider",
+   "title": "Sign in to a model provider",
+   "journey": [
+    "connect",
+    "account"
+   ],
+   "entryPoints": [
+    {
+     "page": "settings",
+     "element": "settings-providers",
+     "landsOn": "integrations"
+    },
+    {
+     "page": "chat",
+     "element": "/connect",
+     "landsOn": "integrations"
+    },
+    {
+     "page": "embedded-message-view",
+     "element": "error > Open providers",
+     "landsOn": "integrations (hub top)"
+    },
+    {
+     "page": "integrations",
+     "element": "provider tile",
+     "landsOn": "command-auth-sheet | integrations-oauth-code-dialog | integrations-connect-key-dialog"
+    }
+   ],
+   "inconsistencies": [
+    "Two paste-a-code dialogs (providers vs MCP) and two \"forget\" sheets for one unfinished sign-in.",
+    "A pending sign-in shows both on command-auth-sheet and on the integrations tile.",
+    "Expired provider auth is found only after a failed reply."
+   ],
+   "target": {
+    "entries": [
+     "settings/Providers",
+     "chat error card/Sign in again",
+     "model-picker-sheet/unavailable provider row"
+    ],
+    "landsOn": "integrations (Providers half), scrolled to the provider row",
+    "pattern": "A row per provider with one Connect; one \"Finish signing in\" dialog; one \"unfinished sign-in\" notice on the row (Check · Clear)."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "command-auth-sheet-confirm-sheet -> command-auth-sheet",
+    "integrations-forget-uncertain-auth-sheet -> integrations-forget-pending-auth-sheet",
+    "integrations-oauth-code-dialog -> integrations-mcp-oauth-code-dialog"
+   ],
+   "sameJobEntries": 7,
+   "sources": [
+    "command-auth-sheet#213",
+    "integrations-mcp-oauth-code-dialog#215",
+    "integrations-oauth-code-dialog#216",
+    "integrations-authorization-launch-dialog#219",
+    "integrations-forget-pending-auth-sheet#220",
+    "integrations-forget-uncertain-auth-sheet#221",
+    "settings#230"
+   ]
+  },
+  {
+   "id": "start-conversation",
+   "title": "Start a conversation",
+   "journey": [
+    "converse"
+   ],
+   "entryPoints": [
+    {
+     "page": "workspace",
+     "element": "workspace-new-session",
+     "landsOn": "chat"
+    },
+    {
+     "page": "chat",
+     "element": "/new",
+     "landsOn": "chat"
+    },
+    {
+     "page": "global-shortcuts",
+     "element": "global-shortcuts-new-session",
+     "landsOn": "chat"
+    },
+    {
+     "page": "system",
+     "element": "launcher shortcut New task",
+     "landsOn": "chat"
+    },
+    {
+     "page": "share-session-failed-banner",
+     "element": "retry (shared text from another app)",
+     "landsOn": "MaterialBanner above the shell"
+    }
+   ],
+   "inconsistencies": [
+    "Work starts work three ways (New conversation, isolated task, Team) with different containers.",
+    "A failed share-in shows a MaterialBanner above the shell instead of Work's status line."
+   ],
+   "target": {
+    "entries": [
+     "workspace/New conversation (one full-width button)",
+     "launcher shortcut",
+     "/new"
+    ],
+    "landsOn": "chat (or team-conversation when Team is chosen)",
+    "pattern": "New conversation's chooser holds Solo · Team and \"In a separate copy\"; the choice is remembered per server."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 5,
+   "sources": [
+    "chat#1",
+    "chat#2",
+    "system#262",
+    "share-session-failed-banner#264",
+    "global-shortcuts#270"
+   ]
+  },
+  {
+   "id": "write-prompt",
+   "title": "Write and send a prompt (text and files)",
+   "journey": [
+    "converse"
+   ],
+   "entryPoints": [
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-field",
+     "landsOn": "chat"
+    },
+    {
+     "page": "prompt-editor",
+     "element": "prompt-editor-field",
+     "landsOn": "chat"
+    },
+    {
+     "page": "embedded-composer",
+     "element": "tools button long-press",
+     "landsOn": "file picker"
+    },
+    {
+     "page": "prompt-tools-sheet",
+     "element": "attach",
+     "landsOn": "file picker"
+    },
+    {
+     "page": "embedded-desktop-file-drop-target",
+     "element": "drop",
+     "landsOn": "composer"
+    },
+    {
+     "page": "context-capsule",
+     "element": "context-capsule-apply",
+     "landsOn": "composer (text concatenated)"
+    }
+   ],
+   "inconsistencies": [
+    "context-capsule only concatenates text and images onto the draft (domain/context_capsule.dart) - a second input box."
+   ],
+   "target": {
+    "entries": [
+     "composer",
+     "composer/+ sheet",
+     "prompt-editor (expand)"
+    ],
+    "landsOn": "chat",
+    "pattern": "One trailing control (Send / Stop / mic); the + sheet by frequency (attach, photo, camera, voice)."
+   },
+   "pagesRemoved": [
+    "context-capsule"
+   ],
+   "pagesMerged": [],
+   "sameJobEntries": 5,
+   "sources": [
+    "embedded-composer#34",
+    "embedded-composer#36",
+    "prompt-editor#51",
+    "context-capsule#156",
+    "embedded-desktop-file-drop-target#269"
+   ]
+  },
+  {
+   "id": "voice",
+   "title": "Speak a prompt and hear replies",
+   "journey": [
+    "converse",
+    "configure"
+   ],
+   "entryPoints": [
+    {
+     "page": "prompt-tools-sheet",
+     "element": "prompt-tools-sheet-voice",
+     "landsOn": "voice-composer-sheet"
+    },
+    {
+     "page": "embedded-voice-conversation-controls",
+     "element": "listen",
+     "landsOn": "voice-composer-sheet (conversation flag)"
+    },
+    {
+     "page": "embedded-voice-conversation-controls",
+     "element": "speak replies",
+     "landsOn": "chat-read-aloud-consent-sheet"
+    },
+    {
+     "page": "chat-message-actions-sheet",
+     "element": "read aloud with another voice",
+     "landsOn": "chat-read-aloud-voice-sheet"
+    },
+    {
+     "page": "settings",
+     "element": "settings-voice",
+     "landsOn": "voice-model-setup-sheet"
+    }
+   ],
+   "inconsistencies": [
+    "Voice mode is buried in Advanced and still goes through the sheet every turn; recording stops at 30 s.",
+    "The voice model must be set up in a separate sheet before the first use.",
+    "Read-aloud consent and voice choice are reached from two doors with different sheets."
+   ],
+   "target": {
+    "entries": [
+     "composer mic (send slot when empty)",
+     "settings/Voice"
+    ],
+    "landsOn": "chat (composer voice mode)",
+    "pattern": "First mic tap picks the pack for this phone and downloads with progress; continuous recording in 30-s chunks; voice conversation is a composer mode; voices and packs live in Settings > Voice."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 6,
+   "sources": [
+    "prompt-tools-sheet#38",
+    "chat-read-aloud-consent-sheet#57",
+    "chat-read-aloud-voice-sheet#58",
+    "embedded-voice-conversation-controls#76",
+    "voice-model-setup-sheet#89",
+    "voice-composer-sheet#90"
+   ]
+  },
+  {
+   "id": "reuse-text",
+   "title": "Reuse or recover earlier text (saved prompts, drafts, history)",
+   "journey": [
+    "converse",
+    "recover"
+   ],
+   "entryPoints": [
+    {
+     "page": "prompt-history-sheet",
+     "element": "prompt row",
+     "landsOn": "chat composer"
+    },
+    {
+     "page": "prompt-stash-sheet",
+     "element": "restore",
+     "landsOn": "chat-stash-restore-confirm-sheet -> composer"
+    },
+    {
+     "page": "legacy-drafts",
+     "element": "draft row",
+     "landsOn": "legacy-drafts-review-sheet -> composer"
+    },
+    {
+     "page": "privacy-settings",
+     "element": "clear drafts",
+     "landsOn": "privacy-settings-clear-drafts-sheet"
+    },
+    {
+     "page": "chat",
+     "element": "recovered photo row",
+     "landsOn": "chat-pending-photo-sheet"
+    },
+    {
+     "page": "chat-leave-unsaved-draft-sheet",
+     "element": "leave",
+     "landsOn": "chat"
+    }
+   ],
+   "inconsistencies": [
+    "Three places hold unsent text (saved prompts, older drafts, privacy); two restore flows and two delete confirmations.",
+    "Restoring asks to confirm although nothing is lost (the current prompt is saved first).",
+    "Two different missing-attachment notices; a recovered photo exposes one global recovery slot (\"I don't understand\")."
+   ],
+   "target": {
+    "entries": [
+     "composer/+ sheet > Saved prompts",
+     "composer/history"
+    ],
+    "landsOn": "chat composer",
+    "pattern": "Act then Undo (\"Current prompt saved · Undo\", \"Saved prompt deleted · Undo\"); missing files as a KitNotice in the composer; recovered photos attach to their own conversation."
+   },
+   "pagesRemoved": [
+    "chat-pending-photo-sheet",
+    "chat-stash-restore-confirm-sheet",
+    "prompt-stash-delete-sheet"
+   ],
+   "pagesMerged": [
+    "legacy-drafts -> prompt-stash-sheet",
+    "legacy-drafts-delete-sheet -> prompt-stash-delete-sheet",
+    "legacy-drafts-review-sheet -> prompt-stash-sheet"
+   ],
+   "sameJobEntries": 13,
+   "sources": [
+    "chat-draft-attachment-recovery-sheet#6",
+    "chat-stash-attachments-unavailable-sheet#7",
+    "chat-stash-restore-confirm-sheet#8",
+    "chat-pending-photo-sheet#11",
+    "chat-leave-unsaved-draft-sheet#33",
+    "prompt-history-sheet#52",
+    "prompt-stash-sheet#54",
+    "prompt-stash-sheet#55",
+    "prompt-stash-delete-sheet#56",
+    "privacy-settings#242",
+    "legacy-drafts#253",
+    "legacy-drafts-review-sheet#254",
+    "legacy-drafts-delete-sheet#255"
+   ]
+  },
+  {
+   "id": "queued-messages",
+   "title": "See and withdraw messages waiting to send",
+   "journey": [
+    "converse",
+    "recover"
+   ],
+   "entryPoints": [
+    {
+     "page": "embedded-pending-sends-strip",
+     "element": "strip",
+     "landsOn": "activity (offline queue)"
+    },
+    {
+     "page": "embedded-pending-sends-strip",
+     "element": "discard",
+     "landsOn": "chat-discard-queued-draft-sheet"
+    },
+    {
+     "page": "embedded-pending-sends-strip",
+     "element": "cancel",
+     "landsOn": "chat-cancel-inbox-send-sheet"
+    }
+   ],
+   "inconsistencies": [
+    "Two withdraw sheets with different tones; the non-destructive one (\"back to draft\") is error-styled.",
+    "One chip per message, off-theme (owner: \"merge in one bubble with a clear CTA\").",
+    "The strip sends the person to the Inbox instead of acting in place."
+   ],
+   "target": {
+    "entries": [
+     "chat/queued bubble"
+    ],
+    "landsOn": "chat",
+    "pattern": "One themed \"Waiting to send · 3\" bubble above the composer with Send now / Edit / Remove; withdraw -> back to draft with Undo; a confirm only when text is deleted."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 3,
+   "sources": [
+    "chat-discard-queued-draft-sheet#9",
+    "chat-cancel-inbox-send-sheet#10",
+    "embedded-pending-sends-strip#48"
+   ]
+  },
+  {
+   "id": "run-command",
+   "title": "Run a command (slash, plugin, shell)",
+   "journey": [
+    "converse",
+    "configure"
+   ],
+   "entryPoints": [
+    {
+     "page": "embedded-composer",
+     "element": "/ inline rows",
+     "landsOn": "chat"
+    },
+    {
+     "page": "prompt-tools-sheet",
+     "element": "prompt-tools-sheet-commands",
+     "landsOn": "command-launcher-sheet"
+    },
+    {
+     "page": "session-menu-sheet",
+     "element": "session-menu-sheet-slash",
+     "landsOn": "command-launcher-sheet"
+    },
+    {
+     "page": "commands",
+     "element": "command row",
+     "landsOn": "run-command-dialog -> chat"
+    },
+    {
+     "page": "capabilities",
+     "element": "commands row play",
+     "landsOn": "run-command-dialog -> chat"
+    },
+    {
+     "page": "plugins-settings",
+     "element": "Review /command",
+     "landsOn": "run-command-dialog"
+    },
+    {
+     "page": "command-palette-dialog",
+     "element": "row",
+     "landsOn": "command-launcher-sheet"
+    },
+    {
+     "page": "chat-run-shell-dialog",
+     "element": "run",
+     "landsOn": "chat (shell output card)"
+    }
+   ],
+   "inconsistencies": [
+    "From Library a command runs through a dialog as a new message; from chat it is inserted into the composer.",
+    "Codex and Paseo report no command catalog, so the launcher silently shrinks (owner: \"will this support Claude or Codex commands?\").",
+    "Plugin commands need a hand-kept mapping (plugins-mapping-dialog) because the server never says which commands a plugin adds."
+   ],
+   "target": {
+    "entries": [
+     "composer/\"/\"",
+     "library/commands row"
+    ],
+    "landsOn": "command-launcher-sheet (redesigned) targeting the current conversation",
+    "pattern": "One command sheet with per-backend catalogs (OpenCode, Claude Code, Codex); shell commands as \"!\" in the composer with an output card."
+   },
+   "pagesRemoved": [
+    "plugins-clear-mappings-sheet",
+    "plugins-mapping-dialog"
+   ],
+   "pagesMerged": [],
+   "sameJobEntries": 12,
+   "sources": [
+    "command-launcher-sheet#21",
+    "command-launcher-sheet#22",
+    "command-launcher-sheet#25",
+    "chat-run-shell-dialog#30",
+    "chat-run-shell-dialog#31",
+    "prompt-tools-sheet#37",
+    "run-command-dialog#112",
+    "commands#214",
+    "plugins-settings#244",
+    "plugins-mapping-dialog#246",
+    "command-palette-dialog#272",
+    "capabilities#281"
+   ]
+  },
+  {
+   "id": "conversation-actions",
+   "title": "Use conversation actions (compact, fork, display)",
+   "journey": [
+    "converse",
+    "inspect"
+   ],
+   "entryPoints": [
+    {
+     "page": "session-menu-sheet",
+     "element": "fork / compact / timeline / display toggles",
+     "landsOn": "various"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "element": "/fork /compact /timeline /thinking /timestamps",
+     "landsOn": "same targets"
+    },
+    {
+     "page": "embedded-chat-nudge-slot",
+     "element": "compact",
+     "landsOn": "chat"
+    },
+    {
+     "page": "chat-message-actions-sheet",
+     "element": "fork from here",
+     "landsOn": "chat (new)"
+    },
+    {
+     "page": "timeline-sheet",
+     "element": "timeline-sheet-row-fork",
+     "landsOn": "chat (new)"
+    }
+   ],
+   "inconsistencies": [
+    "The session menu and the command launcher are two catalogues of the same session actions.",
+    "Fork from the menu forks at the latest prompt and lands in the timeline in fork mode; fork from a message lands in the new chat."
+   ],
+   "target": {
+    "entries": [
+     "chat/title menu",
+     "message long-press"
+    ],
+    "landsOn": "chat",
+    "pattern": "One KitRow menu: Go to (Changes, Timeline, Find, Subagents, Details) and Do (Share, Compact, Fork, Rename, Continue on computer); the launcher lists commands only."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 6,
+   "sources": [
+    "session-menu-sheet#17",
+    "session-menu-sheet#19",
+    "session-menu-sheet#20",
+    "command-launcher-sheet#24",
+    "chat-message-actions-sheet#26",
+    "timeline-sheet#74"
+   ]
+  },
+  {
+   "id": "share-conversation",
+   "title": "Share, stop sharing or export a conversation",
+   "journey": [
+    "converse"
+   ],
+   "entryPoints": [
+    {
+     "page": "session-menu-sheet",
+     "element": "share",
+     "landsOn": "chat-share-confirm-sheet"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "element": "/share",
+     "landsOn": "chat-share-confirm-sheet"
+    },
+    {
+     "page": "workspace",
+     "element": "row menu share",
+     "landsOn": "workspace-share-session-sheet"
+    },
+    {
+     "page": "embedded-shared-session-banner",
+     "element": "stop sharing",
+     "landsOn": "confirm"
+    },
+    {
+     "page": "session-export",
+     "element": "export",
+     "landsOn": "file picker"
+    }
+   ],
+   "inconsistencies": [
+    "Two share confirms (chat and Work); stop sharing has three doors."
+   ],
+   "target": {
+    "entries": [
+     "chat/menu Share",
+     "workspace/row menu Share"
+    ],
+    "landsOn": "one KitConfirmSheet, then link copied",
+    "pattern": "The shared banner's visible action is Copy link; Stop sharing sits in its menu."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 6,
+   "sources": [
+    "chat-share-confirm-sheet#12",
+    "chat-share-confirm-sheet#13",
+    "embedded-shared-session-banner#46",
+    "embedded-shared-session-banner#47",
+    "session-export#152",
+    "workspace-share-session-sheet#314"
+   ]
+  },
+  {
+   "id": "organise-conversations",
+   "title": "Rename, archive and find conversations",
+   "journey": [
+    "converse",
+    "observe"
+   ],
+   "entryPoints": [
+    {
+     "page": "workspace",
+     "element": "workspace-session-row-swipe",
+     "landsOn": "archived at once + Undo (_archiveWithUndo)"
+    },
+    {
+     "page": "workspace",
+     "element": "row menu Archive (workspace_screen.dart:1497)",
+     "landsOn": "workspace-archive-session-sheet (confirm first)"
+    },
+    {
+     "page": "workspace",
+     "element": "archived row",
+     "landsOn": "workspace-archived-sheet"
+    },
+    {
+     "page": "global-sessions",
+     "element": "include archived chip",
+     "landsOn": "global-sessions"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-search-all-sessions",
+     "landsOn": "global-sessions"
+    },
+    {
+     "page": "embedded-session-inventory-footer",
+     "element": "more",
+     "landsOn": "workspace"
+    },
+    {
+     "page": "chat-rename-session-dialog",
+     "element": "rename",
+     "landsOn": "chat"
+    }
+   ],
+   "inconsistencies": [
+    "Archive: swipe acts with Undo, the menu confirms first - two safety models for one act.",
+    "Archived conversations live in two places; two \"Load more\" buttons."
+   ],
+   "target": {
+    "entries": [
+     "workspace/row menu = chat title menu",
+     "workspace/search"
+    ],
+    "landsOn": "global-sessions (search-first, Archived filter)",
+    "pattern": "Archive always acts with Undo; lists page themselves."
+   },
+   "pagesRemoved": [
+    "embedded-session-inventory-footer",
+    "workspace-archive-session-sheet"
+   ],
+   "pagesMerged": [],
+   "sameJobEntries": 10,
+   "sources": [
+    "chat-rename-session-dialog#32",
+    "session-import-destination-sheet#153",
+    "embedded-context-menu-region#295",
+    "workspace#300",
+    "workspace#304",
+    "workspace-rename-session-dialog#312",
+    "workspace-archive-session-sheet#313",
+    "workspace-archived-sheet#315",
+    "global-sessions#317",
+    "embedded-session-inventory-footer#339"
+   ]
+  },
+  {
+   "id": "change-model",
+   "title": "Change the model or agent",
+   "journey": [
+    "configure",
+    "converse"
+   ],
+   "entryPoints": [
+    {
+     "page": "embedded-composer",
+     "element": "embedded-composer-model-chip",
+     "landsOn": "model-picker-sheet"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "element": "/models /agents /variants",
+     "landsOn": "model-picker-sheet"
+    },
+    {
+     "page": "embedded-prompt-error-banner",
+     "element": "choose model",
+     "landsOn": "model-picker-sheet"
+    },
+    {
+     "page": "settings",
+     "element": "settings-model-and-mode",
+     "landsOn": "catalog (same ModelCatalogView as a screen, catalog_screen.dart:78 vs pickers.dart:118)"
+    },
+    {
+     "page": "model-picker-sheet",
+     "element": "options",
+     "landsOn": "model-picker-sheet-options-dialog (agent dropdown)"
+    }
+   ],
+   "inconsistencies": [
+    "The same view as a sheet (chat) and as a screen (Settings).",
+    "The agent is chosen in two dialogs; model-picker-sheet-agent-dialog has no caller.",
+    "Only the strip icon reloads providers; the explaining dialog has no action."
+   ],
+   "target": {
+    "entries": [
+     "composer/model chip",
+     "chat error/Choose a model",
+     "settings/Default model"
+    ],
+    "landsOn": "model-picker-sheet",
+    "pattern": "Thinking and Agent in the sheet footer; model details as an expanding row; Settings opens the same sheet to set the default."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "catalog -> model-picker-sheet (default mode)",
+    "model-picker-sheet-agent-dialog -> model-picker-sheet",
+    "model-picker-sheet-options-dialog -> model-picker-sheet",
+    "model-picker-sheet-unloaded-providers-dialog -> model-picker-sheet"
+   ],
+   "sameJobEntries": 10,
+   "sources": [
+    "embedded-composer#35",
+    "embedded-prompt-error-banner#39",
+    "embedded-message-view#42",
+    "embedded-model-shortcuts#60",
+    "catalog#212",
+    "settings#229",
+    "model-picker-sheet#257",
+    "model-picker-sheet-unloaded-providers-dialog#258",
+    "model-picker-sheet-agent-dialog#259",
+    "model-picker-sheet-options-dialog#260"
+   ]
+  },
+  {
+   "id": "follow-subagents",
+   "title": "Go to a sub-agent and back",
+   "journey": [
+    "converse",
+    "inspect"
+   ],
+   "entryPoints": [
+    {
+     "page": "embedded-tool-card",
+     "element": "open subagent session",
+     "landsOn": "chat (child)"
+    },
+    {
+     "page": "embedded-subagent-context-banner",
+     "element": "parent / list",
+     "landsOn": "chat (parent) / session-relations"
+    },
+    {
+     "page": "session-menu-sheet",
+     "element": "subagents",
+     "landsOn": "session-relations"
+    },
+    {
+     "page": "team-conversation",
+     "element": "family strip",
+     "landsOn": "chat (watching)"
+    }
+   ],
+   "inconsistencies": [
+    "Chat sub-agents use a banner and a relations page; team workers use a family strip and cards - two looks for the same idea."
+   ],
+   "target": {
+    "entries": [
+     "transcript/sub-agent card",
+     "family strip"
+    ],
+    "landsOn": "chat (child conversation)",
+    "pattern": "The family strip (lead + sub-agents with state marks) in both chat and team conversations."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 5,
+   "sources": [
+    "command-launcher-sheet#23",
+    "embedded-subagent-context-banner#44",
+    "embedded-subagent-context-banner#45",
+    "embedded-tool-card#86",
+    "session-relations#150"
+   ]
+  },
+  {
+   "id": "continue-elsewhere",
+   "title": "Continue on the computer",
+   "journey": [
+    "converse"
+   ],
+   "entryPoints": [
+    {
+     "page": "session-handoff-dialog",
+     "element": "copy",
+     "landsOn": "clipboard"
+    },
+    {
+     "page": "continue-on-computer-sheet",
+     "element": "copy",
+     "landsOn": "clipboard"
+    }
+   ],
+   "inconsistencies": [
+    "Two flows copy different commands for the same hand-off."
+   ],
+   "target": {
+    "entries": [
+     "chat/menu Continue on computer"
+    ],
+    "landsOn": "continue-on-computer-sheet",
+    "pattern": "One sheet, one command, copy."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "session-handoff-dialog -> continue-on-computer-sheet"
+   ],
+   "sameJobEntries": 2,
+   "sources": [
+    "session-handoff-dialog#151",
+    "continue-on-computer-sheet#159"
+   ]
+  },
+  {
+   "id": "find-in-conversation",
+   "title": "Find something in a conversation",
+   "journey": [
+    "inspect",
+    "converse"
+   ],
+   "entryPoints": [
+    {
+     "page": "embedded-transcript-find-bar",
+     "element": "input",
+     "landsOn": "chat (scrolled)"
+    },
+    {
+     "page": "timeline-sheet",
+     "element": "timeline-sheet-search",
+     "landsOn": "chat"
+    },
+    {
+     "page": "prompt-history-sheet",
+     "element": "search",
+     "landsOn": "composer"
+    }
+   ],
+   "inconsistencies": [
+    "Three searches over one transcript with different result behaviour."
+   ],
+   "target": {
+    "entries": [
+     "chat/menu Find"
+    ],
+    "landsOn": "chat with the find bar docked above the composer",
+    "pattern": "Timeline is a jump list; its search hands to the find bar."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 5,
+   "sources": [
+    "session-menu-sheet#16",
+    "prompt-history-sheet#53",
+    "embedded-transcript-find-bar#59",
+    "timeline-sheet#75",
+    "active-context-message#149"
+   ]
+  },
+  {
+   "id": "where-it-runs",
+   "title": "Choose where work runs (separate copy, cloud machine, move)",
+   "journey": [
+    "configure",
+    "converse"
+   ],
+   "entryPoints": [
+    {
+     "page": "workspace",
+     "element": "workspace-isolated-task",
+     "landsOn": "isolated-task-sheet -> chat in the copy"
+    },
+    {
+     "page": "worktrees",
+     "element": "worktrees-create",
+     "landsOn": "worktrees-create-dialog -> worktrees list (no conversation)"
+    },
+    {
+     "page": "workspace-context-sheet",
+     "element": "workspace-context-sheet-workspace",
+     "landsOn": "switches the whole Work view"
+    },
+    {
+     "page": "session-destination-sheet",
+     "element": "destination",
+     "landsOn": "moves one conversation (dialog)"
+    },
+    {
+     "page": "global-sessions",
+     "element": "row-menu-steal",
+     "landsOn": "global-sessions-continue-here-sheet"
+    },
+    {
+     "page": "managed-workspaces",
+     "element": "create",
+     "landsOn": "managed-workspaces-create-dialog"
+    }
+   ],
+   "inconsistencies": [
+    "Creating a copy lands in a conversation from Work but in a bare list from Worktrees.",
+    "Three creation dialogs; two typed-name deletes in separate code; moving a conversation has two confirms with different words."
+   ],
+   "target": {
+    "entries": [
+     "New conversation chooser/In a separate copy | On a cloud machine",
+     "chat/menu Move..."
+    ],
+    "landsOn": "chat in the new place",
+    "pattern": "Worktrees and cloud machines are management lists; every creation ends in a conversation; one KitConfirmSheet with a typed-name guard."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "manage-project -> project-hub",
+    "question-sheet-dismiss-dialog -> confirm-sheet",
+    "shell-output-stop-dialog -> confirm-sheet"
+   ],
+   "sameJobEntries": 15,
+   "sources": [
+    "confirm-sheet#296",
+    "workspace#299",
+    "workspace-context-sheet#309",
+    "global-sessions#316",
+    "global-sessions-continue-here-sheet#318",
+    "isolated-task-sheet#319",
+    "manage-project#320",
+    "managed-workspaces#323",
+    "managed-workspaces-create-dialog#324",
+    "managed-workspaces-remove-dialog#325",
+    "session-destination-sheet#333",
+    "worktrees#334",
+    "worktrees#335",
+    "worktrees-create-dialog#336",
+    "worktrees-remove-dialog#337"
+   ]
+  },
+  {
+   "id": "switch-project",
+   "title": "Open or switch a project folder",
+   "journey": [
+    "connect",
+    "configure"
+   ],
+   "entryPoints": [
+    {
+     "page": "workspace",
+     "element": "OtherProjectsPanel row",
+     "landsOn": "switches in place"
+    },
+    {
+     "page": "workspace-context-sheet",
+     "element": "switch project",
+     "landsOn": "projects"
+    },
+    {
+     "page": "manage-project",
+     "element": "switch project",
+     "landsOn": "projects"
+    },
+    {
+     "page": "workspace-folder-chooser",
+     "element": "open / create / browse",
+     "landsOn": "project-folder-browser | project-folder-new-dialog | projects"
+    },
+    {
+     "page": "local-agent-project-sheet",
+     "element": "folder radios",
+     "landsOn": "Claude Code folder"
+    },
+    {
+     "page": "team-phone-onboarding-project-sheet",
+     "element": "project",
+     "landsOn": "team folder"
+    }
+   ],
+   "inconsistencies": [
+    "Four doors land differently (in place vs projects list); only the panel shows activity.",
+    "Creating a folder: dialog on one page, inline field on another; open: browser taps on the phone, typing on a remote.",
+    "Claude Code and the phone team each have their own folder chooser."
+   ],
+   "target": {
+    "entries": [
+     "workspace header/project name"
+    ],
+    "landsOn": "workspace-context-sheet (the one project sheet)",
+    "pattern": "Recent projects with activity, Open folder (browser first, \"Enter a path\" fallback), New project (one dialog); every agent on the phone shares it."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "local-agent-project-sheet -> project-folder-open-dialog",
+    "manage-project -> project-hub",
+    "team-phone-onboarding-project-sheet -> workspace-folder-chooser"
+   ],
+   "sameJobEntries": 12,
+   "sources": [
+    "local-agent-project-sheet#177",
+    "workspace#303",
+    "workspace-folder-chooser#305",
+    "workspace-folder-chooser#306",
+    "workspace-folder-chooser#307",
+    "workspace-context-sheet#310",
+    "manage-project#322",
+    "project-folder-new-dialog#326",
+    "project-folder-open-dialog#327",
+    "project-folder-browser#328",
+    "projects#330",
+    "team-phone-onboarding-project-sheet#398"
+   ]
+  },
+  {
+   "id": "give-team-task",
+   "title": "Give the team a task",
+   "journey": [
+    "delegate"
+   ],
+   "entryPoints": [
+    {
+     "page": "workspace",
+     "element": "New conversation > Team (TeamConversation.start, workspace_screen.dart:1237)",
+     "landsOn": "start-run-sheet -> team-conversation (pending)"
+    },
+    {
+     "page": "team-home",
+     "element": "team-home-start-run (showStartRunSheet, team_home_screen.dart:177)",
+     "landsOn": "start-run-sheet -> stays on team-home (planning card or snackbar)"
+    },
+    {
+     "page": "team-board",
+     "element": "team-board-add (team_board_screen.dart:312)",
+     "landsOn": "team-board-add-sheet -> Backlog"
+    }
+   ],
+   "inconsistencies": [
+    "The same start-run-sheet ends in two places: the task conversation (Work) or back on the team home (team page).",
+    "The board's + is a second task composer with different words.",
+    "A just-given task is followed by a planning card on the home but by the pending Now line in the conversation - it depends on the door.",
+    "start-run-sheet does not keep the draft after a refusal (owner: \"Give the user recovery options?\")."
+   ],
+   "target": {
+    "entries": [
+     "workspace/New conversation > Team",
+     "team-home/Give the team a task",
+     "team-board/+"
+    ],
+    "landsOn": "team-conversation (pending), or team-board Backlog with a receipt when \"Keep in backlog\" is chosen",
+    "pattern": "Every door calls TeamConversation.start; one \"Give the team a task\" sheet with Start now / Keep in backlog; the draft survives a refusal."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "embedded-team-planning-card -> team-conversation",
+    "team-board-add-sheet -> start-run-sheet"
+   ],
+   "sameJobEntries": 8,
+   "sources": [
+    "workspace#298",
+    "team-home#340",
+    "team-board#373",
+    "team-board-add-sheet#379",
+    "team-conversation#381",
+    "start-run-sheet#394",
+    "embedded-team-planning-card#395",
+    "embedded-team-planning-card#396"
+   ]
+  },
+  {
+   "id": "open-team-task",
+   "title": "Open a team task",
+   "journey": [
+    "delegate",
+    "observe"
+   ],
+   "entryPoints": [
+    {
+     "page": "workspace",
+     "element": "team task row (workspace_screen.dart:1241)",
+     "landsOn": "team-conversation"
+    },
+    {
+     "page": "team-board",
+     "element": "card (team_board_screen.dart:59)",
+     "landsOn": "team-conversation"
+    },
+    {
+     "page": "team-home",
+     "element": "task row (team_home_screen.dart:132-143; onOpenRun is never passed)",
+     "landsOn": "team-run"
+    },
+    {
+     "page": "system",
+     "element": "team run notification link (main.dart:967)",
+     "landsOn": "team-run"
+    },
+    {
+     "page": "team-conversation",
+     "element": "menu Task details (team_conversation_view.dart:189)",
+     "landsOn": "team-run (full page with tabs)"
+    }
+   ],
+   "inconsistencies": [
+    "Two task pages: the conversation from Work and the board, RunScreen from the team home and from notifications.",
+    "RunScreen repeats the conversation's blocks (overview, steps, agents, timeline) in tabs, with a second wording of the same history.",
+    "Step rows open work-sheet on RunScreen but are not tappable in the conversation; three stage vocabularies (7 / 4 / 5).",
+    "The conversation renders turns with its own KitRow parts instead of the chat's message view."
+   ],
+   "target": {
+    "entries": [
+     "workspace/team row",
+     "team-board/card",
+     "team-home/task row",
+     "notification"
+    ],
+    "landsOn": "team-conversation",
+    "pattern": "The conversation is the task's page; its menu holds Task details (team-run-details-sheet) and Stop task; steps are tappable."
+   },
+   "pagesRemoved": [
+    "embedded-team-card"
+   ],
+   "pagesMerged": [
+    "team-home-runs-tab -> team-home",
+    "team-run -> team-conversation",
+    "team-run-overview-tab -> team-conversation",
+    "team-run-timeline-tab -> team-conversation",
+    "team-run-work-tab -> team-conversation"
+   ],
+   "sameJobEntries": 12,
+   "sources": [
+    "embedded-message-view#41",
+    "team-home#341",
+    "team-home-runs-tab#342",
+    "team-home-runs-tab#343",
+    "team-run#346",
+    "team-run-overview-tab#348",
+    "team-run-work-tab#349",
+    "team-run-timeline-tab#351",
+    "embedded-team-card#369",
+    "team-board#374",
+    "team-conversation#382",
+    "work-sheet#393"
+   ]
+  },
+  {
+   "id": "watch-worker",
+   "title": "See who works on a task and watch a worker",
+   "journey": [
+    "observe",
+    "delegate"
+   ],
+   "entryPoints": [
+    {
+     "page": "team-agents",
+     "element": "row",
+     "landsOn": "team-agent"
+    },
+    {
+     "page": "team-run-agents-tab",
+     "element": "row",
+     "landsOn": "team-agent"
+    },
+    {
+     "page": "team-conversation",
+     "element": "family strip / agent card",
+     "landsOn": "chat (watching)"
+    },
+    {
+     "page": "team-agent",
+     "element": "Live output",
+     "landsOn": "team-agent-output"
+    },
+    {
+     "page": "embedded-team-cycle-strip",
+     "element": "Open agent output",
+     "landsOn": "team-agent-output"
+    },
+    {
+     "page": "gate-sheet",
+     "element": "View logs",
+     "landsOn": "team-agent-output"
+    }
+   ],
+   "inconsistencies": [
+    "Conversation or raw output is decided per door, not per session."
+   ],
+   "target": {
+    "entries": [
+     "team-conversation/family strip",
+     "team-agents/row"
+    ],
+    "landsOn": "chat (watching mode)",
+    "pattern": "Watching mode renders the live-output transcript itself when the session store is unreadable; team-agent is a short status page whose primary is the conversation."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "embedded-team-planning-card -> team-conversation",
+    "team-agent-output -> chat",
+    "team-home-agents-tab -> team-home",
+    "team-run-agents-tab -> team-conversation"
+   ],
+   "sameJobEntries": 7,
+   "sources": [
+    "team-home-agents-tab#344",
+    "team-run-agents-tab#350",
+    "team-agents#354",
+    "team-agent#358",
+    "team-agent-output#363",
+    "embedded-team-cycle-strip#367",
+    "team-conversation#385"
+   ]
+  },
+  {
+   "id": "message-team",
+   "title": "Message the team or a worker",
+   "journey": [
+    "delegate",
+    "converse"
+   ],
+   "entryPoints": [
+    {
+     "page": "team-agent",
+     "element": "team-agent-control-message (agent_screen.dart:788)",
+     "landsOn": "team-agent-message-sheet"
+    },
+    {
+     "page": "chat",
+     "element": "watching message sheet (team_conversation_view.dart:1328)",
+     "landsOn": "sheet"
+    },
+    {
+     "page": "team-conversation",
+     "element": "composer",
+     "landsOn": "team-conversation (sent line)"
+    }
+   ],
+   "inconsistencies": [
+    "Three places send the same message with three receipt looks."
+   ],
+   "target": {
+    "entries": [
+     "team-conversation/composer",
+     "chat (watching)/composer"
+    ],
+    "landsOn": "team-conversation",
+    "pattern": "The composer addresses the team or a worker chosen from the family strip; draft kept; one KitReceipt."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "team-agent-message-sheet -> team-conversation"
+   ],
+   "sameJobEntries": 4,
+   "sources": [
+    "chat#3",
+    "team-agent#355",
+    "team-agent-message-sheet#360",
+    "team-conversation#384"
+   ]
+  },
+  {
+   "id": "stop-task",
+   "title": "Stop a task or a worker",
+   "journey": [
+    "delegate",
+    "recover"
+   ],
+   "entryPoints": [
+    {
+     "page": "team-run",
+     "element": "team-run-cancel (run_screen.dart:232)",
+     "landsOn": "team-run-cancel-confirm-sheet"
+    },
+    {
+     "page": "gate-sheet",
+     "element": "Cancel work",
+     "landsOn": "gate-sheet-confirm-sheet"
+    },
+    {
+     "page": "team-board-move-sheet",
+     "element": "cancel (Backlog/Ready only)",
+     "landsOn": "team-board-cancel-confirm-sheet"
+    },
+    {
+     "page": "team-conversation",
+     "element": "(none - the menu has only Task details)",
+     "landsOn": "-"
+    },
+    {
+     "page": "team-agent",
+     "element": "stop (agent_screen.dart:750)",
+     "landsOn": "team-agent-stop-confirm-sheet"
+    },
+    {
+     "page": "embedded-team-cycle-strip",
+     "element": "Stop on provider limit (team_cycle_strip.dart:249)",
+     "landsOn": "team-cycle-stop-confirm-sheet"
+    },
+    {
+     "page": "termux-processes",
+     "element": "Stop all (AI Team)",
+     "landsOn": "termux-processes-stop-group-sheet"
+    }
+   ],
+   "inconsistencies": [
+    "The task's own page (the conversation) cannot stop the task.",
+    "Four confirms for stopping a task, two for stopping a worker (two titles), two copies for stopping the phone team."
+   ],
+   "target": {
+    "entries": [
+     "team-conversation/menu Stop task",
+     "family strip/worker menu Stop"
+    ],
+    "landsOn": "KitConfirmSheet, then a receipt in the conversation",
+    "pattern": "\"Stop this task?\" / \"Stop fox?\" with \"Keep running\" as cancel; the team holds a worker on a usage limit by itself."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "team-cycle-stop-confirm-sheet -> team-agent-stop-confirm-sheet",
+    "team-run -> team-conversation"
+   ],
+   "sameJobEntries": 13,
+   "sources": [
+    "team-run#347",
+    "team-run-cancel-confirm-sheet#353",
+    "team-agent#356",
+    "team-agent-stop-confirm-sheet#362",
+    "team-cycle-stop-confirm-sheet#365",
+    "embedded-team-cycle-strip#366",
+    "team-board#375",
+    "team-board-move-sheet#378",
+    "team-board-cancel-confirm-sheet#380",
+    "team-conversation#383",
+    "gate-sheet#388",
+    "gate-sheet-confirm-sheet#390",
+    "team-phone-stop-sheet#403"
+   ]
+  },
+  {
+   "id": "reassign-work",
+   "title": "Put work into a worker's hands",
+   "journey": [
+    "delegate"
+   ],
+   "entryPoints": [
+    {
+     "page": "team-agent",
+     "element": "reassign (agent_screen.dart:807)",
+     "landsOn": "team-agent-reassign-sheet"
+    },
+    {
+     "page": "team-board-move-sheet",
+     "element": "Start now",
+     "landsOn": "team-board Ready"
+    },
+    {
+     "page": "gate-sheet",
+     "element": "Retry",
+     "landsOn": "receipt"
+    }
+   ],
+   "inconsistencies": [
+    "Manual routing (owner: \"Why manual, it's all about automated dev\") in three places with three receipts."
+   ],
+   "target": {
+    "entries": [
+     "team-board/Start now",
+     "gate-sheet/Retry (failed step)"
+    ],
+    "landsOn": "team-conversation (receipt)",
+    "pattern": "Automatic: the dispatcher routes ready work and the app wakes a stalled pool; manual moves are fallbacks only."
+   },
+   "pagesRemoved": [
+    "team-agent-reassign-sheet"
+   ],
+   "pagesMerged": [],
+   "sameJobEntries": 5,
+   "sources": [
+    "team-agent#357",
+    "team-agent-reassign-sheet#361",
+    "team-board#376",
+    "team-board-move-sheet#377",
+    "gate-sheet#389"
+   ]
+  },
+  {
+   "id": "outside-agent",
+   "title": "Hand a task to an outside agent",
+   "journey": [
+    "delegate",
+    "connect"
+   ],
+   "entryPoints": [
+    {
+     "page": "servers",
+     "element": "external agents",
+     "landsOn": "external-agents"
+    },
+    {
+     "page": "settings",
+     "element": "settings-external-agents",
+     "landsOn": "external-agents"
+    },
+    {
+     "page": "external-agent-detail",
+     "element": "New task",
+     "landsOn": "external-agent-detail-input-dialog -> external-task"
+    }
+   ],
+   "inconsistencies": [
+    "An integration filed under Servers and Settings; the task text is typed twice (dialog, then task page); two delete sheets."
+   ],
+   "target": {
+    "entries": [
+     "library/Integrations > Outside agents"
+    ],
+    "landsOn": "external-task (draft)",
+    "pattern": "One delete sheet; replies use the request card pattern."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "external-agents -> integrations"
+   ],
+   "sameJobEntries": 5,
+   "sources": [
+    "external-agents#134",
+    "external-agents#135",
+    "external-agents-delete-sheet#136",
+    "external-agent-detail-input-dialog#137",
+    "external-agent-detail-delete-sheet#138"
+   ]
+  },
+  {
+   "id": "answer-agent",
+   "title": "Answer the agent (permission, question, form, gate)",
+   "journey": [
+    "approve"
+   ],
+   "entryPoints": [
+    {
+     "page": "chat",
+     "element": "permission card (attention_card.dart:11)",
+     "landsOn": "permission-sheet"
+    },
+    {
+     "page": "chat",
+     "element": "OC1 question card (attention_card.dart:56) > More",
+     "landsOn": "question-sheet"
+    },
+    {
+     "page": "chat",
+     "element": "OC2 form card (attention_card.dart:334)",
+     "landsOn": "form-sheet"
+    },
+    {
+     "page": "embedded-markdown-text",
+     "element": "```choices option",
+     "landsOn": "chat (sends)"
+    },
+    {
+     "page": "activity",
+     "element": "permission / question / form rows (activity_screen.dart:766,809)",
+     "landsOn": "permission-sheet | question-sheet | form-sheet over Inbox"
+    },
+    {
+     "page": "activity",
+     "element": "team gate row (activity_screen.dart:899)",
+     "landsOn": "gate-sheet"
+    },
+    {
+     "page": "workspace",
+     "element": "Needs you row (_openSession, workspace_screen.dart:1184)",
+     "landsOn": "chat"
+    },
+    {
+     "page": "profile-monitor",
+     "element": "request row (profile_monitor_screen.dart:65,75)",
+     "landsOn": "permission-sheet | question-sheet"
+    },
+    {
+     "page": "team-home",
+     "element": "needs-you",
+     "landsOn": "inline KitRequestCard | gate-sheet"
+    },
+    {
+     "page": "team-conversation",
+     "element": "TeamNeedsYouCard (team_conversation_view.dart:386-403)",
+     "landsOn": "gate-sheet"
+    },
+    {
+     "page": "system",
+     "element": "notification",
+     "landsOn": "activity -> sheet"
+    },
+    {
+     "page": "external-task",
+     "element": "reply",
+     "landsOn": "external-task"
+    }
+   ],
+   "inconsistencies": [
+    "The same request lands in the conversation from Work but in a sheet over the Inbox from the Inbox, other-server rows and notifications.",
+    "Three question shapes (OC1 card + question-sheet, OC2 form card + form-sheet, ```choices in Markdown) with three choice-row implementations.",
+    "Team gates use their own card and sheet with receipts; chat requests have no receipt.",
+    "Declining differs: form-sheet-dismiss-confirm-sheet vs question-sheet-dismiss-dialog (AlertDialog).",
+    "While a request waits, the work line still says \"Running tools\" with a spinner.",
+    "The most common answer (Allow once) needs a sheet."
+   ],
+   "target": {
+    "entries": [
+     "the request card in its conversation (chat or team)",
+     "activity row",
+     "workspace/Needs you row",
+     "notification",
+     "other-server row"
+    ],
+    "landsOn": "the conversation, scrolled to the request card (switching server first with profile-monitor-switch-server-dialog)",
+    "pattern": "One KitRequestCard family answers the common case in place (Allow once / Reject; an option sends with Undo; \"Something else\" for text); Details opens one KitRequestSheet for a full diff or a long form; one KitReceipt after every answer; the work line says \"Waiting for you\"."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "profile-monitor -> servers",
+    "question-sheet-dismiss-dialog -> confirm-sheet",
+    "team-home-needs-you-tab -> team-home",
+    "team-run -> team-conversation",
+    "team-run-overview-tab -> team-conversation"
+   ],
+   "sameJobEntries": 19,
+   "sources": [
+    "chat#4",
+    "chat#5",
+    "embedded-permission-attention-card#66",
+    "embedded-permission-attention-card#67",
+    "embedded-question-attention-card#68",
+    "embedded-question-attention-card#69",
+    "permission-sheet#70",
+    "form-sheet#79",
+    "form-sheet#80",
+    "form-sheet-dismiss-confirm-sheet#81",
+    "embedded-markdown-text#82",
+    "embedded-question-options#84",
+    "embedded-question-options#85",
+    "external-task#139",
+    "question-sheet#277",
+    "team-home-needs-you-tab#345",
+    "embedded-team-receipt-chip#370",
+    "team-conversation#386",
+    "gate-sheet#387"
+   ]
+  },
+  {
+   "id": "stop-being-asked",
+   "title": "Stop being asked (auto-approval, always allow)",
+   "journey": [
+    "approve",
+    "configure"
+   ],
+   "entryPoints": [
+    {
+     "page": "embedded-chat-nudge-slot",
+     "element": "approvals action",
+     "landsOn": "session-approvals-sheet"
+    },
+    {
+     "page": "session-menu-sheet",
+     "element": "approvals",
+     "landsOn": "session-approvals-sheet"
+    },
+    {
+     "page": "embedded-auto-approval-indicator",
+     "element": "open",
+     "landsOn": "session-approvals-sheet"
+    },
+    {
+     "page": "permission-sheet",
+     "element": "Allow always",
+     "landsOn": "permission-sheet-always-dialog"
+    },
+    {
+     "page": "saved-permissions",
+     "element": "row",
+     "landsOn": "saved-permissions-revoke-dialog"
+    }
+   ],
+   "inconsistencies": [
+    "Rules are created in chat but managed only in Settings, in the server's words (\"grants\"); the revoke is an AlertDialog."
+   ],
+   "target": {
+    "entries": [
+     "request sheet/Always allow",
+     "chat/auto-approval line",
+     "settings/Allowed actions"
+    ],
+    "landsOn": "session-approvals-sheet (this conversation) or saved-permissions (all)",
+    "pattern": "One vocabulary (\"actions\"); revoke in the row menu with a KitConfirmSheet."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 6,
+   "sources": [
+    "embedded-chat-nudge-slot#49",
+    "session-approvals-sheet#63",
+    "session-approvals-sheet#64",
+    "embedded-auto-approval-indicator#65",
+    "permission-sheet-always-dialog#71",
+    "saved-permissions#256"
+   ]
+  },
+  {
+   "id": "merge-team-task",
+   "title": "Merge a team task",
+   "journey": [
+    "approve",
+    "review"
+   ],
+   "entryPoints": [
+    {
+     "page": "team-run-overview-tab",
+     "element": "embedded-team-merge-section",
+     "landsOn": "team-merge-approve-sheet -> team-merge-confirm-sheet"
+    },
+    {
+     "page": "team-conversation",
+     "element": "embedded-team-merge-section (same widget)",
+     "landsOn": "same"
+    },
+    {
+     "page": "team-merge-changes-sheet",
+     "element": "file rows",
+     "landsOn": "no diff"
+    }
+   ],
+   "inconsistencies": [
+    "Two confirmations (approve, then merge); the changes list does not open a diff."
+   ],
+   "target": {
+    "entries": [
+     "team-conversation/merge section"
+    ],
+    "landsOn": "team-conversation (receipt)",
+    "pattern": "Approve directly with a receipt; one merge confirm that says what is merged; changes rows open KitDiffView read-only."
+   },
+   "pagesRemoved": [
+    "team-merge-approve-sheet"
+   ],
+   "pagesMerged": [
+    "team-run-overview-tab -> team-conversation"
+   ],
+   "sameJobEntries": 2,
+   "sources": [
+    "embedded-team-merge-section#391",
+    "team-merge-changes-sheet#392"
+   ]
+  },
+  {
+   "id": "review-changes",
+   "title": "Review what changed",
+   "journey": [
+    "review"
+   ],
+   "entryPoints": [
+    {
+     "page": "session-menu-sheet",
+     "element": "changes",
+     "landsOn": "review-workspace"
+    },
+    {
+     "page": "embedded-chat-nudge-slot",
+     "element": "review",
+     "landsOn": "review-workspace"
+    },
+    {
+     "page": "project-hub",
+     "element": "project-hub-changes",
+     "landsOn": "review-workspace"
+    },
+    {
+     "page": "files",
+     "element": "changes card",
+     "landsOn": "files-changes-sheet -> review-workspace"
+    },
+    {
+     "page": "permission-sheet",
+     "element": "see full diff",
+     "landsOn": "diff-view"
+    },
+    {
+     "page": "staged-revert",
+     "element": "file row",
+     "landsOn": "diff-view"
+    },
+    {
+     "page": "embedded-completion-digest-card",
+     "element": "run results",
+     "landsOn": "run-result"
+    },
+    {
+     "page": "run-result",
+     "element": "file row",
+     "landsOn": "review-workspace"
+    },
+    {
+     "page": "project-health",
+     "element": "version-control rows",
+     "landsOn": "nothing (dead list)"
+    }
+   ],
+   "inconsistencies": [
+    "Two diff renderers (review-workspace and diff-view) and two hunk navigators on one page.",
+    "files-changes-sheet is a one-step detour to the same list the review file strip shows.",
+    "The completion digest repeats run-result and reports mostly unknowns."
+   ],
+   "target": {
+    "entries": [
+     "chat/Changes (menu and nudge)",
+     "project tab/Changes",
+     "run-result",
+     "request sheet/See the change",
+     "team merge/Review changes"
+    ],
+    "landsOn": "review-workspace",
+    "pattern": "One KitDiffView: scoped review, or read-only for callers without a session; one \"Change 1 of N\" navigator."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "diff-view -> review-workspace",
+    "embedded-completion-digest-card -> activity",
+    "files-changes-sheet -> review-workspace"
+   ],
+   "sameJobEntries": 13,
+   "sources": [
+    "session-menu-sheet#18",
+    "embedded-chat-nudge-slot#50",
+    "embedded-completion-digest-card#77",
+    "embedded-completion-digest-card#78",
+    "project-hub#92",
+    "files-changes-sheet#99",
+    "files-changes-sheet#100",
+    "review-workspace#103",
+    "review-workspace#104",
+    "review-workspace#105",
+    "diff-view#111",
+    "run-result#157",
+    "project-health#329"
+   ]
+  },
+  {
+   "id": "undo-prompt",
+   "title": "Undo from a prompt (revert)",
+   "journey": [
+    "review",
+    "recover"
+   ],
+   "entryPoints": [
+    {
+     "page": "session-menu-sheet",
+     "element": "revert",
+     "landsOn": "chat-revert-confirm-sheet (OC1: immediate)"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "element": "/undo",
+     "landsOn": "chat-revert-confirm-sheet"
+    },
+    {
+     "page": "chat-message-actions-sheet",
+     "element": "revert",
+     "landsOn": "stage-revert-sheet (OC2: staged review)"
+    }
+   ],
+   "inconsistencies": [
+    "Two revert flows by protocol (chat_screen.dart:4689 and 4712 branch on supportsStagedRevert) with different titles, doors and outcomes."
+   ],
+   "target": {
+    "entries": [
+     "message long-press/Undo from here",
+     "chat menu/Undo last prompt"
+    ],
+    "landsOn": "stage-revert-sheet",
+    "pattern": "One \"Undo from here?\" flow: quote the prompt, list the files; staged with review where the server allows, an honest one-step confirm otherwise."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "chat-revert-confirm-sheet -> stage-revert-sheet"
+   ],
+   "sameJobEntries": 5,
+   "sources": [
+    "session-menu-sheet#14",
+    "session-menu-sheet#15",
+    "chat-message-actions-sheet#27",
+    "chat-revert-confirm-sheet#28",
+    "chat-revert-confirm-sheet#29"
+   ]
+  },
+  {
+   "id": "instruct-from-review",
+   "title": "Tell the agent what to fix",
+   "journey": [
+    "review",
+    "converse"
+   ],
+   "entryPoints": [
+    {
+     "page": "review-comment-sheet",
+     "element": "field",
+     "landsOn": "chat composer"
+    },
+    {
+     "page": "session-note",
+     "element": "editor",
+     "landsOn": "persistent note"
+    }
+   ],
+   "inconsistencies": [
+    "A review comment can be lost on dismiss; the session note's discard guard is an AlertDialog, the server editor's a sheet."
+   ],
+   "target": {
+    "entries": [
+     "review-workspace/Comment",
+     "composer + sheet/Notes for this conversation"
+    ],
+    "landsOn": "chat composer (draft)",
+    "pattern": "\"Add to prompt\" drafts; one KitDiscardGuard."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 3,
+   "sources": [
+    "review-comment-sheet#106",
+    "session-note#154",
+    "session-note-discard-dialog#155"
+   ]
+  },
+  {
+   "id": "see-what-needs-me",
+   "title": "See what needs me",
+   "journey": [
+    "observe",
+    "approve"
+   ],
+   "entryPoints": [
+    {
+     "page": "home-shell",
+     "element": "home-shell-tab-activity",
+     "landsOn": "activity"
+    },
+    {
+     "page": "workspace",
+     "element": "Needs you section",
+     "landsOn": "chat"
+    },
+    {
+     "page": "system",
+     "element": "Quick Settings tile / notifications",
+     "landsOn": "activity"
+    },
+    {
+     "page": "servers",
+     "element": "servers-attention (bell)",
+     "landsOn": "attention-overview (stale cache)"
+    },
+    {
+     "page": "attention-overview",
+     "element": "open profile",
+     "landsOn": "profile-monitor"
+    },
+    {
+     "page": "activity",
+     "element": "ProfileMonitorInbox section",
+     "landsOn": "profile-monitor"
+    },
+    {
+     "page": "workspace",
+     "element": "OtherServersPanel",
+     "landsOn": "switch server + request"
+    },
+    {
+     "page": "team-home",
+     "element": "needs-you",
+     "landsOn": "inline"
+    }
+   ],
+   "inconsistencies": [
+    "Two tabs list the same requests with different landings (Inbox: sheet; Work: chat).",
+    "Four places answer \"which other server needs me\" with three behaviours; attention-overview reads a stale cache.",
+    "The profile-monitor summary and its rows count the same request twice."
+   ],
+   "target": {
+    "entries": [
+     "home-shell/Inbox tab",
+     "notification",
+     "workspace/\"2 need you\" line"
+    ],
+    "landsOn": "activity (Inbox), each row opening the conversation at its card",
+    "pattern": "Inbox is the one list of what needs you (this server, other servers, team gates) and what finished; Work keeps a single Needs you line with the same landing; server rows carry a status word."
+   },
+   "pagesRemoved": [
+    "attention-overview",
+    "embedded-return-brief-panel",
+    "embedded-return-brief-panel-status-dialog"
+   ],
+   "pagesMerged": [
+    "profile-monitor -> servers"
+   ],
+   "sameJobEntries": 13,
+   "sources": [
+    "profile-monitor#140",
+    "profile-monitor#141",
+    "embedded-profile-monitor-inbox#142",
+    "notifications-settings#239",
+    "system#263",
+    "activity#273",
+    "activity#275",
+    "attention-overview#278",
+    "attention-overview#279",
+    "attention-overview#280",
+    "home-shell#282",
+    "workspace#301",
+    "workspace#302"
+   ]
+  },
+  {
+   "id": "see-running",
+   "title": "See what is running and stop it",
+   "journey": [
+    "observe",
+    "recover"
+   ],
+   "entryPoints": [
+    {
+     "page": "activity",
+     "element": "running rows",
+     "landsOn": "chat"
+    },
+    {
+     "page": "workspace",
+     "element": "Running section",
+     "landsOn": "chat"
+    },
+    {
+     "page": "running-work-sheet",
+     "element": "agent row",
+     "landsOn": "chat"
+    },
+    {
+     "page": "termux-processes",
+     "element": "process rows",
+     "landsOn": "stop sheets"
+    },
+    {
+     "page": "development-services",
+     "element": "service Stop",
+     "landsOn": "development-services-confirm-sheet"
+    },
+    {
+     "page": "embedded-termux-attention-line",
+     "element": "line",
+     "landsOn": "termux-processes"
+    }
+   ],
+   "inconsistencies": [
+    "Three lists of running conversations; two lists of running processes that never show each other; three models for stopping."
+   ],
+   "target": {
+    "entries": [
+     "workspace/Running",
+     "This phone page/Running now",
+     "embedded-termux-attention-line/Stop it"
+    ],
+    "landsOn": "chat (conversations) or termux-processes respec'd as a host-neutral \"Running on this phone\" tool (processes, dev services, the team, helpers)",
+    "pattern": "Work owns running conversations; the phone tool owns processes; one stop confirm per kind."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 8,
+   "sources": [
+    "terminal#108",
+    "development-services#168",
+    "termux-processes#187",
+    "termux-processes#188",
+    "termux-processes-stop-group-sheet#189",
+    "embedded-termux-attention-line#209",
+    "activity#274",
+    "running-work-sheet#331"
+   ]
+  },
+  {
+   "id": "follow-progress",
+   "title": "Follow a run's plan and progress",
+   "journey": [
+    "observe"
+   ],
+   "entryPoints": [
+    {
+     "page": "session-menu-sheet",
+     "element": "todos",
+     "landsOn": "todos-sheet (OC1 only)"
+    },
+    {
+     "page": "embedded-message-view",
+     "element": "todowrite card",
+     "landsOn": "chat"
+    },
+    {
+     "page": "team-conversation",
+     "element": "steps fold",
+     "landsOn": "team-conversation"
+    },
+    {
+     "page": "embedded-team-cycle-strip",
+     "element": "stages",
+     "landsOn": "team-cycle-how-sheet"
+    }
+   ],
+   "inconsistencies": [
+    "The plan hides in a menu-only sheet in chat; three step-list looks; three stage vocabularies; the wait expectation is a sheet over a sheet."
+   ],
+   "target": {
+    "entries": [
+     "transcript"
+    ],
+    "landsOn": "chat / team-conversation",
+    "pattern": "One KitChecklist (\"2 of 4 done\"), one Now line that unfolds \"why and how long\" in place, four outcome stages."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "team-cycle-how-sheet -> team-conversation",
+    "team-run-overview-tab -> team-conversation",
+    "todos-sheet -> embedded-message-view"
+   ],
+   "sameJobEntries": 5,
+   "sources": [
+    "todos-sheet#72",
+    "todos-sheet#73",
+    "embedded-mobile-task-list#338",
+    "team-cycle-how-sheet#364",
+    "embedded-team-cycle-strip#368"
+   ]
+  },
+  {
+   "id": "read-file",
+   "title": "Read a file",
+   "journey": [
+    "inspect"
+   ],
+   "entryPoints": [
+    {
+     "page": "files",
+     "element": "row",
+     "landsOn": "files-file-viewer-sheet"
+    },
+    {
+     "page": "chat",
+     "element": "transcript path link",
+     "landsOn": "file-preview-sheet"
+    },
+    {
+     "page": "markdown-code-reader",
+     "element": "code block",
+     "landsOn": "full screen reader"
+    },
+    {
+     "page": "files",
+     "element": "row actions / long-press / context menu",
+     "landsOn": "files-row-actions-sheet"
+    },
+    {
+     "page": "project-hub",
+     "element": "search",
+     "landsOn": "files"
+    }
+   ],
+   "inconsistencies": [
+    "Two viewers with different headers and two copy buttons; row actions in a sheet, a long-press and a desktop menu; two Try again at once."
+   ],
+   "target": {
+    "entries": [
+     "files/row",
+     "chat/path link",
+     "tool card/See all"
+    ],
+    "landsOn": "file-preview-sheet (one KitFileViewer)",
+    "pattern": "Close, one labelled action (Attach in chat), overflow (Copy, Save, Open in Files); row menu instead of an actions sheet."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "files-file-viewer-sheet -> file-preview-sheet",
+    "files-row-actions-sheet -> files"
+   ],
+   "sameJobEntries": 10,
+   "sources": [
+    "markdown-code-reader#83",
+    "project-hub#91",
+    "files#94",
+    "files#95",
+    "files#96",
+    "files-row-actions-sheet#97",
+    "files-row-actions-sheet#98",
+    "files-file-viewer-sheet#101",
+    "files-file-viewer-sheet#102",
+    "file-preview-sheet#110"
+   ]
+  },
+  {
+   "id": "read-log",
+   "title": "Read a log or command output",
+   "journey": [
+    "inspect",
+    "recover"
+   ],
+   "entryPoints": [
+    {
+     "page": "builtin-server-setup",
+     "element": "show log",
+     "landsOn": "builtin-server-log-sheet"
+    },
+    {
+     "page": "servers",
+     "element": "phone_server_card Show log (phone_server_card.dart:432)",
+     "landsOn": "its own sheet"
+    },
+    {
+     "page": "development-services",
+     "element": "logs",
+     "landsOn": "development-services-logs-sheet"
+    },
+    {
+     "page": "phone-setup-progress",
+     "element": "Details",
+     "landsOn": "TerminalView"
+    },
+    {
+     "page": "embedded-tool-card",
+     "element": "output see all",
+     "landsOn": "run-result-output-sheet"
+    },
+    {
+     "page": "shell-output",
+     "element": "output",
+     "landsOn": "shell-output"
+    }
+   ],
+   "inconsistencies": [
+    "Four log looks, two different sheets for the same server log."
+   ],
+   "target": {
+    "entries": [
+     "any Details fold",
+     "This phone/Server log"
+    ],
+    "landsOn": "KitLogPanel",
+    "pattern": "Follows the newest line, copies, polls while open, collapsed under Details by default."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "builtin-server-setup -> phone-setup-start"
+   ],
+   "sameJobEntries": 7,
+   "sources": [
+    "embedded-tool-card#87",
+    "run-result-output-sheet#158",
+    "builtin-server-setup#163",
+    "builtin-server-log-sheet#166",
+    "development-services-logs-sheet#169",
+    "embedded-setup-terminal#208",
+    "shell-output#332"
+   ]
+  },
+  {
+   "id": "technical-details",
+   "title": "See technical details",
+   "journey": [
+    "inspect"
+   ],
+   "entryPoints": [
+    {
+     "page": "chat",
+     "element": "error details (prompt / message)",
+     "landsOn": "_showChatErrorDetails (one dialog listed twice)"
+    },
+    {
+     "page": "team-run",
+     "element": "details",
+     "landsOn": "team-run-details-sheet"
+    },
+    {
+     "page": "team-agent",
+     "element": "details",
+     "landsOn": "team-agent-details-sheet + page fold"
+    },
+    {
+     "page": "team-host-sheet",
+     "element": "details",
+     "landsOn": "team-host-details-sheet"
+    },
+    {
+     "page": "server-settings",
+     "element": "identity",
+     "landsOn": "server-settings"
+    },
+    {
+     "page": "host-management",
+     "element": "facts",
+     "landsOn": "host-management"
+    },
+    {
+     "page": "workspace",
+     "element": "directory",
+     "landsOn": "workspace-directory-details-dialog"
+    },
+    {
+     "page": "workspace",
+     "element": "session details",
+     "landsOn": "workspace-session-details-sheet"
+    }
+   ],
+   "inconsistencies": [
+    "Five team folds or sheets with different title styles; errors not copyable; a blocking dialog for a path; a thin details sheet next to the richer session-context."
+   ],
+   "target": {
+    "entries": [
+     "page end/Details"
+    ],
+    "landsOn": "KitDetailsFold in place (KitTechnicalDetails sheet only for a standalone raw error)",
+    "pattern": "Collapsed row, mono values, 48 dp copy per value, deduplicated."
+   },
+   "pagesRemoved": [
+    "embedded-info-label"
+   ],
+   "pagesMerged": [
+    "chat-message-error-details-dialog -> chat-prompt-error-details-dialog",
+    "manage-project -> project-hub",
+    "team-agent-details-sheet -> team-agent",
+    "team-run -> team-conversation",
+    "workspace-directory-details-dialog -> workspace-context-sheet",
+    "workspace-session-details-sheet -> session-context"
+   ],
+   "sameJobEntries": 11,
+   "sources": [
+    "chat-prompt-error-details-dialog#40",
+    "chat-message-error-details-dialog#43",
+    "host-management#129",
+    "settings#227",
+    "workspace-directory-details-dialog#308",
+    "workspace-session-details-sheet#311",
+    "manage-project#321",
+    "team-run-details-sheet#352",
+    "team-agent-details-sheet#359",
+    "team-host-details-sheet#409",
+    "embedded-team-technical-value#410"
+   ]
+  },
+  {
+   "id": "open-terminal",
+   "title": "Open a terminal",
+   "journey": [
+    "inspect"
+   ],
+   "entryPoints": [
+    {
+     "page": "project-hub",
+     "element": "project-hub-terminal",
+     "landsOn": "terminal"
+    },
+    {
+     "page": "home-shell",
+     "element": "shortcut terminal",
+     "landsOn": "terminal"
+    },
+    {
+     "page": "terminal",
+     "element": "FAB + empty-state button",
+     "landsOn": "terminal-surface"
+    }
+   ],
+   "inconsistencies": [
+    "Two new-terminal buttons at once; local and remote surfaces use different key bars."
+   ],
+   "target": {
+    "entries": [
+     "project tab/Terminal"
+    ],
+    "landsOn": "terminal-surface",
+    "pattern": "One new action per state; the kit key bar for both."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 3,
+   "sources": [
+    "project-hub#93",
+    "terminal#107",
+    "terminal-surface#109"
+   ]
+  },
+  {
+   "id": "add-tool-mcp",
+   "title": "Add an MCP server, skill or plugin",
+   "journey": [
+    "configure"
+   ],
+   "entryPoints": [
+    {
+     "page": "integrations",
+     "element": "Add MCP server (+)",
+     "landsOn": "mcp-setup (manual form only)"
+    },
+    {
+     "page": "chat",
+     "element": "/mcps",
+     "landsOn": "integrations (MCP)"
+    },
+    {
+     "page": "plugins-settings",
+     "element": "server plugins",
+     "landsOn": "plugins-settings"
+    },
+    {
+     "page": "skills",
+     "element": "row",
+     "landsOn": "skills-preview-sheet"
+    },
+    {
+     "page": "chat",
+     "element": "skill",
+     "landsOn": "skill-activation-sheet"
+    }
+   ],
+   "inconsistencies": [
+    "Only a technical form (owner wants an agent-driven path and a catalog with toggles); MCP and plugins are two library-like places; two sheets for one skill."
+   ],
+   "target": {
+    "entries": [
+     "library/MCP/Add",
+     "settings/MCP"
+    ],
+    "landsOn": "integrations (MCP half) with an Add chooser",
+    "pattern": "Browse a catalog (toggles) / Ask an agent to set it up / Enter manually (mcp-setup); one skill sheet whose primary adapts."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "skills-preview-sheet -> skill-activation-sheet"
+   ],
+   "sameJobEntries": 6,
+   "sources": [
+    "integrations#217",
+    "integrations#218",
+    "skill-activation-sheet#222",
+    "skills-preview-sheet#223",
+    "mcp-setup#224",
+    "settings#231"
+   ]
+  },
+  {
+   "id": "keep-alive",
+   "title": "Keep the app working in the background",
+   "journey": [
+    "configure",
+    "recover"
+   ],
+   "entryPoints": [
+    {
+     "page": "settings",
+     "element": "settings-keep-running",
+     "landsOn": "keep-running"
+    },
+    {
+     "page": "notifications-settings",
+     "element": "background switch / battery",
+     "landsOn": "Android battery settings"
+    },
+    {
+     "page": "home-shell",
+     "element": "app exit notice",
+     "landsOn": "keep-running"
+    },
+    {
+     "page": "activity",
+     "element": "background hint",
+     "landsOn": "notifications-settings"
+    },
+    {
+     "page": "team-phone-tips-sheet",
+     "element": "tips",
+     "landsOn": "own sheet"
+    }
+   ],
+   "inconsistencies": [
+    "Two battery doors; the background switch lives only in Notifications; the team has its own tips."
+   ],
+   "target": {
+    "entries": [
+     "every background hint",
+     "settings/Keep running"
+    ],
+    "landsOn": "keep-running",
+    "pattern": "One background page: switch, Android daily-limit status, battery exemption requested in-app, each step marked done."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "team-phone-tips-sheet -> keep-running"
+   ],
+   "sameJobEntries": 5,
+   "sources": [
+    "settings#232",
+    "notifications-settings#238",
+    "keep-running#261",
+    "activity#276",
+    "team-phone-tips-sheet#404"
+   ]
+  },
+  {
+   "id": "display-settings",
+   "title": "Appearance and conversation display",
+   "journey": [
+    "configure"
+   ],
+   "entryPoints": [
+    {
+     "page": "appearance-settings",
+     "element": "theme row",
+     "landsOn": "appearance-picker-sheet"
+    },
+    {
+     "page": "theme-pack-preview-sheet",
+     "element": "preview",
+     "landsOn": "sheet"
+    },
+    {
+     "page": "session-menu-sheet",
+     "element": "reasoning / timestamps",
+     "landsOn": "chat"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "element": "/thinking /timestamps",
+     "landsOn": "chat"
+    },
+    {
+     "page": "settings",
+     "element": "transcript display",
+     "landsOn": "settings-transcript-display-sheet"
+    }
+   ],
+   "inconsistencies": [
+    "A three-way choice needs a sheet; two display switches reachable three ways."
+   ],
+   "target": {
+    "entries": [
+     "settings/Appearance",
+     "settings/Conversation"
+    ],
+    "landsOn": "appearance-settings / settings",
+    "pattern": "Inline segmented Auto/Light/Dark; KitSwitchRows; commands flip the same values."
+   },
+   "pagesRemoved": [
+    "appearance-picker-sheet"
+   ],
+   "pagesMerged": [
+    "settings-transcript-display-sheet -> settings"
+   ],
+   "sameJobEntries": 4,
+   "sources": [
+    "embedded-transcript-display-toggles#61",
+    "embedded-transcript-display-toggles#62",
+    "settings-transcript-display-sheet#236",
+    "appearance-picker-sheet#240"
+   ]
+  },
+  {
+   "id": "find-setting",
+   "title": "Find a setting",
+   "journey": [
+    "configure",
+    "learn"
+   ],
+   "entryPoints": [
+    {
+     "page": "settings",
+     "element": "search",
+     "landsOn": "the setting's page"
+    },
+    {
+     "page": "command-palette-dialog",
+     "element": "search index",
+     "landsOn": "the setting's page"
+    }
+   ],
+   "inconsistencies": [
+    "Consistent landing; the hub layout (33 rows, 4 duplicates) is the problem."
+   ],
+   "target": {
+    "entries": [
+     "settings/search",
+     "command palette"
+    ],
+    "landsOn": "the setting's page",
+    "pattern": "One search index; a configuration assistant agent later (owner note)."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 1,
+   "sources": [
+    "command-palette-dialog#271"
+   ]
+  },
+  {
+   "id": "privacy-and-notices",
+   "title": "Privacy and licences",
+   "journey": [
+    "learn",
+    "configure"
+   ],
+   "entryPoints": [
+    {
+     "page": "settings",
+     "element": "settings-privacy-data-use",
+     "landsOn": "about privacy tab"
+    },
+    {
+     "page": "settings",
+     "element": "settings-category-privacy",
+     "landsOn": "privacy-settings"
+    },
+    {
+     "page": "settings",
+     "element": "settings-about-notices",
+     "landsOn": "about open-source tab"
+    },
+    {
+     "page": "settings",
+     "element": "settings-voice-notices",
+     "landsOn": "voice-notices"
+    }
+   ],
+   "inconsistencies": [
+    "Two \"privacy\" rows to two pages; two licence pages."
+   ],
+   "target": {
+    "entries": [
+     "settings/Privacy and data",
+     "about"
+    ],
+    "landsOn": "privacy-settings (\"Privacy and data\") and about/Open source",
+    "pattern": "One privacy home linking the policy; voice licences folded into Open source."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 6,
+   "sources": [
+    "voice-notices#88",
+    "settings#234",
+    "settings#235",
+    "privacy-settings#241",
+    "about-privacy-tab#248",
+    "about-open-source-tab#249"
+   ]
+  },
+  {
+   "id": "usage-quota",
+   "title": "Check usage and remaining quota",
+   "journey": [
+    "account"
+   ],
+   "entryPoints": [
+    {
+     "page": "usage-hub",
+     "element": "Spent",
+     "landsOn": "usage"
+    },
+    {
+     "page": "usage-hub",
+     "element": "Remaining",
+     "landsOn": "provider-quota"
+    },
+    {
+     "page": "agent-account",
+     "element": "limits / usage",
+     "landsOn": "agent-account"
+    },
+    {
+     "page": "provider-quota",
+     "element": "threshold",
+     "landsOn": "provider-quota-enroll-dialog"
+    }
+   ],
+   "inconsistencies": [
+    "Codex limits and token usage shown both on agent-account and in the hub; two alert-threshold systems; two clear dialogs."
+   ],
+   "target": {
+    "entries": [
+     "settings/Usage",
+     "quota notification"
+    ],
+    "landsOn": "usage-hub",
+    "pattern": "Spent and Remaining (agent-account becomes the Codex source); \"Alert me at 80 %\" as a switch row on the provider."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [
+    "provider-quota-enroll-dialog -> provider-quota"
+   ],
+   "sameJobEntries": 8,
+   "sources": [
+    "agent-account#132",
+    "agent-account#133",
+    "provider-quota#143",
+    "provider-quota#144",
+    "provider-quota-enroll-dialog#145",
+    "provider-quota-clear-dialog#146",
+    "usage#147",
+    "usage-budget-clear-dialog#148"
+   ]
+  },
+  {
+   "id": "recover-connection",
+   "title": "Get back when the server stops answering",
+   "journey": [
+    "recover",
+    "connect"
+   ],
+   "entryPoints": [
+    {
+     "page": "root-connecting",
+     "element": "retry / restart / change",
+     "landsOn": "stays | confirmPhoneServerRestart | servers"
+    },
+    {
+     "page": "embedded-connection-status-banner",
+     "element": "retry",
+     "landsOn": "stays (different wording)"
+    },
+    {
+     "page": "home-shell",
+     "element": "banner",
+     "landsOn": "connection-status-details-sheet (raw error only)"
+    },
+    {
+     "page": "workspace",
+     "element": "WorkStatusLine restart",
+     "landsOn": "confirmPhoneServerRestart"
+    },
+    {
+     "page": "termux-setup-installed",
+     "element": "restart",
+     "landsOn": "termux-setup-restart-sheet"
+    },
+    {
+     "page": "bootstrap-gate",
+     "element": "spinner",
+     "landsOn": "root-connecting"
+    }
+   ],
+   "inconsistencies": [
+    "Two implementations and three wordings of \"the connection is down\".",
+    "The details sheet shows only the raw error while root-connecting's SavedServerConnectionCard has causes, restart and checks.",
+    "Two waiting screens in a row with different styles (bootstrap-gate, then root-connecting).",
+    "Three restart confirms for the phone server."
+   ],
+   "target": {
+    "entries": [
+     "every status line",
+     "root-connecting"
+    ],
+    "landsOn": "root-connecting's diagnosed card",
+    "pattern": "One status source with fixed stages (\"Reconnecting to Laptop...\" for 8 s, then \"Laptop isn't answering\" + Try again / Restart / Switch server) read by every tab and chat; one restart confirm."
+   },
+   "pagesRemoved": [
+    "embedded-managed-server-health"
+   ],
+   "pagesMerged": [
+    "connection-status-details-sheet -> root-connecting"
+   ],
+   "sameJobEntries": 9,
+   "sources": [
+    "termux-setup-restart-sheet#196",
+    "embedded-managed-server-health#211",
+    "root-connecting#266",
+    "root-connecting#268",
+    "home-shell#284",
+    "embedded-connection-status-banner#285",
+    "embedded-connection-status-banner#286",
+    "connection-status-details-sheet#287",
+    "bootstrap-gate#293"
+   ]
+  },
+  {
+   "id": "report-problem",
+   "title": "Report a problem",
+   "journey": [
+    "recover",
+    "learn"
+   ],
+   "entryPoints": [
+    {
+     "page": "settings",
+     "element": "library-report-bug",
+     "landsOn": "GitHub form with version only"
+    },
+    {
+     "page": "about",
+     "element": "about-report-bug icon and link",
+     "landsOn": "GitHub"
+    },
+    {
+     "page": "embedded-product-states",
+     "element": "product-error-report-bug (product_states.dart:260)",
+     "landsOn": "GitHub"
+    },
+    {
+     "page": "chat",
+     "element": "error state report (chat_states.dart:52)",
+     "landsOn": "GitHub"
+    },
+    {
+     "page": "app-diagnostics",
+     "element": "send",
+     "landsOn": "the person's own server log"
+    }
+   ],
+   "inconsistencies": [
+    "Two destinations never joined: GitHub gets only the version; diagnostics go to the person's own server log.",
+    "Clearing diagnostics is confirmed; clearing the perf trace is immediate.",
+    "Two error-state styles app-wide (ProductErrorState vs KitStateView)."
+   ],
+   "target": {
+    "entries": [
+     "every error state/Report a problem",
+     "settings/Report a problem",
+     "about"
+    ],
+    "landsOn": "app-diagnostics (redesigned \"Report a problem\")",
+    "pattern": "Prefilled with the error that brought the person here and recent redacted diagnostics they can preview; send as a GitHub issue or copy."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 5,
+   "sources": [
+    "settings#233",
+    "about#247",
+    "app-diagnostics#251",
+    "app-diagnostics-clear-sheet#252",
+    "embedded-product-states#297"
+   ]
+  },
+  {
+   "id": "learn-app",
+   "title": "Learn the app, try it, stay current",
+   "journey": [
+    "learn"
+   ],
+   "entryPoints": [
+    {
+     "page": "servers-welcome",
+     "element": "try demo",
+     "landsOn": "demo"
+    },
+    {
+     "page": "guide",
+     "element": "steps",
+     "landsOn": "explains only"
+    },
+    {
+     "page": "desktop-release-notice",
+     "element": "view",
+     "landsOn": "snackbar"
+    },
+    {
+     "page": "shorebird-update-notice",
+     "element": "got it",
+     "landsOn": "snackbar"
+    }
+   ],
+   "inconsistencies": [
+    "The guide names buttons differently from Servers; update notices cover the pinned action and name the tool."
+   ],
+   "target": {
+    "entries": [
+     "servers-welcome/Try it offline",
+     "settings/Guide"
+    ],
+    "landsOn": "demo / guide",
+    "pattern": "Guide steps link to the real buttons; one \"Update ready · Restart\" status line on Work."
+   },
+   "pagesRemoved": [],
+   "pagesMerged": [],
+   "sameJobEntries": 4,
+   "sources": [
+    "guide#250",
+    "desktop-release-notice#291",
+    "shorebird-update-notice#292",
+    "demo#294"
+   ]
+  }
+ ],
+ "intersections": [
+  {
+   "a": "install",
+   "b": "connect",
+   "where": [
+    "servers",
+    "servers-welcome",
+    "profile-editor",
+    "root-connecting",
+    "phone-setup-ready",
+    "server-switcher-sheet"
+   ],
+   "owner": "connect",
+   "rule": "Servers is grouped by where the agent runs (This phone / My computers / Outside agents). Connect owns the list, switching and adding a computer. Install owns anything that puts software on a host: the This phone row hands off to phone setup v2, and phone-setup-ready hands back with \"Switch to this phone\". Adding a computer never installs; host-management becomes a sheet from server-settings."
+  },
+  {
+   "a": "converse",
+   "b": "delegate",
+   "where": [
+    "workspace",
+    "chat",
+    "team-conversation",
+    "team-home",
+    "embedded-team-discover"
+   ],
+   "owner": "converse (start) / delegate (the conversation's content)",
+   "rule": "New conversation owns the start; Team is a mode of it (Solo · Team, remembered per server). A team task is a chat-page conversation whose workers are sub-agents. The team page is overview and configuration, never where work starts or is followed. Every \"give a task\" and \"open a task\" door ends in team-conversation."
+  },
+  {
+   "a": "approve",
+   "b": "converse",
+   "where": [
+    "chat",
+    "embedded-permission-attention-card",
+    "embedded-question-attention-card",
+    "permission-sheet",
+    "question-sheet",
+    "form-sheet"
+   ],
+   "owner": "approve",
+   "rule": "The request card in the conversation owns the answer. Sheets open only from the card's Details, for a full diff or a long form, and return to the card with a receipt."
+  },
+  {
+   "a": "approve",
+   "b": "observe",
+   "where": [
+    "activity",
+    "workspace",
+    "profile-monitor",
+    "embedded-profile-monitor-inbox",
+    "attention-overview",
+    "system"
+   ],
+   "owner": "approve",
+   "rule": "Observe surfaces point, they do not answer. Inbox rows, Work's Needs you line, notifications and other-server rows open the conversation scrolled to the card (switching server first with a confirm). A notification quick action may send the one-tap answer through the same request model."
+  },
+  {
+   "a": "approve",
+   "b": "delegate",
+   "where": [
+    "team-conversation",
+    "team-home",
+    "gate-sheet",
+    "embedded-team-merge-section",
+    "activity"
+   ],
+   "owner": "approve",
+   "rule": "Team gates are request cards in the task conversation, built from the same KitRequestCard and KitReceipt as chat. The team home's Needs you lists and links, and the supervision level decides which gates reach the person at all."
+  },
+  {
+   "a": "observe",
+   "b": "observe",
+   "where": [
+    "workspace",
+    "activity",
+    "attention-overview",
+    "profile-monitor",
+    "server-switcher-sheet",
+    "servers",
+    "running-work-sheet"
+   ],
+   "owner": "observe (Inbox)",
+   "rule": "Inbox owns \"what needs me and what finished\" on every server. Work owns \"what I am working on\" (running, recent, team tasks as conversations). Server rows carry a status word. attention-overview is deleted and profile-monitor folds into the Servers rows and the Notifications setting."
+  },
+  {
+   "a": "install",
+   "b": "delegate",
+   "where": [
+    "team-intro",
+    "phone-setup-customize-sheet",
+    "team-home",
+    "team-host-sheet",
+    "embedded-team-discovery-card"
+   ],
+   "owner": "delegate",
+   "rule": "Delegate owns discovery (Solo · Team, team-intro, automatic discovery). Install owns putting the team on the phone (the v2 aiteam component). Connect owns pointing at a computer's team (team-host-sheet). Every path hands back to team-conversation with \"Give the team a first task\"."
+  },
+  {
+   "a": "review",
+   "b": "approve",
+   "where": [
+    "permission-sheet",
+    "embedded-team-merge-section",
+    "team-merge-changes-sheet",
+    "staged-revert"
+   ],
+   "owner": "approve",
+   "rule": "Approve owns the decision; review supplies a read-only KitDiffView opened from it and returns to the decision."
+  },
+  {
+   "a": "review",
+   "b": "recover",
+   "where": [
+    "stage-revert-sheet",
+    "chat-revert-confirm-sheet",
+    "staged-revert"
+   ],
+   "owner": "review",
+   "rule": "Undo from a prompt is a review action with one flow. Recover surfaces (failed runs, errors) link to it and never build their own revert."
+  },
+  {
+   "a": "converse",
+   "b": "recover",
+   "where": [
+    "embedded-pending-sends-strip",
+    "chat-discard-queued-draft-sheet",
+    "chat-leave-unsaved-draft-sheet",
+    "chat",
+    "activity"
+   ],
+   "owner": "converse",
+   "rule": "The conversation owns its queued messages and drafts (one bubble, undo-first). Inbox does not list the offline queue. The connection status line is shared chrome read from one source."
+  },
+  {
+   "a": "observe",
+   "b": "inspect",
+   "where": [
+    "termux-processes",
+    "development-services",
+    "running-work-sheet",
+    "terminal",
+    "embedded-termux-attention-line"
+   ],
+   "owner": "observe (conversations) / inspect (processes)",
+   "rule": "Work owns running conversations. The host-neutral \"Running on this phone\" tool owns processes, including dev services and the team. The Project tab owns dev commands and the terminal."
+  },
+  {
+   "a": "configure",
+   "b": "converse",
+   "where": [
+    "model-picker-sheet",
+    "catalog",
+    "session-approvals-sheet",
+    "settings-transcript-display-sheet",
+    "command-launcher-sheet"
+   ],
+   "owner": "converse (per conversation) / configure (defaults)",
+   "rule": "Changes made inside a conversation apply to that conversation; Settings sets defaults. Both open the same component (model sheet, approvals sheet, display switches)."
+  },
+  {
+   "a": "account",
+   "b": "connect",
+   "where": [
+    "integrations",
+    "command-auth-sheet",
+    "agent-account",
+    "usage-hub",
+    "provider-quota"
+   ],
+   "owner": "connect (sign-in) / account (numbers)",
+   "rule": "Connect owns sign-in (Providers). Account owns the numbers (the Usage hub: Spent and Remaining). agent-account becomes the Codex quota source plus its sign-in state."
+  },
+  {
+   "a": "recover",
+   "b": "learn",
+   "where": [
+    "embedded-product-states",
+    "chat",
+    "app-diagnostics",
+    "about",
+    "settings"
+   ],
+   "owner": "recover",
+   "rule": "The error state owns the moment and offers \"Report a problem\", which opens diagnostics prefilled with that error. Settings and About are secondary doors to the same flow."
+  },
+  {
+   "a": "configure",
+   "b": "install",
+   "where": [
+    "termux-setup-installed",
+    "server-settings",
+    "phone-setup-customize-sheet",
+    "host-management"
+   ],
+   "owner": "install",
+   "rule": "The phone's own server is configured on the This phone page; server-settings for that server links there. Configuration changes that need software run as v2 jobs."
+  },
+  {
+   "a": "delegate",
+   "b": "inspect",
+   "where": [
+    "team-agent",
+    "team-agent-output",
+    "chat",
+    "embedded-team-cycle-strip",
+    "gate-sheet"
+   ],
+   "owner": "delegate",
+   "rule": "The worker's conversation (watching mode) owns \"what is it doing\"; the raw output is its fallback rendering, never a separate door."
+  }
+ ],
+ "patterns": [
+  {
+   "id": "answer-the-agent",
+   "today": [
+    "OC1 permission card and question card (_PermissionAttentionCard, _QuestionAttentionCard, attention_card.dart:11,56) on KitRequestCard, then permission-sheet or question-sheet (activity_screen.dart:975)",
+    "OC2 form card (_FormRequestCard, attention_card.dart:334), then form-sheet",
+    "```choices options in Markdown (embedded-markdown-text) and a third choice-row implementation",
+    "AI Team gates: TeamNeedsYouCard (team_needs_you.dart:77), then gate-sheet with its own _Receipt (gate_sheet.dart:1076)",
+    "Inbox and profile-monitor open the same sheets over a list; Work opens the chat",
+    "external-task replies through its own composer"
+   ],
+   "target": "One KitRequestCard family. The header says who asks and about what. The body is the ask in one line. The common answer happens in place: Allow once / Reject, a single-choice option sends with Undo, and \"Something else\" takes text. Details opens one KitRequestSheet (full diff, long form, gate details). Every answer shows a KitReceipt. The work line says \"Waiting for you\". Lists (Inbox, Work, team home) show a KitRow with the needs-you marker that deep-links to the card."
+  },
+  {
+   "id": "confirmations",
+   "today": [
+    "78 elements across the map ask for a KitConfirmSheet; showConfirmSheet (lib/ui/widgets/confirm_sheet.dart:10) is used in 37 files while about 30 files still build AlertDialogs",
+    "question-sheet-dismiss-dialog, shell-output-stop-dialog, worktrees/managed-workspaces remove dialogs, saved-permissions-revoke-dialog, session-destination-confirm-dialog are AlertDialogs with right-aligned buttons",
+    "Stops use different cancel words and tones (two worker-stop confirms, two phone-team stops, three phone-server restarts)"
+   ],
+   "target": "KitConfirmSheet in lib/ui/kit. The title is a question naming the thing (\"Stop fox?\"). The body says what happens and whether it can be undone. It uses error tone only when destructive, has an optional secondary action, and offers a typed-name guard for heavy deletes. Cancel words: \"Keep running\" for stops, \"Keep editing\" for discards, \"Cancel\" otherwise. A dialog is kept only for a blocking alert."
+  },
+  {
+   "id": "undo-vs-confirm",
+   "today": [
+    "Archive: swipe acts with Undo, the menu confirms first (workspace_screen.dart:1497-1503)",
+    "Restoring a saved prompt, deleting a saved prompt and starting a dev service ask first although nothing is lost",
+    "Approving a merge needs a sheet; withdrawing a queued message (back to draft) is error-styled"
+   ],
+   "target": "The rule: if it is reversible or restorable, act at once and show a KitUndoSnackbar. That covers archive, restore, deleting a local saved prompt, withdraw-to-draft, start, approve, and a board cancel the host can reopen. If it is irreversible or destructive on the server, confirm first. That covers deleting a conversation, a one-step revert, removing a server, deleting the phone Ubuntu, and stopping a task. The same act gets the same model from every door."
+  },
+  {
+   "id": "technical-details",
+   "today": [
+    "Five team folds or sheets with different title styles (team-run-details-sheet, team-agent-details-sheet + page fold, team-host-details-sheet, work-sheet fold, gate-sheet fold)",
+    "Two chat error-detail entries for one dialog, not copyable",
+    "workspace-directory-details-dialog (a blocking dialog for a path); server identity vs host facts"
+   ],
+   "target": "KitDetailsFold at the end of a page or sheet: collapsed by default, mono values, a 48 dp copy button per value, deduplicated by value. Engine words, ids, paths and ports live only there. A KitTechnicalDetails sheet is used only for a standalone raw error."
+  },
+  {
+   "id": "logs",
+   "today": [
+    "builtin-server-log-sheet and phone_server_card._showLog (phone_server_card.dart:432) - two sheets for one log",
+    "embedded-setup-terminal, phone-setup-progress Details (TerminalView), development-services-logs-sheet, shell-output, run-result-output-sheet"
+   ],
+   "target": "KitLogPanel: follows the newest line, polls while open, copies, wraps optionally, uses accent only for errors, and sits in a Details slot, collapsed by default."
+  },
+  {
+   "id": "needs-you-markers",
+   "today": [
+    "Inbox tab badge, Work Needs you section count, team rows, server-switcher and Servers rows, profile-monitor summary (counts rows twice), attention-overview (stale cache), notifications",
+    "The chat work line says \"Running tools\" while a request waits"
+   ],
+   "target": "One attention source per request, feeding one marker (KitStatusMark \"Needs you\" word plus mark, never colour alone). It is counted once and uses the same words in the tab badge, list rows, server rows, the conversation header and the notification."
+  },
+  {
+   "id": "receipts",
+   "today": [
+    "Two classes both named TeamReceiptChip with different contracts (lib/ui/widgets/team_controls.dart:52 and lib/ui/widgets/team_receipt.dart:101)",
+    "gate_sheet.dart _Receipt, the team conversation sent line, the board \"Moving to...\" flag; chat answers have no receipt"
+   ],
+   "target": "KitReceipt (mark + word in the supporting line: Sent / Confirmed / Not confirmed · Retry / Not accepted + reason) for every write the phone sends: answers, messages, moves, stops, merges."
+  },
+  {
+   "id": "status-and-waiting",
+   "today": [
+    "ConnectionStatusBanner vs WorkStatusLine vs root-connecting vs the chat status line (two implementations, three wordings)",
+    "bootstrap-gate then root-connecting (two waiting screens); team Now line vs cycle strip vs team-cycle-how-sheet"
+   ],
+   "target": "KitStatusLine fed by one connection status source with fixed stages and an honest 8 s escape; KitNowLine for team work (\"what now, what next, how long\") unfolding in place."
+  },
+  {
+   "id": "install-progress",
+   "today": [
+    "phone-setup-progress (SetupProgressView), termux-setup-installing, the Claude Code block steps, team-phone-onboarding-steps"
+   ],
+   "target": "The v2 checklist (KitChecklist): staged marks, a determinate bar, time left, Stop, resume, person-step rows (get Termux, allow) and a folded KitLogPanel."
+  },
+  {
+   "id": "viewers",
+   "today": [
+    "files-file-viewer-sheet vs file-preview-sheet (two headers, two copy buttons); markdown-code-reader",
+    "review-workspace vs diff-view (two diff renderers, two hunk navigators)"
+   ],
+   "target": "KitFileViewer (one header, one labelled action, overflow) and KitDiffView (scoped or read-only, one \"Change 1 of N\" navigator)."
+  },
+  {
+   "id": "choice-rows",
+   "today": [
+    "Question options, form radios, ```choices, the model picker's agent dropdowns, language and shell sheets, board priority"
+   ],
+   "target": "KitChoiceRow / KitChoiceList with a current mark; single choice acts on tap (with Undo where it sends)."
+  },
+  {
+   "id": "discard-guard",
+   "today": [
+    "profile-editor-discard-sheet (sheet) vs session-note-discard-dialog (AlertDialog); review-comment-sheet and start-run-sheet lose the draft"
+   ],
+   "target": "KitDiscardGuard: error-tonal Discard, \"Keep editing\" default, and drafts survive dismiss and refusal."
+  },
+  {
+   "id": "error-states",
+   "today": [
+    "ProductErrorState (lib/ui/widgets/product_states.dart) vs KitStateView; \"Report a bug\" goes to GitHub with the version only"
+   ],
+   "target": "KitStateView everywhere (ProductErrorState as a thin wrapper first). The title is the state, the body says what next, and the actions are Try again and Report a problem (prefilled diagnostics)."
+  },
+  {
+   "id": "short-input",
+   "today": [
+    "Rename dialogs (chat, workspace, projects, terminal), run-command-dialog, chat-run-shell-dialog, credential rename"
+   ],
+   "target": "KitInputDialog: one field, label, helper text, a counter only near the limit, and a verb primary."
+  }
+ ],
+ "priorities": [
+  {
+   "id": "p01-one-answer-pattern",
+   "title": "Answer the agent in one place with one card",
+   "personas": [
+    "remote-lead",
+    "team-delegator",
+    "phone-only",
+    "newcomer"
+   ],
+   "effort": "L",
+   "pages": [
+    "chat",
+    "embedded-permission-attention-card",
+    "embedded-question-attention-card",
+    "embedded-question-options",
+    "permission-sheet",
+    "question-sheet",
+    "form-sheet",
+    "gate-sheet",
+    "activity",
+    "workspace",
+    "team-conversation",
+    "team-home",
+    "profile-monitor"
+   ],
+   "why": "This is the remote-lead's core job, and it is also the one that is least consistent. The same request lands in chat from Work but in a sheet from the Inbox. Answers come in three card shapes. Team gates have receipts and chat answers do not. The work line says \"Running tools\" while the agent waits."
+  },
+  {
+   "id": "p02-team-task-one-page",
+   "title": "Make a team task one page: every door opens the task conversation, which can stop the task",
+   "personas": [
+    "team-delegator",
+    "remote-lead"
+   ],
+   "effort": "M",
+   "pages": [
+    "team-home",
+    "team-home-runs-tab",
+    "team-run",
+    "team-run-overview-tab",
+    "team-run-work-tab",
+    "team-run-agents-tab",
+    "team-run-timeline-tab",
+    "team-conversation",
+    "team-board",
+    "start-run-sheet",
+    "embedded-team-planning-card",
+    "team-run-cancel-confirm-sheet"
+   ],
+   "why": "Team-home rows and notifications open RunScreen: onOpenRun is never passed (team_home_screen.dart:132-143) and the notification link goes to RunScreen at main.dart:967. \"Give the team a task\" from the home stays on the home. The conversation has no Stop. The routing fix is small: pass TeamConversation.open and call TeamConversation.start. Folding RunScreen into Task details is medium."
+  },
+  {
+   "id": "p03-unify-install-v2",
+   "title": "Unify all installation into phone setup v2 (OpenCode, Claude Code, AI Team; in-app or Termux host)",
+   "personas": [
+    "phone-only",
+    "newcomer",
+    "tinkerer"
+   ],
+   "effort": "L",
+   "pages": [
+    "phone-setup-start",
+    "phone-setup-customize-sheet",
+    "phone-setup-progress",
+    "phone-setup-ready",
+    "termux-setup",
+    "termux-setup-choose",
+    "termux-setup-installing",
+    "termux-setup-failed",
+    "termux-setup-connected",
+    "termux-setup-get-termux",
+    "termux-setup-connect-termux",
+    "builtin-server-setup",
+    "local-agent-page",
+    "embedded-local-agent-onboarding-block",
+    "team-phone-onboarding-steps",
+    "team-intro",
+    "servers"
+   ],
+   "why": "The owner's repeated note is \"Align with v2\". Today there are three installers, four progress surfaces and two success moments. 17 ledger edges still reach the old Termux wizard. Claude Code cannot be added from Add tools."
+  },
+  {
+   "id": "p04-inbox-single-list",
+   "title": "Make the Inbox the only \"needs me\" list; delete attention-overview; fold profile-monitor into server rows",
+   "personas": [
+    "remote-lead",
+    "tinkerer",
+    "team-delegator"
+   ],
+   "effort": "M",
+   "pages": [
+    "activity",
+    "workspace",
+    "home-shell",
+    "attention-overview",
+    "profile-monitor",
+    "embedded-profile-monitor-inbox",
+    "server-switcher-sheet",
+    "servers"
+   ],
+   "why": "Four pages answer \"which other server needs me\" with three behaviours, one of them on a stale cache. Two tabs duplicate the same requests. The owner offered deleting attention-overview."
+  },
+  {
+   "id": "p05-one-connection-status",
+   "title": "Use one connection status and a diagnosed failure view",
+   "personas": [
+    "phone-only",
+    "remote-lead",
+    "newcomer"
+   ],
+   "effort": "M",
+   "pages": [
+    "home-shell",
+    "embedded-connection-status-banner",
+    "connection-status-details-sheet",
+    "root-connecting",
+    "bootstrap-gate",
+    "workspace",
+    "chat",
+    "termux-setup-restart-sheet"
+   ],
+   "why": "The most frequent failure on a phone that shares a server with Termux or proot. Today it has two implementations, three wordings, a raw-error sheet and three restart confirms. The phone-only persona needs \"stopped / paused for heat\" told apart from \"offline\"."
+  },
+  {
+   "id": "p06-report-a-problem",
+   "title": "Report a problem from any error, with diagnostics attached",
+   "personas": [
+    "newcomer",
+    "phone-only",
+    "remote-lead",
+    "tinkerer",
+    "team-delegator"
+   ],
+   "effort": "M",
+   "pages": [
+    "app-diagnostics",
+    "embedded-product-states",
+    "chat",
+    "settings",
+    "about",
+    "terminal",
+    "files",
+    "global-sessions"
+   ],
+   "why": "Owner note: \"a first grade page that users willingly use to raise bugs … accessible when errors happen\". Today GitHub gets only the version, while diagnostics go to the person's own server log."
+  },
+  {
+   "id": "p07-turn-on-team-one-page",
+   "title": "Turn the team on from one team page with automatic discovery",
+   "personas": [
+    "team-delegator",
+    "newcomer"
+   ],
+   "effort": "M",
+   "pages": [
+    "team-intro",
+    "team-home",
+    "team-plugin-sheet",
+    "plugins-settings",
+    "settings",
+    "embedded-team-discovery-card",
+    "embedded-team-phone-reoffer-card",
+    "embedded-team-phone-section",
+    "team-host-sheet",
+    "team-host-guide-sheet"
+   ],
+   "why": "Five doors lead to three flows. Settings > AI Team opens Plugins when the team is on (search_index.dart:548). There is a third management sheet under an engine name."
+  },
+  {
+   "id": "p08-add-computer-one-path",
+   "title": "Add a computer in one path (no double agent choice, inline address check, pairing-link sheet)",
+   "personas": [
+    "remote-lead",
+    "newcomer"
+   ],
+   "effort": "M",
+   "pages": [
+    "servers",
+    "servers-welcome",
+    "agent-choice",
+    "profile-editor",
+    "connection-help",
+    "tailscale-setup",
+    "pairing-scanner",
+    "session-link-server-missing-banner",
+    "server-switcher-sheet",
+    "guide"
+   ],
+   "why": "This is the newcomer's first real step. Servers has two Add buttons, the first run asks the agent kind twice, and a pairing link for an unknown server lands on a list."
+  },
+  {
+   "id": "p09-queued-and-drafts",
+   "title": "Show queued messages as one bubble, and handle drafts and saved prompts undo-first",
+   "personas": [
+    "phone-only",
+    "remote-lead"
+   ],
+   "effort": "M",
+   "pages": [
+    "embedded-pending-sends-strip",
+    "chat-discard-queued-draft-sheet",
+    "chat-cancel-inbox-send-sheet",
+    "prompt-stash-sheet",
+    "chat-stash-restore-confirm-sheet",
+    "prompt-stash-delete-sheet",
+    "legacy-drafts",
+    "chat-pending-photo-sheet"
+   ],
+   "why": "Principle 10 (never lose work) on flaky networks. The owner asked for one bubble with a clear CTA. There are three homes for unsent text, and confirmations appear where nothing can be lost."
+  },
+  {
+   "id": "p10-undo-and-diff",
+   "title": "Use one \"Undo from here\" flow and one diff component",
+   "personas": [
+    "remote-lead",
+    "tinkerer"
+   ],
+   "effort": "L",
+   "pages": [
+    "chat-revert-confirm-sheet",
+    "stage-revert-sheet",
+    "staged-revert",
+    "session-menu-sheet",
+    "chat-message-actions-sheet",
+    "review-workspace",
+    "diff-view",
+    "files-changes-sheet",
+    "permission-sheet",
+    "team-merge-changes-sheet"
+   ],
+   "why": "Revert behaves differently by protocol, from different doors (chat_screen.dart:4689/4712). Two diff renderers mean a change looks different in the permission sheet, in review and in the team merge."
+  },
+  {
+   "id": "p11-confirm-and-undo-kit",
+   "title": "Add KitConfirmSheet and apply the undo-vs-confirm rule app-wide",
+   "personas": [
+    "newcomer",
+    "remote-lead",
+    "phone-only",
+    "tinkerer",
+    "team-delegator"
+   ],
+   "effort": "M",
+   "pages": [
+    "confirm-sheet",
+    "workspace-archive-session-sheet",
+    "question-sheet-dismiss-dialog",
+    "shell-output-stop-dialog",
+    "worktrees-remove-dialog",
+    "managed-workspaces-remove-dialog",
+    "team-agent-stop-confirm-sheet",
+    "team-cycle-stop-confirm-sheet",
+    "team-merge-approve-sheet",
+    "saved-permissions-revoke-dialog"
+   ],
+   "why": "The work is mechanical, but it removes the most visible inconsistency (the same act asks first on one door and undoes on another). It is the most requested kit gap in the map (78 elements)."
+  },
+  {
+   "id": "p12-watch-worker-conversation",
+   "title": "Make watching a worker mean opening its conversation, and message it from the conversation composer",
+   "personas": [
+    "team-delegator"
+   ],
+   "effort": "M",
+   "pages": [
+    "team-agent",
+    "team-agent-output",
+    "team-agents",
+    "team-agent-message-sheet",
+    "embedded-team-cycle-strip",
+    "gate-sheet",
+    "team-conversation",
+    "chat"
+   ],
+   "why": "Whether you see a conversation or raw output depends on the door, not on the session. Three message places produce three receipts."
+  },
+  {
+   "id": "p13-command-sheet",
+   "title": "Redesign the command sheet with per-backend catalogs, and cut the session menu to Go to / Do",
+   "personas": [
+    "tinkerer",
+    "remote-lead"
+   ],
+   "effort": "M",
+   "pages": [
+    "command-launcher-sheet",
+    "session-menu-sheet",
+    "commands",
+    "capabilities",
+    "run-command-dialog",
+    "plugins-mapping-dialog",
+    "prompt-tools-sheet"
+   ],
+   "why": "Owner Rethink: \"we are out of the terminal … will this support Claude or Codex commands?\" Today the Codex and Paseo catalogs are empty, and two menus duplicate each other."
+  },
+  {
+   "id": "p14-voice-mode",
+   "title": "Make voice a composer mode with automatic model setup and no 30-second cap",
+   "personas": [
+    "phone-only",
+    "remote-lead"
+   ],
+   "effort": "L",
+   "pages": [
+    "embedded-voice-conversation-controls",
+    "voice-composer-sheet",
+    "voice-model-setup-sheet",
+    "prompt-tools-sheet",
+    "chat-read-aloud-consent-sheet",
+    "embedded-composer"
+   ],
+   "why": "One-hand, away-from-desk use. Owner: \"Why only 30 seconds, this needs rework\". The model must be set up before the first use."
+  },
+  {
+   "id": "p15-start-work-one-place",
+   "title": "Start all work from New conversation (Solo · Team · separate copy), always ending in a conversation",
+   "personas": [
+    "newcomer",
+    "team-delegator",
+    "tinkerer"
+   ],
+   "effort": "M",
+   "pages": [
+    "workspace",
+    "isolated-task-sheet",
+    "worktrees",
+    "worktrees-create-dialog",
+    "managed-workspaces",
+    "session-destination-sheet",
+    "global-sessions-continue-here-sheet"
+   ],
+   "why": "Work starts work in three ways. Creating a separate copy lands in a conversation from one door and in a bare list from another."
+  }
+ ]
+}

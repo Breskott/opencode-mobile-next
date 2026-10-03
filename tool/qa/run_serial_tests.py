@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Run the recursive Flutter test suite in bounded, resumable serial chunks."""
+"""Run the recursive Flutter test suite in bounded, resumable chunks.
+
+By default every file runs serially (``--concurrency=1``) in sorted order. With
+``--shard-index I --shard-count N`` the manifest is split into N disjoint
+shards balanced by the committed per-file timings in ``tool/qa/test_timings.json``
+(unknown files weigh the median), so N machines or processes together run
+every file exactly once. ``--concurrency C`` is passed to ``flutter test``.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +18,7 @@ from pathlib import Path
 import secrets
 import shutil
 import signal
+import statistics
 import subprocess
 import sys
 import time
@@ -21,6 +29,14 @@ from typing import Any, Iterable
 SCHEMA_VERSION = 1
 DEFAULT_CHUNK_SIZE = 25
 MAX_CHUNK_SIZE = 1000
+DEFAULT_CONCURRENCY = 1
+MAX_CONCURRENCY = 64
+MAX_SHARD_COUNT = 256
+# Seconds per test file measured with the Flutter JSON reporter (load + every
+# test). Regenerate with tool/qa/update_test_timings.py from chunk reports.
+TIMINGS_FILE = Path("tool/qa/test_timings.json")
+# Weight of a file when no timings are available at all.
+FALLBACK_WEIGHT_MS = 1000
 # Seconds a chunk may run before it is stopped. The local runner promises a
 # bounded run, so the default is a deadline generous enough for the slowest
 # real chunk (the whole 321-file suite takes 27-40 minutes serially, so a
@@ -216,8 +232,81 @@ def chunks(items: list[str], size: int) -> list[list[str]]:
     return [items[index : index + size] for index in range(0, len(items), size)]
 
 
-def command_for_flutter(flutter: str, test_paths: list[str]) -> list[str]:
-    arguments = [flutter, "test", "--no-pub", "--concurrency=1", *test_paths]
+def load_timings(root: Path) -> dict[str, int]:
+    """Committed per-file timings in integer milliseconds; empty when absent."""
+    path = root / TIMINGS_FILE
+    if not path.is_file():
+        return {}
+    data = read_json(path)
+    files = data.get("files") if isinstance(data, dict) else None
+    if not isinstance(files, dict):
+        raise RunnerError(f"Timing file has no 'files' object: {path}")
+    timings: dict[str, int] = {}
+    for name, seconds in files.items():
+        if not isinstance(name, str) or not isinstance(seconds, (int, float)) or seconds < 0:
+            raise RunnerError(f"Invalid timing entry in {path}: {name!r}: {seconds!r}")
+        timings[name] = int(round(seconds * 1000))
+    return timings
+
+
+def file_weights(test_paths: list[str], timings: dict[str, int]) -> dict[str, int]:
+    """Weight of every file; files without a measurement weigh the median."""
+    default = int(statistics.median(timings.values())) if timings else FALLBACK_WEIGHT_MS
+    return {path: timings.get(path, default) for path in test_paths}
+
+
+def longest_first(test_paths: list[str], weights: dict[str, int]) -> list[str]:
+    return sorted(test_paths, key=lambda path: (-weights[path], path))
+
+
+def partition_shards(
+    test_paths: list[str], weights: dict[str, int], shard_count: int
+) -> list[list[str]]:
+    """Deterministic longest-processing-time partition into shard_count shards.
+
+    Files are placed heaviest first, each on the currently lightest shard (ties
+    go to the lowest shard number). Integer weights keep the result identical
+    on every machine. Each shard lists its files heaviest first, so a parallel
+    ``flutter test`` starts the long files early instead of ending on them.
+    Every input file lands in exactly one shard.
+    """
+    loads = [0] * shard_count
+    shards: list[list[str]] = [[] for _ in range(shard_count)]
+    for path in longest_first(test_paths, weights):
+        target = min(range(shard_count), key=lambda index: (loads[index], index))
+        shards[target].append(path)
+        loads[target] += weights[path]
+    return shards
+
+
+def plan_tests(
+    test_paths: list[str],
+    timings: dict[str, int],
+    shard_index: int,
+    shard_count: int,
+    concurrency: int,
+) -> list[str]:
+    """The ordered files this invocation runs.
+
+    The default (one shard, serial) keeps the sorted manifest order. A sharded
+    or parallel run schedules the heaviest files first.
+    """
+    if shard_count == 1 and concurrency == 1:
+        return list(test_paths)
+    weights = file_weights(test_paths, timings)
+    return partition_shards(test_paths, weights, shard_count)[shard_index - 1]
+
+
+def command_for_flutter(
+    flutter: str,
+    test_paths: list[str],
+    concurrency: int = DEFAULT_CONCURRENCY,
+    json_report: Path | None = None,
+) -> list[str]:
+    arguments = [flutter, "test", "--no-pub", f"--concurrency={concurrency}"]
+    if json_report is not None:
+        arguments.append(f"--file-reporter=json:{json_report}")
+    arguments += test_paths
     if Path(flutter).suffix.lower() not in {".bat", ".cmd"}:
         return arguments
 
@@ -266,6 +355,39 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--shard-index",
+        type=int,
+        default=None,
+        help="1-based shard to run out of --shard-count (default: 1).",
+    )
+    parser.add_argument(
+        "--shard-count",
+        type=int,
+        default=None,
+        help=(
+            "Split the manifest into this many timing-balanced shards; together "
+            "they run every file exactly once (default: 1, the whole suite)."
+        ),
+    )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=None,
+        help=(
+            f"Test files flutter test runs at once (default: {DEFAULT_CONCURRENCY}, "
+            "serial). On resume, an explicit value overrides the stored one."
+        ),
+    )
+    parser.add_argument(
+        "--json-report",
+        action="store_true",
+        help=(
+            "Also write each chunk's Flutter JSON report next to its log, so "
+            "summary.json names the failing files and tool/qa/update_test_timings.py "
+            "can refresh the shard timings. Kept on resume."
+        ),
+    )
+    parser.add_argument(
         "--output-root",
         type=Path,
         help="Directory for new run folders (default: build/traycer).",
@@ -285,6 +407,28 @@ def validate_chunk_size(size: int) -> None:
         )
 
 
+def validate_shard(shard_index: int | None, shard_count: int | None) -> tuple[int, int]:
+    count = 1 if shard_count is None else shard_count
+    index = 1 if shard_index is None else shard_index
+    if count < 1 or count > MAX_SHARD_COUNT:
+        raise RunnerError(f"--shard-count must be between 1 and {MAX_SHARD_COUNT}, got {count}")
+    if index < 1 or index > count:
+        raise RunnerError(
+            f"--shard-index must be between 1 and --shard-count ({count}), got {index}"
+        )
+    return index, count
+
+
+def validate_concurrency(concurrency: int | None) -> int:
+    if concurrency is None:
+        return DEFAULT_CONCURRENCY
+    if concurrency < 1 or concurrency > MAX_CONCURRENCY:
+        raise RunnerError(
+            f"--concurrency must be between 1 and {MAX_CONCURRENCY}, got {concurrency}"
+        )
+    return concurrency
+
+
 def validate_chunk_timeout(timeout: int | None) -> int:
     if timeout is None:
         return DEFAULT_CHUNK_TIMEOUT
@@ -293,8 +437,8 @@ def validate_chunk_timeout(timeout: int | None) -> int:
     return timeout
 
 
-def run_directory_for(root: Path, output_root: Path) -> Path:
-    run_id = f"serial-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{secrets.token_hex(4)}"
+def run_directory_for(root: Path, output_root: Path, prefix: str = "serial") -> Path:
+    run_id = f"{prefix}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{secrets.token_hex(4)}"
     run_directory = output_root / run_id
     run_directory.mkdir(parents=True, exist_ok=False)
     return run_directory
@@ -305,10 +449,16 @@ def create_run(root: Path, args: argparse.Namespace, snapshot: dict[str, Any]) -
         raise RunnerError("--flutter is required when starting a new run")
     validate_chunk_size(args.chunk_size)
     chunk_timeout = validate_chunk_timeout(args.chunk_timeout)
+    shard_index, shard_count = validate_shard(args.shard_index, args.shard_count)
+    concurrency = validate_concurrency(args.concurrency)
     flutter = resolve_flutter(args.flutter)
     output_root = (args.output_root or root / "build" / "traycer").resolve()
-    run_directory = run_directory_for(root, output_root)
-    test_paths = [entry["path"] for entry in snapshot["test_manifest"]]
+    prefix = "serial" if shard_count == 1 else f"shard{shard_index}of{shard_count}"
+    run_directory = run_directory_for(root, output_root, prefix)
+    manifest_paths = [entry["path"] for entry in snapshot["test_manifest"]]
+    test_paths = plan_tests(
+        manifest_paths, load_timings(root), shard_index, shard_count, concurrency
+    )
     chunk_list = chunks(test_paths, args.chunk_size)
     metadata = {
         "schema_version": SCHEMA_VERSION,
@@ -318,6 +468,11 @@ def create_run(root: Path, args: argparse.Namespace, snapshot: dict[str, Any]) -
         "flutter": flutter,
         "chunk_size": args.chunk_size,
         "chunk_timeout": chunk_timeout,
+        "concurrency": concurrency,
+        "json_report": bool(args.json_report),
+        "shard_index": shard_index,
+        "shard_count": shard_count,
+        "manifest_count": len(manifest_paths),
         "test_count": len(test_paths),
         "chunk_count": len(chunk_list),
         "chunks": [
@@ -359,9 +514,23 @@ def load_resume(root: Path, args: argparse.Namespace, snapshot: dict[str, Any]) 
         raise RunnerError(
             "Refusing to resume: recursive test manifest changed since the run snapshot"
         )
-    expected_tests = [
-        entry["path"] for entry in snapshot["test_manifest"]
-    ]
+    shard_index, shard_count = validate_shard(
+        metadata.get("shard_index", 1), metadata.get("shard_count", 1)
+    )
+    if (args.shard_index is not None and args.shard_index != shard_index) or (
+        args.shard_count is not None and args.shard_count != shard_count
+    ):
+        raise RunnerError(
+            "Refusing to resume: --shard-index/--shard-count differ from the immutable run metadata"
+        )
+    stored_concurrency = validate_concurrency(metadata.get("concurrency", DEFAULT_CONCURRENCY))
+    expected_tests = plan_tests(
+        [entry["path"] for entry in snapshot["test_manifest"]],
+        load_timings(root),
+        shard_index,
+        shard_count,
+        stored_concurrency,
+    )
     actual_tests = [
         test_path
         for chunk in metadata.get("chunks", [])
@@ -385,6 +554,11 @@ def load_resume(root: Path, args: argparse.Namespace, snapshot: dict[str, Any]) 
         metadata["chunk_timeout"] = validate_chunk_timeout(args.chunk_timeout)
     else:
         metadata["chunk_timeout"] = validate_chunk_timeout(metadata.get("chunk_timeout"))
+    # Concurrency is execution policy too; the stored file order stays fixed.
+    if args.concurrency is not None:
+        metadata["concurrency"] = validate_concurrency(args.concurrency)
+    else:
+        metadata["concurrency"] = stored_concurrency
     return run_directory, metadata
 
 
@@ -398,7 +572,17 @@ def summary_for(
         "updated_at": utc_now(),
         "source_fingerprint": metadata["source_fingerprint"],
         "test_manifest_fingerprint": metadata["test_manifest_fingerprint"],
+        "shard_index": metadata.get("shard_index", 1),
+        "shard_count": metadata.get("shard_count", 1),
         "chunks": chunks_summary,
+        "failed_files": sorted(
+            {
+                path
+                for chunk in chunks_summary
+                if chunk.get("status") != "passed"
+                for path in chunk.get("failed_files", [])
+            }
+        ),
     }
     if error:
         value["error"] = error
@@ -564,12 +748,96 @@ def stop_process_tree_windows(process: subprocess.Popen[Any]) -> int:
         return process.wait()
 
 
+def report_lines(report: Path) -> Iterable[dict[str, Any]]:
+    """Events of a Flutter JSON reporter file; skips non-JSON noise lines."""
+    try:
+        text = report.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return
+    for line in text.splitlines():
+        if not line.startswith("{"):
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(event, dict):
+            yield event
+
+
+def report_suite_results(report: Path) -> dict[str, dict[str, Any]]:
+    """Per suite path: summed test time in ms (load included) and failure."""
+    suites: dict[int, str] = {}
+    starts: dict[int, tuple[int, int]] = {}
+    results: dict[str, dict[str, Any]] = {}
+    for event in report_lines(report):
+        kind = event.get("type")
+        if kind == "suite":
+            suite = event.get("suite") or {}
+            if isinstance(suite.get("id"), int) and isinstance(suite.get("path"), str):
+                suites[suite["id"]] = suite["path"]
+                results.setdefault(suite["path"], {"ms": 0, "failed": False})
+        elif kind == "testStart":
+            test = event.get("test") or {}
+            if isinstance(test.get("id"), int) and isinstance(test.get("suiteID"), int):
+                starts[test["id"]] = (int(event.get("time", 0)), test["suiteID"])
+        elif kind == "testDone":
+            start = starts.get(event.get("testID"))
+            if start is None or start[1] not in suites:
+                continue
+            entry = results[suites[start[1]]]
+            entry["ms"] += max(0, int(event.get("time", 0)) - start[0])
+            if event.get("result") not in (None, "success"):
+                entry["failed"] = True
+        elif kind == "error":
+            start = starts.get(event.get("testID"))
+            if start is not None and start[1] in suites:
+                results[suites[start[1]]]["failed"] = True
+    return results
+
+
+def relative_test_path(root: Path, path: str) -> str:
+    """Map an absolute suite path from any checkout onto this repo's test/."""
+    candidate = Path(path)
+    if not candidate.is_absolute():
+        return candidate.as_posix()
+    try:
+        return candidate.resolve().relative_to(root).as_posix()
+    except ValueError:
+        pass
+    parts = candidate.parts
+    options = [index for index, part in enumerate(parts) if part == "test"]
+    for index in options:
+        relative = Path(*parts[index:]).as_posix()
+        if (root / relative).is_file():
+            return relative
+    return Path(*parts[options[0]:]).as_posix() if options else candidate.as_posix()
+
+
+def failed_files_for(root: Path, report: Path, tests: list[str], status: str) -> list[str]:
+    """Files that failed in a chunk; every unfinished file when none is named."""
+    if status == "passed":
+        return []
+    results = report_suite_results(report)
+    failed = sorted(
+        {relative_test_path(root, path) for path, entry in results.items() if entry["failed"]}
+    )
+    if failed:
+        return failed
+    finished = {relative_test_path(root, path) for path in results}
+    # A timeout or crash may leave no failing test event; name what did not
+    # report rather than claiming the chunk had no culprit.
+    return [path for path in tests if path not in finished] or list(tests)
+
+
 def run_chunk(
     root: Path,
     run_directory: Path,
     chunk: dict[str, Any],
     flutter: str,
     chunk_timeout: int = DEFAULT_CHUNK_TIMEOUT,
+    concurrency: int = DEFAULT_CONCURRENCY,
+    json_report: bool = False,
 ) -> dict[str, Any]:
     index = int(chunk["index"])
     attempt = next_attempt(run_directory, index)
@@ -578,7 +846,10 @@ def run_chunk(
     stem = f"{index:03d}-attempt-{attempt:03d}"
     log_path = chunk_directory / f"{stem}.log"
     result_path = chunk_directory / f"{stem}.json"
-    command = command_for_flutter(flutter, chunk["tests"])
+    report_path = chunk_directory / f"{stem}.report.jsonl"
+    command = command_for_flutter(
+        flutter, chunk["tests"], concurrency, report_path if json_report else None
+    )
     started_at = utc_now()
     started = datetime.now(timezone.utc)
     print(f"[{index}/{len(read_json(run_directory / 'run.json')['chunks'])}] {len(chunk['tests'])} tests")
@@ -617,10 +888,17 @@ def run_chunk(
         "exit_code": exit_code,
         "status": status,
         "chunk_timeout": chunk_timeout,
+        "concurrency": concurrency,
         "log": log_path.relative_to(run_directory).as_posix(),
+        "report": report_path.relative_to(run_directory).as_posix() if json_report else None,
+        "failed_files": failed_files_for(root, report_path, chunk["tests"], status),
     }
     atomic_json_write(result_path, result)
     return result
+
+
+def result_path_name(result: dict[str, Any]) -> str:
+    return f"chunks/{int(result['chunk']):03d}-attempt-{int(result['attempt']):03d}.json"
 
 
 def write_summary(run_directory: Path, metadata: dict[str, Any], status: str, error: str | None = None) -> None:
@@ -634,6 +912,9 @@ def execute(root: Path, args: argparse.Namespace) -> int:
     snapshot = source_snapshot(root)
     if not snapshot["test_manifest"]:
         raise RunnerError("No recursive test/*_test.dart files were found")
+    # Validate shard/concurrency arguments before anything is written.
+    validate_shard(args.shard_index, args.shard_count)
+    validate_concurrency(args.concurrency)
 
     if args.resume:
         run_directory, metadata = load_resume(root, args, snapshot)
@@ -659,13 +940,23 @@ def execute(root: Path, args: argparse.Namespace) -> int:
             write_summary(run_directory, metadata, "refused_source_changed", message)
             raise RunnerError(message)
         result = run_chunk(
-            root, run_directory, chunk, metadata["flutter"], metadata.get("chunk_timeout", DEFAULT_CHUNK_TIMEOUT)
+            root,
+            run_directory,
+            chunk,
+            metadata["flutter"],
+            metadata.get("chunk_timeout", DEFAULT_CHUNK_TIMEOUT),
+            metadata.get("concurrency", DEFAULT_CONCURRENCY),
+            bool(metadata.get("json_report", False)),
         )
         if result["status"] != "passed":
             # Mirror the chunk outcome (failed / timed_out / interrupted) so a
             # reader of summary.json knows whether to fix, split, or resume.
             write_summary(run_directory, metadata, result["status"])
             print(f"{result['status'].replace('_', ' ').capitalize()}: chunk {chunk['index']} ({result['log']})")
+            for path in result["failed_files"][:20]:
+                print(f"  failed: {path}")
+            if len(result["failed_files"]) > 20:
+                print(f"  ... and {len(result['failed_files']) - 20} more in {result_path_name(result)}")
             return 1
         write_summary(run_directory, metadata, "running")
 

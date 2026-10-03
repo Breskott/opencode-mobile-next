@@ -104,54 +104,65 @@ Future<void> _pumpFrames(WidgetTester tester) async {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('workspace row moves under Needs you and names the permission, '
-      'in the attention tone, while it is pending', (tester) async {
-    tester.view.physicalSize = const Size(800, 1600);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final controller = await _controller();
-    addTearDown(controller.dispose);
+  testWidgets(
+    'workspace row rises to the top of the one list, says Needs you and '
+    'names the permission, in the attention tone, while it is pending',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final controller = await _controller();
+      addTearDown(controller.dispose);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: WorkspaceScreen(controller: controller)),
-      ),
-    );
-    await _pumpFrames(tester);
-    expect(find.textContaining('Working'), findsOneWidget);
-    expect(find.byKey(const ValueKey('workspace-needs-you')), findsNothing);
-    expect(find.textContaining('Permission needed'), findsNothing);
-    // The quick-ask placeholder loses its timestamp everywhere.
-    expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('session-dismiss-session-1')),
-        matching: find.text('New conversation'),
-      ),
-      findsOneWidget,
-    );
-    expect(find.textContaining('2026-09-02T'), findsNothing);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: WorkspaceScreen(controller: controller)),
+        ),
+      );
+      await _pumpFrames(tester);
+      expect(find.textContaining('Working'), findsOneWidget);
+      expect(find.textContaining('Needs you'), findsNothing);
+      expect(find.textContaining('Permission needed'), findsNothing);
+      // The quick-ask placeholder loses its timestamp everywhere.
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('session-dismiss-session-1')),
+          matching: find.text('New conversation'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('2026-09-02T'), findsNothing);
 
-    controller.handleEventForTesting(_permission());
-    await _pumpFrames(tester);
+      controller.handleEventForTesting(_permission());
+      await _pumpFrames(tester);
 
-    expect(find.textContaining('Working'), findsNothing);
-    // The section says "Needs you"; the row says what it needs.
-    expect(find.byKey(const ValueKey('workspace-needs-you')), findsOneWidget);
-    expect(find.text('Active conversations'), findsNothing);
-    final subtitle = find.textContaining('Permission needed');
-    expect(subtitle, findsOneWidget);
-    final theme = Theme.of(tester.element(subtitle));
-    final span = tester.widget<Text>(subtitle).textSpan! as TextSpan;
-    final status = span.children!.first as TextSpan;
-    expect(status.text, 'Permission needed');
-    expect(
-      status.style?.color,
-      AppTheme.statusColor(theme, AppStatusTone.attention),
-    );
-    expect(
-      find.byKey(const ValueKey('session-attention-icon-session-1')),
-      findsOneWidget,
-    );
-  });
+      expect(find.textContaining('Working'), findsNothing);
+      // One list, no "Needs you" section (owner decision 2026-09-27): the row
+      // itself says "Needs you", then what it needs.
+      expect(find.byKey(const ValueKey('workspace-needs-you')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('workspace-conversations')),
+        findsNothing,
+      );
+      expect(find.text('Active conversations'), findsNothing);
+      final subtitle = find.textContaining('Permission needed');
+      expect(subtitle, findsOneWidget);
+      final theme = Theme.of(tester.element(subtitle));
+      final span = tester.widget<Text>(subtitle).textSpan! as TextSpan;
+      // The one "Needs you" word leads, in the attention tone (KitNeedsYou,
+      // LOOK-24), then the blocker by name.
+      final status = span.children!.first as TextSpan;
+      expect(status.text, 'Needs you · ');
+      expect(
+        status.style?.color,
+        AppTheme.statusColor(theme, AppStatusTone.attention),
+      );
+      expect((span.children![1] as TextSpan).text, 'Permission needed');
+      expect(
+        find.byKey(const ValueKey('session-attention-icon-session-1')),
+        findsOneWidget,
+      );
+    },
+  );
 }

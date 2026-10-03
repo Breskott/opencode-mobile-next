@@ -1,15 +1,16 @@
-// TEAM-110: the run detail's Work tab. At phone width the tab defaults to
-// List and Graph is one tap away; at 600dp and wider it starts on Graph;
-// the choice is remembered per run in the profile's store; the List groups
-// the run's items by state in the BRD §14 order with counts, each row
-// carrying its owner glyph, what it waits on and its age; a row or a graph
-// node opens the Work sheet; a run without work shows the empty state.
+// TEAM-110, after slice-P3.5 retired the run page's Work tab: a task's
+// steps live in Task details as the dependency graph in rows (one step per
+// row with its state word and what it needs; the List / Graph toggle and
+// its remembered choice are gone). Every step of the task is there and no
+// other task's; a row opens the Work sheet (owner, age, what it waits on
+// and what waits on it); a task without work shows no steps; the graph's
+// chain is still worked out the same way; the remembered view preference
+// is still swept with the plugin.
 
 import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -18,7 +19,9 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
+import 'package:opencode_mobile/ui/kit/kit_work_graph.dart';
+import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
 import 'package:opencode_mobile/ui/screens/team/work_graph.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -131,6 +134,20 @@ class _Gateway implements OrchestrationGateway {
     projectId: projectId,
     requestId: requestId,
   );
+}
+
+/// The Graph view's geometry for [nodes], as `KitWorkGraph`'s layers form
+/// lays it out (ids deduplicated, first kept, as the Work tab passes them).
+KitWorkGraphGeometry _layout(
+  List<WorkGraphNode> nodes, {
+  Size nodeSize = const Size(KitTokens.graphNodeWidth, 44),
+}) {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+  final seen = <String>{};
+  return KitWorkGraphGeometry.layers([
+    for (final node in nodes)
+      if (seen.add(node.id)) node.toKit(l10n),
+  ], nodeSize: nodeSize);
 }
 
 void main() {
@@ -276,113 +293,36 @@ void main() {
     home: home,
   );
 
-  Future<void> pumpRun(
+  Future<void> pumpDetails(
     WidgetTester tester,
     OrchestrationController controller,
     String runId, {
-    Size size = const Size(320, 740),
+    Size size = const Size(400, 2400),
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
-      app(RunScreen(controller: controller, runId: runId, now: () => clock)),
+      app(
+        Scaffold(
+          body: SingleChildScrollView(
+            child: TeamTaskDetails(
+              controller: controller,
+              runId: runId,
+              now: () => clock,
+            ),
+          ),
+        ),
+      ),
     );
-    await tester.pump();
-    final target = find.byKey(const ValueKey('team-run-tab-work'));
-    await tester.ensureVisible(target);
-    await tester.pumpAndSettle();
-    await tester.tap(target);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   }
 
   Finder key(String name) => find.byKey(ValueKey(name));
 
-  Future<void> reveal(WidgetTester tester, Finder target) async {
-    await tester.scrollUntilVisible(
-      target,
-      120,
-      scrollable: find
-          .descendant(
-            of: key('team-run-work-groups'),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tester.pumpAndSettle();
-  }
-
   const prefKey = 'oc.orchestration.srv-1.workView.oc-xru';
-
-  /// Every label in the semantics tree.
-  List<String> semanticLabels(WidgetTester tester) {
-    final labels = <String>[];
-    bool visit(SemanticsNode node) {
-      final label = node.getSemanticsData().label;
-      if (label.isNotEmpty) labels.add(label);
-      node.visitChildren(visit);
-      return true;
-    }
-
-    tester.getSemantics(key('team-run-work-groups')).visitChildren(visit);
-    return labels;
-  }
-
-  testWidgets('320dp defaults to List; Graph is one tap away', (tester) async {
-    final (controller, _) = await boot();
-    await pumpRun(tester, controller, 'oc-xru');
-    expect(key('team-run-work'), findsOneWidget);
-    expect(key('team-run-work-list'), findsOneWidget);
-    expect(key('team-run-work-graph'), findsNothing);
-    expect(prefs.getString(prefKey), isNull);
-    final graph = key('team-run-work-view-graph');
-    expect(graph, findsOneWidget);
-    await tester.tap(graph);
-    await tester.pumpAndSettle();
-    expect(key('team-run-work-graph'), findsOneWidget);
-    expect(key('team-run-work-list'), findsNothing);
-    expect(key('team-work-graph-fit').hitTestable(), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('600dp and wider starts on Graph', (tester) async {
-    final (controller, _) = await boot();
-    await pumpRun(tester, controller, 'oc-xru', size: const Size(600, 900));
-    expect(key('team-run-work-graph'), findsOneWidget);
-    expect(key('team-run-work-list'), findsNothing);
-    await tester.tap(key('team-run-work-view-list'));
-    await tester.pumpAndSettle();
-    expect(key('team-run-work-list'), findsOneWidget);
-    expect(prefs.getString(prefKey), 'list');
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('the choice is remembered per run in the profile store', (
-    tester,
-  ) async {
-    final (controller, _) = await boot();
-    await pumpRun(tester, controller, 'oc-xru');
-    await tester.tap(key('team-run-work-view-graph'));
-    await tester.pumpAndSettle();
-    expect(prefs.getString(prefKey), 'graph');
-    expect(controller.workView('oc-xru'), 'graph');
-    expect(controller.workView('oc-empty'), isNull);
-
-    // A fresh screen over the same run opens on Graph even at 320dp; the
-    // other run keeps its own default.
-    await tester.pumpWidget(const SizedBox());
-    await pumpRun(tester, controller, 'oc-xru');
-    expect(key('team-run-work-graph'), findsOneWidget);
-    await tester.pumpWidget(const SizedBox());
-    await pumpRun(tester, controller, 'oc-empty');
-    expect(key('team-run-work-empty'), findsOneWidget);
-    expect(find.text('No work items yet'), findsOneWidget);
-    expect(key('team-run-work-view'), findsOneWidget);
-
-    expect(tester.takeException(), isNull);
-  });
 
   test(
     'turning the plugin off sweeps the remembered view with the rest',
@@ -399,142 +339,95 @@ void main() {
     },
   );
 
-  testWidgets('List groups by state in the BRD order with counts', (
-    tester,
-  ) async {
+  testWidgets('every step of the task is a row with its state word; '
+      "another task's work is not", (tester) async {
     final (controller, _) = await boot();
-    await pumpRun(tester, controller, 'oc-xru', size: const Size(400, 2400));
-    expect(key('team-run-work-list'), findsOneWidget);
+    await pumpDetails(tester, controller, 'oc-xru');
+    expect(key('team-task-details-graph'), findsOneWidget);
     const expected = [
-      ('needsInput', 'Needs input · 1'),
-      ('blocked', 'Blocked · 1'),
-      ('working', 'Working · 2'),
-      ('ready', 'Ready · 1'),
-      ('queued', 'Queued · 1'),
-      ('review', 'Review · 1'),
-      ('completed', 'Done · 1'),
-      ('failed', 'Failed · 1'),
-      ('cancelled', 'Cancelled · 1'),
+      ('w-done', 'Storage layer', 'Done'),
+      ('w-work-a', 'Sync engine', 'Working'),
+      ('w-blocked', 'Conflict policy', 'Blocked'),
+      ('w-input', 'Database tests', 'Needs input'),
+      ('w-work-b', 'Android integration', 'Working'),
+      ('w-ready', 'Unit tests', 'Ready'),
+      ('w-queued', 'Release notes', 'Queued'),
+      ('w-review', 'Background sync', 'Review'),
+      ('w-failed', 'Flaky suite', 'Failed'),
+      ('w-cancelled', 'Old approach', 'Cancelled'),
     ];
-    var last = -1.0;
-    for (final (name, header) in expected) {
-      final group = key('team-run-work-group-$name');
-      await reveal(tester, group);
+    for (final (id, title, word) in expected) {
+      final row = key('team-task-details-step-$id');
+      expect(row, findsOneWidget, reason: id);
       expect(
-        tester.widget<Text>(key('team-run-work-group-count-$name')).data,
-        header,
+        find.descendant(
+          of: row,
+          matching: find.textContaining(title, findRichText: true),
+        ),
+        findsWidgets,
+        reason: title,
       );
-      final top = tester.getTopLeft(group).dy;
-      expect(top, greaterThan(last));
-      last = top;
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.textContaining(word, findRichText: true),
+        ),
+        findsWidgets,
+        reason: '$id: $word',
+      );
+      // Rows are full targets.
+      expect(tester.getSize(row).height, greaterThanOrEqualTo(48));
     }
-    expect(key('team-run-work-group-waiting'), findsNothing);
-    expect(key('team-run-work-group-unknown'), findsNothing);
-    // Another run's item is not here.
-    expect(key('team-run-work-row-w-elsewhere'), findsNothing);
-    expect(
-      find.byKey(const ValueKey('team-run-work-row-w-done')),
-      findsOneWidget,
-    );
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('rows carry the owner glyph, what they wait on and age', (
-    tester,
-  ) async {
-    final handle = tester.ensureSemantics();
-    final (controller, _) = await boot();
-    await pumpRun(tester, controller, 'oc-xru', size: const Size(400, 2400));
-    // Blocked: waits on the open Sync engine, not on the done Storage.
-    expect(
-      tester.widget<Text>(key('team-run-work-detail-w-blocked')).data,
-      'Waits on 1 item · 3h ago',
-    );
-    // Needs input: the agent on it is the owner.
-    expect(
-      tester.widget<Text>(key('team-run-work-detail-w-input')).data,
-      'Waits on 1 item · 3h ago',
-    );
+    // Another task's item is not here.
+    expect(key('team-task-details-step-w-elsewhere'), findsNothing);
+    // What a step needs is said on its row.
     expect(
       find.descendant(
-        of: key('team-run-work-owner-w-input'),
-        matching: find.text('W'),
+        of: key('team-task-details-step-w-input'),
+        matching: find.textContaining(
+          'needs Conflict policy',
+          findRichText: true,
+        ),
       ),
-      findsOneWidget,
+      findsWidgets,
     );
-    expect(semanticLabels(tester), anyElement(contains('Owner: wolf')));
-    // Working on a done need: no wait, just the age; assignee initial.
-    expect(
-      tester.widget<Text>(key('team-run-work-detail-w-work-a')).data,
-      '5m ago',
-    );
-    expect(
-      find.descendant(
-        of: key('team-run-work-owner-w-work-a'),
-        matching: find.text('F'),
-      ),
-      findsOneWidget,
-    );
-    await reveal(tester, key('team-run-work-row-w-done'));
-    expect(
-      find.descendant(
-        of: key('team-run-work-owner-w-done'),
-        matching: find.text('M'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      semanticLabels(tester),
-      anyElement(contains('Owner: ocproof/gastown.mole')),
-    );
-    // Nobody on it: a dash and "Unassigned".
-    expect(
-      find.descendant(
-        of: key('team-run-work-owner-w-queued'),
-        matching: find.text('—'),
-      ),
-      findsOneWidget,
-    );
-    expect(semanticLabels(tester), anyElement(contains('Unassigned')));
-    // Rows are full targets.
-    expect(
-      tester.getSize(key('team-run-work-row-w-blocked')).height,
-      greaterThanOrEqualTo(48),
-    );
-    handle.dispose();
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('a row opens the Work sheet', (tester) async {
     final (controller, _) = await boot();
-    await pumpRun(tester, controller, 'oc-xru', size: const Size(400, 2400));
-    await tester.tap(key('team-run-work-row-w-blocked'));
+    await pumpDetails(tester, controller, 'oc-xru');
+    await tester.tap(key('team-task-details-step-w-blocked'));
     await tester.pumpAndSettle();
-    expect(key('team-work-sheet-w-blocked'), findsOneWidget);
+    expect(key('team-work-sheet'), findsOneWidget);
     expect(
-      tester.widget<Text>(key('team-work-sheet-title')).data,
-      'Conflict policy',
+      find.descendant(
+        of: key('team-work-sheet'),
+        matching: find.text('Conflict policy'),
+      ),
+      findsWidgets,
     );
     expect(key('team-work-dependency-w-work-a'), findsOneWidget);
     expect(key('team-work-blocking-w-input'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a graph node opens the Work sheet; the chain is drawn', (
-    tester,
-  ) async {
+  testWidgets('a task without work shows no steps', (tester) async {
     final (controller, _) = await boot();
-    await pumpRun(tester, controller, 'oc-xru', size: const Size(800, 900));
-    expect(key('team-run-work-graph'), findsOneWidget);
-    final viewer = tester.widget<InteractiveViewer>(
-      key('team-work-graph-viewer'),
-    );
-    final transform = viewer.transformationController!.value;
+    await pumpDetails(tester, controller, 'oc-empty');
+    expect(key('team-task-details-body'), findsOneWidget);
+    expect(key('team-task-details-steps'), findsNothing);
+    expect(key('team-task-details-graph'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  test('the chain the graph picks out, from the task\'s steps', () async {
+    final (controller, _) = await boot();
     final nodes = [
       for (final item in controller.snapshot.work)
         if (item.runId == 'oc-xru') WorkGraphNode.of(item),
     ];
-    final layout = WorkGraphLayout.compute(nodes);
+    final layout = _layout(nodes, nodeSize: const Size(156, 58));
     expect(layout.blockedChain, {
       'w-work-a',
       'w-blocked',
@@ -542,17 +435,5 @@ void main() {
       'w-failed',
     });
     expect(layout.criticalPath, ['w-done', 'w-work-a', 'w-blocked', 'w-input']);
-    // The canvas's global origin already carries the fitted transform.
-    final origin = tester.getTopLeft(key('team-work-graph-canvas'));
-    final scale = transform.storage[0];
-    expect(scale, lessThanOrEqualTo(1));
-    await tester.tapAt(origin + layout.rects['w-input']!.center * scale);
-    await tester.pumpAndSettle();
-    expect(key('team-work-sheet-w-input'), findsOneWidget);
-    expect(
-      tester.widget<Text>(key('team-work-sheet-title')).data,
-      'Database tests',
-    );
-    expect(tester.takeException(), isNull);
   });
 }

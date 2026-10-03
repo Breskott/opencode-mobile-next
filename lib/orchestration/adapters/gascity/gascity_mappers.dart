@@ -233,6 +233,13 @@ extension WorkItemGasCity on WorkItem {
   /// `metadata.gc.routed_to`: the pool or agent the bead was slung at.
   String? get routedTo => _meta('gc.routed_to');
   String? get issueType => readText(raw, 'issue_type');
+
+  /// `metadata.merge_result`: what the refinery did with the branch
+  /// (`merged` once it landed on [target]).
+  String? get mergeResult => _meta('merge_result');
+
+  /// `metadata.merged_sha`: the commit the merge produced.
+  String? get mergedSha => _meta('merged_sha');
 }
 
 // ---------------------------------------------------------------------------
@@ -261,10 +268,16 @@ extension WorkItemGasCity on WorkItem {
 /// with several; the raw convoy title stays in `raw['title']`.
 /// `stepCount` is the number of tracked beads, `completedSteps` how many
 /// are closed (`progress.closed`/`progress.total` when the host sends them).
+///
+/// A closed convoy is a finished run: `finishedAt` is [closedAt] (the
+/// `convoy.closed` event time, see [convoyClosedTimes]), else the bead's
+/// `updated_at`; an open convoy has none. `merged` is true when the run
+/// is completed and every tracked item reports `merge_result=merged`.
 OrchestrationRun mapConvoy(
   GcConvoy convoy, {
   Map<String, WorkItem> work = const {},
   GcWorkContext context = const GcWorkContext(),
+  DateTime? closedAt,
 }) {
   final bead = convoy.bead;
   final tracked = <WorkItem>[];
@@ -293,6 +306,11 @@ OrchestrationRun mapConvoy(
     state = _runStateFromWork(tracked);
   }
   final failure = tracked.where((w) => w.state == WorkState.failed).firstOrNull;
+  final finishedAt = bead.isClosed ? closedAt ?? bead.updatedAt : null;
+  final merged =
+      state == RunState.completed &&
+      tracked.isNotEmpty &&
+      tracked.every((w) => w.mergeResult == 'merged');
   return OrchestrationRun(
     id: bead.id,
     title: batchTitle(bead.title, tracked) ?? bead.id,
@@ -304,19 +322,71 @@ OrchestrationRun mapConvoy(
     completedSteps: convoy.progressClosed ?? completed,
     lastError: failure == null ? null : _workError(failure),
     startedAt: bead.createdAt,
-    updatedAt: bead.updatedAt,
+    updatedAt: bead.updatedAt ?? finishedAt,
+    finishedAt: finishedAt,
+    merged: merged,
     raw: bead.raw,
   );
 }
 
-/// Every convoy through [mapConvoy]; [work] is looked up by bead id.
+/// Every convoy through [mapConvoy]; [work] is looked up by bead id and
+/// [closedAt] (convoy id → close time) dates the finished ones.
 List<OrchestrationRun> mapConvoys(
   Iterable<GcConvoy> convoys, {
   Iterable<WorkItem> work = const [],
   GcWorkContext context = const GcWorkContext(),
+  Map<String, DateTime> closedAt = const {},
 }) {
   final byId = {for (final w in work) w.id: w};
-  return [for (final c in convoys) mapConvoy(c, work: byId, context: context)];
+  return [
+    for (final c in convoys)
+      mapConvoy(c, work: byId, context: context, closedAt: closedAt[c.id]),
+  ];
+}
+
+/// Convoy id → when it closed, from `GET /events?type=convoy.closed`
+/// (the event `subject` is the convoy id, `ts` the time). The newest
+/// event wins when a convoy closed more than once.
+Map<String, DateTime> convoyClosedTimes(Iterable<GcEvent> events) {
+  final times = <String, DateTime>{};
+  for (final event in events) {
+    final id = event.subject;
+    final ts = event.ts;
+    if (event.type != 'convoy.closed' || id == null || ts == null) continue;
+    final seen = times[id];
+    if (seen == null || ts.isAfter(seen)) times[id] = ts;
+  }
+  return times;
+}
+
+/// The finished convoys worth showing, newest first: closed ones (from
+/// `GET /beads?status=closed&type=convoy`) that are not also open in
+/// [openIds] (a reopened convoy is shown open), that finished within
+/// [window] of [now] — by [closedAt], else `updated_at`, else
+/// `created_at` — at most [limit] of them. Gas City's `/convoys` lists
+/// open convoys only, so this is what keeps a run visible once it is done.
+List<GcBead> selectFinishedConvoys(
+  Iterable<GcBead> closed, {
+  required DateTime now,
+  required Duration window,
+  required int limit,
+  Map<String, DateTime> closedAt = const {},
+  Set<String> openIds = const {},
+}) {
+  final since = now.subtract(window);
+  DateTime? when(GcBead bead) =>
+      closedAt[bead.id] ?? bead.updatedAt ?? bead.createdAt;
+  final picked = [
+    for (final bead in closed)
+      if (bead.isConvoy &&
+          bead.isClosed &&
+          bead.id.isNotEmpty &&
+          !openIds.contains(bead.id) &&
+          !(when(bead)?.isBefore(since) ?? true))
+        bead,
+  ];
+  picked.sort((a, b) => when(b)!.compareTo(when(a)!));
+  return picked.take(limit < 0 ? 0 : limit).toList();
 }
 
 /// The product title of a batch: the tracked work's title when the convoy
@@ -580,6 +650,8 @@ OrchestrationAgent mapAgent(
     sessionStartedAt: session?.createdAt,
     suspended: isSuspendedAgent(agent),
     raw: agent.raw,
+    sessionState: session?.state,
+    sessionRunning: session?.running,
   );
 }
 
@@ -666,6 +738,8 @@ OrchestrationAgent mapSession(
     branch: _branchOf(session.metadata),
     sessionStartedAt: session.createdAt,
     raw: session.raw,
+    sessionState: session.state,
+    sessionRunning: session.running,
   );
 }
 
@@ -859,7 +933,9 @@ String _gateTitle(GateKind kind, String? raw) => switch (kind) {
 /// Tokens and cost come from `today`; every figure is the host's local
 /// estimate, which [OrchestrationUsageGasCity.isEstimated] reports.
 OrchestrationUsage mapUsage(GcUsage usage, {GcStatus? status}) {
-  final today = usage.today;
+  final available = usage.available && usage.source != 'unavailable';
+  final today = available ? _mapUsageTotals(usage.today) : null;
+  final windowSecs = usage.recentWindowSecs;
   final counts = status == null ? null : mapStatusCounts(status);
   return OrchestrationUsage(
     capturedAt: usage.updatedAt,
@@ -871,7 +947,48 @@ OrchestrationUsage mapUsage(GcUsage usage, {GcStatus? status}) {
     inputTokens: today?.inputTokens,
     outputTokens: today?.outputTokens,
     costUsd: today?.costUsdEstimate,
+    evidence: OrchestrationUsageEvidence(
+      available: available,
+      recording: usage.recording,
+      // Gas City has no billing source. Unknown future source values must
+      // not promote these estimates to authoritative charges.
+      isEstimated: true,
+      partial: usage.partial,
+      partialReasons: List.unmodifiable(usage.partialReasons),
+      observedFrom: usage.observedFrom,
+      updatedAt: usage.updatedAt,
+      today: today,
+      recent: available ? _mapUsageTotals(usage.recent) : null,
+      recentWindow: windowSecs != null && windowSecs > 0
+          ? Duration(seconds: windowSecs)
+          : null,
+      recentBySession: available && usage.recentBySession != null
+          ? List.unmodifiable([
+              for (final session in usage.recentBySession!)
+                if (session.session.isNotEmpty)
+                  OrchestrationSessionUsage(
+                    workerName: session.session,
+                    sessionId: session.sessionId,
+                    totals: _mapUsageTotals(session.totals)!,
+                  ),
+            ])
+          : null,
+    ),
     raw: usage.raw,
+  );
+}
+
+OrchestrationUsageTotals? _mapUsageTotals(GcUsageTotals? totals) {
+  if (totals == null) return null;
+  int? nonnegative(int? value) => value != null && value >= 0 ? value : null;
+  final cost = totals.costUsdEstimate;
+  return OrchestrationUsageTotals(
+    inputTokens: nonnegative(totals.inputTokens),
+    outputTokens: nonnegative(totals.outputTokens),
+    cacheReadTokens: nonnegative(totals.cacheReadTokens),
+    cacheCreationTokens: nonnegative(totals.cacheCreationTokens),
+    costUsdEstimate: cost != null && cost.isFinite && cost >= 0 ? cost : null,
+    unpriced: nonnegative(totals.unpriced),
   );
 }
 
@@ -891,6 +1008,8 @@ OrchestrationUsage mapStatusCounts(GcStatus status) => OrchestrationUsage(
 /// treated as estimated so the UI labels it.
 extension OrchestrationUsageGasCity on OrchestrationUsage {
   bool get isEstimated {
+    final reported = evidence?.isEstimated;
+    if (reported != null) return reported;
     final source = readText(raw, 'source');
     return source == null ||
         source == 'local_estimate' ||
@@ -1232,3 +1351,26 @@ String? _rigOf(String? identity) {
 String? _workError(WorkItem item) =>
     readText(readMapField(item.raw, 'metadata'), 'last_error') ??
     'Work item ${item.id} failed';
+
+/// The tracked items of finished convoys as work of those runs, leaving out
+/// ids already [listed] (the open list) and, with [projectId], other
+/// projects' items. A closed convoy's items are closed beads `/beads` no
+/// longer lists, so without these a finished run shows no work.
+List<WorkItem> finishedConvoyWork(
+  Iterable<GcConvoy> finished, {
+  Set<String> listed = const {},
+  String? projectId,
+}) {
+  final context = GcWorkContext(
+    convoyByBead: {
+      for (final convoy in finished)
+        for (final child in convoy.children) child.id: convoy.id,
+    },
+  );
+  final seen = {...listed};
+  return [
+    for (final convoy in finished)
+      for (final child in convoy.children)
+        if (seen.add(child.id)) mapBead(child, context: context),
+  ].where((item) => projectId == null || item.projectId == projectId).toList();
+}

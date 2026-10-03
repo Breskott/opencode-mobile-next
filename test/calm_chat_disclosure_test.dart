@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitTopBar;
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 
 import '../tool/capture/fixtures.dart';
@@ -49,16 +50,20 @@ void main() {
       expect(find.byKey(const Key('running-work-indicator')), findsNothing);
       expect(find.byKey(const Key('prompt-editor-button')), findsNothing);
       expect(find.byKey(const Key('composer-model-context')), findsOneWidget);
+      // The title is the bar's (KitTopBar): a header naming the route.
       expect(
-        tester.widget<Text>(find.byKey(const Key('chat-title'))).maxLines,
-        1,
+        find.descendant(
+          of: find.byType(KitTopBar),
+          matching: find.byKey(const Key('chat-title')),
+        ),
+        findsOneWidget,
       );
       await tester.tap(find.byKey(const ValueKey('session-actions-button')));
       await tester.pumpAndSettle();
-      expect(find.text('Fix flaky checkout test'), findsWidgets);
-      await tester.tap(find.text('Results'));
+      // Task details are the conversation menu's Subagents (slice-P10.2).
+      await tester.tap(find.byKey(const ValueKey('session-menu-subagents')));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('session-menu-sheet')), findsNothing);
+      expect(find.byKey(const ValueKey('session-menu-find')), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -78,16 +83,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('composer-tool-attach')), findsOneWidget);
     expect(find.byKey(const Key('composer-tool-commands')), findsOneWidget);
-    expect(find.text('Context capsule'), findsNothing);
+    // Voice conversation waits under Advanced (the Context capsule is gone,
+    // slice-P3.3).
+    expect(find.byKey(const Key('composer-tool-conversation')), findsNothing);
     expect(find.byKey(const Key('composer-tool-clear')), findsNothing);
     final advanced = find.byKey(const Key('composer-tools-advanced'));
     await tester.ensureVisible(advanced);
     await tester.tap(advanced);
     await tester.pumpAndSettle();
-    expect(find.text('Context capsule'), findsOneWidget);
+    expect(find.byKey(const Key('composer-tool-conversation')), findsOneWidget);
     // Tap the disclosure header, not the expanded tile's children.
-    await tester.ensureVisible(find.text('Advanced'));
-    await tester.tap(find.text('Advanced'));
+    await tester.ensureVisible(find.text('More tools'));
+    await tester.tap(find.text('More tools'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('composer-tools-sheet')), findsOneWidget);
     final prompts = find.byKey(const Key('composer-tools-prompts'));
@@ -99,8 +106,13 @@ void main() {
     expect(clear.hitTestable(), findsOneWidget);
     expect(
       tester
-          .widget<TextField>(find.byKey(const Key('chat-composer-field')))
-          .controller!
+          .widget<EditableText>(
+            find.descendant(
+              of: find.byKey(const Key('chat-composer-field')),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .controller
           .text,
       'Keep my draft',
     );
@@ -143,13 +155,13 @@ void main() {
             ),
           ],
         );
-        expect(find.byKey(const Key('tool-call-group-header')), findsOneWidget);
+        expect(find.byKey(const Key('work-group-header')), findsOneWidget);
         expect(
           find.byKey(const Key('embedded-tool-row')),
           status == 'error' ? findsWidgets : findsNothing,
         );
         if (status == 'running') {
-          await tester.tap(find.byKey(const Key('tool-call-group-header')));
+          await tester.tap(find.byKey(const Key('work-group-header')));
           await tester.pump();
           expect(find.byKey(const Key('embedded-tool-row')), findsWidgets);
         }

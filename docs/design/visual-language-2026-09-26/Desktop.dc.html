@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PC and tablet — work, conversation and changes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&amp;family=Geist+Mono:wght@400..600&amp;display=swap">
+<style>
+body{margin:0;background:#0B0C0E}
+.tk{--bg:#0B0C0E;--side:#0F1013;--s1:#141518;--s2:#1B1C20;--s3:#26282D;--line:rgba(255,255,255,.07);--t1:#F3F3F1;--t2:#A3A5AB;--t3:#8A8D94;--on-acc:#03140B;--warn:#FFB547;--warn-line:rgba(255,181,71,.34);--kw:#C7A6FF;--str:#FFB88A;--ty:#7FD1FF;--add:#3DDC8A;--del:#FF7A7A}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+code{font-family:'Geist Mono',ui-monospace,monospace;font-size:.9em;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:5px}
+.kbd{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,.14);color:var(--t3)}
+.srow{width:100%;display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:10px;text-align:left;font-size:14px;box-sizing:border-box}
+.sec{padding:0 10px;font-size:12px;font-weight:600;color:var(--t3);margin-top:6px}
+a{color:#3DDC8A}a:hover{color:#74E9AD}
+</style>
+</helmet>
+<div class="tk" style="width: 1440px; height: 900px; display: flex; overflow: hidden; background: var(--bg); color: var(--t1); font-family: Geist, 'Helvetica Neue', system-ui, sans-serif; --acc: {{accent}}">
+
+<aside style="width: 296px; flex-shrink: 0; background: var(--side); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; padding: 16px 12px; box-sizing: border-box">
+<button style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; font-size: 13px; color: var(--t2)"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--acc)"></span>Laptop<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+<button style="display: flex; align-items: center; gap: 6px; padding: 2px 10px 10px; font-size: 22px; font-weight: 650; letter-spacing: -0.02em">shopfront<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+<div style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border-radius: 10px; background: var(--s1); color: var(--t3); font-size: 13.5px; margin-bottom: 8px">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span style="flex-grow: 1">Search</span><span class="kbd">Ctrl K</span>
+</div>
+
+<button class="srow" style="background: var(--s2); font-weight: 550"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg><span style="flex-grow: 1">Work</span></button>
+<button class="srow" style="color: var(--t2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 2h6l1-2h5"/></svg><span style="flex-grow: 1">Inbox</span><span style="min-width: 18px; height: 18px; border-radius: 9px; background: var(--warn); color: #1A1000; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center">1</span></button>
+<button class="srow" style="color: var(--t2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h6l2 2h10v11H3z"/></svg><span style="flex-grow: 1">Project</span></button>
+<button class="srow" style="color: var(--t2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span style="flex-grow: 1">Settings</span></button>
+
+<div class="sec" style="margin-top: 16px">Needs you</div>
+<button class="srow" style="background: rgba(255,181,71,.08); border: 1px solid rgba(255,181,71,.22)"><span style="width: 18px; display: grid; place-items: center"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--warn)"></span></span><span style="flex-grow: 1">Fix flaky checkout test</span></button>
+<div class="sec">Working now</div>
+<button class="srow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="8" stroke-opacity=".22"/><path d="M20 12a8 8 0 0 0-8-8"/></svg><span style="flex-grow: 1">Speed up the CI pipeline</span><span style="font-size: 12px; color: var(--t3)">4 min</span></button>
+<div class="sec">Recent</div>
+<button class="srow" style="color: var(--t2)"><span style="width: 18px"></span><span style="flex-grow: 1">Add dark mode to settings</span><span style="font-size: 12px; color: var(--t3)">3 h</span></button>
+<button class="srow" style="color: var(--t2)"><span style="width: 18px"></span><span style="flex-grow: 1">Explain the payments module</span><span style="font-size: 12px; color: var(--t3)">1 d</span></button>
+<button class="srow" style="color: var(--t2)"><span style="width: 18px"></span><span style="flex-grow: 1">Speed up image loading</span><span style="font-size: 12px; color: var(--t3)">3 d</span></button>
+<div style="flex-grow: 1"></div>
+<button style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 42px; border-radius: 12px; background: var(--acc); color: var(--on-acc); font-size: 14.5px; font-weight: 600">New conversation <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; opacity: .7">Ctrl N</span></button>
+</aside>
+
+<main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; position: relative">
+<header style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 0 16px 0 28px; border-bottom: 1px solid var(--line)">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 17px; font-weight: 600; letter-spacing: -0.01em">Fix flaky checkout test</div>
+<div style="font-size: 12.5px; color: var(--warn); display: flex; align-items: center; gap: 6px"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--warn)"></span>Needs you · Claude Sonnet 4 · branch fix/checkout-flake</div>
+</div>
+<button style="height: 36px; padding: 0 12px; border-radius: 10px; background: var(--s1); font-size: 13.5px; color: var(--t2); display: flex; align-items: center; gap: 8px">Stop task</button>
+<button style="width: 40px; height: 40px; display: grid; place-items: center; color: var(--t2)" aria-label="Conversation menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>
+</header>
+
+<div style="flex-grow: 1; overflow: hidden; display: flex; justify-content: center">
+<div style="width: 700px; display: flex; flex-direction: column; gap: 18px; padding: 28px 0 0">
+<div style="align-self: flex-end; max-width: 78%; background: var(--s2); border-radius: 20px 20px 6px 20px; padding: 12px 16px; font-size: 15px; line-height: 22px">Fix the flaky checkout test. It fails about one run in five on CI.</div>
+<div style="font-size: 15.5px; line-height: 24px">The flakiness comes from <code>CheckoutBloc</code> racing the price refresh: <code>applyCoupon()</code> awaits the network before the total settles, so the assertion sometimes reads the old total. I made the test wait for the settled state.</div>
+<button style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px 0 10px; border-radius: 999px; background: var(--s1); align-self: flex-start; font-size: 13.5px; color: var(--t2)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>Read 3 files · edited 1<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+
+<div style="background: var(--s1); border: 1px solid var(--warn-line); border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 0 0 4px rgba(255,181,71,.06)">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="width: 34px; height: 34px; border-radius: 11px; background: rgba(255,181,71,.15); color: var(--warn); display: grid; place-items: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9l3 3-3 3M13 15h4"/></svg></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px"><div style="font-size: 16.5px; font-weight: 600">Run this command?</div><div style="font-size: 13px; color: var(--t3)">To check the fix · in shopfront</div></div>
+</div>
+<div style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 13px; background: var(--bg); border-radius: 10px; padding: 10px 12px"><span style="color: var(--t3)">$ </span>flutter test test/checkout_test.dart</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<button style="font-size: 13.5px; color: var(--t2)">Always allow <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12.5px">flutter test</span> here</button>
+<div style="flex-grow: 1"></div>
+<button style="height: 40px; padding: 0 16px; border-radius: 12px; background: var(--s3); font-size: 14.5px; font-weight: 550; display: flex; align-items: center; gap: 8px">Don’t run <span class="kbd">Esc</span></button>
+<button style="height: 40px; padding: 0 16px; border-radius: 12px; background: var(--acc); color: var(--on-acc); font-size: 14.5px; font-weight: 600; display: flex; align-items: center; gap: 8px">Run once <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; opacity: .7">Enter</span></button>
+</div>
+</div>
+</div>
+</div>
+
+<div style="flex-shrink: 0; display: flex; justify-content: center; padding: 12px 0 20px">
+<div style="width: 700px; display: flex; align-items: center; gap: 8px; height: 56px; padding: 0 8px; border-radius: 18px; background: var(--s2); border: 1px solid var(--line); box-sizing: border-box">
+<button style="width: 40px; height: 40px; display: grid; place-items: center; color: var(--t2)" aria-label="Attach"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+<label for="d-reply" style="position: absolute; width: 1px; height: 1px; overflow: hidden">Reply</label>
+<input id="d-reply" placeholder="Reply, or steer the work" style="flex-grow: 1; background: none; border: 0; outline: none; color: var(--t1); font: 15px Geist, system-ui, sans-serif">
+<button style="height: 30px; padding: 0 10px; border-radius: 999px; background: var(--s3); font-size: 12.5px; color: var(--t2)">Sonnet 4</button>
+<button style="width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--t1); color: var(--bg)" aria-label="Stop the agent"><svg width="13" height="13" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg></button>
+</div>
+</div>
+</main>
+
+<aside style="width: 340px; flex-shrink: 0; border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; padding: 18px 16px; box-sizing: border-box">
+<div style="display: flex; align-items: baseline"><div style="flex-grow: 1; font-size: 15px; font-weight: 600">Changes</div><span style="font-size: 12.5px; color: var(--t3)">2 files · <span style="color: var(--add)">+7</span> <span style="color: var(--del)">−3</span></span></div>
+<div style="background: var(--s1); border-radius: 14px; overflow: hidden">
+<button style="width: 100%; display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; background: var(--s2); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12.5px; text-align: left"><span style="flex-grow: 1">checkout_test.dart</span><span style="color: var(--add)">+6</span><span style="color: var(--del)">−2</span></button>
+<div style="height: 1px; background: var(--line)"></div>
+<button style="width: 100%; display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12.5px; color: var(--t2); text-align: left"><span style="flex-grow: 1">cart_bloc.dart</span><span style="color: var(--add)">+1</span><span style="color: var(--del)">−1</span></button>
+</div>
+<div style="background: var(--s1); border-radius: 14px; overflow: hidden; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; line-height: 20px">
+<div style="padding: 8px 12px; color: var(--t3); border-bottom: 1px solid var(--line)">@@ checkout_test.dart:41</div>
+<div style="padding: 0 12px; color: var(--t2)">  testWidgets('applies coupon', (t) {</div>
+<div style="padding: 0 12px; background: rgba(255,122,122,.10); color: var(--del)">−   await t.pump(</div>
+<div style="padding: 0 12px; background: rgba(255,122,122,.10); color: var(--del)">−     const Duration(ms: 300));</div>
+<div style="padding: 0 12px; background: rgba(61,220,138,.10); color: var(--add)">+   await t.pumpUntil(</div>
+<div style="padding: 0 12px; background: rgba(61,220,138,.10); color: var(--add)">+     () =&gt; bloc.state</div>
+<div style="padding: 0 12px; background: rgba(61,220,138,.10); color: var(--add)">+       is CheckoutSettled,</div>
+<div style="padding: 0 12px; background: rgba(61,220,138,.10); color: var(--add)">+     timeout: 5.seconds);</div>
+<div style="padding: 0 12px 8px; color: var(--t2)">    expect(find.text('$42.00'),</div>
+</div>
+<button style="height: 40px; border-radius: 12px; background: var(--s2); font-size: 14px; font-weight: 550">Review all changes</button>
+</aside>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#3DDC8A","options":["#3DDC8A","#5AB0FF","#FF8A4C","#C7A6FF"]},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#3DDC8A' };
+  }
+}
+</script>
+</body>
+</html>

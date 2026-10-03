@@ -2,30 +2,6 @@
  "area": "j2-library",
  "pages": [
   {
-   "id": "catalog",
-   "title": "Models and agents",
-   "kind": "screen",
-   "file": "lib/ui/screens/library/catalog_screen.dart",
-   "widget": "CatalogScreen",
-   "presentedBy": [],
-   "line": 51,
-   "purpose": "Full-screen host for the shared ModelCatalogView (lib/ui/widgets/pickers.dart:113, showHeader: false) where the default model and agent for new chats are browsed and chosen.",
-   "reachedFrom": [
-    {
-     "page": "?",
-     "element": null,
-     "widget": "SettingsScreen",
-     "file": "lib/ui/screens/library_screen.dart",
-     "line": 101,
-     "note": "row \"Models & agents\""
-    }
-   ],
-   "gates": [
-    "controller.capabilities.serverCatalog (SettingsScreen row gate, library_screen.dart:91)"
-   ],
-   "elements": []
-  },
-  {
    "id": "commands",
    "title": "Server commands",
    "kind": "screen",
@@ -262,26 +238,6 @@
      "destructive": false
     }
    ]
-  },
-  {
-   "id": "skills-preview-sheet",
-   "title": "<skill name>",
-   "kind": "sheet",
-   "file": "lib/ui/screens/library/skills_screen.dart",
-   "widget": "_showSkill",
-   "presentedBy": [],
-   "line": 173,
-   "purpose": "Read-only preview of a skill: name, selectable location path and rendered SKILL.md (FilePreviewBody, key 'skill-content-preview').",
-   "reachedFrom": [
-    {
-     "page": "skills",
-     "element": "skills-row"
-    }
-   ],
-   "gates": [
-    "widget.sessionID == null (library / capabilities entry)"
-   ],
-   "elements": []
   },
   {
    "id": "skill-activation-sheet",
@@ -710,10 +666,6 @@
      "file": "lib/ui/screens/chat_screen.dart",
      "line": 5217,
      "note": "_ChatCommandAction.integrations; mode all"
-    },
-    {
-     "page": "catalog",
-     "element": "catalog-legacy-provider-row"
     }
    ],
    "gates": [
@@ -725,13 +677,13 @@
      "type": "icon-button",
      "label": "Add MCP server",
      "key": "add-mcp-server",
-     "line": 564,
-     "action": "navigate",
-     "target": "mcp-setup",
-     "targetWidget": "McpSetupScreen",
-     "effect": "_openMcpSetup(): pushes McpSetupScreen; when it pops true and the location is unchanged, _load() and snackbar (runtime added / saved in OpenCode).",
+     "line": 681,
+     "action": "open-sheet",
+     "target": "mcp-add-sheet",
+     "targetWidget": "showMcpAddSheet",
+     "effect": "_openMcpAdd(): the add chooser (catalogue or manual); the catalogue or McpSetupScreen follows, then _load().",
      "gates": [
-      "_showMcp (widget.mode != IntegrationsMode.providers)"
+      "_showMcp && _catalogAvailable"
      ],
      "destructive": false
     },
@@ -772,8 +724,8 @@
      "file": "lib/ui/screens/library/pending_auth_recovery.dart",
      "line": 187,
      "action": "open-sheet",
-     "target": "integrations-forget-uncertain-auth-sheet",
-     "targetWidget": "showConfirmSheet",
+     "target": "integrations-forget-pending-auth-sheet",
+     "targetWidget": "_confirmForgetSignIn",
      "effect": "_UncertainAuthRecoveryTile ('Unconfirmed sign-in: {integrationID}'): opens confirm sheet, then controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision).",
      "gates": [
       "_showProviders (widget.mode != IntegrationsMode.mcp)",
@@ -1054,21 +1006,6 @@
      "destructive": false
     },
     {
-     "id": "integrations-mcp-glossary",
-     "type": "link",
-     "label": "MCP (info label)",
-     "key": null,
-     "line": 896,
-     "action": "open-sheet",
-     "target": "info-label-sheet",
-     "targetWidget": "InfoLabel.show",
-     "effect": "InfoLabel.glossary(Glossary.mcp) in the 'MCP SERVERS' header; tap calls InfoLabel.show (glossary bottom sheet, lib/ui/widgets/info_label.dart:138).",
-     "gates": [
-      "_showMcp (widget.mode != IntegrationsMode.providers)"
-     ],
-     "destructive": false
-    },
-    {
      "id": "integrations-mcp-load-retry",
      "type": "button",
      "label": "Try again",
@@ -1089,12 +1026,12 @@
      "id": "integrations-mcp-empty-add",
      "type": "button",
      "label": "Add an MCP server",
-     "key": null,
-     "line": 944,
-     "action": "navigate",
-     "target": "mcp-setup",
-     "targetWidget": "McpSetupScreen",
-     "effect": "ProductInlineEmpty action -> _openMcpSetup().",
+     "key": "mcp-empty-add",
+     "line": 1427,
+     "action": "open-sheet",
+     "target": "mcp-add-sheet",
+     "targetWidget": "showMcpAddSheet",
+     "effect": "_openMcpAdd(): the add chooser (catalogue or manual); the catalogue or McpSetupScreen follows, then _load().",
      "gates": [
       "_showMcp (widget.mode != IntegrationsMode.providers)",
       "servers.isEmpty"
@@ -1386,39 +1323,42 @@
      "type": "text-field",
      "label": "<prompt message>",
      "key": "oauth-prompt-<key>",
-     "line": 786,
+     "line": 715,
      "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "TextFormField per 'text' prompt; setState(_values[key]).",
+     "effect": "KitField updates the corresponding provider text prompt value and clears its validation error.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/screens/library/integration_tiles.dart"
     },
     {
      "id": "integrations-oauth-inputs-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "line": 812,
+     "type": "icon-button",
+     "label": "Close",
+     "key": "kit-sheet-close",
+     "line": 435,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
-     "effect": "Navigator.pop(context); OAuth is not started.",
+     "effect": "Closes the provider input sheet without beginning OAuth.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/kit/kit_sheet.dart"
     },
     {
      "id": "integrations-oauth-inputs-dialog-continue",
      "type": "button",
-     "label": "Continue",
-     "key": null,
-     "line": 820,
+     "label": "Open {provider} sign-in",
+     "key": "oauth-inputs-continue",
+     "line": 591,
      "action": "submit",
      "target": "integrations-authorization-launch-dialog",
      "targetWidget": "_confirmAuthorizationLaunch",
-     "effect": "_submit(): validates the form and pops the visible values; caller (_connectWithOAuth) starts controller.startRecoverableIntegrationOAuth or legacy repository.startIntegrationOAuth, then opens the authorization-launch dialog.",
+     "effect": "Validates the provider prompts and returns their answers to begin sign-in.",
      "gates": [],
-     "destructive": false
+     "destructive": false,
+     "file": "lib/ui/screens/library/integration_tiles.dart"
     }
    ]
   },
@@ -1623,7 +1563,7 @@
      "type": "button",
      "label": "Disconnect provider",
      "key": "confirm-provider-disconnect",
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
@@ -1637,7 +1577,7 @@
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
@@ -1674,7 +1614,7 @@
      "type": "button",
      "label": "Remove",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
@@ -1688,7 +1628,7 @@
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
@@ -1703,17 +1643,21 @@
    "id": "integrations-forget-pending-auth-sheet",
    "title": "Forget on this device",
    "kind": "sheet",
-   "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+   "file": "lib/ui/screens/library/integrations_screen.dart",
    "widget": "_PendingAuthRecoveryTileState._act",
    "presentedBy": [
     "showConfirmSheet"
    ],
-   "line": 59,
-   "purpose": "Confirms dropping a locally persisted pending sign-in attempt.",
+   "line": 1238,
+   "purpose": "The one forget-sign-in question, for a saved sign-in and for a start the server never confirmed (the uncertain start's own sheet merged here, slice-P3.11a).",
    "reachedFrom": [
     {
      "page": "integrations",
      "element": "integrations-pending-forget"
+    },
+    {
+     "page": "integrations",
+     "element": "integrations-uncertain-forget"
     }
    ],
    "gates": [],
@@ -1723,8 +1667,8 @@
      "type": "button",
      "label": "Forget on this device",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 69,
+     "file": "lib/ui/screens/library/integrations_screen.dart",
+     "line": 1246,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
@@ -1737,57 +1681,8 @@
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 86,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, false); nothing is changed.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "integrations-forget-uncertain-auth-sheet",
-   "title": "Forget uncertain start?",
-   "kind": "sheet",
-   "file": "lib/ui/screens/library/pending_auth_recovery.dart",
-   "widget": "_UncertainAuthRecoveryTile.build",
-   "presentedBy": [
-    "showConfirmSheet"
-   ],
-   "line": 191,
-   "purpose": "Confirms forgetting a sign-in start whose outcome was never confirmed.",
-   "reachedFrom": [
-    {
-     "page": "integrations",
-     "element": "integrations-uncertain-forget"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "integrations-forget-uncertain-auth-sheet-confirm",
-     "type": "button",
-     "label": "Forget uncertain start",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 69,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision); shows 'sign-in source changed' error if it throws.",
-     "gates": [],
-     "destructive": true
-    },
-    {
-     "id": "integrations-forget-uncertain-auth-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 86,
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
+     "line": 431,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
@@ -1831,10 +1726,10 @@
      "label": "Start server sign-in",
      "key": null,
      "line": 203,
-     "action": "open-sheet",
-     "target": "command-auth-sheet-confirm-sheet",
-     "targetWidget": "showConfirmSheet",
-     "effect": "_start(): confirm sheet, then controller.startIntegrationCommand(integration.id, method.id, locationRevision); on failure tries controller.pendingIntegrationCommand to recover the attempt.",
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_start(): controller.startIntegrationCommand(integration.id, method.id, locationRevision) directly; the sheet's intro is the question (the confirm merged into it, slice-P3.11a).",
      "gates": [
       "_current (source/profile unchanged)",
       "_attempt == null && !_uncertainStart && _status != complete"
@@ -1844,13 +1739,13 @@
     {
      "id": "command-auth-sheet-check",
      "type": "button",
-     "label": "Check status",
+     "label": "Check {provider} sign-in now",
      "key": null,
      "line": 208,
      "action": "mutate",
      "target": null,
      "targetWidget": null,
-     "effect": "_check(): controller.integrationCommandStatus(...); on complete clears the attempt and controller.refreshCatalog().",
+     "effect": "_check(): controller.integrationCommandStatus(...); on complete clears the attempt and controller.refreshCatalog(). Offered 8 s after a start without an answer, or at once for an attempt found running.",
      "gates": [
       "_current",
       "_attempt != null"
@@ -1872,55 +1767,6 @@
       "_attempt != null"
      ],
      "destructive": true
-    }
-   ]
-  },
-  {
-   "id": "command-auth-sheet-confirm-sheet",
-   "title": "Start sign-in on the server?",
-   "kind": "sheet",
-   "file": "lib/ui/screens/library/command_auth_sheet.dart",
-   "widget": "_CommandAuthSheetState._start",
-   "presentedBy": [
-    "showConfirmSheet"
-   ],
-   "line": 65,
-   "purpose": "Confirms running the sign-in command on the server.",
-   "reachedFrom": [
-    {
-     "page": "command-auth-sheet",
-     "element": "command-auth-sheet-start"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "command-auth-sheet-confirm-sheet-confirm",
-     "type": "button",
-     "label": "Start server sign-in",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 69,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.startIntegrationCommand(integration.id, method.id, locationRevision); sheet then shows pending state.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "command-auth-sheet-confirm-sheet-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
-     "line": 86,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Navigator.pop(context, false); nothing is changed.",
-     "gates": [],
-     "destructive": false
     }
    ]
   },
@@ -2033,7 +1879,7 @@
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "line": 430,
+     "line": 178,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
@@ -2046,7 +1892,7 @@
      "type": "button",
      "label": "Save label",
      "key": null,
-     "line": 434,
+     "line": 182,
      "action": "submit",
      "target": null,
      "targetWidget": null,
@@ -2080,7 +1926,7 @@
      "type": "button",
      "label": "Remove",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 69,
      "action": "mutate",
      "target": null,
@@ -2094,7 +1940,7 @@
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "file": "lib/ui/kit/kit_confirm_sheet.dart",
      "line": 86,
      "action": "dismiss",
      "target": null,
@@ -2117,15 +1963,23 @@
    "reachedFrom": [
     {
      "page": "integrations",
-     "element": "integrations-add-mcp"
-    },
-    {
-     "page": "integrations",
-     "element": "integrations-mcp-empty-add"
-    },
-    {
-     "page": "integrations",
      "element": "integrations-resources-empty-add"
+    },
+    {
+     "page": "mcp-add-sheet",
+     "element": "mcp-add-sheet-manual"
+    },
+    {
+     "page": "mcp-catalog",
+     "element": "mcp-catalog-switch"
+    },
+    {
+     "page": "mcp-catalog",
+     "element": "mcp-catalog-manual"
+    },
+    {
+     "page": "mcp-catalog-node-sheet",
+     "element": "mcp-catalog-node-sheet-continue"
     }
    ],
    "gates": [
@@ -2138,11 +1992,11 @@
      "type": "icon-button",
      "label": "What is MCP?",
      "key": "mcp-glossary",
-     "line": 268,
-     "action": "open-sheet",
-     "target": "info-label-sheet",
-     "targetWidget": "InfoLabel.show",
-     "effect": "InfoLabel.show(context, term: Glossary.mcp.term, explanation: ...).",
+     "line": 367,
+     "action": "other",
+     "target": null,
+     "targetWidget": "showKitTerm",
+     "effect": "showKitTerm(context, term: MCP, explanation: e7GlossaryMcpExplanation): a bubble anchored to the button (the info-label sheet was removed by slice-P3.1).",
      "gates": [],
      "destructive": false
     },
@@ -2332,16 +2186,297 @@
      "destructive": false
     }
    ]
+  },
+  {
+   "id": "mcp-add-sheet",
+   "title": "Add an MCP server",
+   "kind": "sheet",
+   "file": "lib/ui/screens/mcp_catalog_screen.dart",
+   "widget": "showMcpAddSheet",
+   "presentedBy": [
+    "showKitChoiceSheet"
+   ],
+   "line": 36,
+   "purpose": "MCP › Add: choose the public catalogue or the manual form.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-add-mcp"
+    },
+    {
+     "page": "integrations",
+     "element": "integrations-mcp-empty-add"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "mcp-add-sheet-catalog",
+     "type": "list-tile",
+     "label": "Browse the catalogue",
+     "key": "mcp-add-catalog",
+     "line": 48,
+     "action": "navigate",
+     "target": "mcp-catalog",
+     "targetWidget": "McpCatalogScreen",
+     "effect": "Pops McpAddPath.catalog; IntegrationsScreen pushes McpCatalogScreen.",
+     "gates": [
+      "disabled with its reason unless mcpAddSupported(capabilities)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-add-sheet-manual",
+     "type": "list-tile",
+     "label": "Enter manually",
+     "key": "mcp-add-manual",
+     "line": 58,
+     "action": "navigate",
+     "target": "mcp-setup",
+     "targetWidget": "McpSetupScreen",
+     "effect": "Pops McpAddPath.manual; IntegrationsScreen pushes McpSetupScreen.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "mcp-catalog",
+   "title": "MCP catalogue",
+   "kind": "screen",
+   "file": "lib/ui/screens/mcp_catalog_screen.dart",
+   "widget": "McpCatalogScreen",
+   "presentedBy": [],
+   "line": 90,
+   "purpose": "Servers from the public MCP registry as switches, the ones on this server first; On opens the manual form filled in, Off removes it with the MCP page's question. Loading the registry is the person's choice, remembered per server.",
+   "reachedFrom": [
+    {
+     "page": "mcp-add-sheet",
+     "element": "mcp-add-sheet-catalog"
+    }
+   ],
+   "gates": [
+    "mcpAddSupported(capabilities), else the unavailable state"
+   ],
+   "elements": [
+    {
+     "id": "mcp-catalog-forget",
+     "type": "menu-item",
+     "label": "Stop using the registry",
+     "key": "mcp-catalog-forget",
+     "line": 405,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_stopUsingRegistry(): forgets the opt-in for this server.",
+     "gates": [
+      "registry opted in"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-load",
+     "type": "button",
+     "label": "Load the list",
+     "key": "mcp-catalog-load",
+     "line": 441,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_optIn(): remembers the choice and reads the registry.",
+     "gates": [
+      "not opted in (consent state)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-manual",
+     "type": "button",
+     "label": "Enter manually",
+     "key": "mcp-catalog-manual",
+     "line": 447,
+     "action": "navigate",
+     "target": "mcp-setup",
+     "targetWidget": "McpSetupScreen",
+     "effect": "_openManual(): pushes McpSetupScreen; a save reads the list again.",
+     "gates": [
+      "consent, failed or empty state"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-search",
+     "type": "text-field",
+     "label": "Search the registry",
+     "key": "mcp-catalog-search",
+     "line": 467,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Debounced registry search; empty shows the saved list.",
+     "gates": [
+      "opted in"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-pull-refresh",
+     "type": "gesture",
+     "label": "[pull to refresh]",
+     "key": null,
+     "line": 456,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_refresh(): reads this server's MCP list and the registry again.",
+     "gates": [
+      "opted in"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": null,
+     "line": 539,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Reads the registry (or this server's MCP list) again.",
+     "gates": [
+      "registry unreachable, stale, or inventory unreadable"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-switch",
+     "type": "toggle",
+     "label": "<server title> (on | off)",
+     "key": "mcp-catalog-switch-<server name>",
+     "line": 631,
+     "action": "navigate",
+     "target": "mcp-setup",
+     "targetWidget": "McpSetupScreen",
+     "effect": "On: _turnOn opens McpSetupScreen filled in from the listing (a Node server on a phone host asks first); Off: _turnOff asks with showKitConfirm and removes it with removeMcpServer.",
+     "gates": [
+      "disabled with its reason while busy, when removal is unsupported, or when the listing has no endpoint / needs Docker"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "mcp-catalog-node-sheet",
+   "title": "{title} runs with Node",
+   "kind": "sheet",
+   "file": "lib/ui/screens/mcp_catalog_screen.dart",
+   "widget": "_askNode",
+   "presentedBy": [
+    "showKitChoiceSheet"
+   ],
+   "line": 331,
+   "purpose": "On a phone host, turning on a Node server asks whether to add Node first.",
+   "reachedFrom": [
+    {
+     "page": "mcp-catalog",
+     "element": "mcp-catalog-switch"
+    }
+   ],
+   "gates": [
+    "item.runtime == node && phone host"
+   ],
+   "elements": [
+    {
+     "id": "mcp-catalog-node-sheet-add-node",
+     "type": "list-tile",
+     "label": "Add Node to this phone",
+     "key": "mcp-catalog-add-node",
+     "line": 337,
+     "action": "navigate",
+     "target": "termux-setup-installed",
+     "targetWidget": "openThisPhone",
+     "effect": "Opens This phone to add tools.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "mcp-catalog-node-sheet-continue",
+     "type": "list-tile",
+     "label": "Node is already on this phone",
+     "key": "mcp-catalog-node-continue",
+     "line": 344,
+     "action": "navigate",
+     "target": "mcp-setup",
+     "targetWidget": "McpSetupScreen",
+     "effect": "Continues to the filled-in form.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "mcp-catalog-remove-sheet",
+   "title": "Remove {name} until restart?",
+   "kind": "sheet",
+   "file": "lib/ui/screens/mcp_catalog_screen.dart",
+   "widget": "_turnOff",
+   "presentedBy": [
+    "showKitConfirm"
+   ],
+   "line": 364,
+   "purpose": "Confirms the runtime removal of a catalogue server that is on.",
+   "reachedFrom": [
+    {
+     "page": "mcp-catalog",
+     "element": "mcp-catalog-switch"
+    }
+   ],
+   "gates": [
+    "controller.capabilities.mcpRuntimeRemovals"
+   ],
+   "elements": [
+    {
+     "id": "mcp-catalog-remove-sheet-confirm",
+     "type": "button",
+     "label": "Remove until restart",
+     "key": "confirm-mcp-remove",
+     "line": 372,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "removeMcpServer(name, locationRevision), then reads the list again.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "mcp-catalog-remove-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 371,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops false; nothing changes.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
   }
  ],
- "notPages": [],
+ "notPages": [
+  {
+   "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+   "reason": "Only _authSourceFor remains: a nonvisual equality identity for an authentication action. The sign-in confirmation now lives in integrations_screen.dart."
+  }
+ ],
  "notes": [
   "lib/ui/screens/library/catalog_screen.dart:108 CatalogScreen's live body is ModelCatalogView (lib/ui/widgets/pickers.dart:113, not assigned here); its interactive elements must be merged into page 'catalog' by whoever owns pickers.dart.",
   "lib/ui/screens/library/catalog_screen.dart:113-439 _models/_providers/_agents/_modelDetails (and _load, _catalog, _query) are dead code (// ignore: unused_element); recorded with a dead-code gate so grep hits are covered. ModelStatusPill (line 5) and _CapabilityChip (line 448) are non-interactive.",
   "CommandsScreen, SkillsScreen, ReferencesScreen and ToolsScreen are never pushed standalone from SettingsScreen; they are embedded tab bodies of CapabilitiesScreen (lib/ui/screens/capabilities_screen.dart:29-42, not assigned; opened from library_screen.dart:138 'Commands & tools'). CommandsScreen has no standalone opener anywhere in lib/. Coordinator may want to treat them as capabilities-<tab>-tab pages.",
   "lib/ui/screens/library/commands_screen.dart:152 showRunCommandDialog lives in lib/ui/widgets/run_command_dialog.dart:10 (not assigned); target id guessed as 'run-command-dialog'.",
   "lib/ui/screens/tools_screen.dart:110 showModelPicker (lib/ui/widgets/pickers.dart) target id guessed as 'model-picker'.",
-  "InfoLabel.show glossary sheet (lib/ui/widgets/info_label.dart:138) target id guessed as 'info-label-sheet' (integrations_screen.dart:896, mcp_setup_screen.dart:274).",
   "openBugReport (called from shared ProductErrorState, lib/ui/widgets/product_states.dart:250) not resolved to a page; targetWidget set, target null.",
   "lib/ui/screens/library/integrations_screen.dart:1312 _connectIntegration skips the method sheet when only one method is usable, so integrations-provider-connect / integrations-provider-server-signin can lead directly to integrations-connect-key-dialog, integrations-oauth-inputs-dialog, integrations-authorization-launch-dialog or command-auth-sheet; those pages list both openers in reachedFrom.",
   "lib/ui/screens/library/integrations_screen.dart:193 disconnecting a connected MCP server has no confirmation step (direct repository.disconnectMcp).",

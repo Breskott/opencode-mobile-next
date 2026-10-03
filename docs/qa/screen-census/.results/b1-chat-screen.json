@@ -1,0 +1,129 @@
+{
+ "area": "b1-chat-screen",
+ "renderedAt": "2026-09-26T02:56:06.802092Z",
+ "declaredShots": [
+  {
+   "page": "chat",
+   "state": "finished"
+  },
+  {
+   "page": "chat",
+   "state": "working"
+  },
+  {
+   "page": "chat",
+   "state": "needs-you"
+  },
+  {
+   "page": "chat",
+   "state": "empty"
+  },
+  {
+   "page": "chat-draft-attachment-recovery-sheet",
+   "state": "default"
+  },
+  {
+   "page": "chat-stash-attachments-unavailable-sheet",
+   "state": "default"
+  },
+  {
+   "page": "chat-stash-restore-confirm-sheet",
+   "state": "default"
+  },
+  {
+   "page": "chat-discard-queued-draft-sheet",
+   "state": "default"
+  },
+  {
+   "page": "chat-resend-queued-draft-sheet",
+   "state": "default"
+  },
+  {
+   "page": "chat-cancel-inbox-send-sheet",
+   "state": "default"
+  },
+  {
+   "page": "chat-pending-photo-sheet",
+   "state": "default"
+  },
+  {
+   "page": "chat-share-confirm-sheet",
+   "state": "default"
+  }
+ ],
+ "notRendered": {},
+ "shots": [
+  {
+   "page": "chat",
+   "state": "finished",
+   "image": "b1-chat-screen/chat--finished.png",
+   "note": "A finished turn: prompt, answer, the folded tool work (3 reads, an edit, a test run), a Dart snippet and the choices block. The answer's opening paragraph (visible in the working state) is folded under the work line once the turn finishes."
+  },
+  {
+   "page": "chat",
+   "state": "working",
+   "image": "b1-chat-screen/chat--working.png",
+   "note": "The reply is streaming (cut mid-answer); Stop is live."
+  },
+  {
+   "page": "chat",
+   "state": "needs-you",
+   "image": "b1-chat-screen/chat--needs-you.png",
+   "note": "The run waits for approval to run the checkout tests."
+  },
+  {
+   "page": "chat",
+   "state": "empty",
+   "image": "b1-chat-screen/chat--empty.png",
+   "note": "A conversation with no messages yet."
+  },
+  {
+   "page": "chat-draft-attachment-recovery-sheet",
+   "state": "default",
+   "image": "b1-chat-screen/chat-draft-attachment-recovery-sheet.png",
+   "note": "Opens by itself when the saved draft of this conversation had an attachment that could not be read back (faked store)."
+  },
+  {
+   "page": "chat-stash-attachments-unavailable-sheet",
+   "state": "default",
+   "image": "b1-chat-screen/chat-stash-attachments-unavailable-sheet.png",
+   "note": "Composer + › Prompts › Saved prompts › Restore (faked shelf)."
+  },
+  {
+   "page": "chat-stash-restore-confirm-sheet",
+   "state": "default",
+   "image": "b1-chat-screen/chat-stash-restore-confirm-sheet.png",
+   "note": "Restoring a saved prompt while the composer holds text (faked shelf)."
+  },
+  {
+   "page": "chat-discard-queued-draft-sheet",
+   "state": "default",
+   "image": "b1-chat-screen/chat-discard-queued-draft-sheet.png",
+   "note": "Discard on a draft queued while offline (the queue is faked; the connection itself is up)."
+  },
+  {
+   "page": "chat-resend-queued-draft-sheet",
+   "state": "default",
+   "image": "b1-chat-screen/chat-resend-queued-draft-sheet.png",
+   "note": "A queued draft whose send was never confirmed (faked queue)."
+  },
+  {
+   "page": "chat-cancel-inbox-send-sheet",
+   "state": "default",
+   "image": "b1-chat-screen/chat-cancel-inbox-send-sheet.png",
+   "note": "OpenCode 2 inbox: a message waiting for the running turn (faked inbox capability and item)."
+  },
+  {
+   "page": "chat-pending-photo-sheet",
+   "state": "default",
+   "image": "b1-chat-screen/chat-pending-photo-sheet.png",
+   "note": "Composer + › Take photo while a photo taken for another conversation is still pending."
+  },
+  {
+   "page": "chat-share-confirm-sheet",
+   "state": "default",
+   "image": "b1-chat-screen/chat-share-confirm-sheet.png",
+   "note": "Conversation menu › Conversation actions › Share conversation."
+  }
+ ]
+}

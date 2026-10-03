@@ -7,7 +7,9 @@ import 'package:flutter/foundation.dart';
 import '../api/server_probe.dart';
 import '../platform/platform_capabilities.dart';
 import '../termux/bridge.dart';
+import '../termux/termux_reach.dart';
 import 'profiles.dart';
+import '../diagnostics/perf_trace.dart';
 
 /// Test seam for this scoped, non-redirecting loopback health check.
 @visibleForTesting
@@ -108,6 +110,7 @@ Future<ServerProbeResult> _probeLoopback({
       },
     ),
   );
+  PerfTraceInterceptor.attach(dio, 'discovery');
   final cancelToken = CancelToken();
   void cancelRequest() {
     cancelToken.cancel('Discovery disposed');
@@ -180,19 +183,39 @@ class TermuxRunningServer {
     this.phase = '',
     this.observedAt,
     this.needsCredentials = false,
+    this.problem,
+    this.heardOnPhone = false,
   });
 
   const TermuxRunningServer.unsupported()
     : this._(state: TermuxRunningServerState.unsupported);
 
-  const TermuxRunningServer.absent({String phase = ''})
-    : this._(state: TermuxRunningServerState.absent, phase: phase);
+  const TermuxRunningServer.absent({String phase = '', TermuxProblem? problem})
+    : this._(
+        state: TermuxRunningServerState.absent,
+        phase: phase,
+        problem: problem,
+      );
 
-  const TermuxRunningServer.denied()
-    : this._(state: TermuxRunningServerState.denied);
+  /// [problem] says why commands cannot run; [heardOnPhone] that an
+  /// OpenCode server answered at the app's own loopback address anyway.
+  const TermuxRunningServer.denied({
+    TermuxProblem problem = TermuxProblem.accessNeeded,
+    bool heardOnPhone = false,
+  }) : this._(
+         state: TermuxRunningServerState.denied,
+         problem: problem,
+         heardOnPhone: heardOnPhone,
+       );
 
-  const TermuxRunningServer.unavailable()
-    : this._(state: TermuxRunningServerState.unavailable);
+  const TermuxRunningServer.unavailable({
+    TermuxProblem problem = TermuxProblem.unknown,
+    TermuxRuntime? runtime,
+  }) : this._(
+         state: TermuxRunningServerState.unavailable,
+         problem: problem,
+         runtime: runtime,
+       );
 
   const TermuxRunningServer.stopped({required TermuxRuntime runtime})
     : this._(
@@ -233,6 +256,15 @@ class TermuxRunningServer {
   /// A live responder requested authentication; its health is not verified.
   final bool needsCredentials;
 
+  /// Why the app cannot use Termux (or OpenCode in it) now: set for
+  /// [TermuxRunningServerState.denied] and
+  /// [TermuxRunningServerState.unavailable], and for an absent Termux.
+  final TermuxProblem? problem;
+
+  /// Termux could not be asked, but an OpenCode server answered at the
+  /// app's own loopback address: OpenCode runs on this phone.
+  final bool heardOnPhone;
+
   bool get isRunning => state == TermuxRunningServerState.running;
   bool get isStopped => state == TermuxRunningServerState.stopped;
 
@@ -270,13 +302,33 @@ Future<TermuxRunningServer> detectTermuxRunningServer({
     } catch (_) {
       return const TermuxRunningServer.unavailable();
     }
-    if (!capabilities.platformSupported || !capabilities.installed) {
+    if (!capabilities.platformSupported) {
       return const TermuxRunningServer.absent();
     }
-    if (!capabilities.serviceAvailable ||
-        !capabilities.protocolSupported ||
-        !capabilities.permissionGranted) {
-      return const TermuxRunningServer.denied();
+    if (!capabilities.installed) {
+      return const TermuxRunningServer.absent(
+        problem: TermuxProblem.notInstalled,
+      );
+    }
+    final blocked = termuxProblemOfCapabilities(capabilities);
+    if (blocked != null) {
+      // No Termux command can run. One look at the app's own loopback
+      // address (never another) says whether OpenCode runs here anyway, so
+      // the words can say "found" rather than "maybe".
+      var heard = false;
+      try {
+        final health = await observation.wait(
+          () => termuxRunningServerProbe(
+            baseUrl: TermuxBridge.managedServerUrl,
+            cancellation: observation,
+          ),
+          const Duration(seconds: 4),
+        );
+        heard = health.ok || health.needsPassword;
+      } catch (_) {
+        // Nothing answered: not known, and said as such.
+      }
+      return TermuxRunningServer.denied(problem: blocked, heardOnPhone: heard);
     }
     TermuxSetupStatus status;
     try {
@@ -284,8 +336,20 @@ Future<TermuxRunningServer> detectTermuxRunningServer({
         TermuxBridge.status,
         const Duration(seconds: 8),
       );
-    } catch (_) {
-      return const TermuxRunningServer.unavailable();
+    } on TimeoutException {
+      return const TermuxRunningServer.unavailable(
+        problem: TermuxProblem.asleep,
+      );
+    } catch (error) {
+      if (error is _DiscoveryCancelled) {
+        return const TermuxRunningServer.unavailable();
+      }
+      final problem = termuxProblemOfError(error);
+      if (problem == TermuxProblem.otherAppsOff ||
+          problem == TermuxProblem.accessNeeded) {
+        return TermuxRunningServer.denied(problem: problem);
+      }
+      return TermuxRunningServer.unavailable(problem: problem);
     }
     if (status.isReady &&
         !status.switchPending &&
@@ -326,7 +390,11 @@ Future<TermuxRunningServer> detectTermuxRunningServer({
       } catch (_) {
         // Transport, parse and plugin failures must not escape into the UI.
       }
-      return const TermuxRunningServer.unavailable();
+      // Termux says OpenCode runs, and OpenCode does not answer.
+      return TermuxRunningServer.unavailable(
+        problem: TermuxProblem.notAnswering,
+        runtime: status.runtime,
+      );
     }
     // A deliberate stop leaves a selected runtime behind; a phone that was
     // never set up reports `idle` with none. Only the former can be started

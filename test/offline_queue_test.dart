@@ -12,8 +12,11 @@ import 'package:opencode_mobile/domain/server_gateway.dart'
     show PromptDelivery, ServerGateway;
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/automation_policy.dart';
+import 'package:opencode_mobile/domain/while_away.dart';
 import 'package:opencode_mobile/state/offline_queue.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitUndo;
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
@@ -273,8 +276,39 @@ Future<void> _settleWidgets(WidgetTester tester, bool Function() done) async {
   fail('the background flush never reached the expected state');
 }
 
-Future<void> _openQueuedAction(WidgetTester tester, String key) async {
+/// Opens the queued item's menu (each waiting message carries its own).
+Future<void> _openQueuedMenu(WidgetTester tester, {int index = 0}) async {
+  await tester.tap(find.byKey(ValueKey('queued-send-$index')));
+  await tester.pumpAndSettle();
+}
+
+/// Chooses [key] from the queued item's menu.
+Future<void> _openQueuedAction(
+  WidgetTester tester,
+  String key, {
+  int index = 0,
+}) async {
+  await _openQueuedMenu(tester, index: index);
   await tester.tap(find.byKey(ValueKey(key)));
+  await tester.pumpAndSettle();
+}
+
+/// A send in flight: its menu offers no resend, and Edit and Discard do
+/// nothing, so no action can pull the draft out from under the request.
+Future<void> _expectQueuedActionsInert(
+  WidgetTester tester,
+  ConnectionController controller,
+) async {
+  await _openQueuedMenu(tester);
+  expect(find.byKey(const ValueKey('queued-action-resend')), findsNothing);
+  for (final key in ['queued-action-edit', 'queued-action-discard']) {
+    expect(find.byKey(ValueKey(key)), findsOneWidget);
+    await tester.tap(find.byKey(ValueKey(key)), warnIfMissed: false);
+    await tester.pump();
+    expect(find.text('Discard queued draft?'), findsNothing);
+    expect(controller.queuedPromptCount, 1);
+  }
+  await tester.sendKeyEvent(LogicalKeyboardKey.escape);
   await tester.pumpAndSettle();
 }
 
@@ -513,6 +547,91 @@ void main() {
     expect(controller.queuedPromptCount, 0);
   });
 
+  test(
+    'policy gates queue dispatch and logs only confirmed delivery',
+    () async {
+      final api = _FakeApi();
+      final controller = await _controller(api);
+      addTearDown(controller.dispose);
+      final policy = AutomationPolicyController.forProfile(
+        controller.store.prefs,
+        'profile-1',
+      );
+      await controller.queuePrompt(_entry('policy-queue'));
+      await policy.setBehavior(AutomationBehavior.reconcileQueuedSends, false);
+      await controller.flushOfflineQueue();
+      expect(api.prompts, isEmpty);
+      expect(
+        controller.queuedPromptsFor('session-1').single.dispatched,
+        isFalse,
+      );
+      expect(controller.automaticActsHere, isEmpty);
+      await policy.setBehavior(AutomationBehavior.reconcileQueuedSends, true);
+      final delivered = Completer<void>();
+      api.beforePrompt = () => delivered.future;
+      final flush = controller.flushOfflineQueue();
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.automaticActsHere, isEmpty);
+      delivered.complete();
+      await flush;
+      await Future<void>.delayed(Duration.zero);
+      expect(api.prompts, hasLength(1));
+      expect(
+        controller.automaticActsHere.single.kind,
+        AutomaticActKind.queuedSend,
+      );
+    },
+  );
+
+  test('policy disabled during queue transport wait sends nothing', () async {
+    final api = _FakeApi();
+    final controller = await _controller(api);
+    addTearDown(controller.dispose);
+    await controller.queuePrompt(_entry('policy-wait'));
+    controller.pendingTransport = Completer<ServerGateway?>();
+    final flush = controller.flushOfflineQueue();
+    await AutomationPolicyController.forProfile(
+      controller.store.prefs,
+      'profile-1',
+    ).setBehavior(AutomationBehavior.reconcileQueuedSends, false);
+    controller.pendingTransport!.complete(api);
+    await flush;
+    expect(api.prompts, isEmpty);
+    expect(controller.queuedPromptsFor('session-1').single.dispatched, isFalse);
+    expect(controller.automaticActsHere, isEmpty);
+  });
+
+  test(
+    'explicit resend works with policy off and is not an automatic act',
+    () async {
+      final api = _FakeApi();
+      final controller = await _controller(api);
+      addTearDown(controller.dispose);
+      await controller.queuePrompt(_entry('manual', dispatchedAt: 1));
+      await controller.queuePrompt(_entry('automatic'));
+      await AutomationPolicyController.forProfile(
+        controller.store.prefs,
+        'profile-1',
+      ).setBehavior(AutomationBehavior.reconcileQueuedSends, false);
+      expect(await controller.resendQueuedPrompt('manual'), isTrue);
+      await _settle(
+        () => api.prompts.isNotEmpty && controller.queuedPromptCount == 1,
+      );
+      expect(api.prompts, hasLength(1));
+      expect(controller.queuedPromptsFor('session-1').single.id, 'automatic');
+      expect(controller.automaticActsHere, isEmpty);
+    },
+  );
+
+  test('unconfirmed queue delivery has no automatic act', () async {
+    final api = _FakeApi()..promptPlan.add(ApiException('unavailable'));
+    final controller = await _controller(api);
+    addTearDown(controller.dispose);
+    await controller.queuePrompt(_entry('policy-failure'));
+    await controller.flushOfflineQueue();
+    expect(controller.automaticActsHere, isEmpty);
+  });
+
   test('flush sends queued prompts oldest first', () async {
     final api = _FakeApi();
     final controller = await _controller(api);
@@ -687,6 +806,40 @@ void main() {
     );
   });
 
+  // slice-queue-move hook (slice-chat-speed-fixes): connected to a server
+  // that keeps a queue, the chat says how many drafts wait for another
+  // server and offers to move them here, naming this server.
+  testWidgets('drafts waiting for another server can be moved here', (
+    tester,
+  ) async {
+    final api = _FakeApi();
+    final controller = await _controller(api, secondProfile: true);
+    addTearDown(controller.dispose);
+    await controller.queuePrompt(
+      _entry(
+        'other',
+        profileID: 'profile-2',
+        sessionID: 'session-9',
+        text: 'other server',
+      ),
+    );
+    await _pumpChat(tester, controller);
+
+    expect(
+      find.textContaining('1 draft waiting for other servers.'),
+      findsOneWidget,
+    );
+    final move = find.byKey(
+      const ValueKey('chat-status-move-queued-profile-2'),
+    );
+    expect(move, findsOneWidget);
+    expect(find.text('Move 1 waiting prompt to Test server'), findsOneWidget);
+    await tester.tap(move);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byKey(const ValueKey('queued-move-sheet')), findsOneWidget);
+  });
+
   testWidgets('sending while disconnected queues a visible draft', (
     tester,
   ) async {
@@ -703,7 +856,7 @@ void main() {
       'offline draft',
     );
     await tester.pump();
-    await tester.tap(find.byTooltip('Send'));
+    await tester.tap(find.byTooltip('Send when back online'));
     await tester.pump();
     await tester.pump();
 
@@ -740,8 +893,13 @@ void main() {
       expect(controller.queuedPromptsFor('session-1'), isEmpty);
       expect(
         tester
-            .widget<TextField>(find.byKey(const Key('chat-composer-field')))
-            .controller!
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(const Key('chat-composer-field')),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
             .text,
         'Keep this draft',
       );
@@ -794,14 +952,23 @@ void main() {
     await controller.queuePrompt(_entry('q1', text: 'edit me'));
     await _pumpChat(tester, controller);
 
-    await tester.tap(find.byKey(const ValueKey('queued-action-edit')));
-    await tester.pumpAndSettle();
+    await _openQueuedAction(tester, 'queued-action-edit');
 
     expect(controller.queuedPromptCount, 0);
     expect(find.byKey(const ValueKey('queued-send-0')), findsNothing);
     expect(
       tester.widget<TextField>(find.byType(TextField)).controller?.text,
       'edit me',
+    );
+
+    // P4.3: "Returned to your draft · Undo"; Undo queues it again.
+    expect(find.text('Returned to your draft'), findsOneWidget);
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(controller.queuedPromptCount, 1);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller?.text,
+      isEmpty,
     );
   });
 
@@ -815,8 +982,7 @@ void main() {
     await controller.queuePrompt(_entry('q1', text: 'discard me'));
     await _pumpChat(tester, controller);
 
-    await tester.tap(find.byKey(const ValueKey('queued-action-discard')));
-    await tester.pumpAndSettle();
+    await _openQueuedAction(tester, 'queued-action-discard');
 
     expect(find.text('Discard queued draft?'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, 'Discard draft'));
@@ -990,10 +1156,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(api.prompts, hasLength(1));
-      expect(
-        find.textContaining('OpenCode accepted this prompt'),
-        findsOneWidget,
-      );
+      // It says the server has it, and offers no resend (a certain
+      // duplicate): not on the bubble, not in its menu.
+      expect(find.text('Reached the server'), findsOneWidget);
+      expect(find.byKey(const ValueKey('queued-bubble-resend')), findsNothing);
+      await _openQueuedMenu(tester);
       expect(find.byKey(const ValueKey('queued-action-resend')), findsNothing);
       expect(find.byKey(const ValueKey('queued-action-edit')), findsOneWidget);
       expect(
@@ -1197,11 +1364,9 @@ void main() {
 
       expect(api.prompts, isEmpty);
       expect(find.byKey(const ValueKey('queued-send-0')), findsOneWidget);
-      expect(
-        find.text('Delivery unconfirmed — review before resending'),
-        findsOneWidget,
-      );
-      expect(find.text('Queued — will send when reconnected'), findsNothing);
+      expect(find.text('Not confirmed yet'), findsOneWidget);
+      expect(find.text('Waiting to send'), findsNothing);
+      await _openQueuedMenu(tester);
       expect(
         find.byKey(const ValueKey('queued-action-resend')),
         findsOneWidget,
@@ -1229,7 +1394,10 @@ void main() {
       );
       await _pumpChat(tester, controller);
 
-      expect(find.text('Delivery unconfirmed: socket closed'), findsOneWidget);
+      expect(
+        find.textContaining(RegExp(r'^Not confirmed yet: .*socket closed')),
+        findsOneWidget,
+      );
       expect(find.textContaining('Failed:'), findsNothing);
     });
 
@@ -1251,7 +1419,7 @@ void main() {
 
       await _openQueuedAction(tester, 'queued-action-resend');
       expect(find.text('Send this draft again?'), findsOneWidget);
-      await tester.tap(find.widgetWithText(TextButton, 'Keep for review'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Keep for review'));
       await tester.pumpAndSettle();
       expect(api.prompts, isEmpty);
       expect(
@@ -1289,10 +1457,7 @@ void main() {
         find.textContaining('Could not save the queued draft'),
         findsOneWidget,
       );
-      expect(
-        find.text('Delivery unconfirmed — review before resending'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Not confirmed yet'), findsOneWidget);
       expect(
         controller.queuedPromptsFor('session-1').single.dispatchedAt,
         1700000000000,
@@ -1320,9 +1485,14 @@ void main() {
       expect(find.byKey(const ValueKey('queued-send-0')), findsNothing);
       expect(
         tester
-            .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(const Key('chat-composer-field')),
+                matching: find.byType(EditableText),
+              ),
+            )
             .controller
-            ?.text,
+            .text,
         'edit me',
       );
       expect(find.text('notes.txt'), findsOneWidget);
@@ -1344,6 +1514,9 @@ void main() {
       expect(api.prompts, isEmpty);
       final prefs = await SharedPreferences.getInstance();
       expect(OfflineQueueStore(prefs: prefs).load(), isEmpty);
+      expect(find.text('Returned to your draft'), findsOneWidget);
+      await tester.pump(KitUndo.window);
+      await tester.pumpAndSettle();
     });
 
     testWidgets('editing a never-sent draft carries no duplicate warning', (
@@ -1366,6 +1539,8 @@ void main() {
         findsNothing,
       );
       expect(find.textContaining('may already have reached'), findsNothing);
+      // Let the Undo window close.
+      await tester.pump(KitUndo.window);
     });
 
     testWidgets('editing an unconfirmed send whose removal is refused '
@@ -1394,9 +1569,14 @@ void main() {
       expect(find.byKey(const ValueKey('queued-send-0')), findsOneWidget);
       expect(
         tester
-            .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(const Key('chat-composer-field')),
+                matching: find.byType(EditableText),
+              ),
+            )
             .controller
-            ?.text,
+            .text,
         isEmpty,
       );
       expect(find.text('notes.txt'), findsNothing);
@@ -1431,6 +1611,10 @@ void main() {
       expect(find.byKey(const ValueKey('queued-send-0')), findsOneWidget);
       expect((await disk.onDisk()).single.dispatchedAt, 1700000000000);
 
+      // The failure is a kit alert; dismiss it before returning to the item.
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+
       // Storage back: the discard goes through and nothing is ever sent.
       disk.defaultOutcome = true;
       await _openQueuedAction(tester, 'queued-action-discard');
@@ -1459,14 +1643,7 @@ void main() {
 
       expect(find.text('Sending…'), findsOneWidget);
       // No action can pull the draft out from under a request in flight.
-      final actions = tester.widgetList<IconButton>(
-        find.descendant(
-          of: find.byKey(const ValueKey('queued-send-0')),
-          matching: find.byType(IconButton),
-        ),
-      );
-      expect(actions, isNotEmpty);
-      expect(actions.where((button) => button.onPressed != null), isEmpty);
+      await _expectQueuedActionsInert(tester, controller);
 
       held.complete();
       await flush;
@@ -1650,15 +1827,7 @@ void main() {
 
       expect(find.text('Sending…'), findsOneWidget);
       expect(find.textContaining('Delivery unconfirmed'), findsNothing);
-      expect(find.byKey(const ValueKey('queued-action-resend')), findsNothing);
-      final actions = tester.widgetList<IconButton>(
-        find.descendant(
-          of: find.byKey(const ValueKey('queued-send-0')),
-          matching: find.byType(IconButton),
-        ),
-      );
-      expect(actions, isNotEmpty);
-      expect(actions.where((button) => button.onPressed != null), isEmpty);
+      await _expectQueuedActionsInert(tester, controller);
 
       removalWrite.complete(true);
       await flush;
@@ -1709,7 +1878,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.widgetWithText(TextButton, 'Keep for review'),
+        find.widgetWithText(FilledButton, 'Keep for review'),
         findsOneWidget,
       );
       expect(controller.queuedPromptCount, 1);

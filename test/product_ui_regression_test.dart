@@ -8,13 +8,24 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/main.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/review_handoff.dart';
+import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
+import 'package:opencode_mobile/ui/kit/kit_code_block.dart';
+import 'package:opencode_mobile/ui/kit/kit_nav.dart';
+import 'package:opencode_mobile/ui/kit/kit_image.dart';
+import 'package:opencode_mobile/ui/kit/kit_motion.dart';
+import 'package:opencode_mobile/ui/kit/kit_viewer.dart';
+import 'package:opencode_mobile/ui/kit/kit_top_bar.dart';
+import 'package:opencode_mobile/ui/kit/kit_status_line.dart';
+import 'package:opencode_mobile/ui/screens/review_workspace.dart';
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
-import 'package:opencode_mobile/ui/screens/library_screen.dart';
-import 'package:opencode_mobile/ui/screens/activity_screen.dart';
+import 'package:opencode_mobile/ui/widgets/pickers.dart' show ModelCatalogView;
+import 'package:opencode_mobile/ui/screens/chat/permission_sheet.dart'
+    show showPermissionSheet;
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/terminal_screen.dart';
 import 'package:opencode_mobile/ui/widgets/file_preview.dart';
@@ -22,6 +33,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xterm/xterm.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 class _TestApi extends OpenCodeApi {
   _TestApi({this.files, this.findFiles, this.contents = const {}})
@@ -301,6 +313,14 @@ Future<ConnectionController> _controllerWithoutApi() async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() {
+    ReviewWorkspace.clearCache();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (_) async => null,
+        );
+  });
 
   const terminalProcess = TerminalProcess(
     id: 'pty-1',
@@ -332,14 +352,14 @@ void main() {
     await tester.pump();
 
     expect(find.text('Connecting to Saved server'), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
-    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(KitNavBar), findsNothing);
+    expect(find.byType(KitNavRail), findsNothing);
 
     ready.complete();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
     await tester.pump(const Duration(milliseconds: 50));
-    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(KitNavRail), findsOneWidget);
   });
 
   testWidgets(
@@ -367,6 +387,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: FilesScreen(controller: controller)),
         ),
       );
@@ -421,6 +443,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
@@ -431,10 +455,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(requestedPaths, ['', 'lib', 'lib/ui']);
-    expect(find.widgetWithText(ActionChip, 'Project root'), findsOneWidget);
+    expect(find.bySemanticsLabel('Open Project root'), findsOneWidget);
     expect(find.text('/lib/ui'), findsNothing);
 
-    await tester.tap(find.widgetWithText(ActionChip, 'lib'));
+    await tester.tap(find.bySemanticsLabel('Open folder lib'));
     await tester.pumpAndSettle();
     expect(requestedPaths.last, 'lib');
   });
@@ -505,6 +529,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) => MediaQuery(
               data: MediaQuery.of(
@@ -528,7 +554,7 @@ void main() {
       await tester.tap(find.text('gone.txt'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('review-workspace')), findsOneWidget);
-      expect(find.text('-deleted text'), findsOneWidget);
+      expect(find.text('deleted text'), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
 
@@ -536,8 +562,8 @@ void main() {
 
       expect(find.byKey(const Key('review-workspace')), findsOneWidget);
       expect(find.byKey(const Key('review-scope-picker')), findsNothing);
-      expect(find.text('+new readme'), findsOneWidget);
-      expect(find.text('+library change'), findsNothing);
+      expect(find.text('new readme'), findsOneWidget);
+      expect(find.text('library change'), findsNothing);
       expect(repository.diffLoads, 2);
       expect(tester.takeException(), isNull);
 
@@ -595,6 +621,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: FilesScreen(
             controller: controller,
@@ -606,8 +634,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await _openInReview(tester, 'README.md');
-    await tester.tap(find.text('Ask about file'));
-    await tester.pumpAndSettle();
+    await _openReviewComment(tester, 'README.md');
     await tester.enterText(
       find.byKey(const Key('review-comment-field')),
       'Keep this wording precise.',
@@ -673,13 +700,14 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
     await tester.pumpAndSettle();
     await _openInReview(tester, 'README.md');
-    await tester.tap(find.text('Ask about file'));
-    await tester.pumpAndSettle();
+    await _openReviewComment(tester, 'README.md');
     await tester.enterText(
       find.byKey(const Key('review-comment-field')),
       'Use the approved wording.',
@@ -691,14 +719,13 @@ void main() {
     expect(copiedText, contains('Review `README.md`'));
     expect(copiedText, contains('Use the approved wording.'));
     expect(
-      find.text('Review comment copied. Paste it into a conversation.'),
-      findsOneWidget,
+      tester.takeAnnouncements().map((announcement) => announcement.message),
+      contains('Review comment copied. Paste it into a conversation.'),
     );
   });
 
-  testWidgets('changes card opens the changed set grouped by status', (
-    tester,
-  ) async {
+  testWidgets('changes row opens the diff itself (slice-P3.7a): totals on '
+      'the row, no list of the same files in between', (tester) async {
     final api = _TestApi(
       files: (_) async => [
         FileNode(name: 'README.md', path: 'README.md', isDir: false),
@@ -734,6 +761,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: FilesScreen(
             controller: controller,
@@ -744,38 +773,31 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Browsing keeps the review entry visible; totals wait for that choice.
+    // The row names the set and its totals.
     expect(find.byKey(const ValueKey('files-changes-card')), findsOneWidget);
     expect(find.text('2 changed files'), findsOneWidget);
-    expect(find.textContaining('+42 −2'), findsNothing);
+    expect(find.text(KitBidi.ltr('+42 −2')), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('files-changes-card')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('files-changes-sheet')), findsOneWidget);
-    expect(find.text('2 files · +42 −2'), findsOneWidget);
-    expect(find.text('lib/main.dart · +34 −0'), findsOneWidget);
-    expect(find.text('Modified · 1'), findsOneWidget);
-    expect(find.text('Added · 1'), findsOneWidget);
-    expect(find.byKey(const ValueKey('review-all-changes')), findsOneWidget);
+    // Straight into Review: the diff with its one navigator, no sheet.
+    expect(find.byKey(const ValueKey('files-changes-sheet')), findsNothing);
+    expect(find.byKey(const Key('review-workspace')), findsOneWidget);
+    expect(find.text('library change'), findsOneWidget);
+    expect(find.text('Change 1 of 1'), findsOneWidget);
 
-    // A changed file stages as a reference without opening review.
-    await tester.tap(find.byKey(const ValueKey('stage-change-lib/main.dart')));
+    // A changed file stages as a reference from the diff's own menu.
+    await tester.tap(find.byTooltip('More').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('review-add-file')));
     await tester.pumpAndSettle();
     final staged = store.referencesFor('s1').single;
     expect(staged.kind, ReviewReferenceKind.changedFile);
     expect(staged.path, 'lib/main.dart');
-    expect(staged.added, 34);
-    expect(staged.status, 'added');
-    expect(find.byKey(const Key('review-workspace')), findsNothing);
-
-    // Tapping the row itself opens review at that file.
-    await tester.tap(find.byKey(const ValueKey('files-changes-card')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('changed-file-lib/main.dart')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('review-workspace')), findsOneWidget);
-    expect(find.text('+library change'), findsOneWidget);
+    expect(staged.added, 1);
+    // Let the staged notice's Undo window run out.
+    await tester.pump(const Duration(seconds: 9));
   });
 
   testWidgets('project files stage as references distinct from attachments', (
@@ -798,6 +820,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: FilesScreen(
             controller: controller,
@@ -822,52 +846,61 @@ void main() {
     expect(staged.kind, ReviewReferenceKind.file);
     expect(staged.path, 'README.md');
     expect(staged.snippet, isNull);
+    // Adding a reference now offers Undo for eight seconds. Let the real
+    // undo window commit before the test tears down its host.
+    await tester.pump(const Duration(seconds: 8));
+    await tester.pumpAndSettle();
   });
 
-  testWidgets('file status failure stays scoped and retries independently', (
-    tester,
-  ) async {
-    final api = _TestApi(
-      files: (_) async => [
-        FileNode(name: 'README.md', path: 'README.md', isDir: false),
-      ],
-    );
-    final repository = _FileStatusRepository()
-      ..statusError = const ProductException('Old server');
-    final controller = await _controller(api: api, repository: repository);
-    addTearDown(controller.dispose);
+  testWidgets(
+    'file status failure stays scoped and refresh recovers change marks',
+    (tester) async {
+      final api = _TestApi(
+        files: (_) async => [
+          FileNode(name: 'README.md', path: 'README.md', isDir: false),
+        ],
+      );
+      final repository = _FileStatusRepository()
+        ..statusError = const ProductException('Old server');
+      final controller = await _controller(api: api, repository: repository);
+      addTearDown(controller.dispose);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: FilesScreen(controller: controller)),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('README.md'), findsOneWidget);
-    expect(find.byKey(const ValueKey('file-status-notice')), findsOneWidget);
-    expect(
-      find.text('File change indicators are unavailable on this server.'),
-      findsOneWidget,
-    );
-
-    repository
-      ..statusError = null
-      ..statuses = const [
-        VersionControlFile(
-          path: 'README.md',
-          status: 'modified',
-          additions: 1,
-          deletions: 0,
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: FilesScreen(controller: controller)),
         ),
-      ];
-    await tester.tap(find.text('Try again'));
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('file-status-notice')), findsNothing);
-    expect(find.text('Modified'), findsOneWidget);
-    expect(repository.statusLoads, 2);
-  });
+      expect(find.text('README.md'), findsOneWidget);
+      expect(find.byType(KitStatusLine), findsOneWidget);
+      expect(
+        find.text('File change indicators are unavailable on this server.'),
+        findsOneWidget,
+      );
+
+      repository
+        ..statusError = null
+        ..statuses = const [
+          VersionControlFile(
+            path: 'README.md',
+            status: 'modified',
+            additions: 1,
+            deletions: 0,
+          ),
+        ];
+      // Change marks now occupy the informational status slot. Foreground
+      // refresh refreshes their read along with the listing.
+      controller.signalDataRefreshForTesting();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(KitStatusLine), findsNothing);
+      expect(find.text('Modified'), findsOneWidget);
+      expect(repository.statusLoads, 2);
+    },
+  );
 
   testWidgets('foreground refresh reloads the current file directory', (
     tester,
@@ -896,6 +929,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
@@ -921,16 +956,18 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'query');
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    expect(find.byTooltip('Clear file search'), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('Clear file search')), findsOneWidget);
+    expect(find.byTooltip('Clear search'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Clear search')), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     semantics.dispose();
   });
@@ -960,6 +997,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
@@ -979,7 +1018,7 @@ void main() {
     expect(find.text('result.dart'), findsOneWidget);
     expect(find.text('local.dart'), findsNothing);
 
-    await tester.tap(find.byTooltip('Clear file search'));
+    await tester.tap(find.byTooltip('Clear search'));
     await tester.pumpAndSettle();
 
     expect(requestedPaths.last, 'lib');
@@ -1008,6 +1047,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
@@ -1015,7 +1056,7 @@ void main() {
     await tester.tap(find.text('image.bin'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Preview unavailable'), findsOneWidget);
+    expect(find.text("Can't show this file"), findsOneWidget);
     expect(find.textContaining('application/octet-stream'), findsOneWidget);
     expect(find.text('AAEC'), findsNothing);
   });
@@ -1040,6 +1081,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
@@ -1047,10 +1090,12 @@ void main() {
     await tester.tap(find.text('pixel.png'));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('file-preview-image')), findsOneWidget);
-    expect(find.text('Pinch to zoom'), findsOneWidget);
-    expect(find.byType(InteractiveViewer), findsOneWidget);
+    expect(find.byType(KitZoom), findsOneWidget);
+    expect(find.byKey(const ValueKey('kit-viewer-image')), findsOneWidget);
+    await _openViewerMenu(tester);
     expect(find.byKey(const Key('project-file-download')), findsOneWidget);
+    await tester.tapAt(const Offset(4, 4));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('project-file-attach')), findsNothing);
   });
 
@@ -1079,6 +1124,8 @@ void main() {
       FilePreviewData? attached;
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: FilesScreen(
               controller: controller,
@@ -1090,16 +1137,16 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('small.csv'));
       await tester.pumpAndSettle();
-      expect(find.text('Column 1'), findsOneWidget);
-      expect(find.text('entry'), findsOneWidget);
-      Navigator.of(
-        tester.element(find.byKey(const Key('project-file-download'))),
-      ).pop();
+      expect(find.byKey(const ValueKey('kit-viewer-table')), findsOneWidget);
+      expect(find.textContaining('entry'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('kit-viewer-close')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('large.csv'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Only part of this file'), findsOneWidget);
-      expect(find.text('Column 1'), findsNothing);
+      expect(find.textContaining('Showing'), findsOneWidget);
+      // Files now parses the complete CSV and caps rows in KitViewer; the
+      // source itself is intact, so its truncated table is still honest.
+      expect(find.byKey(const ValueKey('kit-viewer-table')), findsOneWidget);
       await tester.tap(find.byKey(const Key('project-file-attach')));
       await tester.pumpAndSettle();
       expect(attached?.copyText, original);
@@ -1128,6 +1175,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: FilesScreen(
             controller: controller,
@@ -1143,7 +1192,10 @@ void main() {
     await tester.tap(find.text('review.md'));
     await tester.pumpAndSettle();
 
+    await _openViewerMenu(tester);
     expect(find.byKey(const Key('project-file-download')), findsOneWidget);
+    await tester.tapAt(const Offset(4, 4));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('project-file-attach')), findsOneWidget);
     await tester.tap(find.byKey(const Key('project-file-attach')));
     await tester.pumpAndSettle();
@@ -1198,6 +1250,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) => MediaQuery(
             data: MediaQuery.of(
@@ -1212,14 +1266,7 @@ void main() {
     expect(find.text('Symbols'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('file-surface-selector')));
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.ancestor(
-        of: find.text('Symbols'),
-        matching: find.byWidgetPredicate(
-          (widget) => widget is PopupMenuEntry<Object?>,
-        ),
-      ),
-    );
+    await tester.tap(find.byKey(const ValueKey('file-surface-symbols')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'ProjectHealth');
     await tester.testTextInput.receiveAction(TextInputAction.search);
@@ -1236,14 +1283,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Line 42'), findsOneWidget);
+    expect(find.byType(KitViewer), findsOneWidget);
     expect(
-      find.byKey(const Key('file-preview-focused-source')),
-      findsOneWidget,
-    );
-    expect(find.byKey(const Key('file-preview-target-line')), findsOneWidget);
-    expect(
-      find.text('class ProjectHealthScreen extends StatefulWidget {'),
-      findsOneWidget,
+      tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).initialLine,
+      42,
     );
     expect(tester.takeException(), isNull);
   });
@@ -1258,24 +1301,19 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('file-surface-selector')));
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.ancestor(
-        of: find.text('Symbols'),
-        matching: find.byWidgetPredicate(
-          (widget) => widget is PopupMenuEntry<Object?>,
-        ),
-      ),
-    );
+    await tester.tap(find.byKey(const ValueKey('file-surface-symbols')));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'MissingSymbol');
-    await tester.pump(const Duration(milliseconds: 349));
+    await tester.pump(KitMotion.typingSettle - const Duration(milliseconds: 1));
     expect(repository.queries, isEmpty);
     await tester.pump(const Duration(milliseconds: 1));
     await tester.pumpAndSettle();
@@ -1305,6 +1343,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: FilesScreen(controller: controller)),
       ),
     );
@@ -1313,14 +1353,7 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('file-surface-selector')));
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.ancestor(
-        of: find.text('Symbols'),
-        matching: find.byWidgetPredicate(
-          (widget) => widget is PopupMenuEntry<Object?>,
-        ),
-      ),
-    );
+    await tester.tap(find.byKey(const ValueKey('file-surface-symbols')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Missing');
     await tester.testTextInput.receiveAction(TextInputAction.search);
@@ -1332,14 +1365,7 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('file-surface-selector')));
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.ancestor(
-        of: find.text('Files'),
-        matching: find.byWidgetPredicate(
-          (widget) => widget is PopupMenuEntry<Object?>,
-        ),
-      ),
-    );
+    await tester.tap(find.byKey(const ValueKey('file-surface-files')));
     await tester.pumpAndSettle();
     expect(find.text('README.md'), findsOneWidget);
   });
@@ -1350,6 +1376,8 @@ void main() {
       final repository = _TerminalRepository();
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: TerminalSurface(
             repository: repository,
             process: terminalProcess,
@@ -1360,26 +1388,27 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
       expect(find.byType(TerminalView), findsOneWidget);
 
+      await tester.tap(find.byKey(const ValueKey('terminal-surface-menu')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('terminal-accessible-mode')));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const Key('terminal-accessible-input')),
         findsOneWidget,
       );
       expect(find.bySemanticsLabel('Terminal transcript'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('terminal-surface-menu')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('terminal-accessible-mode')));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Ctrl-C'));
+      await tester.tap(find.byKey(const ValueKey('terminal-key-interrupt')));
       expect(repository.channels.first.writes, contains('\x03'));
 
-      final reconnect = tester.widget<IconButton>(
-        find.byKey(const Key('terminal-reconnect')),
-      );
-      await tester.runAsync(() async {
-        reconnect.onPressed!();
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-      });
+      await tester.tap(find.byKey(const ValueKey('terminal-surface-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('terminal-reconnect')));
+      await tester.pumpAndSettle();
       await tester.pump();
       expect(repository.channels, hasLength(2));
       expect(repository.channels.first.closed, isTrue);
@@ -1405,16 +1434,19 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: TerminalScreen(controller: controller)),
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FloatingActionButton, 'Terminal'));
+    await tester.tap(find.byKey(const ValueKey('terminal-new')));
     await tester.pump();
     expect(oldRepository.createCalls, 1);
 
     controller.signalLocation(newRepository);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(newRepository.terminalLoads, 1);
 
     oldRepository.createResult.complete(terminalProcess);
@@ -1423,10 +1455,10 @@ void main() {
 
     expect(find.byType(TerminalSurface), findsNothing);
     expect(newRepository.terminalLoads, 1);
-    final createButton = tester.widget<FloatingActionButton>(
-      find.byType(FloatingActionButton),
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('terminal-new'))),
+      isSemantics(isEnabled: true, hasTapAction: true),
     );
-    expect(createButton.onPressed, isNotNull);
   });
 
   testWidgets('stale terminal rename does not reload a new workspace', (
@@ -1445,22 +1477,26 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: TerminalScreen(controller: controller)),
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Terminal actions'));
+    await tester.longPress(find.text('Shell'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Rename'));
+    await tester.tap(find.byKey(const ValueKey('terminal-menu-rename')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Renamed');
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.byKey(const ValueKey('terminal-rename-confirm')));
     await tester.pump();
     expect(repository.renameCalls, 1);
 
     repository.setLocation(workspace: 'new-workspace');
     controller.signalLocation(repository);
-    await tester.pumpAndSettle();
+    // The confirm remains busy until the deliberately delayed write ends.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(repository.terminalLoads, 2);
 
     repository.renameResult.complete();
@@ -1486,20 +1522,23 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: TerminalScreen(controller: controller)),
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Terminal actions'));
+    await tester.longPress(find.text('Shell'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Stop'));
+    await tester.tap(find.byKey(const ValueKey('terminal-menu-remove')));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Stop'));
+    await tester.tap(find.byKey(const ValueKey('terminal-remove-confirm')));
     await tester.pump();
     expect(oldRepository.removeCalls, 1);
 
     controller.signalLocation(newRepository);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(newRepository.terminalLoads, 1);
 
     oldRepository.removeResult.complete();
@@ -1523,19 +1562,31 @@ void main() {
       ),
     };
     addTearDown(controller.dispose);
-    await tester.pumpWidget(
-      MaterialApp(home: ActivityScreen(controller: controller)),
+    // P4.2a: an Inbox row now lands on the request's card in its chat; the
+    // card's Details opens this same shared sheet, opened directly here.
+    await tester.pumpWidget(const MaterialApp(home: Scaffold()));
+    unawaited(
+      showPermissionSheet(
+        tester.element(find.byType(Scaffold)),
+        permission: controller.permissions['permission-1']!,
+        controller: controller,
+      ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Run a shell command'));
-    await tester.pumpAndSettle();
 
-    // The tile now opens the shared permission sheet; its triad is stacked
-    // full-width, so a 280dp screen must still render all three actions.
-    expect(find.byKey(const Key('permission-sheet')), findsOneWidget);
-    expect(find.byKey(const Key('permission-allow-once')), findsOneWidget);
+    // The shared request sheet: its pinned Allow once and
+    // Reject and the "Always allow" switch must all render at 280dp.
+    final sheet = find.byKey(const Key('permission-sheet'));
+    expect(sheet, findsOneWidget);
+    expect(
+      find.descendant(of: sheet, matching: find.text('Allow once')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text('Reject')),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('permission-allow-always')), findsOneWidget);
-    expect(find.byKey(const Key('permission-reject')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -1574,7 +1625,11 @@ void main() {
     controller.catalogDetailed = true;
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      MaterialApp(home: CatalogScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: ModelCatalogView(controller: controller)),
+      ),
     );
     await tester.pumpAndSettle();
     await tester.drag(find.byType(ListView), const Offset(0, -500));
@@ -1582,7 +1637,20 @@ void main() {
     await tester.tap(find.text('Large model'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(SingleChildScrollView), findsWidgets);
+    // Details now stay under the selected model; thinking levels live in
+    // the footer's menu and must remain reachable on a short screen.
+    await tester.tap(find.byKey(const Key('model-picker-thinking')));
+    await tester.pumpAndSettle();
+    final lastVariant = find.byKey(
+      const ValueKey('model-variant-model-variant-23'),
+    );
+    await tester.scrollUntilVisible(
+      lastVariant,
+      120,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(lastVariant.hitTestable(), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -1597,6 +1665,8 @@ void main() {
           connProvider.overrideWithValue(controller),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           routes: {'/home': (_) => const Scaffold(body: Text('New home'))},
           home: Builder(
             builder: (context) => Scaffold(
@@ -1647,9 +1717,10 @@ void main() {
       ),
     );
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     // The connect screen is titled with the agent the person chose.
-    expect(find.widgetWithText(AppBar, 'OpenCode'), findsOneWidget);
+    expect(find.widgetWithText(KitTopBar, 'OpenCode'), findsOneWidget);
     expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.text('Server URL'), findsOneWidget);
@@ -1666,5 +1737,22 @@ Future<void> _openInReview(WidgetTester tester, String path) async {
   await tester.longPress(find.byKey(ValueKey('project-file-$path')));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const ValueKey('file-menu-review')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _openReviewComment(WidgetTester tester, String path) async {
+  await tester.tap(
+    find.descendant(
+      of: find.byKey(ValueKey('review-file-header-$path')),
+      matching: find.byTooltip('More'),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('review-file-comment')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _openViewerMenu(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('kit-viewer-more')));
   await tester.pumpAndSettle();
 }

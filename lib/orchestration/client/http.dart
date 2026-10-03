@@ -13,6 +13,7 @@ import 'package:dio/dio.dart';
 
 import '../adapters/gascity/dto/json_read.dart';
 import '../adapters/gascity/dto/problem.dart';
+import '../../diagnostics/perf_trace.dart';
 
 /// A non-2xx answer decoded as an RFC 9457 problem document. Non-problem
 /// bodies (HTML, plain text) are wrapped in a synthetic [GcProblem] whose
@@ -153,6 +154,7 @@ class OrchestrationHttpClient {
         },
       ),
     );
+    PerfTraceInterceptor.attach(_dio, 'gascity');
   }
 
   /// Host root without a trailing slash (`http://127.0.0.1:8372`).

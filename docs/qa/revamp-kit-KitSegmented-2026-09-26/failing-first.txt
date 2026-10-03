@@ -1,0 +1,271 @@
+# failing-first: the review-fix tests of test/kit/kit_segmented_test.dart run against the
+# previous part (git show fa62e3d3:lib/ui/kit/kit_segmented.dart, i.e. code head bcd1b315),
+# then the same file against the fixed part passes 66/66 (README.md §4 Runs).
+# Command: flutter test --no-pub -j 1 test/kit/kit_segmented_test.dart
+# (paths shortened to the repository root)
+
+Waiting for another flutter command to release the startup lock...
+00:00 +0: loading test/kit/kit_segmented_test.dart
+00:00 +0: KitSegmented (MOT-7) default settles at once under system
+00:00 +1: KitSegmented (MOT-7) with counts settles at once under system
+00:00 +2: KitSegmented (MOT-7) segment disabled settles at once under system
+00:00 +3: KitSegmented (MOT-7) disabled settles at once under system
+00:00 +4: KitSegmented (MOT-7) a tap moves the selection changes and settles at once under system
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '1 frame callback(s) still scheduled: a ticker or animation is running after one pump()'
+          ]
+KitSegmented a tap moves the selection under system
+
+When the exception was thrown, this was the stack:
+#4      _expectStill (test/kit/kit_motion_still.dart:272:3)
+#5      expectKitChangeStill (test/kit/kit_motion_still.dart:409:3)
+<asynchronous suspension>
+#6      kitMotionStillTests.<anonymous closure>.<anonymous closure> (test/kit/kit_motion_still.dart:472:11)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  test/kit/kit_motion_still.dart line 272
+The test description was:
+  a tap moves the selection changes and settles at once under system
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +4 -1: KitSegmented (MOT-7) a tap moves the selection changes and settles at once under system [E]
+  Test failed. See exception logs above.
+  The test description was: a tap moves the selection changes and settles at once under system
+  
+00:00 +4 -1: KitSegmented (MOT-7) a segment becomes disabled changes and settles at once under system
+00:01 +5 -1: KitSegmented (MOT-7) default settles at once under effectsOff
+00:01 +6 -1: KitSegmented (MOT-7) with counts settles at once under effectsOff
+00:01 +7 -1: KitSegmented (MOT-7) segment disabled settles at once under effectsOff
+00:01 +8 -1: KitSegmented (MOT-7) disabled settles at once under effectsOff
+00:01 +9 -1: KitSegmented (MOT-7) a tap moves the selection changes and settles at once under effectsOff
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '1 frame callback(s) still scheduled: a ticker or animation is running after one pump()'
+          ]
+KitSegmented a tap moves the selection under effectsOff
+
+When the exception was thrown, this was the stack:
+#4      _expectStill (test/kit/kit_motion_still.dart:272:3)
+#5      expectKitChangeStill (test/kit/kit_motion_still.dart:409:3)
+<asynchronous suspension>
+#6      kitMotionStillTests.<anonymous closure>.<anonymous closure> (test/kit/kit_motion_still.dart:472:11)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  test/kit/kit_motion_still.dart line 272
+The test description was:
+  a tap moves the selection changes and settles at once under effectsOff
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +9 -2: KitSegmented (MOT-7) a tap moves the selection changes and settles at once under effectsOff [E]
+  Test failed. See exception logs above.
+  The test description was: a tap moves the selection changes and settles at once under effectsOff
+  
+00:01 +9 -2: KitSegmented (MOT-7) a segment becomes disabled changes and settles at once under effectsOff
+00:01 +10 -2: construction (G37) fewer than 2 segments asserts
+00:01 +11 -2: construction (G37) more than 4 segments asserts
+00:01 +12 -2: construction (G37) a selected value not among the segments asserts
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following assertion was thrown running a test:
+KitSegmented.selected must be the value of one of its segments.
+'package:opencode_mobile/ui/kit/kit_segmented.dart':
+Failed assertion: line 79 pos 10: 'segments.length < 2 ||
+             segments.length > 4 ||
+             segments.any((s) => s.value == selected)'
+
+When the exception was thrown, this was the stack:
+#2      new KitSegmented (package:opencode_mobile/ui/kit/kit_segmented.dart:79:10)
+#3      _part (test/kit/kit_segmented_test.dart:70:7)
+#4      main.<anonymous closure>.<anonymous closure> (test/kit/kit_segmented_test.dart:262:37)
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:29)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 3 frames from class _AssertionError and package:stack_trace)
+
+The test description was:
+  a selected value not among the segments asserts
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +12 -3: construction (G37) a selected value not among the segments asserts [E]
+  Test failed. See exception logs above.
+  The test description was: a selected value not among the segments asserts
+  
+00:01 +12 -3: construction (G37) a disabled segment without disabledReason asserts
+00:01 +13 -3: construction (G37) onChanged null without a group disabledReason asserts
+00:01 +14 -3: tapping (KIT-24, STATE-9) tapping another segment calls onChanged exactly once
+00:01 +15 -3: tapping (KIT-24, STATE-9) tapping the selected segment does not call onChanged
+00:01 +16 -3: tapping (KIT-24, STATE-9) tapping a disabled segment does not call onChanged
+00:01 +17 -3: tapping (KIT-24, STATE-9) a tap leaves no keyboard focus or ring behind
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: null
+  Actual: 'Bravo'
+a touch does not move keyboard focus into the group
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (test/kit/kit_segmented_test.dart:325:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  test/kit/kit_segmented_test.dart line 325
+The test description was:
+  a tap leaves no keyboard focus or ring behind
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +17 -4: tapping (KIT-24, STATE-9) a tap leaves no keyboard focus or ring behind [E]
+  Test failed. See exception logs above.
+  The test description was: a tap leaves no keyboard focus or ring behind
+  
+00:01 +17 -4: the check and semantics (A11Y-1) only the selected segment shows the check glyph
+00:01 +18 -4: the check and semantics (A11Y-1) the check moves with the selection
+00:01 +19 -4: the check and semantics (A11Y-1) each segment carries button, selected and group semantics
+00:01 +20 -4: the check and semantics (A11Y-1) a disabled segment is announced as not enabled
+00:01 +21 -4: the check and semantics (A11Y-1) the count is included in the segment semantic label
+00:01 +22 -4: disabled reasons (STATE-8) a disabled segment's reason is visible text under the control
+00:01 +23 -4: disabled reasons (STATE-8) a reason shared by several segments is shown once
+00:01 +24 -4: disabled reasons (STATE-8) a disabled whole control shows its own reason
+00:01 +25 -4: keyboard (LAY-10, LAY-11, G14) Tab lands on the selected segment
+00:01 +26 -4: keyboard (LAY-10, LAY-11, G14) the group is one Tab stop
+00:01 +27 -4: keyboard (LAY-10, LAY-11, G14) Arrow Right moves focus without calling onChanged
+00:02 +28 -4: keyboard (LAY-10, LAY-11, G14) arrows skip a disabled segment
+00:02 +29 -4: keyboard (LAY-10, LAY-11, G14) Space calls onChanged for the focused segment
+00:02 +30 -4: keyboard (LAY-10, LAY-11, G14) Enter calls onChanged for the focused segment
+00:02 +31 -4: keyboard (LAY-10, LAY-11, G14) in RTL, Arrow Left moves to the next segment
+00:02 +32 -4: keyboard (LAY-10, LAY-11, G14) leaving the group and coming back lands on the selected segment again
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: 'Bravo'
+  Actual: 'Charlie'
+   Which: is different.
+          Expected: Bravo
+            Actual: Charlie
+                    ^
+           Differ at offset 0
+Shift+Tab back in lands on the selected segment
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (test/kit/kit_segmented_test.dart:625:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  test/kit/kit_segmented_test.dart line 625
+The test description was:
+  leaving the group and coming back lands on the selected segment again
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +32 -5: keyboard (LAY-10, LAY-11, G14) leaving the group and coming back lands on the selected segment again [E]
+  Test failed. See exception logs above.
+  The test description was: leaving the group and coming back lands on the selected segment again
+  
+00:02 +32 -5: keyboard (LAY-10, LAY-11, G14) keyboard focus shows the accent ring
+00:02 +33 -5: keyboard (LAY-10, LAY-11, G14) the ring does not move the content
+00:02 +34 -5: fine pointer (D11) hover and press fill with surface steps, never overlays
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: Set:[16777215]
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (test/kit/kit_segmented_test.dart:687:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  test/kit/kit_segmented_test.dart line 687
+The test description was:
+  hover and press fill with surface steps, never overlays
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +34 -6: fine pointer (D11) hover and press fill with surface steps, never overlays [E]
+  Test failed. See exception logs above.
+  The test description was: hover and press fill with surface steps, never overlays
+  
+00:02 +34 -6: fine pointer (D11) a hovered unselected segment fills surface2 in dark
+00:02 +35 -6: reduced motion (G8) after a real tap one pump() settles and no ticker runs
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: false
+  Actual: <true>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (test/kit/kit_segmented_test.dart:721:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  test/kit/kit_segmented_test.dart line 721
+The test description was:
+  after a real tap one pump() settles and no ticker runs
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +35 -7: reduced motion (G8) after a real tap one pump() settles and no ticker runs [E]
+  Test failed. See exception logs above.
+  The test description was: after a real tap one pump() settles and no ticker runs
+  
+00:02 +35 -7: sizing and overflow (LAY-9, G6) default · text 1.0 · rtl: no overflow, 48 dp targets
+00:02 +36 -7: sizing and overflow (LAY-9, G6) default · text 1.0 · ltr: no overflow, 48 dp targets
+00:02 +37 -7: sizing and overflow (LAY-9, G6) default · text 1.3 · rtl: no overflow, 48 dp targets
+00:03 +38 -7: sizing and overflow (LAY-9, G6) default · text 1.3 · ltr: no overflow, 48 dp targets
+00:03 +39 -7: sizing and overflow (LAY-9, G6) default · text 2.0 · rtl: no overflow, 48 dp targets
+00:03 +40 -7: sizing and overflow (LAY-9, G6) default · text 2.0 · ltr: no overflow, 48 dp targets
+00:03 +41 -7: sizing and overflow (LAY-9, G6) with counts · text 1.0 · rtl: no overflow, 48 dp targets
+00:03 +42 -7: sizing and overflow (LAY-9, G6) with counts · text 1.0 · ltr: no overflow, 48 dp targets
+00:03 +43 -7: sizing and overflow (LAY-9, G6) with counts · text 1.3 · rtl: no overflow, 48 dp targets
+00:03 +44 -7: sizing and overflow (LAY-9, G6) with counts · text 1.3 · ltr: no overflow, 48 dp targets
+00:03 +45 -7: sizing and overflow (LAY-9, G6) with counts · text 2.0 · rtl: no overflow, 48 dp targets
+00:03 +46 -7: sizing and overflow (LAY-9, G6) with counts · text 2.0 · ltr: no overflow, 48 dp targets
+00:03 +47 -7: sizing and overflow (LAY-9, G6) segment disabled · text 1.0 · rtl: no overflow, 48 dp targets
+00:03 +48 -7: sizing and overflow (LAY-9, G6) segment disabled · text 1.0 · ltr: no overflow, 48 dp targets
+00:03 +49 -7: sizing and overflow (LAY-9, G6) segment disabled · text 1.3 · rtl: no overflow, 48 dp targets
+00:03 +50 -7: sizing and overflow (LAY-9, G6) segment disabled · text 1.3 · ltr: no overflow, 48 dp targets
+00:03 +51 -7: sizing and overflow (LAY-9, G6) segment disabled · text 2.0 · rtl: no overflow, 48 dp targets
+00:04 +52 -7: sizing and overflow (LAY-9, G6) segment disabled · text 2.0 · ltr: no overflow, 48 dp targets
+00:04 +53 -7: sizing and overflow (LAY-9, G6) disabled · text 1.0 · rtl: no overflow, 48 dp targets
+00:04 +54 -7: sizing and overflow (LAY-9, G6) disabled · text 1.0 · ltr: no overflow, 48 dp targets
+00:04 +55 -7: sizing and overflow (LAY-9, G6) disabled · text 1.3 · rtl: no overflow, 48 dp targets
+00:04 +56 -7: sizing and overflow (LAY-9, G6) disabled · text 1.3 · ltr: no overflow, 48 dp targets
+00:04 +57 -7: sizing and overflow (LAY-9, G6) disabled · text 2.0 · rtl: no overflow, 48 dp targets
+00:04 +58 -7: sizing and overflow (LAY-9, G6) disabled · text 2.0 · ltr: no overflow, 48 dp targets
+00:04 +59 -7: Some tests failed.
+
+Failing tests:
+  test/kit/kit_segmented_test.dart: KitSegmented (MOT-7) a tap moves the selection changes and settles at once under effectsOff
+  test/kit/kit_segmented_test.dart: KitSegmented (MOT-7) a tap moves the selection changes and settles at once under system
+  test/kit/kit_segmented_test.dart: construction (G37) a selected value not among the segments asserts
+  test/kit/kit_segmented_test.dart: fine pointer (D11) hover and press fill with surface steps, never overlays
+  ... and 3 more

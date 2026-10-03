@@ -6,7 +6,8 @@
 /// must see exactly what it saw before this layer existed — and the v2 half
 /// asserts the locked treatment for that surface class:
 ///
-/// - nav destinations, tiles and menu actions with no v2 backend: **hidden**
+/// - unsupported tiles and menu actions: **hidden**
+/// - catalog Tools tab: retained with an explainer (screen-library-2 revamp)
 /// - settings rows: **shown disabled** with a one-line explainer
 /// - v2-only features on a v1 server: **hidden**, no explainer
 library;
@@ -14,6 +15,7 @@ library;
 import 'support/complete_message_history.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
@@ -24,14 +26,16 @@ import 'package:opencode_mobile/api2/gateway_mappers.dart'
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
 import 'package:opencode_mobile/ui/screens/capabilities_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
+import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
+import 'package:opencode_mobile/ui/search/search_index.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tools_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
-import 'package:opencode_mobile/ui/widgets/product_states.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A transport that speaks v1 and reports the v1 superset, like today's
@@ -211,6 +215,15 @@ EventEnvelope _formCreated() => EventEnvelope(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  const storage = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(storage, (_) async => null);
+  });
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(storage, null);
+  });
 
   group('the accessor reports transport truth', () {
     test('an unattached controller reports the v1 superset', () async {
@@ -237,7 +250,7 @@ void main() {
     });
   });
 
-  group('hidden: nav destination with no v2 backend (§7 row 20)', () {
+  group('catalog navigation preserves the explained Tools gate', () {
     testWidgets('catalog tabs stay reachable on a narrow large-text phone', (
       tester,
     ) async {
@@ -268,7 +281,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(references);
       await tester.pumpAndSettle();
-      expect(DefaultTabController.of(tester.element(references)).index, 3);
+      expect(
+        tester.widget<KitTabSwitcher>(find.byType(KitTabSwitcher)).index,
+        3,
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -283,27 +299,37 @@ void main() {
         find.byKey(const ValueKey('capabilities-tab-Tools')),
         findsOneWidget,
       );
-      expect(find.byType(Tab), findsNWidgets(4));
-    });
-
-    testWidgets('v2 drops the tab and keeps the screen', (tester) async {
-      final controller = await _controller(v2: true);
-      addTearDown(controller.dispose);
-
-      await tester.pumpWidget(_app(CapabilitiesScreen(controller: controller)));
-      await tester.pump();
-
-      expect(
-        find.byKey(const ValueKey('capabilities-tab-Tools')),
-        findsNothing,
-      );
-      expect(find.byType(ToolsScreen), findsNothing);
-      // The surviving catalogs still have their tabs — the screen lives on.
-      expect(find.byType(Tab), findsNWidgets(3));
-      for (final tab in const ['Commands', 'Skills', 'References']) {
-        expect(find.byKey(ValueKey('capabilities-tab-$tab')), findsOneWidget);
+      for (final label in const ['Commands', 'Tools', 'Skills', 'References']) {
+        expect(find.byKey(ValueKey('capabilities-tab-$label')), findsOneWidget);
       }
     });
+
+    testWidgets(
+      'v2 keeps the Tools tab and explains its unavailable inventory',
+      (tester) async {
+        final controller = await _controller(v2: true);
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(
+          _app(CapabilitiesScreen(controller: controller)),
+        );
+        await tester.pump();
+
+        final tools = find.byKey(const ValueKey('capabilities-tab-Tools'));
+        expect(tools, findsOneWidget);
+        await tester.tap(tools);
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('capabilities-tools-unavailable')),
+          findsOneWidget,
+        );
+        expect(find.byType(ToolsScreen), findsNothing);
+        // The other catalogs remain reachable beside the explanation.
+        for (final tab in const ['Commands', 'Skills', 'References']) {
+          expect(find.byKey(ValueKey('capabilities-tab-$tab')), findsOneWidget);
+        }
+      },
+    );
   });
 
   group('hidden: More tile whose screen has no backend (§7 row 1)', () {
@@ -311,12 +337,14 @@ void main() {
     // sliver so presence/absence is what the assertions actually measure.
     setUp(() => _useTallSurface());
 
-    // Audit UX-101 moved every management destination behind one labelled
-    // "Manage project" route; the gating rule now applies inside it.
-    Future<void> openManageProject(WidgetTester tester) async {
-      await tester.tap(find.byKey(const ValueKey('current-project-entry')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('manage-project-entry')));
+    // Every project management destination is a Project tab tool (Manage
+    // project merged into the tab, slice-P3.11a); the gating rule applies
+    // to the tab's rows.
+    Future<void> openProjectTab(
+      WidgetTester tester,
+      ConnectionController controller,
+    ) async {
+      await tester.pumpWidget(_app(ProjectHub(controller: controller)));
       await tester.pumpAndSettle();
     }
 
@@ -324,17 +352,16 @@ void main() {
       final controller = await _controller(v2: false);
       addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        _app(Scaffold(body: WorkspaceScreen(controller: controller))),
-      );
-      await tester.pumpAndSettle();
-      await openManageProject(tester);
+      await openProjectTab(tester, controller);
 
       expect(
-        find.byKey(const ValueKey('managed-workspaces-entry')),
+        find.byKey(const ValueKey('project-hub-workspaces')),
         findsOneWidget,
       );
-      expect(find.byKey(const ValueKey('worktrees-entry')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('project-hub-worktrees')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('v2 hides the tile and leaves the rest of Coding', (
@@ -343,33 +370,21 @@ void main() {
       final controller = await _controller(v2: true);
       addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        _app(Scaffold(body: WorkspaceScreen(controller: controller))),
-      );
-      await tester.pumpAndSettle();
-      // The route itself survives: switching projects and project health
-      // have a backend on every generation, so it is never a dead end.
-      expect(
-        find.byKey(const ValueKey('current-project-entry')),
-        findsOneWidget,
-      );
-      await openManageProject(tester);
+      await openProjectTab(tester, controller);
 
       expect(
-        find.byKey(const ValueKey('managed-workspaces-entry')),
+        find.byKey(const ValueKey('project-hub-workspaces')),
         findsNothing,
       );
       // No explainer for a hidden tile: the list simply reflows.
       expect(find.textContaining('OpenCode 2'), findsNothing);
-      expect(find.byKey(const ValueKey('worktrees-entry')), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('project-health-entry')),
+        find.byKey(const ValueKey('project-hub-worktrees')),
         findsOneWidget,
       );
-      expect(
-        find.byKey(const ValueKey('switch-project-entry')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const ValueKey('project-hub-health')), findsOneWidget);
+      // Switching project stays beside the project's name.
+      expect(find.byKey(const ValueKey('project-hub-menu')), findsOneWidget);
     });
   });
 
@@ -377,10 +392,10 @@ void main() {
     setUp(() => _useTallSurface());
 
     Future<void> openSessionMenu(WidgetTester tester) async {
-      // Workspace also has a section menu; open the session's labeled control.
-      final actions = find.byTooltip('Conversation actions').hitTestable();
-      expect(actions, findsOneWidget);
-      await tester.tap(actions);
+      // KIT-28 moved row actions to the long-press menu.
+      final row = find.byKey(const ValueKey('session-row-session-1'));
+      expect(row, findsOneWidget);
+      await tester.longPress(row);
       await tester.pumpAndSettle();
     }
 
@@ -402,8 +417,8 @@ void main() {
       await tester.pumpAndSettle();
       await openSessionMenu(tester);
 
-      expect(find.text('Rename'), findsOneWidget);
-      expect(find.text('Share'), findsOneWidget);
+      expect(find.text('Rename conversation'), findsOneWidget);
+      expect(find.text('Share conversation'), findsOneWidget);
       expect(find.text('Archive'), findsOneWidget);
       expect(find.text('Delete'), findsOneWidget);
     });
@@ -424,10 +439,10 @@ void main() {
       await tester.pumpAndSettle();
       await openSessionMenu(tester);
 
-      expect(find.text('Share'), findsNothing);
+      expect(find.text('Share conversation'), findsNothing);
       expect(find.text('Archive'), findsNothing);
       // Menus list possible actions only — no disabled rows, no explainers.
-      expect(find.text('Rename'), findsOneWidget);
+      expect(find.text('Rename conversation'), findsOneWidget);
       expect(find.text('Delete'), findsOneWidget);
     });
   });
@@ -483,7 +498,7 @@ void main() {
       );
       final row = find.byKey(const ValueKey('gated-git-init'));
       expect(row, findsOneWidget);
-      expect(tester.widget<ListTile>(row).enabled, isFalse);
+      expect(tester.widget<KitRow>(row).enabled, isFalse);
       expect(find.text('Run `git init` from a terminal'), findsOneWidget);
     });
   });
@@ -525,20 +540,29 @@ void main() {
       expect(find.byKey(const ValueKey('gated-shell-settings')), findsNothing);
       expect(find.text('Default shell'), findsNothing);
       // Not a dead search result either.
-      await tester.enterText(find.byKey(const Key('library-search')), 'shell');
-      await tester.pump();
-      expect(
-        find.byKey(const ValueKey('default-shell-settings-entry')),
-        findsNothing,
-      );
+      final shellHits = [
+        for (final entry in searchEntries(
+          lookupAppLocalizations(const Locale('en')),
+          SearchScope(controller: controller),
+          'shell',
+        ))
+          entry.id,
+      ];
+      expect(shellHits, isNot(contains('default-shell-settings-entry')));
       // "shell" is one of the words that find the explanation instead.
+      expect(shellHits, contains('settings-server-capabilities'));
+      // It is a Help row of the hub.
       final help = find.byKey(const ValueKey('settings-server-capabilities'));
       expect(help, findsOneWidget);
 
+      // The hub is longer than the test window: bring the row into view.
+      await tester.ensureVisible(help);
+      await tester.pumpAndSettle();
       await tester.tap(help);
       await tester.pumpAndSettle();
+      // R16 puts missing features first in one list, each with its own state.
       final unavailable = find.byKey(
-        const ValueKey('capabilities-unavailable'),
+        const ValueKey('capability-unavailable-shell'),
       );
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('capability-unavailable-shell')),
@@ -552,6 +576,16 @@ void main() {
       );
       expect(
         find.descendant(of: unavailable, matching: find.text('Default shell')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: unavailable,
+          matching: find.textContaining(
+            'Not on this server',
+            findRichText: true,
+          ),
+        ),
         findsOneWidget,
       );
       expect(
@@ -578,46 +612,34 @@ void main() {
       expect(find.byKey(const Key('server-updates-tile')), findsNothing);
       final row = find.byKey(const ValueKey('gated-remote-upgrade'));
       expect(row, findsOneWidget);
-      expect(tester.widget<ListTile>(row).enabled, isFalse);
+      expect(tester.widget<KitRow>(row).enabled, isFalse);
       expect(
         find.text('Upgrade from the machine running the server'),
         findsOneWidget,
       );
     });
 
-    testWidgets('v2 disables the diagnostics send button in place', (
+    testWidgets('Report a problem is the same page on v1 and v2', (
       tester,
     ) async {
-      final v1 = await _controller(v2: false);
-      addTearDown(v1.dispose);
-      await tester.pumpWidget(_app(AppDiagnosticsScreen(controller: v1)));
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey('gated-client-diagnostics')),
-        findsNothing,
-      );
-
-      final v2 = await _controller(v2: true);
-      addTearDown(v2.dispose);
-      await tester.pumpWidget(_app(AppDiagnosticsScreen(controller: v2)));
-      await tester.pumpAndSettle();
-
-      final send = find.byKey(const ValueKey('send-app-diagnostics'));
-      expect(send, findsOneWidget);
-      expect(tester.widget<FilledButton>(send).onPressed, isNull);
-      expect(
-        find.byKey(const ValueKey('gated-client-diagnostics')),
-        findsOneWidget,
-      );
-      expect(
-        find.text("This server doesn't accept client logs"),
-        findsOneWidget,
-      );
-      // Copy still works: only the server-bound action is gated.
-      expect(
-        find.byKey(const ValueKey('copy-app-diagnostics')),
-        findsOneWidget,
-      );
+      // P8.2 merged the server-log send into Report a problem, so no
+      // capability decides what the page offers.
+      for (final isV2 in [false, true]) {
+        final controller = await _controller(v2: isV2);
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(
+          _app(AppDiagnosticsScreen(controller: controller)),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('send-app-diagnostics')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('report-problem-review')),
+          findsOneWidget,
+        );
+      }
     });
   });
 
@@ -650,38 +672,6 @@ void main() {
       // Silently hidden: no explainer for a feature the user has never seen.
       expect(find.textContaining('OpenCode 2'), findsNothing);
       expect(find.text('All clear here'), findsOneWidget);
-    });
-  });
-
-  group('GatedRow copy', () {
-    testWidgets('names the generation the feature needs', (tester) async {
-      await tester.pumpWidget(
-        _app(
-          Scaffold(
-            body: ListView(
-              children: const [
-                GatedRowTile(
-                  feature: 'example',
-                  title: 'Example',
-                  explainer: gatedOnV2Explainer,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final row = find.byKey(const ValueKey('gated-example'));
-      expect(row, findsOneWidget);
-      expect(tester.widget<ListTile>(row).enabled, isFalse);
-      expect(find.text('Not available on OpenCode 2 servers'), findsOneWidget);
-      // Capability gating, not plan gating: no upsell, no call to action.
-      expect(find.byType(FilledButton), findsNothing);
-
-      await tester.tap(row);
-      await tester.pumpAndSettle();
-      expect(find.text('Requires an OpenCode 1 server'), findsOneWidget);
     });
   });
 }

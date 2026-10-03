@@ -1,0 +1,2 @@
+$ flutter test test/voice_automatic_setup_test.dart test/voice_automatic_setup_platform_test.dart  (pinned 3.47.1, coordinator review)
+00:00 +56: All tests passed!

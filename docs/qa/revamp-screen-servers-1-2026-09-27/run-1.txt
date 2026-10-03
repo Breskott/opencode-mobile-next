@@ -1,0 +1,31 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_fde912d8-958-1/test/revamp/screen_servers_1_test.dart
+00:00 +0: (setUpAll)
+00:00 +0: behaviour a saved server's actions open on long-press, no ⋮ button
+00:01 +1: behaviour a stored password is held, never shown, and kept on save
+00:01 +2: behaviour Replace takes a new password
+00:02 +3: behaviour closing with unsaved changes asks; Keep editing stays
+00:03 +4: behaviour the remove sheet says what goes and what the server keeps
+00:03 +5: behaviour the loaded list lays out at 320 dp
+00:03 +6: behaviour the loaded list lays out at 360 dp
+00:03 +7: behaviour the loaded list lays out at 412 dp
+00:03 +8: behaviour the loaded list lays out at 600 dp
+00:03 +9: behaviour the loaded list lays out at 800 dp
+00:03 +10: behaviour the loaded list lays out at 840 dp
+00:03 +11: behaviour the loaded list lays out at 1280 dp
+00:03 +12: behaviour the loaded list lays out at 1600 dp
+00:03 +13: goldens servers loaded · dark
+00:03 +14: goldens servers loaded 1280x800 · dark
+00:04 +15: goldens welcome · dark
+00:04 +16: goldens remove sheet · dark
+00:04 +17: goldens editor, saved password · dark
+00:04 +18: goldens editor, add · dark
+00:05 +19: goldens discard sheet · dark
+00:05 +20: goldens servers loaded · light
+00:05 +21: goldens servers loaded 1280x800 · light
+00:05 +22: goldens welcome · light
+00:05 +23: goldens remove sheet · light
+00:06 +24: goldens editor, saved password · light
+00:06 +25: goldens editor, add · light
+00:06 +26: goldens discard sheet · light
+00:06 +27: (tearDownAll)
+00:06 +27: All tests passed!

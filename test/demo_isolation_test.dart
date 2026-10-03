@@ -9,9 +9,10 @@ import 'package:opencode_mobile/demo/demo_gateway.dart';
 import 'package:opencode_mobile/demo/demo_store.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/demo_screen.dart';
-import 'package:opencode_mobile/ui/widgets/diff_view.dart';
+import 'package:opencode_mobile/ui/screens/review_workspace.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _channels = [
@@ -120,7 +121,15 @@ Future<void> _isolatedJourney(
       expect(find.byType(ChatScreen), findsOneWidget);
       expect(_demoController(tester), isNot(same(realConnection)));
       expect(_demoController(tester).isIsolated, isTrue);
-      if (keyboard == 0) expect(find.text(DemoCopy.disclosure), findsOneWidget);
+      if (keyboard == 0) {
+        expect(
+          find.text(
+            'Everything here is simulated on this device. No server, '
+            'provider, or files are accessed.',
+          ),
+          findsOneWidget,
+        );
+      }
       await body();
       await tester.pumpWidget(const SizedBox.shrink());
       await _pump(tester);
@@ -170,6 +179,15 @@ void main() {
           );
           expect(find.text('Try a small change'), findsOneWidget);
           expect(find.byType(AppBar), findsNothing);
+          // The status stays readable above the keyboard; its action remains
+          // reachable even when large text needs the status area to scroll.
+          final reset = find.byKey(const Key('demo-reset'));
+          final beforeReset = _demoController(tester);
+          await tester.ensureVisible(reset);
+          await tester.tap(reset);
+          await _pump(tester);
+          expect(_demoController(tester), isNot(same(beforeReset)));
+          expect(tester.takeException(), isNull);
           final send = find.byKey(const Key('chat-send-button'));
           expect(tester.getRect(send).bottom, lessThanOrEqualTo(420));
           await tester.tap(send);
@@ -188,10 +206,20 @@ void main() {
           expect(find.text('Set up your own server'), findsNothing);
           expect(tester.getRect(send).bottom, lessThanOrEqualTo(420));
           final review = find.byKey(const Key('permission-card-review'));
+          expect(
+            review,
+            findsOneWidget,
+            reason:
+                'The pending request must keep its Details action reachable',
+          );
           await Scrollable.ensureVisible(tester.element(review), alignment: .5);
+          await _pump(tester);
           await tester.tap(review);
           await _pump(tester);
-          final allow = find.byKey(const Key('permission-allow-once'));
+          final allow = find.descendant(
+            of: find.byKey(const Key('permission-sheet')),
+            matching: find.widgetWithText(KitButton, 'Allow once'),
+          );
           await Scrollable.ensureVisible(tester.element(allow), alignment: .5);
           await _pump(tester);
           expect(allow.hitTestable(), findsOneWidget);
@@ -214,7 +242,7 @@ void main() {
           );
           expect(find.text('Set up your own server'), findsNothing);
           expect(tester.getRect(send).bottom, lessThanOrEqualTo(420));
-          await tester.tap(find.byTooltip(DemoCopy.exit));
+          await tester.tap(find.byTooltip('Leave demo'));
           await _pump(tester);
           expect(find.text('Open demo'), findsOneWidget);
           expect(tester.takeException(), isNull);
@@ -232,7 +260,7 @@ void main() {
         await _isolatedJourney(tester, () async {
           final controller = _demoController(tester);
           final gateway = controller.api! as DemoGateway;
-          expect(find.byTooltip('Review changes'), findsNothing);
+          expect(find.text('Review changes'), findsNothing);
           await tester.tap(find.byKey(const Key('chat-send-button')));
           await _pump(tester);
           expect(
@@ -240,33 +268,37 @@ void main() {
             hasLength(1),
           );
           expect(gateway.hasPendingTimer, isFalse);
-          await tester.tap(find.byTooltip('Review changes'));
+          await tester.tap(find.text('Review changes'));
           await _pump(tester);
-          expect(find.byType(DiffView), findsOneWidget);
+          expect(find.byType(DiffPage), findsOneWidget);
           expect(
-            tester.widget<DiffView>(find.byType(DiffView)).allowCopy,
+            tester.widget<DiffPage>(find.byType(DiffPage)).allowCopy,
             isFalse,
           );
           expect(
             find.textContaining('Welcome aboard!', findRichText: true),
             findsWidgets,
           );
-          await tester.tap(find.byType(CloseButton));
+          await tester.tap(find.byTooltip('Close'));
           await _pump(tester);
           await _review(tester);
-          await tester.tap(find.byKey(const Key('permission-see-full-diff')));
-          await _pump(tester);
-          expect(find.byType(DiffView), findsOneWidget);
+          // C15 presents the whole change inside the request sheet.
+          // The isolation harness below still forbids clipboard/native I/O.
           expect(
-            tester.widget<DiffView>(find.byType(DiffView)).allowCopy,
-            isFalse,
-          );
-          await tester.tap(find.byType(CloseButton));
-          await _pump(tester);
-          await tester.tap(
-            find.byKey(
-              Key(allow ? 'permission-allow-once' : 'permission-reject'),
+            find.descendant(
+              of: find.byKey(const Key('permission-sheet')),
+              matching: find.byType(KitDiffView),
             ),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining('Welcome aboard!', findRichText: true),
+            findsWidgets,
+          );
+          await tester.tap(
+            find
+                .widgetWithText(KitButton, allow ? 'Allow once' : 'Reject')
+                .hitTestable(),
           );
           await _pump(tester);
           expect(
@@ -292,7 +324,7 @@ void main() {
           await tester.tap(
             allow
                 ? find.text('Set up your own server')
-                : find.byTooltip(DemoCopy.exit),
+                : find.byTooltip('Leave demo'),
           );
           await _pump(tester);
           expect(find.text('Open demo'), findsOneWidget);
@@ -311,7 +343,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
         expect(first.hasPendingTimer, isTrue);
-        await tester.tap(find.byTooltip(DemoCopy.reset));
+        await tester.tap(find.byKey(const Key('demo-reset')));
         await _pump(tester);
         expect(first.isClosed, isTrue);
         expect(first.hasPendingTimer, isFalse);
@@ -320,7 +352,9 @@ void main() {
         expect(await second.messages(DemoGateway.sessionID), isEmpty);
         expect(
           tester
-              .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+              .widget<TextFormField>(
+                find.byKey(const Key('chat-composer-field')),
+              )
               .controller!
               .text,
           DemoCopy.prompt,
@@ -329,7 +363,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
         expect(second.hasPendingTimer, isTrue);
-        await tester.tap(find.byTooltip(DemoCopy.exit));
+        await tester.tap(find.byTooltip('Leave demo'));
         await _pump(tester);
         expect(second.isClosed, isTrue);
         expect(second.hasPendingTimer, isFalse);
@@ -358,6 +392,46 @@ void main() {
         expect(history.first.parts.single.text, input);
         expect(find.byType(ChatScreen), findsOneWidget);
         expect(find.byType(Image), findsNothing);
+      });
+    },
+  );
+
+  testWidgets(
+    'B12: a typed / in the demo says it has no commands, at the start and '
+    'mid-text, and offers none',
+    (tester) async {
+      await _isolatedJourney(tester, () async {
+        const noCommands =
+            'The demo has no commands — send the sample prompt to see a '
+            'change reviewed.';
+        final field = find.byKey(const Key('chat-composer-field'));
+        // The sample prompt alone: nothing in the suggestion area.
+        expect(find.text(noCommands), findsNothing);
+
+        await tester.enterText(field, '/');
+        await _pump(tester);
+        expect(find.byKey(const Key('demo-no-commands')), findsOneWidget);
+        expect(find.text(noCommands), findsOneWidget);
+        expect(
+          find.byKey(const Key('inline-command-suggestions')),
+          findsNothing,
+        );
+
+        // Words without a slash word at the caret: the line goes.
+        await tester.enterText(field, 'Add a welcome line');
+        await _pump(tester);
+        expect(find.text(noCommands), findsNothing);
+
+        // "/" typed mid-text (the backlog's case) says the same.
+        await tester.enterText(field, 'Add a welcome line /rev');
+        await _pump(tester);
+        expect(find.text(noCommands), findsOneWidget);
+
+        // A path inside a word is not a command.
+        await tester.enterText(field, 'Edit src/welcome.txt');
+        await _pump(tester);
+        expect(find.text(noCommands), findsNothing);
+        expect(tester.takeException(), isNull);
       });
     },
   );

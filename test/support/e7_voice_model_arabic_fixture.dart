@@ -62,8 +62,6 @@ class E7VoiceModelArabicFixture extends AppLocalizationsEn {
   @override
   String get e7ModelUiAgent => 'الوكيل';
   @override
-  String get e7ModelUiNoAgents => 'لا توجد وكلاء متاحة';
-  @override
   String get e7ModelUiServerDefault => 'إعداد الخادم الافتراضي';
   @override
   String get e7ModelUiProvider => 'مزوّد الخدمة';
@@ -80,7 +78,8 @@ class E7VoiceModelArabicFixture extends AppLocalizationsEn {
   @override
   String get e7ModelUiFavoritesFailed => 'تعذّر حفظ المفضّلة. حاول مجددًا.';
   @override
-  String get e7ModelUiUseModelMode => 'استخدام النموذج والوضع';
+  String e7ModelUiUseModelMode(String model, String agent) =>
+      'استخدام $model · $agent';
   @override
   String get e7ModelUiUseSession => 'استخدام في هذه الجلسة';
   @override
@@ -108,8 +107,6 @@ class E7VoiceModelArabicFixture extends AppLocalizationsEn {
   String get e7VoiceUiLanguage => 'لغة تحويل الكلام إلى نص';
   @override
   String get e7VoiceUiVerifying => 'جارٍ التحقّق من النموذج المنزّل';
-  @override
-  String get e7VoiceUiVerifyChecksum => 'جارٍ التحقّق من الحجم وبصمة SHA-256…';
   @override
   String get e7VoiceUiCancelDownload => 'إلغاء التنزيل';
   @override
@@ -145,47 +142,17 @@ class E7VoiceModelArabicFixture extends AppLocalizationsEn {
   @override
   String get e7VoiceUiRedownload => 'إعادة التنزيل';
   @override
-  String get e7VoiceUiReviewTranscript => 'مراجعة النص';
-  @override
   String get e7VoiceUiOpenSettings => 'فتح إعدادات التطبيق';
   @override
   String get e7VoiceUiRetry => 'حاول مجددًا';
   @override
   String get e7VoiceUiStartListening => 'بدء الاستماع';
   @override
-  String get e7VoiceUiCancel => 'إلغاء';
-  @override
-  String get e7VoiceUiInsert => 'إدراج';
-  @override
-  String get e7VoiceUiInsertSend => 'إدراج وإرسال';
-  @override
-  String get e7VoiceUiStartingMic => 'جارٍ تشغيل الميكروفون…';
-  @override
-  String get e7VoiceUiLoadingModel => 'جارٍ تحميل النموذج المحلي…';
-  @override
-  String get e7VoiceUiTranscribing =>
-      'جارٍ تحويل الكلام إلى نص على هذا الجهاز…';
-  @override
-  String get e7VoiceUiFinishingCancel => 'جارٍ إنهاء عملية التحويل الملغاة…';
-  @override
   String get e7VoiceUiDraftReady => 'النص جاهز للمراجعة';
   @override
   String get e7VoiceUiNeedsAttention => 'الإدخال الصوتي يحتاج إلى انتباهك';
   @override
-  String get e7VoiceUiReady => 'جاهز للإدخال الصوتي المحلي';
-  @override
   String get e7VoiceUiModelRequired => 'يلزم نموذج محلي';
-  @override
-  String get e7VoiceUiDownloading => 'جارٍ تنزيل النموذج الصوتي…';
-  @override
-  String get e7VoiceUiVerifyingModel => 'جارٍ التحقّق من النموذج الصوتي…';
-  @override
-  String get e7VoiceUiListeningHint =>
-      'جارٍ الاستماع. اضغط مرتين على إيقاف التسجيل عند الانتهاء.';
-  @override
-  String get e7VoiceUiPrivacy => 'يبقى الصوت على هذا الجهاز';
-  @override
-  String get e7VoiceUiStopRecording => 'إيقاف التسجيل';
   @override
   String e7ModelUiContext(String count) => 'سعة سياق $count';
   @override
@@ -224,11 +191,6 @@ class E7VoiceModelArabicFixture extends AppLocalizationsEn {
     String badges,
     String description,
   ) => '$model، $size، $badges. $description';
-  @override
-  String e7VoiceUiListeningTime(String elapsed, String maximum) =>
-      'جارٍ الاستماع: $elapsed من $maximum';
-  @override
-  String e7VoiceUiRecordingCap(int seconds) => 'حتى $seconds ثانية لكل تسجيل';
   @override
   String get e7VoiceUiLicenses => 'تراخيص الصوت ومصادره';
   @override

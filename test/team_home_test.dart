@@ -17,16 +17,21 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/orchestration/adapters/fixture/fixture_gateway.dart';
 import 'package:opencode_mobile/orchestration/adapters/gascity/dto/dto.dart';
+import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_gateway.dart';
 import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_mappers.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_motion.dart';
+import 'package:opencode_mobile/ui/kit/kit_top_bar.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
-import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/gascity_recorded_city.dart';
+import 'team_open_settings.dart';
 
 Directory _findFixtureRoot() {
   var dir = Directory.current;
@@ -41,7 +46,7 @@ Directory _findFixtureRoot() {
 }
 
 /// The `blocked` scenario's derived `/pending` entry (as in
-/// team_card_test).
+/// team_on_work_test).
 const _blockedPending = <String, Object?>{
   'session_id': 'bl-polecat-1',
   'request_id': 'req-fixture-choice-1',
@@ -50,6 +55,9 @@ const _blockedPending = <String, Object?>{
   'options': ['replace', 'keep', 'stop'],
   'metadata': {'bead': 'oc-loy', 'fixture.scenario': 'blocked'},
 };
+
+/// Real sockets inside a widget test (the binding's default answers 400).
+class _RealHttp extends HttpOverrides {}
 
 /// The fixture with per-scope overrides, a read counter and an owned event
 /// stream so a test can drop the connection.
@@ -310,11 +318,6 @@ void main() {
     await tester.pump();
   }
 
-  Future<void> segment(WidgetTester tester, String name) async {
-    await tester.tap(find.byKey(ValueKey('team-home-segment-$name')));
-    await tester.pumpAndSettle();
-  }
-
   Finder runRow(String id) => find.byKey(ValueKey('team-home-run-$id'));
 
   double top(WidgetTester tester, Finder finder) =>
@@ -382,7 +385,7 @@ void main() {
       ..gatesOverride = const [];
   }
 
-  /// The `blocked` shape of team_card_test: the fixture convoy over a
+  /// The `blocked` shape of the old team card test: the fixture convoy over a
   /// blocked `oc-loy` and a closed sibling, plus the pending choice.
   void blockedShape(_Gateway gateway) {
     final convoys = GcList<GcConvoy>.fromJson(
@@ -443,8 +446,28 @@ void main() {
       ];
   }
 
+  /// [mixedShape] and one more working task: past the eight a home shows
+  /// without search, so the search icon and the filter menu appear.
+  void manyShape(_Gateway gateway) {
+    mixedShape(gateway);
+    gateway.runsOverride = [
+      ...?gateway.runsOverride,
+      run('extra-1', RunState.working, 8),
+    ];
+  }
+
+  String? lineOf(WidgetTester tester, String id) {
+    final line = find.descendant(
+      of: find.byKey(ValueKey('team-home-run-state-$id')),
+      matching: find.byType(RichText),
+    );
+    return line.evaluate().isEmpty
+        ? null
+        : (tester.widget<RichText>(line.first).text.toPlainText());
+  }
+
   group('runs', () {
-    testWidgets('the fixture run lists with its kind, progress and state', (
+    testWidgets('the fixture task lists with one plain status line', (
       tester,
     ) async {
       OrchestrationRun? opened;
@@ -452,159 +475,232 @@ void main() {
       await pumpHome(tester, controller, onOpenRun: (run) => opened = run);
       expect(find.byKey(const ValueKey('team-home-data')), findsOneWidget);
       expect(find.text('AI Team'), findsOneWidget);
-      expect(find.text('Runs (1)'), findsOneWidget);
-      // Five live agents; the dog slots and the core helper are not agents.
-      expect(find.text('Agents (5)'), findsOneWidget);
-      expect(find.text('Needs you (0)'), findsOneWidget);
+      // One list, no tabs or counts to choose between first.
+      expect(find.text('Runs (1)'), findsNothing);
+      expect(find.byKey(const ValueKey('team-home-tasks')), findsOneWidget);
+      // Nothing waits on the person: no Needs you section at all.
+      expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
       expect(runRow('oc-xru'), findsOneWidget);
-      // The batch is named by its work and honest about nobody having it.
+      // The task is named by its work and honest about nobody having it,
+      // in the person's words: no "Batch · convoy".
       expect(find.text('Add subtract function to calc.py'), findsOneWidget);
       expect(find.text('sling-oc-loy'), findsNothing);
-      expect(find.text('Batch · convoy · 0 of 1 done'), findsOneWidget);
-      expect(find.text('Waiting for an agent'), findsOneWidget);
-      expect(find.text('Planning'), findsNothing);
+      // One step is not worth counting ("0 of 1"): the state says it all,
+      // then how long and whether a worker started (the recorded task has
+      // waited far past the team's checks; team-discover-2026-09-25).
       expect(
-        find.byKey(const ValueKey('team-home-upkeep-toggle')),
-        findsNothing,
-        reason: 'no upkeep in the recording: no toggle',
+        lineOf(tester, 'oc-xru'),
+        'Waiting for a worker · 17 h 45 min · no worker has started',
       );
+      expect(find.textContaining('convoy'), findsNothing);
+      expect(find.text('Planning'), findsNothing);
+      await tester.tap(runRow('oc-xru'));
+      expect(opened?.id, 'oc-xru');
+      await tester.pumpAndSettle();
+      // Five live agents; the dog slots and the core helper are not agents.
+      await openTeamSettingsFromHome(tester);
+      expect(find.textContaining('5 roles'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('team-home-upkeep-row')),
+        findsNothing,
+        reason: 'no upkeep in the recording: no upkeep line',
+      );
+      expect(find.text('Done today'), findsNothing);
+      expect(find.byKey(const ValueKey('team-home-stale')), findsNothing);
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ordered needs-you → active → waiting/blocked, then done', (
+      tester,
+    ) async {
+      final (controller, _) = await boot(configure: mixedShape);
+      await pumpHome(tester, controller);
+
+      final order = [
+        'failed-1',
+        'work-new',
+        'work-old',
+        'plan-1',
+        'blocked-1',
+        'wait-1',
+      ];
+      for (final id in order) {
+        expect(runRow(id), findsOneWidget, reason: id);
+      }
+      for (var i = 1; i < order.length; i++) {
+        expect(
+          top(tester, runRow(order[i - 1])),
+          lessThan(top(tester, runRow(order[i]))),
+          reason: '${order[i - 1]} above ${order[i]}',
+        );
+      }
+      // What finished follows in the same list, no heading of its own, up
+      // to three shown.
+      expect(
+        top(tester, runRow('done-1')),
+        greaterThan(top(tester, runRow('wait-1'))),
+      );
+      await tester.dragUntilVisible(
+        runRow('done-2'),
+        find.byKey(const ValueKey('team-home-runs')),
+        const Offset(0, -200),
+      );
+      expect(runRow('done-1'), findsOneWidget);
+      expect(runRow('done-2'), findsOneWidget);
+      expect(
+        top(tester, runRow('done-1')),
+        lessThan(top(tester, runRow('done-2'))),
+      );
+      // Rows say where a task is in plain words; the engine's words stay
+      // out of the list.
+      expect(find.textContaining('formula'), findsNothing);
+      expect(find.textContaining('convoy'), findsNothing);
+      expect(
+        lineOf(tester, 'work-new'),
+        'Working · 1 of 4 steps done · a reviewer checks it next',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('one list under one heading: needs you, then working, then '
+        'done; no state sections', (tester) async {
+      final (controller, _) = await boot(
+        configure: (g) {
+          mixedShape(g);
+          // Two questions: each is its task's row, first; no panel of
+          // questions above the list.
+          g.gatesOverride = const [
+            OrchestrationGate(
+              id: 'q-wait',
+              kind: GateKind.freeText,
+              title: 'Which branch?',
+              runId: 'wait-1',
+            ),
+            OrchestrationGate(
+              id: 'q-blocked',
+              kind: GateKind.freeText,
+              title: 'Which port?',
+              runId: 'blocked-1',
+            ),
+          ];
+        },
+      );
+      await pumpHome(tester, controller);
+      // One panel of every task, with no heading; none of the old section
+      // labels.
+      final tasks = find.byKey(const ValueKey('team-home-tasks'));
+      expect(tasks, findsOneWidget);
+      expect(find.text('Tasks'), findsNothing);
+      expect(find.text('Done today'), findsNothing);
+      expect(find.text('Needs you'), findsNothing);
+      expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
       expect(
         find.byKey(const ValueKey('team-home-completed-group')),
         findsNothing,
       );
-      expect(find.byKey(const ValueKey('team-home-stale')), findsNothing);
-
-      await tester.tap(runRow('oc-xru'));
-      expect(opened?.id, 'oc-xru');
+      final order = ['wait-1', 'work-new', 'done-1'];
+      for (final id in order) {
+        expect(
+          find.descendant(of: tasks, matching: runRow(id)),
+          findsOneWidget,
+          reason: '$id in the one list',
+        );
+      }
+      for (var i = 1; i < order.length; i++) {
+        expect(
+          top(tester, runRow(order[i - 1])),
+          lessThan(top(tester, runRow(order[i]))),
+          reason: '${order[i - 1]} above ${order[i]}',
+        );
+      }
+      // The row's own words carry the state: a question's task row is the
+      // question, shown once.
+      expect(lineOf(tester, 'wait-1'), 'Needs you · Which branch?');
+      expect(lineOf(tester, 'blocked-1'), 'Needs you · Which port?');
+      expect(find.byKey(const ValueKey('team-home-gate-q-wait')), findsNothing);
+      expect(find.text('Which branch?'), findsNothing);
+      expect(
+        lineOf(tester, 'work-new'),
+        'Working · 1 of 4 steps done · a reviewer checks it next',
+      );
+      expect(lineOf(tester, 'done-1'), startsWith('Done'));
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets(
-      'ordered needs-you → active → waiting/blocked, completed collapsed',
-      (tester) async {
-        final (controller, _) = await boot(configure: mixedShape);
-        await pumpHome(tester, controller);
+    testWidgets('eight tasks show no search; past eight, search and the '
+        'filter menu reduce the rows', (tester) async {
+      final (few, _) = await boot(configure: mixedShape);
+      await pumpHome(tester, few);
+      expect(find.byKey(const ValueKey('team-home-search-open')), findsNothing);
+      expect(find.byKey(const ValueKey('team-home-filter-menu')), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+      few.dispose();
 
-        expect(find.text('Runs (8)'), findsOneWidget);
-        final order = [
-          'failed-1',
-          'work-new',
-          'work-old',
-          'plan-1',
-          'blocked-1',
-          'wait-1',
-        ];
-        for (final id in order) {
-          expect(runRow(id), findsOneWidget, reason: id);
-        }
-        for (var i = 1; i < order.length; i++) {
-          expect(
-            top(tester, runRow(order[i - 1])),
-            lessThan(top(tester, runRow(order[i]))),
-            reason: '${order[i - 1]} above ${order[i]}',
-          );
-        }
-        // Completed runs are one collapsed row until tapped.
-        expect(runRow('done-1'), findsNothing);
-        expect(runRow('done-2'), findsNothing);
-        final group = find.byKey(const ValueKey('team-home-completed-group'));
-        expect(group, findsOneWidget);
-        expect(find.text('Completed today (2)'), findsOneWidget);
-        expect(top(tester, group), greaterThan(top(tester, runRow('wait-1'))));
-        await tester.tap(group);
-        await tester.pumpAndSettle();
-        expect(runRow('done-1'), findsOneWidget);
-        expect(runRow('done-2'), findsOneWidget);
-        expect(
-          top(tester, runRow('done-1')),
-          lessThan(top(tester, runRow('done-2'))),
-        );
-        await tester.tap(group);
-        await tester.pumpAndSettle();
-        expect(runRow('done-1'), findsNothing);
-        // Kind subtitles: batch says so, formula runs name the formula.
-        expect(find.text('Batch · convoy · 1 of 4 done'), findsOneWidget);
-        expect(find.text('Run · formula ship · 1 of 4 done'), findsNWidgets(5));
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets('filter chips reduce the rows', (tester) async {
-      final (controller, _) = await boot(configure: mixedShape);
+      final (controller, _) = await boot(configure: manyShape);
       await pumpHome(tester, controller);
-
-      await tester.tap(find.byKey(const ValueKey('team-home-filter-active')));
+      await tester.tap(find.byKey(const ValueKey('team-home-search-open')));
       await tester.pumpAndSettle();
+
+      Future<void> choose(String filter) async {
+        await tester.tap(find.byKey(const ValueKey('team-home-filter-menu')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(ValueKey('team-home-filter-$filter')));
+        await tester.pumpAndSettle();
+      }
+
+      await choose('active');
       expect(runRow('work-new'), findsOneWidget);
       expect(runRow('work-old'), findsOneWidget);
       expect(runRow('plan-1'), findsOneWidget);
       expect(runRow('blocked-1'), findsNothing);
       expect(runRow('wait-1'), findsNothing);
       expect(runRow('failed-1'), findsNothing);
-      expect(
-        find.byKey(const ValueKey('team-home-completed-group')),
-        findsNothing,
-      );
 
-      await tester.tap(find.byKey(const ValueKey('team-home-filter-blocked')));
-      await tester.pumpAndSettle();
+      await choose('blocked');
       expect(runRow('failed-1'), findsOneWidget);
       expect(runRow('blocked-1'), findsOneWidget);
       expect(runRow('wait-1'), findsOneWidget);
       expect(runRow('work-new'), findsNothing);
-      expect(runRow('plan-1'), findsNothing);
 
-      // Completed lists the finished runs directly, no group.
-      await tester.tap(
-        find.byKey(const ValueKey('team-home-filter-completed')),
-      );
-      await tester.pumpAndSettle();
+      await choose('completed');
       expect(runRow('done-1'), findsOneWidget);
       expect(runRow('done-2'), findsOneWidget);
       expect(runRow('work-new'), findsNothing);
-      expect(
-        find.byKey(const ValueKey('team-home-completed-group')),
-        findsNothing,
-      );
 
-      await tester.tap(find.byKey(const ValueKey('team-home-filter-all')));
-      await tester.pumpAndSettle();
+      await choose('all');
       expect(runRow('work-new'), findsOneWidget);
-      expect(runRow('done-1'), findsNothing);
-      expect(
-        find.byKey(const ValueKey('team-home-completed-group')),
-        findsOneWidget,
-      );
+      expect(runRow('extra-1'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('search filters by title and clears', (tester) async {
-      final (controller, _) = await boot(configure: mixedShape);
+      final (controller, _) = await boot(configure: manyShape);
       await pumpHome(tester, controller);
+      await tester.tap(find.byKey(const ValueKey('team-home-search-open')));
+      await tester.pumpAndSettle();
 
       await tester.enterText(
         find.byKey(const ValueKey('team-home-search')),
         'WORK-NEW',
       );
+      await tester.pump(KitMotion.typingSettle);
       await tester.pumpAndSettle();
       expect(runRow('work-new'), findsOneWidget);
       expect(runRow('work-old'), findsNothing);
       expect(runRow('failed-1'), findsNothing);
-      expect(
-        find.byKey(const ValueKey('team-home-completed-group')),
-        findsNothing,
-      );
 
       await tester.enterText(
         find.byKey(const ValueKey('team-home-search')),
         'nothing like this',
       );
+      await tester.pump(KitMotion.typingSettle);
       await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('team-home-runs-empty-filtered')),
         findsOneWidget,
       );
-      expect(find.text('No runs match.'), findsOneWidget);
+      expect(find.text('No tasks match.'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('team-home-search-clear')));
       await tester.pumpAndSettle();
@@ -617,44 +713,44 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('TEAM-117: work in the refinery\'s hands reads Waiting for '
-        'merge', (tester) async {
+    testWidgets('TEAM-117: work in the refinery\'s hands reads Reviewing', (
+      tester,
+    ) async {
       final (controller, _) = await boot(configure: handedToRefineryShape);
       await pumpHome(tester, controller);
-      expect(
-        tester
-            .widget<Text>(
-              find.byKey(const ValueKey('team-home-run-state-oc-xru')),
-            )
-            .data,
-        'Waiting for merge',
-      );
-      expect(find.text('Waiting for an agent'), findsNothing);
-      expect(find.text('Batch · convoy · 0 of 1 done'), findsOneWidget);
-      expect(find.text('Needs you (0)'), findsOneWidget);
+      expect(lineOf(tester, 'oc-xru'), 'Reviewing');
+      expect(find.textContaining('Waiting for a worker'), findsNothing);
+      expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a gated run carries the needs-you marker', (tester) async {
+    testWidgets('a gated task with its one question: the question is its '
+        'row, shown once', (tester) async {
       final (controller, _) = await boot(configure: blockedShape);
       await pumpHome(tester, controller);
-      expect(find.text('Needs you (1)'), findsOneWidget);
+      final gate = controller.snapshot.gates.single;
+      // One row: the task, its question inline and its step count; no
+      // separate block and no second copy of the task.
+      expect(runRow('oc-xru'), findsOneWidget);
+      expect(find.byKey(ValueKey('team-home-gate-${gate.id}')), findsNothing);
+      expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
       expect(
-        find.byKey(const ValueKey('team-home-run-needs-you-oc-xru')),
+        find.textContaining('Add subtract function to calc.py'),
         findsOneWidget,
       );
-      expect(
-        tester
-            .widget<Text>(
-              find.byKey(const ValueKey('team-home-run-state-oc-xru')),
-            )
-            .data,
-        'Blocked',
-      );
-      expect(find.text('Batch · convoy · 1 of 2 done'), findsOneWidget);
+      final line = lineOf(tester, 'oc-xru');
+      expect(line, startsWith('Needs you · '));
+      expect(line, contains(gate.title));
+      // It opens the question (the Gate sheet).
+      await tester.tap(runRow('oc-xru'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('team-gate-sheet')), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
-    testWidgets('no runs at all: the empty state', (tester) async {
+    testWidgets('no tasks at all: the empty state teaches once', (
+      tester,
+    ) async {
       final (controller, _) = await boot(
         configure: (g) => g.runsOverride = const [],
       );
@@ -663,18 +759,63 @@ void main() {
         find.byKey(const ValueKey('team-home-runs-empty')),
         findsOneWidget,
       );
-      expect(find.text('No runs yet.'), findsOneWidget);
+      // Honest: a host lists finished tasks for a bounded time only.
+      expect(find.text('No recent tasks'), findsOneWidget);
+      expect(find.text('No runs yet.'), findsNothing);
       expect(
         find.text(
-          'A run is a job the team works through. Start one and its '
-          'progress shows here.',
+          'Say what you need, and the team splits it into steps and shows '
+          'its progress here.',
         ),
         findsOneWidget,
       );
-      expect(find.text('Runs (0)'), findsOneWidget);
+      // The pinned button is the action; the state does not repeat it.
+      expect(find.text('Give the team a task'), findsOneWidget);
     });
 
-    testWidgets('no runs, and this phone cannot start one: no button', (
+    testWidgets('a task that finished and merged stays under Done: read by '
+        'the Gas City gateway from the recorded city', (tester) async {
+      // The live emulator city after the hello.py task merged: /convoys is
+      // empty, the convoy is closed. Read through the real gateway.
+      clock = recordedConvoyClosedAt.add(const Duration(hours: 5));
+      // Widget tests answer every HttpClient request with 400; this read
+      // goes over a real loopback socket.
+      final recorded = await tester.runAsync(
+        () => HttpOverrides.runWithHttpOverrides(() async {
+          final city = await RecordedCity.start();
+          final gateway = GasCityGateway(
+            url: city.url,
+            city: recordedCity,
+            clock: () => clock,
+          );
+          try {
+            return await gateway.runs();
+          } finally {
+            await gateway.close();
+            await city.close();
+          }
+        }, _RealHttp()),
+      );
+      final (controller, _) = await boot(
+        configure: (g) => g.runsOverride = recorded,
+      );
+      await pumpHome(tester, controller);
+
+      expect(find.byKey(const ValueKey('team-home-runs-empty')), findsNothing);
+      expect(find.text('No recent tasks'), findsNothing);
+      expect(find.byKey(const ValueKey('team-home-tasks')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('team-home-run-ma-lqw')),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Create hello.py that prints Hello from the AI Team'),
+        findsOneWidget,
+      );
+      expect(lineOf(tester, 'ma-lqw'), 'Done · merged 5h ago');
+    });
+
+    testWidgets('no tasks, and this phone cannot start one: no button', (
       tester,
     ) async {
       final (controller, _) = await boot(
@@ -688,9 +829,9 @@ void main() {
       await pumpHome(tester, controller);
       final empty = find.byKey(const ValueKey('team-home-runs-empty'));
       expect(empty, findsOneWidget);
-      expect(find.text('Start runs from the host for now.'), findsOneWidget);
+      expect(find.text('Start tasks on the computer for now.'), findsOneWidget);
       // Hide, don't disable: no button the host could not honour.
-      expect(find.text('Start a run'), findsNothing);
+      expect(find.text('Give the team a task'), findsNothing);
       expect(
         find.descendant(of: empty, matching: find.byType(TextButton)),
         findsNothing,
@@ -698,42 +839,56 @@ void main() {
     });
   });
 
-  group('host chip', () {
-    testWidgets('names the server, version, city and access; opens details', (
-      tester,
-    ) async {
+  String hostPhrase(WidgetTester tester) {
+    final bar = find.descendant(
+      of: find.byType(TeamHomeScreen),
+      matching: find.byType(KitTopBar),
+    );
+    final phrase = tester.widget<KitTopBar>(bar).subtitle!;
+    expect(
+      find.descendant(of: bar, matching: find.text(phrase)),
+      findsOneWidget,
+    );
+    return phrase;
+  }
+
+  // Technical details open from the page's "how it runs" row (P3.4).
+  Future<void> openDetails(WidgetTester tester) async {
+    await openTeamSettingsFromHome(tester);
+    await tester.tap(find.byKey(const ValueKey('team-home-host-row')));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> openAgents(WidgetTester tester) async {
+    await openTeamSettingsFromHome(tester);
+    await tester.tap(find.byKey(const ValueKey('team-home-agents-row')));
+    await tester.pumpAndSettle();
+  }
+
+  group('host', () {
+    testWidgets('one phrase under the title; the address, version and '
+        'engine are behind Technical details', (tester) async {
       // The read path alone: no control capability, so read-only.
       final (controller, _) = await boot(
         configure: (g) =>
             g.capabilitiesOverride = OrchestrationCapabilities.gascityRead,
       );
       await pumpHome(tester, controller);
-      // The host is named by the team URL and the kind of computer, never
-      // by the profile; a fixture path names no host, so the provider
-      // stands in.
-      expect(
-        find.text(
-          'fixture · Desktop computer · Gas City 1.4.1 · city bright-lights'
-          ' · read-only',
-        ),
-        findsOneWidget,
-      );
+      final phrase = hostPhrase(tester);
+      expect(phrase, startsWith('On '));
+      for (final word in ['Gas City', '1.4.1', 'city', 'read-only']) {
+        expect(phrase, isNot(contains(word)), reason: word);
+      }
       expect(find.textContaining('Workstation'), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('team-home-host-chip')));
-      await tester.pumpAndSettle();
+
+      await openDetails(tester);
       final sheet = find.byKey(const ValueKey('team-home-host-sheet'));
       expect(sheet, findsOneWidget);
       expect(
         find.descendant(of: sheet, matching: find.text('Technical details')),
         findsOneWidget,
       );
-      expect(
-        find.descendant(of: sheet, matching: find.text('fixture')),
-        findsNWidgets(2),
-        reason: 'identity row and raw value',
-      );
-      // The sheet still names the host by the profile's own address: the
-      // chip's host name comes from the team URL, not from here.
+      // The sheet still names the host by the team URL, never the profile.
       expect(
         find.descendant(of: sheet, matching: find.text('Workstation')),
         findsNothing,
@@ -743,41 +898,29 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.descendant(of: sheet, matching: find.text('bright-lights')),
-        findsNWidgets(2),
-      );
-      expect(
-        find.descendant(of: sheet, matching: find.text('Read-only')),
-        findsOneWidget,
+        find.descendant(of: sheet, matching: find.textContaining('bright')),
+        findsWidgets,
       );
       expect(
         find.byKey(const ValueKey('team-home-host-read-only')),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: sheet, matching: find.text('Computer')),
-        findsOneWidget,
-      );
-      expect(
         find.descendant(of: sheet, matching: find.textContaining('polecat')),
-        findsOneWidget,
+        findsWidgets,
+        reason: 'engine names live here, never on the list',
       );
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a host with controls says so', (tester) async {
+    testWidgets('a named computer is named; its controls are in details', (
+      tester,
+    ) async {
       // The fixture switches every capability on, controls included.
       final (controller, _) = await boot(url: 'https://pop-os:7000');
       await pumpHome(tester, controller);
-      expect(
-        find.text(
-          'pop-os · Desktop computer · Gas City 1.4.1 · city bright-lights'
-          ' · controls',
-        ),
-        findsOneWidget,
-      );
-      await tester.tap(find.byKey(const ValueKey('team-home-host-chip')));
-      await tester.pumpAndSettle();
+      expect(hostPhrase(tester), 'On pop-os');
+      await openDetails(tester);
       expect(find.text('Decisions and controls'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('team-home-host-read-only')),
@@ -785,169 +928,32 @@ void main() {
       );
     });
 
-    testWidgets('an address names the host by its IP (TEAM-115)', (
+    testWidgets('an address is not a name: "On your computer" (TEAM-115)', (
       tester,
     ) async {
       final (controller, _) = await boot(url: 'http://100.126.15.6:7000');
       await pumpHome(tester, controller);
-      expect(
-        tester
-            .widget<Text>(
-              find.byKey(const ValueKey('team-home-host-chip-label')),
-            )
-            .data,
-        '100.126.15.6 · Desktop computer · Gas City 1.4.1 · '
-        'city bright-lights · controls',
-      );
+      expect(hostPhrase(tester), 'On your computer');
+      expect(find.textContaining('100.126.15.6'), findsNothing);
       expect(find.textContaining('Workstation'), findsNothing);
     });
 
-    testWidgets('a phone host is named with its kind word (TEAM-115)', (
-      tester,
-    ) async {
+    testWidgets('a phone host says so (TEAM-115)', (tester) async {
       final (controller, _) = await boot(
         hostMode: OrchestrationHostMode.phone,
         url: 'http://localhost:7000',
       );
       await pumpHome(tester, controller);
-      expect(
-        tester
-            .widget<Text>(
-              find.byKey(const ValueKey('team-home-host-chip-label')),
-            )
-            .data,
-        startsWith('localhost · This phone · '),
-      );
-    });
-
-    testWidgets('a phone host says so', (tester) async {
-      final (controller, _) = await boot(hostMode: OrchestrationHostMode.phone);
-      await pumpHome(tester, controller);
-      await tester.tap(find.byKey(const ValueKey('team-home-host-chip')));
-      await tester.pumpAndSettle();
-      expect(find.text('This phone'), findsOneWidget);
+      expect(hostPhrase(tester), 'On this phone');
+      expect(find.textContaining('localhost'), findsNothing);
     });
   });
 
-  group('agents', () {
-    testWidgets('lists the fleet with states, needs-you first', (tester) async {
-      OrchestrationAgent? opened;
-      final (controller, _) = await boot(
-        configure: (g) => g.agentsOverride = [
-          OrchestrationAgent(
-            id: 'fox',
-            name: 'fox',
-            state: AgentState.working,
-            pool: 'gastown.polecat',
-            provider: 'opencode',
-            currentWorkId: 'oc-loy',
-            lastActivity: clock.subtract(const Duration(minutes: 12)),
-          ),
-          const OrchestrationAgent(
-            id: 'bear',
-            name: 'bear',
-            state: AgentState.idle,
-            pack: 'gastown',
-          ),
-          const OrchestrationAgent(
-            id: 'wolf',
-            name: 'wolf',
-            state: AgentState.waiting,
-            pool: 'gastown.polecat',
-          ),
-          const OrchestrationAgent(
-            id: 'dog-1',
-            name: 'dog-1',
-            state: AgentState.stopped,
-          ),
-          const OrchestrationAgent(
-            id: 'nova',
-            name: 'nova',
-            state: AgentState.crashed,
-          ),
-        ],
-      );
-      await pumpHome(tester, controller, onOpenAgent: (a) => opened = a);
-      // Four live, the stopped dog counted apart (TEAM-115).
-      expect(find.text('Agents (4 · 1 off)'), findsOneWidget);
-      await segment(tester, 'agents');
-      expect(find.byKey(const ValueKey('team-home-agents')), findsOneWidget);
-      Finder row(String id) => find.byKey(ValueKey('team-home-agent-$id'));
-      final order = ['wolf', 'nova', 'fox', 'bear'];
-      for (var i = 1; i < order.length; i++) {
-        expect(
-          top(tester, row(order[i - 1])),
-          lessThan(top(tester, row(order[i]))),
-          reason: '${order[i - 1]} above ${order[i]}',
-        );
-      }
-      expect(find.text('Waiting (needs input)'), findsOneWidget);
-      expect(find.text('Crashed'), findsOneWidget);
-      expect(find.text('Working'), findsOneWidget);
-      expect(find.text('Idle'), findsOneWidget);
-      expect(find.text('gastown.polecat · opencode'), findsOneWidget);
-      // Fox works the fixture's sling bead; the others have no work.
-      expect(find.textContaining('12m ago'), findsOneWidget);
-      expect(find.text('No current work'), findsNWidgets(3));
-      // The stopped dog sits under the collapsed group, below the live.
-      final group = find.byKey(const ValueKey('team-home-suspended-group'));
-      expect(group, findsOneWidget);
-      expect(find.text('Suspended on the host (1)'), findsOneWidget);
-      expect(row('dog-1'), findsNothing);
-      expect(find.text('Stopped'), findsNothing);
-      expect(top(tester, row('bear')), lessThan(top(tester, group)));
-      await tester.tap(group);
-      await tester.pumpAndSettle();
-      expect(row('dog-1'), findsOneWidget);
-      expect(find.text('Stopped'), findsOneWidget);
-      expect(top(tester, group), lessThan(top(tester, row('dog-1'))));
-      await tester.tap(group);
-      await tester.pumpAndSettle();
-      expect(row('dog-1'), findsNothing);
-
-      await tester.tap(row('fox'));
-      expect(opened?.id, 'fox');
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('the fixture fleet has one row per agent', (tester) async {
-      final (controller, _) = await boot();
-      await pumpHome(tester, controller);
-      await segment(tester, 'agents');
-      final rows = find.byWidgetPredicate(
-        (w) => switch (w.key) {
-          ValueKey<String>(:final value) =>
-            value.startsWith('team-home-agent-') &&
-                !value.startsWith('team-home-agent-state-'),
-          _ => false,
-        },
-      );
-      expect(rows, findsNWidgets(controller.snapshot.agents.length));
-      expect(rows, findsNWidgets(5));
-      expect(find.text('Working'), findsNWidgets(2));
-      expect(
-        find.byKey(const ValueKey('team-home-suspended-group')),
-        findsNothing,
-        reason: 'every recorded agent is live once the slots are dropped',
-      );
-    });
-
-    testWidgets('no agents: the empty state', (tester) async {
-      final (controller, _) = await boot(
-        configure: (g) => g.agentsOverride = const [],
-      );
-      await pumpHome(tester, controller);
-      await segment(tester, 'agents');
-      expect(
-        find.byKey(const ValueKey('team-home-agents-empty')),
-        findsOneWidget,
-      );
-      expect(find.text('No agents on this host.'), findsOneWidget);
-    });
-  });
+  group('agents', () {});
 
   group('needs you', () {
-    testWidgets('lists the gate and opens the read-only sheet', (tester) async {
+    testWidgets('one question is its task row, and it opens the read-only '
+        'sheet', (tester) async {
       // Without `controlRespond` the sheet stays Sprint A read-only; the
       // actions are TEAM-203's and tested in team_gate_answer_test.
       final (controller, _) = await boot(
@@ -957,22 +963,12 @@ void main() {
         },
       );
       await pumpHome(tester, controller);
-      await segment(tester, 'needs-you');
-      final gate = controller.snapshot.gates.single;
-      final row = find.byKey(ValueKey('team-home-gate-${gate.id}'));
-      expect(row, findsOneWidget);
-      expect(find.text(gate.title), findsOneWidget);
-      expect(
-        find.text('Decision · Work Add subtract function to calc.py · 2m ago'),
-        findsOneWidget,
-      );
-
-      await tester.tap(row);
+      expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
+      expect(runRow('oc-xru'), findsOneWidget);
+      await tester.tap(runRow('oc-xru'));
       await tester.pumpAndSettle();
       final sheet = find.byKey(const ValueKey('team-gate-sheet'));
       expect(sheet, findsOneWidget);
-      // The mapper titled the gate with its prompt: said once, not twice.
-      expect(find.byKey(const ValueKey('team-gate-prompt')), findsNothing);
       expect(
         find.descendant(
           of: sheet,
@@ -988,14 +984,10 @@ void main() {
           findsOneWidget,
         );
       }
-      expect(
-        find.text('Answer this on the host. The phone can only watch for now.'),
-        findsOneWidget,
-      );
       // Read-only: nothing to send.
       expect(find.byType(Radio<String>), findsNothing);
       expect(find.byType(TextField), findsNothing);
-      await tester.tap(find.byKey(const ValueKey('team-gate-close')));
+      await tester.tap(find.byKey(const ValueKey('kit-sheet-close')));
       await tester.pumpAndSettle();
       expect(sheet, findsNothing);
       expect(tester.takeException(), isNull);
@@ -1010,21 +1002,22 @@ void main() {
         hostMode: OrchestrationHostMode.phone,
       );
       await pumpHome(tester, controller);
-      await segment(tester, 'needs-you');
-      await tester.tap(
-        find.byKey(const ValueKey('team-home-gate-req-fixture-choice-1')),
-      );
+      await tester.tap(runRow('oc-xru'));
       await tester.pumpAndSettle();
       expect(
-        find.text(
-          'Answer this in the host on this phone. The app can only watch '
-          'for now.',
+        find.descendant(
+          of: find.byKey(const ValueKey('team-gate-sheet')),
+          matching: find.text(
+            'Answer this in the host on this phone. The app can only watch '
+            'for now.',
+          ),
         ),
         findsOneWidget,
       );
     });
 
-    testWidgets('ordered decision → run failed → review → gate', (
+    testWidgets('several questions are no section: a task\'s question is '
+        'its row, the rest head the one list (owner rule 2026-09-27)', (
       tester,
     ) async {
       final (controller, _) = await boot(
@@ -1054,11 +1047,26 @@ void main() {
         ],
       );
       await pumpHome(tester, controller);
-      // Review-ready is informational: three need the person.
-      expect(find.text('Needs you (3)'), findsOneWidget);
-      await segment(tester, 'needs-you');
+      // The questions head the page without a section label, and no
+      // separate panel of questions sits above the list.
+      expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
       Finder row(String id) => find.byKey(ValueKey('team-home-gate-$id'));
-      final order = ['ask', 'failed', 'review', 'gate'];
+      final tasks = find.byKey(const ValueKey('team-home-tasks'));
+      // The failed task's question is its own row, once: the mark and
+      // "Needs you · <question> · age", never a second row above.
+      expect(row('failed'), findsNothing);
+      expect(runRow('oc-xru'), findsOneWidget);
+      expect(lineOf(tester, 'oc-xru'), startsWith('Needs you · Run failed'));
+      // Questions with no task listed are rows of the same list, first,
+      // most urgent first.
+      final order = ['ask', 'review', 'gate'];
+      for (final id in order) {
+        expect(
+          find.descendant(of: tasks, matching: row(id)),
+          findsOneWidget,
+          reason: '$id is a row of the one list',
+        );
+      }
       for (var i = 1; i < order.length; i++) {
         expect(
           top(tester, row(order[i - 1])),
@@ -1066,36 +1074,35 @@ void main() {
           reason: '${order[i - 1]} above ${order[i]}',
         );
       }
-      expect(
-        find.text('Run failed · Run Add subtract function to calc.py'),
-        findsOneWidget,
-      );
-      // A prompt that differs from the title is shown under it.
+      expect(top(tester, row('gate')), lessThan(top(tester, runRow('oc-xru'))));
+      // The task's row opens the question, not the conversation.
+      await tester.tap(runRow('oc-xru'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('team-gate-sheet')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('kit-sheet-close')));
+      await tester.pumpAndSettle();
+      // A prompt that differs from the title is shown in the sheet.
       await tester.tap(row('ask'));
       await tester.pumpAndSettle();
       expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('team-gate-prompt')))
-            .data,
-        'main is frozen; dev has the fix.',
-      );
-      expect(find.text('Which branch?'), findsNWidgets(2));
-    });
-
-    testWidgets('nothing waiting: the empty state', (tester) async {
-      final (controller, _) = await boot();
-      await pumpHome(tester, controller);
-      await segment(tester, 'needs-you');
-      expect(
-        find.byKey(const ValueKey('team-home-needs-you-empty')),
+        find.descendant(
+          of: find.byKey(const ValueKey('team-gate-prompt')),
+          matching: find.text('main is frozen; dev has the fix.'),
+        ),
         findsOneWidget,
       );
-      expect(find.text('Nothing needs you right now.'), findsOneWidget);
+    });
+
+    testWidgets('nothing waiting: no section at all', (tester) async {
+      final (controller, _) = await boot();
+      await pumpHome(tester, controller);
+      expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
+      expect(find.text('Nothing needs you right now.'), findsNothing);
     });
   });
 
   group('stale, refresh, loading, error', () {
-    testWidgets('stale shows the time and the refresh button clears it', (
+    testWidgets('stale: one status line with the time; Try again clears it', (
       tester,
     ) async {
       final (controller, gateway) = await boot();
@@ -1113,20 +1120,20 @@ void main() {
             TimeOfDay.fromDateTime(refreshedAt.toLocal()),
             alwaysUse24HourFormat: true,
           );
-      expect(
-        find.text('Showing data from $time · host unreachable'),
-        findsOneWidget,
-      );
+      expect(find.textContaining(time), findsWidgets);
+      // The host phrase says it too.
+      expect(hostPhrase(tester), endsWith(' · Not answering'));
 
       final before = gateway.count('runs');
-      await tester.tap(find.byKey(const ValueKey('team-home-refresh')));
+      await tester.tap(find.byKey(const ValueKey('team-home-status-retry')));
       await tester.pumpAndSettle();
       expect(gateway.count('runs'), before + 1);
       expect(find.byKey(const ValueKey('team-home-stale')), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('pull-to-refresh calls refresh once', (tester) async {
+    testWidgets('pull-to-refresh calls refresh once, on the home and on the '
+        'agents list', (tester) async {
       final (controller, gateway) = await boot();
       await pumpHome(tester, controller);
       final before = gateway.count('runs');
@@ -1141,8 +1148,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
       expect(gateway.count('runs'), before + 1);
-      // Pulling on the Agents list refreshes the same way.
-      await segment(tester, 'agents');
+      await openAgents(tester);
       await tester.drag(
         find.byKey(const ValueKey('team-home-agents')),
         const Offset(0, 900),
@@ -1163,7 +1169,7 @@ void main() {
       expect(find.text('AI Team'), findsOneWidget);
     });
 
-    testWidgets('a failed probe shows honest copy and Retry recovers', (
+    testWidgets('a failed probe shows honest copy and Try again recovers', (
       tester,
     ) async {
       ProbeVerdict verdict = const ProbeUnreachable(error: 'refused');
@@ -1172,19 +1178,12 @@ void main() {
       await pumpHome(tester, controller);
       expect(find.byKey(const ValueKey('team-home-error')), findsOneWidget);
       // A host that could not be read is not an empty team: the failure
-      // keeps "Try again" and never claims there are no runs.
+      // keeps "Try again" and never claims there are no tasks.
       expect(find.text('Try again'), findsOneWidget);
       expect(find.byKey(const ValueKey('team-home-runs-empty')), findsNothing);
-      expect(find.text('No runs yet.'), findsNothing);
-      expect(
-        find.text(
-          'The team host can’t be reached. AI Team works over your Tailscale '
-          'network or on this device.',
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('No recent tasks'), findsNothing);
       verdict = ProbeFound(host: gateway.host!, city: 'bright-lights');
-      await tester.tap(find.byKey(const ValueKey('team-home-refresh')));
+      await tester.tap(find.byKey(const ValueKey('team-home-retry')));
       await tester.pumpAndSettle();
       expect(controller.phase, OrchestrationPhase.ready);
       expect(find.byKey(const ValueKey('team-home-data')), findsOneWidget);
@@ -1193,61 +1192,44 @@ void main() {
   });
 
   group('workspace wiring', () {
-    testWidgets('the card follows Recent and precedes Archived', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(390, 2400);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      final (controller, _) = await boot();
-      final connection = _Connection(ProfileStore(prefs: prefs))
-        ..team = controller;
-      addTearDown(connection.dispose);
-      connection.sessionsById = {
-        'recent': Session(
-          id: 'recent',
-          title: 'recent conversation',
-          time: SessionTime(created: 1, updated: 5),
-        ),
-        'old': Session(
-          id: 'old',
-          title: 'old conversation',
-          time: SessionTime(created: 1, updated: 2, archived: 3),
-        ),
-      };
-      await tester.pumpWidget(
-        app(Scaffold(body: WorkspaceScreen(controller: connection))),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'Work lists conversations only: no team door, no archived row',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 2400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final (controller, _) = await boot();
+        final connection = _Connection(ProfileStore(prefs: prefs))
+          ..team = controller;
+        addTearDown(connection.dispose);
+        connection.sessionsById = {
+          'recent': Session(
+            id: 'recent',
+            title: 'recent conversation',
+            time: SessionTime(created: 1, updated: 5),
+          ),
+          'old': Session(
+            id: 'old',
+            title: 'old conversation',
+            time: SessionTime(created: 1, updated: 2, archived: 3),
+          ),
+        };
+        await tester.pumpWidget(
+          app(Scaffold(body: WorkspaceScreen(controller: connection))),
+        );
+        await tester.pumpAndSettle();
 
-      // UX plan 5.5 and 5.7: the person's own conversations come first.
-      double top(Finder finder) => tester.getTopLeft(finder).dy;
-      final card = find.byType(TeamCard);
-      expect(card, findsOneWidget);
-      expect(top(card), greaterThan(top(find.text('Recent conversations'))));
-      expect(top(card), greaterThan(top(find.text('recent conversation'))));
-      expect(top(card), lessThan(top(find.text('Archived conversations'))));
-    });
-
-    testWidgets('Open on the card pushes the home', (tester) async {
-      final (controller, _) = await boot();
-      final connection = _Connection(ProfileStore(prefs: prefs))
-        ..team = controller;
-      addTearDown(connection.dispose);
-      await tester.pumpWidget(app(WorkspaceScreen(controller: connection)));
-      await tester.pumpAndSettle();
-      expect(find.byType(TeamHomeScreen), findsNothing);
-      // The card follows the person's own conversations (UX plan 5.7).
-      await tester.ensureVisible(find.byKey(const ValueKey('team-card-open')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('team-card-open')));
-      await tester.pumpAndSettle();
-      expect(find.byType(TeamHomeScreen), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-home-data')), findsOneWidget);
-      expect(find.text('Runs (1)'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        // Owner rule R4 (2026-09-27): the team's tasks are rows in the one
+        // list; its page is reached from Settings › AI Team, and archived
+        // conversations are a filter of All conversations.
+        expect(find.text('recent conversation'), findsOneWidget);
+        expect(find.byKey(const ValueKey('team-work-door')), findsNothing);
+        expect(find.byKey(const ValueKey('team-card')), findsNothing);
+        expect(find.text('Archived conversations'), findsNothing);
+        expect(find.text('Conversations'), findsNothing);
+      },
+    );
   });
 
   // TEAM-115: the host's internals stay out of the counts and lists.
@@ -1262,9 +1244,7 @@ void main() {
           updatedAt: clock.subtract(Duration(minutes: minutesAgo)),
         );
 
-    testWidgets('upkeep runs are hidden and uncounted until revealed', (
-      tester,
-    ) async {
+    testWidgets('upkeep runs are one line, never task rows', (tester) async {
       OrchestrationRun? opened;
       final (controller, _) = await boot(
         configure: (g) => g
@@ -1279,49 +1259,34 @@ void main() {
           ],
       );
       await pumpHome(tester, controller, onOpenRun: (r) => opened = r);
-      expect(find.text('Runs (2)'), findsOneWidget);
       expect(runRow('mine'), findsOneWidget);
       expect(find.textContaining('mol-'), findsNothing);
       for (final name in ['refinery', 'deacon', 'witness']) {
         expect(runRow('oc-wisp-$name'), findsNothing);
       }
-      // The completed group counts the person's run only.
-      expect(find.text('Completed today (1)'), findsOneWidget);
+      // What finished lists the person's task only.
+      expect(runRow('done'), findsOneWidget);
 
-      // The toggle sits under the list, off, with the hidden count.
-      final toggle = find.byKey(const ValueKey('team-home-upkeep-toggle'));
-      expect(toggle, findsOneWidget);
-      expect(find.text('Show team upkeep (3)'), findsOneWidget);
+      // Upkeep is one line in words in the team's own panel (owner, build
+      // 2055): no switch, no rows of engine names, duplicates collapsed.
       expect(
-        top(tester, find.byKey(const ValueKey('team-home-completed-group'))),
-        lessThan(top(tester, toggle)),
+        find.byKey(const ValueKey('team-home-upkeep-line')),
+        findsNothing,
+        reason: 'the work page carries no upkeep',
       );
-      expect(tester.widget<SwitchListTile>(toggle).value, isFalse);
-
-      await tester.tap(toggle);
-      await tester.pumpAndSettle();
-      expect(tester.widget<SwitchListTile>(toggle).value, isTrue);
-      for (final name in ['refinery', 'deacon', 'witness']) {
-        expect(runRow('oc-wisp-$name'), findsOneWidget);
-        expect(
-          top(tester, toggle),
-          lessThan(top(tester, runRow('oc-wisp-$name'))),
-        );
-      }
-      expect(find.text('mol-refinery-patrol'), findsOneWidget);
-      // Counts do not move when upkeep is revealed.
-      expect(find.text('Runs (2)'), findsOneWidget);
-      // A revealed upkeep run opens like any other.
-      await tester.tap(runRow('oc-wisp-refinery'));
-      expect(opened?.id, 'oc-wisp-refinery');
-
-      await tester.tap(toggle);
-      await tester.pumpAndSettle();
-      expect(runRow('oc-wisp-refinery'), findsNothing);
+      await openTeamSettingsFromHome(tester);
+      final line = find.byKey(const ValueKey('team-home-upkeep-line'));
+      expect(line, findsOneWidget);
+      expect(find.byType(SwitchListTile), findsNothing);
+      expect(
+        find.text('Patrol ×3 · planning', findRichText: true),
+        findsOneWidget,
+      );
+      expect(opened, isNull);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('only upkeep: the empty state, with the toggle', (
+    testWidgets('only upkeep: the empty state, and the upkeep line', (
       tester,
     ) async {
       final (controller, _) = await boot(
@@ -1331,78 +1296,21 @@ void main() {
           ..runsOverride = [upkeep('refinery', RunState.planning, 1)],
       );
       await pumpHome(tester, controller);
-      expect(find.text('Runs (0)'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('team-home-runs-empty')),
         findsOneWidget,
       );
-      final toggle = find.byKey(const ValueKey('team-home-upkeep-toggle'));
-      expect(find.text('Show team upkeep (1)'), findsOneWidget);
-      await tester.tap(toggle);
-      await tester.pumpAndSettle();
-      expect(runRow('oc-wisp-refinery'), findsOneWidget);
-    });
-
-    testWidgets('suspended agents count apart and sit collapsed', (
-      tester,
-    ) async {
-      final (controller, _) = await boot(
-        configure: (g) => g.agentsOverride = const [
-          OrchestrationAgent(
-            id: 'ocproof/gastown.refinery',
-            name: 'ocproof/gastown.refinery',
-            state: AgentState.idle,
-          ),
-          OrchestrationAgent(
-            id: 'gastown.boot',
-            name: 'gastown.boot',
-            state: AgentState.stopped,
-            suspended: true,
-          ),
-          OrchestrationAgent(
-            id: 'gastown.deacon',
-            name: 'gastown.deacon',
-            state: AgentState.stopped,
-            suspended: true,
-          ),
-          OrchestrationAgent(
-            id: 'gastown.mayor',
-            name: 'gastown.mayor',
-            state: AgentState.stopped,
-            suspended: true,
-          ),
-          OrchestrationAgent(
-            id: 'ocproof/gastown.witness',
-            name: 'ocproof/gastown.witness',
-            state: AgentState.stopped,
-          ),
-        ],
+      expect(runRow('oc-wisp-refinery'), findsNothing);
+      await openTeamSettingsFromHome(tester);
+      expect(
+        find.text('Patrol · planning', findRichText: true),
+        findsOneWidget,
       );
-      await pumpHome(tester, controller);
-      expect(find.text('Agents (1 · 4 off)'), findsOneWidget);
-      await segment(tester, 'agents');
-      Finder row(String id) => find.byKey(ValueKey('team-home-agent-$id'));
-      expect(row('ocproof/gastown.refinery'), findsOneWidget);
-      expect(find.text('Suspended on the host (4)'), findsOneWidget);
-      for (final off in [
-        'gastown.boot',
-        'gastown.deacon',
-        'gastown.mayor',
-        'ocproof/gastown.witness',
-      ]) {
-        expect(row(off), findsNothing);
-      }
-      await tester.tap(find.byKey(const ValueKey('team-home-suspended-group')));
-      await tester.pumpAndSettle();
-      expect(row('gastown.boot'), findsOneWidget);
-      expect(row('ocproof/gastown.witness'), findsOneWidget);
-      expect(find.text('Stopped'), findsNWidgets(4));
-      expect(tester.takeException(), isNull);
     });
   });
 
   group('Arabic', () {
-    testWidgets('the home reads in Arabic with identifiers LTR', (
+    testWidgets('the home reads in Arabic, engine words left out', (
       tester,
     ) async {
       final (controller, _) = await boot(configure: blockedShape);
@@ -1414,16 +1322,16 @@ void main() {
       );
       await tester.pump();
       expect(find.text('فريق الذكاء الاصطناعي'), findsOneWidget);
-      expect(find.text('التشغيلات (1)'), findsOneWidget);
-      expect(find.text('يحتاجك (1)'), findsOneWidget);
-      expect(
-        find.text(
-          'fixture · حاسوب مكتبي · Gas City 1.4.1 · المدينة bright-lights'
-          ' · تحكّم',
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('دفعة · convoy · اكتمل 1 من 2'), findsOneWidget);
+      // The question first, then the tasks, in the person's words: no
+      // engine names or versions on the home in any language.
+      // The one-list redesign removed both section headings in every locale.
+      expect(find.text('يحتاجك'), findsNothing);
+      expect(find.text('المهام'), findsNothing);
+      expect(runRow('oc-xru'), findsOneWidget);
+      expect(hostPhrase(tester), startsWith('على '));
+      for (final word in ['convoy', 'Gas City', '1.4.1', 'bright-lights']) {
+        expect(find.textContaining(word), findsNothing, reason: word);
+      }
       expect(tester.takeException(), isNull);
     });
   });

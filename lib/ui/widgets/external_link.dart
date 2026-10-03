@@ -1,7 +1,16 @@
-import '../../l10n/app_localizations.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_copy.dart';
+import '../kit/kit_redact.dart';
+import '../kit/kit_dialog.dart';
+import '../kit/kit_sheet.dart' show KitConfirmKind, showKitConfirm;
+import '../kit/kit_technical_value.dart';
 import 'product_states.dart';
 
 /// What [openExternalLink] did, so callers can react without re-deriving it.
@@ -9,7 +18,8 @@ enum ExternalLinkOutcome {
   /// The URL failed the policy below and was never handed to the platform.
   blocked,
 
-  /// The URL was allowed but the user declined the confirmation.
+  /// The URL was allowed but the user declined the confirmation (or copied
+  /// the link instead of opening it).
   cancelled,
 
   /// Handed to the platform and accepted.
@@ -26,6 +36,13 @@ enum ExternalLinkOutcome {
 /// arbitrarily long string in a markdown link or a form field, and neither the
 /// confirmation dialog nor the platform intent should have to carry it.
 const _maxExternalLinkLength = 2048;
+
+/// The platform launch [openExternalLink] ends in: [uri] in the app that
+/// handles it, outside this one. Only for a `launcher` handed to
+/// [openExternalLink] that adds its own guard around the default; nothing
+/// else calls it, so every URL still passes the link policy first (SEC-1).
+Future<bool> launchExternalUri(Uri uri) =>
+    launchUrl(uri, mode: LaunchMode.externalApplication);
 
 /// The single gate every URL the app did not author must pass before it can
 /// reach the platform launcher — markdown links in agent output, OpenCode 2
@@ -44,100 +61,159 @@ const _maxExternalLinkLength = 2048;
 /// - a host is required, so opaque URLs cannot slip through;
 /// - the effective destination host is shown before anything opens.
 ///
+/// Every answer is a kit modal ([showKitConfirm], [showKitAlert]); a
+/// snackbar is only ever done-with-undo (KIT-34).
+///
 /// [launcher] exists for tests; production goes to `url_launcher`.
 Future<ExternalLinkOutcome> openExternalLink(
   BuildContext context,
   String? value, {
   Future<bool> Function(Uri uri)? launcher,
 }) async {
+  final copy = _sharedCopy(context);
   final uri = safeExternalLinkUri(value);
   if (uri == null) {
+    // Blocked is the answer to the person's tap, so it is said in a
+    // blocking alert; the outcome returns at once. The refused value is not
+    // echoed: it may be long, hostile or unreadable.
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _sharedCopy(context).e7SharedLinkBlockedThisAppMayOpenOnly,
-          ),
+      unawaited(
+        showKitAlert(
+          context,
+          title: copy.externalLinkBlockedTitle,
+          body: copy.externalLinkBlockedBody,
+          icon: AppIconography.locked,
+          alertKey: const ValueKey('external-link-blocked'),
         ),
       );
     }
     return ExternalLinkOutcome.blocked;
   }
   final insecure = uri.scheme == 'http';
+  final safeAddress = _safeLinkAddress(uri);
 
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      icon: Icon(
-        insecure ? AppIconography.warning : AppIconography.externalLink,
-      ),
-      title: Text(
-        insecure
-            ? _sharedCopy(context).e7SharedOpenInsecureHTTPLink
-            : _sharedCopy(context).e7SharedOpenExternalLink,
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(_sharedCopy(context).e7SharedHost),
-          const SizedBox(height: 4),
-          SelectableText(
-            externalLinkHost(uri),
-            style: const TextStyle(fontFamily: 'AppMono'),
-          ),
-          if (insecure) ...[
-            const SizedBox(height: 12),
-            Text(_sharedCopy(context).e7SharedHTTPIsNotEncryptedOtherDevicesOn),
-          ],
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text(_sharedCopy(context).projectFolderCancel),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(
-            insecure
-                ? _sharedCopy(context).e7SharedOpenHTTPLink
-                : _sharedCopy(context).e7SharedOpenLink,
-          ),
-        ),
-      ],
+  // The destination host stays in sight (not folded under Details): it is
+  // what the person checks before anything opens. The whole address is one
+  // tap away under Details, and "Copy link" uses it without leaving the
+  // app. On http the risky choice is the error-toned one, Enter never
+  // confirms it (KitConfirmKind.destructive), and "Don't open" is the way
+  // back.
+  if (!context.mounted) return ExternalLinkOutcome.cancelled;
+  final confirmed = await showKitConfirm(
+    context,
+    title: insecure
+        ? copy.e7SharedOpenInsecureHTTPLink
+        : copy.e7SharedOpenExternalLink,
+    body: copy.externalLinkOpensHost(KitRedact.text(externalLinkHost(uri))),
+    confirmLabel: insecure ? copy.e7SharedOpenHTTPLink : copy.e7SharedOpenLink,
+    kind: insecure ? KitConfirmKind.destructive : KitConfirmKind.neutral,
+    cancelLabel: insecure ? copy.externalLinkDontOpen : null,
+    icon: insecure ? AppIconography.warning : AppIconography.externalLink,
+    consequences: [if (insecure) copy.e7SharedHTTPIsNotEncryptedOtherDevicesOn],
+    alternative: KitAction(
+      key: const ValueKey('external-link-copy'),
+      label: copy.externalLinkCopy,
+      icon: AppIconography.copy,
+      onPressed: () {
+        // Untrusted links may contain credentials. The approved launcher
+        // alone receives the original URI; display and clipboard stay masked.
+        if (context.mounted) {
+          unawaited(KitCopy.copy(context, safeAddress));
+        }
+      },
     ),
+    details: [KitTechnicalValue(copy.externalLinkAddress, safeAddress)],
+    sheetKey: const ValueKey('external-link-confirm'),
   );
-  if (confirmed != true) return ExternalLinkOutcome.cancelled;
+  if (!confirmed) return ExternalLinkOutcome.cancelled;
   if (!context.mounted) return ExternalLinkOutcome.cancelled;
 
   try {
-    final opened =
-        await (launcher?.call(uri) ??
-            launchUrl(uri, mode: LaunchMode.externalApplication));
+    final opened = await (launcher?.call(uri) ?? launchExternalUri(uri));
     if (opened) return ExternalLinkOutcome.opened;
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_sharedCopy(context).e7SharedNoAppCouldOpenThisLink),
+      unawaited(
+        showKitAlert(
+          context,
+          title: copy.externalLinkOpenFailedTitle,
+          body: copy.e7SharedNoAppCouldOpenThisLink,
+          icon: AppIconography.externalLink,
+          details: [KitTechnicalValue(copy.externalLinkAddress, safeAddress)],
+          alertKey: const ValueKey('external-link-no-app'),
         ),
       );
     }
     return ExternalLinkOutcome.noHandler;
   } catch (error) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _sharedCopy(context).e7SharedDetail699(
-              productErrorText(error, l10n: _sharedCopy(context)),
-            ),
-          ),
+      unawaited(
+        showKitAlert(
+          context,
+          title: copy.externalLinkOpenFailedTitle,
+          body: productErrorText(error, l10n: copy),
+          icon: AppIconography.error,
+          details: [KitTechnicalValue(copy.externalLinkAddress, safeAddress)],
+          alertKey: const ValueKey('external-link-failed'),
         ),
       );
     }
     return ExternalLinkOutcome.failed;
   }
+}
+
+// Authorization URLs also carry opaque codes and CSRF state. Those names are
+// ordinary words in prose, so mask them only in URI parameters. Decode each
+// component before checking registered values; retain untouched URL spelling
+// for ordinary links. This representation never goes to the launcher.
+String _safeLinkAddress(Uri uri) {
+  String redactParameters(String value) => value
+      .split('&')
+      .map((part) {
+        final separator = part.indexOf('=');
+        if (separator < 0) return KitRedact.text(part);
+        try {
+          final name = Uri.decodeQueryComponent(part.substring(0, separator));
+          final decoded = Uri.decodeQueryComponent(
+            part.substring(separator + 1),
+          );
+          final sensitive = const {
+            'code',
+            'state',
+            'session_state',
+            'code_verifier',
+          }.contains(name.toLowerCase());
+          if (sensitive ||
+              KitRedact.containsSecret('$name=$decoded') ||
+              KitRedact.containsSecret(decoded)) {
+            return '${part.substring(0, separator + 1)}${KitRedact.mask}';
+          }
+        } on FormatException {
+          // A malformed encoded component cannot be inspected reliably.
+          return '${part.substring(0, separator + 1)}${KitRedact.mask}';
+        }
+        return part;
+      })
+      .join('&');
+
+  final address = uri.toString();
+  final fragmentStart = address.indexOf('#');
+  final head = fragmentStart < 0
+      ? address
+      : address.substring(0, fragmentStart);
+  final queryStart = head.indexOf('?');
+  final safeHead = queryStart < 0
+      ? head
+      : '${head.substring(0, queryStart + 1)}'
+            '${redactParameters(head.substring(queryStart + 1))}';
+  if (fragmentStart < 0) return KitRedact.text(safeHead);
+  final fragment = address.substring(fragmentStart + 1);
+  // SPA callbacks may use #/callback?code=... rather than #code=....
+  final fragmentQuery = fragment.indexOf('?');
+  final safeFragment = fragmentQuery < 0
+      ? redactParameters(fragment)
+      : '${fragment.substring(0, fragmentQuery + 1)}'
+            '${redactParameters(fragment.substring(fragmentQuery + 1))}';
+  return KitRedact.text('$safeHead#$safeFragment');
 }
 
 /// The parsed URL when [value] passes the policy documented on

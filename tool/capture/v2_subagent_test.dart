@@ -42,7 +42,7 @@ void main() {
               ),
             ),
           );
-          await tester.tap(find.text('explore'));
+          await tester.tap(find.byKey(const ValueKey('task-open-session')));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 200));
           expect(tester.takeException(), isNull);

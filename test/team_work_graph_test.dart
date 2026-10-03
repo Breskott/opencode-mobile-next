@@ -5,12 +5,16 @@
 // unknown ids do not break it, chips grow with the text, and tapping a
 // node (or its semantics button) reports the id.
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/orchestration/models/work.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_image.dart' show KitZoomController;
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
+import 'package:opencode_mobile/ui/kit/kit_work_graph.dart';
 import 'package:opencode_mobile/ui/screens/team/work_graph.dart';
 
 /// a ← b ← c(blocked) ← d, a ← e, f alone.
@@ -43,11 +47,79 @@ const _six = [
   WorkGraphNode(id: 'f', title: 'Docs', state: WorkState.queued),
 ];
 
+/// [KitZoom]'s own [GestureDetector] carries `onDoubleTap` alongside
+/// `onTap`/`onScaleStart` (KitImage.md): Flutter's gesture arena then holds
+/// a tap open for `kDoubleTapTimeout` before resolving it as a single tap,
+/// even for a descendant's own recognizer, so a test must wait that out
+/// (a plain `pumpAndSettle` never does: nothing is animating while the
+/// arena's timer runs).
+Future<void> _tapThroughZoom(WidgetTester tester, Offset point) async {
+  await tester.tapAt(point);
+  await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 1));
+}
+
+/// The Graph view's geometry for [nodes], as `KitWorkGraph`'s layers form
+/// lays it out (ids deduplicated, first kept, as the Work tab passes them).
+KitWorkGraphGeometry _layout(
+  List<WorkGraphNode> nodes, {
+  Size nodeSize = const Size(KitTokens.graphNodeWidth, 44),
+}) {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+  final seen = <String>{};
+  return KitWorkGraphGeometry.layers([
+    for (final node in nodes)
+      if (seen.add(node.id)) node.toKit(l10n),
+  ], nodeSize: nodeSize);
+}
+
+/// The layered graph with the app's work items, as the retired Graph view
+/// drew it: `KitWorkGraph`'s layers form, zoomable, reporting the tapped id.
+class _Graph extends StatefulWidget {
+  const _Graph({
+    required this.nodes,
+    required this.onNodeTap,
+    this.transformationController,
+  });
+
+  final List<WorkGraphNode> nodes;
+  final ValueChanged<String> onNodeTap;
+  final TransformationController? transformationController;
+
+  @override
+  State<_Graph> createState() => _GraphState();
+}
+
+class _GraphState extends State<_Graph> {
+  late final KitZoomController _zoom = KitZoomController(
+    transformation: widget.transformationController,
+  );
+
+  @override
+  void dispose() {
+    _zoom.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return KitWorkGraph(
+      nodes: [for (final node in widget.nodes) node.toKit(l10n)],
+      onOpen: widget.onNodeTap,
+      layout: KitWorkGraphLayout.layers,
+      zoomController: _zoom,
+      viewerKey: const ValueKey('team-work-graph-viewer'),
+      canvasKey: const ValueKey('team-work-graph-canvas'),
+      fitKey: const ValueKey('team-work-graph-fit'),
+    );
+  }
+}
+
 void main() {
-  group('WorkGraphLayout', () {
+  group('the Graph view geometry', () {
     test('lays the six-node graph out the same way twice', () {
-      final first = WorkGraphLayout.compute(_six);
-      final second = WorkGraphLayout.compute(_six);
+      final first = _layout(_six);
+      final second = _layout(_six);
       const w = 156.0, h = 44.0;
       final expected = {
         'a': const Rect.fromLTWH(16, 16, w, h),
@@ -58,7 +130,7 @@ void main() {
         'd': const Rect.fromLTWH(106, 292, w, h),
       };
       for (final layout in [first, second]) {
-        expect(layout.layers, [
+        expect(layout.layerRows, [
           ['a', 'f'],
           ['b', 'e'],
           ['c'],
@@ -92,7 +164,7 @@ void main() {
     });
 
     test('names the critical path and draws its edges thicker', () {
-      final layout = WorkGraphLayout.compute(_six);
+      final layout = _layout(_six);
       expect(layout.criticalPath, ['a', 'b', 'c', 'd']);
       expect(layout.criticalEdges, {('a', 'b'), ('b', 'c'), ('c', 'd')});
       expect({
@@ -106,7 +178,7 @@ void main() {
     });
 
     test('the blocked chain is the stuck item, its open need, its waiters', () {
-      final layout = WorkGraphLayout.compute(_six);
+      final layout = _layout(_six);
       expect(layout.blockedChain, {'b', 'c', 'd'});
       expect(
         {
@@ -117,7 +189,7 @@ void main() {
       );
       // A completed need is not part of the chain; a stuck item with no
       // links stands alone in it.
-      final alone = WorkGraphLayout.compute(const [
+      final alone = _layout(const [
         WorkGraphNode(id: 'x', title: 'x', state: WorkState.completed),
         WorkGraphNode(
           id: 'y',
@@ -131,7 +203,7 @@ void main() {
     });
 
     test('unknown ids, self links, duplicates and cycles do not break it', () {
-      final layout = WorkGraphLayout.compute(const [
+      final layout = _layout(const [
         WorkGraphNode(
           id: 'a',
           title: 'a',
@@ -150,19 +222,16 @@ void main() {
       expect(layout.nodes.first.title, 'a');
       // One edge of the cycle is dropped; both nodes keep a place.
       expect(layout.edges.length, 1);
-      expect(layout.layers.expand((r) => r).toSet(), {'a', 'b'});
+      expect(layout.layerRows.expand((r) => r).toSet(), {'a', 'b'});
       expect(layout.criticalPath.length, 2);
-      final empty = WorkGraphLayout.compute(const []);
+      final empty = _layout(const []);
       expect(empty.nodes, isEmpty);
       expect(empty.criticalPath, isEmpty);
       expect(empty.size, const Size(32, 32));
     });
 
     test('a larger chip size moves every rect and grows the canvas', () {
-      final layout = WorkGraphLayout.compute(
-        _six,
-        nodeSize: const Size(200, 60),
-      );
+      final layout = _layout(_six, nodeSize: const Size(200, 60));
       expect(layout.rects['a'], const Rect.fromLTWH(16, 16, 200, 60));
       expect(layout.rects['f'], const Rect.fromLTWH(240, 16, 200, 60));
       expect(layout.rects['c'], const Rect.fromLTWH(128, 232, 200, 60));
@@ -170,7 +239,7 @@ void main() {
     });
   });
 
-  group('WorkGraph', () {
+  group('the Graph view', () {
     Widget app(Widget child, {double textScale = 1}) => MaterialApp(
       theme: AppTheme.dark(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -197,7 +266,7 @@ void main() {
       final tapped = <String>[];
       await tester.pumpWidget(
         app(
-          WorkGraph(
+          _Graph(
             nodes: _six,
             onNodeTap: tapped.add,
             transformationController: transform,
@@ -211,21 +280,29 @@ void main() {
         findsOneWidget,
       );
       // The graph is smaller than the viewport: shown at 1x, centred.
+      // 368x408: chips are 58 tall, not the retired 44 — KitWorkGraph.md's
+      // 48dp node floor (LAY-9), and since the fixture has a stuck item,
+      // every chip holds a second line for a stuck item's state word
+      // (rowTitle 22 + secondary 20 + space2 8 + 8), so a blocked item
+      // never reads as the waiting mark it borrows (this unit's QA record).
+      // KitZoom's own canvas fit has no extra margin (KitImage.md), unlike
+      // the retired WorkGraph._fit's 12dp one.
       final fitted = transform.value.clone();
       expect(fitted.storage[0], closeTo(1, 1e-9));
       expect(fitted.getTranslation().x, closeTo((800 - 368) / 2, 1e-9));
-      expect(fitted.getTranslation().y, closeTo((600 - 352) / 2, 1e-9));
+      expect(fitted.getTranslation().y, closeTo((600 - 408) / 2, 1e-9));
 
-      final layout = WorkGraphLayout.compute(_six);
-      final origin = tester.getTopLeft(find.byType(WorkGraph));
+      final layout = _layout(_six, nodeSize: const Size(156, 58));
+      final origin = tester.getTopLeft(find.byType(_Graph));
       Offset onScreen(String id) =>
           origin +
           MatrixUtils.transformPoint(transform.value, layout.rects[id]!.center);
-      await tester.tapAt(onScreen('c'));
+      await _tapThroughZoom(tester, onScreen('c'));
       await tester.pumpAndSettle();
       expect(tapped, ['c']);
       // Between the chips nothing fires.
-      await tester.tapAt(
+      await _tapThroughZoom(
+        tester,
         origin +
             MatrixUtils.transformPoint(transform.value, const Offset(184, 38)),
       );
@@ -255,7 +332,7 @@ void main() {
       addTearDown(transform.dispose);
       await tester.pumpWidget(
         app(
-          WorkGraph(
+          _Graph(
             nodes: _six,
             onNodeTap: (_) {},
             transformationController: transform,
@@ -264,8 +341,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       final scale = transform.value.storage[0];
-      expect(scale, closeTo((320 - 24) / 368, 1e-9));
-      expect(transform.value.getTranslation().x, closeTo(12, 1e-9));
+      // KitZoom's canvas fit has no extra margin (KitImage.md): the width
+      // is the binding constraint, so the graph sits flush.
+      expect(scale, closeTo(320 / 368, 1e-9));
+      expect(transform.value.getTranslation().x, closeTo(0, 1e-9));
       expect(scale, greaterThanOrEqualTo(.2));
       expect(tester.takeException(), isNull);
     });
@@ -275,9 +354,7 @@ void main() {
     ) async {
       final handle = tester.ensureSemantics();
       final tapped = <String>[];
-      await tester.pumpWidget(
-        app(WorkGraph(nodes: _six, onNodeTap: tapped.add)),
-      );
+      await tester.pumpWidget(app(_Graph(nodes: _six, onNodeTap: tapped.add)));
       await tester.pumpAndSettle();
       final canvas = tester.getSemantics(
         find.byKey(const ValueKey('team-work-graph-canvas')),
@@ -311,7 +388,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
-        app(WorkGraph(nodes: _six, onNodeTap: (_) {}), textScale: 2.5),
+        app(_Graph(nodes: _six, onNodeTap: (_) {}), textScale: 2.5),
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

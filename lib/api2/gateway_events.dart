@@ -298,6 +298,10 @@ class Api2EventAdapter {
           case Api2Phase.started:
             _remember(_stepCreated, event.assistantMessageID, created);
             return [
+              // A step starts only inside a running execution. Saying so
+              // restores a busy state the app lost (a missed event, or a
+              // status read that fell between two steps).
+              _status(event.sessionID, 'busy'),
               _env('message.updated', {
                 'info': _assistantInfo(event, created: created),
               }),

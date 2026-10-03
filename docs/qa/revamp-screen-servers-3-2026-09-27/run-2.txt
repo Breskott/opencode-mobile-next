@@ -1,0 +1,22 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_fde912d8-958-3/test/tailscale_setup_test.dart
+00:00 +0: review accepts HTTPS origins and bare MagicDNS without loosening policy
+00:00 +1: native bridge maps only explicit package evidence and fails closed
+00:00 +2: installed is unverified; open and resume preserve the typed address
+00:01 +3: missing app offers official install with external host review and recheck
+00:01 +4: failed launch gives recovery and review never probes or saves
+00:01 +5: late package check after dismissal is ignored
+00:01 +6: Continue waits for an address and says why; the counter stays hidden
+00:01 +7: a failed app check offers Check app again on its row
+00:02 +8: unsupported device explains and offers no app actions
+00:02 +9: official guides fold under Details and open for review
+00:02 +10: lays out without overflow at Size(360.0, 800.0), text 1.0
+00:02 +11: lays out without overflow at Size(360.0, 800.0), text 2.0
+00:02 +12: lays out without overflow at Size(412.0, 915.0), text 1.0
+00:03 +13: lays out without overflow at Size(412.0, 915.0), text 2.0
+00:03 +14: lays out without overflow at Size(915.0, 412.0), text 1.0
+00:03 +15: lays out without overflow at Size(915.0, 412.0), text 2.0
+00:03 +16: lays out without overflow at Size(800.0, 1280.0), text 1.0
+00:03 +17: lays out without overflow at Size(800.0, 1280.0), text 2.0
+00:03 +18: lays out without overflow at Size(1280.0, 800.0), text 1.0
+00:04 +19: lays out without overflow at Size(1280.0, 800.0), text 2.0
+00:04 +20: All tests passed!

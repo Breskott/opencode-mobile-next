@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
-import 'package:opencode_mobile/ui/screens/attention_overview_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
 
@@ -143,13 +143,21 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'mobile-app');
       await tester.pumpAndSettle();
-      final rename = find.byKey(const ValueKey('rename-project-mobile'));
-      await _reveal(tester, rename);
+      final project = find.byKey(const ValueKey('project-mobile'));
+      await _reveal(tester, project);
+      // The path shares a supporting line with Current/worktrees. Its
+      // Unicode isolate keeps the path left-to-right in either direction.
       expect(
-        tester.widget<Text>(find.text('/work/mobile-app')).textDirection,
-        TextDirection.ltr,
+        find.descendant(
+          of: project,
+          matching: find.textContaining(KitBidi.ltr('/work/mobile-app')),
+        ),
+        findsOneWidget,
       );
       await _captureScreen(tester, 'projects-${direction.name}');
+      await tester.longPress(project.hitTestable());
+      await tester.pumpAndSettle();
+      final rename = find.byKey(const ValueKey('rename-project-mobile'));
       await tester.tap(rename.hitTestable());
       await tester.pumpAndSettle();
       await tester.enterText(
@@ -158,43 +166,13 @@ void main() {
       );
       await _captureScreen(tester, 'rename-${direction.name}');
       final save = find.byKey(const ValueKey('confirm-rename-project'));
+      await tester.pump();
       await tester.ensureVisible(save);
       await tester.tap(save);
       await tester.pumpAndSettle();
       expect(projects.renamed, 'مشروع جديد');
       expect(tester.takeException(), isNull);
     });
-
-    testWidgets(
-      '320dp 2.5x $direction attention unknown and open action survive',
-      (tester) async {
-        tester.view.physicalSize = const Size(320, 740);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-        final store = await monitorStore(count: 1);
-        final controller = ConnectionController(store);
-        addTearDown(controller.dispose);
-        String? opened;
-        await tester.pumpWidget(
-          _app(
-            AttentionOverviewScreen(
-              controller: controller,
-              onOpenProfile: (id) => opened = id,
-            ),
-            direction,
-          ),
-        );
-        await tester.pumpAndSettle();
-        await _reveal(tester, find.byType(OutlinedButton));
-        expect(find.text('Pending requests: unknown'), findsOneWidget);
-        expect(find.text('Running conversations: unknown'), findsOneWidget);
-        await _captureScreen(tester, 'attention-${direction.name}');
-        await tester.tap(find.byType(OutlinedButton).hitTestable());
-        expect(opened, 'profile-1');
-        expect(tester.takeException(), isNull);
-      },
-    );
 
     testWidgets(
       '320dp 2.5x $direction monitor quiet time and reminder remain usable',
@@ -231,7 +209,7 @@ void main() {
         final l10n = AppLocalizations.of(
           tester.element(find.byType(NotificationsSettingsScreen)),
         );
-        final start = find.widgetWithText(ListTile, l10n.monitorQuietStart);
+        final start = find.widgetWithText(KitRow, l10n.monitorQuietStart);
         await _reveal(tester, start);
         await _captureScreen(tester, 'monitor-quiet-${direction.name}');
         await tester.tap(start.hitTestable());

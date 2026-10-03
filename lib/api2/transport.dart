@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import 'dialect.dart';
+import 'http_keep_alive.dart' if (dart.library.io) 'http_keep_alive_io.dart';
+import '../diagnostics/perf_trace.dart';
+import '../ui/kit/kit_redact.dart';
 
 /// Transport layer for the OpenCode 2 server API (`/api/...`).
 ///
@@ -40,6 +43,7 @@ class Api2Transport {
     required this.password,
     this.username = 'opencode',
   }) : serverRoot = normalizeServerRoot(baseUrl) {
+    KitRedact.registerKnownSecret(password);
     _dio = Dio(
       BaseOptions(
         baseUrl: '${normalizeServerRoot(baseUrl)}/api',
@@ -49,9 +53,11 @@ class Api2Transport {
         validateStatus: (s) => s != null && s >= 200 && s < 300,
       ),
     );
+    configureHttpKeepAlive(_dio);
     if (password.isNotEmpty) {
       _dio.options.headers['Authorization'] = 'Basic $basicToken';
     }
+    PerfTraceInterceptor.attach(_dio, 'oc2');
   }
 
   /// Strips trailing slashes and a trailing `/api` path segment so both

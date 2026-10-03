@@ -435,7 +435,7 @@ void main() {
 
       await tester.tap(find.text('On my computer'));
       await _pumpFrames(tester);
-      await tester.tap(find.byKey(const ValueKey('agent-choice-opencode')));
+      await tester.tap(find.byKey(const ValueKey('server-backend-opencode')));
       await _pumpFrames(tester);
       expect(find.text('Paste pairing code'), findsOneWidget);
       expect(find.text('Scan'), findsNothing);
@@ -462,12 +462,13 @@ void main() {
 
       await tester.tap(find.byKey(const Key('composer-tools-button')));
       await _pumpFrames(tester);
-      expect(find.text('Commands'), findsOneWidget);
+      // The door to commands reads "Commands and agents" (chat-3, e28442b0).
+      expect(find.text('Commands and agents'), findsOneWidget);
       expect(find.text('Attach file'), findsOneWidget);
       expect(find.text('Voice input'), findsNothing);
       expect(find.byKey(const Key('composer-tool-gallery')), findsNothing);
       expect(find.byKey(const Key('composer-tool-camera')), findsNothing);
-      Navigator.of(tester.element(find.text('Commands'))).pop();
+      Navigator.of(tester.element(find.text('Commands and agents'))).pop();
       await _pumpFrames(tester);
 
       await tester.enterText(
@@ -586,16 +587,15 @@ void main() {
         // These are copy/layout checks, not warm-cache/bootstrap evidence.
         rootBundle.evict('PRIVACY.md');
         rootBundle.evict('THIRD_PARTY_NOTICES.md');
-        await _pumpNarrowCopy(
-          tester,
-          const AboutScreen(initialTab: 1),
-          brightness,
-        );
+        await _pumpNarrowCopy(tester, const AboutScreen(), brightness);
         await tester.pumpAndSettle();
-        final title = find.text(l10n.iosAppTitle);
+        // The identity row is the build (c2889432); the platform is said
+        // by its line, the remote-only summary.
+        final version = l10n.aboutBuildVersion('1.0.0', '1');
+        final title = find.text(version);
         final summary = find.text(l10n.iosRemoteSummary);
         await _revealCopy(tester, title);
-        expect(tester.getSemantics(title).label, contains(l10n.iosAppTitle));
+        expect(tester.getSemantics(title).label, contains(version));
         await _revealCopy(tester, summary);
         expect(
           tester.getSemantics(summary).label,

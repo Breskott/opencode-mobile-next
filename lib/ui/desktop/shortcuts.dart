@@ -4,8 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'desktop_interaction.dart';
+import '../../domain/settings_search.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_search_field.dart';
+import '../kit/kit_sheet.dart';
+import '../kit/kit_text.dart';
 
 AppLocalizations _shortcutL10n(BuildContext context) =>
     Localizations.of<AppLocalizations>(context, AppLocalizations) ??
@@ -99,17 +104,34 @@ Map<ShortcutActivator, Intent> get appShortcutBindings => {
   ..._accelerator(LogicalKeyboardKey.digit4, const SelectDestinationIntent(3)),
 };
 
+/// Where a shortcut works: the help groups its rows by it.
+enum ShortcutHelpGroup {
+  /// Anywhere in the app.
+  anywhere,
+
+  /// Inside a conversation (the chat screen and its composer).
+  conversation,
+}
+
 /// One row of the shortcuts help sheet.
 class ShortcutHelpEntry {
-  const ShortcutHelpEntry(this.keys, this.description);
+  const ShortcutHelpEntry(
+    this.keys,
+    this.description, {
+    this.group = ShortcutHelpGroup.anywhere,
+  });
 
   final String keys;
   final String description;
+
+  /// Where it works; the help shows one section per group.
+  final ShortcutHelpGroup group;
 }
 
 /// The discoverable table behind Ctrl+/ and the More hub entry.
 List<ShortcutHelpEntry> shortcutHelp(AppLocalizations l10n) {
   final mod = shortcutModifierLabel;
+  const conversation = ShortcutHelpGroup.conversation;
   return [
     ShortcutHelpEntry('$mod + K', l10n.e7LocaleUiCommandLauncher),
     ShortcutHelpEntry('$mod + N', l10n.e7LocaleUiNewSession),
@@ -118,21 +140,45 @@ List<ShortcutHelpEntry> shortcutHelp(AppLocalizations l10n) {
     ShortcutHelpEntry('$mod + ,', l10n.e7LocaleUiSettings),
     ShortcutHelpEntry('$mod + `', l10n.e7LocaleUiTerminal),
     ShortcutHelpEntry('$mod + W', l10n.e7LocaleUiCloseScreen),
-    ShortcutHelpEntry('$mod + Enter', l10n.e7LocaleUiSendPrompt),
-    ShortcutHelpEntry('$mod + C', l10n.e7LocaleUiCopyTranscript),
-    ShortcutHelpEntry('F2 / Shift + F2', l10n.e7LocaleUiRecentModel),
-    // Handled outside this file (chat screen, ModelShortcuts, the composer's
-    // focus node). Listed here so no shortcut is known only to the people
-    // who guessed it; each also has a visible control, see
-    // docs/design/ui-ledger/gesture-audit.md.
-    ShortcutHelpEntry('Ctrl + B', l10n.backgroundWorkTitle),
-    ShortcutHelpEntry('F3 / Shift + F3', l10n.gestureEquivShortcutFindMatch),
-    ShortcutHelpEntry('↑ / ↓', l10n.gestureEquivShortcutPromptHistory),
     ShortcutHelpEntry('$mod + /', l10n.e7LocaleUiThisList),
     ShortcutHelpEntry('Esc', l10n.e7LocaleUiCloseOverlay),
     ShortcutHelpEntry(
       l10n.e7LocaleUiContextKeys,
       l10n.e7LocaleUiContextActions,
+    ),
+    // Handled outside this file (chat screen, ModelShortcuts, the composer's
+    // focus node). Listed here so no shortcut is known only to the people
+    // who guessed it; each also has a visible control, see
+    // docs/design/ui-ledger/gesture-audit.md.
+    ShortcutHelpEntry(
+      '$mod + Enter',
+      l10n.e7LocaleUiSendPrompt,
+      group: conversation,
+    ),
+    ShortcutHelpEntry(
+      '$mod + C',
+      l10n.e7LocaleUiCopyTranscript,
+      group: conversation,
+    ),
+    ShortcutHelpEntry(
+      'F2 / Shift + F2',
+      l10n.e7LocaleUiRecentModel,
+      group: conversation,
+    ),
+    ShortcutHelpEntry(
+      'Ctrl + B',
+      l10n.backgroundWorkTitle,
+      group: conversation,
+    ),
+    ShortcutHelpEntry(
+      'F3 / Shift + F3',
+      l10n.gestureEquivShortcutFindMatch,
+      group: conversation,
+    ),
+    ShortcutHelpEntry(
+      '↑ / ↓',
+      l10n.gestureEquivShortcutPromptHistory,
+      group: conversation,
     ),
   ];
 }
@@ -186,10 +232,16 @@ class AppShortcutScope extends InheritedWidget {
   const AppShortcutScope({
     super.key,
     required this.signals,
+    this.perform,
     required super.child,
   });
 
   final AppShortcutSignals signals;
+
+  /// Does what the intent's key does, from a tap: the shell's search button
+  /// opens the same command launcher as Ctrl/Cmd+K. Null where no
+  /// [AppShortcuts] layer is installed (a bare screen in a test).
+  final void Function(Intent intent)? perform;
 
   static AppShortcutSignals? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<AppShortcutScope>()?.signals;
@@ -199,9 +251,14 @@ class AppShortcutScope extends InheritedWidget {
   static AppShortcutSignals? read(BuildContext context) =>
       context.getInheritedWidgetOfExactType<AppShortcutScope>()?.signals;
 
+  /// [perform] of the nearest scope, or null (hide the control that would
+  /// use it).
+  static void Function(Intent intent)? performOf(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<AppShortcutScope>()?.perform;
+
   @override
   bool updateShouldNotify(AppShortcutScope oldWidget) =>
-      signals != oldWidget.signals;
+      signals != oldWidget.signals || perform != oldWidget.perform;
 }
 
 /// Mixed into a surface that wants to answer shell shortcuts.
@@ -305,69 +362,75 @@ class _AppShortcutsState extends State<AppShortcuts> {
     return null;
   }
 
+  /// One intent, whether a key or a tap asked for it.
+  Object? _perform(Intent intent) => switch (intent) {
+    OpenCommandPaletteIntent() => _dispatch(
+      intent,
+      (context) => unawaited(
+        showCommandPalette(context, widget.handlers.paletteCommands(context)),
+      ),
+    ),
+    NewSessionIntent() => _dispatch(
+      intent,
+      (_) => widget.handlers.onNewSession(),
+    ),
+    OpenSettingsIntent() => _dispatch(
+      intent,
+      (_) => widget.handlers.onOpenSettings(),
+    ),
+    // maybePop, never pop: a screen guarding unsaved work with PopScope
+    // keeps its veto.
+    CloseRouteIntent() => _dispatch(
+      intent,
+      (_) => unawaited(_navigator!.maybePop()),
+    ),
+    ShowShortcutsHelpIntent() => _dispatch(
+      intent,
+      (context) => unawaited(showShortcutsHelp(context)),
+    ),
+    // No shell fallback: only a surface with primary destinations or a find
+    // field can service it. Registering it still stops the keystroke from
+    // leaking through as a literal character.
+    FindInSurfaceIntent() => _dispatch(intent, (_) {}),
+    // Shell destinations and the terminal belong to the shell root. From a
+    // pushed route (chat, terminal, review) nothing visible claims them, so
+    // the fallback returns to the root and asks the shell again.
+    SelectDestinationIntent() ||
+    OpenTerminalIntent() => _dispatch(intent, (_) => _returnToShell(intent)),
+    _ => _dispatch(intent, (_) {}),
+  };
+
+  void _performFromTap(Intent intent) => _perform(intent);
+
   @override
   Widget build(BuildContext context) {
     // Off desktop only the bus is installed, with no key bindings: search
     // results use it to reach the shell's tabs from any route, the same way
-    // Ctrl+1..4 does here.
+    // Ctrl+1..4 does here, and the shell's search button opens the launcher.
     if (!desktopInteractions) {
-      return AppShortcutScope(signals: _signals, child: widget.child);
+      return AppShortcutScope(
+        signals: _signals,
+        perform: _performFromTap,
+        child: widget.child,
+      );
     }
+    CallbackAction<T> action<T extends Intent>() =>
+        CallbackAction<T>(onInvoke: _perform);
     return AppShortcutScope(
       signals: _signals,
+      perform: _performFromTap,
       child: Shortcuts(
         shortcuts: appShortcutBindings,
         child: Actions(
           actions: <Type, Action<Intent>>{
-            OpenCommandPaletteIntent: CallbackAction<OpenCommandPaletteIntent>(
-              onInvoke: (intent) => _dispatch(
-                intent,
-                (context) => unawaited(
-                  showCommandPalette(
-                    context,
-                    widget.handlers.paletteCommands(context),
-                  ),
-                ),
-              ),
-            ),
-            NewSessionIntent: CallbackAction<NewSessionIntent>(
-              onInvoke: (intent) =>
-                  _dispatch(intent, (_) => widget.handlers.onNewSession()),
-            ),
-            OpenSettingsIntent: CallbackAction<OpenSettingsIntent>(
-              onInvoke: (intent) =>
-                  _dispatch(intent, (_) => widget.handlers.onOpenSettings()),
-            ),
-            CloseRouteIntent: CallbackAction<CloseRouteIntent>(
-              // maybePop, never pop: a screen guarding unsaved work with
-              // PopScope keeps its veto.
-              onInvoke: (intent) =>
-                  _dispatch(intent, (_) => unawaited(_navigator!.maybePop())),
-            ),
-            ShowShortcutsHelpIntent: CallbackAction<ShowShortcutsHelpIntent>(
-              onInvoke: (intent) => _dispatch(
-                intent,
-                (context) => unawaited(showShortcutsHelp(context)),
-              ),
-            ),
-            // No shell fallback: only a surface with primary destinations or
-            // a find field can service these. Registering them still stops
-            // the keystroke from leaking through as a literal character.
-            FindInSurfaceIntent: CallbackAction<FindInSurfaceIntent>(
-              onInvoke: (intent) => _dispatch(intent, (_) {}),
-            ),
-            // Shell destinations and the terminal belong to the shell root.
-            // From a pushed route (chat, terminal, review) nothing visible
-            // claims them, so the fallback returns to the root and asks the
-            // shell again.
-            SelectDestinationIntent: CallbackAction<SelectDestinationIntent>(
-              onInvoke: (intent) =>
-                  _dispatch(intent, (_) => _returnToShell(intent)),
-            ),
-            OpenTerminalIntent: CallbackAction<OpenTerminalIntent>(
-              onInvoke: (intent) =>
-                  _dispatch(intent, (_) => _returnToShell(intent)),
-            ),
+            OpenCommandPaletteIntent: action<OpenCommandPaletteIntent>(),
+            NewSessionIntent: action<NewSessionIntent>(),
+            OpenSettingsIntent: action<OpenSettingsIntent>(),
+            CloseRouteIntent: action<CloseRouteIntent>(),
+            ShowShortcutsHelpIntent: action<ShowShortcutsHelpIntent>(),
+            FindInSurfaceIntent: action<FindInSurfaceIntent>(),
+            SelectDestinationIntent: action<SelectDestinationIntent>(),
+            OpenTerminalIntent: action<OpenTerminalIntent>(),
           },
           child: widget.child,
         ),
@@ -405,16 +468,48 @@ class DesktopCommand {
   final String? keywords;
 }
 
-/// Opens the searchable command launcher.
+/// Opens the searchable command launcher: the kit sheet (a centred panel on
+/// a wide window), a search field, and one row per command. Enter runs the
+/// first match, which is drawn filled so the choice never rests on colour
+/// alone; Arrow Down moves into the rows, which Enter or a tap runs.
 Future<void> showCommandPalette(
   BuildContext context,
   List<DesktopCommand> commands,
 ) {
   if (commands.isEmpty) return Future<void>.value();
-  return showDialog<void>(
-    context: context,
-    builder: (_) => _CommandPalette(commands: commands),
+  return showKitSheet<void>(
+    context,
+    sheetKey: const ValueKey('desktop-command-palette'),
+    title: _shortcutL10n(context).e7LocaleUiCommandLauncher,
+    icon: AppIconography.lightning,
+    body: (_) => _CommandPalette(commands: commands),
   );
+}
+
+/// Which [commands] a query finds, by the same matcher as Settings' search
+/// (lib/domain/settings_search.dart): label, hint and keywords, every word
+/// by word, prefix or one typo, in any case; a whole label first. An empty
+/// query lists every command in order.
+@visibleForTesting
+List<DesktopCommand> matchCommands(
+  List<DesktopCommand> commands,
+  String query,
+) {
+  if (query.trim().isEmpty) return commands;
+  final index = SettingsSearchIndex([
+    for (final (i, command) in commands.indexed)
+      SettingsSearchDocument(
+        id: '$i',
+        title: command.label,
+        parent: command.hint ?? '',
+        aliases: command.keywords ?? '',
+        target: const SettingsSearchTarget(pageId: 'command'),
+      ),
+  ]);
+  return [
+    for (final document in index.search(query))
+      commands[int.parse(document.id)],
+  ];
 }
 
 class _CommandPalette extends StatefulWidget {
@@ -428,135 +523,86 @@ class _CommandPalette extends StatefulWidget {
 
 class _CommandPaletteState extends State<_CommandPalette> {
   final _query = TextEditingController();
-  final _listController = ScrollController();
-  int _highlighted = 0;
 
-  List<DesktopCommand> get _matches {
-    final query = _query.text.trim().toLowerCase();
-    if (query.isEmpty) return widget.commands;
-    return widget.commands
-        .where(
-          (command) =>
-              command.label.toLowerCase().contains(query) ||
-              (command.hint?.toLowerCase().contains(query) ?? false) ||
-              (command.keywords?.toLowerCase().contains(query) ?? false),
-        )
-        .toList();
+  @override
+  void initState() {
+    super.initState();
+    // Filtering is local and instant; the field's settled callback only
+    // drives its own count announcement.
+    _query.addListener(_changed);
   }
 
-  void _move(int delta) {
-    final matches = _matches;
-    if (matches.isEmpty) return;
-    setState(
-      () => _highlighted = (_highlighted + delta).clamp(0, matches.length - 1),
-    );
+  void _changed() {
+    if (mounted) setState(() {});
   }
+
+  List<DesktopCommand> get _matches =>
+      matchCommands(widget.commands, _query.text);
 
   void _run(DesktopCommand command) {
-    Navigator.of(context).pop();
+    KitSheet.close(context);
     command.onInvoke();
   }
 
-  void _runHighlighted() {
+  void _runFirst() {
     final matches = _matches;
-    if (matches.isEmpty || _highlighted >= matches.length) return;
-    _run(matches[_highlighted]);
+    if (matches.isNotEmpty) _run(matches.first);
   }
 
   @override
   void dispose() {
-    _query.dispose();
-    _listController.dispose();
+    _query
+      ..removeListener(_changed)
+      ..dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final l10n = _shortcutL10n(context);
     final matches = _matches;
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.arrowDown): () => _move(1),
-        const SingleActivator(LogicalKeyboardKey.arrowUp): () => _move(-1),
-      },
-      child: Dialog(
-        key: const ValueKey('desktop-command-palette'),
-        alignment: Alignment.topCenter,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 72),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560, maxHeight: 460),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+    final query = _query.text.trim();
+    final showKeys = desktopInteractions;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitSearchField(
+          fieldKey: const ValueKey('command-palette-query'),
+          controller: _query,
+          label: l10n.shortcutsPaletteSearch,
+          autofocus: true,
+          resultCount: query.isEmpty ? null : matches.length,
+          onChanged: (_) {},
+          onSubmitted: (_) => _runFirst(),
+        ),
+        if (matches.isEmpty)
+          KitSearchNoMatch(query: query, onClear: _query.clear)
+        else
+          KitRowGroup(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-                child: TextField(
-                  key: const ValueKey('command-palette-query'),
-                  controller: _query,
-                  autofocus: true,
-                  onChanged: (_) => setState(() => _highlighted = 0),
-                  onSubmitted: (_) => _runHighlighted(),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    prefixIcon: const Icon(AppIconography.lightning, size: 20),
-                    hintText: _shortcutL10n(context).e7LocaleUiTypeCommand,
-                    border: const OutlineInputBorder(),
-                  ),
+              for (final (index, command) in matches.indexed)
+                KitRow(
+                  key: ValueKey('command-${command.label}'),
+                  leading: KitRow.icon(context, command.icon),
+                  title: command.label,
+                  supporting: command.hint == null
+                      ? null
+                      : TextSpan(text: command.hint),
+                  // What Enter runs, filled rather than tinted.
+                  selected: index == 0 && query.isNotEmpty,
+                  trailing: !showKeys || command.keys == null
+                      ? null
+                      : KitText(
+                          command.keys!,
+                          role: KitTextRole.mono,
+                          tone: KitTextTone.secondary,
+                        ),
+                  onTap: () => _run(command),
                 ),
-              ),
-              const Divider(height: 1),
-              Flexible(
-                child: matches.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(28),
-                        child: Text(
-                          _shortcutL10n(context).e7LocaleUiNoCommand,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      )
-                    : Scrollbar(
-                        controller: _listController,
-                        thumbVisibility: true,
-                        child: OwnScrollbar(
-                          child: ListView.builder(
-                            controller: _listController,
-                            shrinkWrap: true,
-                            itemCount: matches.length,
-                            itemBuilder: (context, index) {
-                              final command = matches[index];
-                              return ListTile(
-                                key: ValueKey('command-${command.label}'),
-                                dense: true,
-                                selected: index == _highlighted,
-                                leading: Icon(command.icon, size: 20),
-                                title: Text(command.label),
-                                subtitle: command.hint == null
-                                    ? null
-                                    : Text(command.hint!),
-                                trailing: command.keys == null
-                                    ? null
-                                    : Text(
-                                        command.keys!,
-                                        style: theme.textTheme.labelSmall
-                                            ?.copyWith(
-                                              color: theme
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
-                                            ),
-                                      ),
-                                onTap: () => _run(command),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-              ),
             ],
           ),
-        ),
-      ),
+      ],
     );
   }
 }
@@ -566,61 +612,44 @@ class _CommandPaletteState extends State<_CommandPalette> {
 // =====================================================================
 
 /// The discoverable list of every shortcut, reachable from Ctrl+/ and from
-/// the More hub so it is not itself hidden behind a shortcut.
+/// the More hub so it is not itself hidden behind a shortcut. One section
+/// per place a shortcut works; the keys sit in a mono column at the end of
+/// each row and the description wraps rather than being cut.
 Future<void> showShortcutsHelp(BuildContext context) {
-  final entries = shortcutHelp(_shortcutL10n(context));
-  return showDialog<void>(
-    context: context,
-    builder: (context) {
-      final theme = Theme.of(context);
-      return AlertDialog(
-        key: const ValueKey('keyboard-shortcuts-sheet'),
-        title: Text(_shortcutL10n(context).e7LocaleUiKeyboardShortcuts),
-        content: SizedBox(
-          width: 380,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final entry in entries)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 132,
-                          child: Text(
-                            entry.keys,
-                            textDirection: TextDirection.ltr,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              fontFamily: 'AppMono',
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            entry.description,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
+  final l10n = _shortcutL10n(context);
+  final entries = shortcutHelp(l10n);
+  return showKitSheet<void>(
+    context,
+    sheetKey: const ValueKey('keyboard-shortcuts-sheet'),
+    title: l10n.e7LocaleUiKeyboardShortcuts,
+    icon: AppIconography.keyboard,
+    body: (context) => Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final group in ShortcutHelpGroup.values)
+          KitRowGroup(
+            key: ValueKey('shortcuts-help-${group.name}'),
+            label: switch (group) {
+              ShortcutHelpGroup.anywhere => l10n.shortcutsHelpAnywhere,
+              ShortcutHelpGroup.conversation => l10n.shortcutsHelpConversation,
+            },
+            leadingIcons: false,
+            children: [
+              for (final entry in entries)
+                if (entry.group == group)
+                  KitRow(
+                    title: entry.description,
+                    titleMaxLines: 4,
+                    trailing: KitText(
+                      entry.keys,
+                      role: KitTextRole.mono,
+                      tone: KitTextTone.secondary,
                     ),
                   ),
-              ],
-            ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(_shortcutL10n(context).e7LocaleUiClose),
-          ),
-        ],
-      );
-    },
+      ],
+    ),
   );
 }

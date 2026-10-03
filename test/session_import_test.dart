@@ -10,8 +10,10 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api2/dialect.dart';
 import 'package:opencode_mobile/api2/gateway_operations.dart';
 import 'package:opencode_mobile/api2/transport.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/screens/session_import_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -90,6 +92,20 @@ class _Imports extends ProductRepository implements SessionImportGateway {
   Future<List<WorkspaceInfo>> listWorkspaces() async => [];
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// A server with one place to import into: the current project.
+class _OnePlace extends _Imports {
+  @override
+  Future<List<WorkspaceProject>> listProjects() async => [
+    const WorkspaceProject(
+      id: 'current',
+      name: 'Only project',
+      directory: '/current',
+      worktrees: [],
+      updatedAt: 1,
+    ),
+  ];
 }
 
 class _Controller extends ConnectionController {
@@ -412,6 +428,7 @@ void main() {
     bool redacted = false,
     double? width,
     Future<SessionImportFile?> Function()? pick,
+    _Imports? imports,
   }) async {
     if (width != null) {
       tester.view.physicalSize = Size(width, 891);
@@ -420,7 +437,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.runAsync(loadCaptureFonts);
     }
-    final repo = _Imports();
+    final repo = imports ?? _Imports();
     final controller =
         _Controller(ProfileStore(prefs: await SharedPreferences.getInstance()))
           ..repository = repo
@@ -431,6 +448,8 @@ void main() {
     );
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: width == null ? null : captureTheme(light: true),
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
@@ -478,19 +497,19 @@ void main() {
           )
           .first;
       await tester.scrollUntilVisible(
-        find.text('Change destination'),
+        _destinationRow,
         200,
         scrollable: reviewScroll,
       );
-      await tester.ensureVisible(find.text('Change destination'));
-      await tester.tap(find.text('Change destination'));
+      await tester.ensureVisible(_destinationRow);
+      await tester.tap(_destinationRow);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('/destination'));
+      await tester.tap(
+        find.byKey(const ValueKey('import-destination-/destination')),
+      );
       await tester.pumpAndSettle();
       repo.error = const Api2RequestError('Conflict', statusCode: 409);
-      await tester.tap(
-        find.widgetWithText(FilledButton, 'Import conversation'),
-      );
+      await tester.tap(_importButton);
       await tester.pumpAndSettle();
       expect(repo.writes.single['location'], {'directory': '/destination'});
       expect(find.textContaining('already exists'), findsOneWidget);
@@ -506,15 +525,10 @@ void main() {
     (tester) async {
       final (controller, repo) = await screen(tester);
       await choose(tester);
-      await tester.tap(
-        find.widgetWithText(FilledButton, 'Import conversation'),
-      );
+      await tester.tap(_importButton);
       await tester.pumpAndSettle();
       expect(find.text('Conversation imported'), findsOneWidget);
-      expect(
-        find.widgetWithText(FilledButton, 'Import conversation'),
-        findsNothing,
-      );
+      expect(_importButton, findsNothing);
       await tester.tap(find.text('Open conversation'));
       await tester.pumpAndSettle();
       expect(find.text('Imported chat'), findsOneWidget);
@@ -529,9 +543,7 @@ void main() {
       final (controller, repo) = await screen(tester);
       await choose(tester);
       controller.wake = Completer<void>();
-      await tester.tap(
-        find.widgetWithText(FilledButton, 'Import conversation'),
-      );
+      await tester.tap(_importButton);
       await tester.pump();
       controller.repository = _Imports();
       controller.wake!.complete();
@@ -583,6 +595,8 @@ void main() {
     addTearDown(replacement.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: SessionImportScreen(
           controller: replacement,
           pickFile: () => selected.future,
@@ -610,7 +624,7 @@ void main() {
     final (_, repo) = await screen(tester);
     await choose(tester);
     repo.result = Session(id: 'ses_other', directory: '/current');
-    await tester.tap(find.widgetWithText(FilledButton, 'Import conversation'));
+    await tester.tap(_importButton);
     await tester.pumpAndSettle();
 
     expect(find.text('Conversation imported'), findsNothing);
@@ -618,10 +632,7 @@ void main() {
       find.textContaining('Import could not be confirmed'),
       findsOneWidget,
     );
-    expect(
-      find.widgetWithText(FilledButton, 'Import conversation'),
-      findsOneWidget,
-    );
+    expect(_importButton, findsOneWidget);
     expect(repo.writes, hasLength(1));
   });
 
@@ -637,24 +648,14 @@ void main() {
     await choose(tester);
     expect(find.textContaining('128 MiB'), findsOneWidget);
     expect(repo.writes, isEmpty);
-    expect(
-      tester
-          .widget<FilledButton>(
-            find.widgetWithText(FilledButton, 'Import conversation'),
-          )
-          .onPressed,
-      isNull,
-    );
+    expect(tester.widget<KitButton>(_importButton).onPressed, isNull);
   });
 
   for (final width in [411.0, 320.0]) {
     testWidgets('import review and action fit at $width', (tester) async {
       await screen(tester, width: width, redacted: true);
       await choose(tester);
-      expect(
-        find.widgetWithText(FilledButton, 'Import conversation').hitTestable(),
-        findsOneWidget,
-      );
+      expect(_importButton.hitTestable(), findsOneWidget);
       final preview = Platform.environment['OC_IMPORT_PREVIEW'];
       if (preview != null && width == 411) {
         await tester.runAsync(() async {
@@ -673,15 +674,68 @@ void main() {
             matching: find.byType(Scrollable),
           )
           .first;
-      await tester.scrollUntilVisible(
-        find.text('Change destination'),
-        200,
-        scrollable: scroll,
-      );
-      await tester.ensureVisible(find.text('Change destination'));
+      await tester.scrollUntilVisible(_destinationRow, 200, scrollable: scroll);
+      await tester.ensureVisible(_destinationRow);
       await tester.pumpAndSettle();
-      expect(find.text('Change destination').hitTestable(), findsOneWidget);
+      expect(_destinationRow.hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('review shows the title and a plural count; ids wait folded', (
+    tester,
+  ) async {
+    await screen(tester);
+    await choose(tester);
+
+    expect(find.text('Transfer العربية'), findsOneWidget);
+    expect(
+      find.textContaining('2 messages', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.textContaining('message records'), findsNothing);
+    // The conversation id is a technical value: under Details, collapsed.
+    expect(find.textContaining('ses_transfer'), findsNothing);
+  });
+
+  testWidgets('an unreadable file says so by the file and keeps Import off', (
+    tester,
+  ) async {
+    final bytes = utf8.encode('# A Markdown transcript');
+    final (_, repo) = await screen(
+      tester,
+      pick: () async => SessionImportFile(
+        name: 'notes.md',
+        length: () async => bytes.length,
+        read: () => Stream.value(bytes),
+      ),
+    );
+    await choose(tester);
+
+    expect(
+      find.textContaining('Choose a valid OpenCode JSON export'),
+      findsOneWidget,
+    );
+    expect(find.text('notes.md'), findsOneWidget);
+    expect(tester.widget<KitButton>(_importButton).onPressed, isNull);
+    expect(repo.writes, isEmpty);
+  });
+
+  testWidgets('one place to import into: chosen, then nothing to change', (
+    tester,
+  ) async {
+    await screen(tester, imports: _OnePlace());
+    await tester.pump();
+    expect(find.text('Change'), findsOneWidget);
+    await tester.tap(_destinationRow);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('import-destination-/current')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Only project'), findsOneWidget);
+    expect(find.text('Change'), findsNothing);
+  });
 }
+
+final _importButton = find.byKey(const ValueKey('import-action'));
+final _destinationRow = find.byKey(const ValueKey('import-destination'));

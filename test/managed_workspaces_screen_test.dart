@@ -47,7 +47,13 @@ class _ManagedWorkspaceRepository implements ProductRepository {
   @override
   Future<List<WorkspaceInfo>> listManagedWorkspaces({
     required String projectDirectory,
-  }) async => List.of(workspaces);
+  }) async {
+    listCalls += 1;
+    return List.of(workspaces);
+  }
+
+  /// How many times the environments were read.
+  int listCalls = 0;
 
   @override
   Future<List<WorkspaceAdapterInfo>> listWorkspaceAdapters({
@@ -188,27 +194,40 @@ void main() {
       find.byKey(const ValueKey('managed-workspace-wrk_remote')),
       findsOneWidget,
     );
+    // Providers are chosen in the New environment sheet only (R13).
+    expect(find.text('Cloud runner'), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    // Discover existing lives in the top bar's overflow (map rationale).
+    await tester.tap(find.byKey(const ValueKey('managed-workspaces-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('sync-managed-workspaces')));
+    await tester.pumpAndSettle();
+    expect(repository.syncCalls, 1);
+    // The outcome is said at the top of the list, not in a snackbar.
     await tester.scrollUntilVisible(
-      find.text('Cloud runner'),
-      240,
+      find.text('Discovery finished'),
+      -240,
       scrollable: find.descendant(
         of: find.byKey(const ValueKey('managed-workspaces-list')),
         matching: find.byType(Scrollable),
       ),
     );
-    expect(find.text('Cloud runner'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-
-    await tester.tap(find.byKey(const ValueKey('sync-managed-workspaces')));
-    await tester.pumpAndSettle();
-    expect(repository.syncCalls, 1);
+    expect(find.text('Discovery finished'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.byKey(const ValueKey('create-managed-workspace')));
     await tester.pumpAndSettle();
     expect(find.text('New cloud environment'), findsOneWidget);
+    // One provider: nothing to choose, the subtitle names it.
+    expect(find.text('In Cloud runner'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('workspace-adapter-picker')),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
-    await tester.tap(find.text('Cancel'));
+    // The sheet closes with its Close button (KIT-19).
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
   });
 
@@ -254,23 +273,21 @@ void main() {
       ManagedWorkspacesScreen(controller: controller, project: _project),
     );
 
+    // The row's rarer acts are on long-press (KIT-28), one verb: Remove.
     final tile = find.byKey(const ValueKey('managed-workspace-wrk_remote'));
+    await tester.longPress(tile);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('environment-menu-remove')));
+    await tester.pumpAndSettle();
+    // Nothing is removed until the name is typed.
     await tester.tap(
-      find.descendant(of: tile, matching: find.byType(PopupMenuButton<String>)),
+      find.byKey(const ValueKey('confirm-remove-managed-workspace')),
+      warnIfMissed: false,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
-    expect(
-      tester
-          .widget<FilledButton>(
-            find.byKey(const ValueKey('confirm-remove-managed-workspace')),
-          )
-          .onPressed,
-      isNull,
-    );
+    expect(repository.removedID, isNull);
     await tester.enterText(
-      find.byKey(const ValueKey('remove-managed-workspace-confirmation')),
+      find.byKey(const ValueKey('kit-confirm-typed-name')),
       'Phone runner',
     );
     await tester.pump();
@@ -286,5 +303,103 @@ void main() {
       find.byKey(const ValueKey('managed-workspace-wrk_remote')),
       findsNothing,
     );
+  });
+  group('slice-R13', () {
+    testWidgets('no refresh in the top bar and no provider list on the page; '
+        'pulling down reloads', (tester) async {
+      final repository = _ManagedWorkspaceRepository();
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+      await _open(
+        tester,
+        ManagedWorkspacesScreen(controller: controller, project: _project),
+      );
+
+      expect(
+        find.byKey(const ValueKey('refresh-managed-workspaces')),
+        findsNothing,
+      );
+      expect(find.text('Providers'), findsNothing);
+      // The page title names the list: no "Environments" label or count.
+      expect(find.text('Environments'), findsNothing);
+      expect(find.text('1'), findsNothing);
+
+      final before = repository.listCalls;
+      await tester.fling(
+        find.byKey(const ValueKey('managed-workspaces-list')),
+        const Offset(0, 400),
+        1000,
+      );
+      await tester.pumpAndSettle();
+      expect(repository.listCalls, greaterThan(before));
+    });
+
+    testWidgets('several providers: the sheet asks which, and creates with '
+        'the one chosen', (tester) async {
+      final repository = _ManagedWorkspaceRepository()
+        ..adapters = const [
+          WorkspaceAdapterInfo(
+            type: 'cloud',
+            name: 'Cloud runner',
+            description: 'Create an isolated remote runner',
+          ),
+          WorkspaceAdapterInfo(
+            type: 'daytona',
+            name: 'Daytona',
+            description: 'A sandbox in Daytona',
+          ),
+        ];
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+      await _open(
+        tester,
+        ManagedWorkspacesScreen(controller: controller, project: _project),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('create-managed-workspace')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('workspace-adapter-picker')),
+        findsOneWidget,
+      );
+      expect(find.text('Provider'), findsOneWidget);
+      expect(find.textContaining('In '), findsNothing);
+      await tester.tap(find.text('Daytona'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('confirm-create-managed-workspace')),
+      );
+      await tester.pumpAndSettle();
+      expect(repository.createdType, 'daytona');
+    });
+
+    testWidgets('environments but no provider: the page says why there is no '
+        'New environment', (tester) async {
+      final repository = _ManagedWorkspaceRepository()
+        ..adapters = <WorkspaceAdapterInfo>[];
+      final controller = await _controller(repository);
+      addTearDown(controller.dispose);
+      await _open(
+        tester,
+        ManagedWorkspacesScreen(controller: controller, project: _project),
+      );
+
+      expect(
+        find.byKey(const ValueKey('managed-workspace-wrk_remote')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('workspace-adapters-empty')),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('No provider set up', findRichText: true),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('create-managed-workspace')),
+        findsNothing,
+      );
+    });
   });
 }

@@ -14,6 +14,7 @@ import '../api/models.dart';
 import '../domain/server_gateway.dart';
 import 'mappers.dart';
 import 'transport.dart';
+import '../diagnostics/perf_trace.dart';
 
 const paseoServerCapabilities = ServerCapabilities(
   promptAttachments: false,
@@ -33,6 +34,7 @@ const paseoServerCapabilities = ServerCapabilities(
   sessionImportExport: false,
   sessionNotes: false,
   serverCatalog: false,
+  slashCommands: false,
   profileAttentionPolling: false,
   managedWorkspaces: false,
   workspaceWarp: false,
@@ -487,6 +489,7 @@ class PaseoGateway implements ServerGateway, ServerOperationsGateway {
     List<PromptAgentMention> agentMentions = const [],
     PromptDelivery? delivery,
   }) async {
+    PromptTrace.sent(sessionID);
     if (attachments.isNotEmpty ||
         agentMentions.isNotEmpty ||
         delivery != null) {

@@ -1,0 +1,457 @@
+{
+ "area": "g-servers",
+ "renderedAt": "2026-09-26T02:56:06.804441Z",
+ "declaredShots": [
+  {
+   "page": "servers",
+   "state": "loaded"
+  },
+  {
+   "page": "servers",
+   "state": "password-needed"
+  },
+  {
+   "page": "servers-welcome",
+   "state": "default"
+  },
+  {
+   "page": "agent-choice",
+   "state": "default"
+  },
+  {
+   "page": "servers-remove-server-sheet",
+   "state": "default"
+  },
+  {
+   "page": "profile-editor",
+   "state": "add-opencode"
+  },
+  {
+   "page": "profile-editor",
+   "state": "add-codex"
+  },
+  {
+   "page": "profile-editor",
+   "state": "first-run-connect"
+  },
+  {
+   "page": "profile-editor",
+   "state": "failed"
+  },
+  {
+   "page": "profile-editor-discard-sheet",
+   "state": "default"
+  },
+  {
+   "page": "pairing-scanner",
+   "state": "denied"
+  },
+  {
+   "page": "pairing-scanner",
+   "state": "blocked"
+  },
+  {
+   "page": "pairing-scanner",
+   "state": "no-camera"
+  },
+  {
+   "page": "connection-help",
+   "state": "empty"
+  },
+  {
+   "page": "connection-help",
+   "state": "explained"
+  },
+  {
+   "page": "tailscale-setup",
+   "state": "installed"
+  },
+  {
+   "page": "tailscale-setup",
+   "state": "missing"
+  },
+  {
+   "page": "host-management",
+   "state": "default"
+  },
+  {
+   "page": "server-settings",
+   "state": "update-available"
+  },
+  {
+   "page": "server-settings",
+   "state": "pending-restart"
+  },
+  {
+   "page": "server-settings-upgrade-sheet",
+   "state": "default"
+  },
+  {
+   "page": "server-settings-restart-dialog",
+   "state": "default"
+  },
+  {
+   "page": "agent-account",
+   "state": "signed-out"
+  },
+  {
+   "page": "agent-account",
+   "state": "usage"
+  },
+  {
+   "page": "external-agents",
+   "state": "empty"
+  },
+  {
+   "page": "external-agents",
+   "state": "saved"
+  },
+  {
+   "page": "external-agents",
+   "state": "pending-deletion"
+  },
+  {
+   "page": "external-agents-delete-sheet",
+   "state": "default"
+  },
+  {
+   "page": "add-agent",
+   "state": "address"
+  },
+  {
+   "page": "add-agent",
+   "state": "inspected"
+  },
+  {
+   "page": "external-agent-detail",
+   "state": "default"
+  },
+  {
+   "page": "external-agent-detail-input-dialog",
+   "state": "new-task"
+  },
+  {
+   "page": "external-agent-detail-input-dialog",
+   "state": "update-credential"
+  },
+  {
+   "page": "external-agent-detail-delete-sheet",
+   "state": "default"
+  },
+  {
+   "page": "external-task",
+   "state": "draft"
+  },
+  {
+   "page": "external-task",
+   "state": "input-required"
+  },
+  {
+   "page": "external-task",
+   "state": "completed"
+  },
+  {
+   "page": "external-task-cancel-sheet",
+   "state": "default"
+  },
+  {
+   "page": "external-task-forget-sheet",
+   "state": "default"
+  },
+  {
+   "page": "profile-monitor",
+   "state": "default"
+  },
+  {
+   "page": "profile-monitor-switch-server-dialog",
+   "state": "default"
+  },
+  {
+   "page": "embedded-profile-monitor-inbox",
+   "state": "default"
+  },
+  {
+   "page": "provider-quota",
+   "state": "setup"
+  },
+  {
+   "page": "provider-quota",
+   "state": "loaded"
+  },
+  {
+   "page": "provider-quota-enroll-dialog",
+   "state": "default"
+  },
+  {
+   "page": "provider-quota-clear-dialog",
+   "state": "default"
+  },
+  {
+   "page": "usage",
+   "state": "default"
+  },
+  {
+   "page": "usage-budget-dialog",
+   "state": "default"
+  },
+  {
+   "page": "usage-budget-clear-dialog",
+   "state": "default"
+  }
+ ],
+ "notRendered": {},
+ "shots": [
+  {
+   "page": "servers",
+   "state": "loaded",
+   "image": "g-servers/servers--loaded.png",
+   "note": "Laptop is the connected server; Studio Mac (OpenCode 2) and a Codex host are saved alongside it."
+  },
+  {
+   "page": "servers",
+   "state": "password-needed",
+   "image": "g-servers/servers--password-needed.png"
+  },
+  {
+   "page": "servers-welcome",
+   "state": "default",
+   "image": "g-servers/servers-welcome.png"
+  },
+  {
+   "page": "agent-choice",
+   "state": "default",
+   "image": "g-servers/agent-choice.png"
+  },
+  {
+   "page": "servers-remove-server-sheet",
+   "state": "default",
+   "image": "g-servers/servers-remove-server-sheet.png"
+  },
+  {
+   "page": "profile-editor",
+   "state": "add-opencode",
+   "image": "g-servers/profile-editor--add-opencode.png",
+   "note": "Default \"Add server\": OpenCode chosen, the command and pairing."
+  },
+  {
+   "page": "profile-editor",
+   "state": "add-codex",
+   "image": "g-servers/profile-editor--add-codex.png"
+  },
+  {
+   "page": "profile-editor",
+   "state": "first-run-connect",
+   "image": "g-servers/profile-editor--first-run-connect.png",
+   "note": "First-run \"On my computer\" -> OpenCode connect screen."
+  },
+  {
+   "page": "profile-editor",
+   "state": "failed",
+   "image": "g-servers/profile-editor--failed.png"
+  },
+  {
+   "page": "profile-editor-discard-sheet",
+   "state": "default",
+   "image": "g-servers/profile-editor-discard-sheet.png"
+  },
+  {
+   "page": "pairing-scanner",
+   "state": "denied",
+   "image": "g-servers/pairing-scanner--denied.png",
+   "note": "The camera preview itself needs a real camera; these three states are the screen's whole non-camera surface."
+  },
+  {
+   "page": "pairing-scanner",
+   "state": "blocked",
+   "image": "g-servers/pairing-scanner--blocked.png"
+  },
+  {
+   "page": "pairing-scanner",
+   "state": "no-camera",
+   "image": "g-servers/pairing-scanner--no-camera.png"
+  },
+  {
+   "page": "connection-help",
+   "state": "empty",
+   "image": "g-servers/connection-help--empty.png"
+  },
+  {
+   "page": "connection-help",
+   "state": "explained",
+   "image": "g-servers/connection-help--explained.png"
+  },
+  {
+   "page": "tailscale-setup",
+   "state": "installed",
+   "image": "g-servers/tailscale-setup--installed.png"
+  },
+  {
+   "page": "tailscale-setup",
+   "state": "missing",
+   "image": "g-servers/tailscale-setup--missing.png"
+  },
+  {
+   "page": "host-management",
+   "state": "default",
+   "image": "g-servers/host-management.png"
+  },
+  {
+   "page": "server-settings",
+   "state": "update-available",
+   "image": "g-servers/server-settings--update-available.png"
+  },
+  {
+   "page": "server-settings",
+   "state": "pending-restart",
+   "image": "g-servers/server-settings--pending-restart.png"
+  },
+  {
+   "page": "server-settings-upgrade-sheet",
+   "state": "default",
+   "image": "g-servers/server-settings-upgrade-sheet.png"
+  },
+  {
+   "page": "server-settings-restart-dialog",
+   "state": "default",
+   "image": "g-servers/server-settings-restart-dialog.png"
+  },
+  {
+   "page": "agent-account",
+   "state": "signed-out",
+   "image": "g-servers/agent-account--signed-out.png",
+   "note": "Renders AgentAccountPanel, the body AgentAccountScreen shows once its account session is bound."
+  },
+  {
+   "page": "agent-account",
+   "state": "usage",
+   "image": "g-servers/agent-account--usage.png"
+  },
+  {
+   "page": "external-agents",
+   "state": "empty",
+   "image": "g-servers/external-agents--empty.png"
+  },
+  {
+   "page": "external-agents",
+   "state": "saved",
+   "image": "g-servers/external-agents--saved.png"
+  },
+  {
+   "page": "external-agents",
+   "state": "pending-deletion",
+   "image": "g-servers/external-agents--pending-deletion.png",
+   "note": "Local deletion left incomplete (secure-storage delete refused)."
+  },
+  {
+   "page": "external-agents-delete-sheet",
+   "state": "default",
+   "image": "g-servers/external-agents-delete-sheet.png"
+  },
+  {
+   "page": "add-agent",
+   "state": "address",
+   "image": "g-servers/add-agent--address.png"
+  },
+  {
+   "page": "add-agent",
+   "state": "inspected",
+   "image": "g-servers/add-agent--inspected.png"
+  },
+  {
+   "page": "external-agent-detail",
+   "state": "default",
+   "image": "g-servers/external-agent-detail.png"
+  },
+  {
+   "page": "external-agent-detail-input-dialog",
+   "state": "new-task",
+   "image": "g-servers/external-agent-detail-input-dialog--new-task.png"
+  },
+  {
+   "page": "external-agent-detail-input-dialog",
+   "state": "update-credential",
+   "image": "g-servers/external-agent-detail-input-dialog--update-credential.png"
+  },
+  {
+   "page": "external-agent-detail-delete-sheet",
+   "state": "default",
+   "image": "g-servers/external-agent-detail-delete-sheet.png"
+  },
+  {
+   "page": "external-task",
+   "state": "draft",
+   "image": "g-servers/external-task--draft.png"
+  },
+  {
+   "page": "external-task",
+   "state": "input-required",
+   "image": "g-servers/external-task--input-required.png"
+  },
+  {
+   "page": "external-task",
+   "state": "completed",
+   "image": "g-servers/external-task--completed.png"
+  },
+  {
+   "page": "external-task-cancel-sheet",
+   "state": "default",
+   "image": "g-servers/external-task-cancel-sheet.png"
+  },
+  {
+   "page": "external-task-forget-sheet",
+   "state": "default",
+   "image": "g-servers/external-task-forget-sheet.png"
+  },
+  {
+   "page": "profile-monitor",
+   "state": "default",
+   "image": "g-servers/profile-monitor.png"
+  },
+  {
+   "page": "profile-monitor-switch-server-dialog",
+   "state": "default",
+   "image": "g-servers/profile-monitor-switch-server-dialog.png"
+  },
+  {
+   "page": "embedded-profile-monitor-inbox",
+   "state": "default",
+   "image": "g-servers/embedded-profile-monitor-inbox.png",
+   "note": "Host: HomeScreen tab 1 (Inbox/Activity), scrolled to the embedded saved-servers inbox summary and its pending request row."
+  },
+  {
+   "page": "provider-quota",
+   "state": "setup",
+   "image": "g-servers/provider-quota--setup.png"
+  },
+  {
+   "page": "provider-quota",
+   "state": "loaded",
+   "image": "g-servers/provider-quota--loaded.png"
+  },
+  {
+   "page": "provider-quota-enroll-dialog",
+   "state": "default",
+   "image": "g-servers/provider-quota-enroll-dialog.png"
+  },
+  {
+   "page": "provider-quota-clear-dialog",
+   "state": "default",
+   "image": "g-servers/provider-quota-clear-dialog.png"
+  },
+  {
+   "page": "usage",
+   "state": "default",
+   "image": "g-servers/usage.png"
+  },
+  {
+   "page": "usage-budget-dialog",
+   "state": "default",
+   "image": "g-servers/usage-budget-dialog.png"
+  },
+  {
+   "page": "usage-budget-clear-dialog",
+   "state": "default",
+   "image": "g-servers/usage-budget-clear-dialog.png"
+  }
+ ]
+}

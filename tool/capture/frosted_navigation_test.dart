@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
-import 'package:opencode_mobile/ui/widgets/glass_surface.dart';
+import 'package:opencode_mobile/ui/kit/kit_nav.dart' show KitNavBar;
 
 import '../../test/support/setup_capture_preferences.dart';
 import 'fixtures.dart';
@@ -88,7 +88,7 @@ void main() {
           );
           scroll.position.jumpTo(220);
           await tester.pump(const Duration(milliseconds: 200));
-          final dock = tester.getRect(find.byType(GlassSurface));
+          final dock = tester.getRect(find.byType(KitNavBar));
           final action = tester.getRect(
             find.byKey(const ValueKey('workspace-quick-ask')),
           );

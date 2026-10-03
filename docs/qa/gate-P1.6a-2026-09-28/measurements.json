@@ -1,0 +1,174 @@
+{
+  "sampling": "About one second plus adb latency; excludes empty samples when emulator unreachable; RSS sums double count shared pages; stage labels include idle time",
+  "invalidLinesAfterHostCrash": 1,
+  "stagePeaks": {
+    "ubuntu-install": {
+      "samples": 75,
+      "peakChildren": 13,
+      "peakRssKiBIncludingApp": 278404
+    },
+    "essentials-install": {
+      "samples": 24,
+      "peakChildren": 13,
+      "peakRssKiBIncludingApp": 304856
+    },
+    "node-install": {
+      "samples": 31,
+      "peakChildren": 5,
+      "peakRssKiBIncludingApp": 222704
+    },
+    "claude-install": {
+      "samples": 36,
+      "peakChildren": 5,
+      "peakRssKiBIncludingApp": 341004
+    },
+    "claude-startup": {
+      "samples": 18,
+      "peakChildren": 4,
+      "peakRssKiBIncludingApp": 274804
+    },
+    "paseo-install": {
+      "samples": 152,
+      "peakChildren": 3,
+      "peakRssKiBIncludingApp": 477828
+    },
+    "auth-and-signed-out": {
+      "samples": 47,
+      "peakChildren": 7,
+      "peakRssKiBIncludingApp": 295688
+    },
+    "paseo-preflight": {
+      "samples": 28,
+      "peakChildren": 3,
+      "peakRssKiBIncludingApp": 246968
+    },
+    "paseo-start": {
+      "samples": 104,
+      "peakChildren": 6,
+      "peakRssKiBIncludingApp": 612980
+    },
+    "paseo-gateway": {
+      "samples": 72,
+      "peakChildren": 10,
+      "peakRssKiBIncludingApp": 1024188
+    },
+    "native-helpers": {
+      "samples": 151,
+      "peakChildren": 11,
+      "peakRssKiBIncludingApp": 1122324
+    },
+    "emulator-repeat-boot": {
+      "samples": 11,
+      "peakChildren": 0,
+      "peakRssKiBIncludingApp": 152608
+    },
+    "repeat-paseo-start": {
+      "samples": 44,
+      "peakChildren": 6,
+      "peakRssKiBIncludingApp": 634888
+    },
+    "repeat-paseo-gateway": {
+      "samples": 13,
+      "peakChildren": 6,
+      "peakRssKiBIncludingApp": 634888
+    }
+  },
+  "idlePss": [
+    {
+      "pid": 3656,
+      "name": "io.github.eslamasabry.opencode_mobile.preview",
+      "RssKiB": 106840,
+      "PssKiB": 23489,
+      "SwapPssKiB": 19722
+    },
+    {
+      "pid": 9681,
+      "name": "libproot.so",
+      "RssKiB": 4164,
+      "PssKiB": 1625,
+      "SwapPssKiB": 0
+    },
+    {
+      "pid": 9683,
+      "name": "runuser",
+      "RssKiB": 2964,
+      "PssKiB": 1411,
+      "SwapPssKiB": 0
+    },
+    {
+      "pid": 9686,
+      "name": "node",
+      "RssKiB": 119552,
+      "PssKiB": 83217,
+      "SwapPssKiB": 0
+    },
+    {
+      "pid": 9702,
+      "name": "Paseo Supervisor",
+      "RssKiB": 66120,
+      "PssKiB": 30444,
+      "SwapPssKiB": 0
+    },
+    {
+      "pid": 9715,
+      "name": "Paseo Daemon",
+      "RssKiB": 157068,
+      "PssKiB": 120227,
+      "SwapPssKiB": 0
+    },
+    {
+      "pid": 9736,
+      "name": "node",
+      "RssKiB": 70904,
+      "PssKiB": 35731,
+      "SwapPssKiB": 0
+    },
+    {
+      "pid": 9810,
+      "name": "claude",
+      "RssKiB": 186536,
+      "PssKiB": 184563,
+      "SwapPssKiB": 0
+    }
+  ],
+  "releaseProbeApk": {
+    "bytes": 48698147,
+    "sha256": "1864c4ee7b0bc61dced8ebc1f0cc395827ba7a0d2cd44283ae3c2ea7cf372592"
+  },
+  "installDurationsMs": {
+    "essentials": 107267,
+    "node": 26198,
+    "claude-install": 21936,
+    "paseo-install": 136274
+  },
+  "paseoHealthFirst": {
+    "health": true,
+    "elapsedSeconds": 6.282
+  },
+  "paseoHealthAfterReboot": {
+    "health": true,
+    "elapsedSeconds": 9.762
+  },
+  "rootfsAllocatedKiBAfterAllInstalls": 2000488,
+  "paseoHealthAfterHostRecovery": {
+    "health": true,
+    "elapsedSeconds": 23.487
+  },
+  "ownedServiceStop": {
+    "id": "1790548357486356056",
+    "elapsedMs": 2250,
+    "hostElapsedSeconds": 3.104,
+    "childrenRemaining": []
+  },
+  "validation": {
+    "sourceBase": "a98d2e8e",
+    "analyze": "passed, no issues",
+    "gateTests": 76,
+    "liveGatewayTest": "passed after host recovery",
+    "formatLanguageVersion": "3.10",
+    "testedQaSourcesSha256": {
+      "tool/qa/p16a_emulator_probe.dart": "226d1c21de8765cd372c76c652b7cfd0dbad9e306ebff9c2ddd893c873c631bf",
+      "tool/qa/p16a_paseo_probe_test.dart": "fb3b78c0475afa28dd50e20c4989af2476951840258424180214eba58ab510c2"
+    }
+  }
+}

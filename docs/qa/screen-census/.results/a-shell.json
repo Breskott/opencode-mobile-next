@@ -1,0 +1,354 @@
+{
+ "area": "a-shell",
+ "renderedAt": "2026-09-26T02:56:06.801480Z",
+ "declaredShots": [
+  {
+   "page": "bootstrap-gate",
+   "state": "starting"
+  },
+  {
+   "page": "bootstrap-gate",
+   "state": "failed"
+  },
+  {
+   "page": "root-connecting",
+   "state": "connecting"
+  },
+  {
+   "page": "root-connecting",
+   "state": "not-answering"
+  },
+  {
+   "page": "root-connecting",
+   "state": "stopped"
+  },
+  {
+   "page": "root-connecting",
+   "state": "failed-remote"
+  },
+  {
+   "page": "home-shell",
+   "state": "work"
+  },
+  {
+   "page": "home-shell",
+   "state": "needs-you"
+  },
+  {
+   "page": "home-shell",
+   "state": "reconnecting"
+  },
+  {
+   "page": "embedded-connection-status-banner",
+   "state": "inbox"
+  },
+  {
+   "page": "embedded-connection-status-banner",
+   "state": "lost"
+  },
+  {
+   "page": "embedded-connection-status-banner",
+   "state": "chat"
+  },
+  {
+   "page": "connection-status-details-sheet",
+   "state": "default"
+  },
+  {
+   "page": "server-switcher-sheet",
+   "state": "default"
+  },
+  {
+   "page": "activity",
+   "state": "empty"
+  },
+  {
+   "page": "activity",
+   "state": "waiting"
+  },
+  {
+   "page": "activity",
+   "state": "tab"
+  },
+  {
+   "page": "question-sheet",
+   "state": "default"
+  },
+  {
+   "page": "question-sheet-dismiss-dialog",
+   "state": "default"
+  },
+  {
+   "page": "confirm-sheet",
+   "state": "default"
+  },
+  {
+   "page": "external-link-dialog",
+   "state": "https"
+  },
+  {
+   "page": "external-link-dialog",
+   "state": "insecure-http"
+  },
+  {
+   "page": "share-session-failed-banner",
+   "state": "default"
+  },
+  {
+   "page": "session-link-server-missing-banner",
+   "state": "default"
+  },
+  {
+   "page": "shorebird-update-notice",
+   "state": "receiving"
+  },
+  {
+   "page": "shorebird-update-notice",
+   "state": "ready"
+  },
+  {
+   "page": "desktop-release-notice",
+   "state": "default"
+  },
+  {
+   "page": "shortcuts-help-dialog",
+   "state": "default"
+  },
+  {
+   "page": "command-palette-dialog",
+   "state": "default"
+  },
+  {
+   "page": "embedded-context-menu-region",
+   "state": "default"
+  },
+  {
+   "page": "embedded-product-states",
+   "state": "error"
+  },
+  {
+   "page": "embedded-product-states",
+   "state": "empty"
+  },
+  {
+   "page": "demo",
+   "state": "default"
+  },
+  {
+   "page": "capabilities",
+   "state": "empty"
+  },
+  {
+   "page": "capabilities",
+   "state": "loaded"
+  },
+  {
+   "page": "attention-overview",
+   "state": "default"
+  }
+ ],
+ "notRendered": {
+  "system": "not a surface: the non-UI entry points (share, links, notifications, launcher shortcuts)",
+  "global-shortcuts": "not a surface: the desktop keyboard-shortcut layer; its visible parts are shortcuts-help-dialog and command-palette-dialog",
+  "embedded-desktop-file-drop-target": "desktop-only: the \"Drop to attach\" highlight appears only during a native drag-and-drop, which flutter_test cannot start",
+  "file-drop-failed-dialog": "desktop-only: needs a native drag-and-drop whose handler throws"
+ },
+ "shots": [
+  {
+   "page": "bootstrap-gate",
+   "state": "starting",
+   "image": "a-shell/bootstrap-gate--starting.png"
+  },
+  {
+   "page": "bootstrap-gate",
+   "state": "failed",
+   "image": "a-shell/bootstrap-gate--failed.png"
+  },
+  {
+   "page": "root-connecting",
+   "state": "connecting",
+   "image": "a-shell/root-connecting--connecting.png",
+   "note": "SavedServerConnectionCard as _Root shows it (main.dart)"
+  },
+  {
+   "page": "root-connecting",
+   "state": "not-answering",
+   "image": "a-shell/root-connecting--not-answering.png",
+   "note": "after 8 s without an answer"
+  },
+  {
+   "page": "root-connecting",
+   "state": "stopped",
+   "image": "a-shell/root-connecting--stopped.png"
+  },
+  {
+   "page": "root-connecting",
+   "state": "failed-remote",
+   "image": "a-shell/root-connecting--failed-remote.png"
+  },
+  {
+   "page": "home-shell",
+   "state": "work",
+   "image": "a-shell/home-shell--work.png"
+  },
+  {
+   "page": "home-shell",
+   "state": "needs-you",
+   "image": "a-shell/home-shell--needs-you.png"
+  },
+  {
+   "page": "home-shell",
+   "state": "reconnecting",
+   "image": "a-shell/home-shell--reconnecting.png",
+   "note": "Work tab after 15 s of reconnecting"
+  },
+  {
+   "page": "embedded-connection-status-banner",
+   "state": "inbox",
+   "image": "a-shell/embedded-connection-status-banner--inbox.png",
+   "note": "the shell banner over the Inbox tab (Work uses its own line)"
+  },
+  {
+   "page": "embedded-connection-status-banner",
+   "state": "lost",
+   "image": "a-shell/embedded-connection-status-banner--lost.png",
+   "note": "the shell banner over the Inbox tab once the connection is lost"
+  },
+  {
+   "page": "embedded-connection-status-banner",
+   "state": "chat",
+   "image": "a-shell/embedded-connection-status-banner--chat.png",
+   "note": "the conversation's own connection line (chat_states.dart)"
+  },
+  {
+   "page": "connection-status-details-sheet",
+   "state": "default",
+   "image": "a-shell/connection-status-details-sheet.png"
+  },
+  {
+   "page": "server-switcher-sheet",
+   "state": "default",
+   "image": "a-shell/server-switcher-sheet.png"
+  },
+  {
+   "page": "activity",
+   "state": "empty",
+   "image": "a-shell/activity--empty.png"
+  },
+  {
+   "page": "activity",
+   "state": "waiting",
+   "image": "a-shell/activity--waiting.png"
+  },
+  {
+   "page": "activity",
+   "state": "tab",
+   "image": "a-shell/activity--tab.png",
+   "note": "Inbox as the second tab of the shell"
+  },
+  {
+   "page": "question-sheet",
+   "state": "default",
+   "image": "a-shell/question-sheet.png"
+  },
+  {
+   "page": "question-sheet-dismiss-dialog",
+   "state": "default",
+   "image": "a-shell/question-sheet-dismiss-dialog.png"
+  },
+  {
+   "page": "confirm-sheet",
+   "state": "default",
+   "image": "a-shell/confirm-sheet.png",
+   "note": "the generic confirm sheet, with sample destructive copy"
+  },
+  {
+   "page": "external-link-dialog",
+   "state": "https",
+   "image": "a-shell/external-link-dialog--https.png"
+  },
+  {
+   "page": "external-link-dialog",
+   "state": "insecure-http",
+   "image": "a-shell/external-link-dialog--insecure-http.png"
+  },
+  {
+   "page": "share-session-failed-banner",
+   "state": "default",
+   "image": "a-shell/share-session-failed-banner.png",
+   "note": "the real OcApp; creating the session for shared text fails"
+  },
+  {
+   "page": "session-link-server-missing-banner",
+   "state": "default",
+   "image": "a-shell/session-link-server-missing-banner.png",
+   "note": "the real OcApp; a scanned link names a server not saved here"
+  },
+  {
+   "page": "shorebird-update-notice",
+   "state": "receiving",
+   "image": "a-shell/shorebird-update-notice--receiving.png"
+  },
+  {
+   "page": "shorebird-update-notice",
+   "state": "ready",
+   "image": "a-shell/shorebird-update-notice--ready.png"
+  },
+  {
+   "page": "desktop-release-notice",
+   "state": "default",
+   "image": "a-shell/desktop-release-notice.png",
+   "note": "desktop builds only; shown here at phone size"
+  },
+  {
+   "page": "shortcuts-help-dialog",
+   "state": "default",
+   "image": "a-shell/shortcuts-help-dialog.png",
+   "note": "desktop keyboard help; shown here at phone size"
+  },
+  {
+   "page": "command-palette-dialog",
+   "state": "default",
+   "image": "a-shell/command-palette-dialog.png",
+   "note": "desktop command palette (Ctrl+K) with sample commands"
+  },
+  {
+   "page": "embedded-context-menu-region",
+   "state": "default",
+   "image": "a-shell/embedded-context-menu-region.png",
+   "note": "desktop right-click menu over a Work row, sample entries"
+  },
+  {
+   "page": "embedded-product-states",
+   "state": "error",
+   "image": "a-shell/embedded-product-states--error.png",
+   "note": "the shared error state in a plain host screen"
+  },
+  {
+   "page": "embedded-product-states",
+   "state": "empty",
+   "image": "a-shell/embedded-product-states--empty.png",
+   "note": "the shared empty state in a plain host screen"
+  },
+  {
+   "page": "demo",
+   "state": "default",
+   "image": "a-shell/demo.png"
+  },
+  {
+   "page": "capabilities",
+   "state": "empty",
+   "image": "a-shell/capabilities--empty.png"
+  },
+  {
+   "page": "capabilities",
+   "state": "loaded",
+   "image": "a-shell/capabilities--loaded.png"
+  },
+  {
+   "page": "attention-overview",
+   "state": "default",
+   "image": "a-shell/attention-overview.png"
+  }
+ ]
+}

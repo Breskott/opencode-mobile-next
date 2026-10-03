@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/codex/gateway.dart'
     show codexServerCapabilities;
@@ -11,6 +12,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/review_handoff.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat/permission_sheet.dart';
@@ -72,6 +74,9 @@ Future<void> _pumpChat(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(controller)],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+
         home: ChatScreen(
           sessionID: 'thread-1',
           initialText: initialText,
@@ -88,20 +93,27 @@ Future<void> _pumpChat(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Codex prompt tools hide attachment transports', (tester) async {
+  testWidgets('Codex prompt tools explain unavailable attachment transports', (
+    tester,
+  ) async {
     await _pumpChat(tester, _CodexApi());
 
-    final tooltip = tester.widget<Tooltip>(
-      find.byKey(const Key('prompt-tools-tooltip')),
-    );
-    expect(tooltip.message, 'Prompt tools');
+    expect(find.byTooltip('Attach and more'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('composer-tools-button')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('composer-tool-attach')), findsNothing);
+    final attach = tester.widget<KitRow>(
+      find.byKey(const Key('composer-tool-attach')),
+    );
+    expect(attach.enabled, isFalse);
+    expect(attach.onTap, isNull);
+    expect(find.text('This server takes text only'), findsOneWidget);
     expect(find.byKey(const Key('composer-tool-gallery')), findsNothing);
     expect(find.byKey(const Key('composer-tool-camera')), findsNothing);
+    await tester.tap(find.byKey(const Key('composer-tools-advanced')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('composer-tool-web-sources')), findsNothing);
     expect(find.text('Add web source'), findsNothing);
   });
 
@@ -142,7 +154,7 @@ void main() {
     await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pumpAndSettle();
 
-    final field = tester.widget<TextField>(
+    final field = tester.widget<TextFormField>(
       find.byKey(const Key('chat-composer-field')),
     );
     expect(field.controller!.text, 'keep this offline draft');
@@ -161,26 +173,29 @@ void main() {
     await tester.tap(find.byKey(const Key('session-actions-button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Changes'), findsNothing);
-    expect(find.text('Fork conversation'), findsNothing);
-    expect(find.text('Revert last prompt'), findsNothing);
-    expect(find.text('Compact context'), findsNothing);
-    expect(find.text('Run shell command'), findsNothing);
-    expect(find.text('Subagent conversations'), findsNothing);
-    expect(find.text('Share conversation'), findsNothing);
-    // Utility actions live behind the collapsed Session actions group.
-    await tester.ensureVisible(find.text('Conversation actions'));
-    await tester.tap(find.text('Conversation actions'));
-    await tester.pumpAndSettle();
-    expect(find.text('Fork conversation'), findsNothing);
-    expect(find.text('Revert last prompt'), findsNothing);
-    expect(find.text('Compact context'), findsNothing);
-    expect(find.text('Run shell command'), findsNothing);
-    expect(find.text('Share conversation'), findsNothing);
-    await tester.ensureVisible(find.text('Refresh messages'));
-    expect(find.text('Refresh messages'), findsOneWidget);
-    // Codex has no `opencode --session` CLI, so no resume command is offered.
-    expect(find.text('Continue on computer'), findsNothing);
+    // Go to / Do (slice-P10.2) lists only what Codex can do.
+    for (final missing in [
+      'changes',
+      'subagents',
+      'share',
+      'compact',
+      'fork',
+      // No `opencode --session` CLI, so no resume command is offered.
+      'continue-computer',
+    ]) {
+      expect(
+        find.byKey(ValueKey('session-menu-$missing')),
+        findsNothing,
+        reason: missing,
+      );
+    }
+    for (final kept in ['find', 'details', 'rename']) {
+      expect(
+        find.byKey(ValueKey('session-menu-$kept')),
+        findsOneWidget,
+        reason: kept,
+      );
+    }
   });
 
   testWidgets('Codex command launcher hides unsupported server catalogs', (
@@ -313,7 +328,7 @@ void main() {
 
     expect(find.byKey(const Key('prompt-editor-attach')), findsNothing);
     expect(find.text('draft.txt'), findsOneWidget);
-    await tester.tap(find.byTooltip('Remove attachment draft.txt'));
+    await tester.tap(find.bySemanticsLabel('Remove draft.txt'));
     await tester.enterText(
       find.byKey(const Key('prompt-editor-field')),
       'Edited text-only draft',
@@ -325,7 +340,7 @@ void main() {
     expect(find.text('draft.txt'), findsNothing);
     expect(
       tester
-          .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+          .widget<TextFormField>(find.byKey(const Key('chat-composer-field')))
           .controller!
           .text,
       'Edited text-only draft',
@@ -345,6 +360,9 @@ void main() {
     );
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+
         home: Scaffold(
           body: PermissionSheet(
             permission: permission,
@@ -358,12 +376,25 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('permission-allow-once')), findsOneWidget);
-    expect(find.byKey(const Key('permission-reject')), findsOneWidget);
+    expect(find.byKey(const Key('permission-card-allow')), findsOneWidget);
+    expect(find.byKey(const Key('permission-card-reject')), findsOneWidget);
+    expect(find.byKey(const Key('permission-allow-always')), findsNothing);
+
+    // The details sheet offers no "Always allow" switch either.
+    await tester.tap(find.byKey(const Key('permission-card-review')));
+    await tester.pumpAndSettle();
+    final sheet = find.byKey(const Key('permission-sheet'));
+    expect(sheet, findsOneWidget);
     expect(find.byKey(const Key('permission-allow-always')), findsNothing);
     expect(find.text('Always allow would also cover'), findsNothing);
 
-    await tester.tap(find.byKey(const Key('permission-allow-once')));
+    final allowOnce = find.descendant(
+      of: sheet,
+      matching: find.text('Allow once'),
+    );
+    await tester.ensureVisible(allowOnce.last);
+    await tester.pumpAndSettle();
+    await tester.tap(allowOnce.last);
     await tester.pumpAndSettle();
     expect(replies, ['once']);
   });

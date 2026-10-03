@@ -88,6 +88,8 @@ class OrchestrationRun {
     this.lastError,
     this.startedAt,
     this.updatedAt,
+    this.finishedAt,
+    this.merged = false,
     this.isUpkeep = false,
     this.raw = const {},
   });
@@ -116,6 +118,14 @@ class OrchestrationRun {
   final String? lastError;
   final DateTime? startedAt;
   final DateTime? updatedAt;
+
+  /// When the run finished (completed or cancelled); null while it is
+  /// open, or when the host did not say.
+  final DateTime? finishedAt;
+
+  /// The run's work landed on its target branch: every item it tracked
+  /// reports a merge. False while open and for work that was not merged.
+  final bool merged;
 
   /// Untouched provider payload.
   final Map<String, Object?> raw;

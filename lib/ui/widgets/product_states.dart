@@ -1,470 +1,105 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show PlatformException;
 
-import '../../api/mcp_oauth.dart' show McpOAuthCallbackException;
-import '../../api/opencode_api.dart';
-import '../../api/product_repository.dart';
-import '../../feedback/bug_report.dart';
+import '../../domain/product_failure.dart';
 import '../../l10n/app_localizations.dart';
-import '../../state/profiles.dart' show SecureStorageUnavailable;
 import '../app_theme.dart';
+import '../kit/kit_dialog.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_redact.dart';
+import '../kit/kit_technical_value.dart';
 
-/// Maps any thrown object onto copy that is safe to show users.
-///
-/// - [ProductException], [ApiException], and [McpOAuthCallbackException]
-///   carry product-facing messages and pass through unchanged.
-/// - [SecureStorageUnavailable] names the missing keyring; any other
-///   [PlatformException] is a device-side failure, so its own message is
-///   shown rather than blaming the server.
-/// - A [String] is treated as already-composed product copy.
-/// - Everything else — [StateError]s, socket/transport failures, and other
-///   internals — collapses to one generic connectivity line instead of leaking
-///   `Bad state:` prefixes or raw exception dumps.
+// The shared error words (the no-raw-errors sweep and the audit's
+// domain-owned failure categories): what failed, in plain words, for any
+// thrown object ([productErrorText], [productErrorKind]), the redacted
+// technical text for a Details fold ([productErrorDetails]) and the one
+// blocking alert for a failed act ([showProductError]). Not a kit part.
+//
+// The "not the normal content" widgets that used to live here were thin
+// wrappers over KitStateView and SectionLabel; kit-hygiene deleted them
+// once no screen used them (KitStateView, KitSectionLabel).
+
+AppLocalizations _copy(BuildContext context) =>
+    Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+    lookupAppLocalizations(Localizations.localeOf(context));
+
+/// Localized words for a domain-owned failure category. Server messages never
+/// enter the body; their redacted technical reason is available only in Details.
 String productErrorText(Object error, {AppLocalizations? l10n}) {
-  if (error is ProductException) return error.message;
-  if (error is ApiException) return error.message;
-  if (error is McpOAuthCallbackException) return error.message;
-  if (error is SecureStorageUnavailable) return error.message;
-  if (error is PlatformException) {
-    final message = error.message?.trim();
-    if (message != null && message.isNotEmpty) return message;
-    return l10n?.e7SharedDeviceReportedError(error.code) ??
-        'This device reported an error (${error.code}).';
-  }
-  if (error is String && error.trim().isNotEmpty) return error;
-  return l10n?.e7SharedOpenCodeUnreachableTryAgain ??
-      'OpenCode is unreachable. Try again.';
+  final copy = l10n ?? lookupAppLocalizations(const Locale('en'));
+  final failure = ProductFailure.from(error);
+  return switch (failure.category) {
+    ProductFailureCategory.words =>
+      failure.authoredMessage ?? copy.productErrorUnknown,
+    ProductFailureCategory.stagedRevert => copy.productErrorStagedRevert,
+    ProductFailureCategory.folderNotInstalled =>
+      copy.folderBrowserErrorNotInstalled,
+    ProductFailureCategory.folderMissing => copy.folderBrowserErrorMissing,
+    ProductFailureCategory.folderDenied => copy.folderBrowserErrorDenied,
+    ProductFailureCategory.folderLinked => copy.folderBrowserErrorLinked,
+    ProductFailureCategory.network => copy.e7SharedOpenCodeUnreachableTryAgain,
+    ProductFailureCategory.timedOut => copy.productErrorTimedOut,
+    ProductFailureCategory.certificate => copy.productErrorCertificate,
+    ProductFailureCategory.signIn => copy.productErrorSignIn,
+    ProductFailureCategory.notFound => copy.productErrorNotFound,
+    ProductFailureCategory.conflict => copy.productErrorConflict,
+    ProductFailureCategory.busy => copy.productErrorBusy,
+    ProductFailureCategory.server => copy.productErrorServer(
+      failure.statusCode ?? 500,
+    ),
+    ProductFailureCategory.rejected => copy.productErrorRejected,
+    ProductFailureCategory.unexpected => copy.productErrorUnexpected,
+    ProductFailureCategory.device => copy.productErrorDevice,
+    ProductFailureCategory.storage => copy.productErrorStorage,
+    ProductFailureCategory.termux => copy.productErrorTermux,
+    // An error nobody classified is not a network failure: saying
+    // "unreachable" here sent the Add tools investigation the wrong way.
+    ProductFailureCategory.unknown => copy.productErrorUnknown,
+  };
 }
 
-/// The one styled error snackbar for mutation failures: error-red background,
-/// replaces any snackbar currently showing, and routes the thrown object
-/// through [productErrorText] so raw exceptions never reach users.
-void showProductError(BuildContext context, Object error) {
-  final scheme = Theme.of(context).colorScheme;
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(
-          productErrorText(
-            error,
-            l10n: Localizations.of<AppLocalizations>(context, AppLocalizations),
-          ),
-          style: TextStyle(color: scheme.onError),
-        ),
-        backgroundColor: scheme.error,
-      ),
-    );
+/// Whether the domain failure should offer a network fix first.
+KitErrorKind productErrorKind(Object? error) {
+  if (error == null) return KitErrorKind.other;
+  return switch (ProductFailure.from(error).category) {
+    ProductFailureCategory.network ||
+    ProductFailureCategory.timedOut => KitErrorKind.network,
+    _ => KitErrorKind.of(error),
+  };
 }
 
-/// Keeps cached content mounted while a refresh failure offers a retry.
-class ProductRefreshBody extends StatelessWidget {
-  const ProductRefreshBody({
-    super.key,
-    required this.message,
-    required this.onRetry,
-    required this.child,
-  });
+/// Redacted technical text for a Details fold, Copy details, or a report.
+/// This must never be used for the headline or body.
+String? productErrorDetails(Object? error) {
+  if (error == null) return null;
+  final details = ProductFailure.from(error).technicalDetails;
+  return details == null ? null : KitRedact.text(details);
+}
 
-  final String? message;
-  final VoidCallback onRetry;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n =
-        Localizations.of<AppLocalizations>(context, AppLocalizations) ??
-        lookupAppLocalizations(Localizations.localeOf(context));
-    return Column(
-      children: [
-        if (message != null)
-          MaterialBanner(
-            content: Text('${l10n.refreshFailed}\n$message'),
-            actions: [
-              TextButton(onPressed: onRetry, child: Text(l10n.refreshRetry)),
-            ],
-          ),
-        Expanded(key: const ValueKey('refresh-content'), child: child),
+/// Tells the person that an act they just started failed.
+///
+/// A snackbar is only ever done-with-undo (KIT-34), so a failure with no
+/// part of its own to sit on is a blocking alert (kit-v2 §4.8): [title]
+/// (default "Couldn't finish that"; better, what failed) and the thrown
+/// object in words through [productErrorText], so raw exceptions never
+/// reach users. The technical text ([productErrorDetails]) is folded under
+/// "Error details", redacted. Returns at once; the alert closes on Close,
+/// back or Esc.
+void showProductError(BuildContext context, Object error, {String? title}) {
+  final l10n = _copy(context);
+  final details = productErrorDetails(error);
+  unawaited(
+    showKitAlert(
+      context,
+      title: title ?? l10n.productStatesActionFailedTitle,
+      body: productErrorText(error, l10n: l10n),
+      details: [
+        if (details != null)
+          KitTechnicalValue(l10n.productErrorDetailsLabel, details),
       ],
-    );
-  }
-}
-
-class LoadingList extends StatelessWidget {
-  final int rows;
-  const LoadingList({super.key, this.rows = 5});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.surfaceContainerHighest;
-    return ListView.separated(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: rows,
-      separatorBuilder: (_, _) => const SizedBox(height: 14),
-      itemBuilder: (_, index) => Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                FractionallySizedBox(
-                  widthFactor: index.isEven ? .62 : .45,
-                  child: Container(height: 12, color: color),
-                ),
-                const SizedBox(height: 8),
-                FractionallySizedBox(
-                  widthFactor: index.isEven ? .38 : .7,
-                  child: Container(height: 8, color: color),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class ProductEmptyState extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-  final bool scrollable;
-
-  const ProductEmptyState({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.message,
-    this.actionLabel,
-    this.onAction,
-    this.scrollable = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final content = ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: constraints.hasBoundedHeight ? constraints.maxHeight : 0,
-          ),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 360),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 38, color: AppTheme.mutedOf(theme)),
-                    const SizedBox(height: 14),
-                    Text(title, style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 6),
-                    Text(
-                      message,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.mutedOf(theme),
-                      ),
-                    ),
-                    if (actionLabel != null && onAction != null) ...[
-                      const SizedBox(height: 18),
-                      FilledButton.tonal(
-                        onPressed: onAction,
-                        child: Text(actionLabel!),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-        return scrollable
-            ? SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: content,
-              )
-            : content;
-      },
-    );
-  }
-}
-
-class ProductErrorState extends StatelessWidget {
-  final String message;
-  final Future<void> Function() onRetry;
-
-  const ProductErrorState({
-    super.key,
-    required this.message,
-    required this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: constraints.hasBoundedHeight ? constraints.maxHeight : 0,
-          ),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(28),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(AppIconography.error, color: theme.colorScheme.error),
-                  const SizedBox(height: 10),
-                  Text(message, textAlign: TextAlign.center),
-                  const SizedBox(height: 14),
-                  FilledButton.tonal(
-                    onPressed: onRetry,
-                    child: const Text('Try again'),
-                  ),
-                  // The failure surface is where a bug is actually
-                  // discovered, so the report affordance lives here too —
-                  // one implementation covering every screen that uses this
-                  // state, without adding chrome to any app bar.
-                  TextButton.icon(
-                    key: const ValueKey('product-error-report-bug'),
-                    onPressed: () => unawaited(openBugReport(context)),
-                    icon: const Icon(AppIconography.bug, size: 18),
-                    label: const Text('Report a bug'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A compact, intentionally designed empty state for one section of a longer
-/// scrolling surface, where the full-screen [ProductEmptyState] is too tall
-/// and a bare [ListTile] reads as a broken list row.
-class ProductInlineEmpty extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  const ProductInlineEmpty({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.message,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLow.withValues(alpha: .6),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.hairline(theme)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 22, color: AppTheme.mutedOf(theme)),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
-            ),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 6),
-              TextButton(onPressed: onAction, child: Text(actionLabel!)),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The one explainer row for a feature the connected server cannot do.
-///
-/// Settings are where users go looking for a thing they remember, so a
-/// vanished row reads as a bug (`docs/opencode2-ui-design.md` §7, rule 2).
-/// This renders the row it replaces at 55% opacity with `enabled: false` and
-/// the [explainer] swapped in for the subtitle; tapping says which server
-/// generation the feature needs. Capability gating, not plan gating — no
-/// upsell styling, no call to action.
-///
-/// Menu actions, nav destinations and More-grid tiles are *hidden* instead;
-/// this widget is only for surviving settings/health surfaces.
-class GatedRow extends StatelessWidget {
-  /// Feature id; the row's key is `gated-<feature>`.
-  final String feature;
-
-  /// The title the enabled row would have carried.
-  final String title;
-
-  /// One honest line saying why the row is dead, e.g.
-  /// "Not available on OpenCode 2 servers".
-  final String explainer;
-
-  final Widget? leading;
-
-  /// Server generation named in the tap snackbar. 1 for v1-only features
-  /// (the usual case), 2 for the rare v2-only row we choose to show.
-  final int requiresGeneration;
-
-  const GatedRow({
-    super.key,
-    required this.feature,
-    required this.title,
-    required this.explainer,
-    this.leading,
-    this.requiresGeneration = 1,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: .55,
-      child: ListTile(
-        key: ValueKey('gated-$feature'),
-        enabled: false,
-        leading: leading,
-        title: Text(title),
-        subtitle: Text(explainer),
-        // `enabled: false` swallows ListTile.onTap, so the explanation tap
-        // target lives outside it.
-        onTap: null,
-      ),
-    );
-  }
-}
-
-/// [GatedRow] plus the tap-to-explain snackbar. Split out so the row itself
-/// stays a pure `ListTile` for callers that embed it in their own gesture
-/// handling.
-class GatedRowTile extends StatelessWidget {
-  final String feature;
-  final String title;
-  final String explainer;
-  final Widget? leading;
-  final int requiresGeneration;
-
-  const GatedRowTile({
-    super.key,
-    required this.feature,
-    required this.title,
-    required this.explainer,
-    this.leading,
-    this.requiresGeneration = 1,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text('Requires an OpenCode $requiresGeneration server'),
-            ),
-          );
-      },
-      child: GatedRow(
-        feature: feature,
-        title: title,
-        explainer: explainer,
-        leading: leading,
-        requiresGeneration: requiresGeneration,
-      ),
-    );
-  }
-}
-
-/// The stock explainer for a v1 feature with no OpenCode 2 endpoint.
-const String gatedOnV2Explainer = 'Not available on OpenCode 2 servers';
-
-class SectionLabel extends StatelessWidget {
-  final String text;
-  final Widget? trailing;
-
-  /// Overrides the list-level inset for surfaces that already pad their own
-  /// content — sheets and cards — so those can reuse this label instead of
-  /// hand-rolling the same section caption.
-  final EdgeInsetsGeometry? padding;
-
-  const SectionLabel(this.text, {super.key, this.trailing, this.padding});
-
-  /// The same label with no inset of its own, for already-padded contexts.
-  const SectionLabel.inline(this.text, {super.key, this.trailing})
-    : padding = const EdgeInsets.only(bottom: 8);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final label = Text(
-      text,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: AppTheme.mutedOf(theme),
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.1,
-      ),
-    );
-    return Padding(
-      padding: padding ?? const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: trailing == null
-          ? label
-          // A Wrap, not a Row: when the caption and its status do not fit
-          // on one line at large text scales, the status drops under the
-          // caption instead of overflowing the edge.
-          : Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              runSpacing: 2,
-              children: [label, trailing!],
-            ),
-    );
-  }
+      icon: AppIconography.error,
+      alertKey: const ValueKey('product-error-alert'),
+    ),
+  );
 }

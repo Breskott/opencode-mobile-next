@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
@@ -143,9 +144,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('GPT-5.6 Sol'), findsOneWidget);
-    expect(find.text('2 usable'), findsOneWidget);
-    expect(find.text('3 registered'), findsOneWidget);
-    expect(find.text('Background subagents unavailable'), findsOneWidget);
+    // No counts line; the missing subagents are the model row's own words,
+    // and the row itself opens the picker (no second "Change" button).
+    expect(find.text('2 usable'), findsNothing);
+    expect(find.text('3 registered'), findsNothing);
+    expect(
+      find.textContaining('no background subagents', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('tools-change-model')), findsNothing);
     expect(find.byType(Card), findsNothing);
     expect(repository.providerID, 'openai');
     expect(repository.modelID, 'gpt-5.6-sol');
@@ -163,28 +170,114 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('tool search and schema use server-returned truth', (
+  // Emulator QA B11: the server's description (prompt text written for the
+  // model) was the row's title, cut mid-sentence.
+  test('a tool summary is the first sentence of its description', () {
+    expect(
+      toolSummary(
+        'Use this tool when you need to ask the user questions during '
+        'execution. This allows you to:\n1. Gather preferences',
+      ),
+      'Use this tool when you need to ask the user questions during '
+      'execution.',
+    );
+    expect(
+      toolSummary(
+        '- Fast file pattern matching tool that works with any codebase '
+        'size\n- Supports glob patterns like "**/*.js"',
+      ),
+      'Fast file pattern matching tool that works with any codebase size',
+    );
+    expect(
+      toolSummary('Reads a file.\n\nUsage:\n- The path must be absolute'),
+      'Reads a file.',
+    );
+    expect(
+      toolSummary(
+        'Executes a given bash command in a\npersistent shell. More.',
+      ),
+      'Executes a given bash command in a persistent shell.',
+    );
+    expect(toolSummary('  '), isEmpty);
+    expect(toolSummary('Version 1.2 of the tool'), 'Version 1.2 of the tool');
+  });
+
+  testWidgets('a tool row names the tool and says its first sentence', (
     tester,
   ) async {
+    final repository = _ToolsRepository()
+      ..tools = const [
+        CodingToolInfo(
+          id: 'question',
+          description:
+              'Use this tool when you need to ask the user questions. This '
+              'allows you to gather preferences.\n\nUsage notes: …',
+          parameters: {'type': 'object'},
+        ),
+        CodingToolInfo(id: 'invalid', description: '', parameters: {}),
+      ];
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(ToolsScreen(controller: controller)));
+    await tester.pumpAndSettle();
+
+    final question = find.byKey(const ValueKey('coding-tool-question'));
+    expect(
+      find.descendant(of: question, matching: find.text('question')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: question,
+        matching: find.text(
+          'Use this tool when you need to ask the user questions.',
+          findRichText: true,
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('This allows', findRichText: true),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('coding-tool-invalid')),
+        matching: find.text('invalid'),
+      ),
+      findsOneWidget,
+    );
+
+    // The whole description is one tap away, on the tool's sheet.
+    await tester.tap(question);
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('This allows you to gather preferences.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the tool sheet copies the schema the server returned', (
+    tester,
+  ) async {
+    final copied = _clipboard(tester);
     final repository = _ToolsRepository();
     final controller = await _controller(repository);
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(ToolsScreen(controller: controller)));
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.byKey(const ValueKey('tools-search')),
-      'filesystem',
-    );
-    await tester.pump();
-    expect(find.byKey(const ValueKey('coding-tool-bash')), findsNothing);
-    expect(find.byKey(const ValueKey('coding-tool-read')), findsOneWidget);
-
-    await tester.ensureVisible(find.byKey(const ValueKey('coding-tool-read')));
     await tester.tap(find.byKey(const ValueKey('coding-tool-read')));
     await tester.pumpAndSettle();
-    expect(find.text('Parameter schema'), findsOneWidget);
-    expect(find.textContaining('"filePath": {'), findsOneWidget);
+    // No JSON on the sheet: the schema is one Copy away in its menu.
+    expect(find.text('Parameter schema'), findsNothing);
+    expect(find.textContaining('"filePath": {'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('tool-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy parameter schema'));
+    await tester.pumpAndSettle();
+    expect(copied, hasLength(1));
+    expect(copied.single, contains('"filePath": {'));
     expect(tester.takeException(), isNull);
   });
 
@@ -205,7 +298,7 @@ void main() {
     expect(find.byKey(const ValueKey('coding-tool-read')), findsOneWidget);
   });
 
-  testWidgets('long server descriptions keep parameter schema reachable', (
+  testWidgets('long server descriptions keep Copy parameter schema reachable', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 520);
@@ -233,21 +326,18 @@ void main() {
     await tester.pumpWidget(_app(ToolsScreen(controller: controller)));
     await tester.pumpAndSettle();
 
+    final copied = _clipboard(tester);
     await tester.tap(find.byKey(const ValueKey('coding-tool-apply_patch')));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('tool-parameter-schema')),
-      200,
-      scrollable: find
-          .descendant(
-            of: find.byKey(const ValueKey('tool-detail-scroll')),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    expect(find.byKey(const ValueKey('tool-parameter-schema')), findsOneWidget);
-    expect(find.textContaining('"patch": {'), findsOneWidget);
+    // Below a long description, the menu is still reachable by scrolling.
+    await tester.ensureVisible(find.byKey(const ValueKey('tool-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('tool-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy parameter schema'));
+    await tester.pumpAndSettle();
+    expect(copied.single, contains('"patch": {'));
     expect(tester.takeException(), isNull);
   });
 
@@ -262,25 +352,54 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // One door, under Agent setup.
-    final row = find.byKey(const ValueKey('settings-commands-tools'));
-    expect(find.text('Commands & tools'), findsOneWidget);
+    // One door (P3.10 Settings IA, 2bec3ed3): Settings › Tools, in the
+    // Agent group, holds Commands & tools.
+    final tools = find.byKey(const ValueKey('settings-tools'));
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('settings-group-agent-setup')),
-        matching: row,
+        of: find.byKey(const ValueKey('settings-group-agent')),
+        matching: tools,
       ),
       findsOneWidget,
     );
-    await tester.ensureVisible(row);
+    expect(find.byKey(const ValueKey('settings-commands-tools')), findsNothing);
+    await tester.ensureVisible(tools);
     await tester.pumpAndSettle();
+    await tester.tap(tools);
+    await tester.pumpAndSettle();
+
+    final row = find.byKey(const ValueKey('settings-commands-tools'));
+    expect(
+      find.descendant(of: row, matching: find.text('Commands & tools')),
+      findsOneWidget,
+    );
     await tester.tap(row);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(Tab, 'Tools'));
+    await tester.tap(find.byKey(const ValueKey('capabilities-tab-Tools')));
     await tester.pumpAndSettle();
 
     expect(find.byType(ToolsScreen), findsOneWidget);
     expect(find.byKey(const ValueKey('coding-tools-list')), findsOneWidget);
   });
+}
+
+List<String> _clipboard(WidgetTester tester) {
+  final copied = <String>[];
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+    SystemChannels.platform,
+    (call) async {
+      if (call.method == 'Clipboard.setData') {
+        copied.add((call.arguments as Map)['text'] as String);
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      null,
+    ),
+  );
+  return copied;
 }

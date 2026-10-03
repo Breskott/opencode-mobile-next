@@ -547,7 +547,7 @@ void main() {
     },
   );
 
-  test('worktree errors surface the typed OpenCode message', () async {
+  test('worktree errors keep server prose in the technical cause', () async {
     await HttpOverrides.runZoned(() async {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       server.listen((request) async {
@@ -573,11 +573,19 @@ void main() {
         await expectLater(
           repository.listWorktrees(projectDirectory: '/work/plain'),
           throwsA(
-            isA<ProductException>().having(
-              (error) => error.message,
-              'message',
-              'Worktrees are only supported for git projects',
-            ),
+            isA<ProductException>()
+                .having(
+                  (error) => error.message,
+                  'message',
+                  'Could not load worktrees',
+                )
+                .having(
+                  (error) => error.cause.toString().contains(
+                    'Worktrees are only supported for git projects',
+                  ),
+                  'original cause preserved',
+                  isTrue,
+                ),
           ),
         );
       } finally {
@@ -1194,6 +1202,8 @@ void main() {
           request.response.headers.contentType = ContentType.json;
           if (request.uri.path.startsWith('/api/integration/')) {
             request.response.statusCode = HttpStatus.noContent;
+          } else if (request.uri.path == '/session/status') {
+            request.response.write('{}');
           } else {
             request.response.write('true');
           }
@@ -1216,12 +1226,16 @@ void main() {
           expect(requests.map((request) => request.method), [
             'POST',
             'PUT',
+            'GET',
+            'GET',
             'POST',
             'POST',
           ]);
           expect(requests.map((request) => request.uri.path), [
             '/api/integration/zai-coding-plan/connect/key',
             '/auth/zai-coding-plan',
+            '/session/status',
+            '/session/status',
             '/instance/dispose',
             '/instance/dispose',
           ]);
@@ -1237,11 +1251,18 @@ void main() {
             'location[directory]': '/root',
             'location[workspace]': 'phone',
           });
+          // Running replies are counted in both locations the refresh
+          // disposes, before anything is disposed.
           expect(requests[2].uri.queryParameters, {
             'directory': '/root',
             'workspace': 'phone',
           });
           expect(requests[3].uri.queryParameters, isEmpty);
+          expect(requests[4].uri.queryParameters, {
+            'directory': '/root',
+            'workspace': 'phone',
+          });
+          expect(requests[5].uri.queryParameters, isEmpty);
         } finally {
           await server.close(force: true);
         }
@@ -1260,6 +1281,8 @@ void main() {
           request.response.headers.contentType = ContentType.json;
           if (request.uri.path.startsWith('/api/credential/')) {
             request.response.statusCode = HttpStatus.noContent;
+          } else if (request.uri.path == '/session/status') {
+            request.response.write('{}');
           } else {
             request.response.write('true');
           }
@@ -1292,12 +1315,16 @@ void main() {
           expect(requests.map((request) => request.method), [
             'DELETE',
             'DELETE',
+            'GET',
+            'GET',
             'POST',
             'POST',
           ]);
           expect(requests.map((request) => request.uri.path), [
             '/auth/zai-coding-plan',
             '/api/credential/credential%2Fphone%20key',
+            '/session/status',
+            '/session/status',
             '/instance/dispose',
             '/instance/dispose',
           ]);
@@ -1305,11 +1332,18 @@ void main() {
             'location[directory]': '/root',
             'location[workspace]': 'phone',
           });
+          // Running replies are counted in both locations the refresh
+          // disposes, before anything is disposed.
           expect(requests[2].uri.queryParameters, {
             'directory': '/root',
             'workspace': 'phone',
           });
           expect(requests[3].uri.queryParameters, isEmpty);
+          expect(requests[4].uri.queryParameters, {
+            'directory': '/root',
+            'workspace': 'phone',
+          });
+          expect(requests[5].uri.queryParameters, isEmpty);
         } finally {
           await server.close(force: true);
         }
@@ -1446,6 +1480,76 @@ void main() {
   );
 
   test(
+    'OC1 keeps API keys available and refuses browser auth without a legacy method',
+    () async {
+      await HttpOverrides.runZoned(() async {
+        final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        final requests = <String>[];
+        server.listen((request) async {
+          requests.add(request.uri.path);
+          request.response.headers.contentType = ContentType.json;
+          final response = switch (request.uri.path) {
+            '/api/integration' => {
+              'location': {
+                'directory': '/root',
+                'project': {'id': 'project-1', 'directory': '/root'},
+              },
+              'data': [
+                for (final id in ['anthropic', 'google'])
+                  {
+                    'id': id,
+                    'name': id,
+                    'methods': [
+                      {'type': 'key', 'label': 'API key'},
+                      {'type': 'oauth', 'id': 'browser', 'label': 'Browser'},
+                    ],
+                    'connections': <Object>[],
+                  },
+              ],
+            },
+            '/provider/auth' => <String, Object>{},
+            '/provider' => {
+              'all': <Object>[],
+              'default': <String, String>{},
+              // A stored OAuth credential is not a callable browser method.
+              'connected': ['anthropic', 'google'],
+            },
+            _ => null,
+          };
+          if (response == null) {
+            request.response.statusCode = HttpStatus.notFound;
+          } else {
+            request.response.write(jsonEncode(response));
+          }
+          await request.response.close();
+        });
+
+        final api = OpenCodeApi(
+          baseUrl: 'http://${server.address.host}:${server.port}',
+        );
+        try {
+          final repository = SdkProductRepository(api.sdkClient);
+          final integrations = await repository.listIntegrations();
+          expect(integrations, hasLength(2));
+          for (final integration in integrations) {
+            expect(integration.methods.single.type, 'key');
+            // This is credential presence, not an inference readiness claim.
+            expect(integration.connectionCount, 1);
+            await expectLater(
+              repository.startIntegrationOAuth(integration.id, '0'),
+              throwsA(isA<ProductException>()),
+            );
+          }
+          expect(requests.where((path) => path.contains('/oauth/')), isEmpty);
+        } finally {
+          api.sdkClient.dio.close(force: true);
+          await server.close(force: true);
+        }
+      }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
+    },
+  );
+
+  test(
     'provider disconnect preserves visible v2 connection when legacy removal fails',
     () async {
       await HttpOverrides.runZoned(() async {
@@ -1512,6 +1616,8 @@ void main() {
           if (request.uri.path.startsWith('/api/credential/')) {
             request.response.statusCode = HttpStatus.internalServerError;
             request.response.write(jsonEncode({'message': 'database busy'}));
+          } else if (request.uri.path == '/session/status') {
+            request.response.write('{}');
           } else {
             request.response.write('true');
           }
@@ -1552,6 +1658,8 @@ void main() {
           expect(requests.map((request) => request.uri.path), [
             '/auth/cloud',
             '/api/credential/credential-1',
+            '/session/status',
+            '/session/status',
             '/instance/dispose',
             '/instance/dispose',
           ]);
@@ -2471,11 +2579,11 @@ void main() {
   test('fork session sends the selected OpenCode message point', () async {
     await HttpOverrides.runZoned(() async {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      String? body;
-      Uri? uri;
+      // The fork, then the best-effort plain-name lookup and rename.
+      final requests = <({String method, Uri uri, String body})>[];
       server.listen((request) async {
-        uri = request.uri;
-        body = await utf8.decoder.bind(request).join();
+        final text = await utf8.decoder.bind(request).join();
+        requests.add((method: request.method, uri: request.uri, body: text));
         request.response.headers.contentType = ContentType.json;
         request.response.write(
           jsonEncode({
@@ -2504,12 +2612,15 @@ void main() {
         );
 
         expect(id, 'forked-session');
-        expect(uri?.path, '/session/session-1/fork');
-        expect(uri?.queryParameters, {
+        final fork = requests.firstWhere(
+          (request) => request.uri.path == '/session/session-1/fork',
+        );
+        expect(fork.method, 'POST');
+        expect(fork.uri.queryParameters, {
           'directory': '/work/acme',
           'workspace': 'phone',
         });
-        expect(jsonDecode(body!), {'messageID': 'message-7'});
+        expect(jsonDecode(fork.body), {'messageID': 'message-7'});
       } finally {
         await server.close(force: true);
       }

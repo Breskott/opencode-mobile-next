@@ -28,10 +28,10 @@ import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
-import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 Directory _findFixtureRoot() {
   var dir = Directory.current;
@@ -50,13 +50,16 @@ Directory _findFixtureRoot() {
 /// plugin is off. The Plugins settings entry (`settings-category-plugins`,
 /// `plugins-ai-team-*`) and the server editor's "Add AI Team" section
 /// (`server-editor-team-*`) are the entry points for turning it on and are
-/// meant to exist regardless (TEAM-106).
+/// meant to exist regardless (TEAM-106). So is the Work tab's door to the
+/// team while it is off (`team-discover-*`, docs/qa/team-discover-2026-09-25):
+/// it holds no plugin state and makes no call.
 const _pluginKeyPrefixes = ['team-', 'activity-team-'];
+const _entryPointPrefixes = ['team-discover-'];
 
 bool _isPluginKey(Key? key) => switch (key) {
-  ValueKey<String>(:final value) => _pluginKeyPrefixes.any(
-    (prefix) => value.startsWith(prefix),
-  ),
+  ValueKey<String>(:final value) =>
+    _pluginKeyPrefixes.any((prefix) => value.startsWith(prefix)) &&
+        !_entryPointPrefixes.any((prefix) => value.startsWith(prefix)),
   _ => false,
 };
 
@@ -89,9 +92,8 @@ class _RecordingGateway implements ServerGateway {
 
   void _hit(String name) => calls.add(name);
 
-  // No project catalogue: the Workspace renders its session list (and the
-  // card slot above it) at once instead of asking for a folder first, as
-  // the TeamCard suites do.
+  // No project catalogue: the Workspace renders its session list at once
+  // instead of asking for a folder first, as the Work tab team suites do.
   @override
   ServerCapabilities get capabilities =>
       const ServerCapabilities(projectManagement: false);
@@ -387,7 +389,7 @@ void main() {
   }
 
   Future<void> expectNoPluginWidgets(WidgetTester tester) async {
-    expect(find.byType(TeamCard), findsNothing);
+    expect(find.byKey(const ValueKey('team-card')), findsNothing);
     final stray = _pluginKeys();
     expect(
       stray,
@@ -437,12 +439,9 @@ void main() {
         app(SettingsScreen(controller: controller), scoped: controller),
       );
       await settle(tester);
-      // The Plugins category is the way in; it exists whether the plugin
-      // is on or off (TEAM-106).
-      expect(
-        find.byKey(const ValueKey('settings-category-plugins')),
-        findsOneWidget,
-      );
+      // Tools (which holds Plugins) is the way in; it exists whether the
+      // plugin is on or off (TEAM-106, slice-P3.10).
+      expect(find.byKey(const ValueKey('settings-tools')), findsOneWidget);
       await expectNoPluginWidgets(tester);
       expect(tester.takeException(), isNull);
       await teardown(tester, controller);
@@ -469,6 +468,7 @@ void main() {
       await openFirstRunConnect(tester);
       // The editor's entry point is meant to be there; the host form and
       // every other plugin widget are not.
+      await openServerMoreOptions(tester);
       expect(
         find.byKey(const ValueKey('server-editor-team-section')),
         findsOneWidget,
@@ -505,8 +505,13 @@ void main() {
         expect(team.snapshot.hasData, isTrue);
         expect(team.snapshot.agents, isNotEmpty);
         expect(team.snapshot.runs, isNotEmpty);
-        expect(find.byType(TeamCard), findsOneWidget);
-        expect(find.byKey(const ValueKey('team-card-data')), findsOneWidget);
+        // The team's tasks are rows in the Work tab's one list
+        // (docs/design/team-conversation-2026-09-26.md); its page is reached
+        // from Settings, so Work holds no door row (owner rule R4).
+        expect(
+          find.byKey(const ValueKey('team-work-door'), skipOffstage: false),
+          findsNothing,
+        );
         // The predicate the plugin-off tests rely on does see the plugin's
         // keys when they exist.
         expect(_pluginKeys(), findsWidgets);
@@ -568,7 +573,8 @@ void main() {
         expect(on, same(plugged));
         await team.start();
         await settle(tester);
-        expect(find.byType(TeamCard), findsOneWidget);
+        // The plugin's widgets are in the Work tab (its tasks' rows).
+        expect(_pluginKeys(), findsWidgets);
 
         // Activity too: it reads the plugin's gates and agents for its
         // AI Team rows (none in the fixture's normal run, so no rows).

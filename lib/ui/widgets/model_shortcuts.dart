@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
+import '../kit/kit_icon_button.dart';
+import '../kit/kit_menu.dart';
 
 /// Chat-local shortcuts also work with a hardware keyboard on Android.
 /// A sheet or dialog above the chat must keep ownership of the keyboard.
@@ -60,8 +62,48 @@ class ModelShortcuts extends StatelessWidget {
   );
 }
 
-/// One compact, touch-sized menu beside the model chip. Both actions stay
-/// visible in the menu so hardware shortcuts are discoverable on a phone.
+/// The model shortcuts as menu items, for the composer's model chip (its
+/// long-press, right-click and custom actions) and [ModelCycleButton]. Each
+/// item shows its keyboard shortcut on a fine pointer, so F2 and Shift+F2
+/// are discoverable without a help page; an item that cannot run yet says
+/// why instead of vanishing (STATE-8).
+List<KitMenuItem> modelCycleMenuItems(
+  AppLocalizations l10n, {
+  required Future<void> Function({bool reverse, bool favoritesOnly}) onCycle,
+  required bool hasRecent,
+  required bool hasFavorites,
+}) => [
+  KitMenuItem(
+    key: const Key('model-cycle-next'),
+    icon: AppIconography.swap,
+    label: l10n.modelShortcutsNextRecent,
+    shortcut: 'F2',
+    enabled: hasRecent,
+    disabledReason: hasRecent ? null : l10n.modelShortcutsNoRecent,
+    onSelected: () => unawaited(onCycle()),
+  ),
+  KitMenuItem(
+    key: const Key('model-cycle-previous'),
+    icon: AppIconography.history,
+    label: l10n.modelShortcutsPreviousRecent,
+    shortcut: 'Shift+F2',
+    enabled: hasRecent,
+    disabledReason: hasRecent ? null : l10n.modelShortcutsNoRecent,
+    onSelected: () => unawaited(onCycle(reverse: true)),
+  ),
+  KitMenuItem(
+    key: const Key('model-cycle-favorite'),
+    icon: AppIconography.bookmarks,
+    label: l10n.modelNextFavorite,
+    enabled: hasFavorites,
+    disabledReason: hasFavorites ? null : l10n.modelShortcutsNoFavorite,
+    onSelected: () => unawaited(onCycle(favoritesOnly: true)),
+  ),
+];
+
+/// One touch-sized button that opens the model shortcuts. The composer
+/// folds the same items into its model chip's menu; this stays for hosts
+/// without a chip.
 class ModelCycleButton extends StatelessWidget {
   const ModelCycleButton({
     super.key,
@@ -75,42 +117,25 @@ class ModelCycleButton extends StatelessWidget {
   final bool hasFavorites;
 
   @override
-  Widget build(BuildContext context) => PopupMenuButton<String>(
-    tooltip: lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).modelSwitchSession,
-    icon: const Icon(AppIconography.swap),
-    onSelected: (value) => unawaited(
-      onCycle(reverse: value == 'previous', favoritesOnly: value == 'favorite'),
-    ),
-    itemBuilder: (_) => [
-      PopupMenuItem(
-        value: 'next',
-        enabled: hasRecent,
-        child: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).modelNextRecent,
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return Builder(
+      builder: (anchor) => KitIconButton(
+        icon: AppIconography.swap,
+        tooltip: l10n.modelSwitchSession,
+        onPressed: () => unawaited(
+          showKitMenu(
+            anchor,
+            semanticsLabel: l10n.kitModelActions,
+            items: modelCycleMenuItems(
+              l10n,
+              onCycle: onCycle,
+              hasRecent: hasRecent,
+              hasFavorites: hasFavorites,
+            ),
+          ),
         ),
       ),
-      PopupMenuItem(
-        value: 'previous',
-        enabled: hasRecent,
-        child: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).modelPreviousRecent,
-        ),
-      ),
-      PopupMenuItem(
-        value: 'favorite',
-        enabled: hasFavorites,
-        child: Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).modelNextFavorite,
-        ),
-      ),
-    ],
-  );
+    );
+  }
 }

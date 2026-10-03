@@ -3,47 +3,89 @@ import 'ui/screens/profile_monitor_screen.dart';
 import 'ui/screens/usage_hub_screen.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'background/live_background.dart';
+import 'builtin/app_exit_recovery.dart';
+import 'builtin/builtin_server.dart';
+import 'builtin/phone_server_healing.dart';
+import 'builtin/reply_watch.dart';
+import 'builtin/setup/phone_setup.dart';
+import 'builtin/setup/setup_engine.dart' show ChannelSetupEngine;
+import 'builtin/setup/setup_finish.dart';
+import 'builtin/setup/termux_setup_finish.dart';
+import 'builtin/team/builtin_team.dart' show BuiltinTeam;
+import 'builtin/thermal_guard.dart' show ThermalNoticeKind;
+import 'builtin/thermal_guard_teams.dart';
 import 'desktop/window_icon.dart';
 import 'desktop/window_state.dart';
 import 'diagnostics/app_diagnostics.dart';
+import 'diagnostics/perf_trace.dart';
+import 'diagnostics/report_problem_startup.dart';
+import 'domain/connection_status.dart';
 import 'domain/server_gateway.dart' show ProductException;
 import 'l10n/app_localizations.dart';
 import 'platform/launch_shortcut.dart';
 import 'platform/session_link.dart';
+import 'state/session_address_controller.dart'
+    show SessionAddressFailure, sessionAddressProvider;
 import 'platform/platform_capabilities.dart';
 import 'platform/share_intent.dart';
 import 'domain/session_handoff.dart';
+import 'domain/while_away.dart' show AutomaticActKind;
 import 'domain/team_link.dart';
 import 'state/connection.dart';
+import 'state/automation_policy.dart';
+import 'state/local_server_controls.dart';
+import 'termux/bridge.dart';
 import 'state/profiles.dart';
 import 'update/desktop_release_check.dart';
 import 'update/shorebird_update_notice.dart';
 import 'ui/app_theme.dart';
+import 'ui/capability_flows.dart';
 import 'ui/desktop/desktop_interaction.dart';
 import 'ui/desktop/shortcuts.dart';
+import 'ui/kit/kit.dart';
 import 'ui/theme_packs.dart';
+import 'ui/navigation/attention_landing.dart' show chatLandingPage;
 import 'ui/navigation/chat_route.dart';
 import 'ui/screens/settings_screen.dart';
 import 'ui/widgets/product_states.dart' show productErrorText;
 import 'ui/widgets/saved_server_connection_card.dart';
+import 'ui/widgets/session_address_sheets.dart';
+import 'ui/widgets/last_known_sessions.dart';
+import 'ui/widgets/app_connection_status.dart';
+import 'ui/widgets/phone_server_card.dart' show serverDisplayName;
 import 'ui/screens/guide_screen.dart';
 import 'ui/screens/about_screen.dart';
 import 'ui/screens/home_screen.dart';
 import 'ui/screens/servers_screen.dart';
 import 'ui/screens/chat_screen.dart';
 import 'ui/screens/activity_screen.dart';
-import 'ui/screens/team/run_screen.dart';
-import 'ui/screens/termux_setup_screen.dart';
+import 'ui/screens/team/project_destination.dart';
+import 'ui/screens/team_conversation/team_conversation.dart'
+    show TeamConversation;
+import 'ui/screens/this_phone_screen.dart';
+import 'state/phone_host.dart' show PhoneHostKind;
+import 'ui/screens/phone_setup/phone_setup_routes.dart'
+    show openPhoneSetupFromNotification, openPhoneSetupStart;
 import 'ui/screens/app_diagnostics_screen.dart';
+import 'manage_space_main.dart' show runManageSpaceApp;
+
+/// Android's App info › Storage › Manage space (ManageSpaceActivity): a
+/// small app of its own that guards "Clear storage".
+@pragma('vm:entry-point')
+void manageSpaceMain() => runManageSpaceApp();
 
 Future<void> main() async {
+  // First thing: starts the trace clock, so every later OCTRACE `at=` reads
+  // as time since launch.
+  PerfTrace.markOnce('app.main');
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
     // Restores the remembered size, position and maximized state, clamped to
@@ -65,6 +107,13 @@ Future<void> main() async {
   final diagnostics = AppDiagnosticsController();
   installAppErrorCapture(diagnostics);
   runApp(AppBootstrapGate(diagnostics: diagnostics));
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    PerfTrace.markOnce('app.first_frame');
+    // Disk-backed diagnostics are not needed to paint the opening state.
+    // Capture imports buffered errors/timings when the store attaches, so
+    // installing in-memory error capture above still protects early failures.
+    unawaited(ReportProblemStartup.start(diagnostics));
+  });
 }
 
 typedef AppBootstrapLoader = Future<AppBootstrap> Function();
@@ -72,10 +121,27 @@ typedef AppBootstrapLoader = Future<AppBootstrap> Function();
 /// Renders immediately so a preferences or secure-storage failure can never
 /// leave Android showing a blank native window.
 class AppBootstrapGate extends StatefulWidget {
-  const AppBootstrapGate({super.key, required this.diagnostics, this.loader});
+  const AppBootstrapGate({
+    super.key,
+    required this.diagnostics,
+    this.loader,
+    this.controllerFactory,
+    this.resetSavedSignIns,
+  });
 
   final AppDiagnosticsController diagnostics;
   final AppBootstrapLoader? loader;
+
+  /// Supplies controlled transports for startup ordering tests.
+  @visibleForTesting
+  final ConnectionController Function(
+    ProfileStore store,
+    AppDiagnosticsController diagnostics,
+  )?
+  controllerFactory;
+
+  /// Injectable boundary for the confirmed reset; never loads saved metadata.
+  final Future<void> Function()? resetSavedSignIns;
 
   @override
   State<AppBootstrapGate> createState() => _AppBootstrapGateState();
@@ -87,28 +153,72 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
   Object? _error;
   bool _loading = true;
   int _generation = 0;
+  bool _resetting = false;
+  bool _resetFailed = false;
+  bool _resetConfirming = false;
+  final Set<Future<void>> _loads = {};
+
+  /// When this attempt to open began: after 8 s the page says it is still
+  /// opening and offers Try again (STATE-5).
+  DateTime _since = DateTime.now();
 
   @override
   void initState() {
     super.initState();
-    unawaited(_load());
+    // Every kit error state offers "Report a problem" (P8.3, C26): Report a
+    // problem opens with the failure attached, from the very first page on,
+    // so even a start that fails can be reported.
+    KitReportHook.handler = (context, report) =>
+        openReportProblem(context, error: report);
+    // Even the synchronous part of preferences/Keystore setup waits until
+    // the opening state has painted. Draft/photo/notification prerequisites
+    // below still complete before any conversation or connection is exposed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_load(initial: true));
+    });
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool initial = false}) {
+    if (_resetting) return Future<void>.value();
+    final pending = _runLoad(initial: initial);
+    _loads.add(pending);
+    unawaited(pending.whenComplete(() => _loads.remove(pending)));
+    return pending;
+  }
+
+  Future<void> _runLoad({bool initial = false}) async {
     final generation = ++_generation;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    // Initial fields already describe the opening state. Do not schedule a
+    // redundant opening-state rebuild merely because work starts post-frame.
+    if (!initial) {
+      setState(() {
+        _loading = true;
+        _resetFailed = false;
+        _error = null;
+        _since = DateTime.now();
+      });
+    }
+    ConnectionController? pendingController;
     try {
-      final bootstrap = await (widget.loader ?? AppBootstrap.create)();
-      if (!mounted || generation != _generation) return;
-      final controller = ConnectionController(
-        bootstrap.store,
-        diagnostics: widget.diagnostics,
+      final bootstrap = await PerfTrace.span(
+        'app.bootstrap',
+        widget.loader ?? AppBootstrap.create,
       );
+      if (!mounted || generation != _generation) return;
+      final controller =
+          widget.controllerFactory?.call(bootstrap.store, widget.diagnostics) ??
+          ConnectionController(
+            bootstrap.store,
+            diagnostics: widget.diagnostics,
+          );
+      pendingController = controller;
+      // Before any conversation reads its draft: the older drafts move into
+      // Saved prompts, then a photo the camera handed back after Android
+      // stopped the app joins its own conversation's draft (P3.2). Both keep
+      // their source on failure and retry on the next start.
+      await controller.migrateOlderDrafts();
       if (platformCapabilities.supportsPromptPhotos) {
-        await controller.promptPhotos.recoverLostData();
+        await controller.recoverPendingPhoto();
       }
       // Before anything can alert: quiet hours and Wi-Fi only become one
       // shared definition. Idempotent, and a failure leaves the legacy
@@ -123,17 +233,70 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
         return;
       }
       _controller?.dispose();
+      pendingController = null;
       setState(() {
         _bootstrap = bootstrap;
         _controller = controller;
         _loading = false;
       });
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => PerfTrace.markOnce('app.shell_frame'),
+      );
     } catch (error, stack) {
+      pendingController?.dispose();
       widget.diagnostics.record(error, stack, source: 'bootstrap');
       if (!mounted || generation != _generation) return;
       setState(() {
         _error = error;
         _loading = false;
+      });
+    }
+  }
+
+  Future<void> _startFresh(BuildContext context) async {
+    if (_resetting || _resetConfirming) return;
+    _resetConfirming = true;
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showKitConfirm(
+      context,
+      kind: KitConfirmKind.destructive,
+      title: l10n.bootstrapStartFreshTitle,
+      body: l10n.bootstrapStartFreshBody,
+      confirmLabel: l10n.bootstrapStartFreshConfirm,
+      confirmKey: const ValueKey('confirm-start-fresh'),
+    );
+    _resetConfirming = false;
+    if (!confirmed || !mounted) return;
+    await _resetSignIns();
+  }
+
+  Future<void> _resetSignIns() async {
+    if (_resetting || !mounted) return;
+    // Invalidate loaders before waiting: no old result can mount a controller
+    // or reconnect with the credentials this reset is about to erase.
+    ++_generation;
+    setState(() {
+      _resetting = true;
+      _error = null;
+    });
+    await Future.wait(_loads.toList());
+    if (!mounted) return;
+    _controller?.dispose();
+    _controller = null;
+    _bootstrap = null;
+    try {
+      await (widget.resetSavedSignIns ?? AppBootstrap.resetSavedSignIns)();
+      if (!mounted) return;
+      setState(() => _resetting = false);
+      await _load();
+    } catch (error, stack) {
+      widget.diagnostics.record(error, stack, source: 'bootstrap-reset');
+      if (!mounted) return;
+      setState(() {
+        _resetting = false;
+        _loading = false;
+        _resetFailed = true;
+        _error = error;
       });
     }
   }
@@ -159,74 +322,67 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Builder(
-        builder: (context) => Scaffold(
-          body: SafeArea(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: _loading
-                      ? Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const CircularProgressIndicator(),
-                            const SizedBox(height: 18),
-                            Text(
-                              AppLocalizations.of(context).e7LocaleUiStarting,
-                            ),
-                          ],
-                        )
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.error_outline_rounded,
-                              size: 40,
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                            const SizedBox(height: 14),
-                            Text(
-                              AppLocalizations.of(
-                                context,
-                              ).e7LocaleUiStartFailed,
-                              style: Theme.of(context).textTheme.headlineSmall,
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              widget.diagnostics.sanitize(
-                                _error?.toString() ??
-                                    AppLocalizations.of(
-                                      context,
-                                    ).e7LocaleUiUnknownStartupError,
-                                limit: 300,
-                              ),
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                            const SizedBox(height: 20),
-                            FilledButton.icon(
-                              key: const ValueKey('retry-app-bootstrap'),
-                              onPressed: _load,
-                              icon: const Icon(Icons.refresh_rounded),
-                              label: Text(
-                                AppLocalizations.of(context).e7LocaleUiRetry,
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-            ),
+        builder: (context) => _Ground(
+          child: KitScreen(
+            width: KitScreenWidth.reading,
+            body: _bootstrapState(context),
           ),
         ),
       ),
+    );
+  }
+
+  /// The app opening (map page bootstrap-gate): "Opening…" while the saved
+  /// servers are read, then, if that fails, what failed in words with Try
+  /// again, Copy details and Report a problem; the reason is under Details.
+  Widget _bootstrapState(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (_resetting) {
+      return KitStateView(
+        key: const ValueKey('app-bootstrap-resetting'),
+        icon: AppIconography.waiting,
+        tone: AppStatusTone.progress,
+        title: l10n.bootstrapResettingTitle,
+        body: l10n.bootstrapResettingBody,
+        progress: const KitProgress.waiting(),
+      );
+    }
+    final retry = KitAction(
+      key: const ValueKey('retry-app-bootstrap'),
+      label: l10n.commonRetry,
+      onPressed: () => unawaited(_resetFailed ? _resetSignIns() : _load()),
+    );
+    final reset = KitAction(
+      key: const ValueKey('start-fresh-app-bootstrap'),
+      label: l10n.bootstrapStartFresh,
+      onPressed: () => unawaited(_startFresh(context)),
+    );
+    final error = _error;
+    if (_loading || error == null) {
+      return KitStateView(
+        key: const ValueKey('app-bootstrap-opening'),
+        icon: AppIconography.waiting,
+        tone: AppStatusTone.progress,
+        title: l10n.bootstrapOpeningTitle,
+        body: l10n.bootstrapOpeningBody,
+        progress: const KitProgress.waiting(),
+        since: _since,
+        onSlow: [retry],
+      );
+    }
+    return KitStateView.error(
+      key: const ValueKey('app-bootstrap-failed'),
+      title: _resetFailed
+          ? l10n.bootstrapResetFailedTitle
+          : l10n.bootstrapFailedTitle,
+      body: _resetFailed
+          ? l10n.bootstrapResetFailedBody
+          : l10n.bootstrapFailedBody,
+      error: error,
+      details: widget.diagnostics.sanitize(error.toString(), limit: 300),
+      retry: retry,
+      secondary: reset,
+      reportSource: 'bootstrap-gate',
     );
   }
 
@@ -269,7 +425,6 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   late final ConnectionController _controller;
   late final AppUpdateService _updateService;
   final _navigatorKey = GlobalKey<NavigatorState>();
-  final _messengerKey = GlobalKey<ScaffoldMessengerState>();
   // Desktop only: the shell shortcut registry. Surfaces claim intents through
   // it, and the Ctrl+K launcher dispatches the same intents the keyboard does.
   final _shortcutSignals = AppShortcutSignals();
@@ -284,16 +439,37 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   late final SessionLinkIntent _sessionLink;
   bool _linkRouteScheduled = false;
   bool _teamLinkRouteScheduled = false;
+  bool _addressLinkRouteScheduled = false;
+  bool _addressSheetOpen = false;
   bool _linkWaitingNoticeShown = false;
   // Tracks the route on top of the shell navigator so a shortcut never
   // stacks a second servers screen over one already showing.
   final _routeTracker = _TopRouteTracker();
+  final _routeTiming = PerfTraceNavigatorObserver();
+
+  /// The app's own condition in every screen's one status line (added to
+  /// KitStatusScope above the navigator): a share or a launch waiting for
+  /// the server, and what became of one that could not open. It replaced
+  /// the snackbars and the share banner (G1).
+  final _notice = ValueNotifier<KitStatus?>(null);
+  Timer? _noticeTimer;
+  Object? _shareFailure;
+  int _shareFailures = 0;
+
+  static const _waitingNotice = 'app:waiting';
+  static const _shareWaitingNotice = 'app:share-waiting';
+  static const _shareFailedNotice = 'app:share-failed';
+  static const _oneShotNotice = 'app:notice';
 
   @override
   void initState() {
     super.initState();
     unawaited(_harvestDynamicColors());
     _controller = ref.read(connProvider);
+    // Every capabilities.json enable flow resolves to its page (C20), so a
+    // missing capability offers "Turn it on" wherever that can happen here.
+    registerCapabilityFlows(_controller);
+    ref.read(phoneServerHealingProvider);
     _controller.addListener(_controllerChanged);
     _share = widget.shareIntent ?? ShareIntent();
     _share.pending.addListener(_scheduleShareRoute);
@@ -305,6 +481,8 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     _sessionLink = widget.sessionLinkIntent ?? SessionLinkIntent();
     _sessionLink.pending.addListener(_scheduleSessionLinkRoute);
     _sessionLink.pendingTeam.addListener(_scheduleTeamLinkRoute);
+    _sessionLink.pendingAddress.addListener(_scheduleAddressLinkRoute);
+    _sessionLink.pendingAddressFailure.addListener(_scheduleAddressLinkRoute);
     unawaited(_sessionLink.start());
     // Only the Android build is Shorebird-released; desktop gets its update
     // news from the GitHub release check in DesktopReleaseNotice below.
@@ -321,6 +499,9 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    ref
+        .read(phoneServerHealingProvider)
+        .setForeground(state == AppLifecycleState.resumed);
     switch (state) {
       case AppLifecycleState.resumed:
         unawaited(_resumeAndConsumeCodingAlert());
@@ -340,8 +521,71 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     // transport when the background connection had been suspended.
     await Future.wait<void>([
       _controller.consumeCodingAlertOpen(),
-      _controller.resumeFromLifecycle(),
+      _resumeTransport(),
     ]);
+  }
+
+  /// Resume uses the same durable recovery budget as crash monitoring.
+  Future<void> _resumeTransport() async {
+    final profile = _controller.profile;
+    final healing = ref.read(phoneServerHealingProvider);
+    if (looksLikeInAppServer(profile)) await healing.check(profile!);
+    await _controller.resumeFromLifecycle();
+    if (looksLikeInAppServer(profile)) await healing.connectIfNeeded(profile!);
+  }
+
+  /// Shows [status] as the app's line. A [lasting] one stays until its
+  /// condition ends; any other goes after the kit's undo window, except
+  /// under accessible navigation, where it waits for Dismiss.
+  void _showNotice(KitStatus status, {bool lasting = false}) {
+    _noticeTimer?.cancel();
+    _noticeTimer = null;
+    _notice.value = status;
+    if (lasting) return;
+    _noticeTimer = Timer(KitMotion.undoWindow, () {
+      final context = _navigatorKey.currentContext;
+      if (context != null && MediaQuery.accessibleNavigationOf(context)) {
+        return;
+      }
+      _clearNotice(status.id!);
+    });
+  }
+
+  void _clearNotice(String id) {
+    if (_notice.value?.id != id) return;
+    _noticeTimer?.cancel();
+    _noticeTimer = null;
+    _notice.value = null;
+  }
+
+  /// A line that says what just happened, with Dismiss. [supporting] is
+  /// words ([productErrorText]), never the raw failure.
+  void _say(String message, {String? supporting, bool failed = false}) {
+    _showNotice(
+      KitStatus(
+        // `work`: the person's own act, above "Update ready".
+        kind: KitStatusKind.work,
+        id: _oneShotNotice,
+        icon: failed ? AppIconography.error : AppIconography.info,
+        tone: failed ? AppStatusTone.failure : AppStatusTone.neutral,
+        message: message,
+        supporting: supporting,
+        onDismiss: () => _clearNotice(_oneShotNotice),
+      ),
+    );
+  }
+
+  /// A launch, link or share that opens once the server answers.
+  void _showWaiting(String id, String message) {
+    _showNotice(
+      KitStatus(
+        kind: KitStatusKind.work,
+        id: id,
+        icon: AppIconography.waiting,
+        message: message,
+      ),
+      lasting: true,
+    );
   }
 
   void _controllerChanged() {
@@ -371,15 +615,10 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final context = _navigatorKey.currentContext;
           if (!mounted || context == null) return;
-          _messengerKey.currentState
-            ?..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context).shareWaitingForServer,
-                ),
-              ),
-            );
+          _showWaiting(
+            _shareWaitingNotice,
+            AppLocalizations.of(context).shareWaitingForServer,
+          );
         });
       }
       return;
@@ -387,6 +626,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     _shareRouteScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _shareWaitingNoticeShown = false;
+      _clearNotice(_shareWaitingNotice);
       if (!mounted) return;
       final navigator = _navigatorKey.currentState;
       if (navigator == null) {
@@ -413,12 +653,12 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
             !identical(api, _controller.api) ||
             !identical(repository, _controller.repository)) {
           throw ProductException(
-            AppLocalizations.of(navigator.context).e7LocaleUiShareScopeChanged,
+            AppLocalizations.of(navigator.context).shareConnectionChanged,
           );
         }
         unawaited(
           navigator.push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) =>
                   ChatScreen(sessionID: session.id, initialText: text),
             ),
@@ -426,35 +666,105 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         );
         if (_share.pending.value == text) _share.take();
         _failedShareText = null;
-        _messengerKey.currentState?.hideCurrentMaterialBanner();
-      } catch (_) {
+        _shareFailure = null;
+        _shareFailures = 0;
+        _clearNotice(_shareFailedNotice);
+      } catch (error) {
         if (!mounted) return;
-        if (_share.pending.value == text) _failedShareText = text;
-        final l10n = AppLocalizations.of(navigator.context);
-        _messengerKey.currentState
-          ?..hideCurrentMaterialBanner()
-          ..showMaterialBanner(
-            MaterialBanner(
-              content: Text(l10n.shareSessionFailed),
-              actions: [
-                TextButton(
-                  child: Text(l10n.commonRetry),
-                  onPressed: () {
-                    if (!mounted) return;
-                    _failedShareText = null;
-                    _messengerKey.currentState?.hideCurrentMaterialBanner();
-                    _scheduleShareRoute();
-                  },
-                ),
-              ],
-            ),
-          );
+        // A newer share replaced this text meanwhile: that one goes next.
+        if (_share.pending.value == text) {
+          _failedShareText = text;
+          _shareFailure = error;
+          _shareFailures += 1;
+          _showShareFailed(text);
+        }
       } finally {
         _shareRouteScheduled = false;
         if (mounted) _scheduleShareRoute();
       }
     });
     WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  /// The shared text could not open a conversation (map page
+  /// share-session-failed-banner): it stays saved, the line says why in
+  /// words, Try again opens it, and More copies or discards it, so the text
+  /// is never lost behind a dismissed banner. A second failure says so.
+  void _showShareFailed(String text) {
+    final context = _navigatorKey.currentContext;
+    if (context == null) return;
+    final l10n = AppLocalizations.of(context);
+    final failure = _shareFailure;
+    _showNotice(
+      KitStatus(
+        kind: KitStatusKind.work,
+        id: _shareFailedNotice,
+        icon: AppIconography.outbox,
+        tone: AppStatusTone.failure,
+        message: _shareFailures > 1
+            ? l10n.shareFailedAgainLine
+            : l10n.shareFailedLine,
+        supporting: failure == null
+            ? null
+            : productErrorText(failure, l10n: l10n),
+        action: KitAction(
+          key: const ValueKey('share-failed-retry'),
+          label: l10n.commonRetry,
+          onPressed: _retryShare,
+        ),
+        more: [
+          KitAction(
+            key: const ValueKey('share-failed-copy'),
+            label: l10n.shareFailedCopy,
+            icon: AppIconography.copy,
+            onPressed: () {
+              final target = _routeTracker.topContext;
+              if (target == null) return;
+              // The person's own words: copied as they are (SEC-13).
+              unawaited(KitCopy.copy(target, text, redact: false));
+            },
+          ),
+          KitAction(
+            key: const ValueKey('share-failed-discard'),
+            label: l10n.shareFailedDiscard,
+            icon: AppIconography.delete,
+            destructive: true,
+            onPressed: () => _discardShare(text),
+          ),
+        ],
+      ),
+      lasting: true,
+    );
+  }
+
+  void _retryShare() {
+    if (!mounted) return;
+    _failedShareText = null;
+    _clearNotice(_shareFailedNotice);
+    _scheduleShareRoute();
+  }
+
+  /// Discards the saved shared text with Undo: it is dropped only when the
+  /// Undo bar goes.
+  void _discardShare(String text) {
+    // The top page's context: under the overlay the Undo bar goes into.
+    final context = _routeTracker.topContext;
+    if (context == null) return;
+    _clearNotice(_shareFailedNotice);
+    showKitUndo(
+      context,
+      key: const ValueKey('share-discarded'),
+      message: AppLocalizations.of(context).shareDiscarded,
+      onCommit: () {
+        if (_share.pending.value == text) _share.take();
+        if (_failedShareText == text) _failedShareText = null;
+        _shareFailure = null;
+        _shareFailures = 0;
+      },
+      onUndo: () {
+        if (mounted && _share.pending.value == text) _showShareFailed(text);
+      },
+    );
   }
 
   /// The active connection can open a session right now: transport,
@@ -512,9 +822,12 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         _launchWaitingNoticeShown = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final context = _navigatorKey.currentContext;
-          if (!mounted || context == null) return;
+          if (!mounted || context == null || !_launchWaitingNoticeShown) {
+            return;
+          }
           final l10n = AppLocalizations.of(context);
-          _showLaunchNotice(
+          _showWaiting(
+            _waitingNotice,
             action == null
                 ? l10n.launchUiSessionWaiting
                 : l10n.launchShortcutWaiting,
@@ -543,6 +856,15 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
             await _openNewTaskForLaunch(navigator, current);
           case LaunchAction.activity:
             _openActivityForLaunch(navigator, current);
+          case LaunchAction.phoneSetup:
+          case LaunchAction.phoneSetupDone:
+            // Never waits on the connection: setup has its own screens, and
+            // the job's state (read from setup.json) decides where to land.
+            _consumeLaunchAction(current);
+            await openPhoneSetupFromNotification(
+              navigator,
+              topRouteName: _routeTracker.topName,
+            );
         }
       } finally {
         _launchRouteScheduled = false;
@@ -601,8 +923,10 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     } catch (error) {
       if (!mounted) return;
       _consumeLaunchAction(action);
-      _showLaunchNotice(
-        l10n.launchShortcutNewTaskFailed(productErrorText(error)),
+      _say(
+        l10n.appNewConversationFailed,
+        supporting: productErrorText(error, l10n: l10n),
+        failed: true,
       );
     }
   }
@@ -663,7 +987,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     if (_routeTracker.topName == _activityLaunchRoute) return;
     unawaited(
       navigator.push(
-        MaterialPageRoute<void>(
+        KitPageRoute<void>(
           settings: const RouteSettings(name: _activityLaunchRoute),
           builder: (_) => ActivityScreen(controller: _controller),
         ),
@@ -677,12 +1001,14 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   /// arrived while this one was being handled is not swallowed with it.
   void _consumeLaunchAction(LaunchAction action) {
     _launchWaitingNoticeShown = false;
+    _clearNotice(_waitingNotice);
     if (_launchShortcut.pending.value == action) _launchShortcut.take();
   }
 
   /// Same single-consumption rule for a pinned-session launch.
   void _consumeSessionLaunch(SessionLaunch launch) {
     _launchWaitingNoticeShown = false;
+    _clearNotice(_waitingNotice);
     if (_launchShortcut.pendingSession.value == launch) {
       _launchShortcut.takeSession();
     }
@@ -699,11 +1025,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     unawaited(navigator.pushNamed('/servers'));
   }
 
-  void _showLaunchNotice(String message) {
-    _messengerKey.currentState
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
+  void _showLaunchNotice(String message) => _say(message);
 
   ServerProfile? _savedProfile(String id) {
     for (final profile in _controller.store.profiles) {
@@ -731,8 +1053,11 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         _linkWaitingNoticeShown = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final context = _navigatorKey.currentContext;
-          if (!mounted || context == null) return;
-          _showLaunchNotice(AppLocalizations.of(context).handoffUiLinkWaiting);
+          if (!mounted || context == null || !_linkWaitingNoticeShown) return;
+          _showWaiting(
+            _waitingNotice,
+            AppLocalizations.of(context).handoffUiLinkWaiting,
+          );
         });
       }
       return;
@@ -805,10 +1130,76 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     unawaited(navigator.pushNamed('/chat/${link.sessionID}'));
   }
 
+  /// A conversation link that carries the server's address (P3.9). Taken
+  /// once into the one address coordinator, which stays network-silent; the
+  /// sheet then asks before every step and says plainly when this link type
+  /// is not available yet. Only a found, existing conversation navigates,
+  /// through the same path as a local link. A link arriving while the sheet
+  /// is up replaces the one it shows.
+  void _scheduleAddressLinkRoute() {
+    if (_addressLinkRouteScheduled) return;
+    if (_sessionLink.pendingAddress.value == null &&
+        _sessionLink.pendingAddressFailure.value == null) {
+      return;
+    }
+    _addressLinkRouteScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _addressLinkRouteScheduled = false;
+      final navigator = _navigatorKey.currentState;
+      if (!mounted || navigator == null) return;
+      unawaited(_openAddressLink(navigator));
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  Future<void> _openAddressLink(NavigatorState navigator) async {
+    final addresses = ref.read(sessionAddressProvider);
+    var failure = _sessionLink.takeAddressFailure();
+    final link = _sessionLink.takeAddress();
+    if (link != null) {
+      failure = null;
+      try {
+        addresses.receive(link.encode());
+      } on SessionAddressFailure catch (error) {
+        addresses.cancel();
+        failure = error.code;
+      }
+    }
+    if (_addressSheetOpen) return;
+    _addressSheetOpen = true;
+    try {
+      final opened = await showSessionAddressSheet(
+        navigator.context,
+        controller: addresses,
+        failure: failure,
+        onAddServer: (origin) async {
+          await navigator.pushNamed(
+            '/servers',
+            arguments: ServersRouteRequest.add(initialUrl: origin),
+          );
+        },
+        onSignIn: (profileId) async {
+          await navigator.pushNamed(
+            '/servers',
+            arguments: ServersRouteRequest.connect(profileId),
+          );
+        },
+      );
+      if (opened == null || !mounted) return;
+      final route = SessionLink.tryCreate(
+        profileID: opened.profileId,
+        sessionID: opened.sessionId,
+      );
+      if (route != null) await _openSessionForLink(navigator, route);
+    } finally {
+      _addressSheetOpen = false;
+    }
+  }
+
   /// An AI Team link (TEAM-203) names a saved server and a gate or run and
   /// nothing else: the notification tap and the `opencode-mobile://team`
   /// link both land here. Known, active server: Activity opens with the
-  /// exact Gate sheet (or the run screen). Another saved server: switch
+  /// exact Gate sheet (or the task's conversation). Another saved server: switch
   /// first, as the session link does. Unknown server: the same honest
   /// banner. Opening never answers anything.
   void _scheduleTeamLinkRoute() {
@@ -881,14 +1272,28 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   }
 
   /// Activity with the gate's sheet opening on top (it waits for the
-  /// plugin's first snapshot), or the run screen for a completed run. A
+  /// plugin's first snapshot), or the task's conversation for a run. A
   /// profile without the plugin gets the plain Activity list.
   void _pushTeamDestination(NavigatorState navigator, TeamLink link) {
     final team = _controller.orchestration;
+    if (team != null &&
+        team.capabilities.projectLifecycle &&
+        team.projectController != null) {
+      navigator.push(
+        KitPageRoute<void>(
+          builder: (_) => teamProjectDestination(
+            team,
+            requestId: link.kind == TeamLinkKind.gate ? link.id : null,
+            taskId: link.kind == TeamLinkKind.run ? link.id : null,
+          ),
+        ),
+      );
+      return;
+    }
     switch (link.kind) {
       case TeamLinkKind.gate:
         navigator.push(
-          MaterialPageRoute<void>(
+          KitPageRoute<void>(
             builder: (_) => ActivityScreen(
               controller: _controller,
               initialTeamGateId: team == null ? null : link.id,
@@ -898,17 +1303,15 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
       case TeamLinkKind.run:
         if (team == null) {
           navigator.push(
-            MaterialPageRoute<void>(
+            KitPageRoute<void>(
               builder: (_) => ActivityScreen(controller: _controller),
             ),
           );
           return;
         }
-        navigator.push(
-          MaterialPageRoute<void>(
-            builder: (_) => RunScreen(controller: team, runId: link.id),
-          ),
-        );
+        // The task's one page: its conversation, as every other door to a
+        // task opens (docs/design/team-conversation-2026-09-26.md).
+        navigator.push(TeamConversation.route(team, runId: link.id));
     }
   }
 
@@ -920,39 +1323,37 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   /// arrived while this one was being handled is not swallowed with it.
   void _consumeSessionLink(SessionLink link) {
     _linkWaitingNoticeShown = false;
+    _clearNotice(_waitingNotice);
     if (_sessionLink.pending.value == link) _sessionLink.take();
   }
 
+  /// A link for a server this phone has not saved: the link names only the
+  /// sending phone's profile id (never the server's address, see
+  /// [SessionLink.profileID]), so the sheet cannot fill anything in. It
+  /// offers Add server itself, not the list to find it on (P3.9).
   void _showSessionLinkServerMissing(
     NavigatorState navigator,
     AppLocalizations l10n,
   ) {
-    final messenger = _messengerKey.currentState;
-    if (messenger == null) return;
-    messenger
-      ..hideCurrentMaterialBanner()
-      ..showMaterialBanner(
-        MaterialBanner(
-          key: const Key('session-link-server-missing'),
-          content: Text(l10n.handoffUiLinkServerMissing),
-          actions: [
-            TextButton(
-              onPressed: () {
-                _messengerKey.currentState?.hideCurrentMaterialBanner();
-              },
-              child: Text(l10n.handoffUiLinkDismiss),
-            ),
-            TextButton(
-              onPressed: () {
-                _messengerKey.currentState?.hideCurrentMaterialBanner();
-                final navigator = _navigatorKey.currentState;
-                if (navigator != null) _showServersForLaunch(navigator);
-              },
-              child: Text(l10n.handoffUiLinkOpenServers),
-            ),
-          ],
+    unawaited(() async {
+      final add = await showKitConfirm(
+        navigator.context,
+        title: l10n.handoffUiLinkAddTitle,
+        body: l10n.handoffUiLinkServerMissing,
+        confirmLabel: l10n.handoffUiLinkAddServer,
+        cancelLabel: l10n.handoffUiLinkDismiss,
+        icon: AppIconography.add,
+        sheetKey: const Key('session-link-server-missing'),
+        confirmKey: const Key('session-link-add-server'),
+      );
+      if (!add || !mounted) return;
+      unawaited(
+        _navigatorKey.currentState?.pushNamed(
+          '/servers',
+          arguments: const ServersRouteRequest.add(),
         ),
       );
+    }());
   }
 
   void _scheduleCodingAlertRoute() {
@@ -977,7 +1378,9 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         // AI Team alerts (TEAM-203) carry a gate or run id and the saved
         // server's id, nothing else; they route like the team deep link.
         final link = TeamLink.tryCreate(
-          kind: target.kind == CodingAlertKind.teamCompleted
+          kind:
+              (target.kind == CodingAlertKind.teamCompleted ||
+                  target.kind == CodingAlertKind.teamProgress)
               ? TeamLinkKind.run
               : TeamLinkKind.gate,
           profileId: target.profileID.isEmpty
@@ -997,19 +1400,15 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                   return;
                 }
                 if (route == null) {
-                  _messengerKey.currentState?.showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        lookupAppLocalizations(
-                          Localizations.localeOf(navigator.context),
-                        ).quotaMonitorSourceChanged,
-                      ),
-                    ),
+                  _say(
+                    lookupAppLocalizations(
+                      Localizations.localeOf(navigator.context),
+                    ).quotaMonitorSourceChanged,
                   );
                   return;
                 }
                 navigator.push(
-                  MaterialPageRoute<void>(
+                  KitPageRoute<void>(
                     // Quota monitoring is part of Usage → Remaining.
                     builder: (_) => UsageHubScreen(
                       controller: _controller,
@@ -1031,21 +1430,17 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
             openMonitoredRequest(navigator.context, _controller, route),
           );
         } else {
-          _messengerKey.currentState?.showSnackBar(
-            SnackBar(
-              content: Text(
-                lookupAppLocalizations(
-                  Localizations.localeOf(navigator.context),
-                ).monitorOpenFailed,
-              ),
-            ),
+          _say(
+            lookupAppLocalizations(
+              Localizations.localeOf(navigator.context),
+            ).monitorOpenFailed,
           );
         }
         return;
       }
       if (target.kind == CodingAlertKind.question) {
         navigator.push(
-          MaterialPageRoute<void>(
+          KitPageRoute<void>(
             builder: (_) => ActivityScreen(
               controller: _controller,
               initialQuestionSessionID: target.sessionID,
@@ -1055,7 +1450,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         return;
       }
       navigator.push(
-        MaterialPageRoute<void>(
+        KitPageRoute<void>(
           builder: (_) => ChatScreen(sessionID: target.sessionID),
         ),
       );
@@ -1076,15 +1471,18 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         arguments: const ChatRouteArguments.newlyCreated(),
       );
     } catch (error) {
-      _messengerKey.currentState
-        ?..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(productErrorText(error))));
+      if (!mounted) return;
+      _say(
+        AppLocalizations.of(navigator.context).appNewConversationFailed,
+        supporting: productErrorText(error),
+        failed: true,
+      );
     }
   }
 
   void _openSettings() {
     _navigatorKey.currentState?.push(
-      MaterialPageRoute<void>(
+      KitPageRoute<void>(
         builder: (_) => SettingsScreen(controller: _controller),
       ),
     );
@@ -1103,7 +1501,11 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
       );
     }
 
-    final scope = SearchScope(controller: _controller, hasShell: true);
+    final scope = SearchScope(
+      controller: _controller,
+      hasShell: true,
+      thermalGuard: ref.read(thermalGuardSlotProvider).value != null,
+    );
     return [
       DesktopCommand(
         label: l10n.e7LocaleUiNewSession,
@@ -1198,14 +1600,10 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
           final pack = effectiveThemePack(_controller.themePack.value);
           return MaterialApp(
             navigatorKey: _navigatorKey,
-            navigatorObservers: [_routeTracker],
-            scaffoldMessengerKey: _messengerKey,
+            navigatorObservers: [_routeTracker, _routeTiming],
             builder: (context, child) {
-              // Global text-scale safety net: the system setting passes
-              // through untouched below the ceiling — including scales under
-              // 1.0, which users pick deliberately — and only the extreme top
-              // end is capped so a runaway scale cannot break the shell.
-              final scale = MediaQuery.textScalerOf(context).scale(1);
+              // Global text-scale safety net: only the extreme top end is
+              // capped (KitText.appScaler).
               return Theme(
                 data: AppTheme.forLocale(
                   Theme.of(context),
@@ -1213,36 +1611,77 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                 ),
                 child: MediaQuery(
                   data: MediaQuery.of(context).copyWith(
-                    textScaler: TextScaler.linear(
-                      scale > AppTheme.maxTextScale
-                          ? AppTheme.maxTextScale
-                          : scale,
+                    textScaler: KitText.appScaler(
+                      MediaQuery.textScalerOf(context),
+                      max: AppTheme.maxTextScale,
                     ),
                   ),
-                  child: ShorebirdUpdateNotice(
-                    service: _updateService,
-                    messengerKey: _messengerKey,
-                    child: DesktopReleaseNotice(
-                      messengerKey: _messengerKey,
-                      navigatorKey: _navigatorKey,
-                      // Desktop only. On Android this returns its child
-                      // untouched, so the touch product gains no key handling.
-                      child: AppShortcuts(
-                        navigatorKey: _navigatorKey,
-                        signals: _shortcutSignals,
-                        handlers: AppShortcutHandlers(
-                          onNewSession: () => unawaited(_startNewSession()),
-                          onOpenSettings: _openSettings,
-                          paletteCommands: _shellCommands,
+                  // The app's own line joins the conditions every screen's
+                  // status slot reads; the update notices below add theirs.
+                  child: AppConnectionStatusScope(
+                    controller: _controller,
+                    navigatorKey: _navigatorKey,
+                    child: ValueListenableBuilder<KitStatus?>(
+                      valueListenable: _notice,
+                      builder: (context, notice, notices) =>
+                          UpdateStatusScope(status: notice, child: notices!),
+                      child: ShorebirdUpdateNotice(
+                        service: _updateService,
+                        currentProfileId: () => _controller.profile?.id,
+                        allowsAutomaticUpdate: (id) =>
+                            AutomationPolicyController.forProfile(
+                              _controller.store.prefs,
+                              id,
+                            ).value.allows(AutomationBehavior.applyCodePush),
+                        onDownloaded:
+                            ({
+                              required profileId,
+                              required eventId,
+                              required at,
+                            }) async {
+                              await _controller.recordServerAct(
+                                profileId: profileId,
+                                kind: AutomaticActKind.update,
+                                eventId: eventId,
+                                at: at,
+                              );
+                            },
+                        child: DesktopReleaseNotice(
+                          navigatorKey: _navigatorKey,
+                          // Desktop only. On Android this returns its child
+                          // untouched, so the touch product gains no key handling.
+                          child: AppShortcuts(
+                            navigatorKey: _navigatorKey,
+                            signals: _shortcutSignals,
+                            handlers: AppShortcutHandlers(
+                              onNewSession: () => unawaited(_startNewSession()),
+                              onOpenSettings: _openSettings,
+                              paletteCommands: _shellCommands,
+                            ),
+                            // Settings › Appearance › Effects, above the
+                            // navigator so every route and its transitions read
+                            // the same choices. Calls without a context (a send
+                            // from a controller) obey Vibration via the flag.
+                            child: ValueListenableBuilder<KitEffects>(
+                              valueListenable: _controller.effects,
+                              builder: (context, effects, navigator) {
+                                KitHaptics.enabled = effects.haptics;
+                                return KitEffectsScope(
+                                  effects: effects,
+                                  child: navigator!,
+                                );
+                              },
+                              child: child ?? const SizedBox.shrink(),
+                            ),
+                          ),
                         ),
-                        child: child ?? const SizedBox.shrink(),
                       ),
                     ),
                   ),
                 ),
               );
             },
-            scrollBehavior: const AppScrollBehavior(),
+            scrollBehavior: const KitScrollBehavior(),
             title: 'OpenCode Mobile',
             onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -1272,33 +1711,39 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
             darkTheme: AppTheme.dark(pack),
             initialRoute: '/',
             routes: {
-              '/': (_) => _Root(),
+              '/': (_) => _Root(say: _say),
               '/servers': (_) => const ServersScreen(),
               '/home': (_) => const HomeScreen(),
               '/guide': (_) => GuideScreen(embedded: false),
               '/about': (_) => const AboutScreen(),
-              // Termux is an Android app. Registering the route everywhere
-              // meant a desktop deep link, or any leftover push, landed on a
-              // setup flow with no bridge behind it.
+              // This phone (in the app or in Termux) exists only on
+              // Android: a desktop deep link, or any leftover push, must not
+              // land on a page with no phone behind it.
               if (platformCapabilities.supportsTermux)
-                '/termux-setup': (_) => const TermuxSetupScreen(),
+                thisPhoneRoute: (context) => ThisPhoneScreen(
+                  kind:
+                      ModalRoute.of(context)?.settings.arguments
+                          as PhoneHostKind?,
+                ),
               '/debug': (_) => AppDiagnosticsScreen(controller: _controller),
             },
             onGenerateRoute: (settings) {
               if (settings.name?.startsWith('/chat/') == true) {
                 final id = settings.name!.substring('/chat/'.length);
                 final arguments = settings.arguments;
-                return MaterialPageRoute(
-                  builder: (_) => ChatScreen(
-                    sessionID: id,
-                    discardIfUntouched:
-                        arguments is ChatRouteArguments &&
-                        arguments.discardIfUntouched,
-                    focusComposer:
-                        arguments is ChatRouteArguments &&
-                        arguments.focusComposer,
-                  ),
+                final chat = arguments is ChatRouteArguments
+                    ? arguments
+                    : const ChatRouteArguments();
+                // Built once for the page (P4.2a landing scope).
+                final page = chatLandingPage(
+                  sessionID: id,
+                  discardIfUntouched: chat.discardIfUntouched,
+                  focusComposer: chat.focusComposer,
+                  landOnRequestID: chat.landOnRequestID,
+                  landOnFailure: chat.landOnFailure,
+                  menuAction: chat.menuAction,
                 );
+                return KitPageRoute<void>(builder: (_) => page);
               }
               return null;
             },
@@ -1333,7 +1778,13 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     if (widget.launchShortcut == null) _launchShortcut.dispose();
     _sessionLink.pending.removeListener(_scheduleSessionLinkRoute);
     _sessionLink.pendingTeam.removeListener(_scheduleTeamLinkRoute);
+    _sessionLink.pendingAddress.removeListener(_scheduleAddressLinkRoute);
+    _sessionLink.pendingAddressFailure.removeListener(
+      _scheduleAddressLinkRoute,
+    );
     if (widget.sessionLinkIntent == null) _sessionLink.dispose();
+    _noticeTimer?.cancel();
+    _notice.dispose();
     super.dispose();
   }
 }
@@ -1344,6 +1795,17 @@ class _TopRouteTracker extends NavigatorObserver {
   final List<Route<dynamic>> _stack = [];
 
   String? get topName => _stack.isEmpty ? null : _stack.last.settings.name;
+
+  /// A context inside the top page (below the navigator's overlay), for
+  /// the app-level parts that need one: the Undo bar, Copy.
+  BuildContext? get topContext {
+    for (final route in _stack.reversed) {
+      if (route is ModalRoute && route.subtreeContext != null) {
+        return route.subtreeContext;
+      }
+    }
+    return null;
+  }
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
@@ -1377,6 +1839,11 @@ class _TopRouteTracker extends NavigatorObserver {
 
 /// Decides the start destination from persisted state.
 class _Root extends ConsumerStatefulWidget {
+  const _Root({required this.say});
+
+  /// The app's one-shot line (the shell's status notice).
+  final void Function(String message, {String? supporting, bool failed}) say;
+
   @override
   ConsumerState<_Root> createState() => _RootState();
 }
@@ -1385,11 +1852,125 @@ class _RootState extends ConsumerState<_Root> {
   bool _started = false;
   int _attempts = 0;
   late final ConnectionController _controller;
+  late final BuiltinServerStarter _builtin;
 
   @override
   void initState() {
     super.initState();
     _controller = ref.read(connProvider)..addListener(_changed);
+    _builtin = ref.read(builtinServerStarterProvider)..addListener(_changed);
+    _attachPhoneSetup();
+    _recoverFromLastExit();
+    // Times each reply and keeps the phone awake while one runs on the
+    // in-app server (lib/builtin/reply_watch.dart).
+    ref.read(replyWatchProvider).attach(ConnectionReplySource(_controller));
+    // The status scope is above this route. Publish the guard after mounting
+    // so its slot notification cannot rebuild an ancestor during this build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _startThermalGuard();
+    });
+  }
+
+  void _startThermalGuard() {
+    // Pause the AI Team on this phone while Android says it is hot.
+    startThermalGuard(
+      ref.read(thermalGuardSlotProvider),
+      store: _controller.store,
+      linux: ref.read(builtinLinuxProvider),
+      diagnostics: _controller.diagnostics,
+      // Every confirmed pause, stop and resume is filed in that server's
+      // While you were away (P6.2); the guard still decides alone.
+      onAct: (kind, team, since, at) => unawaited(
+        _controller.recordServerAct(
+          profileId: team.id,
+          kind: switch (kind) {
+            ThermalNoticeKind.paused => AutomaticActKind.heatPause,
+            ThermalNoticeKind.stopped => AutomaticActKind.heatStop,
+            ThermalNoticeKind.resumed => AutomaticActKind.heatResume,
+          },
+          eventId: 'thermal.${kind.name}:${since.microsecondsSinceEpoch}',
+          at: at,
+        ),
+      ),
+    );
+  }
+
+  /// Once per process: why Android last ended the app, and bring back the
+  /// phone's OpenCode (and the AI Team) it stopped with it.
+  void _recoverFromLastExit() {
+    unawaited(
+      ref
+          .read(appExitRecoveryProvider)
+          .runOnce(
+            store: _controller.store,
+            active: _controller.profile,
+            starter: _builtin,
+            diagnostics: _controller.diagnostics,
+            recover: ref.read(phoneServerHealingProvider).check,
+            // The team that ran comes back too: healing restarts OpenCode
+            // only (an app update ends both).
+            reviveTeam: (_) => BuiltinTeam(linux: _builtin.linux).ensureRunning(
+              notice: ChannelSetupEngine.deviceStrings().aiteamComponentNotice,
+              observe: true,
+            ),
+          ),
+    );
+  }
+
+  /// The phone setup engine ends every job by starting OpenCode and
+  /// connecting; only the app shell has the profiles and the connection.
+  void _attachPhoneSetup() {
+    AppLocalizations strings() {
+      final locale =
+          _controller.appLocale.value ?? PlatformDispatcher.instance.locale;
+      final supported = AppLocalizations.supportedLocales.any(
+        (candidate) => candidate.languageCode == locale.languageCode,
+      );
+      return lookupAppLocalizations(
+        supported ? Locale(locale.languageCode) : const Locale('en'),
+      );
+    }
+
+    // Read now: these closures outlive this widget (the engine is app-wide),
+    // and a widget's ref throws once the widget is gone.
+    final store = ref.read(bootstrapProvider).store;
+    PhoneSetup.attach(
+      strings: strings,
+      // Built when the step runs, so the shell reads the profile store only
+      // when a setup job actually needs it.
+      finisher: (request) => BuiltinSetupFinisher(
+        store: store,
+        starter: _builtin,
+        strings: strings,
+        isConnectedTo: (profile) =>
+            _controller.profile?.id == profile.id &&
+            _controller.hasConnectedServer,
+        connect: (profile) async {
+          await _controller.connect(profile);
+          if (_controller.hasConnectedServer) return null;
+          final l10n = strings();
+          return l10n.builtinServerConnectFailed(
+            _controller.lastError ?? l10n.builtinServerStopped,
+          );
+        },
+      ).call(request),
+      // The Termux host ends the same way, through Termux's own manager.
+      termuxFinisher: (request) => TermuxSetupFinisher(
+        store: store,
+        strings: strings,
+        isConnectedTo: (profile) =>
+            _controller.profile?.id == profile.id &&
+            _controller.hasConnectedServer,
+        connect: (profile) async {
+          await _controller.connect(profile);
+          if (_controller.hasConnectedServer) return null;
+          final l10n = strings();
+          return l10n.builtinServerConnectFailed(
+            _controller.lastError ?? l10n.e7SetupAuthFailed,
+          );
+        },
+      ).call(request),
+    );
   }
 
   void _changed() {
@@ -1398,6 +1979,32 @@ class _RootState extends ConsumerState<_Root> {
     // long healthy session starts its count from one again.
     if (_controller.hasConnectedServer) _attempts = 0;
     setState(() {});
+  }
+
+  bool _startingPhoneServer = false;
+
+  Future<void> _startPhoneServer() async {
+    if (_startingPhoneServer) return;
+    setState(() => _startingPhoneServer = true);
+    final strings = lookupAppLocalizations(Localizations.localeOf(context));
+    try {
+      await LocalServerControls(
+        store: _controller.store,
+        connection: _controller,
+      ).restart();
+    } on LocalServerControlFailure catch (failure) {
+      // What failed in words; Termux's own text stays in diagnostics.
+      widget.say(
+        strings.rootPhoneServerStartFailed,
+        supporting: productErrorText(failure, l10n: strings),
+        failed: true,
+      );
+    } finally {
+      if (mounted) setState(() => _startingPhoneServer = false);
+    }
+    if (!mounted) return;
+    _started = false;
+    _connectSaved();
   }
 
   void _connectSaved() {
@@ -1414,7 +2021,55 @@ class _RootState extends ConsumerState<_Root> {
     }
     _started = true;
     _attempts += 1;
+    if (looksLikeInAppServer(profile)) {
+      // Until the launch start has had its turn, nothing here is a verdict:
+      // no "stopped" page flashes before "Starting…" (QA B7).
+      _autoStartPending = true;
+      final retry = _retrying;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => unawaited(_autoStartThenConnect(profile, retry: retry)),
+      );
+      return;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => conn.connect(profile));
+  }
+
+  /// True from the in-app server's launch until its start (and one retry)
+  /// had its turn.
+  bool _autoStartPending = false;
+
+  /// Set only while Try again calls [_connectSaved].
+  bool _retrying = false;
+
+  /// Launch joins the same foreground recovery owner as resume and polling,
+  /// then starts a stopped server the person did not stop themselves
+  /// ([PhoneServerHealing.startForLaunch]) and connects.
+  Future<void> _autoStartThenConnect(
+    ServerProfile profile, {
+    bool retry = false,
+  }) async {
+    try {
+      await ref
+          .read(phoneServerHealingProvider)
+          .startForLaunch(profile, retry: retry);
+    } finally {
+      if (mounted) setState(() => _autoStartPending = false);
+    }
+  }
+
+  Future<void> _startInAppServer() async {
+    final profile = _controller.profile;
+    if (profile == null || _builtin.starting) return;
+    final failure = await _builtin.start(profile);
+    if (!mounted || failure != null || _controller.profile?.id != profile.id) {
+      return;
+    }
+    // This explicit action also authorizes connecting when automatic
+    // reconnect is off. The recovery owner may already have connected it.
+    _started = true;
+    await ref
+        .read(phoneServerHealingProvider)
+        .connectIfNeeded(profile, automatic: false);
   }
 
   @override
@@ -1430,40 +2085,130 @@ class _RootState extends ConsumerState<_Root> {
     }
     _connectSaved();
     final navigator = Navigator.of(context);
-    return Scaffold(
-      body: SafeArea(
-        child: SavedServerConnectionCard(
-          profileName: conn.profile!.name,
-          usesConnectionToken: conn.usesConnectionToken,
-          requiresTokenReentry: conn.profile!.requiresCodexTokenReentry,
-          baseUrl: conn.profile!.baseUrl,
-          error: conn.lastError == null
-              ? null
-              : productErrorText(conn.lastError!),
-          attempts: _attempts,
-          supportsTermux:
-              !conn.usesConnectionToken && platformCapabilities.supportsTermux,
-          onChangeServer: () =>
-              navigator.pushNamedAndRemoveUntil('/servers', (_) => false),
-          onUpdateToken: () => navigator.pushNamedAndRemoveUntil(
-            '/servers',
-            (_) => false,
-            arguments: 'edit-active',
-          ),
-          onUpdatePassword: () => navigator.pushNamedAndRemoveUntil(
-            '/servers',
-            (_) => false,
-            arguments: 'edit-active',
-          ),
-          onOpenTermuxSetup:
-              !conn.usesConnectionToken && platformCapabilities.supportsTermux
-              ? () => navigator.pushNamed('/termux-setup')
-              : null,
-          onRetry: () {
-            _started = false;
-            _connectSaved();
-          },
-        ),
+    final profile = conn.profile!;
+    final inApp = _builtin.recognises(profile);
+    final startFailure = _builtin.failureFor(profile);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    // Cached opening shell (docs/qa/codex-speed-2026-09-28 item 1): the
+    // titles this server listed last time, read-only under the honest
+    // connection state. Nothing here marks the server connected, fills the
+    // live session map or enables a live action.
+    final status = conn.connectionStatus;
+    final cached = conn.cachedSessionInventory;
+    final lastKnown = cached != null && cached.sessions.isNotEmpty
+        ? cached
+        : null;
+    final opening = lastKnown != null;
+    // While the launch start is pending, an early refused connect or a
+    // first failed try is not the answer yet: the page keeps connecting.
+    final pending = _autoStartPending && looksLikeInAppServer(profile);
+    // The in-app OpenCode process runs but the connect failed (a busy phone
+    // right after boot): it is not "stopped". Say it is not answering, as
+    // the status line does, while the healing owner keeps reconnecting.
+    final runningSilent =
+        !pending &&
+        inApp &&
+        startFailure == null &&
+        conn.lastError != null &&
+        _builtin.runningFor(profile);
+    final error = pending || runningSilent
+        ? null
+        : startFailure != null
+        ? l10n.builtinServerStartFailed(startFailure.reason(l10n))
+        : conn.lastError;
+    final card = SavedServerConnectionCard(
+      size: opening ? KitStateSize.inline : KitStateSize.page,
+      profileName: serverDisplayName(profile, l10n, among: conn.store.profiles),
+      usesConnectionToken: conn.usesConnectionToken,
+      requiresTokenReentry: profile.requiresCodexTokenReentry,
+      baseUrl: profile.baseUrl,
+      // The raw failure: the card diagnoses it into words and keeps
+      // the text itself under Details only.
+      error: error,
+      attempts: _attempts,
+      // The controller's one eight-second clock, shared with every status
+      // line; `since` is set once an attempt actually began (P4.4).
+      notAnswering:
+          runningSilent ||
+          !pending &&
+              status.phase == ConnectionStatusPhase.notAnswering &&
+              status.since != null,
+      inAppServer: inApp,
+      startingInAppServer: inApp && _builtin.starting,
+      inAppStartFailed: !pending && startFailure != null,
+      // Why it did not start, in plain words (QA B1); the technical line
+      // stays under Details.
+      inAppStartFailedBody: pending ? null : startFailure?.explanation(l10n),
+      onOpenInAppSetup: !pending && startFailure != null
+          ? () => openPhoneSetupStart(context)
+          : null,
+      supportsTermux:
+          !inApp &&
+          !conn.usesConnectionToken &&
+          platformCapabilities.supportsTermux,
+      onChangeServer: () =>
+          navigator.pushNamedAndRemoveUntil('/servers', (_) => false),
+      onUpdateToken: () => navigator.pushNamedAndRemoveUntil(
+        '/servers',
+        (_) => false,
+        arguments: 'edit-active',
+      ),
+      onUpdatePassword: () => navigator.pushNamedAndRemoveUntil(
+        '/servers',
+        (_) => false,
+        arguments: 'edit-active',
+      ),
+      onOpenTermuxSetup:
+          !inApp &&
+              !conn.usesConnectionToken &&
+              platformCapabilities.supportsTermux
+          // The phone's own Termux server goes to This phone (Start is
+          // there); any other server on this phone goes to phone setup.
+          ? () => TermuxBridge.managesServerUrl(profile.baseUrl)
+                ? openThisPhone(context, kind: PhoneHostKind.termux)
+                : openPhoneSetupStart(context)
+          : null,
+      // The app's own phone server: when nothing answers, it is stopped
+      // (a phone restart, Android closing Termux, the app closed for
+      // OpenCode inside the app), and one tap starts it.
+      onStartPhoneServer: inApp
+          ? _startInAppServer
+          : !conn.usesConnectionToken &&
+                platformCapabilities.supportsTermux &&
+                TermuxBridge.managesServerUrl(profile.baseUrl)
+          ? _startPhoneServer
+          : null,
+      startingPhoneServer: inApp ? _builtin.starting : _startingPhoneServer,
+      onRetry: () {
+        _builtin.clearFailure();
+        _started = false;
+        _retrying = true;
+        _connectSaved();
+        _retrying = false;
+      },
+    );
+    // A KitScreen, so the app's line (a share waiting for this server)
+    // shows above the card (map page root-connecting). The card is this
+    // server's connection state, with its own Try again and Details, so the
+    // slot leaves the shared connection line out here (`bodySays`): the
+    // page says it once. Every other app line still shows (P4.4).
+    return _Ground(
+      child: KitScreen(
+        bodySays: const {KitStatusKind.connection},
+        width: opening ? KitScreenWidth.list : KitScreenWidth.full,
+        body: lastKnown != null
+            ? ListView(
+                key: const ValueKey('opening-shell'),
+                children: [
+                  card,
+                  LastKnownSessions(
+                    preview: lastKnown,
+                    refreshing:
+                        error == null && !profile.requiresCodexTokenReentry,
+                  ),
+                ],
+              )
+            : card,
       ),
     );
   }
@@ -1471,6 +2216,27 @@ class _RootState extends ConsumerState<_Root> {
   @override
   void dispose() {
     _controller.removeListener(_changed);
+    _builtin.removeListener(_changed);
     super.dispose();
   }
+}
+
+/// The page ground under a bar-less root page (the app opening, the saved
+/// server connecting): a KitScreen draws its ground and keeps out of the
+/// system bars only with a top bar, so this does both. The ground runs
+/// under the status and navigation bars; the content (the app's status
+/// line first) stays inside the safe area.
+class _Ground extends StatelessWidget {
+  const _Ground({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => KitSurface(
+    level: KitSurfaceLevel.ground,
+    shape: KitShape.square,
+    padding: KitSurfacePadding.none,
+    clip: false,
+    child: SafeArea(child: child),
+  );
 }

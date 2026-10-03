@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'support/complete_message_history.dart';
+import 'support/fake_setup_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
+import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
+import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/main.dart';
 import 'package:opencode_mobile/platform/launch_shortcut.dart';
@@ -15,6 +18,7 @@ import 'package:opencode_mobile/platform/share_intent.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_progress_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/update/shorebird_update_notice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -179,15 +183,29 @@ Widget _app(
 );
 
 /// The user-facing notice that a shortcut could not be honoured. The router
-/// owns the wording and the surface (snack bar or banner); this only checks
+/// owns the wording and the surface (its status line); this only checks
 /// that something was shown at all.
-bool _noticeShown() =>
-    find.byType(SnackBar).evaluate().isNotEmpty ||
-    find.byType(MaterialBanner).evaluate().isNotEmpty;
+bool _noticeShown() => _appNotice.evaluate().isNotEmpty;
 
-/// Lets any snack bar timer run out before the tree is torn down.
+/// The shared connection line (P4.4, 3d64653c). It outranks the app's
+/// one-shot notice in the one status slot (connection, app stopped, heat,
+/// local work, update), so where the connection failed it is what the
+/// person reads on Servers, with its way forward.
+bool _connectionLineShown() => find
+    .byKey(const ValueKey('connection-status-banner'))
+    .evaluate()
+    .isNotEmpty;
+
+/// Lets a one-shot notice's timer run out before the tree is torn down.
 Future<void> _drainNotices(WidgetTester tester) =>
-    tester.pump(const Duration(seconds: 5));
+    tester.pump(const Duration(seconds: 9));
+
+/// The app's own status line (main.dart's notice, KitStatusLine keys
+/// `kit-status-app:*`), which replaced the snack bars and the banner.
+final _appNotice = find.byWidgetPredicate((widget) {
+  final key = widget.key;
+  return key is ValueKey && '${key.value}'.startsWith('kit-status-app:');
+});
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -212,6 +230,53 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('a phone setup notification tap opens the setup progress, '
+      'first setup included, without touching the connection', (tester) async {
+    final engine = FakeSetupEngine()
+      ..emit(
+        const SetupProgress(
+          jobId: 'job-1',
+          state: SetupState.running,
+          overall: .4,
+          firstSetup: true,
+          components: [
+            ComponentProgress(id: 'linux', state: ComponentState.done),
+            ComponentProgress(id: 'node', state: ComponentState.running),
+          ],
+        ),
+      );
+    PhoneSetup.engine = engine;
+    final controller = await _controller(connected: true);
+    addTearDown(controller.dispose);
+    final api = controller.api! as _ShortcutApi;
+    final shortcut = _shortcut();
+    await tester.pumpWidget(_app(controller, shortcut));
+    await tester.pumpAndSettle();
+
+    shortcut.pending.value = LaunchAction.phoneSetup;
+    // The running row spins, so the screen never settles: pump through the
+    // route transition instead.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    final screen = tester.widget<PhoneSetupProgressScreen>(
+      find.byType(PhoneSetupProgressScreen),
+    );
+    expect(screen.firstSetup, isTrue);
+    expect(shortcut.pending.value, isNull);
+    expect(api.created, 0);
+    expect(controller.status, StreamStatus.connected);
+
+    // A second tap while it shows stacks nothing.
+    shortcut.pending.value = LaunchAction.phoneSetupDone;
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(PhoneSetupProgressScreen), findsOneWidget);
+    expect(shortcut.pending.value, isNull);
+  });
 
   testWidgets('connect opens server selection and keeps the connection', (
     tester,
@@ -322,7 +387,8 @@ void main() {
 
     expect(find.byType(ServersScreen), findsWidgets);
     expect(find.byType(ChatScreen), findsNothing);
-    expect(_noticeShown(), isTrue);
+    // The connection line outranks the launch's notice (3d64653c).
+    expect(_connectionLineShown(), isTrue);
     expect(shortcut.pending.value, isNull);
     expect(controller.api, isNull);
     expect(controller.status, StreamStatus.disconnected);
@@ -351,7 +417,8 @@ void main() {
 
     expect(find.byType(ServersScreen), findsOneWidget);
     expect(find.byType(ChatScreen), findsNothing);
-    expect(_noticeShown(), isTrue);
+    // The connection line outranks the launch's notice (3d64653c).
+    expect(_connectionLineShown(), isTrue);
     expect(shortcut.pending.value, isNull);
     expect(controller.api, isNull);
     await _drainNotices(tester);

@@ -208,4 +208,32 @@ void main() {
       expect(share.take(), isNull);
     },
   );
+
+  test('ShareOut sends the text and subject and reports whether the share '
+      'sheet opened', () async {
+    final calls = <MethodCall>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call);
+          return true;
+        });
+    expect(await ShareOut.text('report body', subject: 'Title'), isTrue);
+    expect(calls.single.method, 'shareText');
+    expect(calls.single.arguments, {'text': 'report body', 'subject': 'Title'});
+    expect(await ShareOut.text(''), isFalse);
+    expect(calls, hasLength(1));
+  });
+
+  test(
+    'ShareOut answers false when the platform side is missing or fails',
+    () async {
+      expect(await ShareOut.text('x'), isFalse);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            channel,
+            (_) async => throw PlatformException(code: 'nope'),
+          );
+      expect(await ShareOut.text('x'), isFalse);
+    },
+  );
 }

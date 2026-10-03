@@ -7,13 +7,17 @@
 /// builds the [OrchestrationConfig] the Termux profile gets once the city
 /// is ready (loopback, no front — `X-GC-Request` alone is trusted there).
 ///
+/// The team runs inside Termux's managed Ubuntu from the upstream builds
+/// the in-app Ubuntu uses ([AiTeamPins]); lib/termux/team_scripts.dart
+/// says how.
+///
 /// Verb contract (what `aiteam.sh` accepts and writes; TEAM-302 drives it):
 ///
 /// | Verb | Args | Phases written |
 /// |---|---|---|
-/// | `install` | `<manifest path or URL>` | downloading → verifying → installing-packages → installed; `failed:checksum-mismatch <name>` (exit 65), `failed:unsupported-arch`, `failed:manifest-*`, `failed:download`, `failed:packages` |
-/// | `init` | `<project path> [--city n] [--rig n]` | creating-city → city-ready; `failed:not-installed`, `failed:project-*`, `failed:gc-*` |
-/// | `start` | — | starting → ready (health ok within 120 s); `failed:no-city`, `failed:supervisor-exited`, `failed:health-timeout` |
+/// | `install` | — | downloading → verifying → installing-packages → installed; `failed:checksum-mismatch <name>` (exit 65, before anything is unpacked), `failed:unsupported-arch`, `failed:no-ubuntu`, `failed:pins`, `failed:download <kind> <host> <code>` (see [TeamDownloadFailure]), `failed:no-space`, `failed:packages`, `failed:blocked-syscall` (Android stopped a program: SIGSYS), `failed:runs-here`, `failed:unpack` |
+/// | `init` | `<project path> [--city n] [--rig n]` | creating-city → city-ready; `failed:not-installed`, `failed:project-*`, `failed:rig-script`, `failed:gc-*` |
+/// | `start` | — | starting → ready (health ok within 360 s); `failed:no-city`, `failed:supervisor-exited`, `failed:health-timeout` |
 /// | `stop` | — | stopping → stopped |
 /// | `remove` | — | removing → (state gone; `status.removed` lists what went) |
 /// | `status` | — | inline JSON, see [TeamRuntimeStatus.parse] |
@@ -26,8 +30,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/services.dart' show rootBundle;
-
+import '../builtin/setup/aiteam_scripts.dart';
 import '../domain/workspace_paths.dart'
     show managedProjectsDirectory, projectFolderNameProblem;
 import '../state/profiles.dart'
@@ -151,11 +154,11 @@ class TeamRuntimeStatus {
   /// The verb that wrote the phase (`install`, `init`, …).
   final String verb;
 
-  /// gc, bd and dolt are all present in `$PREFIX/bin`.
+  /// gc, bd and dolt are unpacked in the managed Ubuntu (`/opt/aiteam`).
   final bool installed;
 
-  /// `gc`, `bd`, `dolt` → the version each binary reports (absent when the
-  /// binary is missing or silent).
+  /// `gc`, `bd`, `dolt` → the version installed (absent when not
+  /// installed).
   final Map<String, String> versions;
 
   /// A verb is running right now (poll again).
@@ -200,6 +203,10 @@ class TeamRuntimeStatus {
 
   /// The `checksum-mismatch <name>` refusal of `install`.
   bool get checksumMismatch => reason?.startsWith('checksum-mismatch') ?? false;
+
+  /// Why a download of `install` failed, or null when [reason] is not a
+  /// download failure.
+  TeamDownloadFailure? get downloadFailure => TeamDownloadFailure.parse(reason);
 
   /// Parses the `aiteam.sh status` JSON line; [unreadable] when it is not
   /// JSON so a UI still has a phase to show.
@@ -277,7 +284,67 @@ class TeamRuntimeStatus {
       '${lastError == null ? '' : ' error=$lastError'})';
 }
 
-/// The pinned download manifest the app ships (`assets/aiteam/manifest.json`).
+/// What kind of network trouble stopped a download (`aiteam.sh` maps
+/// curl's exit code onto these).
+enum TeamDownloadFailureKind {
+  /// The host name did not resolve (curl 6).
+  dns,
+
+  /// Nothing answered on the host (curl 7).
+  connect,
+
+  /// The host took too long (curl 28).
+  timeout,
+
+  /// The secure connection failed: often a wrong clock or a proxy.
+  tls,
+
+  /// The server answered with an HTTP error status.
+  http,
+
+  /// The connection dropped mid-file.
+  interrupted,
+
+  /// The file could not be written on the phone.
+  write,
+
+  /// Anything else, or an older script that gave no detail.
+  other,
+}
+
+/// The `download <kind> <host> <code>` reason of a failed `install`: the
+/// kind of failure, the host that was asked, and the HTTP status (for
+/// [TeamDownloadFailureKind.http]) or curl's exit code.
+class TeamDownloadFailure {
+  const TeamDownloadFailure({required this.kind, this.host = '', this.code});
+
+  final TeamDownloadFailureKind kind;
+  final String host;
+  final int? code;
+
+  /// Null when [reason] is not a download failure; a bare `download` (no
+  /// detail) parses to [TeamDownloadFailureKind.other].
+  static TeamDownloadFailure? parse(String? reason) {
+    final parts = (reason ?? '').trim().split(RegExp(r'\s+'));
+    if (parts.first != 'download') return null;
+    final kind = parts.length > 1
+        ? TeamDownloadFailureKind.values.firstWhere(
+            (k) => k.name == parts[1],
+            orElse: () => TeamDownloadFailureKind.other,
+          )
+        : TeamDownloadFailureKind.other;
+    return TeamDownloadFailure(
+      kind: kind,
+      host: parts.length > 2 ? parts[2] : '',
+      code: parts.length > 3 ? int.tryParse(parts[3]) : null,
+    );
+  }
+}
+
+/// What setting up the team downloads: the pinned upstream builds for the
+/// phone's CPU ([TeamRuntimeManifest.pinned]). [parse] reads the schema-1
+/// manifests of the earlier native layout (`assets/aiteam/manifest*.json`),
+/// which nothing downloads from any more.
 class TeamRuntimeManifest {
   const TeamRuntimeManifest({
     required this.json,
@@ -289,7 +356,7 @@ class TeamRuntimeManifest {
     this.totalBytes = 0,
   });
 
-  /// The manifest exactly as shipped, handed to `aiteam.sh install`.
+  /// The manifest as JSON (for a pinned one, what [pinned] describes).
   final String json;
   final String arch;
   final String gascity;
@@ -301,6 +368,36 @@ class TeamRuntimeManifest {
   /// the manifest declares none (the onboarding copy then falls back to
   /// the spike's estimate).
   final int totalBytes;
+
+  /// The pinned upstream [downloads] for [arch] (`arm64` or `x86_64`), plus
+  /// the few Ubuntu packages (about 3 MB).
+  factory TeamRuntimeManifest.pinned(
+    String arch,
+    List<AiTeamDownload> downloads,
+  ) => TeamRuntimeManifest(
+    json: jsonEncode({
+      'schema': 2,
+      'source': 'upstream',
+      'arch': arch,
+      'gascity': AiTeamPins.gascity,
+      'beads': AiTeamPins.beads,
+      'dolt': AiTeamPins.dolt,
+      'files': {
+        for (final download in downloads)
+          download.tool: {
+            'url': download.url,
+            'bytes': download.bytes,
+            'sha256': download.sha256,
+          },
+      },
+    }),
+    arch: arch,
+    gascity: AiTeamPins.gascity,
+    beads: AiTeamPins.beads,
+    dolt: AiTeamPins.dolt,
+    baseUrl: '',
+    totalBytes: AiTeamPins.bytesFor(downloads) + 3000000,
+  );
 
   /// Null for a manifest this build cannot use (not JSON, not schema 1, no
   /// files).
@@ -340,6 +437,8 @@ class TeamRuntimeManifest {
 
 /// The managed Gas City runtime on this phone.
 class TermuxTeamRuntime {
+  /// [manifestLoader], when given, replaces the pinned downloads with a
+  /// manifest's JSON (tests; null means none).
   TermuxTeamRuntime({
     TeamScriptRunner? runner,
     Future<String?> Function()? manifestLoader,
@@ -347,18 +446,18 @@ class TermuxTeamRuntime {
     this.pollInterval = const Duration(seconds: 5),
     this.verbTimeout = const Duration(minutes: 30),
   }) : _runner = runner ?? _bridgeRunner,
-       _manifestLoader = manifestLoader ?? _assetManifest,
+       _manifestLoader = manifestLoader,
        _archProbe = archProbe ?? _bridgeArch;
 
-  /// The bundled manifest asset.
+  /// The earlier native layout's manifests (Android builds from a release
+  /// of this project that was never published, issue #87). Still shipped
+  /// and still checked by test/shipped_download_urls_test.dart; nothing
+  /// reads them.
   static const manifestAsset = 'assets/aiteam/manifest.json';
-
-  /// The x86_64 manifest, used on the Android emulator (the app's own QA
-  /// proof); phones are arm64.
   static const manifestAssetX86 = 'assets/aiteam/manifest-x86_64.json';
 
   final TeamScriptRunner _runner;
-  final Future<String?> Function() _manifestLoader;
+  final Future<String?> Function()? _manifestLoader;
   final Future<String?> Function() _archProbe;
 
   /// How often [statusStream] polls while a verb runs.
@@ -375,18 +474,6 @@ class TermuxTeamRuntime {
     Duration timeout = const Duration(seconds: 30),
   }) async => (await TermuxBridge.run(script, timeout: timeout)).stdout;
 
-  static Future<String?> _assetManifest() async {
-    final arch = (await _bridgeArch())?.trim().toLowerCase() ?? '';
-    final asset = arch == 'x86_64' || arch == 'amd64'
-        ? manifestAssetX86
-        : manifestAsset;
-    try {
-      return await rootBundle.loadString(asset);
-    } catch (_) {
-      return null;
-    }
-  }
-
   static Future<String?> _bridgeArch() async {
     try {
       return (await TermuxBridge.run('uname -m')).stdout;
@@ -395,9 +482,20 @@ class TermuxTeamRuntime {
     }
   }
 
-  /// The bundled manifest, once; null when the asset is absent or unusable.
-  Future<TeamRuntimeManifest?> manifest() => _manifest ??= _manifestLoader()
-      .then((raw) => raw == null ? null : TeamRuntimeManifest.parse(raw));
+  /// What setting up downloads, once: the pinned upstream builds for this
+  /// phone's CPU (arm64 unless Termux reports x86_64, the emulator).
+  Future<TeamRuntimeManifest?> manifest() => _manifest ??= _loadManifest();
+
+  Future<TeamRuntimeManifest?> _loadManifest() async {
+    final loader = _manifestLoader;
+    if (loader != null) {
+      final raw = await loader();
+      return raw == null ? null : TeamRuntimeManifest.parse(raw);
+    }
+    return await isX86_64
+        ? TeamRuntimeManifest.pinned('x86_64', AiTeamPins.x64)
+        : TeamRuntimeManifest.pinned('arm64', AiTeamPins.arm64);
+  }
 
   /// The Termux side reports a 64-bit ARM machine (`uname -m`), once.
   Future<bool> get isArm64 => _arm64 ??= _archProbe().then((arch) {
@@ -405,8 +503,9 @@ class TermuxTeamRuntime {
     return value == 'aarch64' || value == 'arm64';
   });
 
-  /// The optional onboarding block may be shown: the device is arm64 and
-  /// the app ships an arm64 manifest (03-onboarding §2).
+  /// The optional onboarding block may be shown: the device is 64-bit ARM
+  /// (or x86, the emulator) and there are downloads for it
+  /// (03-onboarding §2).
   Future<bool> get supportsAiTeam async {
     final manifest = await this.manifest();
     if (manifest == null) return false;
@@ -511,28 +610,15 @@ class TermuxTeamRuntime {
     return path;
   }
 
-  /// Downloads and installs gc, bd, dolt and the opencode wrapper from
-  /// [manifestUrl], or from the bundled manifest when null.
-  Future<TeamRuntimeStatus> install({String? manifestUrl}) async {
-    if (manifestUrl != null) {
-      return _dispatch('install', args: [manifestUrl]);
-    }
-    final manifest = await this.manifest();
-    if (manifest == null) {
-      throw const TermuxBridgeException(
-        'This build ships no AI Team manifest.',
-        code: 'aiteam_manifest_missing',
-      );
-    }
-    return _dispatch(
-      'install',
-      args: [TermuxBridge.aiteamManifestPath],
-      manifestJson: manifest.json,
-    );
-  }
+  /// Downloads the pinned upstream gc, bd and dolt (checked against their
+  /// SHA-256 before anything is unpacked) and installs them in the managed
+  /// Ubuntu with the packages the team needs. Does nothing more when they
+  /// are installed at the pinned versions already.
+  Future<TeamRuntimeStatus> install() => _dispatch('install');
 
-  /// Creates the city for [projectPath] (a bare origin next to it when the
-  /// project has none).
+  /// Makes the team's store once and adds [projectPath] (a path inside the
+  /// managed Ubuntu) to it, with an origin on the phone
+  /// (`/root/aiteam/origins`) when the project has none.
   Future<TeamRuntimeStatus> init(
     String projectPath, {
     String? city,
@@ -550,19 +636,18 @@ class TermuxTeamRuntime {
 
   Future<TeamRuntimeStatus> stop() => _dispatch('stop');
 
-  /// Stops the team and deletes the binaries, the city (with its Dolt
-  /// store) and the registry; the project and its origin stay.
+  /// Stops the team and deletes the programs, the team's store and its
+  /// settings; the project and its phone-side origin stay.
   Future<TeamRuntimeStatus> remove() => _dispatch('remove');
 
   /// Runs `install`, `init` and `start` in turn, stopping at the first
   /// phase that is not the expected outcome.
   Future<TeamRuntimeStatus> setUp(
     String projectPath, {
-    String? manifestUrl,
     String? city,
     String? rig,
   }) async {
-    var status = await install(manifestUrl: manifestUrl);
+    var status = await install();
     if (status.phase != TeamRuntimePhase.installed) return status;
     status = await init(projectPath, city: city, rig: rig);
     if (status.phase != TeamRuntimePhase.cityReady) return status;
@@ -587,14 +672,9 @@ class TermuxTeamRuntime {
   Future<TeamRuntimeStatus> _dispatch(
     String verb, {
     List<String> args = const [],
-    String? manifestJson,
   }) async {
     final output = await _runner(
-      TermuxBridge.aiteamVerbScript(
-        verb,
-        args: args,
-        manifestJson: manifestJson,
-      ),
+      TermuxBridge.aiteamVerbScript(verb, args: args),
       timeout: const Duration(seconds: 30),
     );
     if (!RegExp(r'(^|\n)aiteam-started:[0-9]+\s*$').hasMatch(output.trim())) {

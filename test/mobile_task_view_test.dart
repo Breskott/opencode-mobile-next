@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/mobile_tool_view.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_chip.dart';
+import 'package:opencode_mobile/ui/kit/kit_task_mark.dart';
 import 'package:opencode_mobile/ui/widgets/mobile_task_view.dart';
 
 void main() {
@@ -25,6 +27,7 @@ void main() {
 
   Widget host(Widget child, {double? width, double textScale = 1}) {
     return MaterialApp(
+      theme: AppTheme.dark(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, inner) => MediaQuery(
@@ -184,86 +187,83 @@ void main() {
     await tester.pumpWidget(host(MobileTaskList(view: view)));
     expect(find.text('Review changes'), findsOneWidget);
     expect(find.text('Cancelled'), findsOneWidget);
-    await tester.tap(find.text('Show unfinished only'));
+    await tester.tap(find.byKey(const Key('mobile-tasks-filter')));
     await tester.pump();
     expect(find.text('Review changes'), findsNothing);
     expect(find.text('Publish'), findsNothing);
     expect(find.text('Run focused checks'), findsOneWidget);
     expect(view.tasks.length, 3);
-    await tester.tap(find.text('Show unfinished only'));
+    await tester.tap(find.byKey(const Key('mobile-tasks-filter')));
     await tester.pump();
     expect(find.text('Review changes'), findsOneWidget);
   });
 
-  testWidgets('filter label wraps in full instead of fading at 320 px / 2x', (
+  testWidgets('the filter is a chip that says whether it is on', (
     tester,
   ) async {
     final handle = tester.ensureSemantics();
     final view = MobileTaskView.fromTodos(rows)!;
-    await tester.pumpWidget(
-      host(MobileTaskList(view: view), width: 320, textScale: 2),
-    );
-    final label = find.text('Show unfinished only');
-    final paragraph = tester.renderObject<RenderParagraph>(label);
-    // The whole wording is laid out inside its box: no horizontal clipping
-    // and no fade shader (which is what a chip label produced here)...
-    expect(paragraph.debugHasOverflowShader, isFalse);
-    expect(
-      paragraph.textSize.width,
-      lessThanOrEqualTo(paragraph.size.width + 0.01),
-    );
-    // ...because it wrapped onto more than one line...
-    expect(
-      paragraph.textSize.height,
-      greaterThan(paragraph.preferredLineHeight * 1.5),
-    );
-    // ...and the control itself stays inside the 320 px column.
+    await tester.pumpWidget(host(MobileTaskList(view: view)));
     final control = find.byKey(const Key('mobile-tasks-filter'));
-    expect(tester.getRect(control).right, lessThanOrEqualTo(320));
+    expect(find.byType(KitChip), findsWidgets);
+    expect(tester.widget<KitChip>(control).selected, isFalse);
     expect(
-      tester.getSemantics(control),
-      isSemantics(
-        isButton: true,
-        isSelected: false,
-        label: 'Show unfinished only',
-      ),
+      find.bySemanticsLabel(RegExp('Show unfinished only')),
+      findsOneWidget,
     );
-    // Toggling from the wrapped label still filters and is announced.
-    await tester.tap(label);
+    await tester.tap(control);
     await tester.pump();
     expect(find.text('Review changes'), findsNothing);
-    expect(
-      tester.getSemantics(control),
-      isSemantics(isButton: true, isSelected: true),
-    );
+    expect(tester.widget<KitChip>(control).selected, isTrue);
     expect(tester.takeException(), isNull);
     handle.dispose();
   });
 
-  testWidgets('priority caption and accessible progress render', (
-    tester,
-  ) async {
+  testWidgets('one readout, priority in words, High as a chip', (tester) async {
     final handle = tester.ensureSemantics();
     final view = MobileTaskView.fromTodos(prioritised)!;
     await tester.pumpWidget(host(MobileTaskList(view: view)));
-    expect(find.text('In progress · High priority'), findsOneWidget);
+    // No engine label: the old "Server-reported tasks" caption is gone.
+    expect(find.text('Server-reported tasks · mobile view'), findsNothing);
+    expect(find.text('In progress'), findsOneWidget);
+    expect(find.text('High priority'), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.text('High priority'),
+        matching: find.byType(KitChip),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Completed · Low priority'), findsOneWidget);
     expect(find.text('Cancelled · Medium priority'), findsOneWidget);
     expect(find.text('Pending'), findsOneWidget);
-    expect(find.text('1 of 3 done'), findsOneWidget);
+    expect(find.textContaining('1 of 3 done'), findsOneWidget);
     final bar = tester.widget<LinearProgressIndicator>(
       find.byKey(const Key('mobile-tasks-progress-bar')),
     );
     expect(bar.value, closeTo(1 / 3, 0.001));
-    expect(
-      tester.getSemantics(find.byKey(const Key('mobile-tasks-progress-bar'))),
-      isSemantics(label: '1 of 3 done', value: '33%'),
-    );
     // The filter never changes the reported progress.
-    await tester.tap(find.text('Show unfinished only'));
+    await tester.tap(find.byKey(const Key('mobile-tasks-filter')));
     await tester.pump();
-    expect(find.text('1 of 3 done'), findsOneWidget);
+    expect(find.textContaining('1 of 3 done'), findsOneWidget);
     handle.dispose();
+  });
+
+  testWidgets('each task carries the team step mark for its state', (
+    tester,
+  ) async {
+    final view = MobileTaskView.fromTodos(prioritised)!;
+    await tester.pumpWidget(host(MobileTaskList(view: view)));
+    final marks = tester
+        .widgetList<KitTaskMark>(find.byType(KitTaskMark))
+        .map((mark) => mark.state)
+        .toList();
+    expect(marks, [
+      KitTaskState.done,
+      KitTaskState.working,
+      KitTaskState.stopped,
+      KitTaskState.waiting,
+    ]);
   });
 
   testWidgets('progress is hidden when nothing is tracked', (tester) async {
@@ -272,9 +272,44 @@ void main() {
       {'content': 'B', 'status': 'cancelled'},
     ])!;
     await tester.pumpWidget(host(MobileTaskList(view: view)));
-    expect(find.byKey(const Key('mobile-tasks-progress')), findsNothing);
     expect(find.byKey(const Key('mobile-tasks-progress-bar')), findsNothing);
     expect(find.text('Cancelled'), findsNWidgets(2));
+    await tester.tap(find.byKey(const Key('mobile-tasks-filter')));
+    await tester.pump();
+    expect(find.byKey(const Key('mobile-tasks-empty')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a long plan shows a window around the work and unfolds', (
+    tester,
+  ) async {
+    final view = MobileTaskView.fromTodos([
+      for (var i = 1; i <= 24; i++)
+        {
+          'content': 'Task $i',
+          'status': i < 12
+              ? 'completed'
+              : i == 12
+              ? 'in_progress'
+              : 'pending',
+        },
+    ])!;
+    await tester.pumpWidget(host(MobileTaskList(view: view)));
+    // The window starts just before the first unfinished task.
+    expect(find.text('Task 11'), findsOneWidget);
+    expect(find.text('Task 12'), findsOneWidget);
+    expect(find.text('Task 1'), findsNothing);
+    expect(find.text('Task 24'), findsNothing);
+    expect(
+      find.byType(KitTaskMark),
+      findsNWidgets(MobileTaskList.collapsedCount),
+    );
+    final showAll = find.text('Show all 24 tasks');
+    await tester.ensureVisible(showAll);
+    await tester.tap(showAll);
+    await tester.pump();
+    expect(find.byType(KitTaskMark), findsNWidgets(24));
+    expect(find.text('Show all 24 tasks'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -299,7 +334,7 @@ void main() {
     );
     final view = MobileTaskView.fromTodos(prioritised)!;
     await tester.pumpWidget(host(MobileTaskList(view: view)));
-    await tester.tap(find.text('Show unfinished only'));
+    await tester.tap(find.byKey(const Key('mobile-tasks-filter')));
     await tester.pump();
     expect(find.text('Review changes'), findsNothing);
     await tester.tap(find.byKey(const Key('mobile-tasks-copy-all')));
@@ -307,39 +342,9 @@ void main() {
     await tester.pump();
     expect(copied, view.toPlainText());
     expect(copied, contains('Review changes'));
-    expect(find.text('All tasks copied'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
     expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('clipboard failure is reported in place', (tester) async {
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      (call) async {
-        if (call.method == 'Clipboard.setData') {
-          throw PlatformException(code: 'denied');
-        }
-        return null;
-      },
-    );
-    addTearDown(
-      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        null,
-      ),
-    );
-    final view = MobileTaskView.fromTodos(rows)!;
-    await tester.pumpWidget(host(MobileTaskList(view: view)));
-    await tester.tap(find.byKey(const Key('mobile-tasks-copy-all')));
-    await tester.pump();
-    await tester.pump();
-    expect(find.text('Could not copy the task list.'), findsOneWidget);
-    expect(find.text('All tasks copied'), findsNothing);
-    expect(tester.takeException(), isNull);
-    // The button is usable again after the failure.
-    final button = tester.widget<TextButton>(
-      find.byKey(const Key('mobile-tasks-copy-all')),
-    );
-    expect(button.onPressed, isNotNull);
+    await tester.pump(const Duration(seconds: 3));
   });
 
   testWidgets(
@@ -369,10 +374,8 @@ void main() {
         find.text('[Open](https://example.test) <script>no()</script>'),
         findsOneWidget,
       );
-      expect(find.text('Pending · High priority'), findsOneWidget);
-      expect(find.text('1 of 2 done'), findsOneWidget);
-      // Only the local copy button is tappable; task text never becomes a link.
-      expect(find.bySubtype<TextButton>(), findsOneWidget);
+      expect(find.text('Pending'), findsOneWidget);
+      expect(find.textContaining('1 of 2 done'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

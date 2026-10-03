@@ -1,13 +1,11 @@
-import 'dart:convert';
+import 'package:flutter/widgets.dart';
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
-import '../../state/connection.dart';
-import '../../domain/session_command_handoff.dart';
-import '../app_theme.dart';
+import '../../domain/session_handoff.dart';
 import '../../l10n/app_localizations.dart';
+import '../../state/connection.dart';
+import '../../state/server_presentation.dart';
 import 'product_states.dart';
+import 'session_handoff_sheets.dart';
 
 /// A short-lived guard, never a persisted profile or a transport credential.
 class SessionNavigationScope {
@@ -33,100 +31,29 @@ class SessionNavigationScope {
   }
 }
 
-/// Previews a supported resume command, or metadata when attach is unavailable.
-/// Clipboard writes revalidate the same server location and session directory.
+/// "Continue on computer" for a conversation listed outside the chat
+/// (Related conversations, All conversations). The old handoff dialog
+/// (map `session-handoff-dialog`) merged into the one continue-on-computer
+/// sheet (slice-P3.11a): the same command, the same sheet and the same copy
+/// as the conversation menu, built from the folder the server reports for
+/// [sessionID] now. The sheet only copies; nothing is sent.
+///
+/// [projectID], when given, must still match the conversation's project;
+/// a conversation that moved meanwhile says so instead of offering a
+/// command for the old place.
 Future<void> showSessionHandoff(
   BuildContext context, {
   required ConnectionController controller,
   required String sessionID,
   required String? projectID,
 }) async {
-  final scope = SessionNavigationScope(controller);
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-  // Metadata fallback exports opaque identifiers. A supported command previews
-  // its validated server address and session directory separately below.
-  final identifier = RegExp(r'^[A-Za-z0-9_-]+$');
-  if (!identifier.hasMatch(sessionID) ||
-      projectID == null ||
-      !identifier.hasMatch(projectID)) {
-    showProductError(
-      context,
-      'A safe project reference is unavailable. Return and refresh the session.',
-    );
+  if (!controller.capabilities.cliSessionResume) {
+    showProductError(context, l10n.handoffUiComputerUnsupported);
     return;
   }
-  final reference = const JsonEncoder.withIndent('  ').convert({
-    'type': 'OpenCode session metadata reference',
-    'sessionID': sessionID,
-    'projectID': projectID,
-  });
+  final scope = SessionNavigationScope(controller);
   try {
-    scope.check(controller);
-    final initialRepository = await controller.prepareActionRepository();
-    scope.check(controller);
-    if (initialRepository == null) throw StateError('Session unavailable');
-    final initialSession = await initialRepository.getSessionDetails(sessionID);
-    scope.check(controller);
-    if (initialSession.id != sessionID ||
-        initialSession.projectID != projectID) {
-      throw StateError('Session project changed');
-    }
-    final handoff = initialRepository is SessionCommandHandoffGateway
-        ? (initialRepository as SessionCommandHandoffGateway)
-              .createSessionCommandHandoff(
-                sessionID: sessionID,
-                directory: initialSession.directory,
-                workspaceID: initialSession.workspaceID,
-                username: controller.profile?.username ?? '',
-              )
-        : null;
-    final command = handoff?.command;
-    if (!context.mounted) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          command == null ? l10n.handoffTitle : l10n.handoffCommandTitle,
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                command == null
-                    ? l10n.handoffCommandUnavailable
-                    : l10n.handoffCommandDisclosure,
-              ),
-              if (command == null) ...[
-                const SizedBox(height: 12),
-                Text(l10n.handoffDisclosure),
-              ],
-              const SizedBox(height: 16),
-              Text(
-                command ?? reference,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontFamily: AppTheme.monoFamily,
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              command == null ? l10n.handoffCopy : l10n.handoffCopyCommand,
-            ),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) return;
     scope.check(controller);
     final repository = await controller.prepareActionRepository();
     scope.check(controller);
@@ -134,48 +61,24 @@ Future<void> showSessionHandoff(
     final session = await repository.getSessionDetails(sessionID);
     scope.check(controller);
     if (session.id != sessionID ||
-        session.projectID != projectID ||
-        session.directory != initialSession.directory ||
-        session.workspaceID != initialSession.workspaceID) {
+        (projectID != null && session.projectID != projectID)) {
       throw StateError('Session location changed');
     }
-    if (command != null) {
-      if (repository is! SessionCommandHandoffGateway ||
-          (repository as SessionCommandHandoffGateway)
-                  .createSessionCommandHandoff(
-                    sessionID: sessionID,
-                    directory: session.directory,
-                    workspaceID: session.workspaceID,
-                    username: controller.profile?.username ?? '',
-                  )
-                  .command !=
-              command) {
-        throw StateError('Server command changed');
-      }
-    }
-    try {
-      await Clipboard.setData(ClipboardData(text: command ?? reference));
-    } catch (_) {
-      if (context.mounted) {
-        showProductError(context, l10n.handoffCopyFailed);
-      }
-      return;
-    }
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            command == null ? l10n.handoffCopied : l10n.handoffCommandCopied,
-          ),
-        ),
-      );
-    }
+    if (!context.mounted) return;
+    await showContinueOnComputerSheet(
+      context,
+      command: SessionResumeCommand.build(
+        // The CLI's name follows the server's product generation: copy
+        // only, the availability is the capability above.
+        cli: controller.sessionResumeCli,
+        sessionID: session.id,
+        directory: session.directory,
+        workspaceID: session.workspaceID,
+      ),
+    );
   } catch (_) {
     if (context.mounted) {
-      showProductError(
-        context,
-        'Session unavailable or location changed. Return and try again.',
-      );
+      showProductError(context, l10n.handoffUiComputerChanged);
     }
   }
 }

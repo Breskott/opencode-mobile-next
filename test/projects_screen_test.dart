@@ -7,9 +7,12 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/builtin/builtin_folders.dart';
+import 'package:opencode_mobile/builtin/builtin_linux.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/manage_project_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/global_sessions_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_folder_actions.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
@@ -168,6 +171,20 @@ class _FreshServerController extends _ProjectsController {
   final probed = <String>[];
   String? probeProblem;
 
+  /// Disposes and opens in order, so a test can see a new folder's cached
+  /// instance dropped before the folder is opened.
+  final folderEvents = <String>[];
+
+  @override
+  Future<void> disposeFolderInstance(String directory) async =>
+      folderEvents.add('dispose:$directory');
+
+  @override
+  Future<void> selectLocation({String? directory, String? workspace}) {
+    folderEvents.add('open:$directory');
+    return super.selectLocation(directory: directory, workspace: workspace);
+  }
+
   @override
   Future<String?> probeProjectFolder(String directory) async {
     probed.add(directory);
@@ -194,6 +211,8 @@ Future<_ProjectsController> _controller(_ProjectsRepository repository) async {
 }
 
 Widget _direct(ProjectsScreen screen, {double textScale = 1}) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   builder: (context, child) => MediaQuery(
     data: MediaQuery.of(
       context,
@@ -204,6 +223,8 @@ Widget _direct(ProjectsScreen screen, {double textScale = 1}) => MaterialApp(
 );
 
 Widget _host(ProjectsScreen screen) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   home: Builder(
     builder: (context) => Scaffold(
       body: Center(
@@ -218,6 +239,16 @@ Widget _host(ProjectsScreen screen) => MaterialApp(
     ),
   ),
 );
+
+// Kit fields rebuild validation and button state on the next frame; sheet
+// actions may need scrolling after the keyboard or an error changes the body.
+Future<void> _tapAction(WidgetTester tester, String key) async {
+  await tester.pump();
+  final action = find.byKey(ValueKey(key));
+  await tester.ensureVisible(action);
+  await tester.pumpAndSettle();
+  await tester.tap(action);
+}
 
 void main() {
   testWidgets(
@@ -245,42 +276,23 @@ void main() {
       await controller.refreshSessions();
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: WorkspaceScreen(controller: controller)),
         ),
       );
       await tester.pumpAndSettle();
+      // Nothing contradicts the pager: no "no conversations" text, and no
+      // Archived row until an archived conversation is actually known
+      // (work-tab cleanup item 4). The list pages itself, and archived
+      // conversations are a filter of All conversations (R3, R4): the
+      // older page loads, and Work grows no archived row of its own.
       expect(
         find.text('No recent conversations in loaded results'),
-        findsOneWidget,
+        findsNothing,
       );
-      await tester.scrollUntilVisible(
-        find.text('Archived conversations'),
-        180,
-        scrollable: find
-            .descendant(
-              of: find.byType(CustomScrollView),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      // Move the row above the docked quick-ask control before tapping it.
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -220));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Archived conversations'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('No archived conversations in loaded results'),
-        findsOneWidget,
-      );
-      await tester.tap(
-        find.byKey(const ValueKey('session-inventory-more')).hitTestable(),
-      );
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey('archived-session-archived')),
-        findsOneWidget,
-      );
-      expect(find.text('Older archived chat'), findsOneWidget);
+      expect(find.text('Archived conversations'), findsNothing);
+      expect(controller.archivedSessions(), isNotEmpty);
     },
   );
 
@@ -319,11 +331,8 @@ void main() {
     expect(find.byKey(const ValueKey('project-project-1')), findsOneWidget);
     expect(tester.takeException(), isNull);
 
-    // The create/open folder entries above the list push the row lower at
-    // large text; bring the rename control fully on screen before tapping.
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('rename-project-project-1')),
-    );
+    // Rename lives in the project's row menu (screen-work-4).
+    await tester.longPress(find.byKey(const ValueKey('project-project-1')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('rename-project-project-1')));
     await tester.pumpAndSettle();
@@ -335,6 +344,81 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('the project list leaves out the AI Team\'s own folders', (
+    tester,
+  ) async {
+    final repository = _ProjectsRepository()
+      ..projects = const [
+        WorkspaceProject(
+          id: 'team-refinery',
+          name: 'refinery',
+          directory: '/root/aiteam/city/.gc/worktrees/my-app/refinery',
+          worktrees: [],
+          updatedAt: 9,
+        ),
+        WorkspaceProject(
+          id: 'team-origin',
+          name: 'my-app.git',
+          directory: '/root/aiteam/origins/my-app.git',
+          worktrees: [],
+          updatedAt: 8,
+        ),
+        WorkspaceProject(
+          id: 'my-app',
+          name: 'my-app',
+          directory: '/root/projects/my-app',
+          worktrees: [
+            '/root/aiteam/city/.gc/worktrees/my-app/polecats/gastown.furiosa',
+          ],
+          updatedAt: 1,
+        ),
+      ];
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      _direct(ProjectsScreen(controller: controller, selectedProjectID: null)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('project-my-app')), findsOneWidget);
+    expect(find.byKey(const ValueKey('project-team-refinery')), findsNothing);
+    expect(find.byKey(const ValueKey('project-team-origin')), findsNothing);
+  });
+
+  testWidgets('R13: no refresh in the top bar, and Open projects sits one '
+      'section gap under the folder actions', (tester) async {
+    var loads = 0;
+    final repository = _ProjectsRepository()
+      ..projectsLoader = () async {
+        loads += 1;
+        return const [
+          WorkspaceProject(
+            id: 'my-app',
+            name: 'my-app',
+            directory: '/root/projects/my-app',
+            worktrees: [],
+            updatedAt: 1,
+          ),
+        ];
+      };
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      _direct(ProjectsScreen(controller: controller, selectedProjectID: null)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Refresh projects'), findsNothing);
+    final actions = tester.getRect(
+      find.byKey(const ValueKey('projects-open-folder')),
+    );
+    expect(
+      tester.getTopLeft(find.text('Open projects')).dy - actions.bottom,
+      moreOrLessEquals(22, epsilon: 0.01),
+    );
+    expect(loads, 1);
   });
 
   testWidgets('project search and reset-name use server project truth', (
@@ -360,13 +444,15 @@ void main() {
 
     await tester.enterText(find.byKey(const ValueKey('project-search')), '');
     await tester.pump();
+    await tester.longPress(find.byKey(const ValueKey('project-project-1')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('rename-project-project-1')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('project-name-input')),
       'app',
     );
-    await tester.tap(find.byKey(const ValueKey('confirm-rename-project')));
+    await _tapAction(tester, 'confirm-rename-project');
     await tester.pumpAndSettle();
 
     expect(repository.renamedID, 'project-1');
@@ -408,6 +494,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -453,6 +541,8 @@ void main() {
     };
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -473,20 +563,20 @@ void main() {
       findsNothing,
     );
 
+    // The project sheet switches and chooses where it runs; the project's
+    // tools live on the Project tab (Manage project merged there,
+    // slice-P3.11a), so the sheet has no Manage project row.
     await tester.tap(find.byKey(const ValueKey('current-project-entry')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('manage-project-entry')));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(ManageProjectScreen), findsOneWidget);
-    for (final key in const [
-      'switch-project-entry',
-      'worktrees-entry',
-      'managed-workspaces-entry',
-      'project-health-entry',
-    ]) {
-      expect(find.byKey(ValueKey(key)), findsOneWidget, reason: key);
-    }
+    expect(
+      find.byKey(const ValueKey('workspace-context-sheet')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('context-switch-project')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('manage-project-entry')), findsNothing);
   });
 
   testWidgets('the quick-ask pill stays reachable without scrolling', (
@@ -501,6 +591,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -530,6 +622,8 @@ void main() {
     };
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -537,8 +631,12 @@ void main() {
 
     final row = find.byKey(const ValueKey('session-dismiss-session-1'));
     expect(row, findsOneWidget);
-    // The trailing popup menu remains alongside the swipe affordance.
-    expect(find.byType(PopupMenuButton<String>), findsWidgets);
+    // The row's long-press menu remains alongside the swipe affordance.
+    await tester.longPress(find.text('Swipe target'));
+    await tester.pumpAndSettle();
+    expect(find.text('Archive'), findsOneWidget);
+    await tester.tapAt(const Offset(4, 4));
+    await tester.pumpAndSettle();
 
     // Swipe hides the row at once and offers Undo; nothing reaches the
     // server yet.
@@ -550,17 +648,20 @@ void main() {
     expect(api.deleteCalls, isEmpty);
 
     // Undo brings the row back untouched.
-    await tester.tap(find.widgetWithText(SnackBarAction, 'Undo'));
+    await tester.tap(find.text('Undo'));
     await tester.pumpAndSettle();
     expect(find.text('Swipe target'), findsOneWidget);
     expect(repository.archiveCalls, isEmpty);
 
-    // Letting the snackbar expire commits the archive.
+    // Letting the undo window expire commits the archive.
     await tester.drag(row, const Offset(-400, 0));
     await tester.pumpAndSettle();
     expect(find.text('Swipe target'), findsNothing);
     expect(find.text('Archived “Swipe target”'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 6));
+    // KitUndo's documented window is eight seconds (the old snackbar
+    // expired after six). The server is still untouched before it ends.
+    expect(repository.archiveCalls, isEmpty);
+    await tester.pump(KitUndo.window);
     await tester.pumpAndSettle();
     expect(find.text('Archived “Swipe target”'), findsNothing);
     expect(repository.archiveCalls, ['session-1']);
@@ -585,17 +686,23 @@ void main() {
     };
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Conversation actions'));
+    await tester.longPress(find.text('Menu target'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Delete'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     expect(find.text('Delete conversation?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.tap(
+      find.byKey(const ValueKey('workspace-delete-confirm-button')),
+    );
     await tester.pumpAndSettle();
 
     expect(api.deleteCalls, ['session-1']);
@@ -615,12 +722,14 @@ void main() {
     await controller.refreshSessions();
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
     await tester.pump();
     expect(find.text('Swipe target'), findsOneWidget);
-    expect(find.text('All conversations'), findsOneWidget);
+    expect(find.text('Search all conversations'), findsOneWidget);
     expect(find.byKey(const ValueKey('search-all-sessions')), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
     // The one remaining search action works while project discovery is pending.
@@ -684,6 +793,8 @@ void main() {
       await controller.refreshSessions();
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           routes: {
             '/chat/older-chat': (_) =>
                 const Scaffold(body: Text('Previous chat opened')),
@@ -695,7 +806,15 @@ void main() {
       expect(find.text('Project list unavailable'), findsOneWidget);
       expect(find.text('Swipe target'), findsOneWidget);
       expect(find.text('Try again'), findsOneWidget);
-      await tester.tap(find.text('Search all conversations'));
+      // One status line: Try again on it, Search all behind its menu.
+      await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(KitMenuPanel),
+          matching: find.text('Search all conversations'),
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Previous conversation'));
       await tester.pumpAndSettle();
@@ -727,6 +846,8 @@ void main() {
       await controller.refreshSessions();
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: WorkspaceScreen(controller: controller)),
         ),
       );
@@ -762,6 +883,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -806,6 +929,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -830,6 +955,8 @@ void main() {
     await controller.refreshSessions();
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         routes: {
           '/chat/session-1': (_) =>
               const Scaffold(body: Text('Previous chat opened')),
@@ -890,6 +1017,8 @@ void main() {
     await controller.store.setActiveId('server');
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         routes: {
           '/chat/older-chat': (_) =>
               const Scaffold(body: Text('Previous chat opened')),
@@ -934,17 +1063,20 @@ void main() {
     await controller.refreshSessions();
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Session list unavailable'), findsOneWidget);
+    // Said in words at the end of the list; the raw error is under Details.
+    expect(find.text('Could not load your conversations.'), findsOneWidget);
+    expect(find.textContaining('Session list unavailable'), findsNothing);
     fail = false;
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Load more conversations'));
-    await tester.pumpAndSettle();
+    // The list pages itself once it can: the older page loads.
     expect(find.text('Older conversation'), findsOneWidget);
     expect(controller.hasMoreSessions, isFalse);
   });
@@ -961,6 +1093,8 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           onGenerateRoute: (settings) => MaterialPageRoute<void>(
             settings: settings,
             builder: (_) => Scaffold(
@@ -982,7 +1116,7 @@ void main() {
         find.byKey(const ValueKey('open-folder-path')),
         '/root',
       );
-      await tester.tap(find.byKey(const ValueKey('open-folder-confirm')));
+      await _tapAction(tester, 'open-folder-confirm');
       await tester.pumpAndSettle();
       expect(find.textContaining('home folder'), findsWidgets);
       expect(controller.probed, isEmpty);
@@ -994,12 +1128,17 @@ void main() {
         find.byKey(const ValueKey('open-folder-path')),
         '/root/projects/missing',
       );
-      await tester.tap(find.byKey(const ValueKey('open-folder-confirm')));
+      await _tapAction(tester, 'open-folder-confirm');
       await tester.pumpAndSettle();
       expect(controller.probed, ['/root/projects/missing']);
       expect(
         find.text('That folder was not found on the server.'),
         findsOneWidget,
+      );
+      // This app cannot make folders on someone else's server.
+      expect(
+        find.byKey(const ValueKey('open-folder-create-missing')),
+        findsNothing,
       );
       expect(controller.locations, isEmpty);
 
@@ -1009,7 +1148,7 @@ void main() {
         find.byKey(const ValueKey('open-folder-path')),
         '/root/projects/app',
       );
-      await tester.tap(find.byKey(const ValueKey('open-folder-confirm')));
+      await _tapAction(tester, 'open-folder-confirm');
       await tester.pumpAndSettle();
       expect(controller.locations, [
         (directory: '/root/projects/app', workspace: null),
@@ -1049,6 +1188,8 @@ void main() {
     });
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -1060,7 +1201,7 @@ void main() {
       find.byKey(const ValueKey('new-folder-name')),
       '../etc',
     );
-    await tester.tap(find.byKey(const ValueKey('new-folder-create')));
+    await _tapAction(tester, 'new-folder-create');
     await tester.pumpAndSettle();
     expect(created, isEmpty);
     expect(find.textContaining('single folder name'), findsOneWidget);
@@ -1069,7 +1210,7 @@ void main() {
       find.byKey(const ValueKey('new-folder-name')),
       'my-app',
     );
-    await tester.tap(find.byKey(const ValueKey('new-folder-create')));
+    await _tapAction(tester, 'new-folder-create');
     await tester.pumpAndSettle();
     expect(created, ['my-app']);
     expect(controller.locations, [
@@ -1096,6 +1237,8 @@ void main() {
     addTearDown(() => ProjectFolderActions.canCreateOverride = null);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: WorkspaceScreen(controller: controller)),
       ),
     );
@@ -1108,4 +1251,213 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('cannot create folders'), findsOneWidget);
   });
+
+  group('OpenCode inside the app', () {
+    late _InAppLinux linux;
+    late _FreshServerController controller;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      linux = _InAppLinux();
+      ProjectFolderActions.builtinLinuxOverride = linux;
+      // Its fake Ubuntu has no files on disk: folders are listed through it.
+      ProjectFolderActions.folderListerOverride = BuiltinFolders.throughUbuntu(
+        linux,
+      ).list;
+      controller = _FreshServerController(
+        _InAppStore(prefs: await SharedPreferences.getInstance()),
+        _ProjectsRepository()..projects = const [],
+      );
+    });
+
+    tearDown(() {
+      ProjectFolderActions.builtinLinuxOverride = null;
+      ProjectFolderActions.folderListerOverride = null;
+      controller.dispose();
+    });
+
+    Future<void> openSheet(WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: WorkspaceScreen(controller: controller)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('workspace-open-folder')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('its projects are listed and open with one tap', (
+      tester,
+    ) async {
+      linux.projects.addAll(['demo', 'hello']);
+      await openSheet(tester);
+      expect(find.text('Open a project'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('in-app-project-demo')));
+      await tester.pumpAndSettle();
+      expect(controller.folderEvents, ['open:/root/projects/demo']);
+      expect(linux.created, isEmpty);
+      expect(controller.probed, isEmpty, reason: 'OpenCode is never probed');
+    });
+
+    testWidgets('a new project needs only a safe name', (tester) async {
+      await openSheet(tester);
+      expect(find.textContaining('No projects yet'), findsOneWidget);
+      for (final bad in const ['', '../etc', 'a/b', '.hidden']) {
+        await tester.enterText(
+          find.byKey(const ValueKey('in-app-new-project-name')),
+          bad,
+        );
+        await _tapAction(tester, 'in-app-new-project-create');
+        await tester.pumpAndSettle();
+        expect(linux.created, isEmpty, reason: bad);
+        expect(find.text('Open a project'), findsOneWidget, reason: bad);
+      }
+
+      await tester.enterText(
+        find.byKey(const ValueKey('in-app-new-project-name')),
+        'hello',
+      );
+      await _tapAction(tester, 'in-app-new-project-create');
+      await tester.pumpAndSettle();
+      expect(linux.created, ['/root/projects/hello']);
+      expect(
+        linux.scripts.last,
+        BuiltinLinux.createFolderScript('/root/projects/hello'),
+      );
+      // Checked and made through Ubuntu, so OpenCode has nothing stale to
+      // forget: it just opens it.
+      expect(controller.folderEvents, ['open:/root/projects/hello']);
+      expect(controller.probed, isEmpty);
+    });
+
+    testWidgets('a name that already exists just opens it', (tester) async {
+      linux.projects.add('hello');
+      await openSheet(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('in-app-new-project-name')),
+        'hello',
+      );
+      await _tapAction(tester, 'in-app-new-project-create');
+      await tester.pumpAndSettle();
+      expect(linux.created, isEmpty);
+      expect(controller.folderEvents, ['open:/root/projects/hello']);
+    });
+
+    testWidgets('a typed path that does not exist offers Create it', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await tester.tap(find.byKey(const ValueKey('in-app-enter-path')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('open-folder-path')),
+        '/root/projects/missing',
+      );
+      await _tapAction(tester, 'open-folder-confirm');
+      await tester.pumpAndSettle();
+      expect(find.text('That folder does not exist yet.'), findsOneWidget);
+      expect(controller.probed, isEmpty, reason: 'checked in Ubuntu only');
+      expect(controller.folderEvents, isEmpty);
+
+      await tester.tap(
+        find.byKey(const ValueKey('open-folder-create-missing')),
+      );
+      await tester.pumpAndSettle();
+      expect(linux.created, ['/root/projects/missing']);
+      expect(controller.folderEvents, ['open:/root/projects/missing']);
+    });
+
+    testWidgets('Create a new folder makes it inside the app', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: WorkspaceScreen(controller: controller)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('workspace-create-folder')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('new-folder-name')),
+        'app',
+      );
+      await _tapAction(tester, 'new-folder-create');
+      await tester.pumpAndSettle();
+      expect(linux.created, ['/root/projects/app']);
+      expect(controller.folderEvents, ['open:/root/projects/app']);
+    });
+  });
+}
+
+class _InAppStore extends ProfileStore {
+  _InAppStore({required super.prefs});
+
+  final profile = ServerProfile(
+    id: 'builtin',
+    name: 'This phone, built-in (OpenCode)',
+    baseUrl: BuiltinLinux.serverUrl,
+    username: BuiltinLinux.serverUsername,
+  );
+
+  @override
+  List<ServerProfile> get profiles => [profile];
+
+  @override
+  String? get activeId => profile.id;
+}
+
+/// Ubuntu inside the app, as far as project folders go: a set of folders
+/// under /root/projects that the scripts list, test and create.
+class _InAppLinux extends BuiltinLinux {
+  final projects = <String>[];
+  final extraFolders = <String>{};
+  final created = <String>[];
+  final scripts = <String>[];
+
+  @override
+  Future<BuiltinLinuxStatus> status() async => const BuiltinLinuxStatus(
+    installed: true,
+    phase: BuiltinLinuxPhase.ready,
+    serverRunning: true,
+  );
+
+  bool _exists(String path) =>
+      extraFolders.contains(path) ||
+      projects.any((name) => '${BuiltinLinux.projectsDir}/$name' == path);
+
+  @override
+  Future<BuiltinLinuxRunResult> run(
+    String script, {
+    Duration timeout = const Duration(minutes: 2),
+  }) async {
+    scripts.add(script);
+    if (script == BuiltinLinux.listProjectsScript()) {
+      return BuiltinLinuxRunResult(
+        exitCode: 0,
+        output: projects.map((name) => '$name\n').join(),
+      );
+    }
+    final test = RegExp(r"^test -d '(.*)'$").firstMatch(script);
+    if (test != null) {
+      return BuiltinLinuxRunResult(
+        exitCode: _exists(test[1]!) ? 0 : 1,
+        output: '',
+      );
+    }
+    final create = RegExp(r"dir='([^']*)'").firstMatch(script);
+    if (create != null) {
+      final path = create[1]!;
+      if (_exists(path)) {
+        return BuiltinLinuxRunResult(exitCode: 0, output: 'exists $path\n');
+      }
+      created.add(path);
+      extraFolders.add(path);
+      return BuiltinLinuxRunResult(exitCode: 0, output: 'created $path\n');
+    }
+    return const BuiltinLinuxRunResult(exitCode: 127, output: 'unexpected');
+  }
 }

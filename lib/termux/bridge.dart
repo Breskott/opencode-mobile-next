@@ -1,12 +1,17 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 
+import '../domain/phone_agent_context.dart';
 import '../domain/workspace_paths.dart';
 import '../platform/platform_capabilities.dart';
+import '../ui/kit/kit_redact.dart';
+import 'opencode_ubuntu_setup.dart';
+import 'team_scripts.dart';
 
 /// The runtime selected for the one app-managed Ubuntu server. It is separate
 /// from a server's reported version and survives restarts in the manager state.
 enum TermuxRuntime {
-  openCode1('opencode1', '1.18.29'),
+  openCode1('opencode1', '1.18.32'),
   openCode2('opencode2', '2.0.10');
 
   const TermuxRuntime(this.wireName, this.pinnedVersion);
@@ -62,7 +67,7 @@ class TermuxBridge {
   ///
   /// Keep this in step with the shell fallback in [_managerScript]
   /// (`requested_version="${2:-…}"`); a test asserts the two agree.
-  static const defaultOpenCodeVersion = '1.18.29';
+  static const defaultOpenCodeVersion = '1.18.32';
 
   /// The npm dist-tag, available only when a caller passes it to
   /// [installAndServeScript] on purpose. Nothing in the app does today: it
@@ -93,9 +98,192 @@ class TermuxBridge {
   static Future<bool> requestPermission() =>
       _invokeFlag('requestRunCommandPermission');
 
+  /// Android's question for Termux's "Run commands" permission, answered
+  /// in words: `granted`, `denied`, `permanentlyDenied` or `missing`.
+  /// Throws [MissingPluginException] on a runner without the method.
+  static Future<String?> requestRunCommandAccess() async {
+    final raw = await _channel.invokeMethod<Object?>('requestRunCommandAccess');
+    return raw is String ? raw : null;
+  }
+
   static Future<bool> openTermux() => _invokeFlag('openTermux');
 
   static Future<bool> openAppSettings() => _invokeFlag('openAppSettings');
+
+  /// Durable v2 setup. Scripts travel in memory only; metadata is allowlisted
+  /// and redacted before the native host stores it. A lost callback never
+  /// implies that the independently owned Termux process has stopped.
+  static Future<void> startSetup({
+    required String jobId,
+    required List<Map<String, Object?>> components,
+    Map<String, Map<String, String>> params = const {},
+    Map<String, String> texts = const {},
+  }) async {
+    if (!RegExp(r'^[A-Za-z0-9_-]{1,96}$').hasMatch(jobId)) {
+      throw const TermuxBridgeException(
+        'Invalid setup job id.',
+        code: 'invalid_setup',
+      );
+    }
+    final safeParams = <String, Map<String, String>>{};
+    const allowed = {
+      'opencode': {'runtime', 'version'},
+      '_job': {'first', 'adding'},
+    };
+    for (final entry in params.entries) {
+      final keys = allowed[entry.key];
+      if (keys == null || entry.value.keys.any((key) => !keys.contains(key))) {
+        throw const TermuxBridgeException(
+          'Unsupported setup parameter.',
+          code: 'invalid_setup',
+        );
+      }
+      for (final value in entry.value.entries) {
+        final valid = switch (value.key) {
+          'runtime' => {'opencode1', 'opencode2'}.contains(value.value),
+          'version' => RegExp(
+            r'^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$',
+          ).hasMatch(value.value),
+          'first' => {'0', '1'}.contains(value.value),
+          'adding' =>
+            value.value.isEmpty ||
+                RegExp(
+                  r'^[a-z][a-z0-9_-]*(?:,[a-z][a-z0-9_-]*)*$',
+                ).hasMatch(value.value),
+          _ => false,
+        };
+        if (!valid || KitRedact.containsSecret(value.value)) {
+          throw const TermuxBridgeException(
+            'Invalid setup parameter.',
+            code: 'invalid_setup',
+          );
+        }
+      }
+      safeParams[entry.key] = {
+        for (final value in entry.value.entries)
+          if (keys.contains(value.key)) value.key: KitRedact.text(value.value),
+      };
+    }
+    final safeComponents = <Map<String, Object?>>[];
+    for (final component in components) {
+      final id = component['id'];
+      if (id is! String || !RegExp(r'^[a-z][a-z0-9_-]{0,63}$').hasMatch(id)) {
+        throw const TermuxBridgeException(
+          'Invalid setup component.',
+          code: 'invalid_setup',
+        );
+      }
+      final native = component['native'] == true;
+      if (native && id != 'linux') {
+        throw const TermuxBridgeException(
+          'Unsupported native component.',
+          code: 'invalid_setup',
+        );
+      }
+      final data = component['data'];
+      safeComponents.add({
+        'id': id,
+        'script': native ? setupBaseScript : component['script'],
+        'native': native,
+        'step': component['step'] == true,
+        'skipped': component['skipped'] == true,
+        'weight': component['weight'],
+        'version': component['version'] is String
+            ? KitRedact.text(component['version'] as String)
+            : null,
+        'data': data is Map
+            ? {
+                for (final key in ['runtime', 'openCodeChanged'])
+                  if (data[key] is String)
+                    key: KitRedact.text(data[key] as String),
+              }
+            : <String, String>{},
+      });
+    }
+    await _setupInvoke<void>('startSetup', {
+      'jobId': jobId,
+      'components': safeComponents,
+      'params': safeParams,
+    });
+  }
+
+  static Future<String?> setupStatus() => _setupInvoke<String>('setupStatus');
+
+  static Future<void> cancelSetup() => _setupInvoke<void>('cancelSetup');
+
+  static Future<void> completeSetupStep({
+    required String jobId,
+    required String id,
+    required bool ok,
+    String? error,
+    String? version,
+  }) => _setupInvoke<void>('completeSetupStep', {
+    'jobId': jobId, 'id': id, 'ok': ok,
+    // Native persists fixed failure copy; arbitrary errors never cross here.
+    'version': version == null ? null : KitRedact.text(version),
+  });
+
+  static Future<bool> setupHostInstalled() async =>
+      await _setupInvoke<bool>('setupHostInstalled') ?? false;
+
+  /// Runs a check in the same app-managed Ubuntu container as the v1 manager.
+  static Future<TermuxCommandResult> setupRun(
+    String script, {
+    Duration timeout = const Duration(minutes: 2),
+  }) async {
+    final raw = await _setupInvoke<Map<Object?, Object?>>('setupRun', {
+      'script': script,
+      'timeoutMs': timeout.inMilliseconds,
+    });
+    return TermuxCommandResult.fromMap(
+      raw?.cast<String, dynamic>() ?? const {},
+    );
+  }
+
+  static Future<T?> _setupInvoke<T>(String method, [Object? args]) async {
+    if (!supported) throw _unsupported;
+    try {
+      return await _channel.invokeMethod<T>(method, args);
+    } on MissingPluginException {
+      throw _unsupported;
+    } on PlatformException catch (error) {
+      throw TermuxBridgeException(
+        KitRedact.text(error.message ?? 'Termux setup failed.'),
+        code: error.code,
+      );
+    }
+  }
+
+  /// Pinned Canonical base; leaves any unknown existing container untouched.
+  /// No credentials or generated manager scripts are written by this step.
+  @visibleForTesting
+  static const setupBaseScript = r'''set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+if command -v proot-distro >/dev/null 2>&1 &&
+   proot-distro login opencode-ubuntu -- /bin/true >/dev/null 2>&1; then exit 0; fi
+apt-get update
+apt-get -y --no-remove -o Dpkg::Options::="--force-confold" --fix-broken install
+apt-get -y --no-remove -o Dpkg::Options::="--force-confold" install proot-distro curl openssl
+case "$(uname -m)" in
+  aarch64|arm64) arch=arm64; sha=04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2 ;;
+  arm|armv7l|armv8l) arch=armhf; sha=991520b47f6586f38a78505cf016e300b6191bb8ff86a0723481ec23a37ab7f4 ;;
+  x86_64|amd64) arch=amd64; sha=c1e67ef7b17a6300e136118bd1dc04725009cb376c1aad10abcf8cd453628d58 ;;
+  *) exit 64 ;;
+esac
+mkdir -p "$HOME/.oc/setup-v2"
+archive="$HOME/.oc/setup-v2/ubuntu-base.tar.gz"
+root="$PREFIX/var/lib/proot-distro/installed-rootfs/opencode-ubuntu"
+# Never erase an existing container, including one from an interrupted setup.
+# A damaged extraction needs explicit recovery rather than risking projects.
+[ ! -d "$root" ] &&
+  [ ! -d "$PREFIX/var/lib/proot-distro/containers/opencode-ubuntu/rootfs" ] || exit 65
+curl --fail --location --retry 5 --connect-timeout 20 \
+  "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-$arch.tar.gz" -o "$archive"
+printf '%s  %s\n' "$sha" "$archive" | sha256sum -c -
+proot-distro install "$archive" --name opencode-ubuntu
+proot-distro login opencode-ubuntu -- /bin/true
+rm -f "$archive"
+''';
 
   /// Every one of these answers "did the platform do the thing?", so a
   /// missing channel is simply `false` — never an exception a caller that
@@ -269,7 +457,9 @@ LC_ALL=C timeout -k 1s 5s df -Pk '$termuxHome' | awk 'NR == 2 { printf "total_ki
     if (!toolVerbs.contains(verb)) {
       throw ArgumentError.value(verb, 'verb', 'Unknown tools verb.');
     }
-    if (!RegExp(r'^[A-Za-z0-9_]{0,32}$').hasMatch(argument)) {
+    // A name, a number or a comma-separated list of process IDs (one
+    // kind's stop): single-quoted below, so nothing here can escape it.
+    if (!RegExp(r'^[A-Za-z0-9_,]{0,400}$').hasMatch(argument)) {
       throw ArgumentError.value(argument, 'argument', 'Invalid argument.');
     }
     final launch = verb == 'storage-scan'
@@ -904,7 +1094,8 @@ echo 'bootstrap-state-cleared'
   static String _shellQuote(String value) =>
       "'${value.replaceAll("'", "'\"'\"'")}'";
 
-  static const _managerScript = r'''#!/data/data/com.termux/files/usr/bin/bash
+  static const _managerScript =
+      r'''#!/data/data/com.termux/files/usr/bin/bash
 set -Eeuo pipefail
 
 OC_DIR="$HOME/.oc"
@@ -1043,6 +1234,12 @@ if [ "$runtime" = opencode2 ] && [ "$data_mode" = isolated ]; then
     OPENCODE_DB=/root/.oc-opencode2/data/opencode/opencode.db
   )
 fi
+# Tell the agent where it runs: the Android phone, through the app
+# (lib/domain/phone_agent_context.dart). Never blocks the start.
+proot-distro login opencode-ubuntu -- sh -s >/dev/null 2>&1 <<'OC_PHONE_CONTEXT' || true
+''' +
+      PhoneAgentContext.termuxScript +
+      r'''OC_PHONE_CONTEXT
 "$manager" rotate-log server
 # The server never runs from the container's home folder: OpenCode would watch
 # and scan every dotfile and cache under it. Projects live in /root/projects,
@@ -1568,16 +1765,16 @@ install_ubuntu_base() {
   local filename checksum
   case "$(uname -m)" in
     aarch64|arm64)
-      filename='ubuntu-base-24.04.4-base-arm64.tar.gz'
-      checksum='04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2'
+      filename='ubuntu-base-24.04.5-base-arm64.tar.gz'
+      checksum='a91d5a93010193712d346d761372b7c9db6dfcf093893161c64ca107f05914f2'
       ;;
     arm|armv7l|armv8l)
-      filename='ubuntu-base-24.04.4-base-armhf.tar.gz'
-      checksum='991520b47f6586f38a78505cf016e300b6191bb8ff86a0723481ec23a37ab7f4'
+      filename='ubuntu-base-24.04.5-base-armhf.tar.gz'
+      checksum='4fcee4d278f1c5232e085a021a85e4c6cef3853557a88d98ff380b5e5d5841bb'
       ;;
     x86_64|amd64)
-      filename='ubuntu-base-24.04.4-base-amd64.tar.gz'
-      checksum='c1e67ef7b17a6300e136118bd1dc04725009cb376c1aad10abcf8cd453628d58'
+      filename='ubuntu-base-24.04.5-base-amd64.tar.gz'
+      checksum='e77b6f10c2590cef872b33ee9f635a0e3fd1f57fb074c0e52b5c7f56147a0c86'
       ;;
     *) fail_setup "Unsupported CPU architecture: $(uname -m)" "$CURRENT_PORT" ;;
   esac
@@ -1597,7 +1794,7 @@ install_ubuntu_base() {
       return
     fi
   fi
-  printf 'source=canonical-ubuntu-base-24.04.4\n' > "$UBUNTU_INSTALL_MARKER"
+  printf 'source=canonical-ubuntu-base-24.04.5\n' > "$UBUNTU_INSTALL_MARKER"
   proot-distro install "$archive" --name "$PROOT_NAME"
   rm -f "$archive"
   ubuntu_usable || fail_setup 'Ubuntu Base extraction did not create a usable container' "$CURRENT_PORT"
@@ -1608,90 +1805,9 @@ install_runtime() {
   local requested_version="$1"
   write_state installing_opencode 'Installing OpenCode' "$CURRENT_PORT"
   proot-distro login "$PROOT_NAME" -- env OC_REQUESTED_VERSION="$requested_version" OC_RUNTIME="$CURRENT_RUNTIME" bash -s <<'OC_PROOT_SETUP'
-set -Eeuo pipefail
-export DEBIAN_FRONTEND=noninteractive
-# Keep Node filesystem calls visible to PRoot's path translation.
-export UV_USE_IO_URING=0
-if ! command -v node >/dev/null 2>&1 ||
-   ! command -v npm >/dev/null 2>&1 ||
-   ! command -v curl >/dev/null 2>&1 ||
-   ! command -v git >/dev/null 2>&1 ||
-   ! command -v ssh >/dev/null 2>&1 ||
-   [ ! -s /etc/ssl/certs/ca-certificates.crt ]; then
-  apt-get update -y -o Acquire::Retries=5
-  # Skip optional distro tooling, but retain Git and SSH explicitly for coding
-  # projects: these must not depend on npm/git's recommended-package defaults.
-  apt-get install -y --no-install-recommends -o Acquire::Retries=5 \
-    nodejs npm curl ca-certificates git openssh-client
-fi
-export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--dns-result-order=ipv4first"
-# Project folders live here; the server starts in it instead of /root.
-mkdir -p /root/projects
-case "${OC_RUNTIME:-opencode1}" in
-  opencode1) command=opencode ;;
-  opencode2) command=opencode2 ;;
-  *) printf '[oc] ERROR: Unsupported managed runtime\n' >&2; exit 64 ;;
-esac
-install_opencode() {
-  local npm_cache
-  local install_code
-  local binary_package
-  local binary_suffix
-  local main_package=opencode-ai
-  case "$(node -p 'process.arch')" in
-    arm64) binary_suffix=linux-arm64 ;;
-    x64) binary_suffix=linux-x64-baseline ;;
-    *) printf '[oc] ERROR: OpenCode requires a 64-bit ARM or x64 Ubuntu environment\n' >&2; return 64 ;;
-  esac
-  local prefix_args=()
-  if [ "${OC_RUNTIME:-opencode1}" = opencode2 ]; then
-    # OpenCode 2 is published as @opencode/cli since 2026-09-07 (the old
-    # @opencode-ai/cli name stopped at a beta). Its package installs a command
-    # named `opencode` as well as `opencode2`, which collides with OpenCode 1's
-    # own `opencode` in the shared global prefix: npm refuses with EEXIST. So
-    # it gets a prefix of its own and only `opencode2` is linked, which keeps
-    # both runtimes installed side by side and switchable.
-    binary_package="@opencode/cli-$binary_suffix"
-    main_package=@opencode/cli
-    prefix_args=(--prefix "${OC2_PREFIX:-/opt/oc2}")
-    npm uninstall -g @opencode-ai/cli "@opencode-ai/cli-$binary_suffix" >/dev/null 2>&1 || true
-  else
-    binary_package="opencode-$binary_suffix"
-  fi
-  npm_cache=$(mktemp -d /tmp/opencode-mobile-npm.XXXXXX)
-  # Make the compatible Ubuntu binary a required package. Optional dependency
-  # failures must not silently leave postinstall trying a musl-only fallback.
-  # Keep upstream postinstall intact and visible so runtime errors are actionable.
-  if npm install -g \
-    ${prefix_args[@]+"${prefix_args[@]}"} \
-    --include=optional \
-    --foreground-scripts \
-    --cache "$npm_cache" \
-    --fetch-retries=5 \
-    --fetch-retry-mintimeout=10000 \
-    --fetch-retry-maxtimeout=60000 \
-    --fetch-timeout=300000 \
-    "$binary_package@$OC_REQUESTED_VERSION" \
-    "$main_package@$OC_REQUESTED_VERSION"; then
-    install_code=0
-    if [ "${OC_RUNTIME:-opencode1}" = opencode2 ]; then
-      # The overrides exist for the script tests only.
-      ln -sfn "${OC2_PREFIX:-/opt/oc2}/bin/opencode2" \
-        "${OC2_LINK_DIR:-$(npm prefix -g)/bin}/opencode2" || install_code=$?
-    fi
-  else
-    install_code=$?
-  fi
-  rm -rf -- "$npm_cache"
-  return "$install_code"
-}
-install_opencode || {
-  printf '[oc] OpenCode installation failed; retrying in 10 seconds\n'
-  sleep 10
-  install_opencode
-}
-"$command" --version
-OC_PROOT_SETUP
+''' +
+      openCodeUbuntuSetupScript +
+      r'''OC_PROOT_SETUP
 
 }
 
@@ -1704,7 +1820,7 @@ setup() {
   managed_runtime >/dev/null || return 64
   if [ -z "$requested_version" ]; then
     case "$CURRENT_RUNTIME" in
-      opencode1) requested_version=1.18.29 ;;
+      opencode1) requested_version=1.18.32 ;;
       opencode2) requested_version=2.0.10 ;;
     esac
   fi
@@ -1790,6 +1906,9 @@ start_server() {
     fail_setup 'Managed server did not start in an isolated process group' "$CURRENT_PORT"
   fi
   printf '%s %s\n' "$server_pid" "$server_start" > "$SERVER_PID"
+  # Which boot this server belongs to: after the phone restarts, a missing
+  # server is expected, not a crash.
+  cat /proc/sys/kernel/random/boot_id > "$SERVER_PID.boot" 2>/dev/null || true
 
   for _ in {1..30}; do
     if ! kill -0 "$server_pid" 2>/dev/null; then
@@ -1860,11 +1979,23 @@ recovery_arm() {
   local token="$1" pid='' saved_start=''
   [[ "$token" =~ ^[a-zA-Z0-9_-]{1,64}$ ]] || return 64
   [ ! -e "$LOCK_DIR" ] || return 75
-  [ "$(read_state_value phase)" = ready ] || return 75
   [ "$(read_state_value runner)" = proot ] || return 75
-  read -r pid saved_start < "$SERVER_PID" 2>/dev/null || return 75
-  [ -n "$saved_start" ] && [ "$(process_start "$pid" 2>/dev/null || true)" = "$saved_start" ] || return 75
-  server_process "$pid" "$(read_state_value port)" || return 75
+  CURRENT_PORT=$(read_state_value port)
+  [ "$CURRENT_PORT" = 4096 ] || return 75
+  case "$(read_state_value phase)" in
+    ready)
+      read -r pid saved_start < "$SERVER_PID" 2>/dev/null || return 75
+      [ -n "$saved_start" ] && [ "$(process_start "$pid" 2>/dev/null || true)" = "$saved_start" ] || return 75
+      server_process "$pid" "$CURRENT_PORT" || return 75
+      ;;
+    failed)
+      # A policy owner may first attach after a confirmed crash. This only
+      # arms a permit: restart still repeats the full locked preflight.
+      case "$(read_state_value failure_kind)" in crash|recovery) ;; *) return 75 ;; esac
+      recovery_server_absent || return 75
+      ;;
+    *) return 75 ;;
+  esac
   umask 077
   printf '%s' "$token" > "$RECOVERY_PERMIT.tmp.$$"
   mv "$RECOVERY_PERMIT.tmp.$$" "$RECOVERY_PERMIT"
@@ -1968,7 +2099,7 @@ switch_runtime() {
     require_setup_space
     local requested_version
     case "$target" in
-      opencode1) requested_version=1.18.29 ;;
+      opencode1) requested_version=1.18.32 ;;
       opencode2) requested_version=2.0.10 ;;
     esac
     install_runtime "$requested_version"
@@ -2108,8 +2239,15 @@ status() {
     if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null ||
        { [ -n "$saved_start" ] && [ "$saved_start" != "$current_start" ]; } ||
        ! server_process "$pid" "$(read_state_value port)"; then
-      write_state failed 'The local OpenCode server stopped unexpectedly' "$(read_state_value port)" proot '' '' '' crash
-      rm -f "$SERVER_PID" "$SERVER_LOG_ACTIVE"
+      local saved_boot current_boot
+      saved_boot=$(cat "$SERVER_PID.boot" 2>/dev/null || true)
+      current_boot=$(cat /proc/sys/kernel/random/boot_id 2>/dev/null || true)
+      if [ -n "$saved_boot" ] && [ -n "$current_boot" ] && [ "$saved_boot" != "$current_boot" ]; then
+        write_state stopped 'The phone restarted, so the local server stopped' "$(read_state_value port)"
+      else
+        write_state failed 'The local OpenCode server stopped unexpectedly' "$(read_state_value port)" proot '' '' '' crash
+      fi
+      rm -f "$SERVER_PID" "$SERVER_PID.boot" "$SERVER_LOG_ACTIVE"
       termux-wake-unlock >/dev/null 2>&1 || true
     elif [ -z "$saved_start" ] && [ -n "$current_start" ]; then
       printf '%s %s\n' "$pid" "$current_start" > "$SERVER_PID"
@@ -2227,7 +2365,7 @@ SCAN_LOG="$OC_DIR/storage-scan.log"
 SCAN_PID="$OC_DIR/storage-scan.pid"
 SCAN_STATE="$OC_DIR/storage-scan.state"
 SCAN_CANCEL="$OC_DIR/storage-scan.cancel"
-STOP_WAIT_SECONDS=5
+STOP_WAIT_SECONDS=${OC_STOP_WAIT_SECONDS:-5}
 ORPHAN_CPU_SECONDS=300
 mkdir -p "$OC_DIR"
 umask 077
@@ -2246,13 +2384,21 @@ rootfs_dir() {
 }
 
 json_str() {
-  local s="$1"
+  local quoted
+  json_str_into quoted "$1"
+  printf '%s' "$quoted"
+}
+
+# json_str_into <var> <text>: the same quoting without a subshell, for loops
+# over hundreds of rows.
+json_str_into() {
+  local s="$2"
   s=${s//\\/\\\\}
   s=${s//\"/\\\"}
   s=${s//$'\n'/\\n}
   s=${s//$'\t'/\\t}
   s=${s//$'\r'/\\r}
-  printf '"%s"' "$s"
+  printf -v "$1" '"%s"' "$s"
 }
 
 # Bytes used by a path (file or directory); 0 when absent.
@@ -2517,7 +2663,7 @@ storage_scan_body() {
     add_path "$i_team" "$dir"
   done
   if [ -n "$rootfs" ]; then
-    for dir in "$rootfs"/root/aiteam*; do
+    for dir in "$rootfs"/root/aiteam* "$rootfs/opt/aiteam"; do
       add_path "$i_team" "$dir"
     done
   fi
@@ -2743,11 +2889,11 @@ list_processes() {
     ps -eo pid=,ppid=,pcpu=,time=,rss=,etimes=,comm=,args= 2>/dev/null
     return
   fi
-  local dir pid stat rest fields comm ppid utime stime rss start uptime ticks=100 cpu elapsed args
+  local dir pid stat rest fields comm ppid utime stime rss start uptime ticks=100 cpu elapsed args cmd_parts pcpu
   uptime=$(cut -d' ' -f1 /proc/uptime 2>/dev/null); uptime=${uptime%%.*}
   for dir in /proc/[0-9]*; do
     pid=${dir#/proc/}
-    stat=$(cat "$dir/stat" 2>/dev/null) || continue
+    { IFS= read -r stat < "$dir/stat"; } 2>/dev/null || continue
     comm=${stat#*(}; comm=${comm%%)*}
     rest=${stat##*) }
     fields=($rest)
@@ -2755,11 +2901,14 @@ list_processes() {
     start=${fields[19]:-0}; rss=$(( ${fields[21]:-0} * 4 ))
     cpu=$(( (utime + stime) / ticks ))
     elapsed=$(( ${uptime:-0} - start / ticks )); [ "$elapsed" -ge 0 ] || elapsed=0
-    args=$(tr '\0' ' ' < "$dir/cmdline" 2>/dev/null); args=${args% }
+    cmd_parts=()
+    { mapfile -d "" -t cmd_parts < "$dir/cmdline"; } 2>/dev/null || true
+    args="${cmd_parts[*]:-}"
     [ -n "$args" ] || args=$comm
+    pcpu=0
+    [ "$elapsed" -le 0 ] || pcpu=$((cpu * 100 / elapsed))
     printf '%s %s %s %s %s %s %s %s\n' "$pid" "$ppid" \
-      "$( [ "$elapsed" -gt 0 ] && printf '%s' $((cpu * 100 / elapsed)) || printf 0 )" \
-      "$cpu" "$rss" "$elapsed" "$comm" "$args"
+      "$pcpu" "$cpu" "$rss" "$elapsed" "$comm" "$args"
   done
 }
 
@@ -2953,17 +3102,21 @@ proc_name() {
 }
 
 procs_json() {
-  local pid cwd first=1
+  local pid cwd first=1 jname jcmd jcwd jreason
   printf '['
   for pid in "${P_ORDER[@]}"; do
     cwd=$(readlink "/proc/$pid/cwd" 2>/dev/null || true)
     [ "$first" = 1 ] || printf ','
     first=0
+    json_str_into jname "$(proc_name "$pid")"
+    json_str_into jcmd "${P_ARGS[$pid]}"
+    json_str_into jcwd "$cwd"
+    if [ -z "${P_REASON[$pid]}" ]; then jreason=null; else jreason="\"${P_REASON[$pid]}\""; fi
     printf '{"pid":%s,"ppid":%s,"group":"%s","name":%s,"cmd":%s,"cpu_pct":%s,"cpu_seconds":%s,"rss_kb":%s,"elapsed_s":%s,"cwd":%s,"orphan_reason":%s,"protected":%s}' \
-      "$pid" "${P_PPID[$pid]}" "${P_GROUP[$pid]}" "$(json_str "$(proc_name "$pid")")" \
-      "$(json_str "${P_ARGS[$pid]}")" "${P_CPU[$pid]}" "${P_TIME[$pid]}" "${P_RSS[$pid]}" \
-      "${P_ELAPSED[$pid]}" "$(json_str "$cwd")" \
-      "$( [ -z "${P_REASON[$pid]}" ] && printf null || printf '"%s"' "${P_REASON[$pid]}" )" \
+      "$pid" "${P_PPID[$pid]}" "${P_GROUP[$pid]}" "$jname" \
+      "$jcmd" "${P_CPU[$pid]}" "${P_TIME[$pid]}" "${P_RSS[$pid]}" \
+      "${P_ELAPSED[$pid]}" "$jcwd" \
+      "$jreason" \
       "${P_PROTECTED[$pid]}"
   done
   printf ']\n'
@@ -2981,8 +3134,8 @@ procs_stop() {
   read_processes
   classify_processes
   case "$target" in
-    '') echo 'usage: procs-stop <pid|group>' >&2; return 64 ;;
-    *[!0-9]*)
+    '') echo 'usage: procs-stop <pid|pid,pid,...|group>' >&2; return 64 ;;
+    *[!0-9,]*)
       case "$target" in
         ai_team|build_daemons|orphans|other) ;;
         opencode_server) printf '{"stopped":[],"killed":[],"remaining":[],"refused":[{"pid":0,"reason":"protected_group"}]}\n'; return 0 ;;
@@ -2991,6 +3144,25 @@ procs_stop() {
       for pid in "${P_ORDER[@]}"; do
         [ "${P_GROUP[$pid]}" = "$target" ] || continue
         if [ "${P_PROTECTED[$pid]}" = true ]; then
+          [ "$first_refused" = 1 ] || refused+=','
+          first_refused=0
+          refused+="{\"pid\":$pid,\"reason\":\"protected\"}"
+        else
+          targets+=("$pid")
+        fi
+      done ;;
+    *,*)
+      # One kind's processes, confirmed together: each is checked again
+      # now, so a process that ended or became protected is refused.
+      local list=()
+      IFS=, read -r -a list <<<"$target"
+      for pid in "${list[@]}"; do
+        case "$pid" in ''|*[!0-9]*) continue ;; esac
+        if [ -z "${P_COMM[$pid]+x}" ]; then
+          [ "$first_refused" = 1 ] || refused+=','
+          first_refused=0
+          refused+="{\"pid\":$pid,\"reason\":\"not_found\"}"
+        elif [ "${P_PROTECTED[$pid]}" = true ]; then
           [ "$first_refused" = 1 ] || refused+=','
           first_refused=0
           refused+="{\"pid\":$pid,\"reason\":\"protected\"}"
@@ -3051,7 +3223,7 @@ case "${1:-}" in
   storage-clean) shift; storage_clean "$@" ;;
   procs-scan) procs_scan ;;
   procs-stop) shift; procs_stop "$@" ;;
-  *) echo "usage: $0 {storage-scan|storage-status|storage-summary|storage-cancel|storage-clean <category>|procs-scan|procs-stop <pid|group>}" >&2; exit 64 ;;
+  *) echo "usage: $0 {storage-scan|storage-status|storage-summary|storage-cancel|storage-clean <category>|procs-scan|procs-stop <pid|pid,pid,...|group>}" >&2; exit 64 ;;
 esac
 ''';
 
@@ -3059,14 +3231,15 @@ esac
   // AI Team on this phone (TEAM-301): ~/.oc/aiteam.sh next to manager.sh.
   // ---------------------------------------------------------------------------
 
-  /// Where the bridge writes [_aiteamScript].
+  /// Where the bridge writes `aiteam.sh` ([TermuxTeamScripts.aiteamScript]).
   static const aiteamPath = '$termuxHome/.oc/aiteam.sh';
 
-  /// Where an install dispatched with the bundled manifest writes it.
-  static const aiteamManifestPath = '$termuxHome/.oc/aiteam-manifest.json';
+  /// Where every dispatch writes the pinned downloads `aiteam.sh install`
+  /// reads ([TermuxTeamScripts.pinsFile]).
+  static const aiteamPinsPath = '$termuxHome/.oc/aiteam-pins';
 
-  /// The loopback supervisor every phone-hosted city listens on.
-  static const aiteamSupervisorUrl = 'http://127.0.0.1:8372';
+  /// The loopback supervisor of the Termux team.
+  static const aiteamSupervisorUrl = TermuxTeamScripts.supervisorUrl;
 
   /// The verbs `aiteam.sh` runs detached from the bridge shell (their
   /// progress is read back through `status`).
@@ -3078,7 +3251,7 @@ esac
     'remove',
   };
 
-  static String aiteamScriptForTesting() => _aiteamScript;
+  static String aiteamScriptForTesting() => TermuxTeamScripts.aiteamScript;
 
   static String aiteamStatusScript() => aiteamVerbScript('status');
 
@@ -3112,17 +3285,19 @@ for rootfs in "\$base/containers/opencode-ubuntu/rootfs" "\$base/installed-rootf
 done
 ''';
 
-  /// The bridge shell for one `aiteam.sh` verb: rewrites the script from
-  /// this build, then either runs the verb inline (`status`, `log`) or
-  /// queues it and launches it detached in its own process group, printing
-  /// `aiteam-started:<pid>` (or `aiteam-busy:<verb>:<pid>` with exit 75
-  /// while another verb still runs). [manifestJson], when given, is written
-  /// to [aiteamManifestPath] first so an install can read the bundled
-  /// manifest as a local path.
+  /// The bridge shell for one `aiteam.sh` verb: rewrites the script and the
+  /// pinned downloads from this build, then either runs the verb inline
+  /// (`status`, `log`) or queues it and launches it detached in its own
+  /// process group, printing `aiteam-started:<pid>` (or
+  /// `aiteam-busy:<verb>:<pid>` with exit 75 while another verb still runs).
+  ///
+  /// `init <project>` also gets the team's script for that project
+  /// ([TermuxTeamScripts.rigFile]; `--rig` names it), written to
+  /// `~/.oc/aiteam/rig.sh`. [pinsFile] replaces the pins in tests.
   static String aiteamVerbScript(
     String verb, {
     List<String> args = const [],
-    String? manifestJson,
+    @visibleForTesting String? pinsFile,
   }) {
     if (!RegExp(r'^[a-z]+$').hasMatch(verb)) {
       throw ArgumentError.value(verb, 'verb');
@@ -3132,20 +3307,36 @@ done
         throw ArgumentError.value(arg, 'args', 'Must be a single line.');
       }
     }
-    if (manifestJson != null &&
-        manifestJson.contains('OC_AITEAM_MANIFEST_EOF')) {
-      throw ArgumentError.value(manifestJson, 'manifestJson');
+    final pins = pinsFile ?? TermuxTeamScripts.pinsFile();
+    String? rig;
+    if (verb == 'init' && args.isNotEmpty) {
+      final project = TermuxTeamScripts.ubuntuPath(args.first);
+      final named = args.indexOf('--rig');
+      if (project.startsWith('/')) {
+        rig = TermuxTeamScripts.rigFile(
+          project,
+          rig: named >= 0 && named + 1 < args.length ? args[named + 1] : null,
+        );
+      }
+    }
+    for (final (text, end) in [
+      (pins, 'OC_AITEAM_PINS_EOF'),
+      (rig ?? '', 'OC_AITEAM_RIG_EOF'),
+    ]) {
+      if (text.split('\n').contains(end)) {
+        throw ArgumentError.value(text, 'script', 'Holds $end.');
+      }
     }
     final quotedArgs = args.map(_shellQuote).join(' ');
     final buffer = StringBuffer('''
 set -eu
 OC_DIR="\$HOME/.oc"
 AITEAM="\$OC_DIR/aiteam.sh"
-mkdir -p "\$OC_DIR"
+mkdir -p "\$OC_DIR/aiteam"
 umask 077
 aiteam_tmp="\$AITEAM.tmp.\$\$"
 cat > "\$aiteam_tmp" <<'OC_AITEAM_EOF'
-$_aiteamScript
+${TermuxTeamScripts.aiteamScript}
 OC_AITEAM_EOF
 chmod 700 "\$aiteam_tmp"
 mv "\$aiteam_tmp" "\$AITEAM"
@@ -3153,14 +3344,17 @@ mv "\$aiteam_tmp" "\$AITEAM"
   echo 'aiteam-install-failed' >&2
   exit 74
 }
+pins_tmp="\$OC_DIR/aiteam-pins.tmp.\$\$"
+cat > "\$pins_tmp" <<'OC_AITEAM_PINS_EOF'
+${pins}OC_AITEAM_PINS_EOF
+mv "\$pins_tmp" "\$OC_DIR/aiteam-pins"
 ''');
-    if (manifestJson != null) {
+    if (rig != null) {
       buffer.write('''
-manifest_tmp="\$OC_DIR/aiteam-manifest.json.tmp.\$\$"
-cat > "\$manifest_tmp" <<'OC_AITEAM_MANIFEST_EOF'
-$manifestJson
-OC_AITEAM_MANIFEST_EOF
-mv "\$manifest_tmp" "\$OC_DIR/aiteam-manifest.json"
+rig_tmp="\$OC_DIR/aiteam/rig.sh.tmp.\$\$"
+cat > "\$rig_tmp" <<'OC_AITEAM_RIG_EOF'
+${rig}OC_AITEAM_RIG_EOF
+mv "\$rig_tmp" "\$OC_DIR/aiteam/rig.sh"
 ''');
     }
     if (!aiteamDetachedVerbs.contains(verb)) {
@@ -3180,822 +3374,14 @@ echo "aiteam-started:\$!"
   static Future<String> aiteam(
     String verb, {
     List<String> args = const [],
-    String? manifestJson,
     Duration timeout = const Duration(seconds: 30),
   }) async {
     final result = await run(
-      aiteamVerbScript(verb, args: args, manifestJson: manifestJson),
+      aiteamVerbScript(verb, args: args),
       timeout: timeout,
     );
     return result.stdout;
   }
-
-  static const _aiteamScript = r'''#!/data/data/com.termux/files/usr/bin/bash
-# AI Team on this phone (TEAM-301): the managed Gas City runtime in the
-# hybrid native layout (docs/qa/ai-team/spike-phone-2026-09.md §3f).
-# gc, bd and dolt run natively in Termux; only the OpenCode agent process
-# runs inside the glibc rootfs through the `opencode` wrapper.
-#
-# Verbs: install <manifest> | init <project> [--city n] [--rig n] | start |
-#        stop | status | remove | log
-# Every verb except status/log appends to ~/.oc/aiteam/aiteam.log and to the
-# OpenCode install live output (~/.oc/install.log via manager.sh write-log).
-set -Eeuo pipefail
-
-OC_DIR="$HOME/.oc"
-AITEAM_DIR="$OC_DIR/aiteam"
-STATE="$AITEAM_DIR/state"
-CONFIG="$AITEAM_DIR/config"
-LOG="$AITEAM_DIR/aiteam.log"
-VERB_LOCK="$AITEAM_DIR/verb.lock"
-CITY_DIR="$AITEAM_DIR/city"
-CITY_TOML="$AITEAM_DIR/city.toml"
-SUPERVISOR_PID="$AITEAM_DIR/supervisor.pid"
-SUPERVISOR_LOG="$AITEAM_DIR/supervisor.log"
-REMOVED_FILE="$OC_DIR/aiteam-removed"
-MANAGER="$OC_DIR/manager.sh"
-PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
-BIN_DIR="$PREFIX/bin"
-# Downloads live under the AI Team directory, not $PREFIX/tmp: the Termux
-# service clears its tmp directory asynchronously when it starts, which
-# raced the first verb after a Termux restart and deleted the folder
-# between mkdir and the first copy.
-TMP_DIR="$AITEAM_DIR/tmp"
-GC_URL="${AITEAM_URL:-http://127.0.0.1:8372}"
-HEALTH_TIMEOUT="${AITEAM_HEALTH_TIMEOUT:-120}"
-DEFAULT_CITY=phone
-INSTALL_NAMES='gc bd dolt wrapper'
-
-# Process environment the Gas City pack scripts need on Android
-# (docs/qa/ai-team/spike-phone-2026-09.md §3h). The pack's `#!/bin/sh`
-# scripts must resolve to Termux's shell, not Android's mksh: mksh marks
-# `exec 9>lockfile` close-on-exec, so the Dolt start lock (`flock -n 9`)
-# fails with EBADF and `gc init` ends in "exec beads start: context deadline
-# exceeded". termux-exec's LD_PRELOAD rewrites the shebang. Its system-linker
-# exec mode must stay off, otherwise the pack resolves the gc helper as
-# /apex/.../linker64. GC_BIN pins the helper explicitly either way.
-export TERMUX_EXEC__SYSTEM_LINKER_EXEC__MODE=disable
-export GC_BIN="$BIN_DIR/gc"
-if [ -z "${LD_PRELOAD:-}" ] && [ "$(uname -o 2>/dev/null)" = Android ]; then
-  for lib in "$PREFIX/lib/libtermux-exec.so" "$PREFIX/lib/libtermux-exec-ld-preload.so"; do
-    if [ -f "$lib" ]; then
-      export LD_PRELOAD="$lib"
-      break
-    fi
-  done
-fi
-
-# ---------------------------------------------------------------------------
-# state, config, logging
-# ---------------------------------------------------------------------------
-
-read_kv() {
-  local file="$1" key="$2" name value
-  [ -f "$file" ] || return 0
-  while IFS='=' read -r name value; do
-    if [ "$name" = "$key" ]; then
-      printf '%s' "$value"
-      return 0
-    fi
-  done < "$file"
-}
-
-state_value() { read_kv "$STATE" "$1"; }
-config_value() { read_kv "$CONFIG" "$1"; }
-
-# write_state <phase> <message> [supervisor_pid]
-# Phases: idle downloading verifying installing-packages installed
-# creating-city city-ready starting ready stopping stopped removing
-# failed:<reason>. Keeps the verb name and pid of the running verb.
-write_state() {
-  local phase="$1" message="$2" supervisor="${3-$(state_value supervisor_pid)}"
-  mkdir -p "$AITEAM_DIR"
-  local tmp="$STATE.tmp.$$"
-  printf 'phase=%s\nmessage=%s\nverb=%s\npid=%s\nsupervisor_pid=%s\nupdated_at=%s\n' \
-    "$phase" "$message" "${CURRENT_VERB:-}" "${CURRENT_PID:-}" "$supervisor" "$(date +%s)" > "$tmp"
-  mv "$tmp" "$STATE"
-}
-
-set_config() {
-  local key="$1" value="$2"
-  mkdir -p "$AITEAM_DIR"
-  local tmp="$CONFIG.tmp.$$"
-  { [ ! -f "$CONFIG" ] || grep -v "^$key=" "$CONFIG" || true; printf '%s=%s\n' "$key" "$value"; } > "$tmp"
-  mv "$tmp" "$CONFIG"
-}
-
-log() { printf '[aiteam] %s\n' "$*"; }
-
-# The managed Ubuntu rootfs, in either proot-distro layout; empty when it is
-# not installed.
-rootfs_dir() {
-  local base="$PREFIX/var/lib/proot-distro"
-  if [ -d "$base/containers/opencode-ubuntu/rootfs" ]; then
-    printf '%s' "$base/containers/opencode-ubuntu/rootfs"
-  elif [ -d "$base/installed-rootfs/opencode-ubuntu" ]; then
-    printf '%s' "$base/installed-rootfs/opencode-ubuntu"
-  else
-    return 1
-  fi
-}
-
-# A project the app names by its path inside the rootfs (/root/projects/x)
-# lives natively under the rootfs directory; resolve it there when the
-# path does not exist on the Termux side.
-resolve_project() {
-  local project="$1" rootfs
-  if [ ! -d "$project" ]; then
-    case "$project" in
-      /root/*)
-        if rootfs=$(rootfs_dir) && [ -d "$rootfs$project" ]; then
-          project="$rootfs$project"
-        fi ;;
-    esac
-  fi
-  printf '%s' "$project"
-}
-
-live_sink() {
-  if [ -x "$MANAGER" ]; then "$MANAGER" write-log install; else cat > /dev/null; fi
-}
-
-# Mirror everything a verb prints into aiteam.log and the OpenCode install
-# live output so the setup screen's panel shows it.
-attach_log() {
-  mkdir -p "$AITEAM_DIR"
-  touch "$LOG"
-  chmod 600 "$LOG"
-  # fd 3 keeps the original stdout (the terminal when run by hand over SSH;
-  # /dev/null when the bridge dispatched the verb).
-  exec 3>&1
-  exec > >(tee -a "$LOG" >(live_sink) >&3) 2>&1
-}
-
-fail() {
-  local reason="$1"
-  shift
-  local message="${*:-$reason}"
-  trap - ERR
-  write_state "failed:$reason" "$message"
-  log "ERROR: $message"
-  release_verb_lock
-  exit "${FAIL_CODE:-1}"
-}
-
-on_verb_error() {
-  local code=$?
-  local line="${BASH_LINENO[0]:-unknown}"
-  local stage
-  stage=$(state_value message)
-  [ -n "$stage" ] || stage="$CURRENT_VERB"
-  fail "${CURRENT_VERB}-error" "$stage failed (exit $code; line $line)"
-}
-
-# ---------------------------------------------------------------------------
-# processes
-# ---------------------------------------------------------------------------
-
-process_group() {
-  local stat_line
-  stat_line=$(cat "/proc/$1/stat" 2>/dev/null) || return 1
-  stat_line=${stat_line##*) }
-  set -- $stat_line
-  printf '%s' "${3:-}"
-}
-
-process_alive() {
-  case "${1:-}" in ''|*[!0-9]*) return 1 ;; esac
-  kill -0 "$1" 2>/dev/null
-}
-
-process_cmdline() { { tr '\0' ' ' < "/proc/$1/cmdline"; } 2>/dev/null || true; }
-
-# Long verbs own their process group so a Stop can take the whole tree down
-# and so the bridge's shell exiting never takes the verb with it.
-ensure_isolated() {
-  [ "$(process_group "$$" 2>/dev/null || true)" = "$$" ] && return 0
-  [ "${AITEAM_ISOLATED:-}" != 1 ] || return 0
-  AITEAM_ISOLATED=1 exec setsid "${BASH:-bash}" "$0" "$@"
-}
-
-claim_verb_lock() {
-  mkdir -p "$AITEAM_DIR"
-  if mkdir "$VERB_LOCK" 2>/dev/null; then
-    printf '%s %s\n' "$$" "$CURRENT_VERB" > "$VERB_LOCK/owner"
-    return 0
-  fi
-  local owner_pid='' owner_verb=''
-  [ -f "$VERB_LOCK/owner" ] && { read -r owner_pid owner_verb < "$VERB_LOCK/owner" || true; }
-  if process_alive "$owner_pid"; then
-    echo "aiteam-busy:${owner_verb:-unknown}:$owner_pid" >&2
-    return 75
-  fi
-  rm -rf "$VERB_LOCK"
-  mkdir "$VERB_LOCK" 2>/dev/null || return 75
-  printf '%s %s\n' "$$" "$CURRENT_VERB" > "$VERB_LOCK/owner"
-}
-
-release_verb_lock() {
-  local owner_pid=''
-  [ -f "$VERB_LOCK/owner" ] && { read -r owner_pid _ < "$VERB_LOCK/owner" || true; }
-  [ "$owner_pid" = "$$" ] || return 0
-  rm -f "$VERB_LOCK/owner"
-  rmdir "$VERB_LOCK" 2>/dev/null || true
-}
-
-begin_verb() {
-  CURRENT_VERB="$1"
-  CURRENT_PID="$$"
-  claim_verb_lock || exit 75
-  trap on_verb_error ERR
-  trap release_verb_lock EXIT
-  attach_log
-  write_state queued "Starting $CURRENT_VERB"
-  printf '\n[aiteam] %s started at %s\n' "$CURRENT_VERB" "$(date -Iseconds 2>/dev/null || date)"
-}
-
-# queue <verb>: the dispatcher's synchronous gate. Refuses while another
-# verb owns the lock (aiteam-busy:<verb>:<pid>, exit 75), else records the
-# queued verb so a status read between dispatch and the verb's first write
-# already reports it as busy.
-queue_verb() {
-  local next="${1:-}"
-  case "$next" in install|init|start|stop|remove) ;; *) exit 64 ;; esac
-  local owner_pid='' owner_verb=''
-  [ -f "$VERB_LOCK/owner" ] && { read -r owner_pid owner_verb < "$VERB_LOCK/owner" || true; }
-  if process_alive "$owner_pid"; then
-    echo "aiteam-busy:${owner_verb:-unknown}:$owner_pid" >&2
-    exit 75
-  fi
-  CURRENT_VERB="$next" CURRENT_PID='' write_state queued "Queued $next"
-  echo "aiteam-queued:$next"
-}
-
-verb_alive() {
-  process_alive "${1:-}" || return 1
-  case "$(process_cmdline "$1")" in *aiteam*) return 0 ;; esac
-  return 1
-}
-
-supervisor_alive() {
-  local pid
-  pid=$(cat "$SUPERVISOR_PID" 2>/dev/null || true)
-  process_alive "$pid" || return 1
-  case "$(process_cmdline "$pid")" in *supervisor*) return 0 ;; esac
-  return 1
-}
-
-health_json() {
-  local city="${1:-}"
-  if [ -n "$city" ]; then
-    curl -s -m 5 "$GC_URL/v0/city/$city/health" 2>/dev/null || true
-  else
-    curl -s -m 5 "$GC_URL/health" 2>/dev/null || true
-  fi
-}
-
-health_status() {
-  local body
-  body=$(health_json "$@")
-  [ -n "$body" ] || { printf unreachable; return 0; }
-  printf '%s' "$body" | sed -n 's/.*"status":"\([^"]*\)".*/\1/p' | head -1
-}
-
-# ---------------------------------------------------------------------------
-# manifest (schema 1, tool/host/aiteam-manifest-*.json)
-# ---------------------------------------------------------------------------
-
-manifest_str() { printf '%s' "$MANIFEST" | sed -n "s/.*\"$1\":\"\([^\"]*\)\".*/\1/p" | head -1; }
-
-manifest_file_field() {
-  local object
-  object=$(printf '%s' "$MANIFEST" | sed -n "s/.*\"$1\":{\([^}]*\)}.*/\1/p" | head -1)
-  case "$2" in
-    bytes) printf '%s' "$object" | sed -n 's/.*"bytes":\([0-9]*\).*/\1/p' | head -1 ;;
-    *) printf '%s' "$object" | sed -n "s/.*\"$2\":\"\([^\"]*\)\".*/\1/p" | head -1 ;;
-  esac
-}
-
-manifest_packages() {
-  printf '%s' "$MANIFEST" | sed -n 's/.*"termux_packages":\[\([^]]*\)\].*/\1/p' | tr -d '"' | tr ',' ' '
-}
-
-install_target() {
-  case "$1" in
-    gc) printf '%s' "$BIN_DIR/gc" ;;
-    bd) printf '%s' "$BIN_DIR/bd" ;;
-    dolt) printf '%s' "$BIN_DIR/dolt" ;;
-    wrapper) printf '%s' "$BIN_DIR/opencode" ;;
-    *) return 64 ;;
-  esac
-}
-
-fetch() {
-  local source="$1" target="$2"
-  case "$source" in
-    http://*|https://*|file://*)
-      curl -fsSL --retry 3 --retry-delay 2 -o "$target" "$source" ;;
-    *) cp "$source" "$target" ;;
-  esac
-}
-
-# ---------------------------------------------------------------------------
-# install <manifest-path-or-url>
-# ---------------------------------------------------------------------------
-
-# free_mb <path>: megabytes free on the filesystem holding <path> (0 when unknown).
-free_mb() {
-  local kb
-  # No df or awk on PATH (test fixtures, odd Termux installs): do not guess,
-  # let the install proceed and fail honestly later.
-  command -v df >/dev/null 2>&1 && command -v awk >/dev/null 2>&1 || { echo 999999; return 0; }
-  kb=$(df -Pk "$1" 2>/dev/null | awk 'NR==2 {print $4}') || kb=''
-  case "$kb" in ''|*[!0-9]*) echo 999999 ;; *) echo $((kb / 1024)) ;; esac
-}
-
-# require_space <mb> <what>: fail no-space with an honest sentence when the
-# phone cannot hold <what>. Dolt and gc misbehave in confusing ways on a
-# full disk (a start that only "times out"), so check up front.
-require_space() {
-  local need="$1" what="$2" have
-  have=$(free_mb "$HOME")
-  [ "$have" -ge "$need" ] || fail no-space "Not enough space on this phone for $what: $have MB free, $need MB needed"
-}
-
-install_runtime() {
-  local source="${1:-}"
-  [ -n "$source" ] || { echo 'usage: aiteam.sh install <manifest-path-or-url>' >&2; exit 64; }
-  begin_verb install
-  rm -f "$REMOVED_FILE"
-  local arch="${AITEAM_ARCH:-$(uname -m)}"
-  local want_arch
-  case "$arch" in
-    aarch64|arm64) want_arch=arm64 ;;
-    x86_64|amd64) want_arch=x86_64 ;;
-    *) fail unsupported-arch "AI Team needs a 64-bit phone (this one reports $arch)" ;;
-  esac
-  require_space 900 'the AI Team runtime (three binaries plus packages)'
-  write_state downloading 'Downloading the AI Team manifest'
-  mkdir -p "$TMP_DIR"
-  chmod 700 "$TMP_DIR"
-  local manifest_path="$TMP_DIR/manifest.json"
-  fetch "$source" "$manifest_path" || fail manifest-download "Could not download the manifest from $source"
-  MANIFEST=$(tr -d '\n\r\t ' < "$manifest_path")
-  local base_url
-  base_url=$(manifest_str base_url)
-  [ -n "$base_url" ] || fail manifest-invalid 'The manifest has no base_url'
-  [ "$(manifest_str arch)" = "$want_arch" ] || fail manifest-invalid "The manifest is not a $want_arch build"
-
-  local name file bytes sha target
-  for name in $INSTALL_NAMES; do
-    file=$(manifest_file_field "$name" name)
-    bytes=$(manifest_file_field "$name" bytes)
-    sha=$(manifest_file_field "$name" sha256)
-    [ -n "$file" ] && [ -n "$bytes" ] && [ -n "$sha" ] ||
-      fail manifest-invalid "The manifest has no complete entry for $name"
-    write_state downloading "Downloading $file ($((bytes / 1048576)) MB)"
-    log "downloading $base_url$file"
-    fetch "$base_url$file" "$TMP_DIR/$file.part" ||
-      fail download "Could not download $file"
-  done
-
-  write_state verifying 'Verifying checksums'
-  for name in $INSTALL_NAMES; do
-    file=$(manifest_file_field "$name" name)
-    bytes=$(manifest_file_field "$name" bytes)
-    sha=$(manifest_file_field "$name" sha256)
-    local actual_bytes actual_sha
-    actual_bytes=$(wc -c < "$TMP_DIR/$file.part" | tr -d ' ')
-    actual_sha=$(sha256sum "$TMP_DIR/$file.part" | cut -d' ' -f1)
-    if [ "$actual_bytes" != "$bytes" ] || [ "$actual_sha" != "$sha" ]; then
-      rm -f "$TMP_DIR"/*.part
-      echo "checksum-mismatch $name"
-      FAIL_CODE=65 fail "checksum-mismatch $name" \
-        "$file did not match the pinned checksum (got $actual_bytes bytes, $actual_sha)"
-    fi
-    log "verified $file ($bytes bytes)"
-  done
-
-  write_state installing-packages 'Installing Termux packages'
-  local packages
-  packages=$(manifest_packages)
-  [ -n "$packages" ] || packages='libicu git jq tmux'
-  # shellcheck disable=SC2086
-  pkg install -y $packages || fail packages "Could not install Termux packages: $packages"
-
-  write_state installing-packages 'Installing gc, bd, dolt and the opencode wrapper'
-  mkdir -p "$BIN_DIR"
-  for name in $INSTALL_NAMES; do
-    file=$(manifest_file_field "$name" name)
-    target=$(install_target "$name")
-    chmod 755 "$TMP_DIR/$file.part"
-    mv -f "$TMP_DIR/$file.part" "$target"
-    log "installed $target"
-  done
-  rm -rf "$TMP_DIR"
-
-  # Dolt and beads refuse to run without an identity and a maintainer role.
-  dolt config --global --add user.name 'OpenCode Mobile' >/dev/null 2>&1 || true
-  dolt config --global --add user.email 'aiteam@opencode-mobile.local' >/dev/null 2>&1 || true
-  git config --global user.name >/dev/null 2>&1 || git config --global user.name 'OpenCode Mobile'
-  git config --global user.email >/dev/null 2>&1 || git config --global user.email 'aiteam@opencode-mobile.local'
-  git config --global beads.role maintainer
-
-  set_config gascity "$(manifest_str gascity)"
-  set_config beads "$(manifest_str beads)"
-  set_config dolt "$(manifest_str dolt)"
-  set_config pack "$(manifest_str pack)"
-  set_config manifest "$source"
-  set_config installed_at "$(date +%s)"
-  write_state installed 'AI Team runtime installed' ''
-  log 'install finished'
-}
-
-# ---------------------------------------------------------------------------
-# init <project-path> [--city name] [--rig name]
-# ---------------------------------------------------------------------------
-
-safe_name() {
-  printf '%s' "$1" | tr -c 'A-Za-z0-9_-' '-' | sed 's/^-*//; s/-*$//' | cut -c1-40
-}
-
-init_city() {
-  local project='' city='' rig=''
-  while [ $# -gt 0 ]; do
-    case "$1" in
-      --city) city="${2:-}"; shift 2 ;;
-      --rig) rig="${2:-}"; shift 2 ;;
-      *) project="$1"; shift ;;
-    esac
-  done
-  [ -n "$project" ] || { echo 'usage: aiteam.sh init <project-path> [--city name] [--rig name]' >&2; exit 64; }
-  begin_verb init
-  require_space 150 'the team city and its store'
-  [ -x "$BIN_DIR/gc" ] || fail not-installed 'Install the AI Team runtime first'
-  project=${project%/}
-  project=$(resolve_project "$project")
-  [ -d "$project" ] || fail project-missing "Project folder not found: $project"
-  git -C "$project" rev-parse --git-dir >/dev/null 2>&1 ||
-    fail project-not-git "$project is not a git repository"
-  [ -n "$city" ] || city="$DEFAULT_CITY"
-  [ -n "$rig" ] || rig=$(safe_name "$(basename "$project")")
-  [ -n "$rig" ] || rig=project
-  city=$(safe_name "$city")
-  [ -n "$city" ] || city="$DEFAULT_CITY"
-
-  write_state creating-city "Preparing $project"
-  local origin
-  if ! origin=$(git -C "$project" remote get-url origin 2>/dev/null); then
-    origin="$project.git"
-    log "no origin remote; creating a bare origin at $origin"
-    [ -d "$origin" ] || git init -q --bare "$origin"
-    git -C "$project" remote add origin "$origin"
-    git -C "$project" push -q origin HEAD || fail project-push "Could not push $project to its new origin"
-  fi
-
-  write_state creating-city "Creating city $city"
-  local pack pack_source pack_version
-  pack=$(config_value pack)
-  pack_source='https://github.com/gastownhall/gascity-packs/tree/main/gastown'
-  pack_version=${pack#gastown@}
-  [ -n "$pack_version" ] && [ "$pack_version" != "$pack" ] || pack_version='sha:33d3a430a67d1782ad364556cb566bdb01d0afe3'
-  cat > "$CITY_TOML" <<CITY_TOML_EOF
-[workspace]
-provider = "opencode"
-install_agent_hooks = ["opencode"]
-[providers]
-[providers.opencode]
-base = "builtin:opencode"
-ready_delay_ms = 0
-[defaults]
-[defaults.rig]
-[defaults.rig.imports]
-[defaults.rig.imports.gastown]
-source = "$pack_source"
-version = "$pack_version"
-[daemon]
-patrol_interval = "30s"
-max_restarts = 5
-restart_window = "1h"
-shutdown_timeout = "5s"
-CITY_TOML_EOF
-  # A city from an earlier attempt may still have its supervisor or its
-  # managed Dolt server up; take them down before the directory goes, or
-  # the new city inherits a server whose store was just deleted.
-  stop_supervisor
-  rm -rf "$CITY_DIR"
-  (cd "$AITEAM_DIR" && gc init --file ./city.toml --name "$city" --no-start city) ||
-    fail gc-init 'gc init failed'
-  [ -d "$CITY_DIR" ] || fail gc-init 'gc init produced no city directory'
-  # A project that still carries the bead store of an earlier city (a team
-  # removed and set up again) cannot be initialised over or adopted: that
-  # store's Dolt database lived in the old city. It is moved aside, never
-  # deleted, and the rig starts fresh.
-  if [ -e "$project/.beads" ]; then
-    local aside="$project/.beads.before-aiteam-$(date +%Y%m%d-%H%M%S)"
-    log "project already has a bead store from an earlier city; keeping it at $aside"
-    mv "$project/.beads" "$aside" || fail gc-rig-add 'could not move the old bead store aside'
-  fi
-  (cd "$CITY_DIR" && gc rig add "$project" --name "$rig") || fail gc-rig-add 'gc rig add failed'
-  (cd "$CITY_DIR" && gc import install) || fail gc-import 'gc import install failed'
-  # Lean profile: one polecat, the patrol agents suspended; must come after
-  # `gc import install` or the pack's agents are not known yet.
-  printf '\n[[patches.agent]]\nname = "gastown.mayor"\nsuspended = true\n[[patches.agent]]\nname = "gastown.deacon"\nsuspended = true\n[[patches.agent]]\nname = "gastown.boot"\nsuspended = true\n[[patches.agent]]\nname = "gastown.witness"\ndir = "%s"\nsuspended = true\n[[patches.agent]]\nname = "gastown.polecat"\ndir = "%s"\nmax_active_sessions = 1\n' \
-    "$rig" "$rig" >> "$CITY_DIR/city.toml"
-  # The Termux exec shim does not rewrite `#!/usr/bin/env bash`.
-  sed -i 's|#!/usr/bin/env bash|#!/bin/bash|' "$HOME"/.gc/cache/repos/*/gastown/assets/scripts/*.sh 2>/dev/null || true
-
-  set_config city "$city"
-  set_config rig "$rig"
-  set_config project "$project"
-  set_config origin "$origin"
-  set_config city_dir "$CITY_DIR"
-  write_state city-ready "City $city created for $rig" ''
-  log "init finished: city=$city rig=$rig project=$project"
-}
-
-# ---------------------------------------------------------------------------
-# start / stop
-# ---------------------------------------------------------------------------
-
-start_runtime() {
-  begin_verb start
-  [ -x "$BIN_DIR/gc" ] || fail not-installed 'Install the AI Team runtime first'
-  local city
-  city=$(config_value city)
-  [ -n "$city" ] && [ -d "$CITY_DIR" ] || fail no-city 'Create a city first (init)'
-  write_state starting 'Starting the AI Team supervisor'
-  termux-wake-lock >/dev/null 2>&1 || true
-  if supervisor_alive && [ "$(health_status "$city")" = ok ]; then
-    write_state ready 'AI Team is running on this phone'
-    log 'supervisor already running'
-    return 0
-  fi
-  rm -f "$SUPERVISOR_PID"
-  # Its own session with none of this verb's descriptors (the log tee's
-  # pipe included): the verb exits, the supervisor keeps running (§3f).
-  (
-    cd "$CITY_DIR"
-    for fd in /proc/$BASHPID/fd/*; do
-      fd=${fd##*/}
-      [ "$fd" -gt 2 ] 2>/dev/null && eval "exec $fd>&-"
-    done
-    nohup setsid gc supervisor run > "$SUPERVISOR_LOG" 2>&1 < /dev/null &
-    echo $! > "$SUPERVISOR_PID"
-  )
-  local pid
-  pid=$(cat "$SUPERVISOR_PID")
-  log "supervisor pid $pid"
-  local waited=0
-  while [ "$(health_status)" != ok ]; do
-    process_alive "$pid" || fail supervisor-exited 'The supervisor exited before it became healthy'
-    [ "$waited" -lt 30 ] || break
-    sleep 1
-    waited=$((waited + 1))
-  done
-  write_state starting "Registering city $city" "$pid"
-  (cd "$CITY_DIR" && timeout -k 5 60 gc register "$CITY_DIR" --name "$city" --yes) ||
-    log 'gc register did not confirm; waiting on health anyway'
-  write_state starting "Waiting for city $city" "$pid"
-  waited=0
-  while [ "$(health_status "$city")" != ok ]; do
-    process_alive "$pid" || fail supervisor-exited 'The supervisor exited before the city became healthy'
-    [ "$waited" -lt "$HEALTH_TIMEOUT" ] || fail health-timeout "City $city did not become healthy in $HEALTH_TIMEOUT s"
-    sleep 1
-    waited=$((waited + 1))
-  done
-  write_state ready 'AI Team is running on this phone' "$pid"
-  log "city $city healthy"
-}
-
-# Kills every process of ours that works inside the city (gc/bd/dolt agents,
-# proot-distro logins for agent worktrees) — never anything else.
-kill_city_processes() {
-  local city_dir="$1" signal="$2" entry pid cwd cmdline
-  [ -n "$city_dir" ] || return 0
-  for entry in /proc/[0-9]*; do
-    pid=${entry#/proc/}
-    [ "$pid" != "$$" ] && [ "$pid" != "$PPID" ] || continue
-    cwd=$(readlink "$entry/cwd" 2>/dev/null || true)
-    cmdline=$(process_cmdline "$pid")
-    case "$cwd" in
-      "$city_dir"|"$city_dir"/*) ;;
-      *) case "$cmdline" in
-           *"$city_dir"*) ;;
-           *) continue ;;
-         esac ;;
-    esac
-    case "$cmdline" in
-      *aiteam.sh*) continue ;;
-    esac
-    log "$signal pid $pid (${cmdline:0:60})"
-    kill "-$signal" "$pid" 2>/dev/null || true
-  done
-}
-
-stop_supervisor() {
-  local pid
-  pid=$(cat "$SUPERVISOR_PID" 2>/dev/null || true)
-  if [ -d "$CITY_DIR" ]; then
-    (cd "$CITY_DIR" && timeout -k 5 30 gc supervisor stop) >/dev/null 2>&1 || true
-  fi
-  if process_alive "$pid"; then
-    kill -TERM "$pid" 2>/dev/null || true
-    local waited=0
-    while process_alive "$pid" && [ "$waited" -lt 10 ]; do sleep 1; waited=$((waited + 1)); done
-    process_alive "$pid" && kill -KILL "$pid" 2>/dev/null || true
-  fi
-  kill_city_processes "$CITY_DIR" TERM
-  sleep 1
-  kill_city_processes "$CITY_DIR" KILL
-  rm -f "$SUPERVISOR_PID"
-}
-
-stop_runtime() {
-  begin_verb stop
-  write_state stopping 'Stopping the AI Team'
-  stop_supervisor
-  termux-wake-unlock >/dev/null 2>&1 || true
-  write_state stopped 'AI Team stopped' ''
-  log 'stopped'
-}
-
-# ---------------------------------------------------------------------------
-# remove: binaries, ~/.oc/aiteam (city + Dolt store), ~/.gc, ~/.dolt.
-# Never the project folder or its bare origin.
-# ---------------------------------------------------------------------------
-
-remove_runtime() {
-  begin_verb remove
-  write_state removing 'Removing the AI Team from this phone'
-  stop_supervisor
-  termux-wake-unlock >/dev/null 2>&1 || true
-  local removed=() path
-  for path in "$BIN_DIR/gc" "$BIN_DIR/bd" "$BIN_DIR/dolt"; do
-    [ -e "$path" ] || continue
-    rm -f "$path"
-    removed+=("$path")
-  done
-  if [ -f "$BIN_DIR/opencode" ] && grep -q 'AI Team' "$BIN_DIR/opencode" 2>/dev/null; then
-    rm -f "$BIN_DIR/opencode"
-    removed+=("$BIN_DIR/opencode")
-  fi
-  for path in "$HOME/.gc" "$HOME/.dolt" "$TMP_DIR" "$PREFIX/tmp/aiteam"; do
-    [ -e "$path" ] || continue
-    rm -rf "$path"
-    removed+=("$path")
-  done
-  # Printed before the log itself goes: aiteam.log lives in $AITEAM_DIR.
-  for path in "${removed[@]}" "$AITEAM_DIR"; do log "removed $path"; done
-  rm -rf "$AITEAM_DIR"
-  removed+=("$AITEAM_DIR")
-  printf '%s\n' "${removed[@]}" > "$REMOVED_FILE"
-  trap - EXIT
-  exit 0
-}
-
-# ---------------------------------------------------------------------------
-# status (JSON) and log
-# ---------------------------------------------------------------------------
-
-json_str() {
-  local value="$1"
-  value=${value//\\/\\\\}
-  value=${value//\"/\\\"}
-  value=${value//$'\n'/\\n}
-  value=${value//$'\t'/\\t}
-  value=${value//$'\r'/}
-  printf '"%s"' "$value"
-}
-
-json_or_null() { if [ -n "$1" ]; then json_str "$1"; else printf null; fi; }
-json_num_or_null() { case "$1" in ''|*[!0-9]*) printf null ;; *) printf '%s' "$1" ;; esac; }
-
-binary_version() {
-  local binary="$1" out
-  [ -x "$BIN_DIR/$binary" ] || return 0
-  # gc, bd and dolt all answer `<binary> version` (gc rejects --version).
-  # Never let a probe failure abort a status read under set -e.
-  out=$(timeout 5 "$BIN_DIR/$binary" version 2>/dev/null | grep -v '^time=' | head -1 || true)
-  printf '%s' "$out" | sed 's/^[a-z]* version //; s/ (.*$//' | tr -d '\r\n' || true
-  return 0
-}
-
-agents_count() {
-  local city="$1" body
-  [ -n "$city" ] || return 0
-  body=$(curl -s -m 5 "$GC_URL/v0/city/$city/agents" 2>/dev/null || true)
-  [ -n "$body" ] || return 0
-  if command -v jq >/dev/null 2>&1; then
-    printf '%s' "$body" | jq -r '(.items // []) | length' 2>/dev/null || true
-  else
-    printf '%s' "$body" | grep -o '"id":' | wc -l | tr -d ' '
-  fi
-}
-
-status_json() {
-  local phase message verb pid supervisor city rig project url installed
-  phase=$(state_value phase)
-  message=$(state_value message)
-  verb=$(state_value verb)
-  pid=$(state_value pid)
-  supervisor=$(state_value supervisor_pid)
-  city=$(config_value city)
-  rig=$(config_value rig)
-  project=$(config_value project)
-  local last_error='' busy=false killed=false health='' agents='' gc_v bd_v dolt_v
-  gc_v=$(binary_version gc)
-  bd_v=$(binary_version bd)
-  dolt_v=$(binary_version dolt)
-  if [ -x "$BIN_DIR/gc" ] && [ -x "$BIN_DIR/bd" ] && [ -x "$BIN_DIR/dolt" ]; then installed=true; else installed=false; fi
-  [ -n "$phase" ] || phase=idle
-  if verb_alive "$pid"; then
-    busy=true
-  else
-    pid=''
-  fi
-  local age=0 updated
-  updated=$(state_value updated_at)
-  case "$updated" in ''|*[!0-9]*) ;; *) age=$(( $(date +%s) - updated )) ;; esac
-  local state_phase="$phase" reason=''
-  case "$phase" in
-    failed:*)
-      reason=${phase#failed:}
-      last_error="${message:-$reason}"
-      phase=failed ;;
-    queued)
-      # Dispatched but not yet running: busy for a grace period, then a
-      # launch that never happened.
-      if [ "$busy" = false ] && [ "$age" -lt 30 ]; then busy=true; fi
-      if [ "$busy" = false ]; then
-        last_error="$verb never started"
-        CURRENT_VERB="$verb" CURRENT_PID='' write_state "failed:interrupted" "$last_error"
-        phase=failed; reason=interrupted; state_phase=failed:interrupted
-      fi ;;
-    downloading|verifying|installing-packages|creating-city|starting|stopping|removing)
-      # A verb's pid can be momentarily unobservable between two of its own
-      # writes (the detached shell re-execs under setsid); only a phase that
-      # has sat unowned for a while is a real interruption.
-      if [ "$busy" = false ] && [ "$age" -lt 10 ]; then busy=true; fi
-      if [ "$busy" = false ]; then
-        last_error="$verb stopped unexpectedly while $phase"
-        CURRENT_VERB="$verb" CURRENT_PID='' write_state "failed:interrupted" "$last_error"
-        phase=failed; reason=interrupted; state_phase=failed:interrupted
-      fi ;;
-  esac
-  local supervisor_live=false
-  if supervisor_alive; then supervisor_live=true; else supervisor=''; fi
-  if [ "$phase" = ready ]; then
-    if [ "$supervisor_live" = true ]; then
-      health=$(health_status "$city")
-      agents=$(agents_count "$city")
-    else
-      killed=true
-      health=unreachable
-    fi
-  elif [ "$supervisor_live" = true ]; then
-    health=$(health_status "$city")
-  fi
-  local removed='[]'
-  if [ -f "$REMOVED_FILE" ]; then
-    removed='['
-    local first=1 line
-    while IFS= read -r line; do
-      [ -n "$line" ] || continue
-      [ "$first" = 1 ] || removed="$removed,"
-      removed="$removed$(json_str "$line")"
-      first=0
-    done < "$REMOVED_FILE"
-    removed="$removed]"
-  fi
-  printf '{"installed":%s,"versions":{"gc":%s,"bd":%s,"dolt":%s},"phase":%s,"state_phase":%s,"reason":%s,"message":%s,"verb":%s,"busy":%s,"pid":%s,"supervisor_pid":%s,"health":%s,"agents":%s,"city":%s,"rig":%s,"project":%s,"url":%s,"last_error":%s,"killed_by_android":%s,"removed":%s,"log":%s,"updated_at":%s}\n' \
-    "$installed" "$(json_or_null "$gc_v")" "$(json_or_null "$bd_v")" "$(json_or_null "$dolt_v")" \
-    "$(json_str "$phase")" "$(json_str "$state_phase")" "$(json_or_null "$reason")" \
-    "$(json_or_null "$message")" "$(json_or_null "$verb")" "$busy" \
-    "$(json_num_or_null "$pid")" "$(json_num_or_null "$supervisor")" "$(json_or_null "$health")" \
-    "$(json_num_or_null "$agents")" "$(json_or_null "$city")" "$(json_or_null "$rig")" \
-    "$(json_or_null "$project")" "$(json_str "$GC_URL")" "$(json_or_null "$last_error")" "$killed" \
-    "$removed" "$(json_str "$LOG")" "$(json_num_or_null "$(state_value updated_at)")"
-}
-
-verb="${1:-status}"
-case "$verb" in
-  install|init|start|stop|remove)
-    ensure_isolated "$@"
-    shift
-    case "$verb" in
-      install) install_runtime "$@" ;;
-      init) init_city "$@" ;;
-      start) start_runtime ;;
-      stop) stop_runtime ;;
-      remove) remove_runtime ;;
-    esac ;;
-  queue) shift; queue_verb "$@" ;;
-  status) status_json ;;
-  log) printf '%s\n' "$LOG" ;;
-  *) echo "usage: $0 {install|init|start|stop|status|remove|log}" >&2; exit 64 ;;
-esac
-''';
 
   // ---------------------------------------------------------------------------
   // Claude Code on this phone: ~/.oc/claude.sh next to manager.sh. It installs
@@ -4021,7 +3407,10 @@ esac
   /// https://nodejs.org/dist/v24.21.0/SHASUMS256.txt (read 2026-09-19).
   /// x64 exists so the x86_64 emulator can run the same flow as a phone.
   ///
-  /// Paseo is pinned exactly: lib/paseo/ was verified against daemon 0.8.0.
+  /// Paseo is pinned exactly: lib/paseo/ was verified against daemon 0.8.0
+  /// and, with a real Claude Opus 5.5 turn, 0.9.1 (the first release whose
+  /// Claude model list includes Opus 5.5; 2026-09-23). The 0.9.2 patch is
+  /// reviewed for compatible protocol changes; device validation is pending.
   /// Claude Code is not pinned; the installed version is recorded in the
   /// script's state and shown in the app.
   static const localAgentsPins = <String, String>{
@@ -4031,7 +3420,7 @@ esac
         '724282c3b43aec998aa9527380465b45d229e021b58035f5f4f63095eabfe5d5',
     'node_sha256_x64':
         '6e1db87ef58b8819e5d5402eff1536491b18edd8eb7bee5ef7897876e88dc5ff',
-    'paseo_version': '0.8.0',
+    'paseo_version': '0.9.2',
   };
 
   /// The verbs `claude.sh` runs detached from the bridge shell (their
@@ -4211,6 +3600,8 @@ PORT="${OC_CLAUDE_PORT:-6767}"
 LISTEN="127.0.0.1:$PORT"
 HEALTH_URL="http://127.0.0.1:$PORT/api/health"
 HEALTH_TIMEOUT="${OC_CLAUDE_HEALTH_TIMEOUT:-120}"
+# One poll tick in seconds; the timeouts above count ticks. Tests shorten it.
+POLL="${OC_CLAUDE_POLL:-1}"
 LOG_MAX_BYTES=2097152
 # Measured on the emulator: Node 216 MB + packages 773 MB, plus npm's cache
 # and the download while it unpacks.
@@ -4558,17 +3949,21 @@ printf "%s" "$2" > "$1/.oc-node-version"
 
 # npm_install <package spec>: into the app's own prefix, re-runnable. The
 # cache is temporary: npm's persistent cache would keep hundreds of MB.
+# npm 11 runs only the install scripts it is told to allow: exactly this
+# package's own, by name ("@scope/pkg@1.2.3" -> "@scope/pkg").
 npm_install() {
-  local spec="$1" output="$CLAUDE_DIR/npm-last.log" code=0
+  local spec="$1" output="$CLAUDE_DIR/npm-last.log" code=0 name="$1"
+  case "$spec" in ?*@*) name="${spec%@*}" ;; esac
   in_ubuntu env NODE_OPTIONS=--dns-result-order=ipv4first bash -c '
 set -u
 cache=$(mktemp -d /tmp/oc-claude-npm.XXXXXX)
 npm install -g --no-fund --no-audit --prefix "$1" --cache "$cache" \
+  --allow-scripts="$3" \
   --fetch-retries=5 --fetch-retry-mintimeout=10000 --fetch-timeout=300000 "$2"
 code=$?
 rm -rf -- "$cache"
 exit "$code"
-' oc-npm "$AGENTS_DIR" "$spec" > "$output" 2>&1 || code=$?
+' oc-npm "$AGENTS_DIR" "$spec" "$name" > "$output" 2>&1 || code=$?
   cat "$output"
   if [ "$code" -ne 0 ]; then
     # A native module that had to compile and could not. No toolchain is
@@ -4729,14 +4124,17 @@ stop_daemon_processes() {
     else
       kill -TERM "$pid" 2>/dev/null || true
     fi
-    while process_alive "$pid" && [ "$waited" -lt 10 ]; do sleep 1; waited=$((waited + 1)); done
+    while process_alive "$pid" && [ "$waited" -lt 10 ]; do sleep "$POLL"; waited=$((waited + 1)); done
     if process_alive "$pid"; then
       kill -KILL -- "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
     fi
   fi
   # Whatever of ours outlived its runner (Android kills selectively): only a
   # process started with this daemon's own home qualifies.
-  for entry in /proc/[0-9]*; do
+  # One grep narrows the scan to processes that mention the home at all, so
+  # the per-process reading below does not fork once per process on the phone.
+  for entry in $(grep -alF -e "$PASEO_HOME" /proc/[0-9]*/cmdline 2>/dev/null || true); do
+    entry=${entry%/cmdline}
     other=${entry#/proc/}
     [ "$other" != "$$" ] || continue
     cmdline=$(process_cmdline "$other")
@@ -4788,7 +4186,7 @@ start_daemon() {
       stop_daemon_processes
       fail timeout "Claude Code did not answer on $LISTEN within $HEALTH_TIMEOUT seconds"
     fi
-    sleep 1
+    sleep "$POLL"
     waited=$((waited + 1))
   done
   write_state ready 'Claude Code is running on this phone'
@@ -4984,7 +4382,7 @@ status_report() {
     # daemon must answer its health check right now.
     if daemon_alive; then
       pid=$(daemon_pid)
-      if healthy || { sleep 1; healthy; }; then
+      if healthy || { sleep "$POLL"; healthy; }; then
         phase=ready
         message='Claude Code is running on this phone'
       else

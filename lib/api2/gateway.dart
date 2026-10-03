@@ -16,6 +16,7 @@ import 'gateway_events.dart';
 import 'gateway_mappers.dart';
 import 'models.dart';
 import 'transport.dart';
+import '../diagnostics/perf_trace.dart';
 
 /// The OpenCode 2 side of the domain gateway.
 ///
@@ -307,6 +308,16 @@ class Api2Gateway
     String id, {
     String? cursor,
     int limit = 100,
+  }) => PerfTrace.span(
+    'messages.page',
+    () => _messagePage(id, cursor: cursor, limit: limit),
+    attrs: {'older': cursor != null, 'limit': limit},
+  );
+
+  Future<ServerPage<MessageWithParts>> _messagePage(
+    String id, {
+    String? cursor,
+    required int limit,
   }) => _run(() async {
     final page = await client.messages(
       id,
@@ -314,9 +325,14 @@ class Api2Gateway
       order: 'desc',
       cursor: cursor,
     );
+    // OpenCode 2 returns a cursor even on the last page; a short page is
+    // the end. Otherwise every new conversation offered "Load older
+    // messages" for nothing.
+    final more =
+        page.nextCursor?.isNotEmpty == true && page.data.length >= limit;
     return ServerPage(
       items: mapApi2Messages(id, page.data.reversed.toList()),
-      nextCursor: page.nextCursor?.isNotEmpty == true ? page.nextCursor : null,
+      nextCursor: more ? page.nextCursor : null,
     );
   });
 
@@ -361,6 +377,23 @@ class Api2Gateway
     List<PromptAttachment> attachments = const [],
     List<PromptAgentMention> agentMentions = const [],
     PromptDelivery? delivery,
+  }) => PromptTrace.track(
+    sessionID,
+    () => _promptAsync(
+      sessionID,
+      text: text,
+      attachments: attachments,
+      agentMentions: agentMentions,
+      delivery: delivery,
+    ),
+  );
+
+  Future<void> _promptAsync(
+    String sessionID, {
+    required String text,
+    required List<PromptAttachment> attachments,
+    required List<PromptAgentMention> agentMentions,
+    required PromptDelivery? delivery,
   }) => _run(() async {
     await _requireResolvedRevert(sessionID);
     await client.prompt(

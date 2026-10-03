@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
@@ -5,7 +7,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
-import 'package:opencode_mobile/ui/widgets/question_options.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _QuestionRepository extends ProductRepository {
@@ -53,6 +55,9 @@ PendingQuestion _question({required bool multiple}) => PendingQuestion(
   ],
 );
 
+/// The question's answer sheet, as the chat's question card opens it
+/// (P4.2a: an Inbox row now lands on that card instead of a sheet over the
+/// list; the sheet itself is unchanged).
 Future<void> _openQuestion(
   WidgetTester tester,
   PendingQuestion question,
@@ -60,32 +65,28 @@ Future<void> _openQuestion(
 ) async {
   final controller = await _controller(repository);
   addTearDown(controller.dispose);
-  await tester.pumpWidget(
-    MaterialApp(home: ActivityScreen(controller: controller)),
+  await tester.pumpWidget(const MaterialApp(home: Scaffold()));
+  await controller.refreshPendingQuestions();
+  unawaited(
+    showQuestionSheet(
+      tester.element(find.byType(Scaffold)),
+      controller,
+      controller.questions[question.id]!,
+    ),
   );
-  await tester.pumpAndSettle();
-  final row = find.text(question.prompts.single.title);
-  for (
-    var attempt = 0;
-    attempt < 20 && row.hitTestable().evaluate().isEmpty;
-    attempt++
-  ) {
-    await tester.drag(find.byType(ListView), const Offset(0, -140));
-    await tester.pump();
-  }
-  expect(row.hitTestable(), findsOneWidget);
-  await tester.tap(row.hitTestable());
   await tester.pumpAndSettle();
 }
 
-/// Labels of the option rows currently drawn as selected — the sheet and
-/// the inline chat card share [QuestionOptionRow], so this is the one truth.
+/// Labels of the choice rows currently drawn as selected — the sheet and
+/// the request card share the kit's [KitChoiceRow], so this is the one truth.
 List<String> _selectedLabels(WidgetTester tester) => [
-  for (final row in tester.widgetList<QuestionOptionRow>(
-    find.byType(QuestionOptionRow),
+  for (final row in tester.widgetList<KitChoiceRow<String>>(
+    find.byType(KitChoiceRow<String>),
   ))
-    if (row.selected) row.choice.label,
+    if (row.selected) row.choice.title,
 ];
+
+final _send = find.byKey(const ValueKey('question-send'));
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -105,7 +106,9 @@ void main() {
       await tester.pump();
       expect(_selectedLabels(tester), isEmpty);
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Send answers'));
+      await tester.ensureVisible(_send);
+      await tester.pumpAndSettle();
+      await tester.tap(_send);
       await tester.pumpAndSettle();
       expect(repository.answeredID, question.id);
       expect(repository.answers, [
@@ -130,7 +133,9 @@ void main() {
       expect(customField.controller!.text, isEmpty);
       expect(_selectedLabels(tester), ['Production']);
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Send answers'));
+      await tester.ensureVisible(_send);
+      await tester.pumpAndSettle();
+      await tester.tap(_send);
       await tester.pumpAndSettle();
       expect(repository.answers, [
         ['Production'],
@@ -148,7 +153,9 @@ void main() {
     await tester.tap(find.text('Staging'));
     await tester.enterText(find.byType(TextField), 'Canary');
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, 'Send answers'));
+    await tester.ensureVisible(_send);
+    await tester.pumpAndSettle();
+    await tester.tap(_send);
     await tester.pumpAndSettle();
 
     expect(repository.answers, [
@@ -172,9 +179,12 @@ void main() {
       addTearDown(tester.view.resetViewInsets);
       await tester.pump();
 
-      expect(find.bySemanticsLabel(RegExp('Your answer')), findsOneWidget);
-      expect(find.widgetWithText(TextButton, 'Dismiss'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Send answers'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp('Or write your own answer')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('question-dismiss')), findsOneWidget);
+      expect(_send, findsOneWidget);
       expect(tester.takeException(), isNull);
     } finally {
       semantics.dispose();

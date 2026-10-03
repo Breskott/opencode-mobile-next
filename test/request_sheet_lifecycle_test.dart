@@ -7,6 +7,7 @@ import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,7 +36,7 @@ class _Repository extends ProductRepository {
   @override
   Future<void> answerQuestion(String id, List<List<String>> answers) async {
     this.answers = answers;
-    if (fail) throw ApiException('Temporarily unavailable');
+    if (fail) throw ApiException('Temporarily unavailable', statusCode: 503);
     await pending?.future;
   }
 
@@ -111,7 +112,7 @@ _open(WidgetTester tester, {bool question = false}) async {
       ),
     ),
   );
-  await tester.tap(find.byType(ListTile));
+  await tester.tap(find.text(question ? 'Choose target' : 'Edit a file').first);
   await tester.pumpAndSettle();
   return (
     controller: controller,
@@ -132,12 +133,17 @@ void _resolved(ConnectionController controller, {bool question = false}) {
 
 void main() {
   testWidgets(
-    'remote permission resolution removes its confirmation but preserves unrelated routes',
+    'remote permission resolution removes its always-allow step but preserves unrelated routes',
     (tester) async {
       final h = await _open(tester);
-      await tester.tap(find.byKey(const Key('permission-allow-always')));
+      // "Always allow" is a risky switch: turning it on first unfolds the
+      // step that states its scope (it replaced the confirmation dialog).
+      final always = find.byKey(const Key('permission-allow-always'));
+      await tester.ensureVisible(always);
       await tester.pumpAndSettle();
-      expect(find.text('Confirm broader access'), findsOneWidget);
+      await tester.tap(always);
+      await tester.pumpAndSettle();
+      expect(find.text('Turn on'), findsOneWidget);
       h.navigator.currentState!.push(
         MaterialPageRoute<void>(
           builder: (_) => const Scaffold(body: Text('Unrelated screen')),
@@ -149,19 +155,25 @@ void main() {
       expect(find.text('Unrelated screen'), findsOneWidget);
       h.navigator.currentState!.pop();
       await tester.pumpAndSettle();
-      expect(find.text('Confirm broader access'), findsNothing);
+      expect(find.text('Turn on'), findsNothing);
       expect(find.byKey(const Key('permission-sheet')), findsNothing);
       expect(h.api.replies, 0);
       expect(tester.takeException(), isNull);
     },
   );
 
-  testWidgets('remote resolution closes the permission full diff', (
+  testWidgets('remote resolution closes the permission sheet and its diff', (
     tester,
   ) async {
     final h = await _open(tester);
-    await tester.tap(find.byKey(const Key('permission-see-full-diff')));
-    await tester.pumpAndSettle();
+    // The change is shown read-only inside the sheet, not on its own route.
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('permission-sheet')),
+        matching: find.byType(KitDiffView),
+      ),
+      findsOneWidget,
+    );
     _resolved(h.controller);
     await tester.pumpAndSettle();
     expect(h.navigator.currentState!.canPop(), isFalse);
@@ -172,7 +184,9 @@ void main() {
     tester,
   ) async {
     final h = await _open(tester, question: true);
-    await tester.tap(find.widgetWithText(TextButton, 'Dismiss'));
+    await tester.ensureVisible(find.byKey(const ValueKey('question-dismiss')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('question-dismiss')));
     await tester.pumpAndSettle();
     expect(find.text('Dismiss this request?'), findsOneWidget);
     _resolved(h.controller, question: true);
@@ -233,15 +247,27 @@ void main() {
       );
       await tester.pump();
       h.repository.fail = true;
-      await tester.tap(find.widgetWithText(FilledButton, 'Send answers'));
+      await tester.ensureVisible(find.byKey(const ValueKey('question-send')));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Temporarily unavailable'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('question-send')));
+      await tester.pumpAndSettle();
+      // Plain words for the failure, never the server's prose (6cdfca4e,
+      // a65dcea9).
+      expect(
+        find.text(
+          'The server had a problem (error 503). Try again in a moment.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Temporarily unavailable'), findsNothing);
       expect(
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
         'Canary',
       );
       h.repository.fail = false;
-      await tester.tap(find.widgetWithText(FilledButton, 'Send answers'));
+      await tester.ensureVisible(find.byKey(const ValueKey('question-send')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('question-send')));
       await tester.pumpAndSettle();
       expect(h.repository.answers, [
         ['Canary'],
@@ -258,7 +284,9 @@ void main() {
       h.repository.pending = pending;
       await tester.tap(find.text('Staging'));
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, 'Send answers'));
+      await tester.ensureVisible(find.byKey(const ValueKey('question-send')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('question-send')));
       await tester.pump();
       h.navigator.currentState!.push(
         MaterialPageRoute<void>(

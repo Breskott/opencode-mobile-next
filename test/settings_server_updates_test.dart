@@ -9,6 +9,7 @@ import 'package:opencode_mobile/background/live_background.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/offline_queue.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/saved_permissions_screen.dart';
@@ -144,8 +145,25 @@ Future<void> _openCategory(WidgetTester tester, String key) async {
   await tester.pumpAndSettle();
 }
 
+Finder get _verticalScroll => find
+    .byWidgetPredicate(
+      (widget) =>
+          widget is Scrollable &&
+          axisDirectionToAxis(widget.axisDirection) == Axis.vertical,
+    )
+    .first;
+
+Future<void> _tapVisible(WidgetTester tester, Finder target) async {
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
+  expect(target.hitTestable(), findsOneWidget);
+  await tester.tap(target);
+}
+
 void main() {
-  testWidgets('settings exposes process-local app diagnostics', (tester) async {
+  testWidgets('Settings has one Report a problem row with an error badge', (
+    tester,
+  ) async {
     final controller = await _controllerFor(
       'http://127.0.0.1:4096',
       repository: _EmptyPermissionRepository(),
@@ -161,18 +179,31 @@ void main() {
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        // Report a problem is the hub's own row (P8.2), with the count of
+        // errors kept as its badge.
         home: SettingsScreen(controller: controller),
       ),
     );
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.byKey(const Key('app-diagnostics-entry')),
+      find.byKey(const Key('library-report-bug')),
       320,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: _verticalScroll,
     );
-    expect(find.text('1 handled error kept in memory'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('app-diagnostics-entry')));
+    final badge = find.descendant(
+      of: find.byKey(const Key('library-report-bug')),
+      matching: find.byType(KitRowValue),
+    );
+    expect(tester.widget<KitRowValue>(badge).count, 1);
+    expect(tester.widget<KitRowValue>(badge).value, '1 error kept');
+    expect(
+      find.descendant(of: badge, matching: find.text('1')),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(find.byKey(const Key('library-report-bug')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('library-report-bug')));
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDiagnosticsScreen), findsOneWidget);
@@ -188,7 +219,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: SettingsScreen(controller: controller),
         routes: {
-          '/termux-setup': (_) => const Scaffold(body: Text('Managed updater')),
+          '/this-phone': (_) => const Scaffold(body: Text('Managed updater')),
         },
       ),
     );
@@ -218,9 +249,13 @@ void main() {
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-server');
 
-    expect(find.text('Server updates are managed externally'), findsOneWidget);
+    // The row is the copy and names the server; no trailing copy icon.
+    expect(find.textContaining('Copy update commands for '), findsOneWidget);
     expect(
-      find.textContaining('official upgrade and model-refresh commands'),
+      find.text(
+        "Run them in a terminal on the server's computer; this app can't "
+        'update it.',
+      ),
       findsOneWidget,
     );
   });
@@ -252,15 +287,18 @@ void main() {
     await _openCategory(tester, 'settings-category-server');
 
     expect(find.text('Update OpenCode to 1.19.0'), findsOneWidget);
-    expect(find.textContaining('Current server: 1.18.23'), findsOneWidget);
+    // The running version is said once, on the health row (R3).
+    expect(
+      find.text(
+        "Uses OpenCode's official installer; restart the server afterwards.",
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('server-updates-tile')));
     await tester.pumpAndSettle();
 
     expect(find.text('Update remote OpenCode?'), findsOneWidget);
-    expect(
-      find.textContaining('must be restarted on its host'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('on its computer to use'), findsOneWidget);
     await tester.tap(find.byKey(const Key('confirm-server-upgrade')));
     await tester.pumpAndSettle();
 
@@ -303,10 +341,10 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('server-updates-tile')),
       120,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: _verticalScroll,
     );
     tester
-        .widget<ListTile>(find.byKey(const Key('server-updates-tile')))
+        .widget<KitRow>(find.byKey(const Key('server-updates-tile')))
         .onTap!();
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('confirm-server-upgrade')));
@@ -316,9 +354,7 @@ void main() {
     expect(controller.availableServerVersion, '1.19.0');
     expect(controller.installedServerVersion, isNull);
     expect(
-      tester
-          .widget<ListTile>(find.byKey(const Key('server-updates-tile')))
-          .onTap,
+      tester.widget<KitRow>(find.byKey(const Key('server-updates-tile'))).onTap,
       isNotNull,
     );
   });
@@ -360,10 +396,10 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('server-updates-tile')),
       120,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: _verticalScroll,
     );
     tester
-        .widget<ListTile>(find.byKey(const Key('server-updates-tile')))
+        .widget<KitRow>(find.byKey(const Key('server-updates-tile')))
         .onTap!();
     await tester.pumpAndSettle();
 
@@ -385,24 +421,20 @@ void main() {
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: SettingsScreen(controller: controller),
+        home: NotificationsSettingsScreen(controller: controller),
       ),
     );
     await tester.pumpAndSettle();
-    // Durable grants are a Conversation defaults row of the hub: they are
-    // about how the agent works, not about privacy.
-    final entry = find.byKey(const ValueKey('saved-permissions-entry'));
-    expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('settings-group-conversation-defaults')),
-        matching: entry,
-      ),
-      findsOneWidget,
+    // Durable grants sit inside What runs by itself (P6.1), the last section
+    // of Notifications and background: they are about how the agent works.
+    expect(find.byKey(const ValueKey('settings-automation')), findsNothing);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('automation-saved-permissions')),
     );
-    await tester.ensureVisible(entry);
     await tester.pumpAndSettle();
+    final inside = find.byKey(const ValueKey('automation-saved-permissions'));
     expect(find.text('Always allowed actions'), findsOneWidget);
-    await tester.tap(entry);
+    await tester.tap(inside);
     await tester.pumpAndSettle();
 
     expect(find.byType(SavedPermissionsScreen), findsOneWidget);
@@ -426,36 +458,13 @@ void main() {
     await _openCategory(tester, 'settings-category-appearance');
 
     final entry = find.byKey(const ValueKey('appearance-settings-entry'));
-    await tester.scrollUntilVisible(
-      entry,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.scrollUntilVisible(entry, 200, scrollable: _verticalScroll);
     expect(find.text('Dark'), findsOneWidget);
-    await tester.tap(entry);
+    // Light or dark is chosen inline and applies at once (the separate
+    // light-or-dark sheet was removed by slice-P3.1).
+    await tester.tap(find.byKey(const ValueKey('appearance-mode-system')));
     await tester.pumpAndSettle();
-    final pickerScroll = find.descendant(
-      of: find.byKey(const Key('appearance-picker')),
-      matching: find.byType(Scrollable),
-    );
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('appearance-system')),
-      160,
-      scrollable: pickerScroll,
-    );
-    await tester.tap(find.byKey(const Key('appearance-system')));
-    await tester.pumpAndSettle();
-    expect(controller.appearance.value, AppAppearance.dark);
-    await tester.scrollUntilVisible(
-      find.text('Apply'),
-      160,
-      scrollable: pickerScroll,
-    );
-    await tester.tap(find.text('Apply'));
-    await tester.pumpAndSettle();
-
     expect(controller.appearance.value, AppAppearance.system);
-    expect(find.text('Follow Android'), findsOneWidget);
   });
 
   testWidgets(
@@ -478,13 +487,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       final entry = find.byKey(const ValueKey('default-shell-settings-entry'));
-      await tester.scrollUntilVisible(
-        entry,
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await tester.scrollUntilVisible(entry, 200, scrollable: _verticalScroll);
       expect(find.text('bash'), findsOneWidget);
-      await tester.tap(entry);
+      await _tapVisible(tester, entry);
       await tester.pumpAndSettle();
 
       expect(find.text('Automatic (server default)'), findsOneWidget);
@@ -505,7 +510,7 @@ void main() {
       expect(initial.shellSelectCalls, 0);
       expect(replacement.shellSelectCalls, 1);
       expect(replacement.selectedShell, 'fish');
-      expect(find.text('Default shell updated'), findsOneWidget);
+      // The selected value on the row is the save confirmation.
       expect(find.text('fish'), findsOneWidget);
     },
   );
@@ -530,17 +535,16 @@ void main() {
     );
     await tester.pumpAndSettle();
     final entry = find.byKey(const ValueKey('default-shell-settings-entry'));
-    await tester.scrollUntilVisible(
-      entry,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.scrollUntilVisible(entry, 200, scrollable: _verticalScroll);
 
     expect(find.textContaining('Shell endpoint unavailable'), findsOneWidget);
     // Scoped: the neighbouring default still renders.
-    expect(find.text('Model and mode'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings-model-and-mode')),
+      findsOneWidget,
+    );
     repository.shellError = null;
-    await tester.tap(entry);
+    await _tapVisible(tester, entry);
     await tester.pumpAndSettle();
 
     expect(repository.shellLoadCalls, 2);
@@ -564,11 +568,15 @@ void main() {
     expect(find.textContaining('Shell refresh unavailable'), findsOneWidget);
     final loadsBeforeRetry = repository.shellLoadCalls;
     repository.shellError = null;
-    await tester.tap(entry);
+    await _tapVisible(tester, entry);
     await tester.pumpAndSettle();
     expect(repository.shellLoadCalls, loadsBeforeRetry + 1);
     expect(find.byKey(const ValueKey('server-shell-/bin/bash')), findsNothing);
     expect(find.text('bash'), findsOneWidget);
+    // The resume above arms the phone server's recovery check (6ed0ec26),
+    // which the connection scope owns: end that scope inside the test.
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
   });
 
   testWidgets('failed shell update retains the server-reported selection', (
@@ -591,12 +599,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     final entry = find.byKey(const ValueKey('default-shell-settings-entry'));
-    await tester.scrollUntilVisible(
-      entry,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(entry);
+    await tester.scrollUntilVisible(entry, 200, scrollable: _verticalScroll);
+    await _tapVisible(tester, entry);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('server-shell-/usr/bin/fish')));
     await tester.pumpAndSettle();
@@ -604,7 +608,27 @@ void main() {
     expect(repository.shellSelectCalls, 1);
     expect(repository.shellSettings.selected, 'bash');
     expect(find.textContaining('Config write failed'), findsOneWidget);
+    // The failed-save reason occupies the row; reopening still marks the
+    // server-reported choice, never the attempted fish selection.
+    await _tapVisible(tester, entry);
+    await tester.pumpAndSettle();
     expect(find.text('bash'), findsOneWidget);
+    expect(
+      tester
+          .widget<KitChoiceRow<String>>(
+            find.byKey(const ValueKey('server-shell-/bin/bash')),
+          )
+          .selected,
+      isTrue,
+    );
+    expect(
+      tester
+          .widget<KitChoiceRow<String>>(
+            find.byKey(const ValueKey('server-shell-/usr/bin/fish')),
+          )
+          .selected,
+      isFalse,
+    );
   });
 
   testWidgets('default shell picker fits a compact large-text phone', (
@@ -636,13 +660,9 @@ void main() {
     );
     await tester.pumpAndSettle();
     final entry = find.byKey(const ValueKey('default-shell-settings-entry'));
-    await tester.scrollUntilVisible(
-      entry,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.scrollUntilVisible(entry, 200, scrollable: _verticalScroll);
     expect(tester.takeException(), isNull);
-    tester.widget<ListTile>(entry).onTap!();
+    tester.widget<KitRow>(entry).onTap!();
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -707,20 +727,20 @@ void main() {
       findsOneWidget,
     );
     for (final key in const [
-      'settings-category-server',
       'settings-model-and-mode',
+      'settings-tools',
       'default-shell-settings-entry',
+      'settings-category-server',
       'settings-category-background',
       'settings-category-appearance',
-      'settings-category-plugins',
       'settings-category-privacy',
-      'app-diagnostics-entry',
+      'settings-setup-guide',
       'settings-about-notices',
     ]) {
       await tester.scrollUntilVisible(
         find.byKey(ValueKey(key)),
         240,
-        scrollable: find.byType(Scrollable).first,
+        scrollable: _verticalScroll,
       );
       expect(find.byKey(ValueKey(key)), findsOneWidget);
     }
@@ -759,11 +779,7 @@ void main() {
     // The readout names both stores and the expiry, so "where did my draft
     // go" has an answer before it happens.
     final usage = find.byKey(const ValueKey('local-storage-usage'));
-    await tester.scrollUntilVisible(
-      usage,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.scrollUntilVisible(usage, 200, scrollable: _verticalScroll);
     expect(find.textContaining('1 queued prompt'), findsOneWidget);
     expect(find.textContaining('1 draft'), findsOneWidget);
     expect(find.textContaining('discarded after 14 days'), findsOneWidget);
@@ -776,7 +792,9 @@ void main() {
       find.textContaining('Nothing on the server is affected'),
       findsOneWidget,
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.tap(
+      find.widgetWithText(FilledButton, 'Delete 1 queued prompt'),
+    );
     await tester.pumpAndSettle();
 
     expect(controller.totalQueuedPromptCount, 0);
@@ -787,7 +805,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('clear-session-drafts')));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete 1 draft'));
     await tester.pumpAndSettle();
 
     expect(controller.totalSessionDraftCount, 0);
@@ -815,12 +833,8 @@ void main() {
       await tester.pumpAndSettle();
       await _openCategory(tester, 'settings-category-privacy');
       final clear = find.byKey(const ValueKey('clear-queued-prompts'));
-      await tester.scrollUntilVisible(
-        clear,
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      expect(tester.widget<ListTile>(clear).enabled, isTrue);
+      await tester.scrollUntilVisible(clear, 200, scrollable: _verticalScroll);
+      expect(tester.widget<KitRow>(clear).enabled, isTrue);
       expect(
         find.textContaining('number of queued prompts is unknown'),
         findsOneWidget,
@@ -837,11 +851,13 @@ void main() {
         findsOneWidget,
       );
       expect(controller.store.prefs.getString('oc.offlineQueue'), '{broken');
-      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Delete queued prompts'),
+      );
       await tester.pumpAndSettle();
       expect(controller.store.prefs.getString('oc.offlineQueue'), isNull);
       expect(controller.queuedPromptStorageReadable, isTrue);
-      expect(tester.widget<ListTile>(clear).enabled, isFalse);
+      expect(tester.widget<KitRow>(clear).enabled, isFalse);
     },
   );
 
@@ -866,18 +882,18 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('clear-queued-prompts')),
       200,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: _verticalScroll,
     );
 
     expect(
       tester
-          .widget<ListTile>(find.byKey(const ValueKey('clear-queued-prompts')))
+          .widget<KitRow>(find.byKey(const ValueKey('clear-queued-prompts')))
           .enabled,
       isFalse,
     );
     expect(
       tester
-          .widget<ListTile>(find.byKey(const ValueKey('clear-session-drafts')))
+          .widget<KitRow>(find.byKey(const ValueKey('clear-session-drafts')))
           .enabled,
       isFalse,
     );
@@ -915,9 +931,10 @@ void main() {
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-background');
 
-    // The limit is stated on the switch itself, before it is ever hit.
+    // The limit is stated on the switch itself, before it is ever hit, in
+    // the short line d0047ca3 gave it.
     expect(
-      find.textContaining('six hours of this per 24 hours'),
+      find.textContaining('Android stops this after 6 hours a day'),
       findsOneWidget,
     );
     expect(
@@ -926,7 +943,7 @@ void main() {
     );
     expect(
       tester
-          .widget<SwitchListTile>(
+          .widget<KitSwitchRow>(
             find.byKey(const ValueKey('background-live-switch')),
           )
           .value,
@@ -944,7 +961,7 @@ void main() {
     expect(find.text('Android stopped the live connection'), findsOneWidget);
     expect(
       tester
-          .widget<SwitchListTile>(
+          .widget<KitSwitchRow>(
             find.byKey(const ValueKey('background-live-switch')),
           )
           .value,

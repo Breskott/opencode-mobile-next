@@ -8,6 +8,8 @@ import '../api2/models.dart' show Api2FormInfo, Api2FormState, Api2InboxItem;
 import '../domain/server_gateway.dart';
 import 'models.dart';
 import 'sse.dart';
+import '../diagnostics/perf_trace.dart';
+import '../ui/kit/kit_redact.dart';
 
 export 'models.dart' show ApiException;
 
@@ -26,6 +28,11 @@ class OpenCodeApi
   String? _directory;
   String? _workspace;
   bool _closed = false;
+
+  /// Optional app-owned admission fence at the exact person dispatch seam.
+  /// The controller scopes these to its current phone transport only.
+  Future<void> Function(String sessionID)? beforeSessionDispatch;
+  void Function(String sessionID)? sessionDispatchSettled;
 
   Dio get dio => _dio;
   @override
@@ -52,6 +59,16 @@ class OpenCodeApi
     _dio.close(force: true);
   }
 
+  /// Drops the server's cached instance for the current location, so the
+  /// next request there builds it afresh.
+  Future<void> disposeInstance() async {
+    try {
+      await _dio.post<Object?>('/instance/dispose', queryParameters: _query());
+    } on DioException catch (e) {
+      _fail(e, 'Dispose instance');
+    }
+  }
+
   Map<String, dynamic> _query([Map<String, dynamic> values = const {}]) => {
     if (_directory != null) 'directory': _directory,
     if (_workspace != null) 'workspace': _workspace,
@@ -64,6 +81,7 @@ class OpenCodeApi
   ); // sync endpoints can run long
 
   OpenCodeApi({required this.baseUrl, this.username, this.password}) {
+    KitRedact.registerKnownSecret(password ?? '');
     final options = BaseOptions(
       baseUrl: baseUrl.endsWith('/')
           ? baseUrl.substring(0, baseUrl.length - 1)
@@ -74,6 +92,7 @@ class OpenCodeApi
       validateStatus: (s) => s != null && s >= 200 && s < 300,
     );
     _dio = Dio(options);
+    PerfTraceInterceptor.attach(_dio, 'oc1');
     if (password != null && password!.isNotEmpty) {
       final user = (username == null || username!.isEmpty)
           ? 'opencode'
@@ -432,8 +451,13 @@ class OpenCodeApi
         directory: _directory,
         workspace: _workspace,
       );
+      if (response.data == null) {
+        throw ApiException(
+          'Get session status failed: invalid status response',
+        );
+      }
       return _sessionStatusesFromJson({
-        for (final entry in (response.data ?? const {}).entries)
+        for (final entry in response.data!.entries)
           entry.key: entry.value.toJson(),
       });
     } on sdk.OpenCodeApiException catch (e) {
@@ -447,14 +471,17 @@ class OpenCodeApi
   }
 
   Map<String, String> _sessionStatusesFromJson(Object? data) {
-    final out = <String, String>{};
-    if (data is Map) {
-      data.forEach((k, v) {
-        out[k.toString()] = v is Map
-            ? ((v['type'] ?? 'idle')).toString()
-            : 'idle';
-      });
+    if (data is! Map) {
+      throw ApiException('Get session status failed: invalid status response');
     }
+    final out = <String, String>{};
+    data.forEach((k, v) {
+      final kind = v is Map ? v['type'] : v;
+      // Missing/malformed truth cannot establish idle admission.
+      out[k.toString()] = const {'idle', 'busy', 'retry'}.contains(kind)
+          ? kind as String
+          : 'unknown';
+    });
     return out;
   }
 
@@ -507,6 +534,16 @@ class OpenCodeApi
     String id, {
     String? cursor,
     int limit = 100,
+  }) => PerfTrace.span(
+    'messages.page',
+    () => _messagePage(id, cursor: cursor, limit: limit),
+    attrs: {'older': cursor != null, 'limit': limit},
+  );
+
+  Future<ServerPage<MessageWithParts>> _messagePage(
+    String id, {
+    String? cursor,
+    required int limit,
   }) async {
     try {
       final response = await sdkClient.getSessionApi().sessionMessages(
@@ -553,9 +590,8 @@ class OpenCodeApi
     for (final link in (headers.value('link') ?? '').split(',')) {
       if (!RegExp(r'rel="?next"?').hasMatch(link)) continue;
       final match = RegExp(r'<([^>]+)>').firstMatch(link);
-      final next = Uri.tryParse(
-        match?.group(1) ?? '',
-      )?.queryParameters['before'];
+      final next = Uri.tryParse(match?.group(1) ?? '')
+          ?.queryParameters['before'];
       if (next != null && next.isNotEmpty) return next;
     }
     return null;
@@ -584,14 +620,17 @@ class OpenCodeApi
     List<PromptAttachment> attachments = const [],
     List<PromptAgentMention> agentMentions = const [],
     PromptDelivery? delivery,
-  }) => _promptAsync(
+  }) => PromptTrace.track(
     sessionID,
-    text: text,
-    model: model,
-    agent: agent,
-    variant: variant,
-    attachments: attachments,
-    agentMentions: agentMentions,
+    () => _promptAsync(
+      sessionID,
+      text: text,
+      model: model,
+      agent: agent,
+      variant: variant,
+      attachments: attachments,
+      agentMentions: agentMentions,
+    ),
   );
 
   static final _messageRandom = Random.secure();
@@ -630,15 +669,18 @@ class OpenCodeApi
     List<PromptAttachment> attachments = const [],
     List<PromptAgentMention> agentMentions = const [],
     PromptDelivery? delivery,
-  }) => _promptAsync(
+  }) => PromptTrace.track(
     sessionID,
-    messageID: messageID,
-    text: text,
-    model: model,
-    agent: agent,
-    variant: variant,
-    attachments: attachments,
-    agentMentions: agentMentions,
+    () => _promptAsync(
+      sessionID,
+      messageID: messageID,
+      text: text,
+      model: model,
+      agent: agent,
+      variant: variant,
+      attachments: attachments,
+      agentMentions: agentMentions,
+    ),
   );
 
   Future<void> _promptAsync(
@@ -651,6 +693,7 @@ class OpenCodeApi
     List<PromptAttachment> attachments = const [],
     List<PromptAgentMention> agentMentions = const [],
   }) async {
+    await beforeSessionDispatch?.call(sessionID);
     try {
       await sdkClient.getSessionApi().sessionPromptAsync(
         sessionID: sessionID,
@@ -691,6 +734,8 @@ class OpenCodeApi
       _failGenerated(e, 'Send prompt');
     } on DioException catch (e) {
       _fail(e, 'Send prompt');
+    } finally {
+      sessionDispatchSettled?.call(sessionID);
     }
   }
 
@@ -702,6 +747,7 @@ class OpenCodeApi
     ModelRef? model,
     String? variant,
   }) async {
+    await beforeSessionDispatch?.call(sessionID);
     try {
       // The generated SessionShellRequest currently omits OpenCode's thinking
       // variant. Keep this compatibility request until that wire field exists
@@ -718,6 +764,8 @@ class OpenCodeApi
       );
     } on DioException catch (e) {
       _fail(e, 'Run command');
+    } finally {
+      sessionDispatchSettled?.call(sessionID);
     }
   }
 
@@ -729,6 +777,7 @@ class OpenCodeApi
     ModelRef? model,
     String? variant,
   }) async {
+    await beforeSessionDispatch?.call(sessionID);
     try {
       await sdkClient.getSessionApi().sessionCommand(
         sessionID: sessionID,
@@ -745,6 +794,8 @@ class OpenCodeApi
       _failGenerated(e, 'Run /command');
     } on DioException catch (e) {
       _fail(e, 'Run /command');
+    } finally {
+      sessionDispatchSettled?.call(sessionID);
     }
   }
 
@@ -1237,6 +1288,7 @@ class OpenCodeApi
   Future<ProvidersResponse> providers() async {
     try {
       final r = await _dio.get('/provider', queryParameters: _query());
+      KitRedact.registerCredentialValues(r.data);
       return ProvidersResponse.fromJson(
         Map<String, dynamic>.from(r.data as Map),
       );
@@ -1250,6 +1302,7 @@ class OpenCodeApi
   @override
   Future<ProvidersResponse> configuredProviders() async {
     final r = await _dio.get('/config/providers', queryParameters: _query());
+    KitRedact.registerCredentialValues(r.data);
     return ProvidersResponse.fromJson(Map<String, dynamic>.from(r.data as Map));
   }
 

@@ -1,0 +1,100 @@
+# failing-first (TEST-2): test/kit/kit_image_test.dart (fixed tests) run against the pre-fix
+# lib/ui/kit/kit_image.dart at dbce0a98 (the reviewed code head). Assertion failures, not compile errors.
+# Command: flutter test -j 1 test/kit/kit_image_test.dart
+
+The following TestFailure was thrown running a test:
+Expected: Size:<Size(25.0, 100.0)>
+  Actual: Size:<Size(400.0, 1600.0)>
+The test description was:
+00:00 +2 -1: KitImage decode size (KitImage.md "Decode size") contain in a height-bound box decodes to the box height [E]
+  The test description was: contain in a height-bound box decodes to the box height
+The following TestFailure was thrown running a test:
+Expected: Size:<Size(1600.0, 400.0)>
+  Actual: Size:<Size(200.0, 50.0)>
+The test description was:
+00:00 +2 -2: KitImage decode size (KitImage.md "Decode size") cover decodes so the shorter side still covers the box [E]
+  The test description was: cover decodes so the shorter side still covers the box
+The following TestFailure was thrown running a test:
+Expected: Size:<Size(360.0, 90.0)>
+  Actual: Size:<Size(90.0, 22.0)>
+The test description was:
+00:00 +2 -3: KitImage decode size (KitImage.md "Decode size") a wide avatar image covers the circle without upscaling [E]
+  The test description was: a wide avatar image covers the circle without upscaling
+The following TestFailure was thrown running a test:
+Expected: no matching candidates
+  Actual: _TextWidgetFinder:<Found 1 widget with text "Can't show this image": [
+   Which: means one was found but none were expected
+The test description was:
+00:01 +6 -4: KitImage states at 2.0 text the words that need more than two lines are dropped, never ellipsized; the glyph alone shows [E]
+  The test description was: at 2.0 text the words that need more than two lines are dropped, never ellipsized; the glyph alone shows
+The following TestFailure was thrown running a test:
+Expected: contains 'Can\'t show this image'
+  Actual: 'A cat'
+   Which: does not contain 'Can\'t show this image'
+The test description was:
+00:01 +12 -5: KitImage semantics (A11Y) a failing labelled image (80dp) reads its failure words [E]
+  The test description was: a failing labelled image (80dp) reads its failure words
+The following TestFailure was thrown running a test:
+Expected: contains 'Can\'t show this image'
+  Actual: 'A cat'
+   Which: does not contain 'Can\'t show this image'
+The test description was:
+00:01 +12 -6: KitImage semantics (A11Y) a failing labelled image (200dp) reads its failure words [E]
+  The test description was: a failing labelled image (200dp) reads its failure words
+The following TestFailure was thrown running a test:
+Expected: a numeric value within <0.001> of <0.2>
+  Actual: <1.0>
+   Which:  differs by <0.8>
+The test description was:
+00:01 +19 -7: KitZoom in canvas mode double-tap goes to an absolute 2x [E]
+  The test description was: in canvas mode double-tap goes to an absolute 2x
+The following TestFailure was thrown running a test:
+Expected: '100 %'
+  Actual: '165 %'
+   Which: is different.
+The test description was:
+00:01 +20 -8: KitZoom one Ctrl+wheel notch zooms exactly one step at the pointer; a plain wheel does not zoom [E]
+  The test description was: one Ctrl+wheel notch zooms exactly one step at the pointer; a plain wheel does not zoom
+The following TestFailure was thrown running a test:
+Expected: ['Zoom in']
+  Actual: _CompactKeysIterable<String>:['Zoom in', 'Reset zoom']
+   Which: at location [1] is _CompactKeysIterable<String>:['Zoom in', 'Reset zoom'] which longer
+The test description was:
+00:02 +20 -9: KitZoom the custom actions zoom in, zoom out and reset [E]
+  The test description was: the custom actions zoom in, zoom out and reset
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _WidgetPredicateWidgetFinder:<Found 0 widgets with widget matching predicate: []>
+   Which: means none were found but one was expected
+The test description was:
+00:02 +21 -10: KitZoom with a fine pointer each tooltip carries its shortcut [E]
+  The test description was: with a fine pointer each tooltip carries its shortcut
+The following TestFailure was thrown running a test:
+Expected: [
+  Actual: []
+   Which: at location [0] is [] which shorter than expected
+The test description was:
+00:02 +21 -11: KitZoom arrows pan only while zoomed, clamped to the image; at rest they reach the host [E]
+  The test description was: arrows pan only while zoomed, clamped to the image; at rest they reach the host
+The following TestFailure was thrown running a test:
+Expected: null
+  Actual: <Closure: () => void from Function 'resetView':.>
+The test description was:
+00:02 +22 -12: KitZoom canvas mode fits a 2000x2000 child on open, pans within its bounds, and reset() returns to the fit [E]
+  The test description was: canvas mode fits a 2000x2000 child on open, pans within its bounds, and reset() returns to the fit
+The following TestFailure was thrown running a test:
+Expected: a numeric value within <0.01> of <43>
+  Actual: <83.0>
+   Which:  differs by <40.0>
+The test description was:
+00:02 +22 -13: KitZoom a canvas smaller than the view on one axis keeps panning room at the fitted start [E]
+  The test description was: a canvas smaller than the view on one axis keeps panning room at the fitted start
+The following StateError was thrown running a test:
+The test description was:
+00:02 +22 -14: KitZoom under reduced motion the reset settles after one pump [E]
+  The test description was: under reduced motion the reset settles after one pump
+The following assertion was thrown running a test:
+The test description was:
+00:02 +22 -15: KitZoom no HapticFeedback call [E]
+  The test description was: no HapticFeedback call
+00:02 +22 -15: Some tests failed.

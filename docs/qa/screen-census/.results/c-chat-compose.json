@@ -1,0 +1,303 @@
+{
+ "area": "c-chat-compose",
+ "renderedAt": "2026-09-26T02:56:06.802624Z",
+ "declaredShots": [
+  {
+   "page": "embedded-composer",
+   "state": "draft"
+  },
+  {
+   "page": "embedded-composer",
+   "state": "slash-commands"
+  },
+  {
+   "page": "embedded-composer",
+   "state": "working"
+  },
+  {
+   "page": "embedded-composer",
+   "state": "working-steer-queue"
+  },
+  {
+   "page": "prompt-tools-sheet",
+   "state": "default"
+  },
+  {
+   "page": "prompt-tools-sheet",
+   "state": "advanced"
+  },
+  {
+   "page": "prompt-tools-sheet",
+   "state": "prompts"
+  },
+  {
+   "page": "prompt-editor",
+   "state": "default"
+  },
+  {
+   "page": "prompt-editor-discard-sheet",
+   "state": "default"
+  },
+  {
+   "page": "prompt-history-sheet",
+   "state": "default"
+  },
+  {
+   "page": "prompt-stash-sheet",
+   "state": "loaded"
+  },
+  {
+   "page": "prompt-stash-sheet",
+   "state": "empty"
+  },
+  {
+   "page": "prompt-stash-delete-sheet",
+   "state": "default"
+  },
+  {
+   "page": "embedded-transcript-find-bar",
+   "state": "open"
+  },
+  {
+   "page": "embedded-transcript-find-bar",
+   "state": "matches"
+  },
+  {
+   "page": "embedded-transcript-find-bar",
+   "state": "no-match"
+  },
+  {
+   "page": "chat-read-aloud-consent-sheet",
+   "state": "default"
+  },
+  {
+   "page": "chat-read-aloud-voice-sheet",
+   "state": "default"
+  },
+  {
+   "page": "embedded-transcript-display-toggles",
+   "state": "default"
+  },
+  {
+   "page": "embedded-prompt-error-banner",
+   "state": "default"
+  },
+  {
+   "page": "chat-prompt-error-details-dialog",
+   "state": "default"
+  },
+  {
+   "page": "embedded-subagent-context-banner",
+   "state": "default"
+  },
+  {
+   "page": "embedded-shared-session-banner",
+   "state": "default"
+  },
+  {
+   "page": "embedded-message-view",
+   "state": "loaded"
+  },
+  {
+   "page": "embedded-message-view",
+   "state": "working"
+  },
+  {
+   "page": "embedded-message-view",
+   "state": "empty"
+  },
+  {
+   "page": "embedded-message-view",
+   "state": "model-error"
+  },
+  {
+   "page": "chat-message-error-details-dialog",
+   "state": "default"
+  },
+  {
+   "page": "embedded-pending-sends-strip",
+   "state": "default"
+  },
+  {
+   "page": "embedded-chat-nudge-slot",
+   "state": "default"
+  }
+ ],
+ "notRendered": {
+  "embedded-model-shortcuts": "desktop-only input with no visible surface: a Focus wrapper that handles hardware-keyboard shortcuts (Ctrl+B, F2, Shift+F2)"
+ },
+ "shots": [
+  {
+   "page": "embedded-composer",
+   "state": "draft",
+   "image": "c-chat-compose/embedded-composer--draft.png",
+   "note": "Host: ChatScreen after a finished turn, a three-line draft typed."
+  },
+  {
+   "page": "embedded-composer",
+   "state": "slash-commands",
+   "image": "c-chat-compose/embedded-composer--slash-commands.png",
+   "note": "Host: ChatScreen; \"/\" typed opens the inline command list."
+  },
+  {
+   "page": "embedded-composer",
+   "state": "working",
+   "image": "c-chat-compose/embedded-composer--working.png",
+   "note": "Host: ChatScreen while a run streams: Stop, activity ring."
+  },
+  {
+   "page": "embedded-composer",
+   "state": "working-steer-queue",
+   "image": "c-chat-compose/embedded-composer--working-steer-queue.png",
+   "note": "Host: ChatScreen on a server with an inbox (OpenCode 2 capability faked on the v1 fixture) while a run streams, a draft typed: the Steer | Queue control."
+  },
+  {
+   "page": "prompt-tools-sheet",
+   "state": "default",
+   "image": "c-chat-compose/prompt-tools-sheet--default.png"
+  },
+  {
+   "page": "prompt-tools-sheet",
+   "state": "advanced",
+   "image": "c-chat-compose/prompt-tools-sheet--advanced.png",
+   "note": "Advanced group expanded."
+  },
+  {
+   "page": "prompt-tools-sheet",
+   "state": "prompts",
+   "image": "c-chat-compose/prompt-tools-sheet--prompts.png",
+   "note": "A draft typed; the Prompts group expanded."
+  },
+  {
+   "page": "prompt-editor",
+   "state": "default",
+   "image": "c-chat-compose/prompt-editor.png",
+   "note": "Opened from the composer with a multi-line draft."
+  },
+  {
+   "page": "prompt-editor-discard-sheet",
+   "state": "default",
+   "image": "c-chat-compose/prompt-editor-discard-sheet.png"
+  },
+  {
+   "page": "prompt-history-sheet",
+   "state": "default",
+   "image": "c-chat-compose/prompt-history-sheet.png",
+   "note": "Three prompts sent earlier in this conversation."
+  },
+  {
+   "page": "prompt-stash-sheet",
+   "state": "loaded",
+   "image": "c-chat-compose/prompt-stash-sheet--loaded.png"
+  },
+  {
+   "page": "prompt-stash-sheet",
+   "state": "empty",
+   "image": "c-chat-compose/prompt-stash-sheet--empty.png"
+  },
+  {
+   "page": "prompt-stash-delete-sheet",
+   "state": "default",
+   "image": "c-chat-compose/prompt-stash-delete-sheet.png"
+  },
+  {
+   "page": "embedded-transcript-find-bar",
+   "state": "open",
+   "image": "c-chat-compose/embedded-transcript-find-bar--open.png",
+   "note": "Host: ChatScreen; opened from the conversation menu."
+  },
+  {
+   "page": "embedded-transcript-find-bar",
+   "state": "matches",
+   "image": "c-chat-compose/embedded-transcript-find-bar--matches.png",
+   "note": "\"checkout\" typed: match count and navigation."
+  },
+  {
+   "page": "embedded-transcript-find-bar",
+   "state": "no-match",
+   "image": "c-chat-compose/embedded-transcript-find-bar--no-match.png"
+  },
+  {
+   "page": "chat-read-aloud-consent-sheet",
+   "state": "default",
+   "image": "c-chat-compose/chat-read-aloud-consent-sheet.png",
+   "note": "Message actions of the reply › Read reply prose."
+  },
+  {
+   "page": "chat-read-aloud-voice-sheet",
+   "state": "default",
+   "image": "c-chat-compose/chat-read-aloud-voice-sheet.png",
+   "note": "Four offline voices from a mocked system engine."
+  },
+  {
+   "page": "embedded-transcript-display-toggles",
+   "state": "default",
+   "image": "c-chat-compose/embedded-transcript-display-toggles.png",
+   "note": "Host: the conversation menu, Display and context expanded."
+  },
+  {
+   "page": "embedded-prompt-error-banner",
+   "state": "default",
+   "image": "c-chat-compose/embedded-prompt-error-banner.png",
+   "note": "Host: ChatScreen; the server refused the prompt (unknown model) with no reply to carry the error."
+  },
+  {
+   "page": "chat-prompt-error-details-dialog",
+   "state": "default",
+   "image": "c-chat-compose/chat-prompt-error-details-dialog.png"
+  },
+  {
+   "page": "embedded-subagent-context-banner",
+   "state": "default",
+   "image": "c-chat-compose/embedded-subagent-context-banner.png",
+   "note": "Host: a delegated (child) conversation, one of two siblings."
+  },
+  {
+   "page": "embedded-shared-session-banner",
+   "state": "default",
+   "image": "c-chat-compose/embedded-shared-session-banner.png",
+   "note": "Host: ChatScreen for a conversation shared by link."
+  },
+  {
+   "page": "embedded-message-view",
+   "state": "loaded",
+   "image": "c-chat-compose/embedded-message-view--loaded.png",
+   "note": "Three turns; the last turn's work line expanded (reads, edit, command), then code and choices. The expanded group repeats the same summary line inside itself (as rendered)."
+  },
+  {
+   "page": "embedded-message-view",
+   "state": "working",
+   "image": "c-chat-compose/embedded-message-view--working.png",
+   "note": "The reply is still streaming."
+  },
+  {
+   "page": "embedded-message-view",
+   "state": "empty",
+   "image": "c-chat-compose/embedded-message-view--empty.png",
+   "note": "A conversation with no messages yet: the start area."
+  },
+  {
+   "page": "embedded-message-view",
+   "state": "model-error",
+   "image": "c-chat-compose/embedded-message-view--model-error.png",
+   "note": "The reply ended on a model the server does not know."
+  },
+  {
+   "page": "chat-message-error-details-dialog",
+   "state": "default",
+   "image": "c-chat-compose/chat-message-error-details-dialog.png"
+  },
+  {
+   "page": "embedded-pending-sends-strip",
+   "state": "default",
+   "image": "c-chat-compose/embedded-pending-sends-strip.png",
+   "note": "Host: ChatScreen with three offline-queued drafts: failed, delivery unconfirmed (Send again), waiting. The third bubble is clipped under the composer and the unconfirmed label is ellipsized (as rendered). OpenCode 2 inbox bubbles are not shown: they need a live v2 gateway."
+  },
+  {
+   "page": "embedded-chat-nudge-slot",
+   "state": "default",
+   "image": "c-chat-compose/embedded-chat-nudge-slot.png",
+   "note": "Host: ChatScreen after a run that edited files: the review tip."
+  }
+ ]
+}

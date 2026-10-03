@@ -264,6 +264,41 @@ class TermuxStorageScanStatus {
   }
 }
 
+/// The scan's stages, in the order the bundled script measures them. Each
+/// starts with one `[oc] <heading>` log line (TermuxBridge's storage scan),
+/// so the scan view can fill its rows in as it goes: the sizes themselves
+/// arrive only with the finished report.
+enum TermuxStorageScanStage {
+  buildCaches('Build caches'),
+  sharedCaches('Other caches and package data (read only)'),
+  agentScratch('Agent scratch'),
+  toolchains('Toolchains'),
+  aiTeam('AI Team'),
+  opencode('OpenCode'),
+  projects('Projects'),
+  total('Measuring the whole Termux install');
+
+  const TermuxStorageScanStage(this.heading);
+
+  /// The script's log line for this stage, without the `[oc] ` prefix.
+  final String heading;
+
+  /// The stage the scan has reached in [log]: the last heading printed, or
+  /// null before the first one.
+  static TermuxStorageScanStage? reached(String log) {
+    TermuxStorageScanStage? last;
+    for (final raw in log.split('\n')) {
+      final line = raw.trim();
+      if (!line.startsWith('[oc] ')) continue;
+      final heading = line.substring(5);
+      for (final stage in values) {
+        if (stage.heading == heading) last = stage;
+      }
+    }
+    return last;
+  }
+}
+
 /// The cheap answer for the settings row: last total and when it was taken.
 class TermuxStorageSummary {
   const TermuxStorageSummary({

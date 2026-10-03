@@ -1,3 +1,15 @@
+/// The theme preview sheet (map page `theme-pack-preview-sheet`) on the
+/// kit sheet. Light or dark is chosen inline on the Appearance page; the
+/// separate light-or-dark sheet (map page `appearance-picker-sheet`) was
+/// removed by slice-P3.1 (target-ia §1.4).
+///
+/// Browsing never changes the stored preference: the sheet previews the
+/// theme on the app's real parts ([KitThemePreview]) and only Apply saves
+/// it. A save error stays in the sheet, keeping the draft to retry. A theme
+/// that is applied offers Undo; one already in use says so in words, never
+/// with a disabled button.
+library;
+
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -5,6 +17,14 @@ import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
 import '../app_theme.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_segmented.dart';
+import '../kit/kit_sheet.dart';
+import '../kit/kit_swatch.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
+import '../kit/kit_undo.dart';
 import '../theme_packs.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -25,53 +45,42 @@ String appearanceLabel(AppAppearance appearance, [BuildContext? context]) {
   };
 }
 
-String _appearanceDescription(BuildContext context, AppAppearance appearance) {
-  final copy = _copy(context);
-  return switch (appearance) {
-    AppAppearance.system =>
-      platformCapabilities.isAndroid
-          ? copy.e7AppearanceFollowPhoneDescription
-          : copy.e7AppearanceFollowDeviceDescription,
-    AppAppearance.light => copy.e7AppearanceLightDescription,
-    AppAppearance.dark => copy.e7AppearanceDarkDescription,
-  };
-}
-
 IconData _appearanceIcon(AppAppearance appearance) => switch (appearance) {
   AppAppearance.system => AppIconography.systemTheme,
   AppAppearance.light => AppIconography.lightMode,
   AppAppearance.dark => AppIconography.darkMode,
 };
 
-/// Browsing never mutates the stored preference. Save errors stay in the
-/// sheet, keeping the draft available to retry or discard.
-Future<void> showAppearancePicker(
-  BuildContext context, {
-  required ConnectionController controller,
-}) => showModalBottomSheet<void>(
-  context: context,
-  useSafeArea: true,
-  isScrollControlled: true,
-  constraints: const BoxConstraints(maxWidth: 620),
-  builder: (_) => _AppearancePreviewSheet(controller: controller),
-);
-
+/// Opens the preview of [pack]; Apply makes it the app's theme and offers
+/// Undo.
 Future<void> showThemePackPreview(
   BuildContext context, {
   required ConnectionController controller,
   required ThemePackId pack,
-}) => showModalBottomSheet<void>(
-  context: context,
-  useSafeArea: true,
-  isScrollControlled: true,
-  constraints: const BoxConstraints(maxWidth: 620),
-  builder: (_) => _AppearancePreviewSheet(controller: controller, pack: pack),
+}) => showKitSheet<void>(
+  context,
+  title: themePackLabels[pack]!,
+  sheetKey: const Key('appearance-picker'),
+  body: (_) => _AppearancePreviewSheet(
+    controller: controller,
+    host: context,
+    pack: pack,
+  ),
 );
 
 class _AppearancePreviewSheet extends StatefulWidget {
+  const _AppearancePreviewSheet({
+    required this.controller,
+    required this.host,
+    required this.pack,
+  });
+
   final ConnectionController controller;
-  final ThemePackId? pack;
-  const _AppearancePreviewSheet({required this.controller, this.pack});
+
+  /// The context the sheet was opened from: the Undo bar shows there once
+  /// the sheet has closed.
+  final BuildContext host;
+  final ThemePackId pack;
 
   @override
   State<_AppearancePreviewSheet> createState() =>
@@ -89,24 +98,39 @@ class _AppearancePreviewSheetState extends State<_AppearancePreviewSheet> {
       _saving = true;
       _failed = false;
     });
+    final controller = widget.controller;
+    final previous = controller.themePack.value;
     try {
-      if (widget.pack case final pack?) {
-        await widget.controller.setThemePack(pack);
-      } else {
-        await widget.controller.setAppearance(_appearance);
-      }
-      if (mounted) Navigator.of(context).pop();
+      await controller.setThemePack(widget.pack);
     } catch (_) {
-      if (mounted) setState(() => _failed = true);
-    } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _failed = true;
+        });
+      }
+      return;
+    }
+    if (!mounted) return;
+    final copy = _copy(context);
+    KitSheet.close<void>(context);
+    if (widget.host.mounted) {
+      showKitUndo(
+        widget.host,
+        key: const Key('appearance-theme-undo'),
+        message: copy.appearancePickerThemeApplied(
+          themePackLabels[widget.pack]!,
+        ),
+        onUndo: () => controller.setThemePack(previous),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final copy = _copy(context);
-    final packId = widget.pack ?? widget.controller.themePack.value;
+    final tokens = KitTokens.of(context);
+    final packId = widget.pack;
     final available =
         packId != ThemePackId.dynamic || harvestedDynamicPack.value != null;
     final brightness = switch (_appearance) {
@@ -114,208 +138,92 @@ class _AppearancePreviewSheetState extends State<_AppearancePreviewSheet> {
       AppAppearance.light => Brightness.light,
       AppAppearance.dark => Brightness.dark,
     };
-    final changed = widget.pack == null
-        ? _appearance != widget.controller.appearance.value
-        : widget.pack != widget.controller.themePack.value;
+    final changed = packId != widget.controller.themePack.value;
+    final previewed = themePackLabels[packId]!;
     return PopScope(
       canPop: !_saving,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * .9,
-        ),
-        child: ListView(
-          key: const Key('appearance-picker'),
-          shrinkWrap: true,
-          padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 24),
-          children: [
-            Text(
-              widget.pack == null
-                  ? copy.e7AppearanceTitle
-                  : themePackLabels[packId]!,
-              style: Theme.of(context).textTheme.titleLarge,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          KitText(copy.e7AppearancePreviewHint, role: KitTextRole.secondary),
+          SizedBox(height: tokens.space3),
+          if (available)
+            KitThemePreview(
+              previewKey: const ValueKey('theme-component-preview'),
+              roles: effectiveThemePack(packId).palette(brightness).themeRoles,
+              label: copy.appearancePickerPreviewLabel(previewed),
+            )
+          else
+            KitNotice(
+              key: const ValueKey('appearance-dynamic-unavailable'),
+              message: copy.e7AppearanceDynamicUnavailable,
+              icon: AppIconography.info,
+              liveRegion: false,
             ),
-            const SizedBox(height: 8),
-            Text(copy.e7AppearancePreviewHint),
-            const SizedBox(height: 16),
-            if (available)
-              ThemeComponentPreview(
-                theme: AppTheme.forLocale(
-                  AppTheme.fromPalette(
-                    effectiveThemePack(packId).palette(brightness),
+          SizedBox(height: tokens.space4),
+          if (available) ...[
+            KitSegmented<AppAppearance>(
+              semanticsLabel: copy.appearancePickerPreviewIn,
+              segments: [
+                for (final mode in const [
+                  AppAppearance.light,
+                  AppAppearance.dark,
+                ])
+                  KitSegment(
+                    value: mode,
+                    key: ValueKey('appearance-preview-${mode.name}'),
+                    label: appearanceLabel(mode, context),
+                    icon: _appearanceIcon(mode),
                   ),
-                  Localizations.localeOf(context),
-                ),
-              )
-            else
-              Text(copy.e7AppearanceDynamicUnavailable),
-            const SizedBox(height: 12),
-            if (widget.pack == null)
-              for (final appearance in AppAppearance.values)
-                Semantics(
-                  selected: _appearance == appearance,
-                  child: ListTile(
-                    key: ValueKey('appearance-${appearance.name}'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(_appearanceIcon(appearance)),
-                    title: Text(appearanceLabel(appearance, context)),
-                    subtitle: Text(_appearanceDescription(context, appearance)),
-                    trailing: _appearance == appearance
-                        ? const Icon(AppIconography.check)
-                        : null,
-                    onTap: _saving
-                        ? null
-                        : () => setState(() => _appearance = appearance),
-                  ),
-                )
-            else ...[
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final mode in [AppAppearance.light, AppAppearance.dark])
-                    ChoiceChip(
-                      label: Text(appearanceLabel(mode, context)),
-                      selected:
-                          _appearance == mode ||
-                          (_appearance == AppAppearance.system &&
-                              (mode == AppAppearance.light) ==
-                                  (brightness == Brightness.light)),
-                      onSelected: _saving
-                          ? null
-                          : (_) => setState(() => _appearance = mode),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                copy.e7AppearanceUsesMode(
-                  appearanceLabel(widget.controller.appearance.value, context),
-                ),
-              ),
-            ],
-            if (_failed) ...[
-              const SizedBox(height: 12),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  copy.e7AppearanceSaveFailed,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: changed && available && !_saving ? _apply : null,
-              child: Text(
-                _saving
-                    ? copy.e7AppearanceSaving
-                    : changed
-                    ? copy.e7AppearanceApply
-                    : copy.e7AppearanceCurrent,
-              ),
+              ],
+              selected: brightness == Brightness.light
+                  ? AppAppearance.light
+                  : AppAppearance.dark,
+              onChanged: _saving
+                  ? null
+                  : (mode) => setState(() => _appearance = mode),
+              disabledReason: _saving ? copy.e7AppearanceSaving : null,
             ),
-            TextButton(
-              onPressed: _saving ? null : () => Navigator.of(context).pop(),
-              child: Text(copy.e7AppearanceClose),
+            SizedBox(height: tokens.space2),
+            KitText(
+              copy.e7AppearanceUsesMode(
+                appearanceLabel(widget.controller.appearance.value, context),
+              ),
+              role: KitTextRole.secondary,
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Actual app theme text, code, filled control and selected surface roles.
-/// Contains no server data or invented activity; interactions are local samples.
-class ThemeComponentPreview extends StatefulWidget {
-  final ThemeData theme;
-  const ThemeComponentPreview({super.key, required this.theme});
-
-  @override
-  State<ThemeComponentPreview> createState() => _ThemeComponentPreviewState();
-}
-
-class _ThemeComponentPreviewState extends State<ThemeComponentPreview> {
-  bool _selected = true;
-
-  @override
-  Widget build(BuildContext context) {
-    final copy = _copy(context);
-    return Theme(
-      data: widget.theme,
-      child: Builder(
-        builder: (context) {
-          final theme = Theme.of(context);
-          return Material(
-            key: const ValueKey('theme-component-preview'),
-            color: theme.scaffoldBackgroundColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: theme.colorScheme.outlineVariant),
+          if (_failed) ...[
+            SizedBox(height: tokens.space3),
+            KitNotice(
+              key: const ValueKey('appearance-save-failed'),
+              message: copy.e7AppearanceSaveFailed,
+              tone: AppStatusTone.failure,
             ),
-            clipBehavior: Clip.antiAlias,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    copy.e7AppearancePreviewTitle,
-                    style: theme.textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    copy.e7AppearancePreviewBody,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Text(
-                        'final ready = true;',
-                        textDirection: TextDirection.ltr,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontFamily: AppTheme.monoFamily,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      FilterChip(
-                        label: Text(copy.e7AppearanceSelection),
-                        selected: _selected,
-                        onSelected: (value) =>
-                            setState(() => _selected = value),
-                      ),
-                      FilledButton(
-                        onPressed: () => setState(() => _selected = !_selected),
-                        child: Text(copy.e7AppearanceTryControl),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    copy.e7AppearanceSampleHint,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+          ],
+          SizedBox(height: tokens.space4),
+          // An unavailable theme has nothing to apply; the notice above
+          // says why.
+          if (!available)
+            const SizedBox.shrink()
+          else if (changed)
+            KitActionBlock(
+              primary: KitAction(
+                key: const ValueKey('appearance-apply'),
+                label: copy.e7AppearanceApply,
+                working: _saving,
+                onPressed: _apply,
               ),
+            )
+          else
+            KitNotice(
+              key: const ValueKey('appearance-in-use'),
+              message: copy.appearancePickerInUse,
+              tone: AppStatusTone.ok,
+              icon: AppIconography.check,
+              liveRegion: false,
             ),
-          );
-        },
+        ],
       ),
     );
   }

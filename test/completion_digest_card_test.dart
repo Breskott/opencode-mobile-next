@@ -88,6 +88,7 @@ void main() {
     tester,
   ) async {
     String? copied;
+    final announced = <String>[];
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       SystemChannels.platform,
       (call) async {
@@ -97,13 +98,32 @@ void main() {
         return null;
       },
     );
+    tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<dynamic>(
+      SystemChannels.accessibility,
+      (message) async {
+        final map = message as Map<Object?, Object?>;
+        if (map['type'] == 'announce') {
+          announced.add((map['data'] as Map)['message'] as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<dynamic>(
+            SystemChannels.accessibility,
+            null,
+          ),
+    );
 
     await tester.pumpWidget(_app(_digest));
     await tester.pump();
     await tester.tap(find.byKey(const Key('completion-digest-copy')));
     await tester.pump();
 
-    expect(find.text('Digest copied'), findsOneWidget);
+    // KitCopy (KIT-23): announced once, never a SnackBar.
+    expect(announced, ['Digest copied']);
+    expect(find.byType(SnackBar), findsNothing);
     expect(copied, contains('No changed files in the conversation total'));
     expect(copied, contains('this run is unknown'));
     expect(copied, contains('Tool outcomes and remaining tasks: unknown.'));
@@ -127,8 +147,11 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const Key('completion-digest-copy')));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
+    // A kit alert names what failed; the platform's text stays out of it.
     expect(find.text('Could not copy digest'), findsOneWidget);
+    expect(find.textContaining('clipboard-unavailable'), findsNothing);
   });
 
   testWidgets('wraps actions at large text on a narrow RTL surface', (

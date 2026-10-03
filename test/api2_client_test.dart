@@ -98,9 +98,11 @@ void main() {
           expect(requests[0].uri.queryParameters['directory'], '/work/app');
           expect(requests[0].uri.queryParameters['limit'], '1');
           expect(requests[0].uri.queryParameters['parentID'], 'null');
-          expect(requests[1].uri.queryParameters, {
-            'cursor': cursor,
-          }, reason: 'a cursor must be passed back alone');
+          expect(
+            requests[1].uri.queryParameters,
+            {'cursor': cursor},
+            reason: 'a cursor must be passed back alone',
+          );
           client.setLocation(directory: '/work/app', workspace: 'ws_mobile');
           await client.sessions(unscoped: true, search: 'find me');
           expect(requests.last.uri.queryParameters, {'search': 'find me'});

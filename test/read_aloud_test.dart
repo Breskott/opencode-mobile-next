@@ -75,13 +75,16 @@ Future<ConnectionController> _pumpChat(
   WidgetTester tester,
   _Api api, {
   VoiceComposerController? voice,
+  bool keepPreferences = false,
 }) async {
-  SharedPreferences.setMockInitialValues({
-    'oc.profiles': jsonEncode([
-      {'id': 'profile', 'name': 'Synthetic', 'baseUrl': 'http://localhost'},
-    ]),
-    'oc.activeProfile': 'profile',
-  });
+  if (!keepPreferences) {
+    SharedPreferences.setMockInitialValues({
+      'oc.profiles': jsonEncode([
+        {'id': 'profile', 'name': 'Synthetic', 'baseUrl': 'http://localhost'},
+      ]),
+      'oc.activeProfile': 'profile',
+    });
+  }
   final prefs = await SharedPreferences.getInstance();
   final store = ProfileStore(prefs: prefs);
   await store.load();
@@ -103,8 +106,8 @@ Future<ConnectionController> _pumpChat(
 }
 
 Future<void> _openReadReply(WidgetTester tester) async {
-  // Assistant prose is selectable; use its explicit message action target.
-  await tester.tap(find.byTooltip('Message actions'));
+  // Assistant prose is selectable; use the reply footer's More.
+  await tester.tap(find.byKey(const ValueKey('message-actions-reply')));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Read reply prose'));
   await tester.pumpAndSettle();
@@ -278,18 +281,18 @@ void main() {
     (tester) async {
       await _pumpChat(tester, _Api());
       await _openReadReply(tester);
-      expect(find.text('Use the system speech engine?'), findsOneWidget);
+      expect(find.text('Read replies aloud?'), findsOneWidget);
       expect(calls, isEmpty);
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(calls, isEmpty);
 
       await _openReadReply(tester);
-      await tester.tap(find.text('Choose voice'));
+      await tester.tap(find.text('Read aloud'));
       await tester.pumpAndSettle();
-      expect(calls.map((call) => call.method), ['voices']);
-      await tester.tap(find.text('Installed voice'));
-      await tester.pumpAndSettle();
+      // The installed voice speaks the app's language (en-US for en): it
+      // reads at once, with no voice sheet (P10.4).
+      expect(find.byKey(const ValueKey('read-aloud-voices')), findsNothing);
       expect(calls.map((call) => call.method), ['voices', 'speak']);
       expect((calls.last.arguments as Map)['text'], _reply);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -299,8 +302,60 @@ void main() {
   );
 
   testWidgets(
+    'consent is asked once: another conversation, or the app opened again, '
+    'reads without asking',
+    (tester) async {
+      await _pumpChat(tester, _Api());
+      await _openReadReply(tester);
+      expect(find.text('Read replies aloud?'), findsOneWidget);
+      await tester.tap(find.text('Read aloud'));
+      await tester.pumpAndSettle();
+      expect(calls.map((call) => call.method), contains('speak'));
+
+      // A fresh screen and controller on the same phone (a new chat, or a
+      // restart): the answer is remembered.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      calls.clear();
+      await _pumpChat(tester, _Api(), keepPreferences: true);
+      await _openReadReply(tester);
+      expect(find.text('Read replies aloud?'), findsNothing);
+      expect(calls.map((call) => call.method), ['voices', 'speak']);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'no installed voice speaks the app\'s language: the voice sheet asks',
+    (tester) async {
+      binding.defaultBinaryMessenger.setMockMethodCallHandler(_channel, (
+        call,
+      ) async {
+        calls.add(call);
+        if (call.method == 'voices') {
+          return [
+            {'id': 'french', 'label': 'Voix française', 'locale': 'fr-FR'},
+          ];
+        }
+        return null;
+      });
+      await _pumpChat(tester, _Api());
+      await _openReadReply(tester);
+      await tester.tap(find.text('Read aloud'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('read-aloud-voices')), findsOneWidget);
+      expect(calls.map((call) => call.method), ['voices']);
+    },
+  );
+
+  testWidgets(
     'unsent voice conversation is never persisted or sent and is cleared on background',
     (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final voice = _Voice(models: await readyVoiceModelManager());
       addTearDown(voice.dispose);
       final api = _Api();
@@ -310,28 +365,21 @@ void main() {
       await tester.ensureVisible(
         find.byKey(const Key('composer-tools-advanced')),
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('composer-tools-advanced')));
       await tester.pumpAndSettle();
       await tester.ensureVisible(
         find.byKey(const Key('composer-tool-conversation')),
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('composer-tool-conversation')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pump();
-      // Conversation mode deliberately requires an explicit first listen.
-      expect(voice.state, VoiceComposerState.idle);
-      await tester.tap(find.text('Start listening'));
-      await tester.pump();
-      await tester.tap(find.byKey(const Key('stop-voice-recording')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-      await tester.tap(find.byKey(const Key('insert-voice-draft')));
-      await tester.pumpAndSettle();
-      expect(
-        tester.widget<TextField>(find.byType(TextField).first).controller!.text,
-        _transcript,
-      );
+      // Choosing Voice conversation is the explicit start: the composer is
+      // in voice mode and listening; what is said is sent only by Send.
+      expect(voice.state, VoiceComposerState.listening);
+      expect(find.byKey(const Key('voice-mode')), findsOneWidget);
       await tester.pump(const Duration(seconds: 2));
       final prefs = await SharedPreferences.getInstance();
       void expectPrivate() {
@@ -363,6 +411,8 @@ void main() {
         tester.binding.handleAppLifecycleStateChanged(state);
       }
       await tester.pumpAndSettle();
+      // Leaving the app ends the conversation: back to an empty composer.
+      expect(find.byKey(const Key('voice-mode')), findsNothing);
       expect(
         tester.widget<TextField>(find.byType(TextField).first).controller!.text,
         isEmpty,

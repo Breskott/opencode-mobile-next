@@ -1,0 +1,2197 @@
+[
+ {
+  "pageId": "team-agent-output",
+  "area": "i1-team-core",
+  "title": "Live output",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-agent-output--live.png",
+   "docs/qa/screen-census/i1-team-core/team-agent-output--ended.png",
+   "docs/qa/screen-census/i1-team-core/team-agent-output--scrolled-up.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "The transcript follows and \"Jump to latest\" is right, but an ended session says \"Nothing yet\", two full-width bands eat 230 dp before any output, and the log type is too large to read as a log.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C2 · X4 honest state",
+    "what": "Ended state: status \"Session ended · output no longer on the host\", then a disabled Follow switch, then \"Nothing yet\" — as if output might still arrive. There is no way forward.",
+    "fix": "KitStateView inline: \"This session has ended\" / \"Its output is no longer on pop-os.\" Action: \"Open the conversation\" (the chat keeps the history). Hide Follow when nothing can follow."
+   },
+   {
+    "severity": "medium",
+    "principle": "U7 · U5",
+    "what": "A \"● Live\" row and a \"Follow\" switch row, each full-width with dividers, take the top 230 dp; the live dot is a pale-blue disc with no motion or label beyond \"Live\".",
+    "fix": "One KitStatusLine under the top bar: \"Live · following\" with a Follow toggle icon as its single action; in scrolled-up state the \"Jump to latest\" pill already does the work."
+   },
+   {
+    "severity": "medium",
+    "principle": "U8 mono type",
+    "what": "The log is mono at body-large size, so a 40-character line wraps (\"flutter test test/ui/ / offline_banner_test.dart\"); regression row 16 fixed exactly this for setup (mono bodySmall, one line per line).",
+    "fix": "Reuse TerminalView(framed: false) with bodySmall mono; long lines scroll sideways; tool lines (\"[tool: edit …]\") in muted colour so the agent's words stand out."
+   },
+   {
+    "severity": "low",
+    "principle": "C4 8-second rule",
+    "what": "Regression row 22 (open): \"Connecting to the session…\" / \"Nothing yet\" forever for a worker that never started; nothing in the source changes the copy after 8 s.",
+    "fix": "After 8 s: \"No output from fox yet\" with \"It may not have started · Check the agent\" (opens the agent screen)."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-agent",
+  "area": "i1-team-core",
+  "title": "<agent name> (Agent · session {id})",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-agent--top.png",
+   "docs/qa/screen-census/i1-team-core/team-agent--controls.png",
+   "docs/qa/screen-census/i1-team-core/team-agent--unconfirmed.png",
+   "docs/qa/screen-census/i1-team-core/team-agent--stopped.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "Still a dashboard: engine fields, paths and a cost line that is not this agent’s fill the top, it says \"Working\" and \"waiting on one other step\" at once, and the controls sit at the end of a long scroll.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3 · P4 detail on request",
+    "what": "Above the fold: \"ctx 63%\", Provider \"opencode\", Model \"openai/gpt-x\", Harness, Working directory \"/home/dev/shopfront/.gc/worktrees/polecat-fox\", Branch \"polecat/sync-engine\", \"w-sync\". Principle 2 bans paths and engine words above Details, and this screen already has a Technical details fold at the bottom.",
+    "fix": "Top of the screen: the agent's name, one status line (\"Working on Sync engine · 3 h\"), what it is doing now (the Activity line) and the controls. Move Identity, Runtime and Tokens into the Technical details fold."
+   },
+   {
+    "severity": "high",
+    "principle": "C2 words match state",
+    "what": "Header \"Working\"; Runtime State \"Working\"; Current work \"Sync engine · waiting on one other step\"; Activity \"Picking up w-sync\" — three contradicting stories (also noted by the census workers).",
+    "fix": "Derive one state from the host: if the agent works, the current work line says \"In progress\"; the dependency line appears only while the dependency is open."
+   },
+   {
+    "severity": "high",
+    "principle": "C2 · P10 truth",
+    "what": "\"0 tokens · ctx 63% · $0.00 est.\" with the footnote \"Tokens and cost are the whole team's today\" — zero tokens at 63 % context is impossible, and a team-wide figure on one agent misleads.",
+    "fix": "Remove cost from the agent screen; show team usage once, on the home's Details. If the agent has its own figure, show that, labelled."
+   },
+   {
+    "severity": "high",
+    "principle": "X5 · P6 thumb reach",
+    "what": "Controls (Message, Nudge, Pause, ⋯) start at y ≈ 1800 on the top scroll position — below the fold, at the end of the page.",
+    "fix": "Pin Message as the bottom action (KitScreen pinned primary) with Nudge/Pause/⋯ in the top-bar overflow, or put the controls directly under the status line."
+   },
+   {
+    "severity": "medium",
+    "principle": "U6",
+    "what": "Context 63 % is shown three times (header, Context use, Tokens row); State twice.",
+    "fix": "Once, in Details."
+   },
+   {
+    "severity": "medium",
+    "principle": "U5 kit",
+    "what": "The \"Tools\" summary is a bordered card with its own padding and a wrapped two-line summary: an ad-hoc card around a list row.",
+    "fix": "KitExpandRow \"Read 2 files · edited 2 · 6 commands · 4 test runs\" without a card."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "Title \"Worker · fox\" and \"Supervisor · deacon\" use the engine's generated names as identity (regression row 21 is about this).",
+    "fix": "Title: the role in the person's words with the name as a muted suffix only when two share a role."
+   },
+   {
+    "severity": "low",
+    "principle": "X8",
+    "what": "A manual refresh icon holds the top bar's one action slot although the screen follows the host.",
+    "fix": "Drop it (or move to overflow) and show freshness in the status line; use KitRefresh for pull."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "team-agent-stop-confirm-sheet",
+  "area": "i1-team-core",
+  "title": "Stop {agent}?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-agent-stop-confirm-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 4
+  },
+  "suggested": "fix",
+  "summary": "A correct kit confirmation (error-toned, says what stops and what stays), let down by the engine name \"fox\" and \"the host\".",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C3 · C2 names",
+    "what": "Title \"Stop fox?\" while the list called it \"Worker\"; body \"the host can wake it again later\".",
+    "fix": "Title \"Stop the worker on Sync engine?\"; body \"Its session ends now. The work stays; the team can start it again later.\""
+   },
+   {
+    "severity": "low",
+    "principle": "P7 consistency",
+    "what": "Cancel is \"Keep going\" here, \"Keep\" on the gate and phone sheets, \"Cancel\" on the merge sheets.",
+    "fix": "One cancel label for every destructive confirm (\"Keep\" for stop/delete, \"Cancel\" only for forms)."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-agent-restart-confirm-sheet",
+  "area": "i1-team-core",
+  "title": "Restart {agent}?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-agent-restart-confirm-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "Clear and honest (\"loses what it had in context\"), with the same naming and \"host\" wording nits as Stop.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "C3",
+    "what": "\"Restart fox?\" / \"picks its work up from the host\".",
+    "fix": "\"Restart the worker?\" / \"It forgets its current conversation and picks the step up again.\""
+   },
+   {
+    "severity": "low",
+    "principle": "U2",
+    "what": "Restart uses the same error-pink primary as Stop although nothing is removed; everything looks equally dangerous.",
+    "fix": "Tonal primary for Restart; reserve error colour for actions that discard or end work."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-agent-message-sheet",
+  "area": "i1-team-core",
+  "title": "Message {agent}",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-agent-message-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 2,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A tidy composer sheet, but a typed message is thrown away on swipe-down with no warning, and there is no sign of where the message goes or when the agent will see it.",
+  "issues": [
+   {
+    "severity": "critical",
+    "principle": "X2 nothing typed is lost",
+    "what": "The source (_MessageSheet) holds the text in a local TextEditingController; the sheet is dismissible by drag or scrim tap and pops null, so the typed message is discarded silently.",
+    "fix": "Keep the draft per agent (oc.teamDraft.<profileId> or in-memory on the controller) and restore it on reopen, or confirm \"Discard message?\" when dismissing with text."
+   },
+   {
+    "severity": "medium",
+    "principle": "C4",
+    "what": "Nothing says what happens next; a busy worker may not read it until its turn ends.",
+    "fix": "Hint line under the title: \"fox reads it after its current step.\""
+   },
+   {
+    "severity": "low",
+    "principle": "C3",
+    "what": "Title \"Message fox\".",
+    "fix": "\"Message the worker\" or the role-first name used everywhere."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-agent-reassign-sheet",
+  "area": "i1-team-core",
+  "title": "Reassign work to {agent}",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-agent-reassign-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A picker that acts on one tap with no confirmation and labels every item with the engine's \"bead\" id.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "X3 · P10 no surprises",
+    "what": "Tapping a row immediately calls assignWork (source: the sheet pops the id, _reassign sends it); moving work between agents happens with no confirmation, no undo, and nothing on the row says so.",
+    "fix": "Tap selects; a pinned \"Give it to fox\" primary confirms; after sending, a snackbar \"Moved to fox · Undo\" where the host allows."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "Supporting lines \"Work · bead w-ready-1\", \"Work · bead w-ready-2\"; hint \"Ready work on this host\".",
+    "fix": "Supporting line: the parent task and age (\"Offline-first sessions · ready 12 min\"); hint: \"Steps waiting for a worker. The one you pick moves to fox.\""
+   },
+   {
+    "severity": "low",
+    "principle": "X4",
+    "what": "No empty state visible in source for zero ready items beyond the list.",
+    "fix": "KitStateView inline \"Nothing is waiting for a worker\"."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-agent-details-sheet",
+  "area": "i1-team-core",
+  "title": "Technical details",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-agent-details-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Correctly folded technical values with copy buttons, but every value appears twice (curated label, then the raw lowercase key) and the sheet title jumps to headline size.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "U6 duplication",
+    "what": "Run id \"fox\" and name \"fox\"; Session \"bl-5qc\" and session \"bl-5qc\"; Pool and pool \"gastown.polecat\"; Provider status \"active\" and state \"active\".",
+    "fix": "Show the curated rows once; list only raw keys that have no curated row under a \"Raw values\" label, with the same label casing."
+   },
+   {
+    "severity": "low",
+    "principle": "U7",
+    "what": "\"Pack —\" has no copy icon, so its value column breaks the right edge the others keep.",
+    "fix": "Hide empty values, or reserve the icon slot."
+   },
+   {
+    "severity": "low",
+    "principle": "U8",
+    "what": "Sheet title is headline-large (like the run/host details) while the message and reassign sheets use title-medium.",
+    "fix": "One sheet title style across the team sheets (KitSheet title)."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "gate-sheet",
+  "area": "i2-team-sheets",
+  "title": "<gate title> (Decision / Confirmation / Free text / Gate / Run failed / Review ready)",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/gate-sheet--decision.png",
+   "docs/qa/screen-census/i2-team-sheets/gate-sheet--confirmation.png",
+   "docs/qa/screen-census/i2-team-sheets/gate-sheet--free-text.png",
+   "docs/qa/screen-census/i2-team-sheets/gate-sheet--run-failed.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "The answer flows are sound (options, Send pinned in the block, Approve/Deny, Close, Details folded), but every header repeats the kind three times with an interaction id, and the failed-task variant is a report with no primary way forward.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3 · U6",
+    "what": "Header: \"Decision · 12m ago\", title, then \"Decision · interaction req-schema-1\", then \"Run Offline-first sessions\". The kind appears twice, an id sits above the fold, and \"Run\" is the engine noun.",
+    "fix": "One kicker line \"Decision · Offline-first sessions · 12m ago\", then the question. The interaction id under Technical details."
+   },
+   {
+    "severity": "high",
+    "principle": "X5 · C2",
+    "what": "Run failed: \"Recoverable: No — something needs changing first\" and \"Recommended action: Fix the failing tests on the host, then retry the run\" — then offers \"Restart or reassign\", Close and ⋯ in one row. No primary; the advice is not doable from the phone and contradicts the offered action.",
+    "fix": "Title \"Tests fail after the upgrade\"; body the error in plain text (not mono); primary \"Ask the team to fix it\" (message the planner with the failure), secondary \"Stop this task\", Details for classification/raw error."
+   },
+   {
+    "severity": "medium",
+    "principle": "U8",
+    "what": "Run failed shows the error sentence in mono and sections as label/value pairs (Classification \"Test\").",
+    "fix": "Error as body text; Classification under Details."
+   },
+   {
+    "severity": "medium",
+    "principle": "X3 · U2",
+    "what": "Approval of a destructive-sounding request (\"It rewrites the drafts table\") uses a plain green Approve; Deny is tonal with pink text — the danger is on the wrong button.",
+    "fix": "When the request is flagged destructive, Approve takes the error tone and a confirm (the gate-sheet-confirm \"Approve this destructive action?\" exists — show it); Deny is a neutral tonal."
+   },
+   {
+    "severity": "medium",
+    "principle": "X2",
+    "what": "Free text: the typed answer lives only in the sheet; source shows no draft keeping or dismiss guard.",
+    "fix": "Keep the draft per gate until sent, or confirm discard."
+   },
+   {
+    "severity": "low",
+    "principle": "§2",
+    "what": "Run failed actions \"Restart or reassign · Close · ⋯\" side by side.",
+    "fix": "Stacked hierarchy."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "gate-sheet-confirm-sheet",
+  "area": "i2-team-sheets",
+  "title": "Approve this destructive action? / Deny this request? / Cancel this work?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/gate-sheet-confirm-sheet--deny.png",
+   "docs/qa/screen-census/i2-team-sheets/gate-sheet-confirm-sheet--cancel-work.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "Right pattern and short copy; \"Stop this work?\" names the run in engine terms and \"Deny\" repeats the title.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "C3",
+    "what": "\"The run stops and its open work stays as it is.\"",
+    "fix": "\"The task stops; finished steps stay.\""
+   },
+   {
+    "severity": "low",
+    "principle": "P7",
+    "what": "Three stacked sheets (home → gate → confirm).",
+    "fix": "Confirm as a dialog over the gate sheet."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-team-merge-section",
+  "area": "i2-team-sheets",
+  "title": "Ready to merge / Not ready / Merged",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-merge-section--ready.png",
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-merge-section--not-ready.png",
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-merge-section--armed.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A readiness checklist and diff size are the right content, but merge needs three confirmations, Approve sits under Merge as a second big button, and a pending review is shown as a red failure.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "X9 · P1",
+    "what": "Merging takes Merge → \"Tap again to continue\" (armed 8 s, button becomes \"Confirm merge\") → the \"Merge into main?\" sheet → Merge into main: three deliberate taps for one decision (source: merge_section.dart two-step plus sheet).",
+    "fix": "Keep one confirmation: the sheet (it states the branch and irreversibility). Drop the armed state."
+   },
+   {
+    "severity": "high",
+    "principle": "U4 · X5 order",
+    "what": "Two full-width buttons: filled \"Merge\" above tonal \"Approve request\". Approval is the step before merging, yet it is placed second; in the not-ready state Merge is a disabled grey slab whose reason is printed 300 dp below.",
+    "fix": "Show one primary for the next step: \"Approve\" while review is pending, \"Merge into main\" once approved. Disabled reason directly under the button, or hide the button and show the reason as the block's status."
+   },
+   {
+    "severity": "medium",
+    "principle": "U2 · C2",
+    "what": "\"✕ Review · waiting for approval\" in error red: waiting is not a failure.",
+    "fix": "Pending checks use the waiting mark and neutral text; red only for failing tests or conflicts."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "\"merge request gc-mr-14\" in the header.",
+    "fix": "Header \"Ready to merge into main\"; the id under Details."
+   },
+   {
+    "severity": "low",
+    "principle": "U5",
+    "what": "The whole section is a bordered, tinted card inside the Overview, with its own inset rails (64 dp) unlike the rest of the page (32).",
+    "fix": "Sit on the page rails with a SectionLabel \"Merge\", no card."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "team-merge-confirm-sheet",
+  "area": "i2-team-sheets",
+  "title": "Merge into {branch}?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-merge-confirm-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Error-toned and irreversible-aware, but it does not say what is being merged, and it is the third confirmation of the same act.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P10 say exactly what",
+    "what": "Body \"This cannot be undone from the phone\" (no period) — nothing about which task, how many files or which branch.",
+    "fix": "\"Merges Settings screen refresh (6 files, +312 −87) into main. You can’t undo this from the phone.\""
+   },
+   {
+    "severity": "medium",
+    "principle": "X9",
+    "what": "Reached only after the two-tap arm on the section.",
+    "fix": "Make this the only confirmation (see merge section)."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-merge-approve-sheet",
+  "area": "i2-team-sheets",
+  "title": "Approve this merge request?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-merge-approve-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 3,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "fix",
+  "summary": "Clear copy (\"Merging is a separate step\"), but approving is not destructive and does not need its own confirmation sheet.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "X9",
+    "what": "A confirmation for a reversible, non-destructive approval adds a tap to the most common merge path.",
+    "fix": "Approve directly with a snackbar \"Approved · Undo\" (if the host allows withdrawing) or no confirm at all."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-merge-changes-sheet",
+  "area": "i2-team-sheets",
+  "title": "Changes",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-merge-changes-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "A good compact diff summary with the work items that produced it; only long paths wrap awkwardly.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "U8",
+    "what": "Paths wrap mid-segment (\"lib/settings/ / settings_screen.dart\") and \"+88 / -0\" shows zero deletions.",
+    "fix": "File name as title, folder as muted supporting line; omit \"/ -0\"."
+   },
+   {
+    "severity": "low",
+    "principle": "X5",
+    "what": "File rows are not tappable (no diff view).",
+    "fix": "If a diff exists, rows open it with a chevron; otherwise fine."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-run",
+  "area": "i1-team-core",
+  "title": "<run title> (Run · convoy | Run · formula)",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-run--batch.png",
+   "docs/qa/screen-census/i1-team-core/team-run--formula.png",
+   "docs/qa/screen-census/i1-team-core/team-run--missing.png",
+   "docs/qa/screen-census/i1-team-core/team-run--error.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "The task page has the right parts (title, status, one conversation link, what needs you, steps), but the top bar is empty above four tabs, the stage strip contradicts the status, and error/missing states disagree with their own buttons.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P1 · U4 title first",
+    "what": "On Overview the top bar is blank (only refresh and ⋯), then four tabs, then the title in display type; on the other tabs the title moves into the top bar. The place has no name until the eye passes the tabs.",
+    "fix": "Title always in the top bar (collapsing large title on Overview); tabs below it. Or drop the tabs: Overview with Steps inline and Agents/Timeline as rows."
+   },
+   {
+    "severity": "high",
+    "principle": "C2 words match state",
+    "what": "The four-stage strip \"✓ Waiting · ● Working · ○ Reviewing · ○ Done\" marks \"Waiting\" as a completed stage; on the merge fixture the status is \"Done\" with every stage checked while the text says \"1 of 2 steps done\" and review is pending.",
+    "fix": "Stages that are outcomes, not states: \"Planned · Working · In review · Merged\"; derive \"Done\" only when every step is merged."
+   },
+   {
+    "severity": "medium",
+    "principle": "C2 · X4",
+    "what": "Missing state: body says \"Refresh to check again\" but the only button is \"Back\" and refresh is an unlabeled top-bar icon; icon is the cloud-off used for \"can’t reach\".",
+    "fix": "Body \"It may have been closed or removed on pop-os.\" Primary \"Back to the team\", tertiary \"Check again\". Use an empty/archive icon, not cloud-off."
+   },
+   {
+    "severity": "medium",
+    "principle": "U6",
+    "what": "Error state has both the top-bar refresh icon and a primary Try again.",
+    "fix": "Hide the top-bar refresh while a state view offers Try again."
+   },
+   {
+    "severity": "medium",
+    "principle": "U2 colour",
+    "what": "\"Working\" is pale blue in the status line and green in the stage strip on the same screen.",
+    "fix": "One tone per state everywhere (AppStatusTone.working)."
+   },
+   {
+    "severity": "low",
+    "principle": "U7",
+    "what": "Formula run overview is title, status, conversation link, strip and a Details row, then 1100 dp of black: the steps are on another tab although there are only 4.",
+    "fix": "Show steps inline on Overview for every run kind (the batch run already does)."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "team-run-cancel-confirm-sheet",
+  "area": "i1-team-core",
+  "title": "Cancel this run? / Close this batch?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-run-cancel-confirm-sheet--batch.png",
+   "docs/qa/screen-census/i1-team-core/team-run-cancel-confirm-sheet--formula.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Correct confirmation pattern, but it speaks the engine's nouns: a \"batch\" and a \"run\", where the rest of the app says \"task\".",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3 · P7 one name",
+    "what": "\"Close this batch?\" / \"The batch closes on the host. Its open work items stay open for another batch.\" and \"Stop this run?\" — the home, the list and the missing state all say \"task\".",
+    "fix": "\"Stop this task?\" / \"Steps in progress stop; finished work stays. You can’t undo this from the phone.\" Button \"Stop task\"."
+   },
+   {
+    "severity": "low",
+    "principle": "P7",
+    "what": "Cancel label \"Keep going\" differs from other sheets.",
+    "fix": "Align cancel labels (see stop sheet)."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-run-agents-tab",
+  "area": "i1-team-core",
+  "title": "Agents",
+  "kind": "tab",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-run-agents-tab.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A plain list, but both rows are called \"Worker\" and the tab adds a whole screen for two rows the Overview could show.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C2 one name per thing",
+    "what": "Two rows titled \"Worker\" with no name.",
+    "fix": "Name first (\"fox · Worker\")."
+   },
+   {
+    "severity": "low",
+    "principle": "X9",
+    "what": "Two agents justify a row on Overview (\"2 agents · 1 working ›\"), not a tab.",
+    "fix": "Replace the Agents tab with an agents row on Overview, as the home already does."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-run-overview-tab",
+  "area": "i1-team-core",
+  "title": "Overview",
+  "kind": "tab",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-run-overview-tab--stop-unconfirmed.png",
+   "docs/qa/screen-census/i1-team-core/team-run-overview-tab--stalled.png",
+   "docs/qa/screen-census/i1-team-core/team-run-overview-tab--merged.png",
+   "docs/qa/screen-census/i1-team-core/team-run-overview-tab--details-open.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": 3,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "The celebration on a merged task and the stall line are good ideas, but a merged task still shows disabled Merge and Approve buttons, and a stalled task offers no action.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "U4 · §2 disabled button",
+    "what": "Merged state: the merge card shows a greyed full-width \"Merge\" and \"Approve request\" under \"Already on main\". Two dead primaries on a finished task.",
+    "fix": "Merged state of the merge section: one line \"Merged into main · e4c1a9f\" with a copy action and \"Review changes\" tertiary; no Merge/Approve buttons."
+   },
+   {
+    "severity": "high",
+    "principle": "X4 · C4 honest waiting",
+    "what": "Stalled: \"The host has not started an agent yet\" with an hourglass and nothing else — no age, no expectation, no action (regression row 20 asked for age, next check and an action).",
+    "fix": "\"No agent has started this step · 4 min\" + \"Usually 2–6 min\" muted; after 6 min, tertiary \"Start one now\" (nudge the pool) and \"Why?\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "U5 · C3",
+    "what": "Stop unconfirmed: \"⚠ Stop run · Unconfirmed\" outlined chip and \"Try again\" text button side by side under the conversation link, above the stage strip — a status shown as a button.",
+    "fix": "KitNotice under the status line: \"Stop sent · pop-os hasn’t confirmed it\" with \"Send again\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "U6",
+    "what": "Details open: \"Steps · 2 done · 1 working · 0 held up\" repeats the \"2 of 4 steps done\" status two rows up; \"Usage · Team today · $0.00 est. · 0 tokens\" is not about this task.",
+    "fix": "Details: started/updated times, branch, ids (copyable). Remove the step recount and team usage."
+   },
+   {
+    "severity": "low",
+    "principle": "M3",
+    "what": "Celebration plays on first open of a merged task (team_moments, KitMotion.celebration) — good; judge on device that it is skipped with Celebrations off.",
+    "fix": "Verify on device; no change if it obeys KitEffects."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "team-run-work-tab",
+  "area": "i1-team-core",
+  "title": "Work",
+  "kind": "tab",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-run-work-tab--list.png",
+   "docs/qa/screen-census/i1-team-core/team-run-work-tab--graph.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Grouping by state is clear, but each step carries a cryptic one-letter circle (\"W\", \"F\", \"–\") and each group repeats its row icon in the header; the graph truncates names.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C3 · U9",
+    "what": "Trailing outlined circles with \"W\", \"F\" or \"–\" are agent initials; nothing explains them and two Workers would both be \"W\".",
+    "fix": "Supporting line: \"fox · 5m ago\"; drop the initials circle. Unassigned: \"Waiting for a worker\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "U6",
+    "what": "Every group header (\"? Needs input · 1\") carries the same icon as its only row.",
+    "fix": "Headers are text only (SectionLabel with count)."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3 naming",
+    "what": "Tab \"Steps\" but the sheet a row opens says \"Work · bead w-sync\" and the manifest calls it Work.",
+    "fix": "One word: \"Steps\" everywhere in UI; \"bead\" only under Technical details."
+   },
+   {
+    "severity": "low",
+    "principle": "U2",
+    "what": "\"Waits on 1 step\" is drawn in the accent colour, so it reads as a link.",
+    "fix": "Muted supporting colour; tone only for states."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-run-timeline-tab",
+  "area": "i1-team-core",
+  "title": "Timeline",
+  "kind": "tab",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-run-timeline-tab--all.png",
+   "docs/qa/screen-census/i1-team-core/team-run-timeline-tab--work.png",
+   "docs/qa/screen-census/i1-team-core/team-run-timeline-tab--empty.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A readable event list with filters, but the events are generic (\"Sync engine updated\" twice), an engine name slips in (\"fox started\"), and filters sit over an empty list.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C6 · P2",
+    "what": "\"Sync engine updated\" appears at 13:36 and 12:21 with nothing saying what changed.",
+    "fix": "Say the change: \"Sync engine · tests pass\", \"Sync engine · pushed\", from the event payload; fall back to \"updated\" only when unknown."
+   },
+   {
+    "severity": "low",
+    "principle": "X4",
+    "what": "Empty: four filter chips above \"Nothing has happened yet\".",
+    "fix": "Hide the filters when the timeline is empty."
+   },
+   {
+    "severity": "low",
+    "principle": "U7",
+    "what": "The first row starts 8 dp under the chips (row 380 vs chip bottom 332) while rows are 96 dp apart.",
+    "fix": "16 dp between the chip row and the list."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-run-details-sheet",
+  "area": "i1-team-core",
+  "title": "Technical details",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-run-details-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "The right place for \"convoy\", \"rig\" and ids; minor craft: millisecond timestamps and a missing gap before issue_type.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "U8",
+    "what": "Started \"2026-09-11 10:29:00.000\" — milliseconds on a phone.",
+    "fix": "\"Fri, Sep 11 · 10:29\" like the work sheet, with the ISO value copyable."
+   },
+   {
+    "severity": "low",
+    "principle": "U7",
+    "what": "\"issue_type\" sits flush under the wrapped \"Tracked work\" value with no gap.",
+    "fix": "Same 16 dp gap between every raw value row."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "start-run-sheet",
+  "area": "i2-team-sheets",
+  "title": "Start a run",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/start-run-sheet--empty.png",
+   "docs/qa/screen-census/i2-team-sheets/start-run-sheet--filled.png",
+   "docs/qa/screen-census/i2-team-sheets/start-run-sheet--planner-off.png",
+   "docs/qa/screen-census/i2-team-sheets/start-run-sheet--direct-task.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A good pinned-action form with plain supervision choices, but a typed objective is lost on swipe-down, the planner row shows an engine id, and the planner-off state is a dead end.",
+  "issues": [
+   {
+    "severity": "critical",
+    "principle": "X2 nothing typed is lost",
+    "what": "The objective lives in the sheet's TextEditingController (start_run_sheet.dart); dismissing by drag or scrim discards it silently. This is the app's main \"delegate\" input.",
+    "fix": "Keep the objective as a per-profile draft (oc.teamDraft.<profileId>) restored on reopen, and ask \"Discard this task?\" when dismissing with text."
+   },
+   {
+    "severity": "high",
+    "principle": "X4 · P3 dead end",
+    "what": "Planner-off: \"The planner (Mayor) is off on this host. Wake it on the host or switch it to the full profile, then come back.\" with only \"Host guide\". The title still says \"Give the team a task\".",
+    "fix": "When the host creates work, go straight to the direct-task form (it already exists) with a one-line note; only when neither path exists show the state, titled \"This team can’t take tasks right now\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "\"Planner · Mayor gastown.mayor · Set on the host; the phone shows it and does not choose it.\" — an engine id and a row that informs nothing actionable.",
+    "fix": "Remove the row; if needed, one muted line under the button: \"The team’s planner splits it into steps.\""
+   },
+   {
+    "severity": "medium",
+    "principle": "C5",
+    "what": "Primary \"Send to planner\" under the title \"Give the team a task\", label \"Objective\".",
+    "fix": "Label \"What should the team do?\", button \"Give it to the team\"."
+   },
+   {
+    "severity": "low",
+    "principle": "U7",
+    "what": "Supervision descriptions are two lines each; the three options push the pinned button to the bottom with no room.",
+    "fix": "One-line descriptions: \"Asks before every decision\" / \"Asks on merges and failures\" / \"Asks only when stuck\"."
+   },
+   {
+    "severity": "low",
+    "principle": "U7",
+    "what": "Planner-off state inset at 64 dp inside the sheet while the title sits at 32 dp.",
+    "fix": "Same rails as the title."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-team-planning-card",
+  "area": "i2-team-sheets",
+  "title": "Planning… (Mayor) / still planning / unconfirmed / refused",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-planning-card--planning.png",
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-planning-card--still-planning.png",
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-planning-card--unconfirmed.png",
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-planning-card--refused.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": 4,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A warm, honest waiting card with a moving drawing, but after 31 minutes it only says \"Still planning — check the planner's output\", and a refused task can only be dismissed, losing the objective.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "X2 · X4",
+    "what": "Refused: \"The host refused the objective: The planner refused the message\" with Planner output and Dismiss only (source: two tertiaries). The person's objective is gone unless they retype it.",
+    "fix": "Primary \"Edit and send again\" (reopens the start sheet prefilled), tertiary Dismiss; body gives the reason in plain words."
+   },
+   {
+    "severity": "high",
+    "principle": "C4 8-second rule for long waits",
+    "what": "Still planning (31 min): no elapsed time, no expectation, no action beyond reading raw output.",
+    "fix": "\"Still planning after 31 min · usually 1–3 min\" and actions \"Message the planner\", \"Send again\", \"Cancel\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "C6 · C2",
+    "what": "Unconfirmed title wraps to two bold accent lines (\"Sent, unconfirmed — check the planner's output before sending again\"); refused title doubles the subject.",
+    "fix": "Title one line: \"Not confirmed yet\" / \"The planner refused it\"; the rest in the body."
+   },
+   {
+    "severity": "low",
+    "principle": "M4",
+    "what": "Only the first card's drawing loops (ambient: index == 0) — correct per §10.",
+    "fix": "Keep."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-agents",
+  "area": "i1-team-core",
+  "title": "Agents",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-agents--loaded.png",
+   "docs/qa/screen-census/i1-team-core/team-agents--suspended-open.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A clean kit list, but two rows are both called \"Worker\", Idle is a colour-only grey blob, and the working agent leads with a play button glyph.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C2 · P1 one name per thing",
+    "what": "Two rows are titled \"Worker\"; the only way to tell them apart is the supporting line. Elsewhere the same agents are \"fox\" and \"wolf\" (agent screen title \"Worker · fox\", timeline \"fox started\", steps list avatars \"F\"/\"W\").",
+    "fix": "Title each row with the agent's name and role once: \"fox · Worker\", \"wolf · Worker\"; use the same label in the agent screen title, the timeline and the stop sheet."
+   },
+   {
+    "severity": "medium",
+    "principle": "U2 · U9",
+    "what": "Idle agents lead with a solid grey 16 dp disc, working with an outlined play triangle, waiting with a question mark, suspended with a stop-square: four icon styles, one of them a filled blob, at one level.",
+    "fix": "Use KitStatusMark/KitRowIcon consistently: waiting-for-you question, working mark, idle hollow dot, stopped stop mark, all outlined at the same size."
+   },
+   {
+    "severity": "low",
+    "principle": "C3",
+    "what": "\"Suspended on the host (1)\" uses the engine's word and location.",
+    "fix": "\"Stopped (1)\" or \"Asleep (1)\" to match the home's Paused vs asleep wording."
+   },
+   {
+    "severity": "low",
+    "principle": "X4",
+    "what": "No top-bar refresh, empty or loading state is visible here; the screen ends in 1100 dp of black with nothing that says the list updates by itself.",
+    "fix": "A muted footer line \"Updates by itself · checked 20 s ago\" or KitRefresh pull-to-refresh."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-home",
+  "area": "i1-team-core",
+  "title": "AI Team",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-home--loaded.png",
+   "docs/qa/screen-census/i1-team-core/team-home--empty.png",
+   "docs/qa/screen-census/i1-team-core/team-home--error.png",
+   "docs/qa/screen-census/i1-team-core/team-home--not-answering.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": 2,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "The redesign is a real step up (one pinned primary, plain task rows, a Now line), but the same task appears twice, every working row spins at once, and the error states are a large empty top with a body that repeats its title.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "U6 · P1 nothing twice",
+    "what": "With one open question, \"Offline-first sessions\" is both the Needs you card and the first row under Tasks (\"Needs you · 1 of 5 steps done\"). The eye reads two items where there is one.",
+    "fix": "When a task is shown in Needs you, leave it out of Tasks (the Work tab card already does this: \"leaving out the task the question already names\"). Keep the count in the Needs you header: \"Needs you · 1\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "M4 · P5 one loop per screen",
+    "what": "Every \"Working\" task row leads with KitStatusMark(working), a CircularProgressIndicator, so the loaded home runs 2–4 spinners at once (12 in the long list), plus the planning drawing when a plan is pending, plus the waving mascot. Nobody on this screen is waiting on a spinner.",
+    "fix": "Use a still \"working\" mark on list rows (a filled accent dot or a static quarter-arc) and keep motion for the one thing the person waits on: the Now line or the planning drawing. Spinners only in a row the person just acted on."
+   },
+   {
+    "severity": "medium",
+    "principle": "U8 · P8 craft",
+    "what": "The Needs you card leaves ~100 dp of dead space between the last option (\"Plain files\") and \"More\": the reserved slot for the Send button that only appears after a pick. The mascot sits on the card border and collides with it.",
+    "fix": "Collapse the slot until an option is picked (KitReveal with child: null), and put the mascot beside the \"Needs you\" label, not overlapping the card edge."
+   },
+   {
+    "severity": "medium",
+    "principle": "C2 · C6 copy",
+    "what": "Error state: title \"Can’t reach the team host\", body \"The team host can’t be reached. AI Team works over your Tailscale network or on this device.\" The body restates the title, \"team host\" is an engine term, and it offers no cause or next step besides Try again.",
+    "fix": "Title: \"Can’t reach pop-os\". Body: \"Check that the computer is awake and on Tailscale.\" Actions: Try again (primary), \"Check the address\" (tertiary, opens the host sheet). Raw error stays under Details."
+   },
+   {
+    "severity": "medium",
+    "principle": "C2 consistency",
+    "what": "Two failure states for the same fact read differently: error says \"Can’t reach the team host\" with subtitle \"On pop-os · Not answering\"; not-answering says \"The team host isn’t answering\" with a subtitle that does not mention it, and has no Details row.",
+    "fix": "One state, one set of words: \"pop-os isn’t answering\", subtitle carries \"· Not answering\" in both, both keep Details."
+   },
+   {
+    "severity": "medium",
+    "principle": "U7 · P8 layout",
+    "what": "Error and not-answering states float the icon, title and button in the lower half under ~550 dp of empty black, left-aligned. It reads like the page failed to load, not like a designed state.",
+    "fix": "Anchor the state under the top bar with the KitStateView illustration slot (the \"not answering\" scene from standard §10), or centre the block vertically as a page-size KitStateView does."
+   },
+   {
+    "severity": "low",
+    "principle": "X9 · U6",
+    "what": "In the empty state the board appears twice: the top-bar board icon and a \"View board\" row.",
+    "fix": "Keep the row (it has a label) and drop the unlabeled top-bar icon, or keep the icon only once tasks exist."
+   },
+   {
+    "severity": "low",
+    "principle": "U9 icon meaning",
+    "what": "The Now line leads with an outlined play triangle, which reads as a play button, not as \"working\".",
+    "fix": "Use the working mark or the team agent icon for the Now line; reserve the triangle for actions."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "team-home-runs-tab",
+  "area": "i1-team-core",
+  "title": "Runs ({count})",
+  "kind": "tab",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-home-runs-tab--search-open.png",
+   "docs/qa/screen-census/i1-team-core/team-home-runs-tab--filtered.png",
+   "docs/qa/screen-census/i1-team-core/team-home-runs-tab--done-expanded.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Search and filter work, but they do not filter the Needs you card, and scrolled content slides under a transparent top bar where it is cut through the middle of a line.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "U3 · P8 nothing clipped",
+    "what": "Filtered state: the Now line has scrolled under the title and its second line shows cut in half (\"no worker nas starteo\") directly under \"On pop-os\"; the top bar has no surface or scroll-under divider.",
+    "fix": "Give the top bar a solid surface with the scrolled-under elevation tint (Material 3 scrolledUnderElevation) or pin the Now line with the header so it never half-scrolls under the title."
+   },
+   {
+    "severity": "medium",
+    "principle": "X6 · C2 filter truth",
+    "what": "With the filter set to \"Done\", the full Needs you question card still sits above the results; with search open the query does not touch it either. The filter says Done, the screen shows an open question first.",
+    "fix": "When a search or filter is active, hide Needs you (or reduce it to one line \"1 question needs you · Show\") and show only matching tasks, with a \"No tasks match\" empty line when nothing matches."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3 · C6 copy",
+    "what": "Warning Now line: “Price rounding in the checkout” has waited 34 min and no worker has started · Why?. \"Why?\" is the only affordance and it opens an engine explanation (routes, pools, patrol).",
+    "fix": "Say the consequence and the action: \"Price rounding hasn’t started after 34 min\" with a tertiary \"Check the team\" (opens the agents screen) and keep Why? as the second tertiary."
+   },
+   {
+    "severity": "low",
+    "principle": "U4 · U5",
+    "what": "The search field is a 52 dp outlined accent-bordered box plus a separate \"All ⌄\" filter row: two rows of controls before content, and a close X added to the top bar (three icons).",
+    "fix": "Put search in the top bar (SearchAnchor/SearchBar) with the filter as a trailing chip inside it; close with back."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-home-agents-tab",
+  "area": "i1-team-core",
+  "title": "Agents ({count})",
+  "kind": "tab",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-home-agents-tab.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": 2,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Replaced by a single agents row, which is right; the long task list it now shows repeats itself in every waiting row and lets supporting lines wrap.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C6 · P2 fewest words",
+    "what": "Each waiting row reads \"Waiting for a worker · 34 min · no worker has started\": the first and last clauses say the same thing, and the long ones wrap to two lines (\"…no worker has / started\").",
+    "fix": "One clause: \"Waiting 34 min for a worker\". After the threshold, \"Not started after 1 h 2 min\" in the warning tone. One line, never wrapping."
+   },
+   {
+    "severity": "medium",
+    "principle": "M4",
+    "what": "Four spinners (one per working row) run at the same time over a list the person is only scanning.",
+    "fix": "Still working mark on rows (see team-home)."
+   },
+   {
+    "severity": "low",
+    "principle": "U2 colour and shape",
+    "what": "Waiting uses a small hollow circle and working a 2-dp ring of the same size and colour at rest; at a glance the two states are indistinguishable in a still frame or under reduced motion.",
+    "fix": "Give waiting a dashed or muted outline and working a filled accent dot; the word already carries the state."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-home-needs-you-tab",
+  "area": "i1-team-core",
+  "title": "Needs you ({count})",
+  "kind": "tab",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-home-needs-you-tab--several.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Putting what needs the person first is right, but the \"Unconfirmed\" chip squeezes the question into an ellipsis, a failed task repeats its own title, and the same tasks appear again under Tasks.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P-a · U3 nothing cut",
+    "what": "The outlined \"⟳ Unconfirmed\" chip takes ~290 dp of the row, so the question's supporting line truncates to \"Question · Offline-first sessi…\".",
+    "fix": "Move the receipt into the supporting line as a word with an icon (\"Question · Not confirmed yet · Try again\") and keep only a chevron trailing; the row opens the sheet with the retry."
+   },
+   {
+    "severity": "medium",
+    "principle": "C6 · U6",
+    "what": "The failed row reads \"Upgrade the HTTP client and fix what breaks\" / \"Run failed · Upgrade the HTTP client and fix wha…\": the title is repeated and cut in the supporting line.",
+    "fix": "Supporting line for a failed task: \"Failed · 3 tests fail · 20m ago\" (the error's first clause), never the title again."
+   },
+   {
+    "severity": "medium",
+    "principle": "U6 · P1",
+    "what": "Both tasks listed under Needs you are listed again under Tasks with \"Needs you ·\" as their state, so four question rows and two task rows describe two tasks.",
+    "fix": "Omit tasks that have a Needs you row from Tasks, or group the questions under each task."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3 plain words",
+    "what": "\"Unconfirmed\" is the app's bookkeeping word; the person cannot tell whether their answer arrived or what to do.",
+    "fix": "\"Not confirmed yet\" in the row, and in the sheet: \"Your answer left the phone but pop-os hasn’t confirmed it. Send again\"."
+   },
+   {
+    "severity": "low",
+    "principle": "U2",
+    "what": "Needs-you rows use four different leading icons (check-circle, pencil, question, x-circle) in the same accent blue, with the failed one red; the approval check reads as \"done\".",
+    "fix": "Use the question mark for every \"needs you\" row and the error mark only for failures; say the kind in the supporting line."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-intro",
+  "area": "i1-team-core",
+  "title": "AI Team",
+  "kind": "screen",
+  "images": [],
+  "scores": {
+   "ui": null,
+   "ux": null,
+   "motion": null,
+   "copy": 4,
+   "principles": null
+  },
+  "suggested": "keep",
+  "summary": "Not rendered (no census scene yet); the source copy is plain and well structured (four steps, what it needs, one primary per server kind).",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P3 set the expectation",
+    "what": "Source strings give download size (\"About {size} to download\") but no time, while regression row 19 records 8–9 minutes the first time.",
+    "fix": "Add \"About 10 minutes the first time\" beside the size."
+   },
+   {
+    "severity": "low",
+    "principle": "census",
+    "what": "No render, so layout, drawing and primary placement are unreviewed.",
+    "fix": "Add a census scene per server kind (in-app, Termux, computer found / not found, unsupported)."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-work-graph",
+  "area": "i2-team-sheets",
+  "title": "[Work dependency graph]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/embedded-work-graph.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A dependency graph on a phone that truncates every longer name, floats in the middle of a mostly empty canvas and colours three different states the same blue.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P-a nothing cut",
+    "what": "\"Schema for o…\", \"Tests for reco…\" — step names are cut to a few letters.",
+    "fix": "Wrap node labels to two lines, or lay the graph out vertically (one node per row, edges on the left) so names get the full width."
+   },
+   {
+    "severity": "medium",
+    "principle": "U2",
+    "what": "Needs input, Working and Blocked nodes all use the same thick pale-blue border; only the small icon differs.",
+    "fix": "Border tone per state (attention / working / neutral) plus the icon; done muted."
+   },
+   {
+    "severity": "medium",
+    "principle": "U7",
+    "what": "The graph starts at y ≈ 860 under ~500 dp of empty canvas and a floating \"collapse\" button whose meaning is unclear.",
+    "fix": "Fit to top on open; label the button (\"Fit\") or drop it."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "work-sheet",
+  "area": "i2-team-sheets",
+  "title": "<work item title> (Work · bead <id>)",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/work-sheet--working.png",
+   "docs/qa/screen-census/i2-team-sheets/work-sheet--blocked.png",
+   "docs/qa/screen-census/i2-team-sheets/work-sheet--review.png",
+   "docs/qa/screen-census/i2-team-sheets/work-sheet--missing.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "The step sheet carries useful content (description, depends on, blocks), but its header is the engine's seven-stage pipeline, its states contradict each other, and a missing item is a one-line dead end.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3 plain words",
+    "what": "\"Work · bead w-sync\", stages \"Routed · Agent starting · Claimed · Working · Pushed · Handed to merge · Merged\", worktree \"/home/dev/shopfront/.gc/worktrees/polecat-fox\", branch \"polecat/sync-engine\" above Technical details.",
+    "fix": "Kicker \"Step · Offline-first sessions\"; four stages as on the task; Code (branch, worktree) inside Technical details."
+   },
+   {
+    "severity": "high",
+    "principle": "C2 contradiction",
+    "what": "Review fixture: every stage through \"Merged\" checked, status \"Review\". Blocked fixture: current stage \"Routed\" highlighted in green (in progress) while status says \"Blocked\".",
+    "fix": "Stage and status from one function; blocked shows the stage as waiting with \"Blocked by Sync engine\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "X4",
+    "what": "Missing: a tiny sheet with an icon and \"This work item is no longer on the host.\" — title with a period, no body, no action.",
+    "fix": "KitStateView inline: \"This step is gone\" / \"It was closed or removed on pop-os.\" Action \"Close\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "X5",
+    "what": "A blocked step offers nothing to do; a working one offers nothing either (no open agent, no message).",
+    "fix": "Primary per state: working → \"Watch fox\" (agent), blocked → \"Open Sync engine\", needs input → \"Answer\"."
+   },
+   {
+    "severity": "low",
+    "principle": "U5",
+    "what": "\"Depends on\"/\"Blocks\" chips are outlined 56 dp buttons, a one-off style.",
+    "fix": "KitRow items with the state mark and chevron."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-team-card",
+  "area": "i1-team-core",
+  "title": "AI Team · Gas City",
+  "kind": "overlay",
+  "images": [],
+  "scores": {
+   "ui": null,
+   "ux": null,
+   "motion": null,
+   "copy": null,
+   "principles": null
+  },
+  "suggested": "keep",
+  "summary": "Not rendered (census render failed: the \"team-card\" key was not found); the source spec (header, one Needs you line, two task rows, no dashboard indicators) is sound.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "census",
+    "what": "Render failed with CensusMismatch; the Work tab card, the owner's original \"very ugly\" complaint (row 5), has no current image.",
+    "fix": "Fix the census scene so the card is reviewed; it is the most-seen AI Team surface."
+   },
+   {
+    "severity": "low",
+    "principle": "X9",
+    "what": "Per source, task rows open the home rather than the task, costing one extra tap.",
+    "fix": "Let a task row open its task directly."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "team-cycle-how-sheet",
+  "area": "i1-team-core",
+  "title": "How the host dispatches",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-cycle-how-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "It sets a real expectation (\"2–6 minutes from routed to claimed is normal\"), which is exactly what the owner asked for, but in the engine's words, stacked as a sheet on a sheet.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3 plain words",
+    "what": "\"routes it to an agent pool\", \"A patrol every 30 seconds wakes an agent within its wake budget; the agent's harness takes 5–10 seconds to start\", \"claims the work\".",
+    "fix": "\"The team checks for new steps about once a minute. Starting a worker takes a few seconds, and its first reply up to a minute. So 2–6 minutes before a step shows Working is normal.\""
+   },
+   {
+    "severity": "medium",
+    "principle": "X8 container",
+    "what": "A sheet opened over the Work sheet over the run screen: two drag handles and two scrims.",
+    "fix": "Unfold the explanation in place under the stage strip (KitReveal), or make it a dialog."
+   },
+   {
+    "severity": "low",
+    "principle": "§2 buttons",
+    "what": "\"Got it\" is a right-aligned tonal pill, the only right-aligned button in the team sheets.",
+    "fix": "Full-width tertiary or no button (the sheet closes by drag/back)."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-team-cycle-strip",
+  "area": "i1-team-core",
+  "title": "[Dispatch cycle strip]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/embedded-team-cycle-strip--host-not-started.png",
+   "docs/qa/screen-census/i1-team-core/embedded-team-cycle-strip--provider-limit.png",
+   "docs/qa/screen-census/i1-team-core/embedded-team-cycle-strip--working.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "Seven engine stages wrapping over two lines, with engine names, a green Stop, and states that disagree with the status right under them.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3 plain words",
+    "what": "Stages \"Routed · Agent starting · Claimed · Working · Pushed · Handed to merge · Merged\"; owner \"shopfront/gastown.polecat\", \"gastown__polecat-bl-48k\"; subtitle \"Work · bead w-banner\".",
+    "fix": "Four stages in the person's words — \"Waiting · Working · In review · Merged\" — matching the task strip; the owner is the agent's name; bead id and pool under Technical details."
+   },
+   {
+    "severity": "high",
+    "principle": "C2 contradiction",
+    "what": "Provider-limit state: the current stage is \"Pushed\" and the status line says \"▷ Working\" while the warning says the provider hit its usage limit (so nothing is working). Review fixture (work-sheet--review): all stages through \"Merged\" checked but status \"Review\".",
+    "fix": "One state source: stage and status derived together; a blocking condition replaces the status (\"Stopped · usage limit reached\")."
+   },
+   {
+    "severity": "high",
+    "principle": "X3 · U2 destructive",
+    "what": "\"■ Stop\" is a green square text button next to the tonal \"Open agent output\": a destructive action in the accent colour beside a frequent one.",
+    "fix": "Stop moves to the sheet's overflow (error-coloured, confirmed); the notice offers \"Open agent output\" only."
+   },
+   {
+    "severity": "medium",
+    "principle": "C5",
+    "what": "\"The model provider reached its usage limit\" says what but not what next.",
+    "fix": "Add the way out: \"Wait for the limit to reset or switch the model on pop-os\" with \"How\" tertiary."
+   },
+   {
+    "severity": "medium",
+    "principle": "§2 alignment",
+    "what": "\"Refresh\" tonal and \"How the host dispatches\" text sit side by side at different heights.",
+    "fix": "Stack: one tertiary per line (KitActionStack)."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "team-cycle-stop-confirm-sheet",
+  "area": "i1-team-core",
+  "title": "Stop {agent}?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/team-cycle-stop-confirm-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": null,
+   "copy": 1,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "The confirmation is structurally right but its title is an engine address: \"Stop shopfront/ gastown.furiosa?\".",
+  "issues": [
+   {
+    "severity": "critical",
+    "principle": "C2 wrong words · C3",
+    "what": "Title \"Stop shopfront/ gastown.furiosa?\", broken across two lines at the slash; the person cannot tell which agent they are stopping (also listed by the census workers).",
+    "fix": "Title from the agent's display name: \"Stop the worker on Offline banner?\"; the raw id under a Details line if needed."
+   },
+   {
+    "severity": "medium",
+    "principle": "X8",
+    "what": "Third stacked sheet (run → work sheet → confirm).",
+    "fix": "Confirm as a dialog, or close the work sheet first."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-team-discover",
+  "area": "i1-team-core",
+  "title": "AI Team (off)",
+  "kind": "overlay",
+  "images": [],
+  "scores": {
+   "ui": null,
+   "ux": null,
+   "motion": null,
+   "copy": 4,
+   "principles": null
+  },
+  "suggested": "keep",
+  "summary": "Not rendered (no census scene yet); the source plan — a small first-time entry that folds to one quiet row — fits the one-presence rule.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "census",
+    "what": "No render of the first-time or folded entry.",
+    "fix": "Add census scenes for both."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-team-discovery-card",
+  "area": "i2-team-sheets",
+  "title": "{server} also runs an AI team. Turn it on?",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-discovery-card.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "A good offer at the right moment, but in engine language, with right-aligned buttons, directly above a row that says the same thing (the owner's regression row 18 pattern).",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "U6 · P1 one presence",
+    "what": "The card \"Laptop also runs an AI team. Turn it on?\" sits above the \"AI Team · Found on Laptop\" row: one team, two presences on Plugins.",
+    "fix": "Fold the offer into the row: \"AI Team · Found on Laptop\" with a trailing \"Turn on\" (or open the row to a sheet with Turn on)."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "\"Gas City 1.4.1 · city bright-lights · decisions and controls\".",
+    "fix": "\"Ready to connect · you can answer and steer from the phone\"; version and city under Details."
+   },
+   {
+    "severity": "medium",
+    "principle": "§2 alignment",
+    "what": "\"Not now\" / \"Turn on\" right-aligned, while the re-offer card on the same page aligns its pair left.",
+    "fix": "Stacked full width (primary, then tertiary) per standard §2."
+   },
+   {
+    "severity": "low",
+    "principle": "U5",
+    "what": "A filled card on a 40 dp inset while the list uses 32 dp rails.",
+    "fix": "KitNotice on the rails, no card."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-host-sheet",
+  "area": "i2-team-sheets",
+  "title": "Add AI Team host",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-host-sheet--empty.png",
+   "docs/qa/screen-census/i2-team-sheets/team-host-sheet--testing.png",
+   "docs/qa/screen-census/i2-team-sheets/team-host-sheet--not-found.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A short form with a real test before turning on, but the test is a disabled button, the raw error sits in the open, and it asks for a \"City\" and a computer kind that only changes a reminder.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "§2 · P3 disabled button as progress",
+    "what": "Testing: the primary becomes a grey disabled \"Checking the address…\" (regression row 19 and standard §2 forbid this).",
+    "fix": "Keep the button as is (or hide it) and show progress above it: a KitProgressRow \"Checking 100.100.1.2…\" with Cancel; after 8 s say so."
+   },
+   {
+    "severity": "medium",
+    "principle": "P4 detail on request",
+    "what": "Not found: raw \"Connection refused (http://100.100.1.2:8372)\" in mono directly above the button; the notice is a filled tinted block (KitNotice has no filled block).",
+    "fix": "KitNotice on the rails with the plain sentence; raw error under a Details row; secondary \"Save anyway\" if useful."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "\"City (optional)\" is the engine's word.",
+    "fix": "\"Team name (optional)\" with helper \"Only if the computer runs more than one team\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "X9",
+    "what": "\"Kind of computer\" chips wrap to two lines and, by their own helper, \"Only change the reminder shown with the team\".",
+    "fix": "Remove the question; infer from the host or ask later where the reminder appears."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-host-guide-sheet",
+  "area": "i2-team-sheets",
+  "title": "Run an AI team on your computer",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-host-guide-sheet.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "A developer README pasted into a sheet: commands and URLs inline in proportional prose, nothing copyable, and it ends by pointing to a file in the app's repository.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P4 copyable · U8 mono",
+    "what": "\"gc, bd and dolt on your PATH\", \"gc init, then gc rig add\", \"http://127.0.0.1:8372/v0/city/<name>/health\" in body text — not mono, not copyable, broken over lines.",
+    "fix": "Each step: one plain sentence plus a mono command block with a Copy button (as the \"Keep it running\" sheet does)."
+   },
+   {
+    "severity": "high",
+    "principle": "X5 · C5",
+    "what": "Final line \"The full guide with every command is docs/ai-team-host.md in the app's repository\" — not a link, not reachable on a phone. No action at the bottom.",
+    "fix": "A \"Open the full guide\" button through openExternalLink to the published doc, and a primary \"Enter the address\" that opens the host form."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "\"city\", \"rig\", \"Expose port 8372 on the computer's Tailscale address\".",
+    "fix": "Say what it does (\"Start the team in your project folder\"); keep the words only inside the commands."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "team-turn-off-sheet",
+  "area": "i2-team-sheets",
+  "title": "Turn off AI Team for {server}?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-turn-off-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "Exact about what is removed and where (\"Nothing changes on the host\"); a model confirmation.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "X8",
+    "what": "Opened over the AI Team sheet, so two sheets are stacked.",
+    "fix": "Acceptable; consider a dialog for consistency with other stacked confirms."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "team-phone-onboarding-offer",
+  "area": "i2-team-sheets",
+  "title": "Also run an AI team on this phone",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-offer.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "An honest opt-in with size and a battery warning, but \"Skip for now\" is the filled primary, it still talks about Termux on the in-app Linux path, and it never says how long setup takes.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P3 set the expectation",
+    "what": "Only \"Downloads about 294 MB\"; regression row 19: turn-on takes 8–9 minutes the first time.",
+    "fix": "\"About 294 MB and 10 minutes the first time. You can leave the app while it sets up.\""
+   },
+   {
+    "severity": "medium",
+    "principle": "U4 · §2",
+    "what": "Filled \"Skip for now\" beside outlined \"Set up AI team\", side by side inside a card. If Skip is intentionally the default, it still should not be the filled button next to the real offer.",
+    "fix": "Stack: tonal \"Set up the AI team\" then text \"Not now\"; the card is optional, so no filled primary competes with the page's own."
+   },
+   {
+    "severity": "medium",
+    "principle": "C2 · C3",
+    "what": "\"Uses the same Linux environment you just set up\" then \"Keep Termux open or hold its wake lock\"; \"Gas City, beads and Dolt\"; \"Optional · experimental\" kicker.",
+    "fix": "Name the runtime the phone actually uses; \"the team’s programs\" instead of product names (they go under Details); \"Experimental\" once."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-phone-onboarding-steps",
+  "area": "i2-team-sheets",
+  "title": "Setting up the AI team",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-steps.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "Real stages and a live log, but mixed step markers, engine step names, a box-in-a-box log shown open by default, and no time or bytes progress.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P3 honest waiting",
+    "what": "No determinate progress or time: \"Install prerequisites\" spins with no \"2 of 5 · about 6 min left\" and no Cancel.",
+    "fix": "Stage list with KitStatusMark, one determinate bar with \"29 of 89 MB · about 4 min left\" for downloads, and a Cancel tertiary."
+   },
+   {
+    "severity": "high",
+    "principle": "P4 · regression 16 box in a box",
+    "what": "The \"LIVE OUTPUT\" log is open by default inside the card as a second framed panel with ~350 dp of empty space; all-caps label.",
+    "fix": "Fold the log under a \"Details\" row (collapsed), TerminalView(framed: false), newest line followed; sentence-case label."
+   },
+   {
+    "severity": "medium",
+    "principle": "U9 · U5",
+    "what": "Markers mix a check, a spinner and bare numbers \"3 4 5\" for waiting steps.",
+    "fix": "KitStatusMark waiting (hollow dot) for pending steps; no numbers."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "\"Create a city next to the project\", \"Start the supervisor on this phone\", \"Connect\".",
+    "fix": "\"Prepare your project\", \"Start the team\", \"Connect the app\"."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "team-phone-onboarding-success",
+  "area": "i2-team-sheets",
+  "title": "AI team is running on this phone · {n} agents ready",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-success.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": 2,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "It says the team runs, but a finished 10-minute wait lands as a text card with a Termux warning and a right-aligned button, with no finished moment.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "M3 · §10 finished moment",
+    "what": "No drawing or celebration on the success card (the standard names \"setup ready\" and \"a task merged\" as finished moments).",
+    "fix": "KitStateView inline with the team scene, entranceDuration: KitMotion.celebration, and KitHaptics.done once."
+   },
+   {
+    "severity": "medium",
+    "principle": "U4",
+    "what": "Filled \"Open Work\" in the card while the host screen already has a filled primary above (\"Continue to app\" band visible at the top): two primaries on one screen.",
+    "fix": "The card's action is tonal, or the host hides its own primary while the card offers the next step."
+   },
+   {
+    "severity": "medium",
+    "principle": "C6",
+    "what": "Title \"AI team is running on this phone · 3 agents ready\" wraps to two bold lines; body repeats the Termux wake-lock warning.",
+    "fix": "Title \"Your AI team is ready\"; body \"3 agents are waiting for a task.\" The battery advice is one \"Keep it running\" row."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-phone-onboarding-failed",
+  "area": "i2-team-sheets",
+  "title": "The AI team could not be set up.",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-failed.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "It explains the cause in plain words (github.com unreachable, private DNS), but the title is a sentence with a period, the log is open by default with a large empty panel, and Try again floats bottom-right.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P4",
+    "what": "\"LAST OUTPUT\" panel open by default with curl output and ~400 dp of empty panel.",
+    "fix": "Fold under Details; show only the plain explanation and actions."
+   },
+   {
+    "severity": "medium",
+    "principle": "§2 alignment",
+    "what": "\"Try again\" is a right-aligned filled button at the bottom of the card, far from the explanation.",
+    "fix": "Full-width primary right under the body; \"Setup help\" as tertiary."
+   },
+   {
+    "severity": "low",
+    "principle": "C6",
+    "what": "Title \"The AI team could not be set up.\" (period) and a four-line body.",
+    "fix": "Title \"Couldn’t reach the download server\"; body \"Check that the phone is online and no private DNS or ad blocker blocks github.com.\""
+   },
+   {
+    "severity": "low",
+    "principle": "U9",
+    "what": "Failed step marked with ⓧ, the rest numbered 2–5.",
+    "fix": "Waiting marks for the rest."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-phone-onboarding-killed",
+  "area": "i2-team-sheets",
+  "title": "[Android stopped the team]",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-killed.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 4,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "\"Android stopped the team while the app was away. Nothing is lost.\" is exactly right; the card adds a second filled primary and does not help prevent the next kill.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "U4",
+    "what": "Filled \"Start again\" in the card plus the host's filled \"Continue to app\": two primaries.",
+    "fix": "Tonal \"Start again\" in the card."
+   },
+   {
+    "severity": "low",
+    "principle": "X5",
+    "what": "No link to the \"Keep it running\" advice at the moment it matters most.",
+    "fix": "Tertiary \"Stop this happening\" opening the tips sheet."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-phone-onboarding-project-sheet",
+  "area": "i2-team-sheets",
+  "title": "Choose a project",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-phone-onboarding-project-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A simple choice sheet, but the body explains git origins, paths sit above the fold, and the button says \"Continue\".",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "\"The team works on one project folder of the phone server. A project without a git origin gets one on the phone, and the team's merged work comes back into the folder by itself.\"",
+    "fix": "\"The team works on one project. Its finished work lands back in that folder.\""
+   },
+   {
+    "severity": "low",
+    "principle": "C5",
+    "what": "Primary \"Continue\".",
+    "fix": "\"Use shopfront\" (follows the selection)."
+   },
+   {
+    "severity": "low",
+    "principle": "P4",
+    "what": "Mono paths \"/root/projects/shopfront\" as the supporting line.",
+    "fix": "Supporting line \"On this phone · last opened 2 h ago\"; path under Details or on long-press copy."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-team-phone-section",
+  "area": "i2-team-sheets",
+  "title": "On this phone",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-phone-section--running.png",
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-phone-section--killed.png",
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-phone-section--not-installed.png",
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-phone-section--unsupported.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "The AI Team sheet is a dashboard of engine facts: a loopback address above the fold, three status lines that disagree, four button styles and a green Stop.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3 · P2 no ports",
+    "what": "Above Technical details: \"Event stream connected\", Provider \"fixture\", City, Address \"http://127.0.0.1:8372\", \"gc 1.4.1 · bd 1.2.2 · dolt 2.3.3\", \"Project: /root/projects/shopfront\", title \"AI Team · Gas City\". Principle 2 names 127.0.0.1 as banned above Details.",
+    "fix": "Top: \"AI Team\" and one status (\"Running on this phone · 3 agents\"); rows: Project, Keep it running; everything else inside Technical details."
+   },
+   {
+    "severity": "high",
+    "principle": "C2 contradiction",
+    "what": "Killed: \"Not available on this server · no AI team found\" / \"On\" / \"Watching from this phone\", then \"Stopped\" and \"Android stopped the team\". Off: \"Off\" / \"Off\".",
+    "fix": "One status line per state: \"Stopped by Android · Nothing is lost\" with Start again; \"Off\" once."
+   },
+   {
+    "severity": "high",
+    "principle": "X3 · U2",
+    "what": "\"■ Stop\" outlined with a green square next to \"Delete from this phone\" in error text, then tonal \"Refresh\" and outlined \"Change\": four button styles; Stop in accent colour.",
+    "fix": "Status block with one primary for the state (Start again / Open the team), Stop and Delete in the overflow (error-coloured, confirmed), Change as a row, no Refresh."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "\"Keep it running · Wake lock, battery setting and the phantom process killer\"; \"Answering and steering need the front on the computer. The front is a small helper…\"; \"Add manually\".",
+    "fix": "\"Keep it running · Stop Android from ending it\"; \"To answer from the phone, the computer needs the team’s helper running · How\"; \"Add a computer’s team\"."
+   },
+   {
+    "severity": "low",
+    "principle": "X4",
+    "what": "\"Keep it running\" is offered while nothing is installed.",
+    "fix": "Show it only once the team is installed."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "team-phone-stop-sheet",
+  "area": "i2-team-sheets",
+  "title": "Stop the team on this phone?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-phone-stop-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Good reassuring copy (\"Nothing is lost\"), but the stop confirm is the only one in the team area with a green primary, so the same act looks different in two places.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P7 one action, one look",
+    "what": "\"Stop team\" is filled green while \"Stop agent\" and \"Stop run\" confirms are error pink.",
+    "fix": "Decide once: stopping (reversible, nothing lost) uses tonal; ending or deleting uses error. Apply to all team stop sheets."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-phone-remove-sheet",
+  "area": "i2-team-sheets",
+  "title": "Remove the AI team from this phone?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-phone-remove-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Error-toned and explicit about what stays, but the body lists engine parts (\"the supervisor… gc, the city and its store… The plugin is turned off\") and the button just says \"Delete\".",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "\"Stops the supervisor and deletes gc, the city and its store.\"",
+    "fix": "\"Stops the team and deletes its programs and history from this phone (about 294 MB). Your project files and git history stay.\""
+   },
+   {
+    "severity": "low",
+    "principle": "C5",
+    "what": "Button \"Delete\"; title \"Delete the AI team from this phone?\" wraps to two lines.",
+    "fix": "Title \"Delete the AI team?\"; button \"Delete the team\"."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-phone-tips-sheet",
+  "area": "i2-team-sheets",
+  "title": "Keep it running",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-phone-tips-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Genuinely useful advice with a Copy commands button, but the adb commands run off the right edge and the steps assume Termux.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "U3 · P-a clipped",
+    "what": "The command block cuts lines: \"adb connect <ip:port from the Wireless debuggin\", \"…settings_enable_m\", \"…set_sync_disabled_for_t\" (census workers noted it).",
+    "fix": "Wrap commands (soft-wrap with a hanging indent) or make the block scroll horizontally with a visible fade; keep Copy commands."
+   },
+   {
+    "severity": "medium",
+    "principle": "C2",
+    "what": "All three steps are Termux-specific (\"Keep Termux in front\", \"Settings › Apps › Termux\") while the phone setup v2 path is the in-app Linux.",
+    "fix": "Choose the steps by runtime: for the in-app server, the app's own battery exemption and notification."
+   },
+   {
+    "severity": "low",
+    "principle": "C6",
+    "what": "Intro \"Android stops background work it considers excessive, and the team is exactly that: dozens of short gc and bd processes…\"",
+    "fix": "\"Android stops apps that run a lot in the background. Three settings keep the team alive.\""
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-team-phone-reoffer-card",
+  "area": "i2-team-sheets",
+  "title": "Set up AI team on this phone",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-phone-reoffer-card.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A fair second chance for a skipped step, placed above an \"AI Team · Off\" row that is the same thing — two presences again — with buttons aligned unlike its sibling card.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "U6 · regression 18",
+    "what": "Card \"Set up AI team on this phone\" plus the \"AI Team · Off\" row directly below: one feature, two entries, two states.",
+    "fix": "One row \"AI Team · Off · Set up on this phone\" (the row opens the intro); remember the dismissal instead of a card."
+   },
+   {
+    "severity": "medium",
+    "principle": "§2 alignment",
+    "what": "\"Not now\" text then tonal \"Set up\", left-aligned side by side; the discovery card on the same page right-aligns its pair.",
+    "fix": "Stacked full width, same as every other block."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-team-receipt-chip",
+  "area": "i1-team-core",
+  "title": "[Gate answer receipt chip]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/i1-team-core/embedded-team-receipt-chip--unconfirmed.png",
+   "docs/qa/screen-census/i1-team-core/embedded-team-receipt-chip--not-accepted.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "The idea (show that an answer is not yet confirmed) is right; the chip is a wide outlined button that crushes the row text to \"Keep drafts in SQLit…\".",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P-a nothing cut",
+    "what": "In Inbox the question title truncates to \"Keep drafts in SQLit…\" and its supporting line to \"…12m …\" because the chip takes 40 % of the width.",
+    "fix": "Receipt as a word in the supporting line with a small icon; the retry lives in the sheet the row opens."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3 · C5",
+    "what": "\"Unconfirmed\" and \"Not accepted\" say neither by whom nor what to do.",
+    "fix": "\"Not confirmed yet\" / \"pop-os refused your answer · Answer again\"."
+   },
+   {
+    "severity": "low",
+    "principle": "U9",
+    "what": "The unconfirmed chip uses a refresh glyph, which reads as \"tap to reload\".",
+    "fix": "Clock or dotted-circle glyph for pending; the retry is an action, not the state."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "team-host-details-sheet",
+  "area": "i2-team-sheets",
+  "title": "Technical details",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/team-host-details-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "The \"Terms\" glossary (Team · city, Run · convoy, Agent · polecat) is a smart way to keep engine words under Details; values are shown twice.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "U6",
+    "what": "Provider, Address and City appear in the summary and again under Raw values.",
+    "fix": "Give the summary rows copy buttons and drop the duplicate raw rows."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-team-technical-value",
+  "area": "i2-team-sheets",
+  "title": "[Raw value row with copy]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/i2-team-sheets/embedded-team-technical-value.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A consistent copyable raw-value row; the list it builds repeats every value under a second lowercase key.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "U6",
+    "what": "Run id/name, Session/session, Pool/pool, Provider status/state: four pairs of the same value.",
+    "fix": "Deduplicate by value and key before rendering."
+   },
+   {
+    "severity": "low",
+    "principle": "U7",
+    "what": "The copy icon (≈24 dp glyph) sits 60 dp from the right edge, off the 16 dp rail.",
+    "fix": "Trailing 48 dp IconButton aligned to the rail."
+   }
+  ],
+  "quickWin": true
+ }
+]

@@ -128,7 +128,12 @@ class _Fixture {
       '$prefix/var/lib/proot-distro/containers/opencode-ubuntu/rootfs';
 
   static Future<_Fixture> create({bool ubuntu = true}) async {
-    final root = Directory.systemTemp.createTempSync('oc-claude-');
+    // tmpfs where there is one: the script moves many small files, and a
+    // busy disk made each verb seconds long.
+    final shm = Directory('/dev/shm');
+    final root = (shm.existsSync() ? shm : Directory.systemTemp).createTempSync(
+      'oc-claude-',
+    );
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     // A free port for the daemon stub: bind, read, release.
     final probe = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
@@ -142,6 +147,13 @@ class _Fixture {
     if (ubuntu) Directory(fx.rootfs).createSync(recursive: true);
     _executable(fx.script, TermuxBridge.localAgentsScriptForTesting());
     _executable('${fx.stubs}/proot-distro', _prootStub);
+    // Plenty of room, whatever this machine's disk holds; the full-phone
+    // test swaps in a small one.
+    _executable(
+      '${fx.stubs}/df',
+      '#!/bin/bash\necho "Filesystem 1024-blocks Used Available Capacity '
+          'Mounted on"\necho "/dev/x 99999999 1 90000000 1% /"\n',
+    );
     _executable('${fx.stubs}/termux-wake-lock', _wakeStub);
     _executable('${fx.stubs}/termux-wake-unlock', _wakeStub);
     _executable('${root.path}/paseo-stub', _paseoStub);
@@ -218,6 +230,8 @@ class _Fixture {
     'OC_CLAUDE_PORT': '$port',
     'OC_CLAUDE_ARCH': 'x86_64',
     'OC_CLAUDE_HEALTH_TIMEOUT': '8',
+    // A poll tick is a tenth of a second here; the timeouts count ticks.
+    'OC_CLAUDE_POLL': '0.1',
     'OC_CLAUDE_ALLOW_LOOPBACK_PINS': '1',
   };
 
@@ -315,8 +329,8 @@ void main() {
       expect(pins['node_sha256_x64'], matches(RegExp(r'^[0-9a-f]{64}$')));
       expect(pins['node_sha256_arm64'], isNot(pins['node_sha256_x64']));
       expect(pins['node_base_url'], 'https://nodejs.org/dist');
-      // The protocol client in lib/paseo was verified against exactly this.
-      expect(pins['paseo_version'], '0.8.0');
+      // Reviewed patch target; on-device verification is tracked separately.
+      expect(pins['paseo_version'], '0.9.2');
       final file = TermuxBridge.localAgentsPinsFile();
       for (final entry in pins.entries) {
         expect(file, contains('${entry.key}=${entry.value}\n'));

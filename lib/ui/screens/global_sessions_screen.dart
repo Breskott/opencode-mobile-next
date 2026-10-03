@@ -1,25 +1,44 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 
 import '../../api/product_repository.dart';
+import '../../domain/team_directories.dart';
+import '../../feedback/bug_report.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../app_theme.dart';
-import '../desktop/context_menu.dart';
-import '../widgets/confirm_sheet.dart';
-import '../widgets/product_states.dart';
+import '../kit/kit.dart';
+import '../kit/scenes/states_scenes.dart';
+import '../widgets/product_states.dart'
+    show productErrorDetails, productErrorKind, productErrorText;
 import '../widgets/relative_time.dart';
-import '../widgets/session_read_state.dart';
-import '../widgets/session_title.dart';
 import '../widgets/session_handoff.dart';
+import '../widgets/session_title.dart';
+import 'session_import_screen.dart';
 import 'session_relations_screen.dart';
 
+/// All conversations (docs/ux-system/map/all.json `global-sessions`,
+/// proposal "redesign"): every conversation on this server, search first.
+/// A kit-only rebuild of today's layout: the pinned search with one project
+/// filter menu (it never runs off screen), an Active / Archived choice
+/// (archived conversations are a filter of this page, P3.12), one grouped
+/// panel per project named by its project, and Work's row shape. Opening a
+/// row switches Work to that conversation's project first.
+///
+/// Deferred to the Work redesign (wave 3): auto-paging for every list,
+/// restoring an archived conversation (no unarchive call exists).
 class GlobalSessionsScreen extends StatefulWidget {
   final ConnectionController controller;
 
-  const GlobalSessionsScreen({super.key, required this.controller});
+  /// Opens on the Archived filter (Work's "Archived conversations" row).
+  final bool archived;
+
+  const GlobalSessionsScreen({
+    super.key,
+    required this.controller,
+    this.archived = false,
+  });
 
   @override
   State<GlobalSessionsScreen> createState() => _GlobalSessionsScreenState();
@@ -54,17 +73,72 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
   final _scroll = ScrollController();
   List<GlobalSessionResult> _results = const [];
 
-  /// The loaded results grouped by working directory, newest first: the
-  /// groups are ordered by their most recent session, and each group lists
-  /// its sessions from newest to oldest. Rebuilt from [_results] on every
-  /// build so a loaded page slots into the right group.
-  List<_GlobalGroup> get _groups => _groupByDirectory(_results, _l10n(context));
+  /// The text the last invalidation saw: the controller also notifies on
+  /// selection changes, which must not restart the search.
+  String _lastText = '';
 
-  /// A folder chip narrows the list to one group; null shows every group.
+  /// The results this filter shows: every loaded one, or on the Archived
+  /// filter only the archived ones.
+  List<GlobalSessionResult> get _shown => _archived
+      ? _results.where((result) => result.session.archived).toList()
+      : _results;
+
+  /// The shown results grouped by working directory, newest first: the
+  /// groups are ordered by their most recent session, and each group lists
+  /// its sessions from newest to oldest. Rebuilt on every build so a loaded
+  /// page slots into the right group.
+  List<_GlobalGroup> get _groups => _groupByDirectory(_shown, _l10n(context));
+
+  /// The project filter narrows the list to one group; null shows every
+  /// group.
   String? _folderFilter;
 
   static int _recency(GlobalSessionResult result) =>
       result.session.time?.updated ?? result.session.time?.created ?? 0;
+
+  /// Whether a conversation waits on the person: a permission, a question
+  /// or a form (what Work's rows call "Needs you").
+  bool _needsYou(String sessionID) {
+    final controller = widget.controller;
+    return controller.permissionsForSession(sessionID).isNotEmpty ||
+        controller.questionForSession(sessionID) != null ||
+        controller.formForSession(sessionID) != null;
+  }
+
+  /// One project's rows by urgency: the ones that need the person, then
+  /// the working ones, then the rest; newest first within each (the group
+  /// arrives newest first, and the sort is stable).
+  List<GlobalSessionResult> _byUrgency(List<GlobalSessionResult> results) {
+    final busy = widget.controller.busySessions;
+    int rank(GlobalSessionResult result) {
+      final id = result.session.id;
+      if (_needsYou(id)) return 0;
+      if (busy.contains(id)) return 1;
+      return 2;
+    }
+
+    final ranked = [for (final (i, r) in results.indexed) (rank(r), i, r)]
+      ..sort((a, b) {
+        final byRank = a.$1.compareTo(b.$1);
+        return byRank != 0 ? byRank : a.$2.compareTo(b.$2);
+      });
+    return [for (final (_, _, result) in ranked) result];
+  }
+
+  /// The loaded conversations that need the person or are working, as one
+  /// key: when it changes, the rows re-order and re-mark themselves.
+  String _urgencyKey() {
+    final busy = widget.controller.busySessions;
+    return [
+      for (final result in _results)
+        if (_needsYou(result.session.id))
+          '!${result.session.id}'
+        else if (busy.contains(result.session.id))
+          '~${result.session.id}',
+    ].join(',');
+  }
+
+  String _lastUrgencyKey = '';
 
   static String _directoryOf(GlobalSessionResult result) {
     final value = (result.session.directory ?? result.projectDirectory)?.trim();
@@ -87,11 +161,11 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
       groups.putIfAbsent(_directoryOf(result), () => []).add(result);
     }
     // Two folders can share a name (a project and its worktree, or two
-    // checkouts). Those get their parent folder in the label so the chips
-    // and card headers stay distinguishable.
+    // checkouts). Those get their parent folder in the label so the
+    // filter and the section names stay distinguishable.
     final labels = {
       for (final entry in groups.entries)
-        entry.key: _GlobalSessionRow._projectLabel(entry.value.first, l10n),
+        entry.key: _projectLabel(entry.value.first, l10n),
     };
     final counts = <String, int>{};
     for (final label in labels.values) {
@@ -121,9 +195,28 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     return '${parts[parts.length - 2]}/${parts.last}';
   }
 
-  Timer? _debounce;
+  static String _projectLabel(
+    GlobalSessionResult result,
+    AppLocalizations l10n,
+  ) {
+    final named = result.projectName?.trim();
+    if (named?.isNotEmpty == true) return named!;
+    return _basename(result.projectDirectory) ??
+        _basename(result.session.directory) ??
+        l10n.e7WorkspaceUnknownProject;
+  }
+
+  static String? _basename(String? path) {
+    final parts = (path ?? '')
+        .replaceAll('\\', '/')
+        .split('/')
+        .where((part) => part.isNotEmpty)
+        .toList();
+    return parts.isEmpty ? null : parts.last;
+  }
+
   Object? _error;
-  bool _includeArchived = false;
+  late bool _archived = widget.archived;
   bool _loading = true;
   bool _loadingMore = false;
   String? _nextCursor;
@@ -133,17 +226,20 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
   String? _openingSessionID;
   String? _stealingSessionID;
   int _queryGeneration = 0;
+
+  /// A failed open or move, said above the list until dismissed.
+  String? _notice;
+
   int _dataRefreshRevision = 0;
   ServerOperationsGateway? _activeRepository;
   String? _profileID;
   _GlobalSessionsScope? _loadedScope;
   bool _errorWasRefresh = false;
-  final Map<String, FocusNode> _rowFocus = {};
 
   _GlobalSessionsScope get _scope => _GlobalSessionsScope(
     profileID: widget.controller.profile?.id,
     query: _search.text.trim(),
-    includeArchived: _includeArchived,
+    includeArchived: _archived,
   );
 
   bool _requestIsCurrent(
@@ -164,11 +260,19 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     _profileID = widget.controller.profile?.id;
     widget.controller.addListener(_controllerChanged);
     _scroll.addListener(_scrollChanged);
+    _search.addListener(_searchTyped);
     unawaited(_reload());
   }
 
   void _controllerChanged() {
     if (!mounted) return;
+    // A conversation starting, finishing or asking something moves its row
+    // and changes its mark, without reloading the list.
+    final urgency = _urgencyKey();
+    if (urgency != _lastUrgencyKey) {
+      _lastUrgencyKey = urgency;
+      setState(() {});
+    }
     final revision = widget.controller.dataRefreshRevision;
     final repository = widget.controller.repository;
     final profileID = widget.controller.profile?.id;
@@ -226,12 +330,27 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     unawaited(_loadMore());
   }
 
-  void _searchChanged(String _) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      if (mounted) unawaited(_reload());
+  /// The Archived filter keeps paging by itself while the loaded pages hold
+  /// too few archived conversations to fill the screen: the server has no
+  /// archived-only query, so the filter narrows what it sends.
+  void _fillArchived() {
+    if (!_archived || !_hasMore) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_archived || _error != null || _loading) return;
+      if (_scroll.hasClients) {
+        _scrollChanged();
+      } else {
+        unawaited(_loadMore());
+      }
     });
-    // Invalidate in-flight pages immediately, before the debounce expires.
+  }
+
+  /// Every keystroke retires in-flight pages at once; the field reports the
+  /// settled query to [_searchSettled].
+  void _searchTyped() {
+    final text = _search.text;
+    if (text == _lastText) return;
+    _lastText = text;
     setState(() {
       _queryGeneration++;
       _loading = true;
@@ -246,6 +365,23 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
         _loadedScope = null;
       }
     });
+  }
+
+  void _searchSettled(String _) {
+    if (mounted) unawaited(_reload());
+  }
+
+  void _clearSearch() {
+    _search.clear();
+    unawaited(_reload());
+  }
+
+  void _setArchived(bool archived) {
+    setState(() {
+      _archived = archived;
+      _folderFilter = null;
+    });
+    unawaited(_reload());
   }
 
   Future<ServerOperationsGateway> _repository() async {
@@ -287,7 +423,10 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
       setState(() {
         final seen = <String>{};
         _results = results.items
-            .where((result) => seen.add(result.session.id))
+            .where(
+              (result) =>
+                  !isAiTeamConversation(result) && seen.add(result.session.id),
+            )
             .toList();
         _nextCursor = results.hasMore ? results.nextCursor : null;
         _usedCursors.clear();
@@ -315,6 +454,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     } finally {
       if (mounted && generation == _queryGeneration && scope == _scope) {
         setState(() => _loading = false);
+        if (_error == null) _fillArchived();
       }
     }
   }
@@ -342,7 +482,11 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
       if (!_requestIsCurrent(generation, scope, repository)) return;
       final existing = _results.map((result) => result.session.id).toSet();
       final added = page.items
-          .where((result) => existing.add(result.session.id))
+          .where(
+            (result) =>
+                !isAiTeamConversation(result) &&
+                existing.add(result.session.id),
+          )
           .toList();
       final nextCursor = page.hasMore ? page.nextCursor : null;
       if (nextCursor != null &&
@@ -362,8 +506,14 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     } finally {
       if (mounted && generation == _queryGeneration && scope == _scope) {
         setState(() => _loadingMore = false);
+        if (_error == null) _fillArchived();
       }
     }
+  }
+
+  void _say(Object error) {
+    if (!mounted) return;
+    setState(() => _notice = productErrorText(error, l10n: _l10n(context)));
   }
 
   Future<void> _open(
@@ -374,17 +524,21 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     final session = result.session;
     if (_openingSessionID != null) return;
     if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(session.id)) {
-      showProductError(context, _l10n(context).e7WorkspaceReferenceRetry);
+      _say(ProductException(_l10n(context).e7WorkspaceReferenceRetry));
       return;
     }
     final profileID = widget.controller.profile?.id;
     final directory = session.directory ?? result.projectDirectory;
     if (profileID != _profileID || directory == null) {
-      showProductError(context, _l10n(context).e7WorkspaceLocationRetry);
+      _say(ProductException(_l10n(context).e7WorkspaceLocationRetry));
       return;
     }
-    setState(() => _openingSessionID = session.id);
+    setState(() {
+      _openingSessionID = session.id;
+      _notice = null;
+    });
     try {
+      // Opening switches Work to the conversation's project first.
       await widget.controller.selectLocationForExistingSession(
         directory: directory,
         workspace: session.workspaceID,
@@ -394,6 +548,11 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
           widget.controller.directory != directory ||
           widget.controller.workspace != session.workspaceID) {
         throw ProductException(_l10n(context).e7WorkspaceLocationChangedReturn);
+      }
+      // Speed contract item 2: the conversation's newest history is read
+      // while its details are checked; the chat joins that same read.
+      if (!handoff && !related) {
+        unawaited(widget.controller.prefetchSessionTail(session.id));
       }
       final scope = SessionNavigationScope(widget.controller);
       final repository = await _repository();
@@ -414,12 +573,11 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
           projectID: current.projectID,
         );
       } else if (related) {
-        final selected = await Navigator.of(context).push<Session>(
-          MaterialPageRoute(
-            builder: (_) => SessionRelationsScreen(
-              controller: widget.controller,
-              sessionID: session.id,
-            ),
+        final selected = await pushKitPage<Session>(
+          context,
+          (_) => SessionRelationsScreen(
+            controller: widget.controller,
+            sessionID: session.id,
           ),
         );
         scope.check(widget.controller);
@@ -434,12 +592,9 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
         await Navigator.of(context).pushNamed('/chat/${session.id}');
       }
     } catch (error) {
-      if (mounted) showProductError(context, error);
+      _say(error);
     } finally {
-      if (mounted) {
-        setState(() => _openingSessionID = null);
-        _rowFocus[session.id]?.requestFocus();
-      }
+      if (mounted) setState(() => _openingSessionID = null);
     }
   }
 
@@ -461,347 +616,411 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     return sessionDirectory.isNotEmpty && sessionDirectory != active;
   }
 
+  /// The current project's name, for the move question.
+  String _currentProjectLabel(AppLocalizations l10n) {
+    final active = widget.controller.directory?.trim() ?? '';
+    if (active.isEmpty) return l10n.e7WorkspaceUnknownProject;
+    final normalized = ConnectionController.normalizeDirectoryPath(active);
+    for (final result in _results) {
+      if (_directoryOf(result) == normalized) {
+        return _projectLabel(result, l10n);
+      }
+    }
+    return _basename(active) ?? l10n.e7WorkspaceUnknownProject;
+  }
+
+  /// "Continue here" (`global-sessions-continue-here-sheet`): a question
+  /// naming both projects, whether it can be moved back, and that a
+  /// working conversation is interrupted. The move runs inside the
+  /// question, so a failure keeps it open with Try again.
   Future<void> _steal(GlobalSessionResult result) async {
     final session = result.session;
     if (_stealingSessionID != null || _openingSessionID != null) return;
+    final l10n = _l10n(context);
     final scope = SessionNavigationScope(widget.controller);
     final title = presentedSessionTitle(
       session,
-      fallback: _l10n(context).globalSessionsUntitled,
-      l10n: _l10n(context),
+      fallback: l10n.globalSessionsUntitled,
+      l10n: l10n,
     );
-    final confirmed = await showConfirmSheet(
-      context,
-      icon: AppIconography.inbox,
-      title: _l10n(context).e7WorkspaceContinueHereConfirm,
-      message: _l10n(context).e7WorkspaceContinueHereDetail(title),
-      confirmLabel: _l10n(context).globalSessionsContinueHere,
-    );
-    if (!confirmed || !mounted) return;
-    setState(() => _stealingSessionID = session.id);
+    final from = _projectLabel(result, l10n);
+    final to = _currentProjectLabel(l10n);
+    final working = widget.controller.busySessions.contains(session.id);
+    String? stolenID;
+    // Kept while the question is open so refreshes keep older pages; the
+    // question itself shows the move working.
+    _stealingSessionID = session.id;
+    if (_notice != null) setState(() => _notice = null);
     try {
-      scope.check(widget.controller);
-      final repository = await _repository();
-      scope.check(widget.controller);
-      final stolenID = await repository.stealSessionIntoWorkspace(session.id);
-      scope.check(widget.controller);
-      if (!mounted) return;
-      if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(stolenID)) {
-        throw ProductException(_l10n(context).e7WorkspaceReferenceUnavailable);
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_l10n(context).e7WorkspaceMovedHere(title))),
+      final moved = await showKitConfirm(
+        context,
+        icon: AppIconography.inbox,
+        title: l10n.globalSessionsMoveTitle(to),
+        body: l10n.globalSessionsMoveBody(title, from, to),
+        confirmLabel: l10n.e7SharedMoveSession,
+        consequenceItems: [
+          if (working)
+            KitConsequence(
+              l10n.globalSessionsMoveWhileWorking,
+              mark: KitConsequenceMark.lost,
+            ),
+          KitConsequence(l10n.globalSessionsMoveBack(from)),
+        ],
+        confirmKey: const ValueKey('global-sessions-move-confirm'),
+        action: () async {
+          scope.check(widget.controller);
+          final repository = await _repository();
+          scope.check(widget.controller);
+          final id = await repository.stealSessionIntoWorkspace(session.id);
+          scope.check(widget.controller);
+          if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(id)) {
+            throw ProductException(l10n.e7WorkspaceReferenceUnavailable);
+          }
+          stolenID = id;
+        },
       );
-      await Navigator.of(context).pushNamed('/chat/$stolenID');
+      final id = stolenID;
+      if (!moved || id == null || !mounted) return;
+      await Navigator.of(context).pushNamed('/chat/$id');
     } catch (error) {
-      if (mounted) showProductError(context, error);
+      _say(error);
     } finally {
-      if (mounted) {
-        setState(() => _stealingSessionID = null);
-        _rowFocus[session.id]?.requestFocus();
-      }
+      _stealingSessionID = null;
     }
+  }
+
+  /// The server takes an exported conversation file.
+  bool get _canImport {
+    final repository = widget.controller.repository;
+    return widget.controller.capabilities.sessionImportExport &&
+        repository is SessionImportGateway &&
+        (repository as SessionImportGateway).sessionImportSupported;
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n =
-        Localizations.of<AppLocalizations>(context, AppLocalizations) ??
-        lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final l10n = _l10n(context);
+    final tokens = KitTokens.of(context);
     final groups = _groups;
-    final filter = _folderFilter;
+    final filter = groups.any((group) => group.directory == _folderFilter)
+        ? _folderFilter
+        : null;
     final visible = filter == null
         ? groups
         : groups.where((group) => group.directory == filter).toList();
-    final loadedCount = _hasMore ? '${_results.length}+' : '${_results.length}';
-    final shown = visible.fold<int>(
-      0,
-      (sum, group) => sum + group.results.length,
-    );
-    final summary = _results.isEmpty
+    final query = _search.text.trim();
+    final activeFilter = filter == null
         ? null
-        : filter != null
-        ? l10n.e7WorkspaceFilteredLoaded(shown, _results.length)
-        : _hasMore
-        ? l10n.e7WorkspaceLoadedSummary(_results.length, groups.length)
-        : groups.length == 1
-        ? l10n.globalSessionsSummaryOneFolder(loadedCount)
-        : l10n.globalSessionsSummary(loadedCount, groups.length);
+        : groups.firstWhere((group) => group.directory == filter).label;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.globalSessionsTitle)),
-      body: Column(
-        children: [
-          // 1. Search first: the page exists to find one conversation among
-          // every folder on the server.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-            child: TextField(
-              key: const ValueKey('global-session-search'),
-              controller: _search,
-              textInputAction: TextInputAction.search,
-              onChanged: _searchChanged,
-              decoration: InputDecoration(
-                labelText: l10n.globalSessionsSearchLabel,
-                hintText: l10n.globalSessionsSearchHint,
-                prefixIcon: const Icon(AppIconography.search),
-                suffixIcon: _search.text.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: l10n.commonClearSearch,
-                        onPressed: () {
-                          _search.clear();
-                          _debounce?.cancel();
-                          unawaited(_reload());
-                          setState(() {});
-                        },
-                        icon: const Icon(AppIconography.close),
-                      ),
-              ),
-            ),
-          ),
-          // 2. One scrolling strip of filters: archived, then a chip per
-          // folder the loaded results came from. Folder chips narrow the
-          // list on the phone without another request.
-          SizedBox(
-            height: 32 + MediaQuery.textScalerOf(context).scale(20),
-            child: ListView(
-              key: const ValueKey('global-session-filters'),
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                Center(
-                  child: FilterChip(
-                    key: const ValueKey('include-archived-sessions'),
-                    selected: _includeArchived,
-                    showCheckmark: false,
-                    avatar: Icon(
-                      _includeArchived
-                          ? AppIconography.package
-                          : AppIconography.package,
-                      size: 16,
-                    ),
-                    label: Text(
-                      MediaQuery.textScalerOf(context).scale(14) > 20
-                          ? l10n.globalSessionsArchivedShort
-                          : l10n.globalSessionsIncludeArchived,
-                    ),
-                    onSelected: (selected) {
-                      setState(() => _includeArchived = selected);
-                      unawaited(_reload());
-                    },
-                  ),
-                ),
-                if (groups.length > 1) ...[
-                  const SizedBox(width: 8),
-                  Center(
-                    child: ChoiceChip(
-                      key: const ValueKey('global-session-folder-all'),
-                      selected: filter == null,
-                      showCheckmark: false,
-                      label: Text(
-                        _hasMore
-                            ? l10n.e7WorkspaceLoadedFolders
-                            : l10n.globalSessionsAllFolders,
-                      ),
-                      onSelected: (_) => setState(() => _folderFilter = null),
-                    ),
-                  ),
-                  for (final group in groups) ...[
-                    const SizedBox(width: 8),
-                    Center(
-                      child: ChoiceChip(
-                        key: ValueKey(
-                          'global-session-folder-${group.directory}',
-                        ),
-                        selected: filter == group.directory,
-                        showCheckmark: false,
-                        avatar: const Icon(AppIconography.files, size: 16),
-                        label: Text(group.label),
-                        onSelected: (_) => setState(
-                          () => _folderFilter = filter == group.directory
-                              ? null
-                              : group.directory,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ],
-            ),
-          ),
-          if (summary != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 6),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  summary,
-                  key: const ValueKey('global-session-count'),
-                  style: theme.textTheme.labelMedium?.copyWith(color: muted),
+    return KitScreen(
+      width: KitScreenWidth.list,
+      // Importing adds a conversation to this list, so it lives in this
+      // page's menu (R2), not among the agent's settings.
+      topBar: KitTopBar(
+        title: l10n.globalSessionsTitle,
+        menu: [
+          if (_canImport)
+            KitMenuItem(
+              key: const ValueKey('global-sessions-import'),
+              label: l10n.libraryImportAConversation,
+              icon: AppIconography.fileUpload,
+              onSelected: () => unawaited(
+                pushKitPage<void>(
+                  context,
+                  (_) => SessionImportScreen(controller: widget.controller),
                 ),
               ),
             ),
-          Expanded(child: _content(visible, l10n)),
         ],
       ),
+      // 1. Search first: the page exists to find one conversation among
+      // every project on the server. The project filter is one menu, so
+      // any number of projects fits.
+      search: KitSearchField(
+        label: l10n.globalSessionsSearchLabel,
+        controller: _search,
+        onChanged: _searchSettled,
+        resultCount: query.isEmpty || _loading ? null : _shown.length,
+        partial: _hasMore,
+        filters: [
+          if (groups.length > 1)
+            for (final group in groups)
+              KitMenuItem(
+                key: ValueKey('global-session-folder-${group.directory}'),
+                label: group.label,
+                icon: AppIconography.folders,
+                checked: filter == group.directory,
+                onSelected: () => setState(
+                  () => _folderFilter = filter == group.directory
+                      ? null
+                      : group.directory,
+                ),
+              ),
+        ],
+        activeFilter: activeFilter,
+        onClearFilter: () => setState(() => _folderFilter = null),
+        fieldKey: const ValueKey('global-session-search'),
+        filterKey: const ValueKey('global-session-filters'),
+      ),
+      // 2. Active or archived: the filters stay live over an error.
+      header: [
+        Padding(
+          padding: EdgeInsetsDirectional.fromSTEB(
+            tokens.gutter,
+            tokens.space1,
+            tokens.gutter,
+            tokens.space2,
+          ),
+          child: KitSegmented<bool>(
+            semanticsLabel: l10n.globalSessionsFilterLabel,
+            selected: _archived,
+            onChanged: _setArchived,
+            segments: [
+              KitSegment(
+                key: const ValueKey('global-sessions-active'),
+                value: false,
+                label: l10n.globalSessionsFilterActive,
+              ),
+              KitSegment(
+                key: const ValueKey('include-archived-sessions'),
+                value: true,
+                label: l10n.globalSessionsArchivedShort,
+                icon: AppIconography.archive,
+              ),
+            ],
+          ),
+        ),
+      ],
+      loading: _loading || _loadingMore,
+      loadingLabel: l10n.globalSessionsRefresh,
+      body: _content(context, groups, visible, filter, l10n),
     );
   }
 
-  Widget _content(List<_GlobalGroup> groups, AppLocalizations l10n) {
-    if (_loading && _results.isEmpty) return const LoadingList(rows: 7);
-    if (_error != null && _results.isEmpty) {
-      return ProductErrorState(
-        message: productErrorText(_error!),
-        onRetry: _hasMore && !_restartPagination ? _loadMore : _reload,
+  Widget _content(
+    BuildContext context,
+    List<_GlobalGroup> groups,
+    List<_GlobalGroup> visible,
+    String? filter,
+    AppLocalizations l10n,
+  ) {
+    final tokens = KitTokens.of(context);
+    final rails = EdgeInsets.symmetric(horizontal: tokens.gutter);
+    if (_loading && _results.isEmpty) {
+      return ListView(
+        key: const ValueKey('global-sessions-loading'),
+        physics: const NeverScrollableScrollPhysics(),
+        children: const [KitSkeletonRows(count: 7)],
       );
     }
-    if (_results.isEmpty && !_hasMore) {
+    if (_error != null && _results.isEmpty) {
+      final retry = _hasMore && !_restartPagination ? _loadMore : _reload;
+      // Every load failure draws the unplugged cable (design standard §10).
+      return KitStateView(
+        key: const ValueKey('global-sessions-load-failed'),
+        icon: AppIconography.error,
+        tone: AppStatusTone.failure,
+        illustration: const StatesUnpluggedScene(),
+        title: l10n.globalSessionsLoadFailedTitle,
+        body: productErrorText(_error!, l10n: l10n),
+        details: productErrorDetails(_error),
+        primary: KitAction(
+          label: l10n.commonRetry,
+          onPressed: () => unawaited(retry()),
+        ),
+        tertiary: [
+          KitAction(
+            key: const ValueKey('product-error-report-bug'),
+            label: l10n.e7LibraryReportABug,
+            onPressed: () => unawaited(openBugReport(context)),
+          ),
+        ],
+      );
+    }
+    if (_shown.isEmpty && !_hasMore && !_loadingMore) {
       final query = _search.text.trim();
-      return ProductEmptyState(
-        icon: AppIconography.searchList,
-        title: query.isEmpty
-            ? l10n.globalSessionsEmptyTitle
-            : l10n.globalSessionsNoMatchTitle,
-        message: query.isEmpty
-            ? l10n.globalSessionsEmptyMessage
-            : l10n.globalSessionsNoMatchMessage,
-        actionLabel: query.isEmpty
-            ? l10n.globalSessionsRefresh
-            : l10n.commonClearSearch,
-        onAction: query.isEmpty
-            ? _reload
-            : () {
-                _search.clear();
-                setState(() {});
-                unawaited(_reload());
-              },
+      if (query.isNotEmpty) {
+        // A search that found nothing is the magnifier.
+        return KitStateView(
+          key: const ValueKey('global-sessions-no-match'),
+          icon: AppIconography.searchList,
+          illustration: const StatesSearchScene(),
+          title: l10n.globalSessionsNoMatchTitle,
+          body: _archived
+              ? l10n.globalSessionsArchivedNoMatchMessage
+              : l10n.globalSessionsNoMatchMessage,
+          secondary: KitAction(
+            label: l10n.commonClearSearch,
+            onPressed: _clearSearch,
+          ),
+        );
+      }
+      // Nothing yet is the fresh sheet.
+      return KitStateView(
+        key: ValueKey(
+          _archived
+              ? 'global-sessions-archived-empty'
+              : 'global-sessions-empty',
+        ),
+        icon: _archived ? AppIconography.archive : AppIconography.searchList,
+        illustration: const StatesSheetScene(),
+        title: _archived
+            ? l10n.globalSessionsArchivedEmptyTitle
+            : l10n.globalSessionsEmptyTitle,
+        body: _archived
+            ? l10n.globalSessionsArchivedEmptyMessage
+            : l10n.globalSessionsEmptyMessage,
+        secondary: _archived
+            ? KitAction(
+                label: l10n.globalSessionsShowActive,
+                onPressed: () => _setArchived(false),
+              )
+            : null,
+        tertiary: [
+          if (!_archived)
+            KitAction(
+              label: l10n.globalSessionsRefresh,
+              onPressed: () => unawaited(_reload()),
+            ),
+        ],
       );
     }
 
     final scope = SessionNavigationScope(widget.controller);
     void guarded(VoidCallback action) {
       if (!scope.matches(widget.controller)) {
-        showProductError(
-          context,
-          _l10n(context).e7WorkspaceLocationChangedReturn,
-        );
+        _say(ProductException(_l10n(context).e7WorkspaceLocationChangedReturn));
         return;
       }
       action();
     }
 
-    // 3. One card per working directory, newest folder first, each row a
-    // conversation newest first. The card header carries the folder, so
-    // rows keep only what differs between them.
-    return RefreshIndicator(
+    final current = widget.controller.directory?.trim() ?? '';
+    final currentDirectory = current.isEmpty
+        ? null
+        : ConnectionController.normalizeDirectoryPath(current);
+    final notice = _notice;
+
+    // 3. One panel per project, newest project first, each row a
+    // conversation newest first. The section names the project, so rows
+    // keep only what differs between them.
+    return KitRefresh(
       onRefresh: _reload,
       child: ListView(
         key: const PageStorageKey('global-sessions-list'),
         controller: _scroll,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+        padding: EdgeInsetsDirectional.only(
+          bottom: KitScreen.endPadding(context),
+        ),
         children: [
-          for (final group in groups)
-            _FolderCard(
+          if (notice != null)
+            Padding(
+              padding: rails.add(
+                EdgeInsetsDirectional.only(bottom: tokens.space3),
+              ),
+              child: KitNotice(
+                key: const ValueKey('global-sessions-notice'),
+                message: notice,
+                tone: AppStatusTone.failure,
+                icon: AppIconography.warning,
+                onDismiss: () => setState(() => _notice = null),
+                dismissLabel: l10n.workspaceDismissNotice,
+              ),
+            ),
+          // Each project's label keeps the section gap from what is above
+          // it (none for the first); the page title and the rows already
+          // say how many there are, so no count is repeated.
+          for (final group in visible)
+            KitRowGroup(
               key: ValueKey('global-session-group-${group.directory}'),
-              group: group,
-              unknownLocation: l10n.globalSessionsUnknownLocation,
-              rows: [
-                for (final result in group.results)
-                  Focus(
-                    focusNode: _rowFocus.putIfAbsent(
-                      result.session.id,
-                      FocusNode.new,
-                    ),
-                    child: _GlobalSessionRow(
-                      controller: widget.controller,
-                      result: result,
-                      opening: _openingSessionID == result.session.id,
-                      stealing: _stealingSessionID == result.session.id,
-                      onTap: () => guarded(() => _open(result)),
-                      onRelated: () =>
-                          guarded(() => _open(result, related: true)),
-                      onHandoff: () =>
-                          guarded(() => _open(result, handoff: true)),
-                      // §7 row 7: "Continue here" is steal + sync-start,
-                      // neither of which v2 has. A future rebuild is
-                      // export+import+move.
-                      onSteal:
-                          widget.controller.capabilities.sessionSteal &&
-                              _isElsewhere(result)
-                          ? () => guarded(() => unawaited(_steal(result)))
-                          : null,
-                    ),
+              label: group.directory == currentDirectory
+                  ? l10n.globalSessionsProjectInUse(group.label)
+                  : group.label,
+              children: [
+                for (final result in _byUrgency(group.results))
+                  _GlobalSessionRow(
+                    controller: widget.controller,
+                    result: result,
+                    unknownLocation: l10n.globalSessionsUnknownLocation,
+                    opening: _openingSessionID == result.session.id,
+                    needsYou: _needsYou(result.session.id),
+                    onTap: () => guarded(() => _open(result)),
+                    onRelated: () =>
+                        guarded(() => _open(result, related: true)),
+                    onHandoff: () =>
+                        guarded(() => _open(result, handoff: true)),
+                    // §7 row 7: "Continue here" is steal + sync-start,
+                    // neither of which v2 has. A future rebuild is
+                    // export+import+move.
+                    onSteal:
+                        widget.controller.capabilities.sessionSteal &&
+                            _isElsewhere(result)
+                        ? () => guarded(() => unawaited(_steal(result)))
+                        : null,
                   ),
               ],
             ),
-          _footer(l10n),
+          if (_footer(l10n) case final footer?)
+            Padding(
+              padding: visible.isEmpty
+                  ? rails
+                  : rails.add(
+                      EdgeInsetsDirectional.only(top: tokens.sectionGap),
+                    ),
+              child: footer,
+            ),
         ],
       ),
     );
   }
 
-  /// The paging tail: a load error with retry, a spinner while a page
-  /// loads, or the explicit Load more control. Empty once everything is in.
-  Widget _footer(AppLocalizations l10n) {
+  /// The paging tail: a load error with Try again, or the explicit Load
+  /// more control. Null once everything is in; a page on its way is the
+  /// screen's one loading bar.
+  Widget? _footer(AppLocalizations l10n) {
     if (_error != null) {
-      return ListTile(
-        leading: Icon(
-          AppIconography.error,
-          color: Theme.of(context).colorScheme.error,
-        ),
-        title: Text(
-          _errorWasRefresh
-              ? l10n.globalSessionsRefreshFailed
-              : l10n.globalSessionsLoadMoreFailed,
-        ),
-        subtitle: Text(productErrorText(_error!)),
-        trailing: TextButton(
+      // What failed in the title, why in words, the raw text only behind
+      // Copy details (never "ApiException: … page 2" as the words).
+      return KitNotice.error(
+        key: const ValueKey('global-sessions-page-failed'),
+        title: _errorWasRefresh
+            ? l10n.globalSessionsRefreshFailed
+            : l10n.globalSessionsLoadMoreFailed,
+        message: productErrorText(_error!, l10n: l10n),
+        error: _error,
+        errorKind: productErrorKind(_error),
+        details: productErrorDetails(_error),
+        reportSource: 'global-sessions',
+        copyDetailsKey: const ValueKey('global-sessions-page-failed-copy'),
+        retry: KitAction(
+          label: l10n.commonRetry,
           onPressed: _errorWasRefresh || _restartPagination
-              ? _reload
-              : _loadMore,
-          child: Text(l10n.commonRetry),
+              ? () => unawaited(_reload())
+              : () => unawaited(_loadMore()),
         ),
       );
     }
-    if (_loading || _loadingMore) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 18),
-        child: Center(
-          child: SizedBox.square(
-            dimension: 22,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
+    if (_hasMore && !_loading && !_loadingMore) {
+      return KitButton.secondary(
+        key: const ValueKey('global-sessions-load-more'),
+        label: l10n.globalSessionsLoadMore,
+        onPressed: () => unawaited(_loadMore()),
       );
     }
-    if (_hasMore) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(4, 12, 4, 0),
-        child: OutlinedButton(
-          key: const ValueKey('global-sessions-load-more'),
-          onPressed: _loadMore,
-          child: Text(l10n.globalSessionsLoadMore),
-        ),
-      );
-    }
-    return const SizedBox.shrink();
+    return null;
   }
 
   @override
   void dispose() {
-    _debounce?.cancel();
     widget.controller.removeListener(_controllerChanged);
     _scroll
       ..removeListener(_scrollChanged)
       ..dispose();
-    _search.dispose();
-    for (final node in _rowFocus.values) {
-      node.dispose();
-    }
+    _search
+      ..removeListener(_searchTyped)
+      ..dispose();
     super.dispose();
   }
 }
@@ -820,110 +1039,18 @@ class _GlobalGroup {
   final List<GlobalSessionResult> results;
 }
 
-/// One folder's conversations: a header naming the folder, then its rows
-/// with no leading icons or hard dividers, so the eye reads title, age and
-/// state and nothing else.
-class _FolderCard extends StatelessWidget {
-  const _FolderCard({
-    super.key,
-    required this.group,
-    required this.unknownLocation,
-    required this.rows,
-  });
-
-  final _GlobalGroup group;
-  final String unknownLocation;
-  final List<Widget> rows;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    final path = group.directory.isEmpty ? unknownLocation : group.directory;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.colorScheme.outlineVariant),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Semantics(
-              header: true,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        AppIconography.files,
-                        size: 18,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            group.label,
-                            style: theme.textTheme.titleMedium,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            path,
-                            textDirection: group.directory.isEmpty
-                                ? null
-                                : TextDirection.ltr,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: muted,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        '${group.results.length}',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: muted,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            ...rows,
-            const SizedBox(height: 6),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
+/// One conversation in Work's row shape: a leading chat tile (or the
+/// working mark), the title in the person's own words, and a supporting
+/// line that leads with its state word. Rare acts open on long-press,
+/// right-click and as semantic actions (KIT-28).
 class _GlobalSessionRow extends StatelessWidget {
   final ConnectionController controller;
   final GlobalSessionResult result;
+  final String unknownLocation;
   final bool opening;
-  final bool stealing;
+
+  /// A permission, question or form waits on the person.
+  final bool needsYou;
   final VoidCallback onTap;
   final VoidCallback onRelated;
   final VoidCallback onHandoff;
@@ -932,8 +1059,9 @@ class _GlobalSessionRow extends StatelessWidget {
   const _GlobalSessionRow({
     required this.controller,
     required this.result,
+    required this.unknownLocation,
     required this.opening,
-    this.stealing = false,
+    this.needsYou = false,
     required this.onTap,
     required this.onRelated,
     required this.onHandoff,
@@ -942,218 +1070,115 @@ class _GlobalSessionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final l10n = _l10n(context);
+    final tokens = KitTokens.of(context);
     final session = result.session;
     final title = presentedSessionTitle(
       session,
       fallback: l10n.globalSessionsUntitled,
       l10n: l10n,
     );
-    final project = _projectLabel(result, l10n);
-    final working = controller.busySessions.contains(session.id);
+    final working = !needsYou && controller.busySessions.contains(session.id);
+    final unread = !needsYou && !working && controller.isSessionUnread(session);
     final updated = session.time?.updated ?? session.time?.created;
-    final details = <String>[
-      if (working) l10n.globalSessionsWorking,
+    final directory = (session.directory ?? result.projectDirectory)?.trim();
+    final busy = opening;
+    // The state word leads (STATE-9): "Needs you", "Working", "Archived",
+    // "Unread result" at label weight, then the muted facts.
+    final state = working
+        ? l10n.globalSessionsWorking
+        : session.archived
+        ? l10n.globalSessionsArchivedShort
+        : unread
+        ? l10n.sessionUnread
+        : null;
+    final facts = [
       if (updated != null && updated > 0)
         relativeTimeLabel(updated, l10n: l10n),
       if (session.path?.trim().isNotEmpty == true) session.path!.trim(),
-    ].join(' · ');
-    // A screen reader hears the folder on every row; the card header
-    // carries it visually.
-    final spoken = [
-      project,
-      details,
-      if (session.archived) l10n.globalSessionsArchivedShort,
-    ].where((value) => value.isNotEmpty).join(' · ');
-    final busy = opening || stealing;
-
-    final row = Semantics(
-      button: true,
-      label: _l10n(context).e7WorkspaceOpenSessionSemantics(title, spoken),
-      onTap: busy ? null : onTap,
-      customSemanticsActions: {
-        if (!busy) ...{
-          CustomSemanticsAction(label: l10n.sessionOpenRelated): onRelated,
-          CustomSemanticsAction(label: l10n.sessionCopyHandoff): onHandoff,
-        },
-        if (onSteal != null && !busy)
-          CustomSemanticsAction(label: l10n.globalSessionsContinueHere):
-              onSteal!,
-      },
-      child: ExcludeSemantics(
-        child: InkWell(
-          key: ValueKey('global-session-${session.id}'),
-          onTap: busy ? null : onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(14, 8, 4, 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+    ];
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.25;
+    Widget lead(Widget child) => SizedBox.square(
+      dimension: tokens.iconTileSize,
+      child: Center(child: child),
+    );
+    return KitRow(
+      key: ValueKey('global-session-${session.id}'),
+      titleMaxLines: 2,
+      supportingMaxLines: largeText ? 3 : 2,
+      leading: needsYou && !busy
+          ? lead(
+              KitNeedsYou.mark(
+                key: ValueKey('global-session-needs-you-${session.id}'),
+              ),
+            )
+          : busy || working
+          ? lead(const KitTaskMark(state: KitTaskState.working))
+          : KitRow.icon(
+              context,
+              session.archived ? AppIconography.archive : AppIconography.chat,
+            ),
+      title: title,
+      supporting: !needsYou && state == null && facts.isEmpty
+          ? null
+          : TextSpan(
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          if (working)
-                            Padding(
-                              padding: const EdgeInsetsDirectional.only(end: 8),
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: theme.textTheme.bodyLarge,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (session.archived)
-                            Padding(
-                              padding: const EdgeInsetsDirectional.only(
-                                start: 8,
-                              ),
-                              child: _Pill(l10n.globalSessionsArchivedShort),
-                            ),
-                        ],
-                      ),
-                      SessionUnreadBadge(
-                        controller: controller,
-                        session: session,
-                      ),
-                      if (details.isNotEmpty)
-                        Text(
-                          details,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: muted,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                    ],
-                  ),
-                ),
-                // One overflow menu instead of a per-row icon: Open is the
-                // tap, Continue here rides in the menu (and, on desktop,
-                // right click).
-                if (busy)
-                  const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                if (needsYou) KitNeedsYou.span(context),
+                if (state != null)
+                  TextSpan(
+                    text: state,
+                    style: KitText.styleOf(
+                      context,
+                      KitTextRole.label,
+                      tone: KitTextTone.primary,
                     ),
-                  )
-                else
-                  PopupMenuButton<String>(
-                    key: ValueKey('global-session-actions-${session.id}'),
-                    tooltip: l10n.globalSessionsActions,
-                    iconColor: muted,
-                    onSelected: (value) {
-                      if (value == 'open') onTap();
-                      if (value == 'steal') onSteal?.call();
-                      if (value == 'related') onRelated();
-                      if (value == 'handoff') onHandoff();
-                    },
-                    itemBuilder: (_) => [
-                      PopupMenuItem(
-                        value: 'open',
-                        child: Text(l10n.globalSessionsOpen),
-                      ),
-                      PopupMenuItem(
-                        value: 'related',
-                        child: Text(l10n.sessionOpenRelated),
-                      ),
-                      PopupMenuItem(
-                        value: 'handoff',
-                        child: Text(l10n.sessionCopyHandoff),
-                      ),
-                      if (onSteal != null)
-                        PopupMenuItem(
-                          key: ValueKey('steal-session-${session.id}'),
-                          value: 'steal',
-                          child: Text(l10n.globalSessionsContinueHere),
-                        ),
-                    ],
+                  ),
+                if (facts.isNotEmpty)
+                  TextSpan(
+                    text: state == null
+                        ? facts.join(' · ')
+                        : facts.map((fact) => ' · $fact').join(),
                   ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-    // Steal is offered only where it is genuinely possible, matching the
-    // menu's own gate. Off desktop this wrapper is a pass-through.
-    return ContextMenuRegion(
-      actions: () => [
-        if (!busy)
-          ContextMenuAction(
-            menuKey: const ValueKey('global-session-menu-open'),
-            label: l10n.globalSessionsOpen,
-            icon: AppIconography.externalLink,
-            onSelected: onTap,
-          ),
-        if (onSteal != null && !busy)
-          ContextMenuAction(
-            menuKey: const ValueKey('global-session-menu-steal'),
-            label: l10n.globalSessionsContinueHere,
-            icon: AppIconography.inbox,
-            onSelected: onSteal!,
-          ),
-      ],
-      child: row,
-    );
-  }
-
-  static String _projectLabel(
-    GlobalSessionResult result,
-    AppLocalizations l10n,
-  ) {
-    final named = result.projectName?.trim();
-    if (named?.isNotEmpty == true) return named!;
-    for (final path in [result.projectDirectory, result.session.directory]) {
-      final parts = (path ?? '')
-          .replaceAll('\\', '/')
-          .split('/')
-          .where((part) => part.isNotEmpty)
-          .toList();
-      if (parts.isNotEmpty) return parts.last;
-    }
-    return l10n.e7WorkspaceUnknownProject;
-  }
-}
-
-/// A small outlined tag, used for the archived state.
-class _Pill extends StatelessWidget {
-  const _Pill(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Text(
-        text,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: AppTheme.mutedOf(theme),
-        ),
-      ),
+      onTap: busy ? null : onTap,
+      menuLabel: l10n.globalSessionsActions,
+      menu: busy
+          ? const []
+          : [
+              KitMenuItem(
+                key: const ValueKey('global-session-menu-open'),
+                label: l10n.globalSessionsOpen,
+                icon: AppIconography.externalLink,
+                onSelected: onTap,
+              ),
+              KitMenuItem(
+                key: ValueKey('global-session-related-${session.id}'),
+                label: l10n.sessionOpenRelated,
+                icon: AppIconography.link,
+                onSelected: onRelated,
+              ),
+              KitMenuItem(
+                key: ValueKey('global-session-handoff-${session.id}'),
+                label: l10n.sessionCopyHandoff,
+                icon: AppIconography.copy,
+                onSelected: onHandoff,
+              ),
+              if (onSteal != null)
+                KitMenuItem(
+                  key: ValueKey('steal-session-${session.id}'),
+                  label: l10n.globalSessionsContinueHere,
+                  icon: AppIconography.inbox,
+                  onSelected: onSteal!,
+                ),
+              KitMenuItem.copy(
+                key: ValueKey('global-session-copy-folder-${session.id}'),
+                label: l10n.globalSessionsCopyFolder,
+                text: () => directory?.isNotEmpty == true
+                    ? directory!
+                    : unknownLocation,
+              ),
+            ],
     );
   }
 }

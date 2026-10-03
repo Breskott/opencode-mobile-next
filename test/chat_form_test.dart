@@ -173,7 +173,21 @@ void main() {
 
     expect(find.byKey(const Key('form-sheet')), findsOneWidget);
     expect(find.byKey(const Key('form-error-banner')), findsOneWidget);
-    expect(find.textContaining('Invalid option'), findsOneWidget);
+    // The refusal in plain words; the server's prose stays under Details
+    // (6cdfca4e, a65dcea9: no raw errors as copy).
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('form-sheet')),
+        matching: find.text(
+          "The server didn't accept the request. Try again, or report the "
+          'problem.',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Invalid option'), findsNothing);
+    // The card under the sheet says the answers were not accepted (chat-5).
+    expect(find.textContaining('Not accepted'), findsOneWidget);
     expect(controller.forms, contains('frm_1'));
   });
 

@@ -10,6 +10,11 @@ class _PromptEditorResult {
   final List<PromptAttachment> attachments;
 }
 
+/// The full-screen prompt editor: a calm page with the prompt's
+/// attachments on top, one tall field, and Done pinned above the keyboard.
+/// Done hands the text and attachments back to the composer; Close with
+/// changes asks once whether to discard them, and the composer's own draft
+/// is never touched until Done.
 class _PromptEditorScreen extends StatefulWidget {
   const _PromptEditorScreen({
     required this.initialValue,
@@ -86,16 +91,15 @@ class _PromptEditorScreenState extends State<_PromptEditorScreen> {
       return;
     }
     _closing = true;
-    final discard = await showConfirmSheet(
+    final l10n = _chatL10n(context);
+    final discard = await showKitConfirm(
       context,
+      kind: KitConfirmKind.destructive,
       icon: AppIconography.clearAll,
-      title: _chatL10n(context).chatUiDiscardPromptChanges,
-      message: _chatL10n(
-        context,
-      ).chatUiYourOriginalComposerDraftAndAttachmentsWill,
-      confirmLabel: _chatL10n(context).chatUiDiscard,
-      cancelLabel: _chatL10n(context).draftKeepEditing,
-      destructive: true,
+      title: l10n.chatUiDiscardPromptChanges,
+      body: l10n.chatUiYourOriginalComposerDraftAndAttachmentsWill,
+      confirmLabel: l10n.promptEditorDiscardChanges,
+      cancelLabel: l10n.draftKeepEditing,
     );
     _closing = false;
     if (discard && mounted) Navigator.pop(context);
@@ -103,91 +107,88 @@ class _PromptEditorScreenState extends State<_PromptEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = _chatL10n(context);
+    final tokens = KitTokens.of(context);
+    final full = _attachments.length >= _maxAttachmentCount;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) unawaited(_cancel());
       },
-      child: Scaffold(
+      child: KitScreen(
         key: const Key('prompt-editor-screen'),
-        appBar: AppBar(
-          leading: IconButton(
-            tooltip: _chatL10n(context).chatUiClosePromptEditor,
-            onPressed: _cancel,
-            icon: const Icon(AppIconography.close),
-          ),
-          title: Text(_chatL10n(context).chatUiPromptEditor),
+        // A page of prose: centred at the reading width on wide windows.
+        width: KitScreenWidth.reading,
+        topBar: KitTopBar(
+          title: l10n.chatUiPromptEditor,
+          exit: KitTopBarExit.close,
+          onExit: () => unawaited(_cancel()),
           actions: [
             if (widget.chooseAttachment != null)
-              IconButton(
+              KitAction(
                 key: const Key('prompt-editor-attach'),
-                tooltip: _attachments.length >= _maxAttachmentCount
-                    ? _chatL10n(context).chatUiAttachmentLimitReached
-                    : _chatL10n(context).chatUiAttachFile,
-                onPressed: _attachments.length >= _maxAttachmentCount
-                    ? null
-                    : _addAttachment,
-                icon: const Icon(AppIconography.attach),
+                icon: AppIconography.attach,
+                label: l10n.chatUiAttachFile,
+                disabledReason: full ? l10n.chatUiAttachmentLimitReached : null,
+                onPressed: full ? null : () => unawaited(_addAttachment()),
               ),
-            TextButton(
-              key: const Key('prompt-editor-done'),
-              onPressed: _save,
-              child: Text(_chatL10n(context).modelChoiceDone),
-            ),
-            const SizedBox(width: 4),
           ],
         ),
-        body: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              if (_attachments.isNotEmpty)
-                SizedBox(
-                  height: 64,
-                  child: ListView.separated(
-                    key: const Key('prompt-editor-attachments'),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _attachments.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 6),
-                    itemBuilder: (context, index) {
-                      final attachment = _attachments[index];
-                      return _PendingAttachmentChip(
-                        attachment: attachment,
-                        onRemove: () =>
-                            setState(() => _attachments.removeAt(index)),
-                      );
-                    },
-                  ),
-                ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 12),
-                  child: TextField(
-                    key: const Key('prompt-editor-field'),
-                    controller: _controller,
-                    autofocus: true,
-                    expands: true,
-                    minLines: null,
-                    maxLines: null,
-                    keyboardType: TextInputType.multiline,
-                    textAlignVertical: TextAlignVertical.top,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: InputDecoration(
-                      hintText: _chatL10n(
-                        context,
-                      ).chatUiWriteYourOpenCodePrompt,
-                      alignLabelWithHint: true,
-                      contentPadding: EdgeInsets.all(16),
-                    ),
-                  ),
+        bottom: KitActionBlock(
+          primary: KitAction(
+            key: const Key('prompt-editor-done'),
+            icon: AppIconography.check,
+            label: l10n.promptEditorDone,
+            onPressed: _save,
+          ),
+        ),
+        body: ListView(
+          padding: EdgeInsetsDirectional.fromSTEB(
+            tokens.gutter,
+            tokens.space2,
+            tokens.gutter,
+            tokens.space4,
+          ),
+          children: [
+            // Attachments sit above the field, so the keyboard never
+            // covers them.
+            if (_attachments.isNotEmpty)
+              Padding(
+                padding: EdgeInsetsDirectional.only(bottom: tokens.space3),
+                child: KitComposerChips.attachments(
+                  stripKey: const Key('prompt-editor-attachments'),
+                  items: [
+                    for (final attachment in _attachments)
+                      KitAttachment(
+                        id: attachment,
+                        label: attachment.isDirectoryReference
+                            ? '@${attachment.filename}'
+                            : attachment.filename,
+                        kind: attachment.isDirectoryReference
+                            ? KitAttachmentKind.folder
+                            : attachment.mime.startsWith('image/')
+                            ? KitAttachmentKind.image
+                            : KitAttachmentKind.file,
+                        thumbnail: switch (_thumbnailBytes(attachment)) {
+                          final bytes? => KitImageSource.memory(bytes),
+                          null => null,
+                        },
+                      ),
+                  ],
+                  onRemove: (item) =>
+                      setState(() => _attachments.remove(item.id)),
                 ),
               ),
-            ],
-          ),
+            KitField(
+              label: l10n.promptEditorFieldLabel,
+              controller: _controller,
+              kind: KitFieldKind.multiline,
+              hint: l10n.chatUiWriteYourOpenCodePrompt,
+              maxLines: KitLayout.isShort(context) ? 6 : 18,
+              autofocus: true,
+              fieldKey: const Key('prompt-editor-field'),
+            ),
+          ],
         ),
       ),
     );

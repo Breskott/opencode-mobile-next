@@ -4,7 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/demo/demo_copy.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/screens/demo_screen.dart';
 
@@ -87,7 +86,7 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(find.byTooltip(DemoCopy.exit), findsOneWidget);
+        expect(find.byTooltip('Leave demo'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await writePng(
           'docs/qa/page-reviews/chat/demo-complete-$variant.png',

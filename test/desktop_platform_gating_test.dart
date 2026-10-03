@@ -23,7 +23,7 @@ import 'package:opencode_mobile/ui/screens/guide_screen.dart';
 import 'package:opencode_mobile/ui/screens/host_management_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
-import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeApi extends OpenCodeApi with CompleteMessageHistory {
@@ -169,17 +169,18 @@ void main() {
       final (store, controller) = await _seededState();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_servers(store, controller));
-      await tester.ensureVisible(find.text('More setup options'));
-      await tester.tap(find.text('More setup options'));
+      await tester.pumpAndSettle();
+      // One of Add server's ways in (R3).
+      await tester.tap(find.byKey(const ValueKey('servers-add')));
       await tester.pumpAndSettle();
 
       expect(
-        find.byKey(const ValueKey('quick-add-termux-card')),
+        find.byKey(const ValueKey('quick-add-phone-card')),
         findsOneWidget,
       );
       expect(find.text('On this phone'), findsOneWidget);
       expect(
-        find.text('Set up OpenCode 1 or 2 here with Termux.'),
+        find.text('Run a coding agent right here. No computer needed.'),
         findsOneWidget,
       );
     });
@@ -189,13 +190,14 @@ void main() {
       final (store, controller) = await _seededState();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_servers(store, controller));
-      await tester.ensureVisible(find.text('More setup options'));
-      await tester.tap(find.text('More setup options'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('servers-add')));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('quick-add-termux-card')), findsNothing);
+      expect(find.byKey(const ValueKey('quick-add-phone-card')), findsNothing);
       expect(find.text('On-device (Termux)'), findsNothing);
-      expect(find.text('Add server'), findsOneWidget);
+      // The editor, titled Add server.
+      expect(find.text('Add server'), findsWidgets);
     });
   });
 
@@ -270,14 +272,18 @@ void main() {
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: TermuxSetupScreen(),
+            home: PhoneSetupTermuxScreen(),
           ),
         ),
       );
       await tester.pump();
 
-      expect(find.byKey(const Key('termux-setup-unsupported')), findsOneWidget);
-      expect(find.text('Setup on this phone is Android only'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('phone-setup-termux-unsupported')),
+        findsOneWidget,
+      );
+      // The way that works instead (slice-close-servers).
+      expect(find.text('Connect a server'), findsOneWidget);
       // No step list, so nothing invites a tap that cannot work.
       expect(find.text('Get Termux'), findsNothing);
       expect(tester.takeException(), isNull);
@@ -307,7 +313,7 @@ void main() {
 
     testWidgets('offer voice input on Android', (tester) async {
       await pumpChat(tester);
-      expect(find.byTooltip('Add. Hold to attach a file'), findsOneWidget);
+      expect(find.byTooltip('Attach and more'), findsOneWidget);
       await openTools(tester);
       expect(find.byKey(const Key('composer-tool-voice')), findsOneWidget);
     });
@@ -316,7 +322,7 @@ void main() {
       onDesktop();
       await pumpChat(tester);
       // The collapsed button no longer advertises a tool that is not there.
-      expect(find.byTooltip('Add. Hold to attach a file'), findsOneWidget);
+      expect(find.byTooltip('Attach and more'), findsOneWidget);
       await openTools(tester);
       expect(find.byKey(const Key('composer-tool-voice')), findsNothing);
       expect(find.text('Voice input'), findsNothing);

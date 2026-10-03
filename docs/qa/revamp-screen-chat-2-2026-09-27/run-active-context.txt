@@ -1,0 +1,14 @@
+00:00 +0: loading test/active_context_test.dart
+00:00 +0: phone context preview
+00:00 +0 ~1: context GET uses session identity and authentication, retaining more than 5000 messages
+00:00 +1 ~1: malformed and duplicate snapshots fail visibly without disabling context
+00:00 +2 ~1: missing session and auth remain recoverable; missing route is capability failure
+00:00 +3 ~1: explicit inspector retains instruction text and files without binary bodies or metadata
+00:00 +4 ~1: tool content preserves all text results and distinguishes pruned and truncated output
+00:00 +5 ~1: search preview centers a distant literal match without slicing emoji pairs
+00:00 +6 ~1: search, type filter, full preview and copy act on the selected content
+00:02 +7 ~1: failed refresh retains labeled snapshot and later refresh recovers
+00:02 +8 ~1: late context from a previous location never appears
+00:03 +9 ~1: compact large text with open keyboard stays scrollable to results
+00:04 +10 ~1: staged revert excludes hidden messages and history invalidation refreshes
+01:17 +11 ~1: All tests passed!

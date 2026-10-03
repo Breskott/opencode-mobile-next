@@ -1,12 +1,17 @@
 part of '../chat_screen.dart';
 
-/// UX-P0-03: the three secondary prompt tools that used to sit as equal
-/// icons around the field. They now live behind one leading affordance.
+// The chat's composer (chat-3): the glass pill is [KitComposer]; the model
+// chip, the attachments and the `/` and `@` suggestions are
+// [KitComposerChips]; the "+" tools open one [showKitSheet]. This file only
+// maps the chat's state onto those parts.
+
+/// What the "+" sheet can start. The sheet returns one and the composer runs
+/// it after the sheet has closed, so a tool that opens its own sheet never
+/// races this one's dismissal.
 enum _PromptTool {
   commands,
   attach,
   webSources,
-  contextCapsule,
   gallery,
   camera,
   voice,
@@ -15,11 +20,11 @@ enum _PromptTool {
   clearText,
   stash,
   saved,
-  legacyDrafts,
 }
 
 class _ChatComposer extends StatelessWidget {
   const _ChatComposer({
+    this.agentName,
     required this.compact,
     this.isolated = false,
     this.maxInputHeight = double.infinity,
@@ -37,7 +42,6 @@ class _ChatComposer extends StatelessWidget {
     this.onClearText,
     this.onStashPrompt,
     this.onOpenStash,
-    this.onLegacyDrafts,
     this.onRestoreHistoryDraft,
     this.shelfBusy = false,
     this.shelfLoading = true,
@@ -45,10 +49,12 @@ class _ChatComposer extends StatelessWidget {
     required this.promptAttachmentsSupported,
     required this.webSourcesSupported,
     required this.busy,
+    this.live,
     required this.sending,
     this.canSendWhileBusy = false,
     this.canChooseDelivery = false,
-    this.delivery = PromptDelivery.steer,
+    // P6.6: "Send after this reply" is the default; steering is the choice.
+    this.delivery = PromptDelivery.queue,
     this.onDeliveryChanged,
     required this.voiceOpening,
     required this.selectedAgent,
@@ -66,23 +72,26 @@ class _ChatComposer extends StatelessWidget {
     required this.onVoice,
     required this.onConversation,
     required this.onWebSources,
-    required this.onContextCapsule,
     this.conversationMode = false,
+    this.voice,
     required this.onSend,
-    required this.onStop,
-    this.stopping = false,
     required this.onChooseModel,
     required this.onRemoveAttachment,
-    // UX-103 review handoff (start).
     this.references = const [],
     this.onRemoveReference,
-    // UX-103 review handoff (end).
     this.contextUsage,
     this.modelSwitch,
   });
 
+  /// Who the prompt goes to ("Claude Code"); null means OpenCode.
+  final String? agentName;
+
+  /// A phone-sized window: fewer inline suggestions.
   final bool compact;
   final bool isolated;
+
+  /// Kept for the host (KIT-43); the pill caps its own field at 40 % of the
+  /// window (KitLayout.composerMaxShare).
   final double maxInputHeight;
   final bool allowInlineCommands;
   final TextEditingController controller;
@@ -98,7 +107,6 @@ class _ChatComposer extends StatelessWidget {
   final VoidCallback? onClearText;
   final VoidCallback? onStashPrompt;
   final VoidCallback? onOpenStash;
-  final VoidCallback? onLegacyDrafts;
   final VoidCallback? onRestoreHistoryDraft;
   final bool shelfBusy;
   final bool shelfLoading;
@@ -106,27 +114,24 @@ class _ChatComposer extends StatelessWidget {
   final bool promptAttachmentsSupported;
   final bool webSourcesSupported;
   final bool busy;
+
+  /// The running turn's status for the composer's top edge.
+  final KitTurnLive? live;
   final bool sending;
 
-  /// OpenCode 2 only (§5): Send stays live while a turn runs. The delivery
-  /// control above the field says — and sets — what Send will do; long press
-  /// on Send remains a shortcut to the same choice. On v1 the busy composer
-  /// keeps its lone Stop button and no delivery control appears.
+  /// Send stays live while a reply is written (OpenCode 1 runs it after the
+  /// reply; OpenCode 2 queues or steers it).
   final bool canSendWhileBusy;
 
-  /// OpenCode 2 only: the server has an inbox, so a send made while a turn
-  /// runs can either steer it or wait for it. OpenCode 1 accepts the send
-  /// too but always runs it after the current turn, so it gets a hint
-  /// instead of a choice.
+  /// OpenCode 2's inbox: a send made during a reply can wait for it or add
+  /// to this turn. Without it the pill says "Sends after this reply".
   final bool canChooseDelivery;
 
-  /// What Send does while a run is active. Only meaningful when
-  /// [canSendWhileBusy] is true.
+  /// What Send does while a reply is being written.
   final PromptDelivery delivery;
-
-  /// Records an explicit delivery choice so the visible label keeps
-  /// matching what Send will do.
   final ValueChanged<PromptDelivery>? onDeliveryChanged;
+
+  /// Kept for the host (KIT-43): the voice sheet shows its own progress.
   final bool voiceOpening;
   final String selectedAgent;
 
@@ -135,88 +140,58 @@ class _ChatComposer extends StatelessWidget {
   final String defaultAgent;
   final ModelRef? selectedModel;
 
-  /// Presented model name (catalog name or provider · model); the chip shows
-  /// it instead of the raw ID. The tooltip keeps the raw string.
+  /// Presented model name (catalog name or provider · model).
   final String? modelLabel;
+
+  /// The words for "no pick": the server default by name, or "Loading…".
   final String? selectionFallback;
 
-  /// The selection's catalog entry, for the pricing line in the chip's
-  /// tooltip; null when the catalog does not know the model.
+  /// Kept for the host (KIT-43); pricing lives in the model picker.
   final CatalogModel? selectedCatalogModel;
   final String selectedVariant;
 
-  /// The "not saved with your draft" note shows once per session, so the
-  /// screen decides when it applies.
+  /// The "saved with your draft" note shows once per session.
   final bool showAttachmentNote;
 
   final VoidCallback onAttach;
   final VoidCallback onPhotoLibrary;
   final VoidCallback onCamera;
 
-  /// Receives images committed by the IME (keyboard image insertions and
-  /// Android clipboard-image paste chips). See `_handleInsertedContent`.
+  /// Images committed by the IME (keyboard images, clipboard-image chips).
   final ValueChanged<KeyboardInsertedContent> onContentInserted;
   final VoidCallback onVoice;
   final VoidCallback onConversation;
   final VoidCallback onWebSources;
-  final VoidCallback onContextCapsule;
   final bool conversationMode;
-  final VoidCallback onSend;
 
-  final VoidCallback onStop;
-  final bool stopping;
+  /// Non-null: the pill is in voice mode (P10.3), dictating or in a voice
+  /// conversation.
+  final KitComposerVoice? voice;
+  final VoidCallback onSend;
   final VoidCallback onChooseModel;
   final ValueChanged<PromptAttachment> onRemoveAttachment;
 
-  // UX-103 review handoff (start): staged Files/Changes/Review references.
-  // Unlike attachments these upload nothing — they become text in the
-  // prompt when it is sent.
+  /// Staged Files/Changes/Review references: they upload nothing and become
+  /// text in the prompt when it is sent.
   final List<ReviewReference> references;
   final ValueChanged<ReviewReference>? onRemoveReference;
-  // UX-103 review handoff (end).
 
-  /// Fraction of the model's context window the session has consumed, or
-  /// null when the limit is unknown.
+  /// Share of the model's context window in use, or null when unknown.
   final double? contextUsage;
+
+  /// The host's model cycle button; its three shortcuts become the model
+  /// chip's menu (long-press, right-click, custom actions).
   final Widget? modelSwitch;
 
-  Widget _modelControls(BuildContext context) => isolated
-      ? Text(
-          _contextLabel(context),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        )
-      : Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: _ModelContextChip(
-                label: _contextLabel(context),
-                tooltip: _rawContextLabel(context),
-                costLine: _costLine,
-                trailing: _contextPercent(context),
-                contextHint: contextUsage == null
-                    ? null
-                    : _chatL10n(context).chatUiContextPercentFull(
-                        (contextUsage!.clamp(0, 1) * 100).round(),
-                      ),
-                onPressed: onChooseModel,
-              ),
-            ),
-            ?modelSwitch,
-          ],
-        );
+  bool get _hasAttachments => attachments.isNotEmpty || references.isNotEmpty;
 
-  bool get _hasPrompt =>
-      controller.text.trim().isNotEmpty ||
-      attachments.isNotEmpty ||
-      references.isNotEmpty;
+  bool get _hasPrompt => controller.text.trim().isNotEmpty || _hasAttachments;
 
-  /// The delivery control (OpenCode 2) or queue hint (OpenCode 1) exists
-  /// only while a run is active and there is something typed to send.
-  bool get _deliveryStripShown => busy && canSendWhileBusy && _hasPrompt;
+  /// Attaching has to wait for a reply only where Send itself must wait.
+  bool get _attachBlocked =>
+      sending || shelfBusy || (busy && !canSendWhileBusy);
 
-  void _submitFromKeyboard() {
+  void _send() {
     if (_hasPrompt && !sending && !shelfBusy && (!busy || canSendWhileBusy)) {
       onSend();
     }
@@ -224,348 +199,379 @@ class _ChatComposer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final disableAnimations = media.disableAnimations;
+    final conn = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(connProvider);
+    return ListenableBuilder(
+      listenable: Listenable.merge([conn, controller]),
+      builder: (context, _) => _layout(context, conn),
+    );
+  }
 
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(10, 6, 10, 10),
-        child: ListenableBuilder(
-          listenable: focusNode,
-          // Keep the editor mounted when a run finishes. A changing pulse
-          // key used to discard its input connection mid-draft.
-          builder: (context, child) {
-            final focused = focusNode.hasFocus;
-            final radius = BorderRadius.circular(20);
-            final restingBorder = focused
-                ? scheme.primary.withValues(alpha: .8)
-                : scheme.outlineVariant.withValues(alpha: .65);
-            // While a run is active the activity ring paints the border
-            // and breathes the glow, so the surface underneath keeps only
-            // a faint primary base line for the sweep to travel over.
-            return _ComposerActivity(
-              active: busy,
-              radius: radius,
-              child: AnimatedContainer(
-                key: const Key('chat-composer-surface'),
-                duration: disableAnimations
-                    ? Duration.zero
-                    : const Duration(milliseconds: 180),
-                curve: Curves.easeOutCubic,
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerLow,
-                  borderRadius: radius,
-                  border: Border.all(
-                    color: busy
-                        ? scheme.primary.withValues(alpha: .3)
-                        : restingBorder,
-                    width: busy || focused ? 1.4 : 1,
-                  ),
-                ),
-                child: child,
+  Widget _layout(BuildContext context, ConnectionController conn) {
+    final tokens = KitTokens.of(context);
+    final l10n = _chatL10n(context);
+    // Offline compose queues when the server keeps a queue (P4.3); Send says
+    // so in its own words.
+    final offline =
+        conn.status != StreamStatus.connected &&
+        conn.capabilities.offlinePromptQueue;
+    final restore = onRestoreHistoryDraft;
+    // The floating layer draws the gutters, the bottom edge and the safe
+    // area ([KitComposer.layer]).
+    return Padding(
+      padding: EdgeInsetsDirectional.only(top: tokens.space1),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!conversationMode && restore != null)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: KitButton.tertiary(
+                key: const Key('composer-restore-history-draft'),
+                icon: AppIconography.undo,
+                label: l10n.promptOriginalDraft,
+                onPressed: shelfBusy ? null : restore,
               ),
-            );
-          },
-          child: ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller,
-            builder: (context, value, _) => Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (allowInlineCommands && _slashQuery != null)
-                  _InlineCommandSuggestions(
-                    commands: commands,
-                    query: _slashQuery!,
-                    compact: compact,
-                    onSelected: onSelectCommand,
-                    onShowAll: onOpenCommands,
-                  ),
-                if (allowInlineCommands && _agentQuery != null)
-                  _InlineAgentSuggestions(
-                    agents: agents,
-                    query: _agentQuery!.query,
-                    compact: compact,
-                    onSelected: onSelectAgent,
-                    onShowAll: onOpenAgents,
-                  ),
-                // UX-P0-04: while a run is active the consequence of Send
-                // changes, so the choice is stated in words rather than
-                // hidden behind a long press on an unchanged arrow. The
-                // strip only exists while it applies — a run is active AND
-                // there is something typed to send — so watching a run with
-                // an empty composer gains no density from it.
-                if (_deliveryStripShown)
-                  if (canChooseDelivery && onDeliveryChanged != null)
-                    _DeliveryControl(
-                      delivery: delivery,
-                      onChanged: onDeliveryChanged!,
-                      compact: compact,
-                    )
-                  else
-                    _QueueHint(compact: compact),
-                // UX-103 review handoff (start): staged references ride
-                // above the attachment strip so the two never read as one
-                // kind of thing.
-                if (references.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(
-                      12,
-                      10,
-                      12,
-                      0,
-                    ),
-                    child: SizedBox(
-                      height: 48,
-                      child: ListView.separated(
-                        key: const Key('composer-reference-strip'),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: references.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: 6),
-                        itemBuilder: (context, index) {
-                          final reference = references[index];
-                          return _StagedReferenceChip(
-                            reference: reference,
-                            onRemove: onRemoveReference == null
-                                ? null
-                                : () => onRemoveReference!(reference),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(14, 6, 14, 0),
-                    child: Text(
-                      key: const Key('composer-reference-note'),
-                      // §7.4 again: staged references live in memory only, so
-                      // say so here rather than letting a restart lose them
-                      // silently — same promise the attachment note makes.
-                      references.length == 1
-                          ? _chatL10n(context).chatUi1ReferenceIsAddedAsTextWhen
-                          : _chatL10n(
-                              context,
-                            ).chatUiReferencesAttachedNotice(references.length),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: AppTheme.mutedOf(theme),
-                      ),
-                    ),
-                  ),
-                ],
-                // UX-103 review handoff (end).
-                if (attachments.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(
-                      12,
-                      10,
-                      12,
-                      0,
-                    ),
-                    child: SizedBox(
-                      height: 56,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: attachments.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: 6),
-                        itemBuilder: (context, index) {
-                          final attachment = attachments[index];
-                          return _PendingAttachmentChip(
-                            attachment: attachment,
-                            onRemove: () => onRemoveAttachment(attachment),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  // Explain local recovery once per attachment draft.
-                  if (showAttachmentNote)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                        14,
-                        6,
-                        14,
-                        0,
-                      ),
-                      child: Text(
-                        key: const Key('composer-attachment-draft-note'),
-                        promptAttachmentsSupported
-                            ? _chatL10n(context).draftAttachmentsLocal
-                            : _chatL10n(context).codexTextOnlyPrompt,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: AppTheme.mutedOf(theme),
-                        ),
-                      ),
-                    ),
-                ],
-                _composerBody(context),
-              ],
             ),
+          KitComposer(
+            controller: controller,
+            focusNode: focusNode,
+            hint: agentName == null
+                ? l10n.chatUiAskOpenCode
+                : l10n.chatUiAskAgent(KitBidi.auto(agentName!)),
+            onSend: _send,
+            // Stop lives on the composer's own top edge (the rail's tappable
+            // caption), so the mic and Send stay here while a reply runs:
+            // speaking or typing then waits to send after the reply.
+            busy: busy,
+            rail: live,
+            sending: sending || (shelfBusy && shelfLoading),
+            canSendWhileBusy: canSendWhileBusy,
+            // Without an inbox (OpenCode 1) a send made during a reply
+            // always runs after it, whatever the host remembers.
+            delivery: canChooseDelivery && delivery == PromptDelivery.steer
+                ? KitComposerDelivery.addToThisTurn
+                : KitComposerDelivery.afterThisReply,
+            onDeliveryChanged: canChooseDelivery && onDeliveryChanged != null
+                ? (value) => onDeliveryChanged!(
+                    value == KitComposerDelivery.addToThisTurn
+                        ? PromptDelivery.steer
+                        : PromptDelivery.queue,
+                  )
+                : null,
+            offline: offline,
+            readOnlyReason: !shelfBusy
+                ? null
+                : shelfLoading
+                ? l10n.composerBusyReason
+                : l10n.composerDraftBlockedReason,
+            note: _note(context),
+            hasAttachments: _hasAttachments,
+            attachments: _attachmentChips(context),
+            suggestions: _suggestions(context),
+            model: isolated ? null : _modelChip(context, conn),
+            onTools: isolated || conversationMode
+                ? null
+                : () => unawaited(_openTools(context)),
+            onVoice:
+                isolated ||
+                    conversationMode ||
+                    !platformCapabilities.supportsVoice
+                ? null
+                : onVoice,
+            onOpenEditor: isolated || conversationMode ? null : onOpenEditor,
+            voice: voice,
+            onContentInserted: isolated || !promptAttachmentsSupported
+                ? null
+                : onContentInserted,
+            fieldLabel: l10n.composerFieldLabel,
+            composerKey: const Key('chat-composer-surface'),
+            fieldKey: const Key('chat-composer-field'),
+            sendKey: const Key('chat-send-button'),
+            toolsKey: const Key('composer-tools-button'),
+            voiceButtonKey: const Key('composer-voice-button'),
+            editorKey: const Key('prompt-editor-button'),
+            deliveryKey: const Key('composer-delivery-control'),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  // One structure at every height keeps the editor and its input connection
-  // in place as the keyboard opens. Only its line budget changes.
-  Widget _composerBody(BuildContext context) {
-    const fieldPadding = EdgeInsetsDirectional.fromSTEB(16, 14, 16, 8);
-    var fieldLines = compact ? 3 : 6;
-    double? singleLineViewport;
-    if (maxInputHeight.isFinite) {
-      final theme = Theme.of(context);
-      final painter = TextPainter(
-        text: TextSpan(
-          text: 'M',
-          style: theme.useMaterial3
-              ? theme.textTheme.bodyLarge
-              : theme.textTheme.titleMedium,
-        ),
-        textDirection: Directionality.of(context),
-        textScaler: MediaQuery.textScalerOf(context),
-      )..layout();
-      try {
-        // Match the editable's line count to its viewport. Merely clipping a
-        // taller TextField lets InputDecorator position text above the field.
-        fieldLines =
-            ((maxInputHeight - fieldPadding.vertical) /
-                    painter.preferredLineHeight)
-                .floor()
-                .clamp(1, fieldLines);
-        if (fieldLines == 1) {
-          singleLineViewport = math.min(
-            maxInputHeight,
-            painter.preferredLineHeight + fieldPadding.vertical,
-          );
-        }
-      } finally {
-        painter.dispose();
-      }
-    }
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (!conversationMode && onRestoreHistoryDraft != null)
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: TextButton.icon(
-              key: const Key('composer-restore-history-draft'),
-              onPressed: shelfBusy ? null : onRestoreHistoryDraft,
-              icon: const Icon(AppIconography.undo),
-              label: Text(_chatL10n(context).promptOriginalDraft),
-            ),
-          ),
-        if (shelfBusy && shelfLoading)
-          const LinearProgressIndicator(minHeight: 2),
-        ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: singleLineViewport ?? 0,
-            maxHeight: singleLineViewport ?? maxInputHeight,
-          ),
-          child: _ComposerField(
-            isolated: isolated,
-            promptAttachmentsSupported: promptAttachmentsSupported,
-            controller: controller,
-            focusNode: focusNode,
-            onContentInserted: onContentInserted,
-            // Let the draft earn its space; an empty field needs one line.
-            // A single visible line remains a multiline editor. maxLines: 1
-            // would silently strip newlines from pasted or typed prompts.
-            minLines: singleLineViewport == null ? 1 : null,
-            maxLines: singleLineViewport == null ? fieldLines : null,
-            expands: singleLineViewport != null,
-            contentPadding: fieldPadding.resolve(Directionality.of(context)),
-            onSubmitShortcut: _submitFromKeyboard,
-            readOnly: shelfBusy,
-          ),
-        ),
-        // The percentage keeps routine usage visible; the meter signals
-        // an approaching limit instead of dividing every idle composer.
-        if (contextUsage case final usage? when usage >= .7)
-          _ContextMeterLine(usage: usage),
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(6, 0, 6, 6),
-          child: Row(
-            children: [
-              if (!isolated && !conversationMode)
-                _PromptToolsButton(
-                  voiceOpening: voiceOpening,
-                  attachmentsSupported: promptAttachmentsSupported,
-                  onSelected: _openTool,
-                  onAttach: _attachBlocked || !promptAttachmentsSupported
-                      ? null
-                      : onAttach,
-                ),
-              const SizedBox(width: 2),
-              // The model/agent reads as context, not as a fifth equal
-              // action: it flexes and ellipsizes so the row never pushes
-              // Send off the edge at large text scales.
-              Expanded(
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: _modelControls(context),
-                ),
-              ),
-              if (!isolated && _hasPrompt)
-                IconButton(
-                  key: const Key('prompt-editor-button'),
-                  tooltip: _chatL10n(context).chatUiOpenFullScreenPromptEditor,
-                  onPressed: shelfBusy || conversationMode
-                      ? null
-                      : onOpenEditor,
-                  icon: const Icon(AppIconography.expand, size: 19),
-                  style: IconButton.styleFrom(
-                    foregroundColor: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              const SizedBox(width: 2),
-              _ComposerSubmit(
-                busy: busy,
-                sending: sending || (shelfBusy && shelfLoading),
-                enabled: _hasPrompt && !shelfBusy,
-                canSendWhileBusy: canSendWhileBusy,
-                delivery: delivery,
-                onDeliveryChanged: onDeliveryChanged,
-                onSend: onSend,
-                canChooseDelivery: canChooseDelivery,
-                onStop: onStop,
-                stopping: stopping,
-              ),
-            ],
-          ),
-        ),
-      ],
+  /// The pill's one muted line: what the attachments and references do
+  /// with the draft.
+  String? _note(BuildContext context) {
+    final l10n = _chatL10n(context);
+    final parts = <String>[
+      if (references.length == 1) l10n.chatUi1ReferenceIsAddedAsTextWhen,
+      if (references.length > 1)
+        l10n.chatUiReferencesAttachedNotice(references.length),
+      if (attachments.isNotEmpty && showAttachmentNote)
+        promptAttachmentsSupported
+            ? l10n.draftAttachmentsLocal
+            : l10n.codexTextOnlyPrompt,
+    ];
+    return parts.isEmpty ? null : parts.join(' ');
+  }
+
+  // --- model chip ------------------------------------------------------
+
+  KitComposerChips _modelChip(BuildContext context, ConnectionController conn) {
+    final model = selectedModel;
+    final picked = model != null && model.modelID.isNotEmpty;
+    final catalog = conn.catalog;
+    final noModels = catalog != null && catalog.models.isEmpty;
+    // P7.7: before the first send with nothing signed in, the chip says so.
+    // P7.5: while a reply is being written a model is answering, so the chip
+    // never asks to choose one.
+    final state = picked
+        ? KitModelChipState.chosen
+        : noModels && !busy
+        ? KitModelChipState.signInNeeded
+        : KitModelChipState.serverDefault;
+    final cycle = modelSwitch;
+    return KitComposerChips.model(
+      label: picked ? _contextLabel(context) : (selectionFallback ?? ''),
+      onPressed: onChooseModel,
+      state: state,
+      contextUsed: contextUsage?.clamp(0.0, 1.0),
+      menu: cycle is ModelCycleButton
+          ? modelCycleMenuItems(
+              _chatL10n(context),
+              onCycle: cycle.onCycle,
+              hasRecent: cycle.hasRecent,
+              hasFavorites: cycle.hasFavorites,
+            )
+          : const [],
+      chipKey: const Key('composer-model-context'),
+      contextKey: const Key('composer-context-percent'),
     );
   }
 
-  /// Opens the tools sheet and runs the chosen action once the sheet has
-  /// closed, so a tool that opens its own sheet (Commands, Voice) never
-  /// races the dismissal of this one.
-  Future<void> _openTool(BuildContext context) async {
+  /// The presented model, the agent only when it is not the server's
+  /// default, the effort only when it is a real choice.
+  String _contextLabel(BuildContext context) {
+    final parts = <String>[];
+    if (selectedAgent.isNotEmpty && selectedAgent != defaultAgent) {
+      parts.add(selectedAgent);
+    }
+    final model = selectedModel;
+    if (model != null && model.modelID.isNotEmpty) {
+      final presented = modelLabel?.trim();
+      parts.add(
+        presented == null || presented.isEmpty
+            ? presentedModelLabel(model.providerID, model.modelID)
+            : presented,
+      );
+    }
+    final variant = selectedVariant.trim();
+    if (variant.isNotEmpty && !_isDefaultVariant(variant)) {
+      parts.add(presentedEffort(variant, _chatL10n(context)));
+    }
+    return parts.join(' · ');
+  }
+
+  static bool _isDefaultVariant(String variant) =>
+      switch (variant.toLowerCase()) {
+        'default' || 'medium' || 'normal' || 'standard' || 'auto' => true,
+        _ => false,
+      };
+
+  // --- attachments -----------------------------------------------------
+
+  KitComposerChips? _attachmentChips(BuildContext context) {
+    if (!_hasAttachments) return null;
+    return KitComposerChips.attachments(
+      stripKey: references.isEmpty
+          ? null
+          : const Key('composer-reference-strip'),
+      items: [
+        for (final reference in references)
+          KitAttachment(
+            id: reference,
+            label: reference.label,
+            kind: KitAttachmentKind.reference,
+            chipKey: Key('composer-reference-${reference.id}'),
+          ),
+        for (final attachment in attachments)
+          _attachmentChip(context, attachment),
+      ],
+      onRemove: (item) {
+        switch (item.id) {
+          case final PromptAttachment attachment:
+            onRemoveAttachment(attachment);
+          case final ReviewReference reference:
+            onRemoveReference?.call(reference);
+        }
+      },
+    );
+  }
+
+  KitAttachment _attachmentChip(
+    BuildContext context,
+    PromptAttachment attachment,
+  ) {
+    final folder = attachment.isDirectoryReference;
+    final bytes = _thumbnailBytes(attachment);
+    return KitAttachment(
+      id: attachment,
+      label: folder ? '@${attachment.filename}' : attachment.filename,
+      kind: folder
+          ? KitAttachmentKind.folder
+          : attachment.mime.startsWith('image/')
+          ? KitAttachmentKind.image
+          : KitAttachmentKind.file,
+      thumbnail: bytes == null ? null : KitImageSource.memory(bytes),
+      thumbnailKey: const Key('attachment-thumbnail'),
+      onOpen: folder
+          ? null
+          : () => unawaited(
+              showFilePreviewSheet(
+                context,
+                FilePreviewData.fromDataUrl(
+                  name: attachment.filename,
+                  mimeType: attachment.mime,
+                  url: attachment.url,
+                ),
+              ),
+            ),
+    );
+  }
+
+  // --- suggestions -----------------------------------------------------
+
+  KitComposerChips? _suggestions(BuildContext context) {
+    if (!allowInlineCommands) return null;
+    final l10n = _chatL10n(context);
+    // The demo has no commands: a typed `/` (at the start or mid-text) gets
+    // one line saying so and pointing at the sample prompt, not silence
+    // (B12).
+    if (isolated) {
+      if (!_slashWordAtCaret(controller.value)) return null;
+      return KitComposerChips.suggestions(
+        listKey: const Key('demo-no-commands'),
+        suggestions: const [],
+        onSelected: (_) {},
+        note: l10n.demoNoCommands,
+      );
+    }
+    final shown = compact ? 3 : KitComposerChips.visibleCount;
+    final slash = _slashQuery;
+    if (slash != null) {
+      final matches =
+          commands
+              .where(
+                (command) =>
+                    command.enabled &&
+                    command.listed &&
+                    command.matchesQuery(slash),
+              )
+              .toList()
+            ..sort((a, b) {
+              final score = a.scoreFor(slash).compareTo(b.scoreFor(slash));
+              return score != 0 ? score : a.slash.compareTo(b.slash);
+            });
+      if (matches.isEmpty) return null;
+      return KitComposerChips.suggestions(
+        listKey: const Key('inline-command-suggestions'),
+        suggestions: [
+          for (final command in matches.take(shown))
+            KitSuggestion(
+              id: command,
+              label: '/${command.slash}',
+              kind: KitSuggestionKind.command,
+              description: command.description,
+              key: Key('inline-command-${command.slash}'),
+            ),
+        ],
+        onSelected: (s) => onSelectCommand(s.id as _ChatCommand),
+        onShowAll: matches.length > shown ? onOpenCommands : null,
+      );
+    }
+    final agentQuery = _activeAgentQuery(controller.value);
+    if (agentQuery == null) return null;
+    final normalized = agentQuery.query.toLowerCase();
+    final matches =
+        agents.where((agent) {
+          return normalized.isEmpty ||
+              agent.id.toLowerCase().contains(normalized) ||
+              (agent.description?.toLowerCase().contains(normalized) ?? false);
+        }).toList()..sort((a, b) {
+          final aPrefix = a.id.toLowerCase().startsWith(normalized) ? 0 : 1;
+          final bPrefix = b.id.toLowerCase().startsWith(normalized) ? 0 : 1;
+          final prefix = aPrefix.compareTo(bPrefix);
+          return prefix != 0 ? prefix : a.id.compareTo(b.id);
+        });
+    if (matches.isEmpty) return null;
+    return KitComposerChips.suggestions(
+      listKey: const Key('inline-agent-suggestions'),
+      suggestions: [
+        for (final agent in matches.take(shown))
+          KitSuggestion(
+            id: agent,
+            label: '@${agent.id}',
+            kind: KitSuggestionKind.agent,
+            description: agent.description ?? l10n.chatUiDelegateThisPrompt,
+            key: Key('inline-agent-${agent.id}'),
+          ),
+      ],
+      onSelected: (s) => onSelectAgent(s.id as CatalogAgent),
+      onShowAll: matches.length > shown ? onOpenAgents : null,
+    );
+  }
+
+  /// The word the caret ends starts with `/`: "/" alone, "/rev", or
+  /// "fix this /" mid-text. Without a caret, the whole text's start counts.
+  static bool _slashWordAtCaret(TextEditingValue value) {
+    final text = value.text;
+    final selection = value.selection;
+    if (!selection.isValid || !selection.isCollapsed) {
+      return text.trimLeft().startsWith('/');
+    }
+    final cursor = selection.baseOffset;
+    if (cursor < 1 || cursor > text.length) return false;
+    final before = text.substring(0, cursor);
+    final start = before.lastIndexOf(RegExp(r'\s')) + 1;
+    return before.substring(start).startsWith('/');
+  }
+
+  String? get _slashQuery {
+    final match = RegExp(r'^/(\S*)$').firstMatch(controller.text.trimLeft());
+    return match?.group(1);
+  }
+
+  // --- the "+" sheet ---------------------------------------------------
+
+  /// Opens the tools sheet and runs the chosen tool once it has closed.
+  Future<void> _openTools(BuildContext context) async {
     if (isolated || shelfBusy || conversationMode) return;
-    final tool = await showModalBottomSheet<_PromptTool>(
-      context: context,
-      useSafeArea: true,
-      showDragHandle: true,
-      // Three tiles at a 2.5x text scale outgrow the default half-screen
-      // sheet on a short phone, so the surface may grow and scroll.
-      isScrollControlled: true,
-      constraints: const BoxConstraints(maxWidth: 720),
-      builder: (_) => _PromptToolsSheet(
-        attachBlocked: _attachBlocked,
+    final l10n = _chatL10n(context);
+    final attachBlocked = _attachBlocked;
+    // Dictation only fills the draft, so it works while a reply runs; a
+    // voice conversation waits for the reply it would talk over.
+    final voiceBlocked = sending;
+    final conversationBlocked = busy || sending;
+    final canClearText = controller.text.isNotEmpty && onClearText != null;
+    final canStash = _hasPrompt && onStashPrompt != null;
+    final tool = await showKitSheet<_PromptTool>(
+      context,
+      title: l10n.chatUiPromptTools,
+      sheetKey: const Key('composer-tools-sheet'),
+      body: (sheetContext) => _PromptToolsList(
+        attachBlocked: attachBlocked,
         attachmentsSupported: promptAttachmentsSupported,
         webSourcesSupported: webSourcesSupported,
-        voiceBlocked: busy || sending,
+        voiceBlocked: voiceBlocked,
+        conversationBlocked: conversationBlocked,
         attachmentCount: attachments.length,
         canReusePrompt: onReusePrompt != null,
-        canClearText: controller.text.isNotEmpty && onClearText != null,
-        canStash: _hasPrompt && onStashPrompt != null,
+        canClearText: canClearText,
+        canStash: canStash,
         canOpenStash: onOpenStash != null,
-        hasLegacyDrafts: onLegacyDrafts != null,
+        onPick: (tool) => KitSheet.close(sheetContext, tool),
       ),
     );
     switch (tool) {
@@ -577,8 +583,6 @@ class _ChatComposer extends StatelessWidget {
         onAttach();
       case _PromptTool.webSources:
         onWebSources();
-      case _PromptTool.contextCapsule:
-        onContextCapsule();
       case _PromptTool.gallery:
         onPhotoLibrary();
       case _PromptTool.camera:
@@ -595,1308 +599,247 @@ class _ChatComposer extends StatelessWidget {
         onStashPrompt?.call();
       case _PromptTool.saved:
         onOpenStash?.call();
-      case _PromptTool.legacyDrafts:
-        onLegacyDrafts?.call();
     }
-  }
-
-  /// Attaching only has to wait for a run on servers where Send itself must
-  /// wait; with an inbox the file simply rides on the next send.
-  bool get _attachBlocked =>
-      sending || shelfBusy || (busy && !canSendWhileBusy);
-
-  /// The chip's visible text: the presented model name, the agent only when
-  /// it is not the server's default, the variant only when it is a real
-  /// choice. The raw IDs stay in the tooltip.
-  String _contextLabel(BuildContext context) {
-    final parts = <String>[];
-    if (selectedAgent.isNotEmpty && selectedAgent != defaultAgent) {
-      parts.add(selectedAgent);
-    }
-    final model = selectedModel;
-    if (model != null && model.modelID.isNotEmpty) {
-      final presented = modelLabel?.trim();
-      parts.add(
-        presented == null || presented.isEmpty
-            ? presentedModelLabel(model.providerID, model.modelID)
-            : presented,
-      );
-    }
-    final variant = selectedVariant.trim();
-    if (variant.isNotEmpty && !_isDefaultVariant(variant)) parts.add(variant);
-    return parts.isEmpty
-        ? selectionFallback ?? _chatL10n(context).chatUiChooseModel
-        : parts.join(' · ');
-  }
-
-  /// Full raw selection for the tooltip.
-  String _rawContextLabel(BuildContext context) {
-    final parts = <String>[];
-    if (selectedAgent.isNotEmpty) parts.add(selectedAgent);
-    final model = selectedModel;
-    if (model != null && model.modelID.isNotEmpty) parts.add(model.wireName);
-    if (selectedVariant.isNotEmpty) parts.add(selectedVariant);
-    return parts.isEmpty
-        ? selectionFallback ?? _chatL10n(context).chatUiChooseModel
-        : parts.join(' · ');
-  }
-
-  /// "$3.00 in · $15.00 out /1M" (the picker's pricing line), or null for
-  /// free/unknown pricing.
-  String? get _costLine {
-    final model = selectedCatalogModel;
-    return model == null ? null : modelCostLabel(model);
-  }
-
-  static bool _isDefaultVariant(String variant) =>
-      switch (variant.toLowerCase()) {
-        'default' || 'medium' || 'normal' || 'standard' || 'auto' => true,
-        _ => false,
-      };
-
-  /// Routine usage is available in Context usage. Surface the percentage
-  /// when the reader may need to make space, alongside the warning meter.
-  Widget? _contextPercent(BuildContext context) {
-    final usage = contextUsage;
-    if (usage == null || usage < .7) return null;
-    return _ContextPercentBadge(usage: usage.clamp(0.0, 1.0));
-  }
-
-  String? get _slashQuery {
-    final match = RegExp(r'^/(\S*)$').firstMatch(controller.text.trimLeft());
-    return match?.group(1);
-  }
-
-  ({int start, int end, String query})? get _agentQuery =>
-      _activeAgentQuery(controller.value);
-}
-
-class _ComposerField extends StatelessWidget {
-  const _ComposerField({
-    required this.controller,
-    required this.focusNode,
-    required this.onContentInserted,
-    required this.minLines,
-    required this.maxLines,
-    required this.contentPadding,
-    this.onSubmitShortcut,
-    this.readOnly = false,
-    this.expands = false,
-    this.isolated = false,
-    this.promptAttachmentsSupported = true,
-  });
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final ValueChanged<KeyboardInsertedContent> onContentInserted;
-  final int? minLines;
-  final int? maxLines;
-  final bool expands;
-  final EdgeInsets contentPadding;
-
-  /// Ctrl/Cmd+Enter sends from hardware keyboards (Android with a keyboard
-  /// attached today, desktop later) without stealing plain Enter from the
-  /// multiline field.
-  final VoidCallback? onSubmitShortcut;
-  final bool readOnly;
-  final bool isolated;
-  final bool promptAttachmentsSupported;
-
-  @override
-  Widget build(BuildContext context) {
-    final field = TextField(
-      key: const Key('chat-composer-field'),
-      controller: controller,
-      focusNode: focusNode,
-      readOnly: readOnly,
-      minLines: minLines,
-      maxLines: maxLines,
-      expands: expands,
-      textAlignVertical: TextAlignVertical.top,
-      // Accepts images committed by the IME (Android commitContent): the
-      // default allowed mime types cover the common raster image formats.
-      enableInteractiveSelection: !isolated,
-      contentInsertionConfiguration: isolated || !promptAttachmentsSupported
-          ? null
-          : ContentInsertionConfiguration(onContentInserted: onContentInserted),
-      textCapitalization: TextCapitalization.sentences,
-      decoration: InputDecoration(
-        hintText: _chatL10n(context).chatUiAskOpenCode,
-        hintMaxLines: expands ? 1 : null,
-        filled: false,
-        border: InputBorder.none,
-        enabledBorder: InputBorder.none,
-        focusedBorder: InputBorder.none,
-        contentPadding: contentPadding,
-      ),
-    );
-    final onSubmit = onSubmitShortcut;
-    if (isolated || onSubmit == null) return field;
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.enter, control: true):
-            onSubmit,
-        const SingleActivator(LogicalKeyboardKey.enter, meta: true): onSubmit,
-        // Desktop: plain Enter sends, as every chat client there does;
-        // Shift+Enter is left unbound so it still reaches the field as a
-        // newline. Touch keyboards keep Enter as a newline.
-        if (desktopInteractions)
-          const SingleActivator(LogicalKeyboardKey.enter): onSubmit,
-        if (desktopInteractions)
-          const SingleActivator(LogicalKeyboardKey.numpadEnter): onSubmit,
-      },
-      child: field,
-    );
   }
 }
 
-/// UX-P0-03: one leading affordance for Commands, Attach, and Voice. It is
-/// a plain [IconButton], so it keeps the 48 dp target, the tooltip, and the
-/// keyboard/TalkBack behaviour the three separate buttons had.
-class _PromptToolsButton extends StatelessWidget {
-  const _PromptToolsButton({
-    required this.voiceOpening,
-    required this.attachmentsSupported,
-    required this.onSelected,
-    this.onAttach,
-  });
+/// Decoded image previews, once per attachment rather than per keystroke.
+final _thumbnailCache = Expando<Uint8List>('composer-thumbnail');
+final _thumbnailTried = Expando<bool>('composer-thumbnail-tried');
 
-  /// Voice opening is the one tool with a visible pending state, so the
-  /// collapsed button reports it rather than hiding it behind the sheet.
-  final bool voiceOpening;
-  final bool attachmentsSupported;
-  final Future<void> Function(BuildContext context) onSelected;
-
-  /// Long press skips the sheet and opens the file picker directly; null
-  /// while attaching is unavailable.
-  final VoidCallback? onAttach;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final label = attachmentsSupported
-        ? _chatL10n(context).chatUiAddHoldToAttachAFile
-        : _chatL10n(context).chatUiPromptTools;
-    // The tooltip is manual so its own long-press recognizer cannot swallow
-    // the attach gesture; hover still shows it on desktop, and the message
-    // stays in semantics.
-    return Tooltip(
-      key: const Key('prompt-tools-tooltip'),
-      message: label,
-      triggerMode: TooltipTriggerMode.manual,
-      child: GestureDetector(
-        onLongPress: onAttach,
-        child: IconButton(
-          key: const Key('composer-tools-button'),
-          onPressed: () => unawaited(onSelected(context)),
-          style: IconButton.styleFrom(foregroundColor: scheme.onSurfaceVariant),
-          // The label rides on the icon so it merges into the button's own
-          // semantics node, where TalkBack and the tap-target guideline
-          // look for it.
-          icon: voiceOpening
-              ? Semantics(
-                  label: label,
-                  child: SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
-              : Icon(AppIconography.add, semanticLabel: label),
-        ),
-      ),
-    );
+Uint8List? _thumbnailBytes(PromptAttachment attachment) {
+  if (!attachment.mime.startsWith('image/') ||
+      !attachment.url.startsWith('data:')) {
+    return null;
+  }
+  if (_thumbnailTried[attachment] == true) return _thumbnailCache[attachment];
+  _thumbnailTried[attachment] = true;
+  try {
+    final bytes = Uri.parse(attachment.url).data?.contentAsBytes();
+    if (bytes != null) _thumbnailCache[attachment] = bytes;
+    return bytes;
+  } on FormatException {
+    return null;
   }
 }
 
-/// The compact tools surface behind [_PromptToolsButton]. Every entry is a
-/// full-width [ListTile]: labelled, focusable, and comfortably past the
-/// 48 dp minimum at any text scale.
-class _PromptToolsSheet extends StatelessWidget {
-  const _PromptToolsSheet({
+/// The "+" sheet's rows, most used first (map prompt-tools-sheet): attach,
+/// photos, camera and voice; the door to commands; then the prompt shelf
+/// and the rarer tools folded under their own rows. A tool this server or
+/// this moment cannot run stays in its place and says why (STATE-8).
+class _PromptToolsList extends StatelessWidget {
+  const _PromptToolsList({
     required this.attachBlocked,
     required this.attachmentsSupported,
     required this.webSourcesSupported,
     required this.voiceBlocked,
+    required this.conversationBlocked,
     required this.attachmentCount,
-    this.canReusePrompt = false,
-    this.canClearText = false,
-    this.canStash = false,
-    this.canOpenStash = false,
-    this.hasLegacyDrafts = false,
+    required this.canReusePrompt,
+    required this.canClearText,
+    required this.canStash,
+    required this.canOpenStash,
+    required this.onPick,
   });
 
-  /// Voice stays unavailable while a turn is in flight; Attach only where
-  /// Send itself has to wait (no inbox).
   final bool attachBlocked;
   final bool attachmentsSupported;
   final bool webSourcesSupported;
   final bool voiceBlocked;
+  final bool conversationBlocked;
   final int attachmentCount;
   final bool canReusePrompt;
   final bool canClearText;
   final bool canStash;
   final bool canOpenStash;
-  final bool hasLegacyDrafts;
+  final ValueChanged<_PromptTool> onPick;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        child: Column(
-          key: const Key('composer-tools-sheet'),
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    final l10n = _chatL10n(context);
+    final running = l10n.chatUiAvailableWhenTheCurrentRunFinishes;
+
+    Widget tool(
+      _PromptTool value, {
+      required String key,
+      required IconData icon,
+      required String title,
+      String? supporting,
+      String? blockedBy,
+    }) => KitRow(
+      key: Key('composer-tool-$key'),
+      leading: KitRowIcon(icon),
+      title: title,
+      supporting: supporting == null ? null : TextSpan(text: supporting),
+      supportingMaxLines: 2,
+      enabled: blockedBy == null,
+      disabledReason: blockedBy,
+      onTap: blockedBy == null ? () => onPick(value) : null,
+    );
+
+    final photos = platformCapabilities.supportsPromptPhotos;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitRowGroup(
           children: [
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 4),
-              child: Text(
-                _chatL10n(context).chatUiPromptTools,
-                style: theme.textTheme.titleMedium,
-              ),
-            ),
-            ListTile(
-              key: const Key('composer-tool-commands'),
-              leading: const Icon(AppIcons.run),
-              title: Text(_chatL10n(context).runResultsCommandsTitle),
-              subtitle: Text(_chatL10n(context).chatUiSlashCommandsAndAgents),
-              onTap: () => Navigator.pop(context, _PromptTool.commands),
-            ),
             if (attachmentsSupported)
-              ListTile(
+              tool(
+                _PromptTool.attach,
+                key: 'attach',
+                icon: AppIconography.attach,
+                title: l10n.chatUiAttachFile,
+                supporting: attachmentCount == 0
+                    ? l10n.chatUiAddAnImageOrFileToThe
+                    : l10n.chatUiAttachedCount(attachmentCount),
+                blockedBy: attachBlocked ? running : null,
+              )
+            else
+              KitRow.unavailable(
                 key: const Key('composer-tool-attach'),
-                enabled: !attachBlocked,
-                leading: const Icon(AppIconography.attach),
-                title: Text(_chatL10n(context).chatUiAttachFile),
-                subtitle: Text(
-                  attachBlocked
-                      ? _chatL10n(
-                          context,
-                        ).chatUiAvailableWhenTheCurrentRunFinishes
-                      : attachmentCount == 0
-                      ? _chatL10n(context).chatUiAddAnImageOrFileToThe
-                      : _chatL10n(context).chatUiAttachedCount(attachmentCount),
-                ),
-                onTap: attachBlocked
-                    ? null
-                    : () => Navigator.pop(context, _PromptTool.attach),
+                leading: const KitRowIcon(AppIconography.attach),
+                title: l10n.chatUiAttachFile,
+                reason: l10n.composerToolsTextOnly,
               ),
-            if (attachmentsSupported &&
-                platformCapabilities.supportsPromptPhotos) ...[
-              ListTile(
-                key: const Key('composer-tool-gallery'),
-                enabled: !attachBlocked,
-                leading: const Icon(AppIconography.images),
-                title: Text(_chatL10n(context).photoLibraryAction),
-                subtitle: Text(_chatL10n(context).photoLibraryDescription),
-                onTap: attachBlocked
-                    ? null
-                    : () => Navigator.pop(context, _PromptTool.gallery),
+            if (attachmentsSupported && photos) ...[
+              tool(
+                _PromptTool.gallery,
+                key: 'gallery',
+                icon: AppIconography.images,
+                title: l10n.photoLibraryAction,
+                supporting: l10n.photoLibraryDescription,
+                blockedBy: attachBlocked ? running : null,
               ),
-              ListTile(
-                key: const Key('composer-tool-camera'),
-                enabled: !attachBlocked,
-                leading: const Icon(AppIconography.camera),
-                title: Text(_chatL10n(context).photoCameraAction),
-                onTap: attachBlocked
-                    ? null
-                    : () => Navigator.pop(context, _PromptTool.camera),
+              tool(
+                _PromptTool.camera,
+                key: 'camera',
+                icon: AppIconography.camera,
+                title: l10n.photoCameraAction,
+                blockedBy: attachBlocked ? running : null,
               ),
             ],
-            // Speech capture and the on-device recognizer are Android-only:
-            // the `oc/voice` channel exists in the Android runner alone, and
-            // the recorder writes into Android-shaped paths. Offering the row
-            // on desktop promised a transcript nothing could produce.
+            // Speech capture runs on Android only (`oc/voice`).
             if (platformCapabilities.supportsVoice)
-              ListTile(
-                key: const Key('composer-tool-voice'),
-                enabled: !voiceBlocked,
-                leading: const Icon(AppIconography.mic),
-                title: Text(_chatL10n(context).chatUiVoiceInput),
-                subtitle: Text(
-                  voiceBlocked
-                      ? _chatL10n(
-                          context,
-                        ).chatUiAvailableWhenTheCurrentRunFinishes
-                      : _chatL10n(
-                          context,
-                        ).chatUiRecordsAndTranscribesOnThisDevice,
-                ),
-                onTap: voiceBlocked
-                    ? null
-                    : () => Navigator.pop(context, _PromptTool.voice),
+              tool(
+                _PromptTool.voice,
+                key: 'voice',
+                icon: AppIconography.mic,
+                title: l10n.chatUiVoiceInput,
+                supporting: l10n.chatUiRecordsAndTranscribesOnThisDevice,
+                blockedBy: voiceBlocked ? running : null,
               ),
-            ExpansionTile(
-              key: const Key('composer-tools-advanced'),
-              title: Text(_chatL10n(context).e7SharedAdvanced),
-              children: [
-                ListTile(
-                  leading: const Icon(AppIconography.layers),
-                  title: Text(_chatL10n(context).capsuleTitle),
-                  subtitle: Text(_chatL10n(context).capsuleEntry),
-                  enabled: !voiceBlocked,
-                  onTap: voiceBlocked
-                      ? null
-                      : () =>
-                            Navigator.pop(context, _PromptTool.contextCapsule),
-                ),
-                if (webSourcesSupported)
-                  ListTile(
-                    enabled: !attachBlocked,
-                    leading: const Icon(AppIconography.link),
-                    title: Text(_chatL10n(context).webSourcesTitle),
-                    subtitle: Text(_chatL10n(context).webSourcesEntryDetail),
-                    onTap: attachBlocked
-                        ? null
-                        : () => Navigator.pop(context, _PromptTool.webSources),
-                  ),
-                if (platformCapabilities.supportsVoiceConversation)
-                  ListTile(
-                    key: const Key('composer-tool-conversation'),
-                    enabled: !voiceBlocked,
-                    leading: const Icon(AppIconography.speakUser),
-                    title: Text(_chatL10n(context).voiceConversationTitle),
-                    subtitle: Text(
-                      _chatL10n(context).voiceConversationDescription,
-                    ),
-                    onTap: voiceBlocked
-                        ? null
-                        : () =>
-                              Navigator.pop(context, _PromptTool.conversation),
-                  ),
-              ],
+            tool(
+              _PromptTool.commands,
+              key: 'commands',
+              icon: AppIcons.run,
+              title: l10n.composerToolCommandsTitle,
+              supporting: l10n.chatUiSlashCommandsAndAgents,
             ),
-            if (canReusePrompt ||
-                canOpenStash ||
-                hasLegacyDrafts ||
-                canClearText)
-              ExpansionTile(
-                key: const Key('composer-tools-prompts'),
-                title: Text(_chatL10n(context).usagePrompts),
-                children: [
-                  if (canReusePrompt)
-                    ListTile(
-                      key: const Key('composer-tool-history'),
-                      leading: const Icon(AppIconography.history),
-                      title: Text(_chatL10n(context).composerReuseTitle),
-                      subtitle: Text(_chatL10n(context).composerReuseSubtitle),
-                      onTap: () => Navigator.pop(context, _PromptTool.history),
-                    ),
-                  if (hasLegacyDrafts)
-                    ListTile(
-                      key: const Key('composer-tool-legacy-drafts'),
-                      leading: const Icon(Icons.restore_page_outlined),
-                      title: Text(_chatL10n(context).legacyDraftsTitle),
-                      subtitle: Text(
-                        _chatL10n(context).legacyDraftsDescription,
-                      ),
-                      onTap: () =>
-                          Navigator.pop(context, _PromptTool.legacyDrafts),
-                    ),
-                  if (canOpenStash) ...[
-                    ListTile(
-                      key: const Key('composer-tool-stash'),
-                      enabled: canStash,
-                      leading: const Icon(AppIconography.package),
-                      title: Text(_chatL10n(context).promptStashAction),
-                      subtitle: Text(_chatL10n(context).promptStashDescription),
-                      onTap: canStash
-                          ? () => Navigator.pop(context, _PromptTool.stash)
-                          : null,
-                    ),
-                    ListTile(
-                      key: const Key('composer-tool-saved'),
-                      leading: const Icon(AppIconography.bookmarks),
-                      title: Text(_chatL10n(context).promptStashTitle),
-                      subtitle: Text(
-                        _chatL10n(context).promptStashListDescription,
-                      ),
-                      onTap: () => Navigator.pop(context, _PromptTool.saved),
-                    ),
-                  ],
-                  if (canClearText)
-                    ListTile(
-                      key: const Key('composer-tool-clear'),
-                      leading: const Icon(AppIconography.textSnippet),
-                      title: Text(_chatL10n(context).composerClearTextTitle),
-                      subtitle: Text(
-                        _chatL10n(context).composerClearTextSubtitle,
-                      ),
-                      onTap: () =>
-                          Navigator.pop(context, _PromptTool.clearText),
-                    ),
-                ],
-              ),
-            const SizedBox(height: 8),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// UX-P0-03: the model/agent/variant reads as context chrome — a chip that
-/// states the current selection and opens the picker — rather than another
-/// icon button with the same weight as Send.
-class _ModelContextChip extends StatelessWidget {
-  const _ModelContextChip({
-    required this.label,
-    required this.tooltip,
-    this.costLine,
-    this.trailing,
-    this.contextHint,
-    required this.onPressed,
-  });
-
-  final String label;
-
-  /// The raw agent · provider/model · variant string.
-  final String tooltip;
-
-  /// Second tooltip line with the model's per-million pricing, when known.
-  final String? costLine;
-
-  /// Trailing slot for the context-window percentage once it matters.
-  final Widget? trailing;
-  final String? contextHint;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final iconOnly =
-            constraints.maxWidth < MediaQuery.textScalerOf(context).scale(80);
-        return Tooltip(
-          message: [
-            _chatL10n(context).chatUiModelAndAgentHint(
-              tooltip,
-              costLine == null ? '' : '\n$costLine',
-            ),
-            if (iconOnly && contextHint != null) contextHint!,
-          ].join('\n'),
-          child: TextButton(
-            key: const Key('composer-model-context'),
-            style: TextButton.styleFrom(
-              foregroundColor: scheme.onSurfaceVariant,
-              minimumSize: const Size(48, 48),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-              textStyle: theme.textTheme.labelLarge,
-            ),
-            onPressed: onPressed,
-            child: iconOnly
-                ? Icon(AppIconography.model, semanticLabel: label)
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      const Icon(AppIconography.chevronDown, size: 18),
-                      if (trailing case final trailing?) ...[
-                        const SizedBox(width: 8),
-                        trailing,
-                      ],
-                    ],
-                  ),
+        if (canReusePrompt || canOpenStash || canClearText)
+          KitExpandRow(
+            headerKey: const Key('composer-tools-prompts'),
+            leading: const KitRowIcon(AppIconography.bookmarks),
+            title: l10n.usagePrompts,
+            children: [
+              if (canReusePrompt)
+                tool(
+                  _PromptTool.history,
+                  key: 'history',
+                  icon: AppIconography.history,
+                  title: l10n.composerReuseTitle,
+                  supporting: l10n.composerReuseSubtitle,
+                ),
+              if (canOpenStash) ...[
+                tool(
+                  _PromptTool.saved,
+                  key: 'saved',
+                  icon: AppIconography.bookmarks,
+                  title: l10n.promptStashTitle,
+                  supporting: l10n.composerToolSavedSubtitle,
+                ),
+                tool(
+                  _PromptTool.stash,
+                  key: 'stash',
+                  icon: AppIconography.package,
+                  title: l10n.composerToolSaveForLater,
+                  supporting: l10n.promptStashDescription,
+                  blockedBy: canStash ? null : l10n.composerToolNothingToSave,
+                ),
+              ],
+              if (canClearText)
+                tool(
+                  _PromptTool.clearText,
+                  key: 'clear',
+                  icon: AppIconography.textSnippet,
+                  title: l10n.composerClearTextTitle,
+                  supporting: l10n.composerClearTextSubtitle,
+                ),
+            ],
           ),
-        );
-      },
-    );
-  }
-}
-
-class _ComposerSubmit extends StatelessWidget {
-  const _ComposerSubmit({
-    required this.busy,
-    required this.sending,
-    required this.enabled,
-    this.canSendWhileBusy = false,
-    this.canChooseDelivery = false,
-    this.delivery = PromptDelivery.steer,
-    this.onDeliveryChanged,
-    required this.onSend,
-    required this.onStop,
-    this.stopping = false,
-  });
-
-  final bool busy;
-  final bool sending;
-  final bool enabled;
-  final bool canSendWhileBusy;
-  final bool canChooseDelivery;
-  final PromptDelivery delivery;
-  final ValueChanged<PromptDelivery>? onDeliveryChanged;
-  final VoidCallback onSend;
-  final VoidCallback onStop;
-  final bool stopping;
-
-  @override
-  Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    return AnimatedSwitcher(
-      duration: reduceMotion
-          ? Duration.zero
-          : const Duration(milliseconds: 150),
-      child: _slot(context),
-    );
-  }
-
-  /// Send fills with the primary colour the moment there is something to
-  /// send and drops to a tonal disc when there is not, so the button itself
-  /// says whether a tap will do anything. The colour change animates over
-  /// 150 ms through the button's own style transition (none under reduced
-  /// motion). Kept a plain [IconButton] so the switcher above updates it in
-  /// place instead of cross-fading two send buttons.
-  ButtonStyle _sendStyle(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    return IconButton.styleFrom(
-      backgroundColor: scheme.primary,
-      foregroundColor: scheme.onPrimary,
-      disabledBackgroundColor: scheme.surfaceContainerHigh,
-      disabledForegroundColor: scheme.onSurfaceVariant.withValues(alpha: .7),
-      animationDuration: reduceMotion
-          ? Duration.zero
-          : const Duration(milliseconds: 150),
-    );
-  }
-
-  /// The Stop tooltip is shown by hover or long-press, and the button it
-  /// belongs to is swapped for Send the moment the run ends — so the tooltip
-  /// is told to go before the swap, instead of outliving its button.
-  void _stop() {
-    Tooltip.dismissAllToolTips();
-    onStop();
-  }
-
-  Widget _slot(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    if (busy && !canSendWhileBusy) {
-      // v1 semantics unchanged: sending is impossible while a turn runs.
-      return IconButton.filledTonal(
-        key: const Key('chat-send-button'),
-        tooltip: _chatL10n(context).voiceConversationStopReply,
-        onPressed: stopping ? null : _stop,
-        style: IconButton.styleFrom(
-          foregroundColor: scheme.error,
-          backgroundColor: scheme.errorContainer.withValues(alpha: .55),
-        ),
-        icon: const Icon(AppIcons.stop),
-      );
-    }
-    final icon = sending
-        ? const SizedBox.square(
-            dimension: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-        : const Icon(AppIconography.send);
-    if (!busy) {
-      return IconButton(
-        key: const Key('chat-send-button'),
-        tooltip: _chatL10n(context).chatUiSend,
-        onPressed: sending || !enabled ? null : onSend,
-        style: _sendStyle(context),
-        icon: icon,
-      );
-    }
-    // While a turn runs, Send keeps working: OpenCode 2 steers or queues
-    // per the visible toggle above the field, OpenCode 1 queues after the
-    // run. Stop keeps its own adjacent button so neither action hides the
-    // other.
-    final sendHint = !canChooseDelivery
-        ? _chatL10n(context).chatUiSendAfterThisRun
-        : delivery == PromptDelivery.queue
-        ? _chatL10n(context).chatUiQueueAfterThisRun
-        : _chatL10n(context).chatUiSendNowAndSteerThisRun;
-    return Row(
-      key: const Key('chat-busy-submit-row'),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton.filledTonal(
-          key: const Key('chat-stop-button'),
-          tooltip: _chatL10n(context).voiceConversationStopReply,
-          onPressed: stopping ? null : _stop,
-          style: IconButton.styleFrom(
-            foregroundColor: scheme.error,
-            backgroundColor: scheme.errorContainer.withValues(alpha: .55),
-          ),
-          icon: const Icon(AppIcons.stop),
-        ),
-        const SizedBox(width: 4),
-        IconButton(
-          key: const Key('chat-send-button'),
-          tooltip: sendHint,
-          onPressed: sending || !enabled ? null : onSend,
-          style: _sendStyle(context),
-          icon: icon,
+        KitExpandRow(
+          headerKey: const Key('composer-tools-advanced'),
+          leading: const KitRowIcon(AppIconography.layers),
+          title: l10n.composerToolsMore,
+          children: [
+            if (webSourcesSupported)
+              tool(
+                _PromptTool.webSources,
+                key: 'web-sources',
+                icon: AppIconography.link,
+                title: l10n.webSourcesTitle,
+                supporting: l10n.webSourcesEntryDetail,
+                blockedBy: attachBlocked ? running : null,
+              ),
+            if (platformCapabilities.supportsVoiceConversation)
+              tool(
+                _PromptTool.conversation,
+                key: 'conversation',
+                icon: AppIconography.speakUser,
+                title: l10n.voiceConversationTitle,
+                supporting: l10n.voiceConversationDescription,
+                blockedBy: conversationBlocked ? running : null,
+              ),
+          ],
         ),
       ],
     );
   }
 }
 
-/// The known context-window percentage shown beside the model.
-class _ContextPercentBadge extends StatelessWidget {
-  const _ContextPercentBadge({required this.usage});
-
-  final double usage;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final percent = (usage * 100).round();
-    final color = usage >= .95
-        ? theme.colorScheme.error
-        : usage >= .85
-        ? AppTheme.statusColor(theme, AppStatusTone.attention)
-        : AppTheme.mutedOf(theme);
-    return Semantics(
-      label: _chatL10n(context).chatUiContextPercentFull(percent),
-      excludeSemantics: true,
-      child: Text(
-        '$percent%',
-        key: const Key('composer-context-percent'),
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ),
-      ),
-    );
-  }
-}
-
-/// UX-P0-04: the labelled delivery choice that replaces long-press-only
-/// knowledge. It appears only while a run is active on a server that
-/// supports the inbox, states in words what Send will do, and stays
-/// operable by keyboard and TalkBack because it is two real buttons.
-/// While a run is active on OpenCode 2, the one choice that changes what
-/// Send does: steer the current run now, or queue for after it. A compact
-/// two-segment toggle, right-aligned above the field, that only exists while
-/// it applies.
-class _DeliveryControl extends StatelessWidget {
-  const _DeliveryControl({
-    required this.delivery,
-    required this.onChanged,
-    required this.compact,
-  });
-
-  final PromptDelivery delivery;
-  final ValueChanged<PromptDelivery> onChanged;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final compactCopy =
-        compact && MediaQuery.textScalerOf(context).scale(14) > 18;
-    return Padding(
-      key: const Key('composer-delivery-control'),
-      padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
-      // A Wrap, not a Row: at large text scales the toggle drops under the
-      // caption instead of pushing off the edge.
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 8,
-        runSpacing: 4,
-        children: [
-          if (!compactCopy)
-            Text(
-              delivery == PromptDelivery.steer
-                  ? _chatL10n(context).chatUiSendSteersTheCurrentRun
-                  : _chatL10n(context).chatUiSendWaitsForThisRunToFinish,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
-            ),
-          SegmentedButton<PromptDelivery>(
-            showSelectedIcon: false,
-            style: ButtonStyle(
-              visualDensity: VisualDensity.compact,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              padding: const WidgetStatePropertyAll(
-                EdgeInsets.symmetric(horizontal: 10),
-              ),
-              textStyle: WidgetStatePropertyAll(theme.textTheme.labelMedium),
-              side: WidgetStatePropertyAll(
-                BorderSide(color: scheme.outlineVariant),
-              ),
-            ),
-            segments: [
-              ButtonSegment(
-                value: PromptDelivery.steer,
-                icon: Icon(AppIcons.run, size: 15),
-                label: Text(
-                  _chatL10n(context).chatUiSteer,
-                  key: Key('composer-delivery-steer'),
-                ),
-                tooltip: _chatL10n(context).chatUiSendNowAndSteerTheCurrentRun,
-              ),
-              ButtonSegment(
-                value: PromptDelivery.queue,
-                icon: Icon(AppIcons.queue, size: 15),
-                label: Text(
-                  _chatL10n(context).chatUiQueue,
-                  key: Key('composer-delivery-queue'),
-                ),
-                tooltip: _chatL10n(context).chatUiWaitForTheCurrentRunToFinish,
-              ),
-            ],
-            selected: {delivery},
-            onSelectionChanged: (selection) => onChanged(selection.single),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// OpenCode 1 while a run is active: the server accepts the send and runs
-/// it after the current turn, so the composer says so instead of hiding
-/// Send behind Stop. Mid-run steering is an OpenCode 2 inbox feature, and
-/// the hint says so rather than leaving the missing toggle unexplained.
-class _QueueHint extends StatelessWidget {
-  const _QueueHint({required this.compact});
-
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    final compactCopy =
-        compact && MediaQuery.textScalerOf(context).scale(14) > 18;
-    final explanation = _chatL10n(
-      context,
-    ).chatUiQueueOnlySteeringNeedsOpenCode2;
-    return Padding(
-      key: const Key('composer-queue-hint'),
-      padding: const EdgeInsetsDirectional.fromSTEB(14, 8, 12, 0),
-      child: Row(
-        children: [
-          Icon(AppIcons.queue, size: 14, color: muted),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Tooltip(
-              message: explanation,
-              child: Text(
-                compactCopy ? _chatL10n(context).chatUiQueue : explanation,
-                maxLines: compactCopy ? 1 : 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(color: muted),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Decode the bounded local attachment once, not on every keystroke. Remote
-/// URLs retain an icon; previewing is always an explicit action.
-class _AttachmentGlyph extends StatefulWidget {
-  const _AttachmentGlyph({required this.attachment});
-  final PromptAttachment attachment;
-
-  @override
-  State<_AttachmentGlyph> createState() => _AttachmentGlyphState();
-}
-
-class _AttachmentGlyphState extends State<_AttachmentGlyph> {
-  Uint8List? _bytes;
-
-  void _load() {
-    _bytes = null;
-    final attachment = widget.attachment;
-    if (!attachment.mime.startsWith('image/') ||
-        !attachment.url.startsWith('data:')) {
-      return;
-    }
-    try {
-      _bytes = Uri.parse(attachment.url).data?.contentAsBytes();
-    } on FormatException {
-      /* Fall back to the file icon. */
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  @override
-  void didUpdateWidget(covariant _AttachmentGlyph oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.attachment.url != widget.attachment.url ||
-        oldWidget.attachment.mime != widget.attachment.mime) {
-      _load();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final icon = Icon(
-      widget.attachment.isDirectoryReference
-          ? AppIconography.bookmark
-          : AppIconography.attach,
-      size: 18,
-    );
-    final bytes = _bytes;
-    if (bytes == null) return icon;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
-      child: Image.memory(
-        bytes,
-        key: const Key('attachment-thumbnail'),
-        width: 32,
-        height: 32,
-        cacheWidth: 96,
-        fit: BoxFit.cover,
-        excludeFromSemantics: true,
-        errorBuilder: (_, _, _) => icon,
-      ),
-    );
-  }
-}
-
-class _PendingAttachmentChip extends StatelessWidget {
-  const _PendingAttachmentChip({
-    required this.attachment,
-    required this.onRemove,
-  });
-
-  final PromptAttachment attachment;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final reference = attachment.isDirectoryReference;
-    final removeLabel = reference
-        ? _chatL10n(context).chatUiRemoveReferenceName(attachment.filename)
-        : _chatL10n(context).chatUiRemoveAttachmentName(attachment.filename);
-    void openPreview() => showFilePreviewSheet(
-      context,
-      FilePreviewData.fromDataUrl(
-        name: attachment.filename,
-        mimeType: attachment.mime,
-        url: attachment.url,
-      ),
-    );
-
-    return Material(
-      color: theme.colorScheme.surfaceContainerHighest,
-      shape: StadiumBorder(
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Semantics(
-            button: !reference,
-            excludeSemantics: true,
-            label: reference
-                ? _chatL10n(context).chatUiReferenceName(attachment.filename)
-                : _chatL10n(
-                    context,
-                  ).chatUiPreviewAttachmentName(attachment.filename),
-            onTap: reference ? null : openPreview,
-            child: Tooltip(
-              message: reference
-                  ? _chatL10n(
-                      context,
-                    ).chatUiProjectReferenceName(attachment.filename)
-                  : _chatL10n(context).chatUiPreviewName(attachment.filename),
-              child: InkWell(
-                onTap: reference ? null : openPreview,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 48),
-                  child: Padding(
-                    padding: const EdgeInsetsDirectional.only(start: 12),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _AttachmentGlyph(attachment: attachment),
-                        const SizedBox(width: 6),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 180),
-                          child: Text(
-                            reference
-                                ? '@${attachment.filename}'
-                                : attachment.filename,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (!reference) ...[
-                          const SizedBox(width: 8),
-                          const Icon(AppIconography.visible, size: 16),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Semantics(
-            container: true,
-            excludeSemantics: true,
-            label: removeLabel,
-            button: true,
-            onTap: onRemove,
-            child: IconButton(
-              tooltip: removeLabel,
-              constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-              onPressed: onRemove,
-              icon: const Icon(AppIconography.close, size: 18),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// UX-103: a review finding staged from Files, Changes, or the Review
-/// workspace. It mirrors [_PendingAttachmentChip]'s shape so the strip reads
-/// as one family, but stays visibly a *reference* — a tinted chip with a
-/// code glyph and a line range, not a paperclip and a filename — because
-/// nothing is uploaded: on send it becomes text in the prompt.
-class _StagedReferenceChip extends StatelessWidget {
-  const _StagedReferenceChip({required this.reference, required this.onRemove});
-
-  final ReviewReference reference;
-  final VoidCallback? onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final removeLabel = _chatL10n(
-      context,
-    ).chatUiRemoveContextReference(reference.label);
-    return Material(
-      key: Key('composer-reference-${reference.id}'),
-      color: scheme.secondaryContainer,
-      shape: StadiumBorder(side: BorderSide(color: scheme.outlineVariant)),
-      clipBehavior: Clip.antiAlias,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Semantics(
-            container: true,
-            excludeSemantics: true,
-            label: reference.description,
-            child: Tooltip(
-              message: reference.description,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 48),
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 12),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        switch (reference.kind) {
-                          ReviewReferenceKind.comment => AppIconography.chat,
-                          ReviewReferenceKind.file => AppIconography.fileText,
-                          ReviewReferenceKind.changedFile =>
-                            AppIconography.review,
-                          _ => AppIconography.code,
-                        },
-                        size: 16,
-                        color: scheme.onSecondaryContainer,
-                      ),
-                      const SizedBox(width: 6),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 200),
-                        child: Text(
-                          reference.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: scheme.onSecondaryContainer),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Semantics(
-            container: true,
-            excludeSemantics: true,
-            label: removeLabel,
-            button: true,
-            onTap: onRemove,
-            child: IconButton(
-              tooltip: removeLabel,
-              constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-              onPressed: onRemove,
-              icon: Icon(
-                AppIconography.close,
-                size: 18,
-                color: scheme.onSecondaryContainer,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Known context usage, with warning colors as the window approaches full.
-class _ContextMeterLine extends StatelessWidget {
-  const _ContextMeterLine({required this.usage});
-
-  final double? usage;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final track = scheme.outlineVariant.withValues(alpha: .72);
-    final value = usage?.clamp(0.0, 1.0);
-    if (value == null) {
-      return const SizedBox.shrink();
-    }
-    final fill = value >= .9
-        ? scheme.error
-        : value >= .7
-        ? scheme.tertiary
-        : scheme.primary;
-    final percent = (value * 100).round();
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    return Semantics(
-      container: true,
-      label: _chatL10n(context).chatUiContextPercentUsed(percent),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: ClipRRect(
-          key: const ValueKey('composer-context-meter'),
-          borderRadius: BorderRadius.circular(1.25),
-          child: SizedBox(
-            height: 3,
-            width: double.infinity,
-            child: ColoredBox(
-              color: track,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: value),
-                duration: reduceMotion
-                    ? Duration.zero
-                    : const Duration(milliseconds: 400),
-                curve: Curves.easeOutCubic,
-                builder: (context, t, _) => Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: FractionallySizedBox(
-                    widthFactor: t.clamp(0.0, 1.0),
-                    // Both factors must be tight: with a loose height the
-                    // fill box collapses to zero and only the track paints.
-                    heightFactor: 1,
-                    child: ColoredBox(
-                      key: const ValueKey('composer-context-meter-fill'),
-                      color: fill,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The composer's "alive" treatment while a run is active. A primary-to-
-/// tertiary gradient sweeps slowly around the rounded border and a soft
-/// glow breathes underneath, so the surface that holds Stop is the one
-/// thing on screen saying the assistant is working — the transcript no
-/// longer carries a blinking row for it.
-///
-/// The tree shape is identical whether or not [active] is set: the ring is
-/// an extra overlay in a [Stack] and the glow decoration is always present
-/// (empty when idle), so toggling busy never re-parents the prompt field
-/// and never drops the keyboard. Reduced motion gets a still primary ring
-/// and a steady glow instead of the sweep and the breathing.
-class _ComposerActivity extends StatefulWidget {
-  const _ComposerActivity({
-    required this.active,
-    required this.radius,
-    required this.child,
-  });
-
-  final bool active;
-  final BorderRadius radius;
-  final Widget child;
-
-  @override
-  State<_ComposerActivity> createState() => _ComposerActivityState();
-}
-
-class _ComposerActivityState extends State<_ComposerActivity>
-    with SingleTickerProviderStateMixin {
-  /// One cycle: the sweep turns once while the glow breathes twice, so the
-  /// breath sits at the 1.8 s the rest of the app uses for "working" motion.
-  static const _cycle = Duration(milliseconds: 3600);
-  static const _glowFloor = .15;
-  static const _glowCeiling = .35;
-
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: _cycle,
+/// P4.3's composer half: a withdrawn waiting message (an edited offline
+/// draft, a cancelled server send) goes back into the draft, ahead of what
+/// was typed since, with "Returned to your draft · Undo". Undo puts the
+/// draft back as it was and runs [onUndo] (the host queues the message
+/// again). Nothing is sent.
+void returnWithdrawnToDraft(
+  BuildContext context, {
+  required TextEditingController composer,
+  required String text,
+  FocusNode? focus,
+  FutureOr<void> Function()? onUndo,
+}) {
+  if (text.trim().isEmpty) return;
+  final before = composer.value;
+  final current = before.text;
+  final next = current.trim().isEmpty ? text : '$text\n$current';
+  composer.value = TextEditingValue(
+    text: next,
+    selection: TextSelection.collapsed(offset: next.length),
   );
-  bool _running = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _sync();
-  }
-
-  @override
-  void didUpdateWidget(_ComposerActivity oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _sync();
-  }
-
-  void _sync() {
-    final run = widget.active && !MediaQuery.disableAnimationsOf(context);
-    if (run == _running) return;
-    _running = run;
-    if (run) {
-      _controller.repeat();
-    } else {
-      _controller.stop();
-      _controller.value = 0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final active = widget.active;
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final t = _controller.value;
-        // Breath: floor → ceiling → floor twice per cycle. The still
-        // (reduced-motion) ring holds the midpoint so it reads as lit,
-        // not as a frozen frame of the animation.
-        final glow = !active
-            ? 0.0
-            : _running
-            ? (_glowFloor + _glowCeiling) / 2 -
-                  (_glowCeiling - _glowFloor) / 2 * math.cos(4 * math.pi * t)
-            : (_glowFloor + _glowCeiling) / 2;
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: widget.radius,
-            boxShadow: active
-                ? AppTheme.glow(scheme.primary, strength: glow)
-                : const [],
-          ),
-          child: Stack(
-            fit: StackFit.passthrough,
-            children: [
-              child!,
-              // The ring is its own semantics node so the announcement the
-              // transcript blip used to make survives, without merging into
-              // the prompt field's or the context meter's labels.
-              if (active)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: Semantics(
-                      container: true,
-                      liveRegion: true,
-                      label: _chatL10n(context).chatUiAssistantIsWorking,
-                      child: CustomPaint(
-                        key: const ValueKey('composer-activity'),
-                        painter: _ActivityRingPainter(
-                          radius: widget.radius,
-                          primary: scheme.primary,
-                          tertiary: scheme.tertiary,
-                          sweep: _running ? t : null,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-      child: widget.child,
-    );
-  }
-}
-
-/// Strokes the composer's rounded border with a gradient that carries one
-/// bright primary-to-tertiary highlight around the ring; [sweep] is the
-/// highlight's position around the loop, or null for a still primary ring.
-class _ActivityRingPainter extends CustomPainter {
-  const _ActivityRingPainter({
-    required this.radius,
-    required this.primary,
-    required this.tertiary,
-    required this.sweep,
-  });
-
-  final BorderRadius radius;
-  final Color primary;
-  final Color tertiary;
-  final double? sweep;
-
-  static const _strokeWidth = 1.6;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final ring = radius.toRRect(rect).deflate(_strokeWidth / 2);
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = _strokeWidth;
-    final sweep = this.sweep;
-    if (sweep == null) {
-      paint.color = primary;
-    } else {
-      final base = primary.withValues(alpha: .28);
-      // A dim primary ring with one soft highlight: primary brightening
-      // into tertiary and fading back out over about a third of the loop.
-      paint.shader = SweepGradient(
-        colors: [base, primary, tertiary, primary, base, base],
-        stops: const [0, .1, .18, .26, .38, 1],
-        transform: GradientRotation(2 * math.pi * sweep),
-      ).createShader(rect);
-    }
-    canvas.drawRRect(ring, paint);
-  }
-
-  @override
-  bool shouldRepaint(_ActivityRingPainter old) =>
-      old.sweep != sweep ||
-      old.primary != primary ||
-      old.tertiary != tertiary ||
-      old.radius != radius;
+  focus?.requestFocus();
+  showKitUndo(
+    context,
+    message: lookupAppLocalizations(
+      Localizations.localeOf(context),
+    ).composerReturnedToDraft,
+    key: const Key('composer-returned-undo'),
+    onUndo: () async {
+      // Only the text this call added comes out again; later typing stays.
+      if (composer.text == next) composer.value = before;
+      await onUndo?.call();
+    },
+  );
 }

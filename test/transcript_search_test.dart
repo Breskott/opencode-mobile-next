@@ -11,10 +11,12 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/domain/transcript_search.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart' show ServerPage;
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/desktop/shortcuts.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 import 'package:opencode_mobile/ui/widgets/transcript_highlight.dart';
@@ -135,6 +137,9 @@ Future<void> _pump(
         key: const ValueKey('find-preview'),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
+          // The kit's search field reads the app's strings.
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: captureTheme(),
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
@@ -270,10 +275,13 @@ void main() {
       expect(MarkdownText.debugParseCount, parsed);
       expect(
         tester
-            .widgetList<SelectableText>(find.byType(SelectableText))
-            .any(
-              (w) => w.textSpan?.toPlainText().contains('final cache') == true,
-            ),
+            .widgetList<RichText>(
+              find.descendant(
+                of: find.byType(KitCodeBlock),
+                matching: find.byType(RichText),
+              ),
+            )
+            .any((w) => w.text.toPlainText().contains('final cache = 1;')),
         isTrue,
       );
     },
@@ -293,20 +301,27 @@ void main() {
       api.failOlder = true;
       await tester.tap(find.byKey(const ValueKey('transcript-find-older')));
       await tester.pumpAndSettle();
-      expect(find.text('Older history unavailable'), findsWidgets);
+      expect(
+        find.text(
+          'The server had a problem (error 503). Try again in a moment.',
+        ),
+        findsWidgets,
+      );
+      expect(find.text('Older history unavailable'), findsNothing);
       expect(find.text('4 of 4 matches'), findsWidgets);
       api.failOlder = false;
       await tester.tap(find.byKey(const ValueKey('transcript-find-older')));
       await tester.pumpAndSettle();
       expect(find.text('6 of 6 matches'), findsWidgets);
-      expect(
-        find.text('All available message content searched.'),
-        findsOneWidget,
-      );
+      // Nothing is left to load, so nothing is said about it.
+      expect(find.textContaining('Loaded messages only.'), findsNothing);
       await tester.tap(find.byKey(const ValueKey('transcript-find-next')));
       await tester.pumpAndSettle();
+      // The count once, in the bar; the tool-data match is shown in an
+      // excerpt that says where it is, without repeating the count.
       expect(find.text('1 of 6 matches'), findsOneWidget);
-      expect(find.text('1 of 6 matches · Tool data'), findsOneWidget);
+      expect(find.text('Tool data'), findsOneWidget);
+      expect(find.textContaining('1 of 6 matches ·'), findsNothing);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('transcript-find-bar')), findsNothing);
@@ -322,14 +337,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Find in conversation'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-find')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('transcript-find-input')), findsOneWidget);
     await tester.tap(find.byTooltip('Close search'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Timeline'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('timeline-search')),
@@ -359,12 +374,21 @@ void main() {
     await _query(tester, 'cache');
     await tester.tap(find.byKey(const ValueKey('transcript-find-older')));
     await tester.pump();
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.text('Stop searching older messages'));
     await tester.pump();
     api.olderGate!.complete(ServerPage(items: [], nextCursor: 'oldest'));
     await tester.pumpAndSettle();
     expect(api.cursors, [null, 'older']);
     expect(find.textContaining('Loaded messages only.'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a match in words already on screen is marked in place, with '
+      'no excerpt repeating it', (tester) async {
+    await _pump(tester, _Api());
+    await _query(tester, 'expiry');
+    expect(find.text('1 match'), findsWidgets);
+    expect(find.byType(TranscriptMatchExcerpt), findsNothing);
     await tester.pumpWidget(const SizedBox());
   });
 

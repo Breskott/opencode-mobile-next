@@ -1,0 +1,12 @@
+00:00 +0: loading test/revamp/screen_chat_2_test.dart
+00:00 +0: note for the agent delete offers Undo, and Undo writes the words back
+00:01 +1: note for the agent a failed save keeps the draft and Try again repeats it
+00:01 +2: note for the agent the size shows only near the limit, and too long says by how much
+00:01 +3: subagents one list by urgency: working first, then newest first
+00:01 +4: subagents a working subagent is stopped by name after a question
+00:01 +5: subagents a subagent that is done has no stop
+00:02 +6: active context a search with no match says so and clears
+00:02 +7: web sources a result is added to the prompt, marked Added, and Done returns it
+00:02 +8: web sources no results says so; a failed search offers Search again
+00:03 +9: web sources without search, a pasted link is added and can be removed
+00:03 +10: All tests passed!

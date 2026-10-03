@@ -104,6 +104,14 @@ class IsolatedTaskLaunch extends ChangeNotifier {
       _phase == IsolatedTaskPhase.ready ||
       _phase == IsolatedTaskPhase.unconfirmed;
 
+  /// The copy was made but its setup reported a failure: the person may
+  /// still start in it, by an explicit choice ([open] with
+  /// `acceptFailedSetup`). False when the create call itself failed.
+  bool get canStartAfterFailedSetup =>
+      _phase == IsolatedTaskPhase.failed &&
+      _worktree != null &&
+      _failure == null;
+
   bool get isTerminal =>
       _phase == IsolatedTaskPhase.opened ||
       _phase == IsolatedTaskPhase.failed ||
@@ -157,12 +165,18 @@ class IsolatedTaskLaunch extends ChangeNotifier {
     _armTimer();
   }
 
-  /// Opens a blank session inside the worktree. Allowed when ready, or when
-  /// unconfirmed only if the caller passes [acceptUnconfirmed] to record the
-  /// user's explicit choice. A failed open keeps the launch openable.
-  Future<void> open({bool acceptUnconfirmed = false}) async {
+  /// Opens a blank session inside the worktree. Allowed when ready, when
+  /// unconfirmed only if the caller passes [acceptUnconfirmed], and after a
+  /// failed setup only if the caller passes [acceptFailedSetup] — each
+  /// records the user's explicit choice. A failed open keeps the launch
+  /// openable.
+  Future<void> open({
+    bool acceptUnconfirmed = false,
+    bool acceptFailedSetup = false,
+  }) async {
     final directory = _worktree?.directory;
-    if (directory == null || !canOpen) return;
+    final afterFailedSetup = acceptFailedSetup && canStartAfterFailedSetup;
+    if (directory == null || (!canOpen && !afterFailedSetup)) return;
     if (_phase == IsolatedTaskPhase.unconfirmed && !acceptUnconfirmed) return;
     final previous = _phase;
     _openError = null;

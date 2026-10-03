@@ -15,8 +15,14 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit_nav.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
-import 'package:opencode_mobile/ui/widgets/glass_surface.dart';
+import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
+import 'package:opencode_mobile/ui/kit/glass/kit_glass.dart';
+import 'package:opencode_mobile/ui/kit/kit_bottom_inset.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
+import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _ShellApi extends OpenCodeApi {
@@ -91,7 +97,10 @@ class _ShellProfileStore extends ProfileStore {
   String? get activeId => profile?.id;
 }
 
-Future<ConnectionController> _controller({String? profileName}) async {
+Future<ConnectionController> _controller({
+  String? profileName,
+  String? directory,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final store = _ShellProfileStore(
@@ -107,8 +116,27 @@ Future<ConnectionController> _controller({String? profileName}) async {
   return ConnectionController(store)
     ..api = _ShellApi()
     ..repository = _ShellRepository()
-    ..status = StreamStatus.connected;
+    ..status = StreamStatus.connected
+    // The Project hub lists its tools only once a project is open.
+    ..directory = directory;
 }
+
+Widget _shellHome(ConnectionController controller, {int? initialTab}) =>
+    Builder(
+      builder: (context) => ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) => AppConditionsScope(
+          conditions: [
+            connectionKitStatus(
+              context,
+              controller,
+              actionContext: () => context,
+            ),
+          ],
+          child: HomeScreen(initialTab: initialTab),
+        ),
+      ),
+    );
 
 Future<void> _pumpShell(
   WidgetTester tester,
@@ -127,12 +155,51 @@ Future<void> _pumpShell(
         ),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const HomeScreen(),
+        home: _shellHome(controller),
       ),
     ),
   );
   await tester.pumpAndSettle();
 }
+
+// The shell revamp names the current destination in its selected navigation
+// item; compact/medium headers now identify the server instead of repeating it.
+String _selectedDestination(WidgetTester tester) {
+  final nav = tester.widget<KitNav>(find.byType(KitNav));
+  final destination = nav.destinations[nav.selected];
+  expect(
+    tester.getSemantics(find.byKey(destination.key!)),
+    isSemantics(
+      isButton: true,
+      isSelected: true,
+      hasSelectedState: true,
+      hasTapAction: true,
+      label: destination.needsYou > 0
+          ? '${destination.label}, ${destination.needsYou} need you'
+          : destination.label,
+    ),
+  );
+  return destination.label;
+}
+
+Finder _dockGlass() => find.descendant(
+  of: find.byType(KitNavBar),
+  matching: find.byType(KitGlass),
+);
+
+Finder _inboxDestination() =>
+    find.byKey(const ValueKey('home-shell-tab-inbox'));
+
+/// The dock's selection lens. Since kit-fluid-glass (71cb03cd) it rides
+/// KitMotion springs on one ticker instead of an AnimatedPositioned.
+Rect _dockLens(WidgetTester tester) => tester.getRect(
+  find.descendant(
+    of: find.byType(KitNavBar),
+    matching: find.byWidgetPredicate(
+      (widget) => widget.runtimeType.toString() == '_KitNavLens',
+    ),
+  ),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -165,12 +232,12 @@ void main() {
             ),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const HomeScreen(),
+            home: _shellHome(controller),
           ),
         ),
       );
       await tester.pumpAndSettle();
-      final dock = tester.getRect(find.byType(GlassSurface));
+      final dock = tester.getRect(_dockGlass());
       final icon = tester.getRect(
         find.byIcon(AppIconography.workspaceSelected),
       );
@@ -187,21 +254,21 @@ void main() {
       } else {
         expect(labels, ['العمل', 'الوارد', 'المشروع', 'الإعدادات']);
         expect(
-          Directionality.of(tester.element(find.byType(NavigationBar))),
+          Directionality.of(tester.element(find.byType(KitNavBar))),
           TextDirection.rtl,
         );
       }
       for (final label in labels) {
         final rect = tester.getRect(
           find.descendant(
-            of: find.byType(NavigationBar),
+            of: find.byType(KitNavBar),
             matching: find.text(label),
           ),
         );
         final paragraph = tester.renderObject<RenderParagraph>(
           find.descendant(
             of: find.descendant(
-              of: find.byType(NavigationBar),
+              of: find.byType(KitNavBar),
               matching: find.text(label),
             ),
             matching: find.byType(RichText),
@@ -226,7 +293,7 @@ void main() {
     'Files Back clears search, ascends folders, returns home, then guards exit',
     (tester) async {
       final api = _NestedFilesApi();
-      final controller = await _controller()
+      final controller = await _controller(directory: '/srv/app')
         ..api = api;
       addTearDown(controller.dispose);
       var exits = 0;
@@ -253,9 +320,7 @@ void main() {
       await tester.tap(find.text('src'));
       await tester.pumpAndSettle();
       expect(
-        tester
-            .getSemantics(find.widgetWithText(ActionChip, 'Project root'))
-            .label,
+        tester.getSemantics(find.bySemanticsLabel('Open Project root')).label,
         contains('Project root'),
       );
       final search = find.byKey(const ValueKey('files-search-field'));
@@ -288,12 +353,7 @@ void main() {
       await tester.binding.handlePopRoute();
       await tester.pump();
       expect(find.text('Press back again to exit'), findsNothing);
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-            .data,
-        'Project',
-      );
+      expect(_selectedDestination(tester), 'Project');
       expect(
         find.byKey(const ValueKey('project-hub-files')).hitTestable(),
         findsOneWidget,
@@ -302,12 +362,7 @@ void main() {
       await tester.binding.handlePopRoute();
       await tester.pump();
       expect(find.text('Press back again to exit'), findsNothing);
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-            .data,
-        'Work',
-      );
+      expect(_selectedDestination(tester), 'Work');
       await tester.binding.handlePopRoute();
       await tester.pump();
       expect(find.text('Press back again to exit'), findsOneWidget);
@@ -320,7 +375,7 @@ void main() {
 
   testWidgets('inactive Files tab does not consume Back', (tester) async {
     final api = _NestedFilesApi();
-    final controller = await _controller()
+    final controller = await _controller(directory: '/srv/app')
       ..api = api;
     addTearDown(controller.dispose);
     await _pumpShell(tester, controller);
@@ -336,10 +391,7 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pump();
     expect(find.text('Press back again to exit'), findsNothing);
-    expect(
-      tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Work',
-    );
+    expect(_selectedDestination(tester), 'Work');
     expect(api.paths.length, loads);
   });
 
@@ -347,7 +399,7 @@ void main() {
     tester,
   ) async {
     final api = _NestedFilesApi();
-    final controller = await _controller()
+    final controller = await _controller(directory: '/srv/app')
       ..api = api;
     addTearDown(controller.dispose);
     await _pumpShell(tester, controller);
@@ -379,10 +431,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    expect(
-      tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Work',
-    );
+    expect(_selectedDestination(tester), 'Work');
     expect(find.text('Press back again to exit'), findsNothing);
   });
 
@@ -396,19 +445,66 @@ void main() {
     final controller = await _controller();
     addTearDown(controller.dispose);
     await _pumpShell(tester, controller, disableAnimations: true);
-    expect(
-      tester
-          .widget<NavigationBar>(find.byType(NavigationBar))
-          .animationDuration,
-      Duration.zero,
-    );
+    final before = _dockLens(tester);
     await tester.tap(find.byIcon(AppIconography.settings));
     await tester.pump();
+    expect(_selectedDestination(tester), 'Settings');
+    // One pump: the lens is already on Settings and Settings is fully shown
+    // (no fade). Settings builds on first visit (lazy tabs, 5253e12c), so
+    // its own loading bar may still run; the switch itself does not.
+    final after = _dockLens(tester);
+    expect(after.left, greaterThan(before.left));
     expect(
-      tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Settings',
+      find.ancestor(
+        of: find.byType(SettingsScreen),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is Opacity && widget.opacity < 1,
+        ),
+      ),
+      findsNothing,
     );
+    await tester.pumpAndSettle();
+    expect(_dockLens(tester), after);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('switching destinations fades through: the tab being left '
+      'clears before the chosen one shows, never both half-visible', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    await _pumpShell(tester, controller);
+    final lensAtRest = _dockLens(tester);
+
+    double opacityOf(Type screen) => tester
+        .widget<Opacity>(
+          find
+              .ancestor(of: find.byType(screen), matching: find.byType(Opacity))
+              .first,
+        )
+        .opacity;
+
+    await tester.tap(find.byIcon(AppIconography.activity));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+    // The dock lens is on its way to Inbox, not there yet.
+    final lensMoving = _dockLens(tester);
+    expect(opacityOf(ActivityScreen), 0);
+    expect(opacityOf(WorkspaceScreen), inExclusiveRange(0, 1));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(opacityOf(ActivityScreen), inExclusiveRange(0, 1));
+    await tester.pumpAndSettle();
+    expect(opacityOf(ActivityScreen), 1);
+    final lensOnInbox = _dockLens(tester);
+    expect(lensOnInbox.center.dx, greaterThan(lensAtRest.center.dx));
+    expect(lensMoving, isNot(lensOnInbox));
+    // The status dot is still while connected: nothing runs at rest.
+    expect(tester.binding.transientCallbackCount, 0);
   });
 
   testWidgets(
@@ -419,7 +515,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       addTearDown(tester.view.resetViewInsets);
-      final controller = await _controller()
+      final controller = await _controller(directory: '/srv/app')
         ..api = _LongFilesApi();
       addTearDown(controller.dispose);
       await _pumpShell(tester, controller);
@@ -428,8 +524,10 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('project-hub-files')));
       await tester.pumpAndSettle();
       expect(
-        tester.widget<Scaffold>(find.byType(Scaffold).first).extendBody,
-        isTrue,
+        KitBottomInset.of(
+          tester.element(find.byKey(const ValueKey('files-search-field'))),
+        ).bottom,
+        greaterThanOrEqualTo(tester.getSize(_dockGlass()).height),
       );
       final list = find.byType(ListView).first;
       await tester.drag(list, const Offset(0, -2200));
@@ -445,20 +543,22 @@ void main() {
       await tester.pump();
       expect(
         tester.getRect(last).bottom,
-        lessThanOrEqualTo(tester.getRect(find.byType(GlassSurface)).top),
+        lessThanOrEqualTo(tester.getRect(_dockGlass()).top),
       );
       tester.view.viewInsets = const FakeViewPadding(bottom: 300);
       await tester.pumpAndSettle();
-      expect(find.byType(GlassSurface), findsNothing);
+      expect(_dockGlass(), findsNothing);
       expect(
-        tester.widget<Scaffold>(find.byType(Scaffold).first).extendBody,
-        isFalse,
+        KitBottomInset.of(
+          tester.element(find.byKey(const ValueKey('files-search-field'))),
+        ).bottom,
+        300,
       );
       final search = find.byKey(const ValueKey('files-search-field'));
       expect(tester.getRect(search).bottom, lessThanOrEqualTo(544));
       tester.view.resetViewInsets();
       await tester.pumpAndSettle();
-      expect(find.byType(GlassSurface), findsOneWidget);
+      expect(_dockGlass(), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -473,59 +573,39 @@ void main() {
 
     await _pumpShell(tester, controller);
 
-    expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.byType(GlassSurface), findsOneWidget);
-    final dock = tester.getRect(find.byType(GlassSurface));
+    expect(find.byType(KitNavBar), findsOneWidget);
+    expect(_dockGlass(), findsOneWidget);
+    final dock = tester.getRect(_dockGlass());
     expect(dock.left, 16);
     expect(dock.right, 374);
-    expect(dock.height, 72);
-    final navigation = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    final navigationContext = tester.element(find.byType(NavigationBar));
-    for (final states in [
-      <WidgetState>{},
-      {WidgetState.selected},
+    expect(dock.height, 60);
+    final navigation = tester.widget<KitNavBar>(find.byType(KitNavBar));
+    final roles = ThemeRoles.resolve(
+      Theme.of(tester.element(find.byType(KitNavBar))),
+    );
+    for (final (label, glyph, color) in [
+      ('Work', AppIconography.workspaceSelected, roles.text1),
+      ('Inbox', AppIconography.activity, roles.text2),
+      ('Project', AppIconography.files, roles.text2),
+      ('Settings', AppIconography.settings, roles.text2),
     ]) {
-      expect(
-        navigation.labelTextStyle!.resolve(states)!.color,
-        GlassSurface.foregroundColor(Theme.of(navigationContext)),
+      final labelFinder = find.descendant(
+        of: find.byType(KitNavBar),
+        matching: find.text(label),
       );
-      expect(
-        NavigationBarTheme.of(
-          navigationContext,
-        ).iconTheme!.resolve(states)!.color,
-        GlassSurface.foregroundColor(Theme.of(navigationContext)),
-      );
-    }
-    for (final glyph in [
-      AppIconography.workspaceSelected,
-      AppIconography.files,
-    ]) {
-      final iconFinder = find.byIcon(glyph);
-      expect(tester.widget<Icon>(iconFinder).color, isNull);
-      expect(
-        IconTheme.of(tester.element(iconFinder)).color,
-        GlassSurface.foregroundColor(Theme.of(navigationContext)),
-      );
+      expect(tester.widget<Text>(labelFinder).style!.color, color);
+      expect(tester.widget<Icon>(find.byIcon(glyph)).color, color);
     }
     final icon = tester.getRect(find.byIcon(AppIconography.workspaceSelected));
     expect(icon.top - dock.top, greaterThanOrEqualTo(8));
     final label = tester.getRect(
-      find.descendant(
-        of: find.byType(NavigationBar),
-        matching: find.text('Work'),
-      ),
+      find.descendant(of: find.byType(KitNavBar), matching: find.text('Work')),
     );
     expect(dock.bottom - label.bottom, greaterThanOrEqualTo(4));
 
-    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(KitNavRail), findsNothing);
     // UX plan 5.1: one tab per noun, in this order.
-    final navigationLabels = tester
-        .widgetList<NavigationDestination>(
-          find.descendant(
-            of: find.byType(NavigationBar),
-            matching: find.byType(NavigationDestination),
-          ),
-        )
+    final navigationLabels = navigation.destinations
         .map((destination) => destination.label)
         .toList();
     expect(navigationLabels, ['Work', 'Inbox', 'Project', 'Settings']);
@@ -547,11 +627,14 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    final controller = await _controller();
+    final controller = await _controller(profileName: 'Test server');
     addTearDown(controller.dispose);
 
     await _pumpShell(tester, controller);
-    expect(find.byType(Badge), findsNothing);
+    expect(
+      find.descendant(of: _inboxDestination(), matching: find.text('1')),
+      findsNothing,
+    );
 
     controller.permissions = {
       'perm-1': PermissionRequest(
@@ -566,27 +649,21 @@ void main() {
 
     // UX-P0-01: exactly one global badge, and the duplicate app-bar entry
     // points are gone.
-    final badge = find.byKey(const ValueKey('activity-pending-badge'));
+    final badge = _inboxDestination();
     expect(badge, findsOneWidget);
-    expect(find.byType(Badge), findsOneWidget);
     expect(
-      find.descendant(of: find.byType(NavigationBar), matching: badge),
+      find.descendant(of: find.byType(KitNav), matching: find.text('1')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: find.byType(KitNavBar), matching: badge),
       findsOneWidget,
     );
     expect(
       find.descendant(of: badge, matching: find.text('1')),
       findsOneWidget,
     );
-    expect(
-      find.ancestor(
-        of: badge,
-        matching: find.byWidgetPredicate(
-          (widget) =>
-              widget is NavigationDestination && widget.label == 'Inbox',
-        ),
-      ),
-      findsOneWidget,
-    );
+    expect(tester.getSemantics(badge).label, 'Inbox, 1 need you');
 
     // The badge counts everything waiting on the person, not just "some".
     controller.permissions = {
@@ -599,14 +676,14 @@ void main() {
         ),
     };
     controller.notifyListeners();
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(
       find.descendant(of: badge, matching: find.text('3')),
       findsOneWidget,
     );
     controller.permissions = {'perm-1': controller.permissions['perm-1']!};
     controller.notifyListeners();
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(
       find.descendant(of: badge, matching: find.text('1')),
       findsOneWidget,
@@ -638,10 +715,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.byType(ActivityScreen), findsOneWidget);
-    expect(
-      tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Inbox',
-    );
+    expect(_selectedDestination(tester), 'Inbox');
     // An empty inbox reads as success, not as a missing feature.
     expect(find.text('All clear here'), findsWidgets);
   });
@@ -654,9 +728,7 @@ void main() {
       patterns: const ['lib/main.dart'],
     );
 
-    String title(WidgetTester tester) => tester
-        .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
-        .data!;
+    String title(WidgetTester tester) => _selectedDestination(tester);
 
     Future<void> pump(
       WidgetTester tester,
@@ -673,7 +745,7 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: HomeScreen(initialTab: initialTab),
+            home: _shellHome(controller, initialTab: initialTab),
           ),
         ),
       );
@@ -682,17 +754,20 @@ void main() {
     }
 
     testWidgets('nothing waiting: Work', (tester) async {
-      final controller = await _controller();
+      final controller = await _controller(profileName: 'Test server');
       addTearDown(controller.dispose);
       await pump(tester, controller);
       expect(title(tester), 'Work');
-      expect(find.byType(Badge), findsNothing);
+      expect(
+        find.descendant(of: _inboxDestination(), matching: find.text('1')),
+        findsNothing,
+      );
     });
 
     testWidgets('something waiting: Inbox, on the request itself', (
       tester,
     ) async {
-      final controller = await _controller();
+      final controller = await _controller(profileName: 'Test server');
       addTearDown(controller.dispose);
       controller.permissions = {'perm-1': permission('perm-1')};
       await pump(tester, controller);
@@ -711,7 +786,7 @@ void main() {
     testWidgets('the first read of pending requests decides, once', (
       tester,
     ) async {
-      final controller = await _controller();
+      final controller = await _controller(profileName: 'Test server');
       addTearDown(controller.dispose);
       // Connect starts this read before the shell mounts.
       controller.permissionsLoading = true;
@@ -740,17 +815,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(title(tester), 'Work');
       expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('activity-pending-badge')),
-          matching: find.text('2'),
-        ),
+        find.descendant(of: _inboxDestination(), matching: find.text('2')),
         findsOneWidget,
       );
     });
 
     testWidgets('a read that finds nothing leaves Work, and a late request '
         'does not move the person', (tester) async {
-      final controller = await _controller();
+      final controller = await _controller(profileName: 'Test server');
       addTearDown(controller.dispose);
       controller
         ..permissionsLoading = true
@@ -772,13 +844,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(title(tester), 'Work');
       expect(
-        find.byKey(const ValueKey('activity-pending-badge')),
+        find.descendant(of: _inboxDestination(), matching: find.text('1')),
         findsOneWidget,
       );
     });
 
     testWidgets('picking a tab during the read is final', (tester) async {
-      final controller = await _controller();
+      final controller = await _controller(profileName: 'Test server');
       addTearDown(controller.dispose);
       controller.permissionsLoading = true;
       await pump(tester, controller);
@@ -797,13 +869,13 @@ void main() {
     });
 
     testWidgets('an explicit destination is respected', (tester) async {
-      final controller = await _controller();
+      final controller = await _controller(profileName: 'Test server');
       addTearDown(controller.dispose);
       controller.permissions = {'perm-1': permission('perm-1')};
       await pump(tester, controller, initialTab: 0);
       expect(title(tester), 'Work');
       expect(
-        find.byKey(const ValueKey('activity-pending-badge')),
+        find.descendant(of: _inboxDestination(), matching: find.text('1')),
         findsOneWidget,
       );
     });
@@ -849,13 +921,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     double top(Finder finder) => tester.getTopLeft(finder).dy;
+    // One list, no section headers (owner rule R1): the rows' marks and
+    // words carry the state.
     final order = [
-      find.text('Needs attention'),
       find.byKey(const ValueKey('activity-permission-perm-old')),
       find.byKey(const ValueKey('activity-permission-perm-new')),
-      find.text('Running'),
       find.byKey(const ValueKey('activity-running-running')),
-      find.text('Completion digests'),
+      find.byKey(const ValueKey('activity-digest-finished')),
     ];
     for (final item in order) {
       expect(item, findsOneWidget);
@@ -863,14 +935,10 @@ void main() {
     for (var i = 1; i < order.length; i++) {
       expect(top(order[i - 1]), lessThan(top(order[i])), reason: 'item $i');
     }
-    // Finished work is listed under its heading once opened.
-    await tester.tap(find.text('Completion digests'));
-    await tester.pump();
+    for (final header in ['Needs attention', 'Running', 'Completion digests']) {
+      expect(find.text(header), findsNothing, reason: header);
+    }
     expect(find.text('Finished conversation'), findsOneWidget);
-    expect(
-      top(find.text('Finished conversation')),
-      greaterThan(top(find.text('Completion digests'))),
-    );
   });
 
   testWidgets('failed reconnect keeps the product shell and location visible', (
@@ -890,27 +958,47 @@ void main() {
     await _pumpShell(tester, controller);
 
     expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('connection-status-banner')),
-      findsOneWidget,
-    );
-    expect(find.text('Connection lost'), findsOneWidget);
+    expect(find.byType(KitNav), findsOneWidget);
+    // A completed failure occupies the one shared status slot immediately.
+    final line = find.byKey(const ValueKey('connection-status-banner'));
+    expect(line, findsOneWidget);
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('connection-status-banner')),
-        matching: find.text('Try again'),
+        of: line,
+        matching: find.text("This device (Termux) isn't answering"),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: line,
+        matching: find.text('Reconnect to This device (Termux)'),
       ),
       findsOneWidget,
     );
     // The raw error and the secondary action live behind Details.
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    // The raw error waits folded under the sheet's own Details.
+    expect(find.textContaining('Endpoint is unavailable'), findsNothing);
+    final fold = find.descendant(
+      of: find.byKey(const ValueKey('connection-banner-details-sheet')),
+      matching: find.byKey(const ValueKey('kit-details-toggle')),
+    );
+    await tester.ensureVisible(fold);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(fold);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.textContaining('Endpoint is unavailable'), findsOneWidget);
-    expect(find.text('Change server'), findsOneWidget);
+    expect(find.text('Switch server'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
+    // Stop the controller-owned fallback poll before widget-test invariants.
     controller.dispose();
   });
 
@@ -939,7 +1027,7 @@ void main() {
               data: MediaQuery.of(
                 context,
               ).copyWith(textScaler: const TextScaler.linear(2)),
-              child: const HomeScreen(),
+              child: _shellHome(controller),
             ),
           ),
         ),
@@ -947,19 +1035,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final line = find.byKey(const ValueKey('connection-status-banner'));
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('connection-status-banner')),
-        matching: find.text('Try again'),
+        of: line,
+        matching: find.text('Reconnect to This device (Termux)'),
       ),
       findsOneWidget,
     );
-    expect(
-      find.byKey(const ValueKey('connection-banner-details')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('kit-status-more')), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
+    // Stop the controller-owned fallback poll before widget-test invariants.
     controller.dispose();
   });
 
@@ -973,65 +1060,97 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: HomeScreen(),
+          home: _shellHome(controller),
         ),
       ),
     );
     await tester.pump();
+    // The shared line reports reconnection immediately, then escalates after
+    // the controller's eight-second grace period without adding another slot.
+    final line = find.byKey(const ValueKey('connection-status-banner'));
+    expect(line, findsOneWidget);
+    expect(find.text('Reconnecting to This device (Termux)…'), findsOneWidget);
+    expect(find.text("This device (Termux) isn't answering"), findsNothing);
+    await tester.pump(const Duration(seconds: 8));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(line, findsOneWidget);
+    expect(find.text("This device (Termux) isn't answering"), findsOneWidget);
 
     final retry = tester.widget<TextButton>(
-      find.widgetWithText(TextButton, 'Try again'),
+      find.widgetWithText(TextButton, 'Reconnect to This device (Termux)'),
     );
     expect(retry.onPressed, isNotNull);
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Change server'), findsOneWidget);
+    expect(find.text('Switch server'), findsOneWidget);
   });
 
-  testWidgets('phone header separates long local server and workspace labels', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(411, 891);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final controller = await _controller(profileName: 'This device (Termux)');
-    addTearDown(controller.dispose);
+  testWidgets(
+    'phone header names the server and keeps the current tab in the dock',
+    (tester) async {
+      tester.view.physicalSize = const Size(411, 891);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final controller = await _controller(profileName: 'This device (Termux)');
+      addTearDown(controller.dispose);
 
-    await _pumpShell(tester, controller);
+      await _pumpShell(tester, controller);
 
-    final profile = find.byKey(const ValueKey('server-profile-title'));
-    final tab = find.byKey(const ValueKey('current-tab-title'));
-    expect(profile, findsOneWidget);
-    expect(tab, findsOneWidget);
-    expect(tester.getRect(profile).bottom, lessThan(tester.getRect(tab).top));
-    expect(
-      tester.getSemantics(profile).label,
-      contains('Server: This device (Termux)'),
-    );
-    expect(tester.takeException(), isNull);
-  });
+      final profile = find.byKey(const ValueKey('server-switcher-button'));
+      final tab = find.byKey(const ValueKey('home-shell-tab-work'));
+      expect(profile, findsOneWidget);
+      expect(tab, findsOneWidget);
+      expect(tester.getRect(profile).bottom, lessThan(tester.getRect(tab).top));
+      expect(
+        tester.getSemantics(profile).label,
+        contains('This device (Termux)'),
+      );
+      expect(
+        tester.getSemantics(profile).label,
+        contains('Connected, Switch server'),
+      );
+      expect(_selectedDestination(tester), 'Work');
+      expect(find.byKey(const ValueKey('current-tab-title')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('tablet shell switches to navigation rail', (tester) async {
-    tester.view.physicalSize = const Size(1024, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final controller = await _controller();
-    addTearDown(controller.dispose);
+  testWidgets(
+    'expanded tablet shell puts navigation and server controls in the sidebar',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final controller = await _controller();
+      addTearDown(controller.dispose);
 
-    await _pumpShell(tester, controller);
+      await _pumpShell(tester, controller);
 
-    expect(find.byType(NavigationRail), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
-    final profile = tester.getRect(
-      find.byKey(const ValueKey('server-profile-title')),
-    );
-    final tab = tester.getRect(find.byKey(const ValueKey('current-tab-title')));
-    expect((profile.center.dy - tab.center.dy).abs(), lessThan(2));
-  });
+      expect(find.byType(KitNavRail), findsOneWidget);
+      expect(
+        tester.widget<KitNavRail>(find.byType(KitNavRail)).extended,
+        isTrue,
+      );
+      expect(find.byType(KitNavBar), findsNothing);
+      final profile = find.byKey(const ValueKey('server-switcher-button'));
+      expect(
+        find.descendant(of: find.byType(KitNavRail), matching: profile),
+        findsOneWidget,
+      );
+      final tab = find.byKey(const ValueKey('home-shell-tab-work'));
+      expect(tester.getRect(profile).bottom, lessThan(tester.getRect(tab).top));
+      expect(_selectedDestination(tester), 'Work');
+      expect(find.byKey(const ValueKey('current-tab-title')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

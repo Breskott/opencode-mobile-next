@@ -1,0 +1,18 @@
+$ tool/qa/machine_lock.sh test -- $F test -j 1 -r expanded test/design_standard_test.dart
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-2/test/design_standard_test.dart
+00:00 +0: G3x: migrated screens hold every forbidden pattern at zero (or below their baseline)
+00:00 +1: G3x: migrated classes in mixed files use the kit
+00:00 +2: G3x: the baseline only shrinks and names only migrated entries
+00:00 +3: G3x: a screen migrated on or after 2026-09-26 has an _ar_dark golden
+00:00 +4: raw parts a migrated screen gave up do not come back
+00:00 +5: every allowlist entry names a migrated file and gives a reason
+00:00 +6: each migrated screen has dark and light goldens at 412x915
+00:00 +7: scenes take their time only from KitIllustration (§10)
+00:00 +8: the kit is the one place raw progress and filled buttons live
+00:00 +9: G3x counters on fixture strings (proves the patterns) every G1, G2, G7, G17 and G21 pattern is forbidden
+00:00 +10: G3x counters on fixture strings (proves the patterns) a screen that breaks one rule of each gate fails each
+00:00 +11: G3x counters on fixture strings (proves the patterns) scopes: the kit and the theme files are judged by their own rules
+00:00 +12: G3x counters on fixture strings (proves the patterns) directional and themed forms pass
+00:00 +13: G3x counters on fixture strings (proves the patterns) bidi literals count outside the kit, as characters or escapes
+00:00 +14: G3x counters on fixture strings (proves the patterns) an argument list is read to its closing parenthesis
+00:00 +15: All tests passed!

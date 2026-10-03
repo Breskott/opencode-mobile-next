@@ -1,26 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/models.dart' show ApiException;
 import 'package:opencode_mobile/api2/models.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/widgets/form_renderer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Api2FormInfo makeForm(
   List<Api2FormField> fields, {
+  String id = 'frm_1',
   String sessionID = 'ses_1',
   String? title = 'Connect to Sentry',
-}) => Api2FormInfo(
-  id: 'frm_1',
-  sessionID: sessionID,
-  title: title,
-  fields: fields,
-);
+}) => Api2FormInfo(id: id, sessionID: sessionID, title: title, fields: fields);
 
 List<Api2FormOption> options(List<String> values) => [
   for (final value in values) Api2FormOption(value: value, label: 'L $value'),
 ];
 
+Widget _app(Widget home) => MaterialApp(
+  theme: AppTheme.light(),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: home,
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+  tearDown(debugForgetFormAnswers);
 
   Future<void> pumpRenderer(
     WidgetTester tester,
@@ -30,9 +39,8 @@ void main() {
     VoidCallback? onClose,
   }) async {
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        home: Scaffold(
+      _app(
+        Scaffold(
           body: FormRenderer(
             form: form,
             onSubmit: onSubmit ?? (_) async {},
@@ -42,10 +50,18 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
   }
 
   Future<void> submit(WidgetTester tester) async {
+    await tester.ensureVisible(find.byKey(const Key('form-submit')));
     await tester.tap(find.byKey(const Key('form-submit')));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> tapText(WidgetTester tester, String text) async {
+    await tester.ensureVisible(find.text(text).last);
+    await tester.tap(find.text(text).last);
     await tester.pumpAndSettle();
   }
 
@@ -54,27 +70,34 @@ void main() {
     matching: find.byType(TextField),
   );
 
-  testWidgets('renders header, origin line, apply bar, and locked keys', (
+  String textOf(WidgetTester tester, String key) =>
+      tester.widget<TextField>(fieldText(key).first).controller!.text;
+
+  testWidgets('renders the kit sheet: title, origin, fields and actions', (
     tester,
   ) async {
     await pumpRenderer(
       tester,
       makeForm([Api2FormField(key: 'name', type: Api2FormFieldType.string)]),
+      onClose: () {},
     );
 
     expect(find.byKey(const Key('form-sheet')), findsOneWidget);
-    expect(find.byKey(const Key('form-title')), findsOneWidget);
     expect(find.text('Connect to Sentry'), findsOneWidget);
     expect(
       find.text('Asked by the agent in this conversation'),
       findsOneWidget,
     );
     expect(find.byKey(const Key('form-field-name')), findsOneWidget);
-    expect(find.byKey(const Key('form-apply-bar')), findsOneWidget);
-    expect(find.byKey(const Key('form-submit')), findsOneWidget);
-    expect(find.byKey(const Key('form-cancel')), findsOneWidget);
+    expect(find.byKey(const Key('kit-sheet-actions')), findsOneWidget);
     expect(find.text('Send answers'), findsOneWidget);
-    expect(find.text('Dismiss'), findsOneWidget);
+    // The decline says what it declines; there is no separate "Finish
+    // later": close, swipe and back keep the answers (owner rule
+    // 2026-09-27, one way out each).
+    expect(find.text('Decline this request'), findsOneWidget);
+    expect(find.text('Dismiss'), findsNothing);
+    expect(find.text('Finish later'), findsNothing);
+    expect(find.byKey(const Key('form-later')), findsNothing);
   });
 
   testWidgets('global forms are attributed to an MCP server', (tester) async {
@@ -87,9 +110,7 @@ void main() {
     expect(find.text('Asked by an MCP server'), findsOneWidget);
   });
 
-  testWidgets('free string field prefills, shows counter, edits, submits', (
-    tester,
-  ) async {
+  testWidgets('free string field prefills, edits, submits', (tester) async {
     Map<String, dynamic>? sent;
     await pumpRenderer(
       tester,
@@ -106,15 +127,15 @@ void main() {
       onSubmit: (answer) async => sent = answer,
     );
 
-    expect(find.text('staging'), findsOneWidget);
-    expect(find.text('7/20'), findsOneWidget); // M3 counter from maxLength.
+    expect(find.text('Environment'), findsOneWidget);
+    expect(textOf(tester, 'env'), 'staging');
 
     await tester.enterText(fieldText('env'), 'production');
     await submit(tester);
     expect(sent, {'env': 'production'});
   });
 
-  testWidgets('string with few options renders a radio card group', (
+  testWidgets('string with few options: choice rows that speak their state', (
     tester,
   ) async {
     Map<String, dynamic>? sent;
@@ -139,16 +160,27 @@ void main() {
       onSubmit: (answer) async => sent = answer,
     );
 
-    expect(find.byType(RadioListTile<String>), findsNWidgets(3));
     expect(find.text('Live traffic'), findsOneWidget);
+    final staging = find.byKey(const Key('form-option-env-staging'));
+    expect(
+      tester.getSemantics(staging),
+      isSemantics(
+        hasCheckedState: true,
+        isChecked: false,
+        isInMutuallyExclusiveGroup: true,
+      ),
+    );
 
-    await tester.tap(find.text('Staging'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Staging');
+    expect(
+      tester.getSemantics(staging),
+      isSemantics(hasCheckedState: true, isChecked: true),
+    );
     await submit(tester);
     expect(sent, {'env': 'staging'});
   });
 
-  testWidgets('string with five or more options uses a dropdown menu', (
+  testWidgets('string with five or more options picks from the kit menu', (
     tester,
   ) async {
     Map<String, dynamic>? sent;
@@ -165,13 +197,15 @@ void main() {
       onSubmit: (answer) async => sent = answer,
     );
 
-    expect(find.byType(DropdownMenu<String>), findsOneWidget);
-    expect(find.byType(RadioListTile<String>), findsNothing);
+    expect(find.text('Choose'), findsOneWidget);
+    expect(find.text('L eu'), findsNothing);
 
-    await tester.tap(find.byType(DropdownMenu<String>));
+    await tester.tap(find.byKey(const Key('form-field-region-pick')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('L eu').last);
     await tester.pumpAndSettle();
+    // The row names the choice.
+    expect(find.text('L eu'), findsOneWidget);
     await submit(tester);
     expect(sent, {'region': 'eu'});
   });
@@ -192,12 +226,14 @@ void main() {
     );
 
     expect(find.byKey(const Key('form-field-env-other')), findsNothing);
-    await tester.tap(find.text('Other…'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Other…');
     expect(find.byKey(const Key('form-field-env-other')), findsOneWidget);
 
     await tester.enterText(
-      find.byKey(const Key('form-field-env-other')),
+      find.descendant(
+        of: find.byKey(const Key('form-field-env-other')),
+        matching: find.byType(TextField),
+      ),
       'my own env',
     );
     await submit(tester);
@@ -228,10 +264,7 @@ void main() {
 
     await tester.enterText(fieldText('retries'), '9a9');
     await tester.pump();
-    expect(
-      tester.widget<TextField>(fieldText('retries')).controller!.text,
-      '99',
-    );
+    expect(textOf(tester, 'retries'), '99');
 
     await submit(tester);
     expect(calls, 0);
@@ -256,7 +289,9 @@ void main() {
     expect(sent, {'ratio': 0.5});
   });
 
-  testWidgets('boolean renders a switch seeded from default', (tester) async {
+  testWidgets('boolean renders a switch row seeded from default', (
+    tester,
+  ) async {
     Map<String, dynamic>? sent;
     await pumpRenderer(
       tester,
@@ -272,17 +307,18 @@ void main() {
       onSubmit: (answer) async => sent = answer,
     );
 
-    final tile = tester.widget<SwitchListTile>(find.byType(SwitchListTile));
-    expect(tile.value, isTrue);
+    expect(
+      tester.getSemantics(find.text('Confirm')),
+      isSemantics(isToggled: true),
+    );
     expect(find.text('Really do it'), findsOneWidget);
 
-    await tester.tap(find.byType(SwitchListTile));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Confirm');
     await submit(tester);
     expect(sent, {'confirm': false});
   });
 
-  testWidgets('multiselect chips enforce min/max items with a pick caption', (
+  testWidgets('multiselect chips show their selection and enforce min/max', (
     tester,
   ) async {
     Map<String, dynamic>? sent;
@@ -306,24 +342,31 @@ void main() {
       },
     );
 
-    expect(find.byType(FilterChip), findsNWidgets(3));
     expect(find.text('Pick 1–2'), findsOneWidget);
-
     await submit(tester);
     expect(calls, 0);
     expect(find.text('Required'), findsOneWidget);
 
-    for (final value in ['L a', 'L b', 'L c']) {
-      await tester.tap(find.text(value));
+    for (final value in ['a', 'b', 'c']) {
+      await tester.tap(find.byKey(Key('form-option-tags-$value')));
       await tester.pumpAndSettle();
     }
+    // The selected state is visible and spoken (map infoMissing).
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('L a')),
+      isSemantics(hasToggledState: true, isToggled: true),
+    );
     expect(find.text('Pick 1–2 · 3 selected'), findsOneWidget);
     await submit(tester);
     expect(calls, 0);
     expect(find.text('Pick at most 2'), findsOneWidget);
 
-    await tester.tap(find.text('L b'));
+    await tester.tap(find.byKey(const Key('form-option-tags-b')));
     await tester.pumpAndSettle();
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('L b')),
+      isSemantics(hasToggledState: true, isToggled: false),
+    );
     await submit(tester);
     expect(calls, 1);
     expect(sent, {
@@ -331,7 +374,7 @@ void main() {
     });
   });
 
-  testWidgets('multiselect with nine options renders a checkbox list', (
+  testWidgets('multiselect with nine options renders a check list', (
     tester,
   ) async {
     Map<String, dynamic>? sent;
@@ -348,19 +391,19 @@ void main() {
       onSubmit: (answer) async => sent = answer,
     );
 
-    expect(find.byType(CheckboxListTile), findsNWidgets(9));
-    expect(find.byType(FilterChip), findsNothing);
-
-    await tester.tap(find.text('L v0'));
-    await tester.tap(find.text('L v2'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'L v0');
+    await tapText(tester, 'L v2');
+    expect(
+      tester.getSemantics(find.byKey(const Key('form-option-many-v2'))),
+      isSemantics(hasCheckedState: true, isChecked: true),
+    );
     await submit(tester);
     expect(sent, {
       'many': ['v0', 'v2'],
     });
   });
 
-  testWidgets('custom multiselect adds typed values as input chips', (
+  testWidgets('custom multiselect adds typed values as removable chips', (
     tester,
   ) async {
     Map<String, dynamic>? sent;
@@ -377,16 +420,19 @@ void main() {
       onSubmit: (answer) async => sent = answer,
     );
 
-    await tester.tap(find.text('L a'));
+    await tester.tap(find.byKey(const Key('form-option-tags-a')));
     await tester.pumpAndSettle();
     await tester.enterText(
-      find.byKey(const Key('form-field-tags-add')),
+      find.descendant(
+        of: find.byKey(const Key('form-field-tags-add')),
+        matching: find.byType(TextField),
+      ),
       'homemade',
     );
-    await tester.tap(find.byTooltip('Add answer'));
+    await tester.tap(find.byKey(const Key('form-field-tags-add-button')));
     await tester.pumpAndSettle();
 
-    expect(find.byType(InputChip), findsOneWidget);
+    expect(find.byKey(const Key('form-own-tags-homemade')), findsOneWidget);
     expect(find.text('homemade'), findsOneWidget);
 
     await submit(tester);
@@ -395,7 +441,7 @@ void main() {
     });
   });
 
-  testWidgets('date field opens the date picker and submits an ISO date', (
+  testWidgets('date field shows a human date and submits an ISO date', (
     tester,
   ) async {
     Map<String, dynamic>? sent;
@@ -403,35 +449,54 @@ void main() {
       tester,
       makeForm([
         Api2FormField(
-          key: 'birthday',
+          key: 'deploy',
           type: Api2FormFieldType.string,
           format: 'date',
-          title: 'Birthday',
+          title: 'Deploy day',
+          defaultValue: '2026-09-27',
         ),
       ]),
       onSubmit: (answer) async => sent = answer,
     );
 
-    await tester.tap(fieldText('birthday'));
+    // Human date (map infoMissing), not the ISO string.
+    expect(find.text('Sep 27, 2026'), findsOneWidget);
+    expect(find.text('2026-09-27'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('form-field-deploy-pick')));
     await tester.pumpAndSettle();
-    expect(find.byType(DatePickerDialog), findsOneWidget);
-    await tester.tap(find.text('OK'));
+    // The kit's date sheet, never the stock Material dialog.
+    expect(find.byKey(const Key('form-field-deploy-picker')), findsOneWidget);
+    expect(find.byType(DatePickerDialog), findsNothing);
+    await tester.tap(
+      find
+          .descendant(of: find.byType(Semantics), matching: find.text('28'))
+          .first,
+    );
+    await tester.tap(find.text('Use date'));
     await tester.pumpAndSettle();
 
-    final now = DateTime.now();
-    final iso =
-        '${now.year}-'
-        '${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
-    expect(
-      tester.widget<TextField>(fieldText('birthday')).controller!.text,
-      iso,
-    );
+    expect(find.text('Sep 28, 2026'), findsOneWidget);
     await submit(tester);
-    expect(sent, {'birthday': iso});
+    expect(sent, {'deploy': '2026-09-28'});
   });
 
-  testWidgets('external field renders an action card and never answers', (
+  testWidgets('an empty date field asks for a date', (tester) async {
+    await pumpRenderer(
+      tester,
+      makeForm([
+        Api2FormField(
+          key: 'deploy',
+          type: Api2FormFieldType.string,
+          format: 'date-time',
+          title: 'Deploy time',
+        ),
+      ]),
+    );
+    expect(find.text('Choose a date and time'), findsOneWidget);
+  });
+
+  testWidgets('external field renders an action row and never answers', (
     tester,
   ) async {
     Map<String, dynamic>? sent;
@@ -459,7 +524,6 @@ void main() {
     expect(find.text('Authorize Sentry'), findsOneWidget);
     expect(find.text('Grants read access'), findsOneWidget);
     expect(find.text('Opens example.com in your browser'), findsOneWidget);
-    expect(find.byIcon(AppIconography.externalLink), findsOneWidget);
 
     await submit(tester);
     expect(sent, {'note': 'done'});
@@ -487,7 +551,7 @@ void main() {
         ]),
       );
 
-      // The card says up front that this link is not openable instead of
+      // The row says up front that this link is not openable instead of
       // offering a browser it will never reach.
       expect(
         find.text('This server sent a link this app will not open.'),
@@ -528,7 +592,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Open external link?'), findsOneWidget);
-    expect(find.text('login.example.org:8443'), findsOneWidget);
+    // The real host stays in sight in the body (06102116 link gate on kit
+    // parts: "Opens {host} outside this app.").
+    expect(
+      find.text('Opens login.example.org:8443 outside this app.'),
+      findsOneWidget,
+    );
 
     // Declining is a real outcome: nothing opens.
     await tester.tap(find.text('Cancel'));
@@ -566,8 +635,7 @@ void main() {
       // Unanswered controlling field: the dependent stays hidden.
       expect(find.byKey(const Key('form-field-reason')), findsNothing);
 
-      await tester.tap(find.text('Production'));
-      await tester.pumpAndSettle();
+      await tapText(tester, 'Production');
       expect(find.byKey(const Key('form-field-reason')), findsOneWidget);
 
       await tester.enterText(fieldText('reason'), 'because prod');
@@ -575,20 +643,15 @@ void main() {
       expect(sent, {'env': 'production', 'reason': 'because prod'});
 
       // Deactivate: field disappears and is excluded from the payload...
-      await tester.tap(find.text('Development'));
-      await tester.pumpAndSettle();
+      await tapText(tester, 'Development');
       expect(find.byKey(const Key('form-field-reason')), findsNothing);
       await submit(tester);
       expect(sent, {'env': 'dev'});
       expect(sent!.containsKey('reason'), isFalse);
 
       // ...but the draft answer is retained in state.
-      await tester.tap(find.text('Production'));
-      await tester.pumpAndSettle();
-      expect(
-        tester.widget<TextField>(fieldText('reason')).controller!.text,
-        'because prod',
-      );
+      await tapText(tester, 'Production');
+      expect(textOf(tester, 'reason'), 'because prod');
       await submit(tester);
       expect(sent, {'env': 'production', 'reason': 'because prod'});
     },
@@ -634,10 +697,12 @@ void main() {
     expect(sent, {'name': 'Eslam', 'code': 'abcd'});
   });
 
-  testWidgets('submit failure surfaces the error banner and stays open', (
+  testWidgets('send failure shows the error notice; Send answers retries', (
     tester,
   ) async {
     var closed = false;
+    var attempts = 0;
+    Map<String, dynamic>? sent;
     await pumpRenderer(
       tester,
       makeForm([
@@ -647,16 +712,48 @@ void main() {
           defaultValue: 'x',
         ),
       ]),
-      onSubmit: (_) async => throw Exception('server rejected the answer'),
+      onSubmit: (answer) async {
+        attempts++;
+        if (attempts == 1) {
+          throw ApiException(
+            'Answer form failed (HTTP 400): server rejected the answer',
+            statusCode: 400,
+          );
+        }
+        sent = answer;
+      },
       onClose: () => closed = true,
     );
 
     expect(find.byKey(const Key('form-error-banner')), findsNothing);
     await submit(tester);
     expect(find.byKey(const Key('form-error-banner')), findsOneWidget);
-    expect(find.text('server rejected the answer'), findsOneWidget);
+    // Plain words, never the server's prose (a65dcea9 maps protocol
+    // failures to domain-owned categories); transport text is details only.
+    expect(
+      find.text(
+        "The server didn't accept the request. Try again, or report the "
+        'problem.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('server rejected the answer'), findsNothing);
+    expect(find.textContaining('HTTP 400'), findsNothing);
     expect(find.byKey(const Key('form-sheet')), findsOneWidget);
     expect(closed, isFalse);
+
+    // The notice has no Try again of its own: Send answers is the retry.
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('form-error-banner')),
+        matching: find.text('Try again'),
+      ),
+      findsNothing,
+    );
+    await submit(tester);
+    expect(attempts, 2);
+    expect(sent, {'name': 'x'});
+    expect(closed, isTrue);
   });
 
   testWidgets('dismiss confirms before cancelling', (tester) async {
@@ -672,7 +769,7 @@ void main() {
     // Backing out of the confirm leaves the form untouched.
     await tester.tap(find.byKey(const Key('form-cancel')));
     await tester.pumpAndSettle();
-    expect(find.text('Dismiss this request?'), findsOneWidget);
+    expect(find.text('Decline this request?'), findsOneWidget);
     expect(
       find.text('The agent continues without your answers.'),
       findsOneWidget,
@@ -691,20 +788,24 @@ void main() {
     expect(closed, isTrue);
   });
 
-  group('presentation split on DECLARED field count', () {
-    Future<void> pumpPresenter(WidgetTester tester, Api2FormInfo form) async {
+  group('presented in the kit sheet', () {
+    Future<void> pumpPresenter(
+      WidgetTester tester,
+      Api2FormInfo form, {
+      FormRendererSubmit? onSubmit,
+      FormRendererCancel? onCancel,
+    }) async {
       await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light(),
-          home: Scaffold(
+        _app(
+          Scaffold(
             body: Builder(
               builder: (context) => Center(
-                child: FilledButton(
+                child: TextButton(
                   onPressed: () => presentForm(
                     context,
                     form: form,
-                    onSubmit: (_) async {},
-                    onCancel: () async {},
+                    onSubmit: onSubmit ?? (_) async {},
+                    onCancel: onCancel ?? () async {},
                   ),
                   child: const Text('Open form'),
                 ),
@@ -727,7 +828,10 @@ void main() {
         ),
     ];
 
-    testWidgets('four declared fields open as a modal bottom sheet', (
+    double sheetHeight(WidgetTester tester) =>
+        tester.getSize(find.byKey(const Key('form-sheet'))).height;
+
+    testWidgets('four declared fields open a content-height sheet', (
       tester,
     ) async {
       await pumpPresenter(
@@ -741,9 +845,10 @@ void main() {
       expect(find.byKey(const Key('form-sheet')), findsOneWidget);
       // Only the active field renders, but the sheet was still chosen.
       expect(find.byKey(const Key('form-field-hidden0')), findsNothing);
+      expect(sheetHeight(tester), lessThan(600 * .6));
     });
 
-    testWidgets('five declared fields open as a full-screen dialog', (
+    testWidgets('five declared fields open a full-height sheet', (
       tester,
     ) async {
       await pumpPresenter(
@@ -753,15 +858,16 @@ void main() {
           ...inactive(4),
         ]),
       );
-      expect(find.byType(BottomSheet), findsNothing);
-      expect(find.byKey(const Key('form-sheet')), findsOneWidget);
-      final route =
-          ModalRoute.of(tester.element(find.byKey(const Key('form-title'))))!
-              as MaterialPageRoute<void>;
-      expect(route.fullscreenDialog, isTrue);
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(sheetHeight(tester), greaterThan(600 * .8));
+      // The actions stay pinned at the bottom of the window.
+      final actions = tester.getRect(
+        find.byKey(const Key('kit-sheet-actions')),
+      );
+      expect(actions.bottom, greaterThan(600 * .9));
     });
 
-    testWidgets('a long field description forces the full-screen dialog', (
+    testWidgets('a long field description forces the full-height sheet', (
       tester,
     ) async {
       await pumpPresenter(
@@ -775,11 +881,104 @@ void main() {
           ),
         ]),
       );
-      expect(find.byType(BottomSheet), findsNothing);
-      final route =
-          ModalRoute.of(tester.element(find.byKey(const Key('form-title'))))!
-              as MaterialPageRoute<void>;
-      expect(route.fullscreenDialog, isTrue);
+      expect(sheetHeight(tester), greaterThan(600 * .8));
+    });
+
+    Api2FormInfo carryForm() => makeForm([
+      Api2FormField(key: 'note', type: Api2FormFieldType.string, title: 'Note'),
+      Api2FormField(
+        key: 'env',
+        type: Api2FormFieldType.string,
+        title: 'Environment',
+        options: [
+          Api2FormOption(value: 'production', label: 'Production'),
+          Api2FormOption(value: 'dev', label: 'Development'),
+        ],
+      ),
+    ], id: 'frm_carry');
+
+    Future<void> fill(WidgetTester tester) async {
+      await tester.enterText(fieldText('note'), 'ship it friday');
+      await tapText(tester, 'Development');
+    }
+
+    testWidgets('draft carry: answers survive a swipe down and reopen', (
+      tester,
+    ) async {
+      Map<String, dynamic>? sent;
+      await pumpPresenter(
+        tester,
+        carryForm(),
+        onSubmit: (answer) async => sent = answer,
+      );
+      await fill(tester);
+
+      // Swipe the sheet away: it closes silently, nothing is asked.
+      await tester.fling(
+        find.text('Connect to Sentry'),
+        const Offset(0, 500),
+        2000,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('form-sheet')), findsNothing);
+      expect(find.text('Decline this request?'), findsNothing);
+
+      await tester.tap(find.text('Open form'));
+      await tester.pumpAndSettle();
+      expect(textOf(tester, 'note'), 'ship it friday');
+      expect(
+        tester.getSemantics(find.byKey(const Key('form-option-env-dev'))),
+        isSemantics(isChecked: true),
+      );
+
+      await submit(tester);
+      expect(sent, {'note': 'ship it friday', 'env': 'dev'});
+      expect(find.byKey(const Key('form-sheet')), findsNothing);
+
+      // Sent answers are not kept: the form starts over.
+      await tester.tap(find.text('Open form'));
+      await tester.pumpAndSettle();
+      expect(textOf(tester, 'note'), isEmpty);
+    });
+
+    testWidgets('draft carry: close keeps the answers', (tester) async {
+      await pumpPresenter(tester, carryForm());
+      await fill(tester);
+      expect(find.text('Finish later'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('kit-sheet-close')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('form-sheet')), findsNothing);
+      await tester.tap(find.text('Open form'));
+      await tester.pumpAndSettle();
+      expect(textOf(tester, 'note'), 'ship it friday');
+    });
+
+    testWidgets('dismiss asks in place, cancels, and forgets the answers', (
+      tester,
+    ) async {
+      var cancelled = false;
+      await pumpPresenter(
+        tester,
+        carryForm(),
+        onCancel: () async => cancelled = true,
+      );
+      await fill(tester);
+
+      await tester.tap(find.byKey(const Key('form-cancel')));
+      await tester.pumpAndSettle();
+      expect(find.text('Decline this request?'), findsOneWidget);
+      // One sheet: the question replaced its content (no sheet on a sheet).
+      expect(find.byType(BottomSheet), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('form-dismiss-confirm-button')));
+      await tester.pumpAndSettle();
+      expect(cancelled, isTrue);
+      expect(find.byKey(const Key('form-sheet')), findsNothing);
+
+      await tester.tap(find.text('Open form'));
+      await tester.pumpAndSettle();
+      expect(textOf(tester, 'note'), isEmpty);
     });
   });
 }

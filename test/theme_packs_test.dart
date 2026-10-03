@@ -4,6 +4,8 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_nav.dart';
+import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/theme_packs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,23 +21,22 @@ void main() {
 
   tearDown(() => harvestedDynamicPack.value = null);
 
-  test('the default OpenCode pack preserves identity and semantic colors', () {
+  test('the default pack is Graphite, the visual language palette', () {
     final dark = AppTheme.dark();
-    expect(dark.colorScheme.primary, const Color(0xFF83CDAA));
-    expect(dark.colorScheme.onPrimary, const Color(0xFF052117));
-    expect(dark.colorScheme.surface, const Color(0xFF151A17));
-    expect(dark.colorScheme.onSurface, const Color(0xFFE3E8E4));
-    expect(dark.colorScheme.surfaceContainerLow, const Color(0xFF171C19));
-    expect(dark.colorScheme.error, const Color(0xFFFFB4AB));
-    expect(dark.scaffoldBackgroundColor, const Color(0xFF101310));
-    expect(AppTheme.successOf(dark), const Color(0xFF86D8A5));
+    expect(dark.colorScheme.primary, const Color(0xFF3DDC8A));
+    expect(dark.colorScheme.onPrimary, const Color(0xFF03140B));
+    expect(dark.colorScheme.surface, const Color(0xFF0B0C0E));
+    expect(dark.colorScheme.onSurface, const Color(0xFFF3F3F1));
+    expect(dark.colorScheme.surfaceContainerLow, const Color(0xFF141518));
+    expect(dark.colorScheme.error, const Color(0xFFFF7A7A));
+    expect(dark.scaffoldBackgroundColor, const Color(0xFF0B0C0E));
+    expect(AppTheme.successOf(dark), const Color(0xFF3DDC8A));
 
     final light = AppTheme.light();
-    expect(light.colorScheme.primary, const Color(0xFF176B4B));
-    expect(light.colorScheme.surface, const Color(0xFFFFFFFF));
-    expect(light.colorScheme.surfaceContainerLow, const Color(0xFFF0F5F1));
-    expect(light.scaffoldBackgroundColor, const Color(0xFFF6F9F6));
-    expect(AppTheme.successOf(light), const Color(0xFF1E7A44));
+    expect(light.colorScheme.primary, const Color(0xFF087F43));
+    expect(light.colorScheme.surfaceContainerLow, const Color(0xFFFFFFFF));
+    expect(light.scaffoldBackgroundColor, const Color(0xFFF3F3F1));
+    expect(AppTheme.successOf(light), const Color(0xFF087F43));
   });
 
   test('every static pack has complete, distinct dark and light palettes', () {
@@ -46,10 +47,11 @@ void main() {
       expect(pack.dark.scheme.brightness, Brightness.dark, reason: '$id');
       expect(pack.light.scheme.brightness, Brightness.light, reason: '$id');
       expect(pack.dark.background, isNot(pack.light.background), reason: '$id');
-      // Pack-owned success reaches the ThemeData extension.
+      // The pack's success, held to its floor, reaches the ThemeData
+      // extension.
       expect(
         AppTheme.successOf(AppTheme.dark(pack)),
-        pack.dark.success,
+        pack.dark.themeRoles.success,
         reason: '$id',
       );
     }
@@ -72,27 +74,34 @@ void main() {
       }
     }
 
-    // The generated themes. The four hand-written packs keep their authors'
-    // exact colours (Solarized's famous low contrast included) and have
-    // goldens instead.
+    // Every pack, the four hand-written ones included, reaches the app
+    // through its role set, so the theme the app builds meets the visual
+    // language's floors (LOOK-7, LOOK-8): text1 7:1 on every surface step,
+    // text2 4.5:1, the accent 4.5:1 on the ground and surface1 (links are
+    // text), its on-colour 4.5:1, and danger and success 4.5:1 on the ground.
     for (final id in ThemePackId.values.where(
-      (id) => id != ThemePackId.dynamic && !curatedThemePacks.contains(id),
+      (id) => id != ThemePackId.dynamic,
     )) {
       for (final brightness in Brightness.values) {
-        final palette = themePack(id).palette(brightness);
-        final s = palette.scheme;
+        final pack = themePack(id);
+        final theme = brightness == Brightness.dark
+            ? AppTheme.dark(pack)
+            : AppTheme.light(pack);
+        final s = theme.colorScheme;
         final tag = '${id.name}/${brightness.name}';
-        // Reading text: WCAG AA. On the page and on every surface it sits on.
         for (final surface in [
-          palette.background,
-          s.surface,
+          theme.scaffoldBackgroundColor,
+          s.surfaceContainerLow,
           s.surfaceContainer,
           s.surfaceContainerHigh,
+          s.surfaceContainerHighest,
         ]) {
-          floor('$tag text', s.onSurface, surface, 4.5);
+          floor('$tag text', s.onSurface, surface, 7);
           floor('$tag muted text', s.onSurfaceVariant, surface, 4.5);
         }
         floor('$tag on primary', s.onPrimary, s.primary, 4.5);
+        floor('$tag accent', s.primary, theme.scaffoldBackgroundColor, 4.5);
+        floor('$tag accent on surface1', s.primary, s.surfaceContainerLow, 4.5);
         floor(
           '$tag on primary container',
           s.onPrimaryContainer,
@@ -111,11 +120,13 @@ void main() {
           s.errorContainer,
           4.5,
         );
-        // Things recognised by colour (accent, status): the 3:1 of
-        // non-text contrast.
-        floor('$tag accent', s.primary, palette.background, 3);
-        floor('$tag error', s.error, palette.background, 3);
-        floor('$tag success', palette.success, palette.background, 3);
+        floor('$tag error', s.error, theme.scaffoldBackgroundColor, 4.5);
+        floor(
+          '$tag success',
+          AppTheme.successOf(theme),
+          theme.scaffoldBackgroundColor,
+          4.5,
+        );
       }
     }
     expect(failures, isEmpty, reason: failures.join('\n'));
@@ -162,7 +173,7 @@ void main() {
       ),
     );
     BuildContext context = tester.element(find.text('themed'));
-    expect(Theme.of(context).colorScheme.primary, const Color(0xFF83CDAA));
+    expect(Theme.of(context).colorScheme.primary, const Color(0xFF3DDC8A));
 
     await controller.setThemePack(ThemePackId.gruvbox);
     await tester.pumpAndSettle();
@@ -185,9 +196,12 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         theme: AppTheme.light(),
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: const TextScaler.linear(2)),
+          // Reduced motion: the preview sheet's working mark (KitThemePreview,
+          // 063f4741) holds still, so the tree settles.
+          data: MediaQuery.of(context).copyWith(
+            textScaler: const TextScaler.linear(2),
+            disableAnimations: true,
+          ),
           child: child!,
         ),
         home: AppearanceSettingsScreen(controller: controller),
@@ -222,18 +236,17 @@ void main() {
     await tester.tap(solarized);
     await tester.pumpAndSettle();
     expect(controller.themePack.value, ThemePackId.opencode);
-    await tester.scrollUntilVisible(
-      find.text('Apply'),
-      160,
-      scrollable: find.descendant(
-        of: find.byKey(const Key('appearance-picker')),
-        matching: find.byType(Scrollable),
-      ),
-    );
+    // Apply ends the preview sheet's scrolling body; it is built before
+    // it is on screen, so bring it into view rather than scroll until it
+    // exists.
+    await tester.ensureVisible(find.text('Apply'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(controller.themePack.value, ThemePackId.solarized);
     expect(tester.takeException(), isNull);
+    // Apply offers Undo (063f4741); close its window.
+    KitUndo.commitPending();
   });
 
   testWidgets('a harvested Material You pack becomes selectable', (
@@ -254,6 +267,12 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: AppTheme.light(),
+        // Reduced motion: the preview sheet's working mark
+        // (KitThemePreview, 063f4741) holds still, so the tree settles.
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
         home: AppearanceSettingsScreen(controller: controller),
       ),
     );
@@ -269,19 +288,85 @@ void main() {
       find.text('Material You colors are not available on this device.'),
       findsNothing,
     );
+    // Centre the swatch: the grid's last row can sit under the fold.
+    await Scrollable.ensureVisible(tester.element(dynamicTile), alignment: 0.5);
+    await tester.pumpAndSettle();
     await tester.tap(dynamicTile);
     await tester.pumpAndSettle();
     expect(controller.themePack.value, ThemePackId.opencode);
-    await tester.scrollUntilVisible(
-      find.text('Apply'),
-      160,
-      scrollable: find.descendant(
-        of: find.byKey(const Key('appearance-picker')),
-        matching: find.byType(Scrollable),
-      ),
-    );
+    // Apply ends the preview sheet's scrolling body; it is built before
+    // it is on screen, so bring it into view rather than scroll until it
+    // exists.
+    await tester.ensureVisible(find.text('Apply'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(controller.themePack.value, ThemePackId.dynamic);
+    // Apply offers Undo (063f4741); close its window.
+    KitUndo.commitPending();
+  });
+
+  group('screen-settings-1: appearance', () {
+    Widget page(ConnectionController controller) => MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      theme: AppTheme.light(),
+      home: AppearanceSettingsScreen(controller: controller),
+    );
+
+    testWidgets('light or dark is one tap on the page', (tester) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(page(controller));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Light'));
+      await tester.pumpAndSettle();
+      expect(controller.appearance.value, AppAppearance.light);
+      // No sheet opened on the way.
+      expect(find.byKey(const Key('appearance-picker')), findsNothing);
+
+      await tester.tap(find.text('Dark'));
+      await tester.pumpAndSettle();
+      expect(controller.appearance.value, AppAppearance.dark);
+    });
+
+    testWidgets('the language is a picker row with its value', (tester) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(page(controller));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Language'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('appearance-language')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('appearance-language-ar')));
+      await tester.pumpAndSettle();
+      expect(controller.appLocale.value, const Locale('ar'));
+      // The row shows the value now in force.
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('appearance-language')),
+          matching: find.textContaining('العربية'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('effects preview glass through the kit tab bar', (
+      tester,
+    ) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(page(controller));
+      await tester.pumpAndSettle();
+      final preview = find.byKey(const ValueKey('effects-preview-glass'));
+      await tester.ensureVisible(preview);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: preview, matching: find.byType(KitNavBar)),
+        findsOneWidget,
+      );
+    });
   });
 }

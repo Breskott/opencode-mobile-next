@@ -1,0 +1,6 @@
+frames,avg_fps,dropped,p50_ms,p90_ms,p99_ms,over_17ms_pct,over_34ms_pct
+511,22.896,0,38,58,350,96.1,63.6
+Total frames rendered: 2
+Janky frames: 2 (100.00%)
+Total frames rendered: 2
+Janky frames: 2 (100.00%)

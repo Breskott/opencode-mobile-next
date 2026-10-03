@@ -1,0 +1,7 @@
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'workspace-new-mode'>]: []>
+00:01 +0 -1: New conversation: Solo · Team Team is offered, remembered per server, and with the team off it opens the intro [E]
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'workspace-running'>]: []>
+00:01 +0 -2: New conversation: Solo · Team with the team on: its tasks are in the lists with the team mark, and Team starts a team task [E]
+exit 1

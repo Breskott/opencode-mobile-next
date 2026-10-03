@@ -851,7 +851,7 @@ class ProviderQuotaMonitor extends ChangeNotifier {
     } catch (_) {}
   }
 
-  void removeProfile(String id) {
+  void removeProfile(String id, {bool retainIdentity = false}) {
     _blocked.add(id);
     _epochs[id] = (_epochs[id] ?? 0) + 1;
     if (_readingProfile == id) {
@@ -862,13 +862,23 @@ class ProviderQuotaMonitor extends ChangeNotifier {
       _expiry.remove(_id(id, provider))?.cancel();
       unawaited(_dismiss(id, provider));
     }
-    _credentialSources.remove(id);
-    for (final provider in QuotaProvider.values) {
-      _retiredCredentials.remove(_id(id, provider));
+    // Reversible deletion must retain consent retirement after credential
+    // rotation. Only committed removal discards these safety identities.
+    if (!retainIdentity) {
+      _credentialSources.remove(id);
+      for (final provider in QuotaProvider.values) {
+        _retiredCredentials.remove(_id(id, provider));
+      }
     }
     if (!_disposed) {
       notifyListeners();
     }
+  }
+
+  /// Reopens admission after an aborted removal; old callbacks stay invalid.
+  void cancelDeletion(String id) {
+    if (_disposed || !_blocked.remove(id)) return;
+    _schedule();
   }
 
   Future<void> drain(String id) async {

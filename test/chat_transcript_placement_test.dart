@@ -9,6 +9,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _TranscriptApi extends OpenCodeApi with CompleteMessageHistory {
@@ -66,8 +67,7 @@ Future<ConnectionController> _pump(
       child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
     ),
   );
-  // The composer's activity ring animates forever, so a busy chat never
-  // settles.
+  // Working indicators can animate indefinitely, so use bounded frames.
   if (busy) {
     for (var i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 100));
@@ -81,8 +81,8 @@ Future<ConnectionController> _pump(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('a busy session shows working on the composer, not as a '
-      'transcript row', (tester) async {
+  testWidgets('a busy session writes its status and Stop on the composer '
+      'edge, not under the newest turn', (tester) async {
     final semantics = tester.ensureSemantics();
     await _pump(tester, [
       _message('u1', 'user', [_text('u1-t', 'First question')], created: 1),
@@ -91,20 +91,28 @@ void main() {
       _message('a2', 'assistant', [_text('a2-t', 'Second answer')], created: 4),
     ], busy: true);
 
-    // The transcript is only the messages: the newest turn is the last row
-    // and nothing sits under it.
+    // Nothing is shown twice: the transcript has no live line, the
+    // composer's edge has the one status and its Stop.
     expect(find.byKey(const ValueKey('typing-indicator')), findsNothing);
     expect(find.byKey(const ValueKey('message-a2')), findsOneWidget);
-    final activity = find.byKey(const ValueKey('composer-activity'));
-    expect(activity, findsOneWidget);
-    final lastBubbleBottom = tester
-        .getBottomLeft(find.byKey(const ValueKey('message-a2')))
-        .dy;
+    final stop = find.byKey(const Key('chat-stop-button'));
+    expect(stop, findsOneWidget);
     expect(
-      tester.getTopLeft(activity).dy,
-      greaterThanOrEqualTo(lastBubbleBottom),
+      find.descendant(
+        of: find.byKey(const ValueKey('message-a2')),
+        matching: stop,
+      ),
+      findsNothing,
     );
-    expect(find.bySemanticsLabel('Assistant is working'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('chat-composer-surface')),
+        matching: stop,
+      ),
+      findsOneWidget,
+    );
+    // A screen reader reaches Stop as its own button.
+    expect(find.bySemanticsLabel(RegExp('Stop reply')), findsOneWidget);
     semantics.dispose();
   });
 
@@ -115,8 +123,8 @@ void main() {
       _message('a1', 'assistant', [_text('a1-t', 'Answer')], created: 2),
     ]);
     expect(find.byKey(const ValueKey('typing-indicator')), findsNothing);
-    expect(find.byKey(const ValueKey('composer-activity')), findsNothing);
-    expect(find.bySemanticsLabel('Assistant is working'), findsNothing);
+    expect(find.byKey(const Key('chat-stop-button')), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('Stop reply')), findsNothing);
     semantics.dispose();
   });
 
@@ -221,70 +229,187 @@ void main() {
       ], created: 2),
     ]);
 
-    // One line for the step: the agent's own name for it, then what it did.
+    // The run folds under the turn's one work line, which says what was
+    // done; opened, the agent's own name for the step titles its first call
+    // instead of a thinking block of its own.
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    expect(find.text('Read 1 file · edited 1 file'), findsOneWidget);
+    expect(find.text('Tools'), findsNothing);
+    await tester.tap(find.byKey(const Key('work-group-header')));
+    await tester.pumpAndSettle();
     expect(find.text('Patching home shell'), findsOneWidget);
     expect(find.byKey(const Key('assistant-reasoning-block')), findsNothing);
-    expect(find.byKey(const Key('tool-call-group')), findsOneWidget);
-    expect(find.text('Tools'), findsNothing);
   });
 
-  testWidgets('a prompt is a ruled line, not a bubble', (tester) async {
+  testWidgets('a prompt is an end-aligned bubble; the reply has no frame', (
+    tester,
+  ) async {
     await _pump(tester, [
       _message('u1', 'user', [_text('u1-t', 'Hello there')], created: 1),
       _message('a1', 'assistant', [_text('a1-t', 'Hi.')], created: 2),
     ]);
-    final prompt = tester.widget<Container>(
-      find.byKey(const ValueKey('user-prompt-u1')),
-    );
-    final decoration = prompt.decoration! as BoxDecoration;
-    expect(decoration.color, isNull);
-    expect(decoration.borderRadius, isNull);
-    expect((decoration.border! as BorderDirectional).start.width, 3);
-    // Prompt and reply share a left edge.
+    // VL §5 / Appendix A #47: the person's words sit in a bubble at the end
+    // edge; the agent's prose starts at the start edge.
+    expect(find.byKey(const ValueKey('user-prompt-u1')), findsOneWidget);
     expect(
       tester.getTopLeft(find.text('Hello there')).dx,
-      lessThan(tester.getTopLeft(find.text('Hi.')).dx + 16),
+      greaterThan(tester.getTopLeft(find.text('Hi.')).dx + 16),
+    );
+    expect(
+      tester.getTopRight(find.byKey(const ValueKey('user-prompt-u1'))).dx,
+      equals(tester.getTopRight(find.text('Hi.')).dx),
     );
   });
 
-  testWidgets('what the agent did between two replies folds under one line', (
+  testWidgets(
+    'a finished turn folds its work and passing words under one line',
+    (tester) async {
+      await _pump(tester, [
+        _message('u1', 'user', [_text('u1-t', 'Fix the balance')], created: 1),
+        _message('a1', 'assistant', [
+          _text('a1-t', 'Looking into it.'),
+          tool('t1', 'bash'),
+        ], created: 2),
+        // Later steps of the same stretch of work, stored as separate messages.
+        _message('a2', 'assistant', [
+          Part(id: 'r2', type: 'reasoning', text: '**Checking persistence**'),
+          tool('t2', 'bash'),
+        ], created: 3),
+        _message('a3', 'assistant', [
+          Part(id: 'r3', type: 'reasoning', text: '**Preparing the patch**'),
+          tool('t3', 'read'),
+          tool('t4', 'read'),
+        ], created: 4),
+        _message('a4', 'assistant', [_text('a4-t', 'Fixed.')], created: 5),
+      ]);
+
+      // A finished turn is the prompt, one line of work and the answer. What
+      // the agent said on the way ("Looking into it.") is folded with the work.
+      expect(find.text('Looking into it.'), findsNothing);
+      expect(find.text('Fixed.'), findsOneWidget);
+      expect(find.byKey(const Key('work-group')), findsOneWidget);
+      expect(find.text('3 steps'), findsNothing);
+      expect(find.text('Checking persistence'), findsNothing);
+
+      // Discoverable: one tap shows every step, in order, by the agent's name.
+      await tester.tap(find.byKey(const Key('work-group-header')));
+      await tester.pumpAndSettle();
+      expect(find.text('Looking into it.'), findsOneWidget);
+      expect(find.text('Checking persistence'), findsOneWidget);
+      expect(find.text('Preparing the patch'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Looking into it.')).dy,
+        lessThan(tester.getTopLeft(find.text('Checking persistence')).dy),
+      );
+      expect(
+        tester.getTopLeft(find.text('Checking persistence')).dy,
+        lessThan(tester.getTopLeft(find.text('Preparing the patch')).dy),
+      );
+    },
+  );
+
+  testWidgets('a finished turn keeps the agent\'s explanation in view; only '
+      'the work folds, under one line (gap 17)', (tester) async {
+    const explanation =
+        'The flakiness comes from CheckoutBloc: it reads the balance before '
+        'the save completes.\n\nSo the test sometimes sees the old value.';
+    await _pump(tester, [
+      _message('u1', 'user', [
+        _text('u1-t', 'Why is the test flaky?'),
+      ], created: 1),
+      _message('a1', 'assistant', [
+        _text('a1-t', 'Looking into it.'),
+        tool('t1', 'read'),
+        tool('t2', 'read'),
+      ], created: 2),
+      _message('a2', 'assistant', [
+        _text('a2-t', explanation),
+        tool('t3', 'edit'),
+      ], created: 3),
+      _message('a3', 'assistant', [_text('a3-t', 'Fixed.')], created: 4),
+    ]);
+
+    // The explanation and the closing words stay; the passing words fold.
+    expect(
+      find.textContaining('The flakiness comes from CheckoutBloc'),
+      findsOneWidget,
+    );
+    expect(find.text('Fixed.'), findsOneWidget);
+    expect(find.text('Looking into it.'), findsNothing);
+    // One work line for the whole turn, above the answer it led to.
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    final work = tester.getTopLeft(find.byKey(const Key('work-group'))).dy;
+    expect(
+      work,
+      lessThan(
+        tester
+            .getTopLeft(
+              find.textContaining('The flakiness comes from CheckoutBloc'),
+            )
+            .dy,
+      ),
+    );
+  });
+
+  testWidgets('a notice filed mid-turn folds into the work, not between it', (
     tester,
   ) async {
     await _pump(tester, [
-      _message('u1', 'user', [_text('u1-t', 'Fix the balance')], created: 1),
-      _message('a1', 'assistant', [
-        _text('a1-t', 'Looking into it.'),
-        tool('t1', 'bash'),
-      ], created: 2),
-      // Later steps of the same stretch of work, stored as separate messages.
-      _message('a2', 'assistant', [
-        Part(id: 'r2', type: 'reasoning', text: '**Checking persistence**'),
-        tool('t2', 'bash'),
+      _message('u1', 'user', [_text('u1-t', 'Ship it')], created: 1),
+      _message('a1', 'assistant', [tool('t1', 'bash')], created: 2),
+      _message('n1', 'user', [
+        Part(
+          id: 'n1-p',
+          messageID: 'n1',
+          type: 'v2:notice',
+          toolName: 'synthetic',
+          filename: 'python3 release_discovery.py',
+          text: 'done',
+        ),
       ], created: 3),
-      _message('a3', 'assistant', [
-        Part(id: 'r3', type: 'reasoning', text: '**Preparing the patch**'),
-        tool('t3', 'read'),
-        tool('t4', 'read'),
-      ], created: 4),
-      _message('a4', 'assistant', [_text('a4-t', 'Fixed.')], created: 5),
+      _message('a2', 'assistant', [tool('t2', 'read')], created: 4),
+      _message('a3', 'assistant', [_text('a3-t', 'Published.')], created: 5),
     ]);
 
-    // Said: visible. Done: one line, however many steps it took.
-    expect(find.text('Looking into it.'), findsOneWidget);
-    expect(find.text('Fixed.'), findsOneWidget);
+    // One line for the whole turn's work, the notice inside it.
     expect(find.byKey(const Key('work-group')), findsOneWidget);
-    expect(find.text('3 steps'), findsOneWidget);
-    expect(find.text('Checking persistence'), findsNothing);
-
-    // Discoverable: one tap shows every step, in order, by the agent's name.
+    expect(find.text('python3 release_discovery.py'), findsNothing);
+    expect(find.text('Published.'), findsOneWidget);
     await tester.tap(find.byKey(const Key('work-group-header')));
     await tester.pumpAndSettle();
-    expect(find.text('Checking persistence'), findsOneWidget);
-    expect(find.text('Preparing the patch'), findsOneWidget);
-    expect(
-      tester.getTopLeft(find.text('Checking persistence')).dy,
-      lessThan(tester.getTopLeft(find.text('Preparing the patch')).dy),
-    );
+    expect(find.text('python3 release_discovery.py'), findsOneWidget);
+  });
+
+  testWidgets('a background command finishing at the end of a turn is '
+      'one line inside its work, not markup', (tester) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Run the tests')], created: 1),
+      _message('a1', 'assistant', [tool('t1', 'bash')], created: 2),
+      _message('a2', 'assistant', [tool('t2', 'read')], created: 3),
+      _message('n1', 'user', [
+        Part(
+          id: 'n1-p',
+          messageID: 'n1',
+          type: 'v2:notice',
+          toolName: 'synthetic',
+          filename: '/tmp/opencode/flutter/bin/flutter test',
+          text:
+              '<shell id="sh_1" state="completed" '
+              'command="/tmp/opencode/flutter/bin/flutter test">\n'
+              'All tests passed!\n\nCommand exited with code 0.\n</shell>',
+        ),
+      ], created: 4),
+    ]);
+
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    expect(find.byKey(const Key('background-shell-result')), findsNothing);
+    await tester.tap(find.byKey(const Key('work-group-header')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('background-shell-result')), findsOneWidget);
+    expect(find.text('flutter test'), findsOneWidget);
+    expect(find.textContaining('<shell'), findsNothing);
+    // The output waits behind a tap of its own.
+    expect(find.byKey(const Key('background-shell-output')), findsNothing);
   });
 
   testWidgets('a thought titles its step and explains itself inside it', (
@@ -314,10 +439,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('step-note')), findsOneWidget);
     expect(find.textContaining('The bundle is stale'), findsOneWidget);
-    // It reads from the leading edge, under the step's title; not centred.
+    // One transcript gutter: the opened note sits flush with its row's
+    // leading edge, with no indent of its own.
+    final row = find.ancestor(
+      of: find.text('Rebuilding latest source'),
+      matching: find.byType(KitToolRow),
+    );
     expect(
       tester.getTopLeft(find.textContaining('The bundle is stale')).dx,
-      lessThan(60),
+      equals(tester.getTopLeft(row).dx),
     );
   });
 
@@ -529,7 +659,9 @@ void main() {
     expect(title, findsOneWidget);
     final titleRight = tester.getRect(title).right;
     // Everything else on that row starts after the title ends.
-    final row = find.ancestor(of: title, matching: find.byType(InkWell)).first;
+    final row = find
+        .ancestor(of: title, matching: find.byType(KitTappable))
+        .first;
     for (final text
         in find.descendant(of: row, matching: find.byType(Text)).evaluate()) {
       if (identical(text.widget, tester.widget(title))) continue;

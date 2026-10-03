@@ -24,6 +24,21 @@ table says so with a dash rather than inventing an owner.
 
 ## Bundled components
 
+### Phone project engine
+
+The ARM64 phone engine, confinement launcher and isolated boundary probe are
+built from `engine/phone/` and its committed `Cargo.lock`. The packaged Android
+asset `aiteam-engine-manifest.json` records executable SHA-256 hashes and an exact
+Rust source digest; native launch verifies the executable hashes. Rebuild with
+`engine/phone/tool/build-android.sh --stage-android` using the pinned NDK.
+
+The complete locked Android normal-dependency notices, including Rust standard
+library attribution, libgit2's GPL v2 text with linking exception and vendored
+notices, and SQLite's public-domain dedication, are bundled in
+[`LICENSES/Rust-Phone-Engine.txt`](LICENSES/Rust-Phone-Engine.txt). The generator
+reads the exact local Cargo package sources; these are separate from the Dart
+package inventory below. Execution is gated independently of packaging.
+
 ### Phosphor icon artwork
 
 The regular, duotone and fill icon fonts are copied unchanged from the official
@@ -119,7 +134,7 @@ timelines.
 ### mobile_scanner, and the Android libraries it pulls in
 
 - Component: `mobile_scanner` Flutter package
-- Version: 7.4.0
+- Version: 7.4.2
 - Project: https://github.com/juliansteenbakker/mobile_scanner
 - Copyright: 2022 Julian Steenbakker
 - License: BSD 3-Clause; see `LICENSES/BSD-3-Clause.txt`
@@ -144,29 +159,38 @@ ML Kit is additionally covered by Google's ML Kit terms of service. None of
 these are used anywhere else in the app: the camera is opened only by the
 pairing scanner, only while that screen is on top, and no frame is stored.
 
-### JetBrains Mono
+### Termux terminal-emulator (the local terminal's PTY)
 
-- Component: JetBrains Mono font files bundled under `assets/fonts/`
-- Version: distributed TTF builds from the upstream repository
-- Project: https://github.com/JetBrains/JetBrainsMono
-- Copyright: 2020 The JetBrains Mono Project Authors
-- License: SIL Open Font License 1.1; see
-  `LICENSES/OFL-1.1-JetBrains-Mono.txt`
+- Component: `terminal-emulator` library of Termux, used unmodified as the
+  published artifact `com.github.termux.termux-app:terminal-emulator`
+- Version: v0.118.3 (JitPack build of that release tag)
+- Project: https://github.com/termux/termux-app/tree/v0.118.3/terminal-emulator
+- Copyright: Fredrik Fornwall and the Termux contributors; derived from Jack
+  Palevich's Android Terminal Emulator
+- License: Apache License 2.0; see `LICENSES/Apache-2.0.txt`
 
-These font files render code, terminal output, paths, and other monospace
-content throughout the application.
+The terminal on "This phone" starts its shell on a pseudoterminal through
+this library's native `libtermux.so` (`termux.c`), called from
+`android/app/src/main/java/com/termux/terminal/PtyAccess.java`. The
+termux-app repository as a whole is GPLv3; its `LICENSE.md` names
+`terminal-emulator` and `terminal-view` as the Apache 2.0 exceptions. No
+other Termux code (the app, its extra-keys view, `termux-shared`) is used:
+the key bar and the screen are this app's own. The upstream library ships
+no NOTICE file of its own. See also `NOTICE`.
 
-### Space Grotesk
+### Geist and Geist Mono
 
-- Component: Space Grotesk font files bundled under `assets/fonts/`
-- Version: static TTF instances as served by Google Fonts
-- Project: https://github.com/floriankarsten/space-grotesk
-- Copyright: 2020 The Space Grotesk Project Authors
-- License: SIL Open Font License 1.1; see
-  `LICENSES/OFL-1.1-Space-Grotesk.txt`
+- Component: Geist and Geist Mono variable font files bundled under
+  `assets/fonts/geist/`
+- Version: v1.7.2, the `variable/` TTFs of the official release archive
+  https://github.com/vercel/geist-font/releases/download/v1.7.2/geist-font-v1.7.2.zip
+- Project: https://github.com/vercel/geist-font
+- Copyright: 2024 The Geist Project Authors
+- License: SIL Open Font License 1.1; see `LICENSES/OFL-1.1-Geist.txt`
+  (also `assets/fonts/geist/OFL.txt`)
 
-These font files render headlines and titles: the one display face the
-product uses beyond the platform default.
+Geist renders every word of the interface; Geist Mono renders code,
+terminal output, commands, paths and other monospace content.
 
 ### Flutter SDK
 
@@ -236,7 +260,7 @@ lives in `packages/opencode_sdk/`, and is covered by this project's
 | `cupertino_icons` | 1.0.9 | MIT | Copyright (c) 2016 Vladimir Kharlampidi | runtime |
 | `dbus` | 0.7.15 | MPL-2.0 | — | runtime |
 | `desktop_drop` | 0.8.4 | Apache-2.0 | copyright notice that is included in or attached to the work | runtime |
-| `dio` | 5.11.0 | MIT | Copyright (c) 2018 Wen Du (wendux) | runtime |
+| `dio` | 5.11.1 | MIT | Copyright (c) 2018 Wen Du (wendux) | runtime |
 | `dio_web_adapter` | 2.2.1 | MIT | Copyright (c) 2018 Wen Du (wendux) | runtime |
 | `dynamic_color` | 1.9.0 | Apache-2.0 | — | runtime |
 | `equatable` | 2.0.7 | MIT | Copyright (c) 2024 Felix Angelov | runtime |
@@ -257,10 +281,10 @@ lives in `packages/opencode_sdk/`, and is covered by this project's
 | `flutter_lints` | 6.0.0 | BSD-3-Clause | Copyright 2013 The Flutter Authors. All rights reserved | test-only |
 | `flutter_plugin_android_lifecycle` | 2.0.35 | BSD-3-Clause | Copyright 2013 The Flutter Authors | runtime |
 | `flutter_riverpod` | 3.4.3 | MIT | Copyright (c) 2020 Remi Rousselet | runtime |
-| `flutter_secure_storage` | 11.0.0 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
+| `flutter_secure_storage` | 11.2.0 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
 | `flutter_secure_storage_darwin` | 0.4.0 | BSD-3-Clause | Copyright 2025 Julian Steenbakker | runtime |
 | `flutter_secure_storage_linux` | 3.0.2 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
-| `flutter_secure_storage_platform_interface` | 2.0.3 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
+| `flutter_secure_storage_platform_interface` | 2.1.1 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
 | `flutter_secure_storage_web` | 2.1.1 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
 | `flutter_secure_storage_windows` | 4.2.2 | BSD-3-Clause | Copyright 2017 German Saprykin | runtime |
 | `flutter_svg` | 2.3.0 | MIT | Copyright (c) 2018 Dan Field | runtime |
@@ -292,7 +316,7 @@ lives in `packages/opencode_sdk/`, and is covered by this project's
 | `material_color_utilities` | 0.13.0 | Apache-2.0 | — | runtime |
 | `meta` | 1.19.0 | BSD-3-Clause | Copyright 2016, the Dart project authors | runtime |
 | `mime` | 2.0.0 | BSD-3-Clause | Copyright 2015, the Dart project authors | runtime |
-| `mobile_scanner` | 7.4.0 | BSD-3-Clause | Copyright (c) 2022, Julian Steenbakker | runtime |
+| `mobile_scanner` | 7.4.2 | BSD-3-Clause | Copyright (c) 2022, Julian Steenbakker | runtime |
 | `objective_c` | 9.6.0 | BSD-3-Clause | Copyright 2024, the Dart project authors | runtime |
 | `package_config` | 2.2.0 | BSD-3-Clause | Copyright 2019, the Dart project authors | runtime |
 | `package_info_plus` | 10.2.1 | BSD-3-Clause | Copyright 2017 The Chromium Authors. All rights reserved | runtime |

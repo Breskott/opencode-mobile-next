@@ -1,6 +1,8 @@
-// TEAM-106: Settings › Plugins — the AI Team row per state, the manual-add
-// form and its verdicts (tailnet rule, no network), the discovery card and
-// its memory, and the turn-off sheet's copy and effects.
+// TEAM-106: the AI Team page — the manual-add form and its verdicts (tailnet
+// rule, no network), a team found on the server (the intro's Turn on) and the
+// dismissal memory, and the turn-off sheet's copy and effects. The page is
+// pumped directly: Settings opens it from its own AI Team row (the Plugins
+// page and its row are gone).
 
 import 'dart:async';
 import 'dart:io';
@@ -16,10 +18,16 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart'
+    show teamRowSubtitle;
+import 'package:opencode_mobile/ui/screens/team/team_page.dart';
+import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_discovery_card.dart';
 import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'team_open_settings.dart';
 
 const _profileId = 'workstation';
 
@@ -213,8 +221,8 @@ void main() {
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: PluginsSettingsScreen(
-            controller: controller,
+          home: TeamPage(
+            connection: controller,
             probe: probe.call,
             now: () => DateTime.utc(2026, 9, 11, 12),
           ),
@@ -227,10 +235,6 @@ void main() {
     }
   }
 
-  String subtitle(WidgetTester tester) => tester
-      .widget<Text>(find.byKey(const ValueKey('plugins-ai-team-subtitle')))
-      .data!;
-
   Set<String> dataKeys() => {
     for (final key in prefs.getKeys())
       if (key.startsWith(OrchestrationStore.prefix(_profileId)) &&
@@ -238,25 +242,23 @@ void main() {
         key,
   };
 
-  group('row subtitles', () {
-    testWidgets('off while discovery runs, then "Off · Add manually"', (
-      tester,
-    ) async {
-      probe.gate = Completer<void>();
-      final controller = await boot(profile());
-      await pump(tester, controller);
-      expect(subtitle(tester), l10n.teamUiRowOff);
-      probe.gate!.complete();
-      await settle(tester);
-      expect(subtitle(tester), l10n.teamUiRowOffAddManually);
-      // The front port first (controls), then the bare supervisor.
-      expect(probe.calls, [
-        ('http://100.100.1.2:8373', null),
-        ('http://100.100.1.2:8372', null),
-      ]);
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsNothing);
-    });
+  /// Picks [item] from the team page's top bar menu.
+  Future<void> menu(WidgetTester tester, String item) async {
+    await openTeamSettingsFromHome(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ValueKey(item)));
+    await tester.pumpAndSettle();
+  }
 
+  /// The team page's speed line (how it runs where it runs).
+  String speed(WidgetTester tester) {
+    final text = tester.widget<Text>(
+      find.byKey(const ValueKey('team-home-host-speed')),
+    );
+    return text.data ?? text.textSpan!.toPlainText();
+  }
+
+  group('team discovery and row subtitles', () {
     testWidgets('discovery prefers a front on 8373 (TEAM-202)', (tester) async {
       probe.verdicts['http://100.100.1.2:8373'] = ProbeFound(
         host: const OrchestrationHostIdentity(
@@ -279,8 +281,7 @@ void main() {
       await settle(tester);
       // Found on the front: the supervisor port is never asked.
       expect(probe.calls, [('http://100.100.1.2:8373', null)]);
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('team-discovery-turn-on')));
+      await tester.tap(find.byKey(const ValueKey('team-intro-turn-on')));
       await settle(tester);
       final config = controller.profile!.orchestration;
       expect(config?.url, 'http://100.100.1.2:8373');
@@ -296,46 +297,6 @@ void main() {
       await pump(tester, controller);
       await settle(tester);
       expect(probe.calls, isEmpty);
-      expect(subtitle(tester), l10n.teamUiRowOffAddManually);
-    });
-
-    testWidgets('found on the server host', (tester) async {
-      probe.verdicts['http://100.100.1.2:8372'] = _found();
-      final controller = await boot(profile());
-      await pump(tester, controller);
-      await settle(tester);
-      expect(subtitle(tester), l10n.teamUiRowFound('Workstation', '1.4.1'));
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsOneWidget);
-    });
-
-    testWidgets('on and healthy with a front', (tester) async {
-      final controller = await boot(profile(config: fixtureConfig()));
-      await pump(tester, controller);
-      await settle(tester);
-      expect(controller.orchestration?.phase, OrchestrationPhase.ready);
-      // The fixture answers controls, so the phone is not read-only.
-      expect(subtitle(tester), l10n.teamUiRowOn('Workstation'));
-      expect(probe.calls, isEmpty);
-    });
-
-    testWidgets('not available with the reason', (tester) async {
-      // Plain http to a public host is refused before any request: no
-      // network in this test.
-      final controller = await boot(
-        profile(
-          config: const OrchestrationConfig(
-            provider: OrchestrationProvider.gascity,
-            url: 'http://public.example:8372',
-          ),
-        ),
-      );
-      await pump(tester, controller);
-      await settle(tester);
-      expect(controller.orchestration?.phase, OrchestrationPhase.failed);
-      expect(
-        subtitle(tester),
-        l10n.teamUiRowNotAvailableReason(l10n.teamUiReasonPlainHttp),
-      );
     });
 
     test('read-only and unreachable states', () async {
@@ -397,10 +358,10 @@ void main() {
   });
 
   group('manual add', () {
+    // The row opens the team page, off: its address action is the form.
     Future<void> openForm(WidgetTester tester) async {
-      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('team-sheet-add-manually')));
+      expect(find.byType(TeamIntroScreen), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('team-intro-address')));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('team-host-form')), findsOneWidget);
     }
@@ -428,8 +389,9 @@ void main() {
       final controller = await boot(profile());
       await pump(tester, controller);
       await settle(tester);
-      probe.calls.clear();
       await openForm(tester);
+      // What the page's discovery asked is not the form's.
+      probe.calls.clear();
       await submit(tester, 'http://public.example:8372');
       expect(verdict(tester), l10n.teamUiTailnetRequired);
       expect(probe.calls, isEmpty);
@@ -465,6 +427,9 @@ void main() {
       expect(stored.profiles.single.orchestration, config);
       expect(controller.orchestration?.config, config);
       expect(find.byKey(const ValueKey('team-host-form')), findsNothing);
+      // The same page is now the team's.
+      expect(find.byType(TeamIntroScreen), findsNothing);
+      expect(find.byType(TeamHomeScreen), findsOneWidget);
     });
 
     testWidgets('probes a loopback address', (tester) async {
@@ -529,101 +494,72 @@ void main() {
       }
     });
 
-    // TEAM-206: the kind of computer, chosen for the disclaimer only.
+    // TEAM-206: the kind of computer, kept for the disclaimer only. Since
+    // 19640c8b (shared-team-1 map fix) the form no longer asks for it: a
+    // new host is a Desktop computer, a saved kind is carried through
+    // Change address, and a host that reports a phone stays a phone.
     group('host kind', () {
-      Finder chip(OrchestrationHostKind kind) =>
-          find.byKey(ValueKey('team-host-kind-${kind.name}'));
+      void expectNoKindQuestion() {
+        expect(find.text(l10n.teamUiHostKindLabel), findsNothing);
+        expect(find.text(l10n.teamUiHostKindHint), findsNothing);
+        for (final kind in OrchestrationHostKind.values) {
+          expect(
+            find.byKey(ValueKey('team-host-kind-${kind.name}')),
+            findsNothing,
+          );
+        }
+      }
 
-      bool selected(WidgetTester tester, OrchestrationHostKind kind) =>
-          tester.widget<ChoiceChip>(chip(kind)).selected;
-
-      testWidgets('offers three kinds with Desktop computer preselected', (
+      testWidgets('the form asks no kind; a new host is a Desktop computer', (
         tester,
       ) async {
+        probe.verdicts['http://100.100.1.2:8372'] = _found();
         final controller = await boot(
           profile(baseUrl: 'https://server.example:4096'),
         );
         await pump(tester, controller);
         await settle(tester);
         await openForm(tester);
-        expect(find.text(l10n.teamUiHostKindLabel), findsOneWidget);
-        expect(find.text(l10n.teamUiHostKindDesktop), findsOneWidget);
-        expect(find.text(l10n.teamUiHostKindLaptop), findsOneWidget);
-        expect(find.text(l10n.teamUiHostKindWsl), findsOneWidget);
-        expect(find.text(l10n.teamUiHostKindHint), findsOneWidget);
-        expect(chip(OrchestrationHostKind.phone), findsNothing);
-        expect(selected(tester, OrchestrationHostKind.pc), isTrue);
-        expect(selected(tester, OrchestrationHostKind.laptop), isFalse);
-        expect(selected(tester, OrchestrationHostKind.wsl), isFalse);
+        expectNoKindQuestion();
+        await submit(tester, 'http://100.100.1.2:8372');
+        final config = controller.profile!.orchestration!;
+        expect(config.hostKind, OrchestrationHostKind.pc);
+        expect(config.hostMode, OrchestrationHostMode.computer);
       });
 
       for (final kind in teamHostKindChoices) {
-        testWidgets('${kind.name} persists into the config', (tester) async {
-          probe.verdicts['http://100.100.1.2:8372'] = _found();
+        testWidgets('a saved ${kind.name} persists through Change address', (
+          tester,
+        ) async {
+          probe.verdicts['http://100.100.1.3:8372'] = _found();
           final controller = await boot(
-            profile(baseUrl: 'https://server.example:4096'),
+            profile(
+              config: OrchestrationConfig(
+                provider: OrchestrationProvider.gascity,
+                url: 'http://100.100.1.2:8372',
+                city: 'bright-lights',
+                hostKind: kind,
+              ),
+            ),
           );
           await pump(tester, controller);
           await settle(tester);
-          await openForm(tester);
-          await tester.tap(chip(kind));
-          await tester.pump();
-          expect(selected(tester, kind), isTrue);
-          await submit(tester, 'http://100.100.1.2:8372');
+          // The team page's menu: Change address.
+          await menu(tester, 'team-home-change-address');
+          expect(find.byKey(const ValueKey('team-host-form')), findsOneWidget);
+          expectNoKindQuestion();
+          await submit(tester, 'http://100.100.1.3:8372');
           final config = controller.profile!.orchestration!;
+          expect(config.url, 'http://100.100.1.3:8372');
           expect(config.hostKind, kind);
           expect(config.hostMode, OrchestrationHostMode.computer);
           final stored = ProfileStore(prefs: prefs, secure: secure);
           await stored.load();
           expect(stored.profiles.single.orchestration!.hostKind, kind);
-          // The sheet now carries this kind's disclaimer and, for a laptop
-          // or WSL, names the kind on the Host row.
-          await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-          await tester.pumpAndSettle();
-          expect(
-            tester
-                .widget<Text>(
-                  find.byKey(const ValueKey('team-sheet-disclaimer')),
-                )
-                .data,
-            teamHostDisclaimer(l10n, kind),
-          );
-          expect(
-            find.text(switch (kind) {
-              OrchestrationHostKind.pc => l10n.teamUiHostModeComputer,
-              _ => teamHostKindLabel(l10n, kind),
-            }),
-            findsOneWidget,
-          );
+          // The page is the team's now, at the saved address.
+          expect(find.byType(TeamHomeScreen), findsOneWidget);
         });
       }
-
-      testWidgets('Change reopens the form with the saved kind', (
-        tester,
-      ) async {
-        probe.verdicts['http://100.100.1.2:8372'] = _found();
-        final controller = await boot(
-          profile(
-            config: const OrchestrationConfig(
-              provider: OrchestrationProvider.gascity,
-              url: 'http://100.100.1.2:8372',
-              city: 'bright-lights',
-              hostKind: OrchestrationHostKind.wsl,
-            ),
-          ),
-        );
-        await pump(tester, controller);
-        await settle(tester);
-        await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-        await tester.pumpAndSettle();
-        await tester.ensureVisible(
-          find.byKey(const ValueKey('team-sheet-add-manually')),
-        );
-        await tester.tap(find.byKey(const ValueKey('team-sheet-add-manually')));
-        await tester.pumpAndSettle();
-        expect(selected(tester, OrchestrationHostKind.wsl), isTrue);
-        expect(selected(tester, OrchestrationHostKind.pc), isFalse);
-      });
 
       testWidgets('a host that reports a phone keeps the phone kind', (
         tester,
@@ -637,8 +573,6 @@ void main() {
         await pump(tester, controller);
         await settle(tester);
         await openForm(tester);
-        await tester.tap(chip(OrchestrationHostKind.laptop));
-        await tester.pump();
         await submit(tester, 'http://100.100.1.2:8372');
         final config = controller.profile!.orchestration!;
         expect(config.hostMode, OrchestrationHostMode.phone);
@@ -647,7 +581,7 @@ void main() {
     });
   });
 
-  group('disclaimer per host kind in the sheet', () {
+  group('how it runs, per host kind, on the team page', () {
     for (final kind in OrchestrationHostKind.values) {
       testWidgets('${kind.name} shows its line', (tester) async {
         final controller = await boot(
@@ -658,11 +592,9 @@ void main() {
         // The fixture reports the config's own mode, so the chosen kind
         // stands (a phone config is a phone gateway).
         expect(controller.orchestration?.phase, OrchestrationPhase.ready);
-        await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
+        await openTeamSettingsFromHome(tester);
         await tester.pumpAndSettle();
-        final line = find.byKey(const ValueKey('team-sheet-disclaimer'));
-        expect(line, findsOneWidget);
-        expect(tester.widget<Text>(line).data, teamHostDisclaimer(l10n, kind));
+        expect(speed(tester), teamHostDisclaimer(l10n, kind));
         for (final other in OrchestrationHostKind.values) {
           if (other == kind) continue;
           expect(find.text(teamHostDisclaimer(l10n, other)), findsNothing);
@@ -670,85 +602,29 @@ void main() {
       });
     }
 
-    testWidgets('a found-but-off host shows the computer default', (
-      tester,
-    ) async {
+    testWidgets('a found-but-off host: the page offers Turn on, and turning '
+        'on makes it the team\'s page', (tester) async {
       probe.verdicts['http://100.100.1.2:8372'] = _found();
       final controller = await boot(profile());
       await pump(tester, controller);
       await settle(tester);
-      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-      await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('team-sheet-disclaimer')))
-            .data,
-        l10n.teamUiDisclaimerComputer,
-      );
-    });
-  });
-
-  group('discovery card', () {
-    testWidgets('appears once and stays dismissed', (tester) async {
-      probe.verdicts['http://100.100.1.2:8372'] = _found();
-      final controller = await boot(profile());
-      await pump(tester, controller);
+      await tester.tap(find.byKey(const ValueKey('team-intro-turn-on')));
       await settle(tester);
-      final card = find.byKey(const ValueKey('team-discovery-card'));
-      expect(card, findsOneWidget);
-      expect(
-        find.text(l10n.teamUiDiscoveryTitle('Workstation')),
-        findsOneWidget,
-      );
-      await tester.tap(find.byKey(const ValueKey('team-discovery-not-now')));
-      await settle(tester);
-      expect(card, findsNothing);
-      expect(
-        prefs.getString(OrchestrationStore.discoveryDismissedKey(_profileId)),
-        isNotNull,
-      );
-      expect(subtitle(tester), l10n.teamUiRowOffAddManually);
-
-      // A fresh screen remembers the dismissal and does not probe again.
-      probe.calls.clear();
-      await tester.pumpWidget(const SizedBox.shrink());
-      await pump(tester, controller);
-      await settle(tester);
-      expect(card, findsNothing);
-      expect(probe.calls, isEmpty);
-      // The dismissal lives under the profile's sweep prefix.
-      expect(
-        OrchestrationStore.discoveryDismissedKey(_profileId),
-        startsWith(OrchestrationStore.prefix(_profileId)),
-      );
-    });
-
-    testWidgets('turn on saves the found host', (tester) async {
-      probe.verdicts['http://100.100.1.2:8372'] = _found();
-      final controller = await boot(profile());
-      await pump(tester, controller);
-      await settle(tester);
-      await tester.tap(find.byKey(const ValueKey('team-discovery-turn-on')));
-      await settle(tester);
-      final config = controller.profile!.orchestration;
-      expect(config?.url, 'http://100.100.1.2:8372');
-      expect(config?.city, 'bright-lights');
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsNothing);
-      expect(controller.orchestration, isNotNull);
-    });
-
-    testWidgets('absent while the plugin is on', (tester) async {
-      probe.verdicts['http://100.100.1.2:8372'] = _found();
-      final controller = await boot(profile(config: fixtureConfig()));
-      await pump(tester, controller);
-      await settle(tester);
-      expect(find.byKey(const ValueKey('team-discovery-card')), findsNothing);
-      expect(probe.calls, isEmpty);
+      expect(controller.profile!.orchestration?.url, 'http://100.100.1.2:8372');
+      expect(find.byType(TeamHomeScreen), findsOneWidget);
     });
   });
 
   group('turn off', () {
+    // A phone window, as the team page is used most.
+    void phone(WidgetTester tester) {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
+
     testWidgets('sheet copy and effects', (tester) async {
+      phone(tester);
       final p = profile(config: fixtureConfig());
       final controller = await boot(p);
       await pump(tester, controller);
@@ -757,16 +633,8 @@ void main() {
       expect(sibling.phase, OrchestrationPhase.ready);
       expect(dataKeys(), isNotEmpty);
 
-      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('team-plugin-sheet')), findsOneWidget);
-      expect(find.text(l10n.teamUiStatusConnected), findsOneWidget);
-      expect(find.text(l10n.teamUiDisclaimerComputer), findsOneWidget);
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('team-sheet-turn-off')),
-      );
-      await tester.tap(find.byKey(const ValueKey('team-sheet-turn-off')));
-      await tester.pumpAndSettle();
+      expect(find.byType(TeamHomeScreen), findsOneWidget);
+      await menu(tester, 'team-home-turn-off');
       expect(find.byKey(const ValueKey('team-turn-off-sheet')), findsOneWidget);
       expect(find.text(l10n.teamUiTurnOffTitle('Workstation')), findsOneWidget);
       expect(find.text(l10n.teamUiTurnOffBody), findsOneWidget);
@@ -789,27 +657,24 @@ void main() {
         ).isDiscoveryDismissed(_profileId),
         isTrue,
       );
-      expect(find.byKey(const ValueKey('team-plugin-sheet')), findsNothing);
-      expect(subtitle(tester), l10n.teamUiRowOffAddManually);
+      // The same page, off: it says what the team does and sets it up.
+      expect(find.byType(TeamHomeScreen), findsNothing);
+      expect(find.byType(TeamIntroScreen), findsOneWidget);
     });
 
     testWidgets('keep leaves everything in place', (tester) async {
+      phone(tester);
       final p = profile(config: fixtureConfig());
       final controller = await boot(p);
       await pump(tester, controller);
       await settle(tester);
-      await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('team-sheet-turn-off')),
-      );
-      await tester.tap(find.byKey(const ValueKey('team-sheet-turn-off')));
-      await tester.pumpAndSettle();
+      await menu(tester, 'team-home-turn-off');
       await tester.tap(find.text(l10n.teamUiKeep));
       await tester.pumpAndSettle();
       expect(p.orchestration, isNotNull);
       expect(controller.orchestration?.phase, OrchestrationPhase.ready);
-      expect(find.byKey(const ValueKey('team-plugin-sheet')), findsOneWidget);
+      // Still on Team settings, which sits over the team's page.
+      expect(find.byKey(const ValueKey('team-settings')), findsOneWidget);
     });
   });
 

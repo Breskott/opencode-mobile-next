@@ -1,0 +1,81 @@
++0: loading test/revamp/screen_library_2_test.dart
++0: test/revamp/screen_library_2_test.dart: Commands & tools keeps the Tools tab and says why on a server without it
++1: test/revamp/screen_library_2_test.dart: Commands & tools a link counted without Tools still lands on its tab
++2: test/revamp/screen_library_2_test.dart: Commands & tools a server without a catalog explains the whole page
++3: test/revamp/screen_library_2_test.dart: Add MCP server a server that cannot add one explains instead of a form
++4: test/revamp/screen_library_2_test.dart: Add MCP server Save names what is missing and adds nothing
++5: test/revamp/screen_library_2_test.dart: Add MCP server Back with typed input asks before discarding it
++6: test/revamp/screen_library_2_test.dart: External agents an agent waiting for a reply comes first and says so
++7: test/revamp/screen_library_2_test.dart: External agents removal is on the row, names the agent and confirms
++8: loading test/external_agent_widget_test.dart
++8: test/external_agent_widget_test.dart: check save draft task input result reopen and remove journey
++9: test/external_agent_widget_test.dart: a new task left empty leaves no row behind
++10: test/external_agent_widget_test.dart: uncertain delivery has no enabled send and restart does not resend
++11: test/external_agent_widget_test.dart: cancel keeps active state when agent does not confirm
++12: test/external_agent_widget_test.dart: failed draft save keeps review text and blocks Back and Send until retry
++13: test/external_agent_widget_test.dart: Back and Send wait for latest A after held B then A draft writes
++14: test/external_agent_widget_test.dart: capture external task input light
++15: test/external_agent_widget_test.dart: capture external task input dark
++16: test/external_agent_widget_test.dart: capture external task input large
++17: test/external_agent_widget_test.dart: capture external task result light
++18: test/external_agent_widget_test.dart: capture external task result dark
++19: test/external_agent_widget_test.dart: capture external task result large
++20: test/external_agent_widget_test.dart: capture external task uncertain light
++21: test/external_agent_widget_test.dart: capture external task uncertain dark
++22: test/external_agent_widget_test.dart: capture external task uncertain large
++23: test/external_agent_widget_test.dart: capture external task error light
++24: test/external_agent_widget_test.dart: capture external task error dark
++25: test/external_agent_widget_test.dart: capture external task error large
++26: test/external_agent_widget_test.dart: capture external task draft light
++27: test/external_agent_widget_test.dart: capture external task draft dark
++28: test/external_agent_widget_test.dart: capture external task draft large
++29: test/external_agent_widget_test.dart: capture inspected agent and saved tasks
++30: loading test/mcp_setup_screen_test.dart
++30: test/mcp_setup_screen_test.dart: v2 shows its location and adds without configuration reload
++31: test/mcp_setup_screen_test.dart: connection change during wake retains draft without writing
++32: test/mcp_setup_screen_test.dart: saves a project remote MCP with exact advanced fields
++33: test/mcp_setup_screen_test.dart: saves a global local MCP on a compact large-text phone
++34: test/mcp_setup_screen_test.dart: keeps validation and server errors inline without saving
++35: test/mcp_setup_screen_test.dart: retries reconnect without duplicating a saved MCP server
++36: test/mcp_setup_screen_test.dart: keeps reconnect disabled after the saved profile changes
++37: test/mcp_setup_screen_test.dart: P0.1: header values are secrets masks the value, key stays visible, reveal on press, never prefilled
++38: test/mcp_setup_screen_test.dart: P0.1: header values are secrets adds and removes header rows
++39: test/mcp_setup_screen_test.dart: diagnostics also redact an Authorization=Bearer header value (P0.1)
++40: loading test/revamp/screen_library_2_golden_test.dart
++40: test/revamp/screen_library_2_golden_test.dart: (setUpAll)
++40: test/revamp/screen_library_2_golden_test.dart: capabilities (dark) tools not listed 412
++41: test/revamp/screen_library_2_golden_test.dart: capabilities (dark) tools not listed 1280
++42: test/revamp/screen_library_2_golden_test.dart: capabilities (dark) catalog not shared
++43: test/revamp/screen_library_2_golden_test.dart: mcp setup (dark) form 412
++44: test/revamp/screen_library_2_golden_test.dart: mcp setup (dark) form 1280
++45: test/revamp/screen_library_2_golden_test.dart: mcp setup (dark) until restart
++46: test/revamp/screen_library_2_golden_test.dart: mcp setup (dark) errors after Save
++47: test/revamp/screen_library_2_golden_test.dart: mcp setup (dark) not available
++48: test/revamp/screen_library_2_golden_test.dart: external agents (dark) list 412
++49: test/revamp/screen_library_2_golden_test.dart: external agents (dark) list 1280
++50: test/revamp/screen_library_2_golden_test.dart: external agents (dark) empty
++51: test/revamp/screen_library_2_golden_test.dart: external agents (dark) remove question
++52: test/revamp/screen_library_2_golden_test.dart: external agents (dark) add agent checked
++53: test/revamp/screen_library_2_golden_test.dart: external agents (dark) agent page
++54: test/revamp/screen_library_2_golden_test.dart: external agents (dark) task needs a reply
++55: test/revamp/screen_library_2_golden_test.dart: external agents (dark) task draft
++56: test/revamp/screen_library_2_golden_test.dart: external agents (dark) stop question
++57: test/revamp/screen_library_2_golden_test.dart: capabilities (light) tools not listed 412
++58: test/revamp/screen_library_2_golden_test.dart: capabilities (light) tools not listed 1280
++59: test/revamp/screen_library_2_golden_test.dart: capabilities (light) catalog not shared
++60: test/revamp/screen_library_2_golden_test.dart: mcp setup (light) form 412
++61: test/revamp/screen_library_2_golden_test.dart: mcp setup (light) form 1280
++62: test/revamp/screen_library_2_golden_test.dart: mcp setup (light) until restart
++63: test/revamp/screen_library_2_golden_test.dart: mcp setup (light) errors after Save
++64: test/revamp/screen_library_2_golden_test.dart: mcp setup (light) not available
++65: test/revamp/screen_library_2_golden_test.dart: external agents (light) list 412
++66: test/revamp/screen_library_2_golden_test.dart: external agents (light) list 1280
++67: test/revamp/screen_library_2_golden_test.dart: external agents (light) empty
++68: test/revamp/screen_library_2_golden_test.dart: external agents (light) remove question
++69: test/revamp/screen_library_2_golden_test.dart: external agents (light) add agent checked
++70: test/revamp/screen_library_2_golden_test.dart: external agents (light) agent page
++71: test/revamp/screen_library_2_golden_test.dart: external agents (light) task needs a reply
++72: test/revamp/screen_library_2_golden_test.dart: external agents (light) task draft
++73: test/revamp/screen_library_2_golden_test.dart: external agents (light) stop question
++74: test/revamp/screen_library_2_golden_test.dart: (tearDownAll)
++74: All tests passed!

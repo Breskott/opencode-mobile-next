@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stop task — confirmation</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&amp;family=Geist+Mono:wght@400..600&amp;display=swap">
+<style>
+body{margin:0;background:#0B0C0E}
+.tk{--bg:#0B0C0E;--s1:#141518;--s2:#1B1C20;--s3:#26282D;--line:rgba(255,255,255,.07);--t1:#F3F3F1;--t2:#A3A5AB;--t3:#8A8D94;--danger:#FF7A7A;--danger-fill:#E5484D}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+</style>
+</helmet>
+<div class="tk" style="width: 390px; height: 844px; position: relative; overflow: hidden; background: var(--bg); color: var(--t1); font-family: Geist, 'Helvetica Neue', system-ui, sans-serif">
+<div style="position: absolute; inset: 0; filter: blur(3px) saturate(.8); transform: scale(1.02)">
+<dc-import name="Chat" accent="{{accent}}" hint-size="390px,844px"></dc-import>
+</div>
+<div style="position: absolute; inset: 0; background: rgba(0,0,0,.58)"></div>
+
+<div role="dialog" aria-modal="true" aria-labelledby="stop-title" style="position: absolute; left: 0; right: 0; bottom: 0; background: var(--s2); border-radius: 30px 30px 0 0; border-top: 1px solid var(--line); padding: 10px 20px 24px; display: flex; flex-direction: column; gap: 18px">
+<div style="align-self: center; width: 36px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.18)"></div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding-top: 4px">
+<div style="width: 44px; height: 44px; border-radius: 14px; background: rgba(229,72,77,.14); color: var(--danger); display: grid; place-items: center">
+<svg width="18" height="18" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg>
+</div>
+<h2 id="stop-title" style="margin: 0; font-size: 23px; line-height: 29px; font-weight: 650; letter-spacing: -0.02em">Stop “Fix flaky checkout test”?</h2>
+<p style="margin: 0; font-size: 15px; line-height: 22px; color: var(--t2)">The agent stops where it is. You can pick it up again from this conversation.</p>
+</div>
+<div style="background: var(--s1); border-radius: 16px; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 12px; padding: 13px 14px; font-size: 14.5px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9l3 3-3 3M13 15h4"/></svg>
+<span style="flex-grow: 1">The test run is cancelled</span>
+</div>
+<div style="height: 1px; background: var(--line); margin-left: 44px"></div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 13px 14px; font-size: 14.5px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>
+<span style="flex-grow: 1">2 edited files are kept</span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<button style="height: 52px; border-radius: 16px; background: var(--danger-fill); color: #FFFFFF; font-size: 16px; font-weight: 600">Stop task</button>
+<button style="height: 52px; border-radius: 16px; background: var(--s3); font-size: 16px; font-weight: 550">Keep running</button>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#3DDC8A","options":["#3DDC8A","#5AB0FF","#FF8A4C","#C7A6FF"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#3DDC8A' };
+  }
+}
+</script>
+</body>
+</html>

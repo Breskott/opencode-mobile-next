@@ -413,6 +413,54 @@ void main() {
     expect(calls, isEmpty);
   });
 
+  test('a test notification ignores the live-mode gate but not the platform '
+      'answer (P0.6)', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final calls = <(String, Map<String, dynamic>?)>[];
+    var shown = true;
+    final controller = BackgroundLiveController(
+      preferences: preferences,
+      invoke: (method, [arguments]) async {
+        calls.add((method, arguments));
+        return {'shown': shown};
+      },
+    );
+    addTearDown(controller.dispose);
+
+    // Live background mode was never turned on; a real coding alert would
+    // refuse (see 'disabled live mode never posts a coding alert' above),
+    // but a test notification must still try, since it exists to answer a
+    // question unrelated to that preference.
+    expect(controller.enabled, isFalse);
+    expect(await controller.sendTestNotification(), isTrue);
+    expect(calls.single.$1, 'showCodingAlert');
+    expect(
+      calls.single.$2,
+      containsPair('sessionID', BackgroundLiveController.testNotificationID),
+    );
+
+    shown = false;
+    expect(await controller.sendTestNotification(), isFalse);
+  });
+
+  test('openNotificationSettings calls the platform once and swallows a '
+      'missing channel (P0.6)', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final calls = <String>[];
+    final controller = BackgroundLiveController(
+      preferences: preferences,
+      invoke: (method, [arguments]) async {
+        calls.add(method);
+        return const {};
+      },
+    );
+    addTearDown(controller.dispose);
+    await controller.openNotificationSettings();
+    expect(calls, ['openAppSettings']);
+  });
+
   test(
     'consumes a typed notification destination once Android provides it',
     () async {

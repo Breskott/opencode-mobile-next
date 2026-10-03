@@ -19,6 +19,7 @@ import 'package:opencode_mobile/ui/widgets/termux_running_server_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../tool/capture/fixtures.dart' show loadCaptureFonts;
+import 'support/server_editor.dart';
 
 // UX plan 5.1: the server name in the app bar is the server switcher, the
 // single door to servers while connected. It only chooses; the Servers screen
@@ -199,7 +200,7 @@ void main() {
           routes: {
             '/servers': (_) => const ServersScreen(),
             '/home': (_) => const Scaffold(body: Text('Connected home')),
-            '/termux-setup': (_) => const Scaffold(body: Text('Phone setup')),
+            '/this-phone': (_) => const Scaffold(body: Text('Phone setup')),
           },
           home: const HomeScreen(),
         ),
@@ -240,29 +241,23 @@ void main() {
       findsNothing,
     );
 
+    // The shell's glass server pill (f4b7a51f, kit shell rebuild): the name
+    // and the status word on the pill, one button whose label reads both and
+    // says what a tap does. The dock names the tab, so the pill is not a
+    // page header any more.
     final button = find.byKey(const ValueKey('server-switcher-button'));
     expect(
-      find.descendant(
-        of: button,
-        matching: find.byKey(const ValueKey('server-profile-title')),
-      ),
+      find.descendant(of: button, matching: find.textContaining('Work server')),
       findsOneWidget,
     );
     expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
     expect(
       tester.getSemantics(button),
-      matchesSemantics(
-        label: 'Server Connected\nServer: Work server\nWork',
-        hint: 'Switch server',
-        isButton: true,
-        // It is still the app bar's title.
-        isHeader: true,
-        namesRoute: true,
-        tooltip: 'Connected',
-        hasTapAction: true,
-        hasFocusAction: true,
-        isFocusable: true,
-      ),
+      isSemantics(isButton: true, hasTapAction: true),
+    );
+    expect(
+      tester.getSemantics(button).label,
+      allOf(contains('Work server'), contains('Connected, Switch server')),
     );
 
     await openSwitcher(tester);
@@ -271,12 +266,17 @@ void main() {
       find.descendant(of: current, matching: find.text('Work server')),
       findsOneWidget,
     );
+    // One current mark: its line is the state word.
     expect(
-      find.descendant(of: current, matching: find.text('Connected')),
+      find.descendant(
+        of: current,
+        matching: find.textContaining('Connected', findRichText: true),
+      ),
       findsOneWidget,
     );
-    // Saved servers: every other profile, never the current one twice.
-    expect(inSheet(find.text('Saved servers')), findsOneWidget);
+    // One unlabelled panel of servers (R1): every other profile after the
+    // current one, never the current one twice.
+    expect(inSheet(find.text('Saved servers')), findsNothing);
     expect(
       find.byKey(const ValueKey('server-switcher-profile-home')),
       findsOneWidget,
@@ -285,26 +285,100 @@ void main() {
       find.byKey(const ValueKey('server-switcher-profile-work')),
       findsNothing,
     );
+    // The name identifies a server; its address is technical and lives in
+    // its editor, so no row is cut off mid-address.
     expect(
-      inSheet(find.text('https://home.example.test:4096')),
-      findsOneWidget,
+      inSheet(
+        find.textContaining(
+          'https://home.example.test:4096',
+          findRichText: true,
+        ),
+      ),
+      findsNothing,
     );
 
-    // Order: current, saved, Add, Manage, and Disconnect last.
+    // Order: current, saved, Add, Manage.
     double top(String key) => tester.getTopLeft(find.byKey(ValueKey(key))).dy;
     final order = [
       top('server-switcher-current'),
       top('server-switcher-profile-home'),
       top('server-switcher-add'),
       top('server-switcher-manage'),
-      top('server-switcher-disconnect'),
     ];
     expect(order, [...order]..sort());
+    expect(find.text('Servers'), findsOneWidget);
     expect(inSheet(find.text('Add server')), findsOneWidget);
     expect(inSheet(find.text('Manage servers')), findsOneWidget);
-    expect(inSheet(find.text('Disconnect')), findsOneWidget);
+    // Disconnect is in the current row's menu, which a tap opens.
+    expect(find.text('Disconnect'), findsNothing);
+    await tester.tap(current);
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('server-switcher-disconnect')),
+      findsOneWidget,
+    );
     // No Termux on this platform: the phone card has nothing to show.
     expect(find.byKey(const ValueKey('termux-running-server')), findsNothing);
+  });
+
+  // Open point 3 of phone setup v2: setup renames the in-app profile to
+  // "This phone" while the app is connected to it. Nothing about the
+  // connection changes, so the app bar kept the old name until a restart.
+  group('a renamed profile shows at once', () {
+    ServerProfile fresh(String id, String name) => ServerProfile(
+      id: id,
+      name: name,
+      baseUrl: 'https://$id.example.test',
+      password: 'synthetic-$id',
+    );
+
+    testWidgets('renamed in place and saved, as setup does', (tester) async {
+      final connection = await pumpShell(
+        tester,
+        profiles: [fresh('desk', 'Old desk name')],
+      );
+      // The name on the shell's server pill (f4b7a51f).
+      Finder pill(String name) => find.descendant(
+        of: find.byKey(const ValueKey('server-switcher-button')),
+        matching: find.textContaining(name),
+      );
+      expect(pill('Old desk name'), findsOneWidget);
+
+      final saved = connection.store.profiles.single..name = 'Desk';
+      await connection.store.upsert(saved);
+      await tester.pump();
+      expect(pill('Desk'), findsOneWidget);
+      expect(pill('Old desk name'), findsNothing);
+    });
+
+    testWidgets('replaced by an edited copy, as the editor does', (
+      tester,
+    ) async {
+      final connection = await pumpShell(
+        tester,
+        profiles: [fresh('desk', 'Desk'), fresh('lab', 'Lab box')],
+      );
+      await openSwitcher(tester);
+      expect(inSheet(find.text('Lab box')), findsOneWidget);
+
+      await connection.store.upsert(fresh('lab', 'Lab workstation'));
+      await tester.pump();
+      expect(inSheet(find.text('Lab workstation')), findsOneWidget);
+      expect(inSheet(find.text('Lab box')), findsNothing);
+    });
+
+    testWidgets('a save that changes nothing shown does not rebuild the '
+        'shell', (tester) async {
+      final connection = await pumpShell(
+        tester,
+        profiles: [fresh('desk', 'Desk')],
+      );
+      var notified = 0;
+      connection.addListener(() => notified++);
+      final saved = connection.store.profiles.single..serverVersion = '1.18.29';
+      await connection.store.upsert(saved);
+      expect(notified, 0);
+    });
   });
 
   testWidgets('the current server status follows the connection', (
@@ -312,13 +386,27 @@ void main() {
   ) async {
     final connection = await pumpShell(tester, profiles: [work]);
     await openSwitcher(tester);
-    expect(inSheet(find.text('Connected')), findsOneWidget);
+    Finder word(String text) =>
+        inSheet(find.textContaining(text, findRichText: true));
+    expect(word('Connected'), findsOneWidget);
     expect(inSheet(find.text('Saved servers')), findsNothing);
     connection.status = StreamStatus.reconnecting;
     connection.notifyListeners();
     await tester.pump();
-    expect(inSheet(find.text('Reconnecting')), findsOneWidget);
-    expect(inSheet(find.text('Connected')), findsNothing);
+    expect(word('Reconnecting'), findsOneWidget);
+    expect(word('Connected'), findsNothing);
+    // The one shared grace period (3d64653c): once it runs out the sheet
+    // says what the shell's pill says, never "Reconnecting" forever.
+    await tester.pump(const Duration(seconds: 8));
+    expect(word('Reconnecting'), findsNothing);
+    expect(word('Offline'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('server-switcher-button')),
+        matching: find.textContaining('Offline'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('tapping a saved server runs the Servers connect flow', (
@@ -370,10 +458,19 @@ void main() {
     await openSwitcher(tester);
     await tester.tap(find.byKey(const ValueKey('server-switcher-add')));
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
+    await openServerManualAddress(tester);
     expect(find.byKey(const ValueKey('server-url-field')), findsOneWidget);
     expect(
       tester
-          .widget<TextField>(find.byKey(const ValueKey('server-url-field')))
+          .widget<TextField>(
+            // A kit TextFormField since 71417a2f; the inner TextField holds
+            // the controller.
+            find.descendant(
+              of: find.byKey(const ValueKey('server-url-field')),
+              matching: find.byType(TextField),
+            ),
+          )
           .controller!
           .text,
       isNot(contains('example.test')),
@@ -402,8 +499,16 @@ void main() {
   ) async {
     final connection = await pumpShell(tester, profiles: [work, home]);
     await openSwitcher(tester);
-    await tester.tap(find.byKey(const ValueKey('server-switcher-disconnect')));
-    await tester.pumpAndSettle();
+    Future<void> disconnect() async {
+      await tester.tap(find.byKey(const ValueKey('server-switcher-current')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('server-switcher-disconnect')),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await disconnect();
     expect(
       find.byKey(const ValueKey('disconnect-confirm-sheet')),
       findsOneWidget,
@@ -422,8 +527,7 @@ void main() {
     expect(find.byKey(const ValueKey('server-switcher-sheet')), findsOneWidget);
     expect(find.byType(ServersScreen), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey('server-switcher-disconnect')));
-    await tester.pumpAndSettle();
+    await disconnect();
     await tester.tap(find.byKey(const ValueKey('confirm-disconnect')));
     await tester.pumpAndSettle();
     expect(connection.disconnects, 1);
@@ -433,7 +537,7 @@ void main() {
   });
 
   group('the server on this phone', () {
-    testWidgets('its card leads the saved servers and connects in place', (
+    testWidgets('its row follows the one server list and connects in place', (
       tester,
     ) async {
       fakeRunningPhoneServer();
@@ -443,7 +547,8 @@ void main() {
       final card = find.byKey(const ValueKey('termux-running-server'));
       expect(inSheet(card), findsOneWidget);
       expect(inSheet(find.byType(TermuxRunningServerEntry)), findsOneWidget);
-      // Found live on the phone: above every saved server, below the current.
+      // The saved servers are one unlabelled panel, the current one first
+      // (R1); the phone's own server, controlled in place, follows it.
       expect(
         tester.getTopLeft(card).dy,
         greaterThan(
@@ -454,7 +559,7 @@ void main() {
       );
       expect(
         tester.getTopLeft(card).dy,
-        lessThan(
+        greaterThan(
           tester
               .getTopLeft(
                 find.byKey(const ValueKey('server-switcher-profile-home')),
@@ -462,7 +567,11 @@ void main() {
               .dy,
         ),
       );
-      // Controlled where it is shown.
+      // Controlled where it is shown, from its row's menu.
+      await tester.tap(
+        find.byKey(const ValueKey('termux-running-server-menu')),
+      );
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('termux-running-server-restart')),
         findsOneWidget,
@@ -471,6 +580,8 @@ void main() {
         find.byKey(const ValueKey('termux-running-server-stop')),
         findsOneWidget,
       );
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
 
       await tester.tap(
         find.byKey(const ValueKey('termux-running-server-connect')),
@@ -519,27 +630,16 @@ void main() {
       expect(find.byType(ServersScreen), findsOneWidget);
     });
 
-    testWidgets('connected through it: Open returns to the shell as it is', (
-      tester,
-    ) async {
+    testWidgets('connected through it: the card offers no Open, and the '
+        'connection is left as it is', (tester) async {
       fakeRunningPhoneServer();
       final connection = await pumpShell(tester, profiles: [phone, work]);
       await openSwitcher(tester);
+      // The row above already says it is the connected one.
       expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('termux-running-server-connect')),
-          matching: find.text('Open'),
-        ),
-        findsOneWidget,
-      );
-      await tester.tap(
         find.byKey(const ValueKey('termux-running-server-connect')),
+        findsNothing,
       );
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('server-switcher-sheet')), findsNothing);
-      expect(find.byType(HomeScreen), findsOneWidget);
-      expect(find.byType(ServersScreen), findsNothing);
-      // No reconnect: that would drop the live connection it already has.
       expect(connection.attempted, isEmpty);
       expect(connection.disconnects, 0);
     });
@@ -573,7 +673,9 @@ void main() {
           locale: locale,
         );
         expect(tester.takeException(), isNull);
-        final bar = tester.getRect(find.byType(AppBar));
+        // The shell's top controls have no AppBar since the shell revamp:
+        // the button stays inside the window.
+        final bar = Offset.zero & const Size(320, 640);
         final button = tester.getRect(
           find.byKey(const ValueKey('server-switcher-button')),
         );
@@ -591,7 +693,6 @@ void main() {
           'server-switcher-profile-work',
           'server-switcher-add',
           'server-switcher-manage',
-          'server-switcher-disconnect',
         ]) {
           final finder = find.byKey(ValueKey(key));
           await tester.ensureVisible(finder);

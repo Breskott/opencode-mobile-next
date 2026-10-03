@@ -9,12 +9,19 @@ import '../../domain/web_source_selection.dart';
 import '../../state/connection.dart';
 import '../../state/web_sources_overview.dart';
 import '../widgets/external_link.dart';
-import '../app_iconography.dart';
+import '../app_theme.dart';
+import '../kit/kit.dart';
 
 export '../../domain/web_source_selection.dart';
 
 /// Returns `List<WebSourceSelection>` on explicit review confirmation, or null
 /// on cancellation. Does not send a prompt, attach a remote file or fetch URLs.
+///
+/// Map page web-sources: search (when the server has a provider) or paste a
+/// link. A result toggles in place ("Added" with a check; tap again to
+/// remove it); only pasted links, which have no result row, are listed
+/// under "Links you added". The pinned primary says what it does: "Add 2
+/// sources to prompt" (Close with none).
 class WebSourcesScreen extends StatefulWidget {
   const WebSourcesScreen({super.key, required this.controller});
 
@@ -30,7 +37,12 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
   final _title = TextEditingController();
   final _excerpt = TextEditingController();
   late WebSourcesOverview _overview;
+
+  /// Why the pasted link was not added; under the address field.
   String? _error;
+
+  /// Why a search result was not added; over the results.
+  String? _resultError;
 
   @override
   void initState() {
@@ -48,6 +60,7 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
       _title.clear();
       _excerpt.clear();
       _error = null;
+      _resultError = null;
     }
     setState(() {});
   }
@@ -66,15 +79,17 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
     _title.clear();
     _excerpt.clear();
     _error = null;
+    _resultError = null;
   }
+
+  AppLocalizations get _l10n =>
+      lookupAppLocalizations(Localizations.localeOf(context));
 
   void _add() {
     if (_overview.scopeChanged) return;
     final uri = safeExternalLinkUri(_url.text);
     if (uri == null) {
-      setState(
-        () => _error = 'Enter an HTTP or HTTPS URL without credentials.',
-      );
+      setState(() => _error = _l10n.webSourcesInvalidUrl);
       return;
     }
     try {
@@ -95,6 +110,33 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
     }
   }
 
+  void _addResult(WebSourceSelection result) =>
+      setState(() => _resultError = _overview.add(result));
+
+  /// A result already added is taken out again by tapping it.
+  void _removeResult(WebSourceSelection result) {
+    for (final source in _overview.sources) {
+      if (source.url == result.url) {
+        _overview.remove(source);
+        break;
+      }
+    }
+    setState(() => _resultError = null);
+  }
+
+  void _open(String url) {
+    if (_overview.reviewedSelection() == null) return;
+    openExternalLink(context, url);
+  }
+
+  void _search() {
+    if (_query.text.trim().isEmpty) return;
+    setState(() => _resultError = null);
+    unawaited(_overview.search(_query.text));
+  }
+
+  void _close() => Navigator.of(context).pop<List<WebSourceSelection>>();
+
   void _confirm() {
     final sources = _overview.reviewedSelection();
     if (sources == null || sources.isEmpty) return;
@@ -112,222 +154,333 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
     super.dispose();
   }
 
-  Widget _searchPanel(AppLocalizations l10n) {
+  bool _added(WebSourceSelection source) =>
+      _overview.sources.any((item) => item.url == source.url);
+
+  String _host(String url) => Uri.tryParse(url)?.host ?? url;
+
+  List<Widget> _searchPanel(BuildContext context, AppLocalizations l10n) {
+    final tokens = KitTokens.of(context);
     final busy = _overview.discovering || _overview.searching;
     final failure = _overview.searchFailure;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (_overview.discovering || _overview.searching)
-          const LinearProgressIndicator(),
-        if (failure != null)
-          Semantics(
-            liveRegion: true,
-            child: Text(switch (failure) {
-              WebSearchFailureKind.unavailable => l10n.webSearchUnavailable,
-              WebSearchFailureKind.authentication =>
-                l10n.webSearchAuthentication,
-              WebSearchFailureKind.invalidResponse =>
-                l10n.webSearchInvalidResponse,
-              WebSearchFailureKind.failed => l10n.webSearchFailed,
-            }),
-          ),
-        if (!_overview.discovering &&
-            _overview.providers.isEmpty &&
-            failure == null)
-          Text(l10n.webSearchUnavailable),
-        if (!busy)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: _overview.discoverProviders,
-              icon: const Icon(AppIconography.retry),
-              label: Text(l10n.webSearchRefresh),
-            ),
-          ),
-        if (_overview.providers.isNotEmpty)
-          DropdownButtonFormField<String>(
-            key: ValueKey(
-              'web-provider-${_overview.providerID}-${_overview.providers.map((p) => p.id).join(',')}',
-            ),
-            initialValue: _overview.providerID,
-            isExpanded: true,
-            decoration: InputDecoration(labelText: l10n.webSearchProvider),
-            items: [
-              for (final provider in _overview.providers)
-                DropdownMenuItem(
-                  value: provider.id,
-                  child: Text(provider.name, overflow: TextOverflow.ellipsis),
+    final noProvider = !_overview.discovering && _overview.providers.isEmpty;
+    final gutter = EdgeInsetsDirectional.symmetric(
+      horizontal: tokens.gutter,
+      vertical: tokens.space2,
+    );
+    final results = _overview.results;
+    return [
+      KitReveal(
+        child: failure != null
+            ? Padding(
+                padding: gutter,
+                child: KitNotice(
+                  key: const ValueKey('web-search-failure'),
+                  tone: AppStatusTone.failure,
+                  title: l10n.webSearchFailedTitle,
+                  message: switch (failure) {
+                    WebSearchFailureKind.unavailable =>
+                      l10n.webSearchUnavailable,
+                    WebSearchFailureKind.authentication =>
+                      l10n.webSearchAuthentication,
+                    WebSearchFailureKind.invalidResponse =>
+                      l10n.webSearchInvalidResponse,
+                    WebSearchFailureKind.failed => l10n.webSearchFailed,
+                  },
+                  actions: [
+                    if (failure == WebSearchFailureKind.unavailable ||
+                        failure == WebSearchFailureKind.invalidResponse)
+                      KitAction(
+                        label: l10n.webSearchRefresh,
+                        onPressed: busy ? null : _overview.discoverProviders,
+                      )
+                    else
+                      KitAction(
+                        label: l10n.webSearchTryAgain,
+                        onPressed: busy || _query.text.trim().isEmpty
+                            ? null
+                            : _search,
+                      ),
+                  ],
                 ),
-            ],
-            onChanged: busy ? null : _overview.chooseProvider,
-          ),
-        TextField(
+              )
+            : noProvider
+            ? Padding(
+                padding: gutter,
+                child: KitNotice(
+                  key: const ValueKey('web-search-no-provider'),
+                  message: l10n.webSearchUnavailable,
+                  actions: [
+                    KitAction(
+                      label: l10n.webSearchRefresh,
+                      onPressed: busy ? null : _overview.discoverProviders,
+                    ),
+                  ],
+                ),
+              )
+            : null,
+      ),
+      if (_overview.providers.isNotEmpty)
+        KitRowGroup(
+          leadingIcons: false,
+          children: [
+            KitPickerRow<String>(
+              key: ValueKey(
+                'web-provider-${_overview.providers.map((p) => p.id).join(',')}',
+              ),
+              title: l10n.webSearchProvider,
+              choices: [
+                for (final provider in _overview.providers)
+                  KitChoice(value: provider.id, title: provider.name),
+              ],
+              selected: _overview.providerID,
+              onSelected: busy ? null : _overview.chooseProvider,
+              disabledReason: busy ? l10n.webSearchBusy : null,
+            ),
+          ],
+        ),
+      Padding(
+        padding: gutter,
+        child: KitField(
+          fieldKey: const ValueKey('web-search-query'),
+          label: l10n.webSearchQuery,
           controller: _query,
-          key: const ValueKey('web-search-query'),
+          hint: l10n.webSearchQueryHint,
           maxLength: 1000,
-          onChanged: (_) => setState(() {}),
-          enabled: !busy && _overview.providers.isNotEmpty,
           textInputAction: TextInputAction.search,
-          onSubmitted: (_) => _overview.search(_query.text),
-          decoration: InputDecoration(labelText: l10n.webSearchQuery),
-        ),
-        FilledButton.icon(
-          onPressed:
-              busy || _overview.providerID == null || _query.text.trim().isEmpty
-              ? null
-              : () => _overview.search(_query.text),
-          icon: const Icon(AppIconography.search),
-          label: Text(l10n.webSearchSubmit),
-        ),
-        if (_overview.searched && _overview.results.isEmpty)
-          Text(l10n.webSearchEmpty),
-        if (_overview.omittedResults > 0) Text(l10n.webSearchOmitted),
-        for (final result in _overview.results) ...[
-          const Divider(height: 24),
-          Text(result.title, style: Theme.of(context).textTheme.titleSmall),
-          Text(Uri.parse(result.url).host),
-          if (result.excerpt != null)
-            Text(result.excerpt!, maxLines: 6, overflow: TextOverflow.ellipsis),
-          Wrap(
-            spacing: 8,
-            children: [
-              TextButton.icon(
-                onPressed: () {
-                  if (_overview.reviewedSelection() != null) {
-                    openExternalLink(context, result.url);
-                  }
-                },
-                icon: const Icon(AppIconography.externalLink),
-                label: Text(l10n.webSourcesOpen),
-              ),
-              TextButton.icon(
-                onPressed:
-                    _overview.sources.any((item) => item.url == result.url)
-                    ? null
-                    : () => setState(() => _error = _overview.add(result)),
-                icon: const Icon(AppIconography.add),
-                label: Text(l10n.webSourcesAdd),
-              ),
-            ],
+          enabled: !busy && _overview.providers.isNotEmpty,
+          disabledReason: busy
+              ? l10n.webSearchBusy
+              : l10n.webSearchNeedsProvider,
+          onChanged: (_) => setState(() {}),
+          onSubmitted: (_) => _search(),
+          action: KitAction(
+            key: const ValueKey('web-search-submit'),
+            label: l10n.webSearchSubmit,
+            icon: AppIconography.search,
+            onPressed:
+                busy ||
+                    _overview.providerID == null ||
+                    _query.text.trim().isEmpty
+                ? null
+                : _search,
           ),
-        ],
+        ),
+      ),
+      KitReveal(
+        child: _resultError == null
+            ? null
+            : Padding(
+                padding: gutter,
+                child: KitNotice(
+                  key: const ValueKey('web-result-error'),
+                  message: _resultError!,
+                ),
+              ),
+      ),
+      if (_overview.searched && results.isEmpty)
+        KitStateView(
+          key: const ValueKey('web-search-empty'),
+          icon: AppIconography.search,
+          title: l10n.webSearchEmpty,
+          body: l10n.webSearchEmptyDetail,
+          size: KitStateSize.inline,
+        ),
+      if (results.isNotEmpty)
+        KitRowGroup(
+          label: l10n.webSearchResults(results.length),
+          leadingIcons: false,
+          children: [for (final result in results) _resultRow(l10n, result)],
+        ),
+      if (_overview.omittedResults > 0)
+        Padding(
+          padding: gutter,
+          child: KitText(
+            l10n.webSearchOmitted,
+            role: KitTextRole.caption,
+            tone: KitTextTone.secondary,
+          ),
+        ),
+    ];
+  }
+
+  Widget _resultRow(AppLocalizations l10n, WebSourceSelection result) {
+    final added = _added(result);
+    final host = _host(result.url);
+    return KitRow(
+      key: ValueKey('web-result-${result.url}'),
+      title: result.title,
+      titleMaxLines: 2,
+      supporting: TextSpan(
+        text: [
+          KitBidi.ltr(host),
+          if (result.excerpt case final excerpt? when excerpt.isNotEmpty)
+            excerpt,
+        ].join(' · '),
+      ),
+      supportingMaxLines: 3,
+      // A toggle: "Added" with a check, and tapping the row again removes
+      // it (its menu names it: "Remove … from prompt").
+      trailing: added
+          ? KitStatusMark(
+              state: KitMarkState.done,
+              label: l10n.webSourcesAdded,
+              showLabel: true,
+            )
+          : KitIconButton(
+              icon: AppIconography.add,
+              tooltip: l10n.webSourcesAddNamed(result.title),
+              onPressed: () => _addResult(result),
+            ),
+      onTap: added ? () => _removeResult(result) : () => _addResult(result),
+      menuLabel: l10n.webSourcesRowMenu(result.title),
+      menu: [
+        if (added)
+          KitMenuItem(
+            label: l10n.webSourcesRemoveNamed(result.title),
+            icon: AppIconography.close,
+            onSelected: () => _removeResult(result),
+          )
+        else
+          KitMenuItem(
+            label: l10n.webSourcesAddNamed(result.title),
+            icon: AppIconography.add,
+            onSelected: () => _addResult(result),
+          ),
+        KitMenuItem(
+          label: l10n.webSourcesOpenHost(host),
+          icon: AppIconography.externalLink,
+          onSelected: () => _open(result.url),
+        ),
       ],
     );
   }
 
-  Widget _manualEntry(AppLocalizations l10n) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      TextField(
-        key: const ValueKey('web-source-url'),
+  List<Widget> _manualFields(BuildContext context, AppLocalizations l10n) {
+    final tokens = KitTokens.of(context);
+    final gap = SizedBox(height: tokens.space3);
+    return [
+      KitField(
+        fieldKey: const ValueKey('web-source-url'),
+        label: l10n.webSourcesUrl,
         controller: _url,
-        keyboardType: TextInputType.url,
-        autocorrect: false,
-        enableSuggestions: false,
+        kind: KitFieldKind.url,
         maxLength: WebSourceSelection.maxUrlLength,
-        decoration: InputDecoration(labelText: l10n.webSourcesUrl),
+        error: _error,
+        onChanged: (_) {
+          if (_error != null) setState(() => _error = null);
+        },
       ),
-      TextField(
-        key: const ValueKey('web-source-title'),
+      gap,
+      KitField(
+        fieldKey: const ValueKey('web-source-title'),
+        label: l10n.webSourcesLabel,
         controller: _title,
         maxLength: WebSourceSelection.maxTitleLength,
-        decoration: InputDecoration(labelText: l10n.webSourcesLabel),
       ),
-      TextField(
-        key: const ValueKey('web-source-excerpt'),
+      gap,
+      KitField(
+        fieldKey: const ValueKey('web-source-excerpt'),
+        label: l10n.webSourcesExcerpt,
         controller: _excerpt,
-        minLines: 3,
-        maxLines: 6,
+        kind: KitFieldKind.multiline,
         maxLength: WebSourceSelection.maxExcerptLength,
-        decoration: InputDecoration(
-          labelText: l10n.webSourcesExcerpt,
-          helperText: l10n.webSourcesExcerptHint,
-          helperMaxLines: 3,
+        helper: l10n.webSourcesExcerptHint,
+      ),
+      gap,
+      KitActionBlock(
+        secondary: KitAction(
+          key: const ValueKey('web-source-add'),
+          label: l10n.webSourcesAddLink,
+          icon: AppIconography.add,
+          onPressed: _add,
         ),
       ),
-      if (_error != null) Semantics(liveRegion: true, child: Text(_error!)),
-      const SizedBox(height: 12),
-      OutlinedButton.icon(
-        key: const ValueKey('web-source-add'),
-        style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
-        onPressed: _add,
-        icon: const Icon(AppIconography.add),
-        label: Text(l10n.webSourcesAdd),
+    ];
+  }
+
+  Widget _manualEntry(BuildContext context, AppLocalizations l10n) {
+    final tokens = KitTokens.of(context);
+    final fields = Padding(
+      padding: EdgeInsetsDirectional.symmetric(
+        horizontal: tokens.gutter,
+        vertical: tokens.space2,
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: _manualFields(context, l10n),
+      ),
+    );
+    if (!_overview.supportsSearch) return fields;
+    return KitRowGroup(
+      leadingIcons: false,
+      children: [
+        KitExpandRow(
+          headerKey: const ValueKey('web-source-paste'),
+          title: l10n.webSearchManual,
+          supporting: TextSpan(text: l10n.webSourcesPasteDetail),
+          maintainState: true,
+          children: [fields],
+        ),
+      ],
+    );
+  }
+
+  /// Added sources that have no result row above: the pasted links. A
+  /// result that was added is marked on its own row, not listed twice.
+  List<(int, WebSourceSelection)> get _pasted {
+    final resultUrls = {for (final result in _overview.results) result.url};
+    final sources = _overview.sources;
+    return [
+      for (var index = 0; index < sources.length; index++)
+        if (!resultUrls.contains(sources[index].url)) (index, sources[index]),
+    ];
+  }
+
+  Widget _addedList(
+    AppLocalizations l10n,
+    List<(int, WebSourceSelection)> pasted,
+  ) => KitRowGroup(
+    key: const ValueKey('web-sources-added'),
+    label: l10n.webSourcesPastedLinks,
+    leadingIcons: false,
+    children: [
+      for (final (index, source) in pasted) _addedRow(l10n, source, index),
     ],
   );
 
-  Widget _reviewPanel(AppLocalizations l10n) {
-    final sources = _overview.sources;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 24),
-        Text(
-          l10n.webSourcesReviewCount(sources.length),
-          style: Theme.of(context).textTheme.titleMedium,
+  Widget _addedRow(AppLocalizations l10n, WebSourceSelection source, int i) {
+    final host = _host(source.url);
+    return KitRow(
+      key: ValueKey('web-source-row-$i'),
+      title: source.title,
+      supporting: TextSpan(
+        text: [
+          KitBidi.ltr(host),
+          if (source.excerpt case final excerpt? when excerpt.isNotEmpty)
+            excerpt,
+        ].join(' · '),
+      ),
+      supportingMaxLines: 2,
+      trailing: KitIconButton(
+        key: ValueKey('web-source-remove-$i'),
+        icon: AppIconography.close,
+        tooltip: l10n.webSourcesRemoveNamed(source.title),
+        onPressed: () => _overview.remove(source),
+      ),
+      onTap: () => _open(source.url),
+      menuLabel: l10n.webSourcesRowMenu(source.title),
+      menu: [
+        KitMenuItem(
+          key: ValueKey('web-source-open-$i'),
+          label: l10n.webSourcesOpenHost(host),
+          icon: AppIconography.externalLink,
+          onSelected: () => _open(source.url),
         ),
-        Text(l10n.webSourcesReviewHint),
-        if (sources.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Text(l10n.webSourcesEmpty),
-          ),
-        for (var index = 0; index < sources.length; index++)
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                CheckboxListTile(
-                  key: ValueKey('web-source-select-$index'),
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(sources[index].title),
-                  subtitle: Text(sources[index].url),
-                  value: _overview.isSelected(sources[index]),
-                  onChanged: (value) =>
-                      _overview.select(sources[index], value == true),
-                ),
-                if (sources[index].excerpt != null)
-                  SelectableText(sources[index].excerpt!),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    TextButton.icon(
-                      key: ValueKey('web-source-open-$index'),
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                      ),
-                      onPressed: () {
-                        if (_overview.reviewedSelection() == null) {
-                          return;
-                        }
-                        openExternalLink(context, sources[index].url);
-                      },
-                      icon: const Icon(AppIconography.externalLink),
-                      label: Text(l10n.webSourcesOpen),
-                    ),
-                    TextButton.icon(
-                      key: ValueKey('web-source-remove-$index'),
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                      ),
-                      onPressed: () => _overview.remove(sources[index]),
-                      icon: const Icon(AppIconography.delete),
-                      label: Text(l10n.mcpRemove),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        const SizedBox(height: 16),
-        FilledButton(
-          key: const ValueKey('web-sources-confirm'),
-          style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-          onPressed: _overview.selectedCount == 0 ? null : _confirm,
-          child: Text(l10n.webSourcesUseCount(_overview.selectedCount)),
+        KitMenuItem(
+          label: l10n.webSourcesRemoveNamed(source.title),
+          icon: AppIconography.close,
+          onSelected: () => _overview.remove(source),
         ),
       ],
     );
@@ -335,46 +488,71 @@ class _WebSourcesScreenState extends State<WebSourcesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final l10n = _l10n;
     final blocked = _overview.scopeChanged;
-    final sources = _overview.sources;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.webSourcesTitle)),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(
-              _overview.supportsSearch
-                  ? l10n.webSearchDisclosure
-                  : l10n.webSourcesDisclosure,
+    final count = _overview.selectedCount;
+    final tokens = KitTokens.of(context);
+    final pasted = _pasted;
+    return KitScreen(
+      topBar: KitTopBar(title: l10n.webSourcesTitle),
+      width: KitScreenWidth.list,
+      loading: !blocked && (_overview.discovering || _overview.searching),
+      loadingLabel: _overview.searching
+          ? l10n.webSearchSearching
+          : l10n.webSearchFindingProviders,
+      bottom: blocked
+          ? null
+          : count == 0
+          ? KitActionBlock(
+              secondary: KitAction(
+                key: const ValueKey('web-sources-close'),
+                label: l10n.webSourcesClose,
+                onPressed: _close,
+              ),
+            )
+          : KitActionBlock(
+              primary: KitAction(
+                key: const ValueKey('web-sources-confirm'),
+                label: l10n.webSourcesDone(count),
+                icon: AppIconography.check,
+                onPressed: _confirm,
+              ),
             ),
-            const SizedBox(height: 16),
-            if (blocked)
-              Semantics(
-                liveRegion: true,
-                child: Text(l10n.webSourcesScopeChanged),
-              )
-            else ...[
-              if (_overview.supportsSearch) ...[
-                _searchPanel(l10n),
-                if (sources.isNotEmpty) _reviewPanel(l10n),
-                const Divider(height: 32),
-                ExpansionTile(
-                  tilePadding: EdgeInsets.zero,
-                  shape: const Border(),
-                  collapsedShape: const Border(),
-                  title: Text(l10n.webSearchManual),
-                  children: [_manualEntry(l10n)],
+      body: blocked
+          ? KitStateView(
+              key: const ValueKey('web-sources-blocked'),
+              icon: AppIconography.info,
+              title: l10n.webSourcesScopeChangedTitle,
+              body: l10n.webSourcesScopeChanged,
+            )
+          : ListView(
+              padding: EdgeInsetsDirectional.only(
+                top: tokens.space2,
+                bottom: KitScreen.endPadding(context),
+              ),
+              children: [
+                Padding(
+                  padding: EdgeInsetsDirectional.symmetric(
+                    horizontal: tokens.gutter,
+                    vertical: tokens.space2,
+                  ),
+                  child: KitText(
+                    _overview.supportsSearch
+                        ? l10n.webSearchDisclosure
+                        : l10n.webSourcesDisclosure,
+                    role: KitTextRole.secondary,
+                    tone: KitTextTone.secondary,
+                  ),
                 ),
-              ] else ...[
-                _manualEntry(l10n),
-                _reviewPanel(l10n),
+                if (_overview.supportsSearch) ..._searchPanel(context, l10n),
+                SizedBox(height: tokens.space3),
+                _manualEntry(context, l10n),
+                if (pasted.isNotEmpty) ...[
+                  SizedBox(height: tokens.sectionGap),
+                  _addedList(l10n, pasted),
+                ],
               ],
-            ],
-          ],
-        ),
-      ),
+            ),
     );
   }
 }

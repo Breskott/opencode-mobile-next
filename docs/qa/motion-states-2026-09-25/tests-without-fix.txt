@@ -1,0 +1,47 @@
+# test/motion_states_test.dart on cf1d7464 with the scene files copied in: every state lacks its drawing
+Expected: [<<Instance of 'StatesSheetScene'>>]
+  Actual: []
+00:02 +0 -1: Work no conversations yet is the fresh sheet, and it rests [E]
+Expected: [<<Instance of 'StatesFolderScene'>>]
+  Actual: []
+00:03 +0 -2: Work no project yet is the open folder [E]
+Expected: no matching candidates
+  Actual: _TypeWidgetFinder:<Found 1 widget with type "KitSkeletonRows": [
+00:04 +0 -3: Work not answering with nothing listed: placeholder rows for 8 s, then the unplugged cable [E]
+Expected: [<<Instance of 'StatesTrayScene'>>]
+  Actual: []
+00:04 +0 -4: Inbox: all caught up is the tray [E]
+Expected: [<<Instance of 'StatesSheetScene'>>]
+  Actual: []
+00:04 +0 -5: All conversations none yet is the fresh sheet [E]
+Expected: [<<Instance of 'StatesSearchScene'>>]
+  Actual: []
+00:04 +0 -6: All conversations a search with no match is the magnifier [E]
+Expected: [<<Instance of 'StatesUnpluggedScene'>>]
+  Actual: []
+00:04 +0 -7: All conversations could not load is the unplugged cable, with Try again and Report a bug [E]
+Expected: [<<Instance of 'StatesFolderScene'>>]
+  Actual: []
+00:05 +0 -8: Files: an empty folder is the open folder [E]
+Expected: [<<Instance of 'StatesTerminalScene'> with `ended`: false>]
+  Actual: []
+00:05 +0 -9: Terminal no terminal on the server is the terminal window [E]
+Expected: [<<Instance of 'StatesTerminalScene'> with `ended`: false>]
+  Actual: []
+00:05 +0 -10: Terminal this phone not set up is the terminal window [E]
+Expected: [<<Instance of 'StatesTerminalScene'> with `ended`: true>]
+  Actual: []
+00:05 +0 -11: Terminal a shell that ended is the dimmed terminal window [E]
+Expected: [<<Instance of 'StatesSheetScene'>>]
+  Actual: []
+00:06 +0 -12: Chat an empty conversation starts on the fresh sheet [E]
+Expected: [<<Instance of 'StatesUnpluggedScene'>>]
+  Actual: []
+00:06 +0 -13: Chat could not load is the unplugged cable [E]
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'chat-working-mark'>]: []>
+00:06 +0 -14: Chat while a reply is written the working mark moves; it goes when the run ends [E]
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'chat-working-mark'>]: []>
+00:07 +0 -15: Chat under reduced motion the working mark is still [E]
+00:07 +0 -15: Some tests failed.

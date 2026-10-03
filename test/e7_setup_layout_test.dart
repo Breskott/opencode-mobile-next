@@ -8,7 +8,6 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/camera.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/connection_help_screen.dart';
 import 'package:opencode_mobile/ui/screens/host_management_screen.dart';
 import 'package:opencode_mobile/ui/screens/pairing_scanner_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
@@ -17,6 +16,8 @@ import 'package:opencode_mobile/ui/widgets/saved_server_connection_card.dart';
 import 'package:opencode_mobile/ui/widgets/setup_terminal.dart';
 
 import 'support/first_run_path.dart';
+import 'support/kit_field_finders.dart';
+import 'support/server_editor.dart';
 
 import '../tool/capture/fixtures.dart'
     show loadCaptureFonts, captureTheme, capturePng, writePng;
@@ -42,7 +43,6 @@ void main() {
   setUpAll(loadCaptureFonts);
   for (final rtl in [false, true]) {
     for (final page in [
-      'help',
       'tailscale',
       'host',
       'scanner',
@@ -87,7 +87,6 @@ void main() {
         final outputScroll = ScrollController();
         final boundary = GlobalKey();
         final home = switch (page) {
-          'help' => const ConnectionHelpScreen(),
           'tailscale' => const TailscaleSetupScreen(
             initialAddress: 'https://workstation.example.ts.net',
           ),
@@ -157,14 +156,25 @@ void main() {
           for (final field in tester.widgetList<TextField>(
             find.byType(TextField),
           )) {
-            if (page == 'help' || page == 'tailscale') {
+            if (page == 'tailscale') {
               expect(field.textDirection, TextDirection.ltr);
             }
           }
           if (page == 'output') {
+            // The setup output is a KitLogPanel: its lines read left to
+            // right in any interface direction.
+            final line = find.text('[oc] OpenCode is ready');
+            expect(line, findsOneWidget);
             expect(
               tester
-                  .widget<SelectableText>(find.byType(SelectableText))
+                  .widget<Directionality>(
+                    find
+                        .ancestor(
+                          of: line,
+                          matching: find.byType(Directionality),
+                        )
+                        .first,
+                  )
                   .textDirection,
               TextDirection.ltr,
             );
@@ -190,14 +200,18 @@ void main() {
               400,
               scrollable: find.byType(Scrollable).first,
             );
+            // Built is not yet on screen: bring it the rest of the way.
+            await tester.ensureVisible(docs);
+            await tester.pump();
             expect(docs.hitTestable(), findsOneWidget);
           }
           if (page == 'servers') {
             await openFirstRunConnect(tester);
+            await openServerManualAddress(tester);
             final address = find.byKey(const ValueKey('server-url-field'));
             await tester.ensureVisible(address);
             expect(
-              tester.widget<TextField>(address).textDirection,
+              editableOf(tester, address).textDirection,
               TextDirection.ltr,
             );
           }

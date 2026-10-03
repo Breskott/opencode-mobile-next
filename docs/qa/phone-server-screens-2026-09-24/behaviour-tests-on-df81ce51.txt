@@ -1,0 +1,27 @@
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "This phone": []>
+00:01 +0 -1: Servers the phone server appears once, as one row [E]
+Expected: exactly one matching candidate
+  Actual: _DescendantWidgetFinder:<Found 0 widgets with key [<'kit-row-current-mark'>] descending
+00:01 +0 -2: Servers the server in use carries the current mark [E]
+Expected: no matching candidates
+  Actual: _TypeWidgetFinder:<Found 1 widget with type "Switch": [
+00:01 +0 -3: Servers restarting after a crash is not configured on the list [E]
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "OpenCode on this phone": []>
+00:02 +0 -4: On this phone one status line, stacked actions, and Stop confirms [E]
+00:02 +0 -5: On this phone restarting after a crash and Claude Code are rows here [E]
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "OpenCode is stopped": []>
+00:02 +0 -6: On this phone stopped, the same place offers Start first [E]
+Expected: no matching candidates
+  Actual: _TextContainingWidgetFinder:<Found 7 widgets with text containing opencode.: [
+00:02 +0 -7: Plugins rows show plain names; the raw id is under Details [E]
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'plugins-builtin-group'>]: []>
+00:03 +0 -8: Plugins built-in plugins fold into one row that opens [E]
+00:03 +0 -9: Plugins actions are in menus: Link commands and Clear personal links [E]
+Expected: exactly one matching candidate
+  Actual: _DescendantWidgetFinder:<Found 0 widgets with text "AI Team" descending from widgets with
+00:03 +0 -10: Plugins the AI Team row reads "AI Team · Off" [E]
+00:03 +0 -10: Some tests failed.

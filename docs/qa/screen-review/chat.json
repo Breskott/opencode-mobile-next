@@ -1,0 +1,2152 @@
+[
+ {
+  "pageId": "chat",
+  "area": "b1-chat-screen",
+  "title": "[Conversation: <session title>]",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/b1-chat-screen/chat--finished.png",
+   "docs/qa/screen-census/b1-chat-screen/chat--working.png",
+   "docs/qa/screen-census/b1-chat-screen/chat--needs-you.png",
+   "docs/qa/screen-census/b1-chat-screen/chat--empty.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": 3,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "The conversation is calm and readable, but the finished turn hides the answer's explanation, the blocked state still says 'Running tools', and the model label contradicts itself.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P2 Plain words · C2",
+    "what": "In the needs-you state the work line reads 'Running tools · Shell · flutter test…' with a spinning ring, while the run is actually stopped and waiting for your approval in the card below.",
+    "fix": "When a permission or question is pending, the work line switches to a still mark and the words 'Waiting for you · Run flutter test'; the spinner only runs while a tool really runs."
+   },
+   {
+    "severity": "high",
+    "principle": "P4 Detail on request · X5",
+    "what": "Once the turn finishes, the answer's opening paragraphs ('The flakiness comes from CheckoutBloc…') fold under 'Read 3 files, edited 1 file, ran 1 command'. The reader sees a code block and a closing sentence with no explanation of what was wrong.",
+    "fix": "Fold only tool work under the work line. Assistant prose always stays in the transcript; if interleaved text must fold, keep the first paragraph visible above the work line."
+   },
+   {
+    "severity": "high",
+    "principle": "P2 Plain words · C2",
+    "what": "The line under each reply shows the raw id 'anthropic/claude-sonnet-4' while the composer chip beside it says 'Choose model' — the screen says two different things about the same model, and the chip claims no model is chosen while one is answering.",
+    "fix": "Pass the reply's model through presentedModelLabel ('Claude Sonnet 4'). When no explicit selection exists, the chip shows the server default by name with a quiet suffix: 'Sonnet 4 · default'. Reserve 'Choose model' for the case where the server reports no default."
+   },
+   {
+    "severity": "high",
+    "principle": "P6 Made for one hand · X3",
+    "what": "While working, Stop (red filled square) and the disabled Send sit 8 dp apart in the same 48 dp row, next to a third icon (the activity mark). A thumb aiming at Send after typing a follow-up lands on Stop.",
+    "fix": "While a run is active and the field is empty, show only Stop in that slot; when text is typed, Send (or Steer/Queue) replaces it and Stop moves to the left of the model chip or into a long-press. Never show both filled controls side by side."
+   },
+   {
+    "severity": "high",
+    "principle": "P1 One thing at a time · regression #4",
+    "what": "Needs-you: the attention card's full-width filled 'Review' is the only action, so the most common decision (allow a shell command once) always takes two taps and a sheet.",
+    "fix": "For a single low-risk request show the command plus two inline actions: filled 'Allow once' and tonal 'Reject', with 'Details' as a text button that opens the sheet (Always allow stays inside the sheet)."
+   },
+   {
+    "severity": "medium",
+    "principle": "P3 Honest waiting",
+    "what": "The app bar carries only the title. Nothing at the top says which project/server this is or that the run is working/waiting; the only working signal is the green ring around the composer at the bottom.",
+    "fix": "Add a one-line subtitle under the title: 'shopfront · Working 2 min' / 'shopfront · Needs you' / 'shopfront · Done', using KitStatusLine wording."
+   },
+   {
+    "severity": "medium",
+    "principle": "P8 Craft · U3",
+    "what": "Code blocks clip at the right rail with no fade or scroll hint ('findsOneWidget' loses its closing ')' ).",
+    "fix": "Add a right-edge fade and a horizontal-scroll affordance, or default code blocks under 60 chars/line to soft-wrap with a wrap toggle."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 Plain words",
+    "what": "Empty conversation: starters 'Build a small web page' / 'Write a Python script that…' are generic and ignore the project (shopfront, a Flutter app) and the conversation title; the tip 'long-press a message for its actions' appears when there are no messages; the chip row is clipped at the right with no affordance.",
+    "fix": "Derive 2–3 starters from the project (e.g. 'Explain how checkout works', 'Run the tests'), drop the long-press tip until a message exists, and wrap starters as full-width rows (like the choice rows) instead of a clipped horizontal strip."
+   },
+   {
+    "severity": "medium",
+    "principle": "P5 Motion · M1/M4",
+    "what": "Source: the empty-state caret blink (empty_chat.dart, 530 ms timer) only checks the system 'remove animations' flag, not the person's Effects › Animations Off; message_view/chat_screen use 150/180/200/220/360 ms durations instead of KitMotion tokens; the streaming reply sits in a tinted container that disappears when the turn finishes, so the layout jumps at completion.",
+    "fix": "Gate the caret on KitMotion.loopsIn(context); replace literal durations with KitMotion.quick/standard; render the streaming reply in the same container as the finished one so completion changes paint only."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "chat-draft-attachment-recovery-sheet",
+  "area": "b1-chat-screen",
+  "title": "Some attachments need attention",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b1-chat-screen/chat-draft-attachment-recovery-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Does the right thing (keeps the draft, lets you drop broken attachments) but reads like a legal notice with a help icon on a warning.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P2 Plain words · C6",
+    "what": "Body is three clauses in one centred paragraph with the file name buried mid-sentence: 'These saved attachments are missing, unreadable, or belong to another project: coupon-flow.png. Use the available…'. The title wraps to two lines of display type.",
+    "fix": "Title 'Attachment missing' (one line). Body: 'coupon-flow.png can't be read any more.' List affected files as rows with a file icon. Buttons: 'Send without it' / 'Keep draft as is'."
+   },
+   {
+    "severity": "medium",
+    "principle": "P7 One kit · U9",
+    "what": "A '?' help icon is used for a warning state.",
+    "fix": "Use the kit warning icon in the warning tone (AppStatusTone.warning)."
+   },
+   {
+    "severity": "low",
+    "principle": "P8 Craft",
+    "what": "Centred multi-line body text is hard to scan.",
+    "fix": "Left-align bodies longer than one line in KitStateView/confirm sheets."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "chat-stash-attachments-unavailable-sheet",
+  "area": "b1-chat-screen",
+  "title": "Some attachments cannot be restored",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b1-chat-screen/chat-stash-attachments-unavailable-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Correct safeguard, but 'stash', 'temporary attachments' and a three-sentence centred body make a simple situation sound complicated.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P2 Plain words · C3",
+    "what": "Uses 'stash' (an engine/git word) while the list is called 'Saved prompts'; 'Missing, damaged or temporary attachments'; 'Restore available content' is not how anyone talks.",
+    "fix": "Title 'Some files can't be restored'. Body: 'checkout-log.txt is gone. The text comes back; attach the file again before sending.' Primary 'Restore text'. Use 'saved prompts' everywhere, never 'stash'."
+   },
+   {
+    "severity": "low",
+    "principle": "P8 Craft",
+    "what": "Centred four-line body.",
+    "fix": "Left-align, two sentences max."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "chat-stash-restore-confirm-sheet",
+  "area": "b1-chat-screen",
+  "title": "Restore saved prompt?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b1-chat-screen/chat-stash-restore-confirm-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A confirmation for something that loses nothing; an undo would be faster and calmer.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P10 Earn trust · X6",
+    "what": "The sheet exists only to say the current prompt will be saved first — nothing is lost either way, yet it costs an extra tap and does not show which saved prompt is being restored.",
+    "fix": "Restore immediately, save the current prompt automatically, and show a snackbar 'Current prompt saved · Undo'. If a confirm is kept, show the first line of both prompts."
+   },
+   {
+    "severity": "low",
+    "principle": "P2 Plain words",
+    "what": "'saved to the stash'.",
+    "fix": "'saved to Saved prompts'."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "chat-discard-queued-draft-sheet",
+  "area": "b1-chat-screen",
+  "title": "Discard queued draft?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b1-chat-screen/chat-discard-queued-draft-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 4
+  },
+  "suggested": "fix",
+  "summary": "Clean destructive confirm, but it does not say which draft you are about to lose.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P10 Earn trust · X3",
+    "what": "'Discard queued draft?' with 'This draft has not been sent to OpenCode.' — with several queued drafts the person cannot tell which one this is.",
+    "fix": "Quote the draft's first line in the body: '“Also run the payments tests” has not been sent yet. It will be deleted.'"
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "chat-resend-queued-draft-sheet",
+  "area": "b1-chat-screen",
+  "title": "Send this draft again?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b1-chat-screen/chat-resend-queued-draft-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "Honest about the duplicate risk in two short sentences; the right primary.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "P2 Plain words · C5",
+    "what": "'Keep for review' is vague about where the draft stays.",
+    "fix": "'Keep it in the queue'."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "chat-cancel-inbox-send-sheet",
+  "area": "b1-chat-screen",
+  "title": "Cancel this pending message?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b1-chat-screen/chat-cancel-inbox-send-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Clear words, but it is dressed as a destructive delete when nothing is lost.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P6 · standard §2 Destructive",
+    "what": "The body says the text returns to the composer, yet the primary is error-filled with a broom icon — the same styling as irreversible deletes, which trains people to ignore the red.",
+    "fix": "Use a normal filled primary 'Move back to draft' and a neutral icon (arrow into composer); keep error styling for actions that destroy work."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "chat-pending-photo-sheet",
+  "area": "b1-chat-screen",
+  "title": "Pending photo",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b1-chat-screen/chat-pending-photo-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "Blocks the camera with a destructive choice and no way to go and deal with the other photo.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P1 One thing at a time · X5",
+    "what": "The only offers are 'Discard pending photo' (error-filled primary) or 'Keep editing'. The obvious path — open the conversation that owns the photo — is missing, so the person must delete to continue.",
+    "fix": "Primary 'Open that conversation' (names it: 'Photo waiting in “Add dark mode…”'), secondary 'Discard it and take a new one' in error text, tertiary 'Cancel'."
+   },
+   {
+    "severity": "medium",
+    "principle": "P7 · U9",
+    "what": "A '?' icon in error tone; title 'Pending photo' is a label, not the situation.",
+    "fix": "Camera icon, neutral tone; title 'A photo is still waiting'."
+   },
+   {
+    "severity": "low",
+    "principle": "P2 · C5",
+    "what": "'Keep editing' — nothing is being edited here.",
+    "fix": "'Cancel'."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "chat-share-confirm-sheet",
+  "area": "b1-chat-screen",
+  "title": "Share this session?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b1-chat-screen/chat-share-confirm-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Good caution, but it never says where the link lives or how to take it back.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P10 Earn trust · C1",
+    "what": "'Anyone with the link can view' — but not that the conversation is uploaded to a public host (opncd.ai) nor that it can be stopped later.",
+    "fix": "Body: 'OpenCode uploads this conversation to opncd.ai. Anyone with the link can read it until you stop sharing.' Keep the secrets warning as a second sentence."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "session-menu-sheet",
+  "area": "b2-chat-screen",
+  "title": "<session title> (Session menu)",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b2-chat-screen/session-menu-sheet--closed.png",
+   "docs/qa/screen-census/b2-chat-screen/session-menu-sheet--actions.png",
+   "docs/qa/screen-census/b2-chat-screen/session-menu-sheet--display.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 3,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "Three layout languages in one sheet (chip grid, collapsible sections, plain rows), the session title repeated, and destructive Revert sitting next to Retry.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P7 One kit · U5",
+    "what": "Six destinations are outlined chips that wrap raggedly (2/3/1 per row, different widths), followed by accordion headers in a different type size, followed by plain icon rows — an ad-hoc mix, not KitRow/KitExpandRow.",
+    "fix": "Make it one KitRow list: a short 'Go to' group (Results, Changes, Todos, Timeline, Find, Subagents) as rows with chevrons, then 'Actions' rows. Drop the chip grid."
+   },
+   {
+    "severity": "high",
+    "principle": "P6 · X3",
+    "what": "'Revert last prompt' (rolls back files) is an ordinary row between 'Retry last prompt' and 'Fork conversation', same colour and weight.",
+    "fix": "Move Revert to the bottom of the actions, destructive: true (error-coloured), separated by a divider from Retry/Fork/Share."
+   },
+   {
+    "severity": "medium",
+    "principle": "P1 · U6",
+    "what": "The sheet's header repeats the conversation title that is already in the app bar directly behind it.",
+    "fix": "Replace with nothing, or with a useful line: 'shopfront · 4 prompts · 9 files changed'."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 Plain words · C3",
+    "what": "'Compact context', 'Subagent conversations', 'Display and context' are engine terms; 'Results' and 'Changes' overlap in meaning.",
+    "fix": "'Summarise to free up memory', 'Delegated conversations', 'Show in conversation'; merge Results into Changes or rename to 'What it did'."
+   },
+   {
+    "severity": "medium",
+    "principle": "P6 Made for one hand",
+    "what": "Frequent actions (Approvals, Retry, Share) are folded under 'Conversation actions' and the unfolded list runs past the bottom of the screen.",
+    "fix": "Open with actions unfolded and rarely used display toggles folded; cap the sheet at 90% with the list scrolling inside."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "command-launcher-sheet",
+  "area": "b2-chat-screen",
+  "title": "Commands",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b2-chat-screen/command-launcher-sheet--commands.png",
+   "docs/qa/screen-census/b2-chat-screen/command-launcher-sheet--search.png",
+   "docs/qa/screen-census/b2-chat-screen/command-launcher-sheet--delegate.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "A developer's command palette: the wrong title, 'mobile' stamped on every row and slash syntax as the primary label.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P2 Plain words · C2",
+    "what": "Opened as Commands, the sheet is titled 'Composer tools' — and a different sheet (Prompt tools) is also reached from the same '+' button.",
+    "fix": "Title 'Commands'. Merge Prompt tools and this launcher into one '+' sheet or give them distinct, honest names."
+   },
+   {
+    "severity": "high",
+    "principle": "P2 Plain words · C3",
+    "what": "Rows lead with mono slash commands and aliases ('/sessions /resume /continue', '/warp', '/health') and every row carries a grey 'mobile' tag that means nothing to the person; '/warp — Change this conversation's experimental cloud environment'.",
+    "fix": "Lead with the plain action ('New conversation', 'Find a conversation', 'Open files', 'Project health'); show the slash form as a small trailing hint only. Remove the 'mobile' tag (mark only server commands if the difference matters, e.g. 'from server'). Hide experimental commands behind Details."
+   },
+   {
+    "severity": "medium",
+    "principle": "P9 · U2",
+    "what": "Delegate tab: coloured dots before each agent carry no meaning explained anywhere; one row adds a raw model id ('anthropic/claude-haiku-3-5'); the trailing '+' does not say what it does.",
+    "fix": "Use the agent's icon, not a coloured dot; show the model's presented name; replace '+' with a text button 'Ask' or make the row tap delegate."
+   },
+   {
+    "severity": "low",
+    "principle": "P7 · X7",
+    "what": "Both a drag handle and an X close button.",
+    "fix": "Keep the handle; drop the X on a sheet (or keep only X on a full-screen page)."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "chat-message-actions-sheet",
+  "area": "b2-chat-screen",
+  "title": "[Message actions]",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b2-chat-screen/chat-message-actions-sheet--prompt.png",
+   "docs/qa/screen-census/b2-chat-screen/chat-message-actions-sheet--reply.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Short and usable, but anonymous (no preview of the message) and missing the actions people expect on their own prompt.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P1 · X5",
+    "what": "No header — the person cannot confirm which message the actions apply to.",
+    "fix": "Show the message's first line (muted, one line) as the sheet header."
+   },
+   {
+    "severity": "medium",
+    "principle": "P6 · X7",
+    "what": "Long-press on a reply opens nothing; only the small ⋯ button does, while long-press on a prompt works — the same gesture behaves differently (census observation).",
+    "fix": "Make long-press open this sheet on every message."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 · C5",
+    "what": "'Read reply prose' is odd; the prompt sheet lacks 'Edit and resend' and 'Revert to here', which are the prompt's most useful actions.",
+    "fix": "'Read aloud'; add 'Edit and resend' and 'Undo from here' (destructive, confirmed) to the prompt variant."
+   },
+   {
+    "severity": "low",
+    "principle": "P6 · X3",
+    "what": "Delete sits directly under Copy/Fork with only colour to separate it.",
+    "fix": "Add a divider above Delete."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "chat-delete-message-sheet",
+  "area": "b2-chat-screen",
+  "title": "Delete this message?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b2-chat-screen/chat-delete-message-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "Says exactly what is removed and, importantly, that file changes are not reverted.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "P2 · C6",
+    "what": "Three sentences; 'and all of its parts' is filler.",
+    "fix": "'The message is removed for good, and future replies won't see it. Files it changed stay changed.'"
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "chat-revert-confirm-sheet",
+  "area": "b2-chat-screen",
+  "title": "Revert from this prompt?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b2-chat-screen/chat-revert-confirm-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "A file-rollback confirm that contradicts itself about which prompt and styles the risky action as a normal primary.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P2 · C2",
+    "what": "Reached from 'Revert last prompt', titled 'Revert from this prompt?', body says 'after the most recent prompt' — three names for the target, and the prompt itself is never shown.",
+    "fix": "Title 'Undo the last prompt?'. Body quotes it and counts the effect: '“Fix the flaky checkout test” and its 1 file change will be rolled back.'"
+   },
+   {
+    "severity": "high",
+    "principle": "P6 · X3",
+    "what": "Rolling back files is the primary in the accent colour, identical to a harmless confirm.",
+    "fix": "Error-toned primary 'Roll back'; say whether it can be undone ('You can restore it until you send another prompt') when the server supports unrevert."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "chat-run-shell-dialog",
+  "area": "b2-chat-screen",
+  "title": "Run shell command",
+  "kind": "dialog",
+  "images": [
+   "docs/qa/screen-census/b2-chat-screen/chat-run-shell-dialog.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "The right container for short input, but the command is scrolled out of view and the dialog never says where it runs.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P8 · U3",
+    "what": "The single-line field shows '$ er test test/checkout_test.dart' — the start of the command is scrolled off, so the person cannot read what they are about to run.",
+    "fix": "Make the field multi-line (1–4 lines, mono) so the whole command is visible; place the cursor at the end without hiding the start."
+   },
+   {
+    "severity": "medium",
+    "principle": "P10 Earn trust",
+    "what": "Nothing says it runs on the server in the project folder, without the agent's approval rules.",
+    "fix": "Helper line: 'Runs on Laptop in shopfront/. The output joins this conversation.'"
+   },
+   {
+    "severity": "low",
+    "principle": "standard §2",
+    "what": "Right-aligned Cancel/Run cluster.",
+    "fix": "Stack full-width Run over Cancel as the standard prescribes for phones, or accept the dialog exception in the standard explicitly."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "chat-rename-session-dialog",
+  "area": "b2-chat-screen",
+  "title": "Rename session",
+  "kind": "dialog",
+  "images": [
+   "docs/qa/screen-census/b2-chat-screen/chat-rename-session-dialog.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "Plain, fast rename with the current title selected-ready; nothing to cut.",
+  "issues": [],
+  "quickWin": false
+ },
+ {
+  "pageId": "chat-leave-unsaved-draft-sheet",
+  "area": "b2-chat-screen",
+  "title": "Draft could not be saved",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/b2-chat-screen/chat-leave-unsaved-draft-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 3,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "Warns that work may be lost but withholds the two actions it tells you to take.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P10 Earn trust · X2",
+    "what": "Body: 'Keep editing to copy your text or retry saving' — but the sheet offers neither Copy nor Retry, only 'Leave without saving' (error primary) and 'Keep editing'.",
+    "fix": "Primary 'Copy draft and leave' (copies to clipboard, then leaves), secondary 'Try saving again', tertiary error text 'Leave without saving'."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-composer",
+  "area": "c-chat-compose",
+  "title": "[Chat composer]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/embedded-composer--draft.png",
+   "docs/qa/screen-census/c-chat-compose/embedded-composer--slash-commands.png",
+   "docs/qa/screen-census/c-chat-compose/embedded-composer--working.png",
+   "docs/qa/screen-census/c-chat-compose/embedded-composer--working-steer-queue.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": 3,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A good-looking glass composer that says 'Choose model' while a model answers, crowds six controls into the working row, and speaks engine ('steers the current run').",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P2 Plain words · C2",
+    "what": "The line under each reply shows the raw id 'anthropic/claude-sonnet-4' while the composer chip beside it says 'Choose model' — the screen says two different things about the same model, and the chip claims no model is chosen while one is answering.",
+    "fix": "Pass the reply's model through presentedModelLabel ('Claude Sonnet 4'). When no explicit selection exists, the chip shows the server default by name with a quiet suffix: 'Sonnet 4 · default'. Reserve 'Choose model' for the case where the server reports no default."
+   },
+   {
+    "severity": "high",
+    "principle": "P6 · X1/X3",
+    "what": "Steer/Queue state: +, model chip, expand, activity mark, Stop (red) and Send (green) share one row; Stop and Send touch. The activity mark reads as a 'scan' glyph, not 'working'.",
+    "fix": "In the working state keep +, model chip and one trailing control (Send when text is typed, Stop when empty). Move expand into the field's corner. The activity treatment is the ring alone, or a clearly animated dot inside the Stop button."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 Plain words · C3",
+    "what": "'Send steers the current run' with a Steer | Queue segmented control.",
+    "fix": "Label 'While it works:' with options 'Add to this turn' and 'Send after'."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 · P8",
+    "what": "Inline '/' list shows engine commands (/compact, /connect, /context) with descriptions truncated mid-word ('Summarize the conversation using the select…').",
+    "fix": "Plain names first, two-line descriptions allowed, or drop the description column and show it on focus."
+   },
+   {
+    "severity": "low",
+    "principle": "P5 · M4",
+    "what": "Source: 150/180/400 ms literal durations in composer.dart.",
+    "fix": "Use KitMotion.quick/standard."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "prompt-tools-sheet",
+  "area": "c-chat-compose",
+  "title": "Prompt tools",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/prompt-tools-sheet--default.png",
+   "docs/qa/screen-census/c-chat-compose/prompt-tools-sheet--advanced.png",
+   "docs/qa/screen-census/c-chat-compose/prompt-tools-sheet--prompts.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A tidy row list whose words ('stash', 'context capsule') and overlapping entries make the '+' menu feel like a toolbox dump.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P1 · U6",
+    "what": "'Commands' here opens a second sheet titled 'Composer tools'; 'Attach file' (image or file) overlaps 'Photo library'.",
+    "fix": "Order by frequency: Photo library, Take photo, Attach a file (files only), Voice input, Commands. One name for the command sheet."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 Plain words · C3",
+    "what": "'Stash current prompt', 'Context capsule — Collect notes, errors and screenshots…', 'Saved prompts — Saved on this device for this server. Restoring a prompt also saves any current prompt for later.'",
+    "fix": "'Save prompt for later', 'Notes for this conversation', and a one-line supporting 'On this phone'. Explain the auto-save in the snackbar, not in the menu."
+   },
+   {
+    "severity": "low",
+    "principle": "P8 Craft",
+    "what": "Sheet title in small titleSmall while other chat sheets use large display titles; accordion rows full-bleed dividers vs rails.",
+    "fix": "Adopt one sheet header style (see chat.md pattern) and inset dividers to the 16 dp rails."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-prompt-error-banner",
+  "area": "c-chat-compose",
+  "title": "[Prompt error banner]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/embedded-prompt-error-banner.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "The server even suggests the fix ('Did you mean gpt-5.6-pro?') but the app makes you go and find it, from the top of the screen, far from the failed prompt.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P3 Honest waiting · C4",
+    "what": "Raw 'Model not found: openai/gpt-5.6. Did you mean: gpt-5.6-pro?' with only 'Choose model'; the failed prompt at the bottom carries no failed mark or Retry.",
+    "fix": "Title 'That model isn't on this server'. Actions: filled 'Use GPT-5.6 Pro and resend', text 'Choose another'. Mark the prompt itself 'Not sent' with a Retry beside it."
+   },
+   {
+    "severity": "medium",
+    "principle": "P6 Made for one hand",
+    "what": "The banner sits under the app bar, the opposite end from the composer and the prompt it concerns.",
+    "fix": "Show the error as an inline notice under the failed prompt, above the composer (KitNotice)."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "chat-prompt-error-details-dialog",
+  "area": "c-chat-compose",
+  "title": "Error details",
+  "kind": "dialog",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/chat-prompt-error-details-dialog.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 4,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "The technical truth is there on request, as it should be, but it cannot be copied.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P4 Detail on request · P-c",
+    "what": "A stack trace with paths in mono and only a 'Close' button — no one-tap copy for filing a bug or pasting to the agent.",
+    "fix": "Add 'Copy' (with a 'Copied' snackbar) beside Close; make the text selectable."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-message-view",
+  "area": "c-chat-compose",
+  "title": "[Chat transcript: messages, empty state, floating pills]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/embedded-message-view--loaded.png",
+   "docs/qa/screen-census/c-chat-compose/embedded-message-view--working.png",
+   "docs/qa/screen-census/c-chat-compose/embedded-message-view--empty.png",
+   "docs/qa/screen-census/c-chat-compose/embedded-message-view--model-error.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": 3,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Readable transcript with good choice rows, but the expanded work group repeats itself and errors borrow the reasoning icon.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P1 · U6",
+    "what": "Expanding 'Read 3 files, edited 1 file, ran 1 command' shows the folded prose and then the same summary line again inside itself.",
+    "fix": "Inside the expanded group list the steps (Read cart.dart · Edit checkout_test.dart +5 −2 · Ran flutter test ✓) — never repeat the header."
+   },
+   {
+    "severity": "medium",
+    "principle": "P7 · U9",
+    "what": "Model-error state uses the brain (reasoning) icon in error pink for 'Model not found'.",
+    "fix": "Kit error icon; the brain stays reserved for reasoning."
+   },
+   {
+    "severity": "medium",
+    "principle": "P1 · U4",
+    "what": "Every reply carries two 48 dp circular buttons (copy, ⋯) plus the model id — repeated per turn they become the loudest shapes in the transcript.",
+    "fix": "Show the action row only on the latest reply and on long-press elsewhere; make them 40 dp ghost icons with 48 dp hit areas."
+   },
+   {
+    "severity": "low",
+    "principle": "P8",
+    "what": "Scrolled content is cut hard under the app bar ('Add a test for a coupon…' sliced).",
+    "fix": "Add an 8 dp fade under the app bar."
+   },
+   {
+    "severity": "low",
+    "principle": "P5 · M5",
+    "what": "Source: AnimatedSize and 150–220 ms literal durations in message_view.dart.",
+    "fix": "KitReveal/KitMotion tokens; avoid layout animation on the scrolling list."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "chat-message-error-details-dialog",
+  "area": "c-chat-compose",
+  "title": "Error details",
+  "kind": "dialog",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/chat-message-error-details-dialog.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 4,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Same dialog as the prompt error details: correct place for the stack trace, missing Copy.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P4 · P-c",
+    "what": "No copy action for the error text.",
+    "fix": "Add 'Copy' and selectable text; share the widget with chat-prompt-error-details-dialog."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-subagent-context-banner",
+  "area": "c-chat-compose",
+  "title": "[Subagent session banner: \"Subagent · {count}\"]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/embedded-subagent-context-banner.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Tells you you're inside a delegated conversation, in engine words, with sibling navigation hidden in ⋯.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P2 · C3",
+    "what": "'Subagent · 1 of 2'.",
+    "fix": "'Delegated to explore · 1 of 2' with the parent's title as the back action: '‹ Fix flaky checkout test'."
+   },
+   {
+    "severity": "medium",
+    "principle": "X9",
+    "what": "Moving to the sibling needs the ⋯ menu.",
+    "fix": "Add ‹ › buttons for siblings on the bar."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 · C2",
+    "what": "The composer still says 'Ask OpenCode…' — unclear whether a message goes to the subagent or the main agent.",
+    "fix": "Placeholder 'Message explore…', or disable with 'Reply in the main conversation' if the server doesn't accept it."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-shared-session-banner",
+  "area": "c-chat-compose",
+  "title": "[Shared session banner: \"Shared: anyone with the link can view\"]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/embedded-shared-session-banner.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "An honest reminder that the conversation is public, but it spends three lines and 90 dp at the top of every visit.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "standard §5 KitStatusLine",
+    "what": "Three-line banner with the raw URL permanently above the transcript.",
+    "fix": "One-line status: globe · 'Shared publicly' · 'Copy link'; Stop sharing and the URL go in its ⋯ menu."
+   },
+   {
+    "severity": "low",
+    "principle": "P10",
+    "what": "'Stop sharing' acts without confirmation, yet the link cannot be restored.",
+    "fix": "Confirm: 'Stop sharing? The link stops working for everyone.'"
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-pending-sends-strip",
+  "area": "c-chat-compose",
+  "title": "[Pending sends strip]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/embedded-pending-sends-strip.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "Queued prompts are clipped under the composer, truncated, and a failed one offers every action except Retry.",
+  "issues": [
+   {
+    "severity": "critical",
+    "principle": "P8 · U3",
+    "what": "The third queued bubble ('Then open a pull request…') is cut in half by the composer; the second bubble overruns the right rail to the screen edge.",
+    "fix": "Place queued items inside the scroll view above the composer with the standard bottom inset, or collapse them into one 'n waiting to send' line that opens a sheet."
+   },
+   {
+    "severity": "high",
+    "principle": "P3 · C4",
+    "what": "'Failed: Provider is overloaded. Please retry.' — but the bubble offers only edit and delete; no Retry.",
+    "fix": "Primary text button 'Retry' on the failed item; edit/delete in its ⋯."
+   },
+   {
+    "severity": "high",
+    "principle": "P1 · X3",
+    "what": "Each bubble has up to three trailing icon buttons (send, edit, delete) with delete adjacent to send.",
+    "fix": "One trailing action (the likely one: Retry/Send now) plus a ⋯ menu with Edit and an error-coloured Delete."
+   },
+   {
+    "severity": "medium",
+    "principle": "P8 · P-a",
+    "what": "'Delivery unconfirmed — review before r…' is truncated; message text is right-aligned while its status line is left-aligned.",
+    "fix": "Wrap to two lines: 'May not have arrived. Check before sending again.' Left-align both lines inside the bubble."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-chat-nudge-slot",
+  "area": "c-chat-compose",
+  "title": "[One-time tip above the composer]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/embedded-chat-nudge-slot.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A useful, well-timed tip; the wording and alignment need a pass.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P2 · C3",
+    "what": "'This run changed files: review what changed before you continue.' — 'run' is engine speak and the count is missing.",
+    "fix": "'OpenCode changed 3 files. Look them over before you go on.' Action 'Review changes'."
+   },
+   {
+    "severity": "low",
+    "principle": "P8 · U7",
+    "what": "The text runs past the 16 dp right rail to the screen edge; the dismiss X sits on the action's line far from the text.",
+    "fix": "Keep text inside the rails; put the dismiss X at the top-right of the notice (KitNotice)."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "prompt-editor",
+  "area": "c-chat-compose",
+  "title": "Prompt editor",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/prompt-editor.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 3,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "fix",
+  "summary": "A calm, roomy editor; the only action that matters is out of thumb reach.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P6 Made for one hand · X5",
+    "what": "'Done' is a small text button in the top-right corner; there is no Send from the editor, so finishing a long prompt costs Done + Send.",
+    "fix": "Pin a bottom bar above the keyboard with filled 'Send' and text 'Done'; keep X at top-left."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "prompt-editor-discard-sheet",
+  "area": "c-chat-compose",
+  "title": "Discard prompt changes?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/prompt-editor-discard-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "Clear stakes and a reassuring second sentence; the right confirm for dropping edits.",
+  "issues": [],
+  "quickWin": false
+ },
+ {
+  "pageId": "prompt-history-sheet",
+  "area": "c-chat-compose",
+  "title": "Reuse a prompt",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/prompt-history-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Handy reuse list under a five-line manual that mentions hardware keyboard keys on a phone.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P2 Plain words · C6",
+    "what": "Body: 'Text from loaded prompts in this conversation and recent sends on this server. Selecting one appends it to your draft. Attachments are not copied. With a keyboard, use Up at the start or Down…' — five lines before the list.",
+    "fix": "One line: 'Tap a prompt to add it to your draft.' Keyboard tips belong in a desktop-only tooltip."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 · C5",
+    "what": "Trailing '+' on every row does not say append vs replace.",
+    "fix": "Drop the '+', make the whole row tap; snackbar 'Added to draft · Undo'."
+   },
+   {
+    "severity": "low",
+    "principle": "P8 · U7",
+    "what": "Row dividers start at the rail but run past the right edge.",
+    "fix": "Inset both ends to the 16 dp rails."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "prompt-stash-sheet",
+  "area": "c-chat-compose",
+  "title": "Saved prompts",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/prompt-stash-sheet--loaded.png",
+   "docs/qa/screen-census/c-chat-compose/prompt-stash-sheet--empty.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Saved prompts work, but each row puts Delete beside Restore and the empty state is an instruction, not a door.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P6 · X3",
+    "what": "Every row shows 'Restore' and 'Delete' as equal text buttons side by side, plus an expand chevron.",
+    "fix": "Row tap restores; the chevron expands; Delete moves to a ⋯ menu (error-coloured) or swipe with Undo."
+   },
+   {
+    "severity": "medium",
+    "principle": "P3 · X4",
+    "what": "Empty: 'Nothing saved yet. Use Stash current prompt in Prompt tools to keep a prompt for later.' — plain text telling you to navigate elsewhere.",
+    "fix": "KitStateView inline: 'No saved prompts' + 'Save the current prompt' button (when the draft has text)."
+   },
+   {
+    "severity": "low",
+    "principle": "P8",
+    "what": "Oldest first (Sep 25 above Sep 26); list rows use 32 dp rails vs the header's 16 dp.",
+    "fix": "Newest first; 16 dp rails."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "prompt-stash-delete-sheet",
+  "area": "c-chat-compose",
+  "title": "Delete saved prompt?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/prompt-stash-delete-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 4,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A sheet stacked on a sheet to confirm deleting a local note that could simply be undone.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P10 · X6",
+    "what": "Confirm sheet over the Saved prompts sheet, without naming which prompt.",
+    "fix": "Delete immediately with a snackbar 'Saved prompt deleted · Undo'; if a confirm stays, quote the prompt's first line."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "chat-read-aloud-consent-sheet",
+  "area": "c-chat-compose",
+  "title": "Use the system speech engine?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/chat-read-aloud-consent-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 1,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "Seven centred sentences of disclaimers to read a reply aloud.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P2 Plain words · C6",
+    "what": "'The loaded reply prose will be sent to your system speech engine. Only voices marked offline are offered, but the engine is separate software… Others may hear the audio. Playback stops when…' — seven sentences, centred; title 'Use the system speech engine?'.",
+    "fix": "Title 'Read replies aloud?'. Body: 'Your phone's voice reads the reply, offline. Code is skipped.' Put the rest under a 'Details' row. Ask once, remember the answer."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "chat-read-aloud-voice-sheet",
+  "area": "c-chat-compose",
+  "title": "Choose a reading voice",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/chat-read-aloud-voice-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A voice picker with no way to hear a voice and no mark for the current one.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P3 · X5",
+    "what": "Four rows 'English (US) · voice 1/2…' with raw locale codes (en-US, ar) as the supporting line; no play sample, no selected mark, no cancel.",
+    "fix": "Each row gets a play button (speaks 'This is how replies will sound'), a current-voice check, and the supporting line becomes 'Offline'. Drop the locale codes."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-transcript-find-bar",
+  "area": "c-chat-compose",
+  "title": "[Transcript find bar]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/embedded-transcript-find-bar--open.png",
+   "docs/qa/screen-census/c-chat-compose/embedded-transcript-find-bar--matches.png",
+   "docs/qa/screen-census/c-chat-compose/embedded-transcript-find-bar--no-match.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Find works and highlights well, but it shows its count twice and narrates its own implementation.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P1 · U6",
+    "what": "'1 of 12 matches' appears in the bar and again as the heading of a match card that duplicates the prompt directly beneath it.",
+    "fix": "Keep the count in the bar only; highlight the match in place (the green current-match fill already does this)."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 · C3",
+    "what": "Idle: 'Messages, reasoning and tool data' where the count goes, plus 'All available message content searched.' under every state.",
+    "fix": "Placeholder 'Find in conversation'; show 'Older messages not loaded — Load' only when that is true; otherwise nothing."
+   },
+   {
+    "severity": "low",
+    "principle": "P6",
+    "what": "The bar sits under the app bar, the far end from the thumb.",
+    "fix": "Consider docking it above the composer (as in Safari/Chrome mobile find)."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-model-shortcuts",
+  "area": "c-chat-compose",
+  "title": "[Chat keyboard shortcuts: model cycle / background]",
+  "kind": "overlay",
+  "images": [],
+  "scores": {
+   "ui": null,
+   "ux": null,
+   "motion": null,
+   "copy": null,
+   "principles": null
+  },
+  "suggested": "keep",
+  "summary": "Not rendered: a desktop-only keyboard-shortcut Focus wrapper with no visible surface; nothing to review on a phone.",
+  "issues": [],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-transcript-display-toggles",
+  "area": "c-chat-compose",
+  "title": "[Transcript display toggles]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/c-chat-compose/embedded-transcript-display-toggles.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Two switches whose supporting lines describe the off state, so you cannot tell what 'on' does.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P2 · C2",
+    "what": "'Reasoning — Collapsed until you tap it' next to an off switch; 'Timestamps & usage — Hidden to keep the transcript quiet'.",
+    "fix": "Name what on does: 'Show reasoning open', 'Show times and token use'. 'Context usage' gets a chevron and a value ('62% used')."
+   },
+   {
+    "severity": "low",
+    "principle": "P7",
+    "what": "Accordion header and rows use full-bleed dividers.",
+    "fix": "Inset to rails; KitSwitchRow."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "session-approvals-sheet",
+  "area": "d-chat-sheets",
+  "title": "Approvals for this session",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/session-approvals-sheet--ask.png",
+   "docs/qa/screen-census/d-chat-sheets/session-approvals-sheet--auto.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "Important safety control whose copy contradicts itself about new conversations, with the dangerous server-wide switch styled like any other.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P2 · C2",
+    "what": "'Approve everything on this server — Every conversation on this server, new ones and subagents included…' and the footer 'New conversations always ask.' say opposite things on the same screen.",
+    "fix": "Decide the rule and say it once. E.g. server switch: 'Approve everything on this server, including new conversations, until this app disconnects.' Remove the contradicting footer sentence."
+   },
+   {
+    "severity": "high",
+    "principle": "P10 Earn trust · X3",
+    "what": "The server-wide 'Dangerous' option is a plain switch with the same look as 'Subagents inherit this', and turns on without a confirm.",
+    "fix": "Error-toned row (destructive styling), and a confirm sheet 'Approve everything on Laptop?' that lists what it covers."
+   },
+   {
+    "severity": "medium",
+    "principle": "P8 · U7",
+    "what": "Radio rows indent to 60 dp, switch rows to 40 dp; the lone tonal 'Close' floats right.",
+    "fix": "One leading edge (KitRow); no Close button — the handle and back dismiss a settings sheet."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 · C6",
+    "what": "Supporting lines run to four lines each.",
+    "fix": "Max two lines; move the rest behind an info Details row."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-auto-approval-indicator",
+  "area": "d-chat-sheets",
+  "title": "[Auto-approval indicator strip]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/embedded-auto-approval-indicator--on.png",
+   "docs/qa/screen-census/d-chat-sheets/embedded-auto-approval-indicator--paused.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A clear, tappable reminder that approvals are automatic; it just doesn't sit on the grid or explain the paused state.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P7 · U9",
+    "what": "The on state uses a shield icon, the paused state a key icon, for the same feature.",
+    "fix": "One icon (shield) with a paused variant (shield-slash)."
+   },
+   {
+    "severity": "low",
+    "principle": "P8 · U7",
+    "what": "The pill starts at 12 dp while the transcript uses 20 dp rails.",
+    "fix": "Align to the content rail."
+   },
+   {
+    "severity": "low",
+    "principle": "P2 · C4",
+    "what": "'Auto-approve paused' doesn't say until when.",
+    "fix": "'Auto-approve paused · resumes when Laptop answers'."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-permission-attention-card",
+  "area": "d-chat-sheets",
+  "title": "<permission request title>",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/embedded-permission-attention-card--command.png",
+   "docs/qa/screen-census/d-chat-sheets/embedded-permission-attention-card--edit.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Unmissable, but a heavy filled button that only opens another sheet, under a work line that still says 'Running'.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P2 · C2",
+    "what": "Above the card the work line reads 'Running tools · Shell · flutter test test/checkout_test.…' with a spinner, and repeats the same command the card shows.",
+    "fix": "While the card is up, the work line says 'Waiting for you' (still mark) and drops the command."
+   },
+   {
+    "severity": "high",
+    "principle": "P1 · regression #4",
+    "what": "The only action is a full-width filled 'Review' that opens the permission sheet — two taps for every approval.",
+    "fix": "Inline filled 'Allow once' + tonal 'Reject' + text 'Details'; the edit variant shows '+5 −2' so the choice can be made in place."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-question-attention-card",
+  "area": "d-chat-sheets",
+  "title": "<question title> / OpenCode needs input",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/embedded-question-attention-card--inline.png",
+   "docs/qa/screen-census/d-chat-sheets/embedded-question-attention-card--summary.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Good inline question with timing hints on options; 'More' and the free-text field's role are unclear.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P2 · C5",
+    "what": "A bare 'More' text button at the bottom of the card.",
+    "fix": "'Open full question' or 'Other options'."
+   },
+   {
+    "severity": "medium",
+    "principle": "X5",
+    "what": "Single-choice card shows radio rows and a 'Your answer' field with no Send; it is not clear whether tapping a radio sends at once or the typed text is used.",
+    "fix": "Radio tap sends at once with a snackbar 'Answered · Undo'; the text field shows a Send button only when it has text."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "permission-sheet",
+  "area": "d-chat-sheets",
+  "title": "<permission request title, e.g. \"Run a shell command\">",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/permission-sheet--command.png",
+   "docs/qa/screen-census/d-chat-sheets/permission-sheet--edit-diff.png",
+   "docs/qa/screen-census/d-chat-sheets/permission-sheet--reject-with-message.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": 3,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Right hierarchy (Allow once / Reject / Always allow) and a clear 'would also cover' preview, spoiled by tool names, a duplicated path and a rendering band.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P2 Plain words · C3",
+    "what": "'The agent wants to use bash.' / 'The agent wants to use edit.' — raw tool ids.",
+    "fix": "'OpenCode wants to run this command:' / 'OpenCode wants to change this file:'."
+   },
+   {
+    "severity": "high",
+    "principle": "P1 · U6",
+    "what": "Edit request shows the path twice: an absolute '/home/dev/shopfront/test/checkout_test.dart' row above the diff and a relative 'test/checkout_test.dart' card below it.",
+    "fix": "One relative path in the header ('test/checkout_test.dart'); absolute path under Details."
+   },
+   {
+    "severity": "medium",
+    "principle": "P8 · U3",
+    "what": "A black band separates the scrolling body from the pinned action area (also on the form sheet).",
+    "fix": "Give the pinned bar the sheet's surface colour and a hairline top border; no gap."
+   },
+   {
+    "severity": "medium",
+    "principle": "P8",
+    "what": "Diff lines are clipped at the card's edge with no wrap or scroll hint.",
+    "fix": "Soft-wrap diff lines with a hanging indent, or add a wrap toggle and right-edge fade."
+   },
+   {
+    "severity": "low",
+    "principle": "P5 · M5",
+    "what": "Source: AnimatedSize 240 ms for the reject-reason reveal (layout animation, off-token).",
+    "fix": "KitReveal on KitMotion.standard."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "permission-sheet-always-dialog",
+  "area": "d-chat-sheets",
+  "title": "Confirm broader access",
+  "kind": "dialog",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/permission-sheet-always-dialog.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Asks before granting broad access — good — but reads like a form and puts the risky choice in the filled button.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P2 · C6",
+    "what": "'Context: bash in this conversation', 'Always allow patterns:', 'Consequence: future matching actions can run without asking again for the lifetime of this OpenCode server', 'saved grants'.",
+    "fix": "'Always allow flutter test *? OpenCode will run matching commands without asking until the server restarts. You can remove this in Settings › Saved permissions.'"
+   },
+   {
+    "severity": "medium",
+    "principle": "P10 · X3",
+    "what": "'Confirm always allow' is a filled primary and the safe 'Keep asking' a text button.",
+    "fix": "Tonal (warning) 'Always allow' and a filled or outlined 'Keep asking', or equal-weight stacked buttons with the safe one first."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "todos-sheet",
+  "area": "d-chat-sheets",
+  "title": "Todo list",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/todos-sheet--loaded.png",
+   "docs/qa/screen-census/d-chat-sheets/todos-sheet--empty.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "Shows the plan, but with raw status words, a checkbox for 'in progress' and a card-wrapped empty state.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P7 One kit · U5",
+    "what": "Status is lowercase enum text ('completed', 'in progress') under each item; the in-progress item shows an empty checkbox identical to 'not started'.",
+    "fix": "Lead each row with KitStatusMark (waiting / working / done); drop the status words or use 'Done'/'Working on it'."
+   },
+   {
+    "severity": "medium",
+    "principle": "P6 · X7",
+    "what": "Checkboxes look tappable but the list is read-only.",
+    "fix": "Use non-interactive marks, not Checkbox widgets."
+   },
+   {
+    "severity": "medium",
+    "principle": "standard §3",
+    "what": "Empty: a bordered card with a centred icon and 'No todos in this conversation', and the sheet loses its title.",
+    "fix": "KitStateView inline with no card: 'No plan yet' / 'When OpenCode plans the work as steps, they show here.' Keep the sheet title."
+   },
+   {
+    "severity": "low",
+    "principle": "P2",
+    "what": "'the assistant' while the rest of the app says 'OpenCode'.",
+    "fix": "'OpenCode'."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "timeline-sheet",
+  "area": "d-chat-sheets",
+  "title": "Message timeline / Fork from prompt",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/timeline-sheet--loaded.png",
+   "docs/qa/screen-census/d-chat-sheets/timeline-sheet--search.png",
+   "docs/qa/screen-census/d-chat-sheets/timeline-sheet--fork.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Useful jump list with search and fork; previews leak raw Markdown and the match count disagrees with the rows.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P2 · C2",
+    "what": "Previews show raw backticks ('`cart_repository_test.dart`', '`CheckoutBloc`').",
+    "fix": "Strip Markdown in previews; render inline code in mono without backticks."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 · C2",
+    "what": "'5 matches in message text' above three rows (it counts occurrences, not messages); the line is centred over left-aligned rows.",
+    "fix": "'3 messages' left-aligned; highlight all occurrences within them."
+   },
+   {
+    "severity": "low",
+    "principle": "P7",
+    "what": "Large display title + subtitle + X + drag handle — a different header style from Todos and Approvals.",
+    "fix": "Unify sheet headers (see chat.md)."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-voice-conversation-controls",
+  "area": "d-chat-sheets",
+  "title": "Voice conversation",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/embedded-voice-conversation-controls.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Voice mode's main action is a small text button inside a card, and the switch's explanation is cryptic.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P6 Made for one hand · X5",
+    "what": "'Listen' — the reason voice mode exists — is a text button the same weight as 'Exit voice mode'.",
+    "fix": "A large mic button (56–64 dp) at the composer's send position; 'Exit' as a small text button."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 · C3",
+    "what": "'Speak replies — Read a matched reply once after Send. Tap Listen to use the microphone.'",
+    "fix": "'Read replies aloud' with supporting 'Only the reply to what you just said.'"
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-completion-digest-card",
+  "area": "d-chat-sheets",
+  "title": "Server reported idle. Success or failure is not verified.",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/embedded-completion-digest-card.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 1,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "A 'digest' that mostly reports what it does not know, in engineering disclaimers, with five competing text actions.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P2 Plain words · C3/C4",
+    "what": "'Server reported idle. Success or failure is not verified.', '9 changed files in the conversation total; this run is unknown.', 'No pending decisions in the current cache.', 'Tool outcomes and remaining tasks: unknown.', 'Cached server metadata only. No AI summary or model call.'",
+    "fix": "Show only what is known, as a person would: 'Finished · 9 files changed · nothing waiting on you'. Put provenance ('from server status, not checked') under a Details row."
+   },
+   {
+    "severity": "high",
+    "principle": "standard §2 · U4",
+    "what": "Five actions in two rows: Open conversation, Review next actions, Run results, Copy digest, Dismiss.",
+    "fix": "One primary 'Open conversation', one secondary 'Review changes'; Copy and Dismiss in a ⋯ menu."
+   },
+   {
+    "severity": "medium",
+    "principle": "P1 · U6",
+    "what": "Nested expanders: a 'Completion digests' row expands to a conversation row that expands again into the digest.",
+    "fix": "Show each finished conversation as a KitRow in Inbox with a one-line result; tapping opens the conversation."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "form-sheet",
+  "area": "d-chat-sheets",
+  "title": "<form title>",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/form-sheet--sheet.png",
+   "docs/qa/screen-census/d-chat-sheets/form-sheet--full-screen.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 3,
+   "motion": 3,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "The agent's form renders cleanly as a sheet, but the full-screen variant's pinned bar floats mid-screen between black bands.",
+  "issues": [
+   {
+    "severity": "critical",
+    "principle": "P8 · U3",
+    "what": "Full-screen variant: the 'pinned' Dismiss / Send answers bar sits directly under the last field in the middle of the screen, framed by black bands, with empty screen below it; the page also has no top bar or close control.",
+    "fix": "Use KitScreen with an app bar (X + title) and pin the action bar to the bottom safe area; fields scroll above it with a bottom inset."
+   },
+   {
+    "severity": "medium",
+    "principle": "standard §2",
+    "what": "Dismiss and Send answers sit side by side (text + filled) on a phone.",
+    "fix": "Stack full-width 'Send answers' over a text 'Dismiss'."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 · C2",
+    "what": "The date field shows ISO '2026-10-02'; multi-select chips ('Unit tests / Goldens / End-to-end') show no difference between selected and unselected — all look disabled.",
+    "fix": "Human date 'Fri, 2 Oct 2026'; selected chips get a check and filled tonal background."
+   },
+   {
+    "severity": "low",
+    "principle": "P5 · M5",
+    "what": "Source: AnimatedSize 240 ms around conditional fields.",
+    "fix": "KitReveal on KitMotion.standard."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "form-sheet-dismiss-confirm-sheet",
+  "area": "d-chat-sheets",
+  "title": "Dismiss this request?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/form-sheet-dismiss-confirm-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "One short sentence that states the real consequence; the right confirm.",
+  "issues": [],
+  "quickWin": false
+ },
+ {
+  "pageId": "form-sheet-date-picker",
+  "area": "d-chat-sheets",
+  "title": "[Material date picker, then time picker for date-time fields]",
+  "kind": "dialog",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/form-sheet-date-picker.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "Stock Material date picker, themed correctly; familiar and fine.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "P2 · C5",
+    "what": "'OK' is not a verb that says what happens.",
+    "fix": "Set confirmText to 'Use date'."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-markdown-text",
+  "area": "d-chat-sheets",
+  "title": "[Markdown content]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/embedded-markdown-text.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Rich, well-typeset replies; tables break file names mid-word and code clips without a hint.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P8 · P-a",
+    "what": "Table cells break file names mid-token: 'checkout_test / .dart', 'cart_reposito / ry_test.dart'.",
+    "fix": "Give the first column min-content width with ellipsis-in-middle ('cart_rep…test.dart') and horizontal scroll for the table; or break only at '_' and '.'."
+   },
+   {
+    "severity": "medium",
+    "principle": "P8 · U3",
+    "what": "Code block lines clip at the edge ('tota').",
+    "fix": "Right-edge fade + wrap toggle, as for chat code blocks."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "markdown-code-reader",
+  "area": "d-chat-sheets",
+  "title": "Code reader",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/markdown-code-reader.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "'Full screen' shows the same small, still-clipped card with three quarters of the screen empty.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P1 · X5",
+    "what": "The reader renders the code as the same bordered card (5 lines, last line clipped at 'total'), wrap off, on an otherwise empty page.",
+    "fix": "Edge-to-edge code with line numbers, wrap on by default in the reader, pinch to zoom, copy in the app bar."
+   },
+   {
+    "severity": "low",
+    "principle": "P2 · C6",
+    "what": "Title 'Code reader'.",
+    "fix": "Use the language or file name: 'Dart snippet' / 'checkout_bloc.dart'."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-question-options",
+  "area": "d-chat-sheets",
+  "title": "[Question option rows]",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/embedded-question-options--multi-select.png",
+   "docs/qa/screen-census/d-chat-sheets/embedded-question-options--custom-answer.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 4
+  },
+  "suggested": "fix",
+  "summary": "Clean option rows with useful cost hints; the free-text field's relationship to the options is unclear.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "X5",
+    "what": "Multi-select: checked options plus an empty 'Your answer' field and 'Send' — does the text add to or replace the checks? After typing in single-choice, the radios stay unselected but look ignorable.",
+    "fix": "Label the field 'Something else' and, when it has text, clear/disable the options with a line 'Your answer replaces the choices'."
+   },
+   {
+    "severity": "low",
+    "principle": "P2 · C5",
+    "what": "'More'.",
+    "fix": "'Show the full question'."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-return-brief-panel-status-dialog",
+  "area": "d-chat-sheets",
+  "title": "Review status unknown",
+  "kind": "dialog",
+  "images": [],
+  "scores": {
+   "ui": null,
+   "ux": null,
+   "motion": null,
+   "copy": null,
+   "principles": null
+  },
+  "suggested": "keep",
+  "summary": "Not rendered: removed from the code together with the return brief card; nothing to review.",
+  "issues": [],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-return-brief-panel",
+  "area": "d-chat-sheets",
+  "title": "Unreviewed work",
+  "kind": "overlay",
+  "images": [],
+  "scores": {
+   "ui": null,
+   "ux": null,
+   "motion": null,
+   "copy": null,
+   "principles": null
+  },
+  "suggested": "keep",
+  "summary": "Not rendered: the widget was removed in the 2026-09-24 Work tab cleanup (unreviewed state moved into session rows); nothing to review.",
+  "issues": [],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-tool-card",
+  "area": "d-chat-sheets",
+  "title": "<tool title> (e.g. Shell, Edit, Task)",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/embedded-tool-card--shell.png",
+   "docs/qa/screen-census/d-chat-sheets/embedded-tool-card--long-output.png",
+   "docs/qa/screen-census/d-chat-sheets/embedded-tool-card--edit.png",
+   "docs/qa/screen-census/d-chat-sheets/embedded-tool-card--subagent.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": 3,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Shell and edit cards are informative; long output is uncapped and the subagent card is developer noise.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P8 · U3",
+    "what": "A 41-line shell output renders in full inline, pushing the card header off screen; the edit card caps with 'See all' but the shell card does not.",
+    "fix": "Cap all outputs at ~12 lines with 'See all · 41 lines' (the edit card's pattern), newest lines shown for failures."
+   },
+   {
+    "severity": "high",
+    "principle": "P2 · C3",
+    "what": "Subagent card: agent name three times (header 'explore', orange 'explore' chip, title), mono labels 'Prompt from parent agent', '1 line', 'Result', and a 'Rendered | Raw' toggle.",
+    "fix": "Header 'Delegated to explore · Done ✓'; body: the task in one line, the result in prose, and 'Open that conversation'. Raw view goes under ⋯."
+   },
+   {
+    "severity": "medium",
+    "principle": "P8 · U7",
+    "what": "Three nested indents (work group rail → tool → output) leave the output 25% narrower than the transcript.",
+    "fix": "One indent level; outputs align to the work-group rail."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 · C3",
+    "what": "'exit 0' in the shell header; diff shows '--- a/ +++ b/ @@ -41,9 +41,12 @@' headers.",
+    "fix": "'Passed ✓' / 'Failed (exit 1)'; hide unified-diff headers, show '+5 −2' and line numbers."
+   },
+   {
+    "severity": "low",
+    "principle": "P7 · U9",
+    "what": "The subagent chip uses an orange outside the palette.",
+    "fix": "Use the agent's accent from the theme's tonal set."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "voice-notices",
+  "area": "d-chat-sheets",
+  "title": "Voice licenses and provenance",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/voice-notices.png"
+  ],
+  "scores": {
+   "ui": 1,
+   "ux": 2,
+   "motion": null,
+   "copy": 1,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "Raw Markdown (#, **, backticks) with hard line breaks, written for maintainers, under a truncated title.",
+  "issues": [
+   {
+    "severity": "critical",
+    "principle": "P8 · U3",
+    "what": "The notices file is shown as raw Markdown in mono with the file's hard line breaks mid-sentence; the title is cut to 'Voice licenses and proven…'.",
+    "fix": "Render the Markdown (the app has a renderer) with proportional body text; title 'Voice licences'."
+   },
+   {
+    "severity": "high",
+    "principle": "P2 · C3",
+    "what": "Content is build-process prose: 'pubspec.lock', '~/.pub-cache/hosted/pub.dev/<name>-<version>/LICENSE', 'record 6.2.1 while the app shipped 7.1.1'.",
+    "fix": "Write a user page: which voice models, who made them, their licence, a link each; move the verification method to the repository."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "voice-model-setup-sheet",
+  "area": "d-chat-sheets",
+  "title": "Local voice input",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/voice-model-setup-sheet--not-installed.png",
+   "docs/qa/screen-census/d-chat-sheets/voice-model-setup-sheet--downloading.png",
+   "docs/qa/screen-census/d-chat-sheets/voice-model-setup-sheet--installed.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Clear privacy promise and honest sizes, but model jargon, badge chips that look like buttons and a disabled Download standing in for progress.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "standard §2 · regression #19",
+    "what": "While downloading, a disabled 'Download' button remains beside 'Cancel download'; no time estimate under the bar.",
+    "fix": "Replace the buttons with KitProgressRow ('61 of 153 MB · about 1 min left') and a single 'Cancel'."
+   },
+   {
+    "severity": "medium",
+    "principle": "P2 · C3",
+    "what": "'Choose a multilingual Whisper INT8 model', 'MiB', 'Recommended quality, storage, and speed tradeoff'.",
+    "fix": "Subtitle 'Pick a voice model to download once'. Sizes in MB. 'Best for most phones'."
+   },
+   {
+    "severity": "medium",
+    "principle": "P7 · U5",
+    "what": "'Default', 'Optional', 'Installed' are outlined boxes that look like buttons; each option is a bordered card.",
+    "fix": "Use a small tonal tag (KitRow trailing value) and plain radio rows."
+   },
+   {
+    "severity": "medium",
+    "principle": "standard §2",
+    "what": "'Not now' and 'Download' side by side; in the installed state 'Delete' is accent-coloured beside 'Re-download'.",
+    "fix": "Stack primary over text; Delete in error colour in the row's ⋯ menu."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "voice-model-setup-sheet-delete-dialog",
+  "area": "d-chat-sheets",
+  "title": "Delete {model}?",
+  "kind": "dialog",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/voice-model-setup-sheet-delete-dialog.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Honest about size and re-download, but the delete is a green filled button.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P6 · X3",
+    "what": "'Delete' is the filled accent primary.",
+    "fix": "Error-coloured 'Delete'; 'Keep' as the neutral action."
+   },
+   {
+    "severity": "low",
+    "principle": "P2 · C3",
+    "what": "'Delete Balanced?' / 'app-private storage'.",
+    "fix": "'Delete the Balanced voice model?' / 'This frees 153 MB. You can download it again.'"
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "voice-composer-sheet",
+  "area": "d-chat-sheets",
+  "title": "[Voice input] (status: Ready for local voice input / Listening …)",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/d-chat-sheets/voice-composer-sheet--listening.png",
+   "docs/qa/screen-census/d-chat-sheets/voice-composer-sheet--draft.png",
+   "docs/qa/screen-census/d-chat-sheets/voice-composer-sheet--mic-denied.png",
+   "docs/qa/screen-census/d-chat-sheets/voice-composer-sheet--conversation-ready.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Listening is excellent (timer, meter, privacy line); the other states misorder their buttons and one quietly discards text.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P10 Earn trust · X2",
+    "what": "Conversation-ready: 'Unsent text is discarded when you leave voice mode, the conversation, or the app.'",
+    "fix": "Keep unsent transcripts as the composer draft like any typed text; drop the warning."
+   },
+   {
+    "severity": "medium",
+    "principle": "standard §2",
+    "what": "Transcript ready: 'Cancel' (outlined) sits above the primary 'Insert'; mic-denied: the real fix 'Open app settings' is outlined while 'Try again' (useless until permission changes) is the filled primary.",
+    "fix": "Order primary → secondary → tertiary: 'Insert & send' / 'Insert' / 'Cancel'; 'Open settings' filled, 'Cancel' text; drop 'Try again' (re-check on return)."
+   },
+   {
+    "severity": "medium",
+    "principle": "P8 · P-a",
+    "what": "Helper line truncated: 'Edit before inserting. Sending always requires an ex…'.",
+    "fix": "'You can edit it first.' (one short line)."
+   },
+   {
+    "severity": "low",
+    "principle": "standard §3",
+    "what": "Mic denied: 'Technical details' sits above the actions; the icon is the neutral waveform.",
+    "fix": "Details below actions; mic-off icon in warning tone."
+   }
+  ],
+  "quickWin": false
+ }
+]

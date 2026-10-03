@@ -71,6 +71,7 @@ final class ProbeFound extends ProbeVerdict {
     this.identityLogin,
     this.identityAllowed = false,
     this.capabilities = OrchestrationCapabilities.gascityRead,
+    this.boundaryTier = '',
   }) : readOnly = readOnly ?? !(front && identityAllowed);
 
   /// Identity of the host; when [front] is set, [OrchestrationHostIdentity.url]
@@ -95,6 +96,10 @@ final class ProbeFound extends ProbeVerdict {
   /// What the adapter built for this host may do: [OrchestrationCapabilities.gascityFront]
   /// behind an allowing front, else [OrchestrationCapabilities.gascityRead].
   final OrchestrationCapabilities capabilities;
+
+  /// The phone engine's proven file boundary (`proot`, `landlock`, or empty
+  /// when unknown). Only the phone engine reports one.
+  final String boundaryTier;
 
   @override
   String describe() =>
@@ -198,12 +203,30 @@ final class ProbePlainHttpRefused extends ProbeVerdict {
 
 /// No answer: DNS, refused connection, timeout, TLS failure, bad URL.
 final class ProbeUnreachable extends ProbeVerdict {
-  const ProbeUnreachable({required this.error});
+  const ProbeUnreachable({required this.error, this.url});
 
   final Object error;
 
+  /// The address the app asked. Dart's refused-connection text ends in
+  /// the local (ephemeral) port, not this one ("port = 36580" for a team
+  /// on 8472), so the details name the address themselves.
+  final String? url;
+
   @override
-  String describe() => 'Unreachable: $error';
+  String describe() {
+    final asked = _origin(url);
+    return asked == null
+        ? 'Unreachable: $error'
+        : 'Unreachable: $asked did not answer: $error';
+  }
+
+  /// Scheme, host and port only: never a user name or password.
+  static String? _origin(String? url) {
+    final uri = url == null ? null : Uri.tryParse(url);
+    if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return null;
+    final host = uri.host.contains(':') ? '[${uri.host}]' : uri.host;
+    return '${uri.scheme}://$host${uri.hasPort ? ':${uri.port}' : ''}';
+  }
 }
 
 /// Path of the front's discovery document.
@@ -315,9 +338,9 @@ class GasCityProbe {
         detail: e.problem.message,
       );
     } on OrchestrationTransportException catch (e) {
-      return ProbeUnreachable(error: e.cause ?? e);
+      return ProbeUnreachable(error: e.cause ?? e, url: client.baseUrl);
     } on Object catch (e) {
-      return ProbeUnreachable(error: e);
+      return ProbeUnreachable(error: e, url: client.baseUrl);
     }
 
     final wanted = city ?? health.city;
@@ -365,7 +388,7 @@ class GasCityProbe {
       } on OrchestrationHttpException {
         // Older supervisors may not list cities; the city health decides.
       } on OrchestrationTransportException catch (e) {
-        return ProbeUnreachable(error: e.cause ?? e);
+        return ProbeUnreachable(error: e.cause ?? e, url: scoped.baseUrl);
       }
 
       // 3. The city's own health and status (identity).
@@ -386,7 +409,7 @@ class GasCityProbe {
           detail: e.problem.message,
         );
       } on OrchestrationTransportException catch (e) {
-        return ProbeUnreachable(error: e.cause ?? e);
+        return ProbeUnreachable(error: e.cause ?? e, url: scoped.baseUrl);
       }
       try {
         status = GcStatus.fromJson(await scoped.getCity('/status'));

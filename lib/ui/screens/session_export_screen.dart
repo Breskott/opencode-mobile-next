@@ -8,7 +8,18 @@ import '../../api2/transport.dart';
 import '../../domain/server_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../app_iconography.dart';
+import '../app_theme.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_choice_list.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_progress.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_row_parts.dart';
+import '../kit/kit_screen.dart';
+import '../kit/kit_section_label.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
+import '../kit/kit_top_bar.dart';
 
 typedef SaveSessionExport =
     Future<Uri?> Function(String name, Uint8List bytes, String mimeType);
@@ -16,6 +27,14 @@ typedef SaveSessionExport =
 Future<Uri?> _saveExport(String name, Uint8List bytes, String mimeType) =>
     FilePicker.saveFile(fileName: name, bytes: bytes, mimeType: mimeType);
 
+/// Export conversation (map page `session-export`): save this conversation
+/// as a file, either the complete copy the server sends (JSON, redacted by
+/// default) or the readable transcript loaded here (Markdown).
+///
+/// One format list, the redaction switch only for the complete copy (a
+/// transcript is never redacted), and one bottom primary that names what it
+/// saves. A server without the complete copy keeps that choice visible with
+/// its reason (STATE-12) and starts on the transcript.
 class SessionExportScreen extends StatefulWidget {
   const SessionExportScreen({
     super.key,
@@ -41,7 +60,7 @@ class _SessionExportScreenState extends State<SessionExportScreen> {
   late final String _sessionID;
   late final Uint8List Function() _markdown;
   late final SaveSessionExport _saveFile;
-  bool _json = true;
+  late bool _json;
   bool _sanitize = true;
   bool _busy = false;
   bool _saving = false;
@@ -69,6 +88,9 @@ class _SessionExportScreenState extends State<SessionExportScreen> {
     _sessionID = widget.sessionID;
     _markdown = widget.markdown;
     _saveFile = widget.saveFile;
+    // A server without the complete copy starts on the transcript, so the
+    // primary works at once instead of waiting for a second tap.
+    _json = _supported;
     _controller.addListener(_changed);
   }
 
@@ -89,6 +111,7 @@ class _SessionExportScreenState extends State<SessionExportScreen> {
     final l10n = _l10n;
     final token = CancelToken();
     _cancel = token;
+    var writing = false;
     setState(() {
       _busy = true;
       _saved = false;
@@ -125,6 +148,7 @@ class _SessionExportScreenState extends State<SessionExportScreen> {
       setState(() => _saving = true);
       final id = _sessionID.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
       final saveBytes = Uint8List.fromList(bytes);
+      writing = true;
       final result = await _saveFile(
         'opencode-$id.${_json ? 'json' : 'md'}',
         saveBytes,
@@ -136,12 +160,15 @@ class _SessionExportScreenState extends State<SessionExportScreen> {
     } catch (error) {
       if (!mounted || token.isCancelled) return;
       setState(() {
-        _error = switch (error) {
-          SessionExportUnsupported() => l10n.exportUnsupported,
-          Api2Error(statusCode: 401 || 403) => l10n.exportAuthorization,
-          Api2Error(tag: 'SessionNotFoundError') => l10n.exportMissing,
-          _ => l10n.exportFailed,
-        };
+        if (error is SessionExportUnsupported) _json = false;
+        _error = writing
+            ? l10n.sessionExportSaveFailed
+            : switch (error) {
+                SessionExportUnsupported() => l10n.exportUnsupported,
+                Api2Error(statusCode: 401 || 403) => l10n.exportAuthorization,
+                Api2Error(tag: 'SessionNotFoundError') => l10n.exportMissing,
+                _ => l10n.exportFailed,
+              };
       });
     } finally {
       if (mounted) {
@@ -154,159 +181,142 @@ class _SessionExportScreenState extends State<SessionExportScreen> {
     }
   }
 
+  void _choose(bool json) {
+    if (_busy || !_current || json == _json) return;
+    if (json && !_supported) return;
+    setState(() {
+      _json = json;
+      _error = null;
+      _saved = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n;
+    final tokens = KitTokens.of(context);
+    final canAct = _current && (!_json || _supported);
+    final progress = _saving
+        ? KitProgress.waiting(caption: l10n.exportSaving)
+        : switch (_progress) {
+            final value? => KitProgress.known(
+              value,
+              caption: l10n.exportDownloading,
+            ),
+            null => KitProgress.waiting(caption: l10n.exportDownloading),
+          };
     return PopScope(
       canPop: !_saving,
-      child: Scaffold(
-        appBar: AppBar(title: Text(l10n.exportTitle)),
-        bottomNavigationBar: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Align(
-              heightFactor: 1,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (!_current) Text(l10n.exportChanged),
-                    if (_error != null) ...[
-                      Semantics(
-                        liveRegion: true,
-                        child: Text(
-                          _error!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    if (_busy) ...[
-                      LinearProgressIndicator(
-                        value: _saving ? null : _progress,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _saving ? l10n.exportSaving : l10n.exportDownloading,
-                      ),
-                      if (!_saving)
-                        TextButton(
-                          onPressed: () => _cancel?.cancel(),
-                          child: Text(l10n.exportCancel),
-                        ),
-                    ] else
-                      FilledButton.icon(
-                        onPressed: _current && (!_json || _supported)
-                            ? _export
-                            : null,
-                        icon: const Icon(AppIconography.download),
-                        label: Text(l10n.exportSave),
-                      ),
-                    if (_saved) ...[
-                      const SizedBox(height: 12),
-                      Semantics(
-                        liveRegion: true,
-                        child: Text(l10n.exportSaved),
-                      ),
-                    ],
-                  ],
-                ),
+      child: KitScreen(
+        topBar: KitTopBar(title: l10n.exportTitle),
+        width: KitScreenWidth.reading,
+        bottom: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_error case final error?) ...[
+              KitNotice.error(message: error),
+              SizedBox(height: tokens.space3),
+            ],
+            if (_saved) ...[
+              KitNotice(tone: AppStatusTone.ok, message: l10n.exportSaved),
+              SizedBox(height: tokens.space3),
+            ],
+            if (_busy) ...[
+              KitProgressView(progress: progress),
+              SizedBox(height: tokens.space3),
+            ],
+            KitActionBlock(
+              primary: KitAction(
+                label: _json
+                    ? l10n.sessionExportSaveJson
+                    : l10n.sessionExportSaveMarkdown,
+                icon: AppIconography.download,
+                working: _busy,
+                onPressed: canAct ? _export : null,
+                disabledReason: !_current
+                    ? l10n.exportChanged
+                    : canAct
+                    ? null
+                    : l10n.exportUnsupported,
               ),
+              tertiary: [
+                if (_busy && !_saving)
+                  KitAction(
+                    label: l10n.exportCancel,
+                    onPressed: () => _cancel?.cancel(),
+                  ),
+              ],
             ),
-          ),
+          ],
         ),
-        body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: ListView(
-                padding: const EdgeInsets.all(20),
+        body: ListView(
+          padding: KitScreen.padding(context),
+          children: [
+            SizedBox(height: tokens.space2),
+            KitText(l10n.exportDescription, tone: KitTextTone.secondary),
+            KitSectionLabel(
+              l10n.sessionExportFormatLabel,
+              margin: EdgeInsets.zero,
+            ),
+            KitChoiceList<bool>.single(
+              semanticsLabel: l10n.sessionExportFormatLabel,
+              actsOnTap: false,
+              selected: _json,
+              choices: [
+                KitChoice(
+                  value: true,
+                  title: l10n.exportJson,
+                  supporting: _supported ? l10n.exportJsonDescription : null,
+                  leading: const KitRowIcon(AppIconography.dataObject),
+                  enabled: _supported,
+                  disabledReason: _supported
+                      ? null
+                      : l10n.sessionExportJsonUnavailable,
+                ),
+                KitChoice(
+                  value: false,
+                  title: l10n.exportMarkdown,
+                  supporting: l10n.exportMarkdownDescription,
+                  leading: const KitRowIcon(AppIconography.fileText),
+                ),
+              ],
+              onSelected: _choose,
+            ),
+            if (_json && _supported) ...[
+              SizedBox(height: tokens.sectionGap),
+              KitRowGroup(
+                label: l10n.sessionExportPrivacyLabel,
+                margin: EdgeInsetsDirectional.zero,
+                leadingIcons: false,
                 children: [
-                  Text(
-                    l10n.exportDescription,
-                    style: Theme.of(context).textTheme.bodyLarge,
+                  KitSwitchRow(
+                    title: l10n.exportRedact,
+                    supporting: l10n.sessionExportRedactKeeps,
+                    value: _sanitize,
+                    disabledReason: _current
+                        ? l10n.sessionExportRedactBusy
+                        : l10n.sessionExportRedactChanged,
+                    onChanged: _busy || !_current
+                        ? null
+                        : (value) => setState(() {
+                            _sanitize = value;
+                            _saved = false;
+                          }),
                   ),
-                  const SizedBox(height: 20),
-                  if (_supported)
-                    _format(
-                      title: l10n.exportJson,
-                      description: l10n.exportJsonDescription,
-                      icon: AppIconography.dataObject,
-                      selected: _json,
-                      onTap: () => setState(() {
-                        _json = true;
-                        _error = null;
-                        _saved = false;
-                      }),
-                    ),
-                  _format(
-                    title: l10n.exportMarkdown,
-                    description: l10n.exportMarkdownDescription,
-                    icon: AppIconography.fileText,
-                    selected: !_json,
-                    onTap: () => setState(() {
-                      _json = false;
-                      _error = null;
-                      _saved = false;
-                    }),
-                  ),
-                  if (_json && _supported) ...[
-                    const SizedBox(height: 16),
-                    SwitchListTile.adaptive(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.exportRedact),
-                      value: _sanitize,
-                      onChanged: _busy || !_current
-                          ? null
-                          : (value) => setState(() {
-                              _sanitize = value;
-                              _saved = false;
-                            }),
-                    ),
-                    Text(l10n.exportRedactDescription),
-                    if (!_sanitize) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        l10n.exportUnredacted,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ],
-                  ],
                 ],
               ),
-            ),
-          ),
+              if (!_sanitize) ...[
+                SizedBox(height: tokens.space3),
+                KitNotice(
+                  icon: AppIconography.warning,
+                  message: l10n.exportUnredacted,
+                ),
+              ],
+            ],
+          ],
         ),
       ),
     );
   }
-
-  Widget _format({
-    required String title,
-    required String description,
-    required IconData icon,
-    required bool selected,
-    required VoidCallback onTap,
-  }) => Card(
-    color: selected ? Theme.of(context).colorScheme.secondaryContainer : null,
-    child: Semantics(
-      selected: selected,
-      child: ListTile(
-        enabled: !_busy && _current,
-        leading: Icon(icon),
-        title: Text(title),
-        subtitle: Text(description),
-        trailing: Icon(
-          selected ? AppIconography.radioSelected : AppIconography.radioEmpty,
-        ),
-        onTap: onTap,
-      ),
-    ),
-  );
 }

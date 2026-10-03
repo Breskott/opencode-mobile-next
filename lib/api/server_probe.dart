@@ -5,6 +5,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import 'models.dart';
+import '../diagnostics/perf_trace.dart';
+import '../ui/kit/kit_redact.dart';
 
 /// Which protocol generation answered a probe.
 ///
@@ -84,6 +86,7 @@ Future<ServerProbeResult> probeServerConnection({
   String? username,
   String? password,
 }) async {
+  KitRedact.registerKnownSecret(password ?? '');
   final hasPassword = password != null && password.isNotEmpty;
   final headers = <String, Object>{};
   if (hasPassword) {
@@ -103,6 +106,7 @@ Future<ServerProbeResult> probeServerConnection({
           status != null && status >= 200 && status < 300,
     ),
   );
+  PerfTraceInterceptor.attach(dio, 'probe');
   final adapterFactory = serverProbeAdapterFactory;
   if (adapterFactory != null) dio.httpClientAdapter = adapterFactory();
   try {

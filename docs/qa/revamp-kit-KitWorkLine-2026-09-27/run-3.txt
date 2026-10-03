@@ -1,0 +1,59 @@
++0: loading test/kit/kit_work_line_test.dart
++0: test/kit/kit_work_line_test.dart: summaryOf (1) read 3 + edited 1
++1: test/kit/kit_work_line_test.dart: summaryOf (1) one segment only
++2: test/kit/kit_work_line_test.dart: summaryOf (1) no counted call falls back to steps
++3: test/kit/kit_work_line_test.dart: summaryOf (1) every segment, singular, in order
++4: test/kit/kit_work_line_test.dart: summaryOf (1) isEmpty
++5: test/kit/kit_work_line_test.dart: states (2, 3) running shows the live words and a working mark
++6: test/kit/kit_work_line_test.dart: states (2, 3) running without now falls back to the summary
++7: test/kit/kit_work_line_test.dart: states (2, 3) waitingForYou: the words, no mark, no progress anywhere (AUTO-15)
++8: test/kit/kit_work_line_test.dart: states (2, 3) done: the summary and no mark
++9: test/kit/kit_work_line_test.dart: states (2, 3) stopped says so
++10: test/kit/kit_work_line_test.dart: states (2, 3) endedFailed: failed mark with its word, open on first build, no danger colour (LOOK-5 interim)
++11: test/kit/kit_work_line_test.dart: toggling (4) tap toggles an uncontrolled line
++12: test/kit/kit_work_line_test.dart: toggling (4) controlled never toggles on its own
++13: test/kit/kit_work_line_test.dart: toggling (4) uncontrolled starts from opensByDefault
++14: test/kit/kit_work_line_test.dart: opened: steps in order under stepsKey, summary not repeated (5)
++15: test/kit/kit_work_line_test.dart: 30 steps: 25 built, "Show 5 earlier steps" reveals the rest in place and focus moves to the first (6)
++16: test/kit/kit_work_line_test.dart: keyboard reveal: focus lands on the first revealed step's own control, and no later Tab stop lacks a visible ring (G14)
++17: test/kit/kit_work_line_test.dart: prose steps: focus holds the first revealed step once, then it is never a Tab stop again (G14)
++18: test/kit/kit_work_line_test.dart: motion (7, G8x) no size or layout animation in the subtree
++19: test/kit/kit_work_line_test.dart: motion (7, G8x) reduced motion: one pump settles the opening
++20: test/kit/kit_work_line_test.dart: motion (7, G8x) full motion: steps fade in over quick (paint only)
++21: test/kit/kit_work_line_test.dart: semantics (8) labels per state
++22: test/kit/kit_work_line_test.dart: semantics (8) the leading mark says nothing of its own
++23: test/kit/kit_work_line_test.dart: desktop: Tab reaches the chip, Enter toggles, the focus ring shows (9)
++24: test/kit/kit_work_line_test.dart: 200 % text at 320 dp (10, G6) KitWorkState.running · rtl
++25: test/kit/kit_work_line_test.dart: 200 % text at 320 dp (10, G6) KitWorkState.waitingForYou · rtl
++26: test/kit/kit_work_line_test.dart: 200 % text at 320 dp (10, G6) KitWorkState.done · rtl
++27: test/kit/kit_work_line_test.dart: 200 % text at 320 dp (10, G6) KitWorkState.endedFailed · rtl
++28: test/kit/kit_work_line_test.dart: 200 % text at 320 dp (10, G6) KitWorkState.stopped · rtl
++29: test/kit/kit_work_line_test.dart: 200 % text at 320 dp (10, G6) KitWorkState.running · ltr
++30: test/kit/kit_work_line_test.dart: 200 % text at 320 dp (10, G6) KitWorkState.waitingForYou · ltr
++31: test/kit/kit_work_line_test.dart: 200 % text at 320 dp (10, G6) KitWorkState.done · ltr
++32: test/kit/kit_work_line_test.dart: 200 % text at 320 dp (10, G6) KitWorkState.endedFailed · ltr
++33: test/kit/kit_work_line_test.dart: 200 % text at 320 dp (10, G6) KitWorkState.stopped · ltr
++34: test/kit/kit_work_line_test.dart: a running line that ends on a failure opens by itself
++35: test/kit/kit_work_line_test.dart: the steps stroke is one physical pixel at the start edge (DPR 3)
++36: loading test/goldens/kit/kit_work_line_golden_test.dart
++36: test/goldens/kit/kit_work_line_golden_test.dart: (setUpAll)
++36: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line running · dark
++37: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line waiting_for_you · dark
++38: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line done · dark
++39: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line done_expanded · dark
++40: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line ended_failed · dark
++41: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line stopped · dark
++42: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line default · 1280x800 · dark
++43: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line default · 2.0 text · 412x915 · dark
++44: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line default · 2.0 text · 1280x800 · dark
++45: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line running · light
++46: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line waiting_for_you · light
++47: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line done · light
++48: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line done_expanded · light
++49: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line ended_failed · light
++50: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line stopped · light
++51: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line default · 1280x800 · light
++52: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line default · 2.0 text · 412x915 · light
++53: test/goldens/kit/kit_work_line_golden_test.dart: kit_work_line default · 2.0 text · 1280x800 · light
++54: test/goldens/kit/kit_work_line_golden_test.dart: (tearDownAll)
++54: All tests passed!

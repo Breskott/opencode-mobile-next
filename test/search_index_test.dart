@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -19,6 +20,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/desktop/shortcuts.dart';
 import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings/ai_setup_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/search/search_index.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,14 +33,18 @@ const _excluded = <String, String>{
   'root-connecting': 'shown automatically while a saved server connects',
   'bootstrap-gate': 'startup failure screen; nothing is connected yet',
   'servers-welcome': 'first run only, before any server exists',
-  'demo': 'offered on the first-run welcome only; owned by phase 3b',
+  'manage-space':
+      'opened by Android Settings › Storage, not from inside the app',
+  'termux-migration':
+      'offered only to a Termux user, from This phone and the Termux server row',
+  'team-migration':
+      'shown on its own when an old team was left on after the update',
   // Need a conversation: the conversation menu and its command launcher are
   // their search (phase 4 adds them to this index through the registry).
   'chat': 'a conversation; opened from Work, Inbox or All conversations',
   'active-context': 'needs an open conversation',
   'active-context-message': 'needs an open conversation and a message',
   'prompt-editor': 'needs an open conversation (composer)',
-  'context-capsule': 'needs an open conversation',
   'run-result': 'needs an open conversation',
   'session-context': 'needs an open conversation',
   'session-export': 'needs an open conversation',
@@ -46,14 +52,10 @@ const _excluded = <String, String>{
   'session-relations': 'needs an open conversation',
   'markdown-code-reader': 'needs a code block in a transcript',
   'web-sources': 'adds a source to the open conversation',
-  'legacy-drafts': 'restores a draft into the open conversation',
   'staged-revert': 'needs a staged revert in an open conversation',
   // Need something picked first.
-  'manage-project': 'needs a project; opened from the Work project header',
-  'managed-workspaces': 'needs a project; opened from Manage project',
   'projects': 'a picker that returns the chosen project to Work',
   'workspace-folder-chooser': 'a state of the Work tab, not a place',
-  'development-services': 'needs a project; opened from Manage project',
   'shell-output': 'the output of one command that was just run',
   'terminal-surface': 'one terminal process; opened from Terminal',
   'diff-view': 'one file of a review; opened from Changes',
@@ -62,13 +64,30 @@ const _excluded = <String, String>{
   'add-agent': 'a form inside External agents',
   'profile-editor': 'a form inside Saved servers; owned by phase 3b',
   'pairing-scanner': 'a step of adding a server',
+  'team-project-overview':
+      'One selected project; opened from AI Team projects.',
+  'team-project-conversation':
+      'One project task; opened from its project or notification.',
+  'team-project-board': 'Task graph for one selected project.',
+  'team-project-timeline': 'Audit events for one selected project.',
+  'team-project-servers': 'Placement controls for one selected project.',
   'team-agent': 'one agent of one AI Team run',
-  'team-agent-output': 'one agent of one AI Team run',
-  'team-run': 'one AI Team run',
-  'team-run-agents-tab': 'a tab of one AI Team run',
-  'team-run-overview-tab': 'a tab of one AI Team run',
-  'team-run-work-tab': 'a tab of one AI Team run',
-  'team-run-timeline-tab': 'a tab of one AI Team run',
+  'chat-watching-live':
+      'one AI Team agent whose conversation the server cannot read; '
+      'opened from that agent',
+  'team-role': 'one role of the AI Team; opened from Agents',
+  'team-board':
+      "needs the AI Team; opened from the home's board icon or "
+      "'View board' row",
+  'team-conversation':
+      'one AI Team task\'s conversation; opened from the '
+      'team page, the board or the Work tab',
+  'phone-setup-progress':
+      'a step of phone setup; opened from On this phone '
+      'or a setup notification',
+  'phone-setup-ready':
+      'a step of phone setup; shown automatically when a '
+      'first setup finishes',
 };
 
 class _Api extends OpenCodeApi {
@@ -276,6 +295,35 @@ void main() {
         expect(entry.matches(entry.title), isTrue, reason: 'ar ${entry.id}');
       }
     });
+
+    test('each result names the page that holds it (reachability audit)', () {
+      final byId = {for (final entry in entries) entry.id: entry};
+      expect(
+        byId['settings-privacy-data-use']!.parent,
+        _en.settingsHubPrivacyRow,
+      );
+      expect(byId['ai-team']!.parent, _en.librarySettingsTitle);
+      // Background checks folded into Notifications (slice-close-misc).
+      expect(byId['inside-servers-monitor'], isNull);
+      expect(
+        byId['inside-notifications-servers']!.matches(
+          _en.monitorBackgroundChecks,
+        ),
+        isTrue,
+      );
+      expect(byId['settings-try-demo']!.parent, _en.onboardingSetupGuide);
+      expect(byId['settings-mcp']!.parent, _en.settingsHubToolsRow);
+      expect(byId['settings-external-agents']!.parent, _en.settingsHubToolsRow);
+      expect(byId['settings-voice-notices']!.parent, _en.aboutTitle);
+      expect(byId['settings-show-tips-again']!.parent, _en.aboutTitle);
+      expect(byId['settings-try-demo']!.matches('demo'), isTrue);
+      expect(byId['archived-conversations']!.matches('archived'), isTrue);
+      expect(byId['archived-conversations']!.pages, ['global-sessions']);
+      expect(byId['settings-models']!.pages, ['model-picker-sheet']);
+      final servers = byId['settings-saved-servers']!;
+      expect(servers.pages, ['servers']);
+      expect(servers.keywords, isNot(contains(_en.attentionTitle)));
+    });
   });
 
   group('gates: a result the server or device cannot open is absent', () {
@@ -329,6 +377,60 @@ void main() {
       },
     );
 
+    test('AI setup is found by name where the server shares its setup, '
+        'and absent where its row is', () async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      final found = searchEntries(_en, scope(controller), 'ai setup');
+      expect(found.first.id, 'inside-server-ai-setup');
+      expect(found.first.parent, _en.settingsHubThisServer);
+      expect(
+        _ids(searchEntries(_en, scope(controller), 'suggestions')),
+        contains('inside-server-ai-setup'),
+      );
+
+      final codex = await _controller(capabilities: codexServerCapabilities);
+      addTearDown(codex.dispose);
+      expect(
+        _ids(searchIndex(_en, scope(codex))),
+        isNot(contains('inside-server-ai-setup')),
+      );
+      // The server, not this device, hides it: the hub can say so.
+      final entry = allSearchEntries(
+        _en,
+      ).singleWhere((entry) => entry.id == 'inside-server-ai-setup');
+      expect(entry.hiddenByServer(scope(codex)), isTrue);
+    });
+
+    testWidgets('the AI setup result opens the AI setup page', (tester) async {
+      final controller = await tester.runAsync(_controller);
+      addTearDown(controller!.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => searchEntries(
+                _en,
+                scope(controller),
+                'AI setup',
+              ).first.open(context, scope(controller)),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(AiSetupScreen), findsOneWidget);
+      expect(
+        tester.widget<AiSetupScreen>(find.byType(AiSetupScreen)).serverName,
+        'Workstation',
+      );
+    });
+
     for (final backend in {
       'Codex': codexServerCapabilities,
       'Paseo': paseoServerCapabilities,
@@ -341,7 +443,6 @@ void main() {
         final ids = _ids(index);
         for (final id in [
           'settings-models',
-          'settings-providers',
           'settings-mcp',
           'settings-commands-tools',
           'inside-capabilities-commands',
@@ -364,7 +465,10 @@ void main() {
           ids.contains('all-conversations'),
           capabilities.globalSessionSearch,
         );
-        expect(ids.contains('settings-accounts'), capabilities.agentAccount);
+        // Providers and accounts is the Codex account's door; there is no
+        // second row for it.
+        expect(ids.contains('settings-providers'), capabilities.agentAccount);
+        expect(ids, isNot(contains('settings-accounts')));
         // Typing the name of something absent finds nothing that opens it.
         expect(
           searchEntries(
@@ -464,6 +568,27 @@ void main() {
   });
 
   group('Settings search', () {
+    // Settings has no search field of its own: the header's command launcher
+    // reads this same index, so what it finds is what these tests read.
+    List<SearchEntry> found(ConnectionController controller, String query) =>
+        searchEntries(_en, SearchScope(controller: controller), query);
+
+    Future<void> openResult(
+      WidgetTester tester,
+      ConnectionController controller,
+      String query,
+      String id,
+    ) async {
+      final context = tester.element(find.byType(SettingsScreen));
+      final scope = SearchScope.of(context, controller);
+      final entry = searchEntries(
+        _en,
+        scope,
+        query,
+      ).firstWhere((entry) => entry.id == id);
+      unawaited(entry.open(context, scope));
+    }
+
     testWidgets(
       'finds a setting inside a screen and opens it at that section',
       (tester) async {
@@ -475,22 +600,20 @@ void main() {
         await tester.pumpWidget(_app(controller));
         await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byKey(const Key('library-search')),
-          'quiet hours',
-        );
-        await tester.pump();
         // The door and the thing itself.
-        expect(_key('settings-category-background'), findsOneWidget);
-        final result = _key('search-result-inside-notifications-quiet');
-        expect(result, findsOneWidget);
-        expect(
-          find.descendant(of: result, matching: find.text('In Notifications')),
-          findsOneWidget,
+        final results = found(controller, 'quiet hours');
+        expect(_ids(results), contains('settings-category-background'));
+        final result = results.firstWhere(
+          (entry) => entry.id == 'inside-notifications-quiet',
         );
-        expect(_key('search-results-inside'), findsOneWidget);
+        expect(result.parent, _en.settingsHubGroupNotifications);
 
-        await tester.tap(result);
+        await openResult(
+          tester,
+          controller,
+          'quiet hours',
+          'inside-notifications-quiet',
+        );
         await tester.pumpAndSettle();
         expect(_key('notifications-settings'), findsOneWidget);
         // On a 500 dp tall phone Quiet hours starts below the fold; the result
@@ -523,17 +646,16 @@ void main() {
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
       for (final entry in {
-        'language': 'search-result-inside-appearance-language',
-        'theme': 'search-result-inside-appearance-theme',
+        'language': 'inside-appearance-language',
+        'theme': 'inside-appearance-theme',
       }.entries) {
-        await tester.enterText(
-          find.byKey(const Key('library-search')),
-          entry.key,
+        expect(
+          _ids(found(controller, entry.key)),
+          contains(entry.value),
+          reason: entry.key,
         );
-        await tester.pump();
-        expect(_key(entry.value), findsOneWidget, reason: entry.key);
       }
-      await tester.tap(_key('search-result-inside-appearance-theme'));
+      await openResult(tester, controller, 'theme', 'inside-appearance-theme');
       await tester.pumpAndSettle();
       expect(find.byType(AppearanceSettingsScreen), findsOneWidget);
       expect(_key('theme-pack-${'opencode'}'), findsWidgets);
@@ -542,17 +664,44 @@ void main() {
     testWidgets('budget and always allowed are found', (tester) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(controller));
-      await tester.pumpAndSettle();
-      final search = find.byKey(const Key('library-search'));
-      await tester.enterText(search, 'budget');
-      await tester.pump();
-      expect(_key('search-result-inside-usage-budgets'), findsOneWidget);
-      expect(_key('settings-category-usage'), findsOneWidget);
-      await tester.enterText(search, 'always allowed');
-      await tester.pump();
-      expect(_key('saved-permissions-entry'), findsOneWidget);
+      expect(
+        _ids(found(controller, 'budget')),
+        containsAll(['inside-usage-budgets', 'settings-category-usage']),
+      );
+      // Inside Notifications and background, still found by its own name.
+      final always = found(controller, 'always allowed');
+      expect(_ids(always), contains('saved-permissions-entry'));
+      expect(
+        always.firstWhere((e) => e.id == 'saved-permissions-entry').parent,
+        _en.settingsHubGroupNotifications,
+      );
     });
+
+    testWidgets(
+      'Keep running, What runs by itself and Plugins lead somewhere sensible',
+      (tester) async {
+        final controller = await _controller();
+        addTearDown(controller.dispose);
+        expect(
+          _ids(found(controller, 'keep running')),
+          contains('settings-keep-running'),
+        );
+        expect(
+          _ids(found(controller, _en.automationTitle)),
+          contains('settings-automation'),
+        );
+        // Plugins was a page holding only the AI Team row; its words lead
+        // to the AI Team.
+        expect(
+          _ids(found(controller, _en.teamUiPluginsTitle)),
+          contains('settings-ai-team'),
+        );
+        expect(
+          _ids(found(controller, _en.teamUiPluginsTitle)),
+          isNot(contains('settings-category-plugins')),
+        );
+      },
+    );
 
     testWidgets('a tab result asks the shell for that tab', (tester) async {
       final seen = <Intent>[];
@@ -560,26 +709,21 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller, shell: seen));
       await tester.pumpAndSettle();
-      final search = find.byKey(const Key('library-search'));
 
-      await tester.enterText(search, _en.shellTabInbox);
-      await tester.pump();
-      expect(_key('search-results-places'), findsOneWidget);
-      await tester.tap(_key('search-result-tab-inbox'));
+      await openResult(tester, controller, _en.shellTabInbox, 'tab-inbox');
       await tester.pump();
       expect(seen.single, isA<SelectDestinationIntent>());
       expect((seen.single as SelectDestinationIntent).index, 1);
 
       seen.clear();
-      await tester.enterText(search, _en.readerUiFiles);
-      await tester.pump();
-      await tester.tap(_key('search-result-project-files'));
+      await openResult(tester, controller, _en.readerUiFiles, 'project-files');
       await tester.pump();
       expect((seen.single as OpenProjectToolIntent).tool, ProjectTool.files);
       // The hub never offers a way to itself.
-      await tester.enterText(search, _en.librarySettingsTitle);
-      await tester.pump();
-      expect(_key('search-result-tab-settings'), findsNothing);
+      expect(
+        _ids(found(controller, _en.librarySettingsTitle)),
+        isNot(contains('tab-settings')),
+      );
     });
 
     testWidgets('without a shell the tabs are not offered; tools still are', (
@@ -587,89 +731,32 @@ void main() {
     ) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(controller));
-      await tester.pumpAndSettle();
-      final search = find.byKey(const Key('library-search'));
-      await tester.enterText(search, _en.shellTabInbox);
-      await tester.pump();
-      expect(_key('search-result-tab-inbox'), findsNothing);
-      await tester.enterText(search, 'terminal');
-      await tester.pump();
-      expect(_key('search-result-project-terminal'), findsOneWidget);
+      final scope = SearchScope(controller: controller, hasShell: false);
+      expect(
+        _ids(searchEntries(_en, scope, _en.shellTabInbox)),
+        isNot(contains('tab-inbox')),
+      );
+      expect(
+        _ids(searchEntries(_en, scope, 'terminal')),
+        contains('project-terminal'),
+      );
     });
 
-    testWidgets('Codex: absent results stay absent in the hub', (tester) async {
+    testWidgets('Codex: absent results stay absent', (tester) async {
       final controller = await _controller(
         capabilities: codexServerCapabilities,
       );
       addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(controller, shell: []));
-      await tester.pumpAndSettle();
-      final search = find.byKey(const Key('library-search'));
+      final scope = SearchScope(controller: controller, hasShell: true);
       for (final query in ['terminal', 'skills', 'worktrees', 'files']) {
-        await tester.enterText(search, query);
-        await tester.pump();
-        expect(_key('search-results-places'), findsNothing, reason: query);
+        final ids = _ids(searchEntries(_en, scope, query));
         expect(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget.key is ValueKey<String> &&
-                (widget.key! as ValueKey<String>).value.startsWith(
-                  'search-result-inside-capabilities',
-                ),
-          ),
-          findsNothing,
+          ids.where((id) => id.startsWith('inside-capabilities')),
+          isEmpty,
           reason: query,
         );
       }
     });
-
-    for (final locale in const [Locale('en'), Locale('ar')]) {
-      testWidgets('results fit 320 dp at 2.5x text in ${locale.languageCode}', (
-        tester,
-      ) async {
-        const phone = Size(320, 640);
-        tester.view.devicePixelRatio = 1;
-        tester.view.physicalSize = phone;
-        addTearDown(tester.view.reset);
-        final controller = await _controller();
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          MediaQuery(
-            data: const MediaQueryData(
-              size: phone,
-              textScaler: TextScaler.linear(AppTheme.maxTextScale),
-            ),
-            child: _app(controller, locale: locale, shell: []),
-          ),
-        );
-        await tester.pumpAndSettle();
-        // One letter matches nearly the whole index: every kind of result
-        // row is laid out.
-        await tester.enterText(find.byKey(const Key('library-search')), 'e');
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        final scrollable = find.byType(Scrollable).first;
-        for (final section in ['inside', 'places']) {
-          await tester.scrollUntilVisible(
-            _key('search-results-$section'),
-            300,
-            scrollable: scrollable,
-          );
-          expect(tester.takeException(), isNull, reason: section);
-        }
-        await tester.scrollUntilVisible(
-          find.byKey(const Key('library-search-summary')),
-          300,
-          scrollable: scrollable,
-        );
-        expect(tester.takeException(), isNull);
-        for (final tile in tester.widgetList<ListTile>(find.byType(ListTile))) {
-          final box = tester.renderObject<RenderBox>(find.byWidget(tile));
-          expect(box.size.width, lessThanOrEqualTo(phone.width));
-        }
-      });
-    }
   });
 
   group('desktop command palette', () {

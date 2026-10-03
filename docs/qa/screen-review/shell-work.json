@@ -1,0 +1,990 @@
+[
+  {
+    "pageId": "system",
+    "area": "a-shell",
+    "title": "[System entry points: share, launcher shortcuts, links, notifications]",
+    "kind": "overlay",
+    "images": [],
+    "scores": {"ui": null, "ux": null, "motion": null, "copy": null, "principles": null},
+    "suggested": "keep",
+    "summary": "Not a surface (share, links, shortcuts, notifications); nothing to judge in a still. Its visible outcomes are the two banners below, which need work.",
+    "issues": [],
+    "quickWin": false
+  },
+  {
+    "pageId": "share-session-failed-banner",
+    "area": "a-shell",
+    "title": "Shared text kept. Could not open a session. Retry when the connection is ready.",
+    "kind": "overlay",
+    "images": ["docs/qa/screen-census/a-shell/share-session-failed-banner.png"],
+    "scores": {"ui": 2, "ux": 3, "motion": null, "copy": 2, "principles": 3},
+    "suggested": "fix",
+    "summary": "A three-line Material banner wedged between the server header and the project title. It blames the connection while the header shows Laptop connected, and never says where the shared text went.",
+    "issues": [
+      {"severity": "high", "principle": "C2 · Plain words", "what": "It says “Retry when the connection is ready” while the header dot is green and says Laptop. The person can't tell what is actually wrong.", "fix": "Title the real state: “Couldn't start a conversation with your shared text”. Put the error under Details. Say “Try again” only when retrying can help."},
+      {"severity": "high", "principle": "U5 · One kit, one language", "what": "An ad-hoc MaterialBanner with its text wrapping to three lines beside a right-aligned “Try again”. It pushes the whole Work page down.", "fix": "Use KitStatusLine: one line reading “Shared text saved · couldn't open a conversation”, one action “Try again”, and Discard in its overflow."},
+      {"severity": "medium", "principle": "X2 · Earn trust", "what": "“Shared text kept”, but kept where? There is no way to see it or use it now.", "fix": "Add “Open as draft”, which opens a new-conversation composer already filled with the shared text."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "session-link-server-missing-banner",
+    "area": "a-shell",
+    "title": "This server is not saved on this phone. Add it under Servers, then scan the code again.",
+    "kind": "overlay",
+    "images": ["docs/qa/screen-census/a-shell/session-link-server-missing-banner.png"],
+    "scores": {"ui": 2, "ux": 2, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "It sends the person off to Servers to add a server by hand and then back to scan again, although the link already carries what is needed.",
+    "issues": [
+      {"severity": "high", "principle": "X9 · One thing at a time", "what": "Two round trips: go to Servers, add the server, come back, scan the code again.", "fix": "The primary is “Add this server”: open Add server filled in from the link, then continue straight to the linked conversation once it connects."},
+      {"severity": "medium", "principle": "X8 · Container fits the task", "what": "A pushed-in MaterialBanner with right-aligned “Dismiss” and “Open Servers” buttons. This is a choice, but it is shown as a page banner.", "fix": "Make it a sheet (the standard's container for a choice): title “Add this server?”, body with the server name, primary Add, text button Not now."},
+      {"severity": "low", "principle": "C5 · Plain words", "what": "“Open Servers” is in title case.", "fix": "Use sentence case, or better, the verb from the fix above."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "root-connecting",
+    "area": "a-shell",
+    "title": "Connecting to {name}",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/a-shell/root-connecting--connecting.png", "docs/qa/screen-census/a-shell/root-connecting--not-answering.png", "docs/qa/screen-census/a-shell/root-connecting--stopped.png", "docs/qa/screen-census/a-shell/root-connecting--failed-remote.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "Mostly on KitStateView with drawings, but the four states name the same escape three ways, the stopped state offers a retry that can't work, and the remote failure puts a raw IP in the body.",
+    "issues": [
+      {"severity": "high", "principle": "C3 · Detail on request", "what": "The failed-remote body reads “Something is at 100.64.0.7, but it did not reply.”, with a raw address above the Details fold.", "fix": "Body: “Laptop is reachable but isn't replying. Usually it's the network in between (VPN or Wi-Fi).” Move the address to Details, in mono, with copy."},
+      {"severity": "high", "principle": "P7 · One action, one name", "what": "The same escape is “Choose another server” on not-answering and “Change server” on stopped and failed.", "fix": "Use “Switch server” in every state and on the server switcher."},
+      {"severity": "high", "principle": "C2 · Words match the state", "what": "Stopped offers “Try again” as the secondary under “Start and connect”. Retrying a server that is stopped cannot succeed. Its two tertiaries also sit side by side (“Change server  On this phone”).", "fix": "Primary: Start and connect. Tertiaries stacked and left-aligned: Switch server, then Open On this phone. Drop Try again from this state."},
+      {"severity": "medium", "principle": "U9 · One kit, one language", "what": "Failed-remote uses a red cloud icon in a circle, while the other three states use drawings.", "fix": "Give it the unplugged drawing (StatesUnpluggedScene) like every other load failure."},
+      {"severity": "medium", "principle": "C6 · Plain words", "what": "“Connecting to This phone • Termux” capitalises “This” mid-sentence and wraps to two display lines.", "fix": "Title “Connecting…”, with the server name as the body's first words: “This phone · Termux. Opening your saved project.”"},
+      {"severity": "low", "principle": "C6 · Plain words", "what": "The stopped body is three lines long and joins two thoughts with a semicolon.", "fix": "“Android closed Termux to save battery. Your conversations are safe.”"}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "embedded-desktop-file-drop-target",
+    "area": "a-shell",
+    "title": "Drop to attach",
+    "kind": "overlay",
+    "images": [],
+    "scores": {"ui": null, "ux": null, "motion": null, "copy": null, "principles": null},
+    "suggested": "keep",
+    "summary": "Not rendered: a desktop-only drag highlight that flutter_test can't start. Nothing in the source warrants a rethink; judge it on desktop.",
+    "issues": [],
+    "quickWin": false
+  },
+  {
+    "pageId": "file-drop-failed-dialog",
+    "area": "a-shell",
+    "title": "Could not attach dropped files",
+    "kind": "dialog",
+    "images": [],
+    "scores": {"ui": null, "ux": null, "motion": null, "copy": null, "principles": null},
+    "suggested": "keep",
+    "summary": "Not rendered (desktop-only failure path). Review it on desktop against C4: it should say which files failed and why.",
+    "issues": [],
+    "quickWin": false
+  },
+  {
+    "pageId": "global-shortcuts",
+    "area": "a-shell",
+    "title": "[Global keyboard shortcuts]",
+    "kind": "overlay",
+    "images": [],
+    "scores": {"ui": null, "ux": null, "motion": null, "copy": null, "principles": null},
+    "suggested": "keep",
+    "summary": "Not a surface. Its visible parts are the command palette and the shortcuts help, reviewed separately.",
+    "issues": [],
+    "quickWin": false
+  },
+  {
+    "pageId": "command-palette-dialog",
+    "area": "a-shell",
+    "title": "[Command launcher]",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/a-shell/command-palette-dialog.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 4, "principles": 4},
+    "suggested": "keep",
+    "summary": "A clean desktop launcher: focused search field, icon, label and shortcut per row. One craft nit.",
+    "issues": [
+      {"severity": "medium", "principle": "U2 · For everyone", "what": "The highlighted first row is shown only by accent-coloured text, with no row fill.", "fix": "Give the active row a surfaceContainerHighest fill and keep the text on-surface, so selection doesn't depend on hue."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "shortcuts-help-dialog",
+    "area": "a-shell",
+    "title": "Keyboard shortcuts",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/a-shell/shortcuts-help-dialog.png"],
+    "scores": {"ui": 3, "ux": 4, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "Useful list, but the key column crowds the descriptions and the list is cut mid-row at the bottom. Desktop-only, shown at phone size.",
+    "issues": [
+      {"severity": "medium", "principle": "U7 · Craft in the details", "what": "“F2 / Shift + F2” and “F3 / Shift + F3” run into their descriptions with no gap. The last row (“Right click /”) is cut through the middle of the text above the Close button, with no fade.", "fix": "Give the key column a fixed width with at least 16 dp of gap, and let long keys wrap in their own column. Add a top and bottom scroll fade, or group the list under section labels (Anywhere, Conversation)."},
+      {"severity": "medium", "principle": "C3 · Plain words", "what": "“Find in this surface” uses an engine word.", "fix": "“Find on this screen”."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "activity",
+    "area": "a-shell",
+    "title": "Inbox",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/a-shell/activity--empty.png", "docs/qa/screen-census/a-shell/activity--waiting.png", "docs/qa/screen-census/a-shell/activity--tab.png"],
+    "scores": {"ui": 3, "ux": 2, "motion": null, "copy": 2, "principles": 2},
+    "suggested": "rethink",
+    "summary": "The Inbox should answer “what needs me?”. Instead it counts each request twice, mixes settings into the list, and keeps a spinner running for work it can no longer see.",
+    "issues": [
+      {"severity": "high", "principle": "U6 · One thing at a time", "what": "Under Needs attention, the “Saved servers · 2 pending · Watched in each server's current project” row counts the same two requests already listed right above it.", "fix": "Remove the aggregate row from Needs attention. List each request once. Show other servers' requests as rows grouped under a label with the server name (“On Office build box”)."},
+      {"severity": "high", "principle": "C3 · Plain words", "what": "Engine phrasing: “Watched in each server's current project”, “Completion digests”, and “1 unknown” in the reconnecting and lost states.", "fix": "Rename “Completion digests” to “Finished while you were away”. Hide the count when it's unknown. Drop the “Watched in…” line."},
+      {"severity": "high", "principle": "C2 · Words match the state", "what": "The Running row's spinner keeps turning after the connection is lost, promising live work the app can't see.", "fix": "When disconnected, replace the spinner with a static mark and say “Last seen working · 2m ago”."},
+      {"severity": "medium", "principle": "X8 · Container fits the task", "what": "The empty state carries settings rows (“Background updates · Off · choose when to stay connected”, “Saved servers”).", "fix": "Keep the empty state to the drawing, title and body. Offer a single tertiary “Get notified in the background” only while background updates are off. The settings belong in Settings."},
+      {"severity": "medium", "principle": "P-d · One language", "what": "The page has two headers: “Inbox” as a pushed screen, and “Laptop ⌄ / Inbox” as the tab.", "fix": "Use one header. Inside the shell, keep the shell header and remove the duplicate route, or make the pushed route identical."}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "question-sheet",
+    "area": "a-shell",
+    "title": "OpenCode needs input",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/a-shell/question-sheet.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 4, "principles": 3},
+    "suggested": "fix",
+    "summary": "The question itself reads well, but the sheet opens nearly full height with half of it empty, and it ends in a compact disabled pill that doesn't say why it's disabled.",
+    "issues": [
+      {"severity": "high", "principle": "U4 · §2 button hierarchy", "what": "The actions are a text “Dismiss” beside a grey, disabled, half-width “Send answers” pill, with no reason shown.", "fix": "Pin a full-width primary “Send answer” to the bottom. While it's disabled, put the hint “Pick an option or write an answer” under it. Stack “Dismiss” as a tertiary below."},
+      {"severity": "medium", "principle": "U7 · Made for one hand", "what": "The sheet takes about 95% of the height, and roughly 900 px of empty surface separates the options from the buttons.", "fix": "Size the sheet to its content (at most 90%), so the options and Send sit together in the thumb zone."},
+      {"severity": "medium", "principle": "X5 · Clear next step", "what": "Radio options plus an unlabelled “Your answer” field: is the field an alternative to the options, or an addition?", "fix": "Label the field “Or write your own answer” and clear the radio selection when the person types."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "question-sheet-dismiss-dialog",
+    "area": "a-shell",
+    "title": "Dismiss this request?",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/a-shell/question-sheet-dismiss-dialog.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 4, "principles": 3},
+    "suggested": "fix",
+    "summary": "The copy is right (“OpenCode will continue without answers”), but it's a dialog stacked on a sheet, while every other confirmation in these areas is a confirm sheet.",
+    "issues": [
+      {"severity": "medium", "principle": "X8 · Container fits the task", "what": "A dialog over a sheet, with right-aligned Cancel and a pink filled Dismiss.", "fix": "Use showConfirmSheet (as delete and archive do): error-toned full-width “Dismiss request”, then a Cancel text button. Or, since dismissing only skips a question, dismiss at once and offer Undo in a snackbar."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "attention-overview",
+    "area": "a-shell",
+    "title": "Server attention",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/a-shell/attention-overview.png"],
+    "scores": {"ui": 2, "ux": 2, "motion": null, "copy": 1, "principles": 2},
+    "suggested": "rethink",
+    "summary": "A developer's diagnostic dump. Every card lists “unknown” three to five times under a disclaimer paragraph, and the page never answers “which server needs me?”.",
+    "issues": [
+      {"severity": "high", "principle": "C2 · Honest waiting", "what": "“Pending requests: unknown”, “Unread conversations: unknown”, “Last refreshed: unknown” and “Attention status: unknown” repeat on every card.", "fix": "Show only what is known: “2 waiting · 1 running”, “Nothing waiting”, or “Not checked yet · Check now”. Never print “unknown”."},
+      {"severity": "high", "principle": "C3 · Plain words", "what": "It opens with a disclaimer (“A local overview, not live monitoring across servers. Cached signals may be incomplete…”), and each card has “Source: selected server's local cache. Scope: currently loaded project and conversations.”", "fix": "Drop the disclaimer and the Source/Scope lines. If staleness matters, add one supporting word per row: “as of 3h ago”."},
+      {"severity": "high", "principle": "U5 · One kit, one language", "what": "One Card per server, each with seven text lines and an outlined button (“Open server” on one, “Choose server…” on another).", "fix": "Use one KitRow per server: title is the server name, supporting line is its attention summary, trailing chevron. The current server gets KitRowIcon(current) and “Connected ·”. Tapping a row switches to that server."},
+      {"severity": "medium", "principle": "U6 · One thing at a time", "what": "This duplicates Inbox's “Saved servers” row, and it's reached from a bare activity icon on Servers.", "fix": "Make this the one destination of Inbox's other-servers group, titled “Other servers”, and remove the icon from the Servers app bar."}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "capabilities",
+    "area": "a-shell",
+    "title": "Commands & tools",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/a-shell/capabilities--empty.png", "docs/qa/screen-census/a-shell/capabilities--loaded.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "A workable list, off the kit in the details: 12 dp search rails, full-bleed dividers unlike every other list, an old centred empty state, and a ▶ that doesn't say where the command runs.",
+    "issues": [
+      {"severity": "medium", "principle": "U7 · Craft in the details", "what": "The search field sits on 12 dp rails while the title and rows use 16 dp. Only this list separates rows with full-bleed dividers.", "fix": "Put search on the 16 dp rails and remove the dividers (KitRow spacing only)."},
+      {"severity": "medium", "principle": "U5 · One kit, one language", "what": "The empty state is the old centred bolt with “No server commands found” in the middle of the screen.", "fix": "Use KitStateView inline: “No commands in this project yet”, with a tertiary “How to add a command” opening the docs link through openExternalLink."},
+      {"severity": "medium", "principle": "X5 · Clear next step", "what": "Each row has a trailing ▶ but nothing says where the command will run (this conversation? a new one?).", "fix": "Make the row tap open a small sheet (“Run /review in… This conversation / New conversation”), or give the trailing button the label “Run in new conversation”."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "home-shell",
+    "area": "a-shell",
+    "title": "{server name} · Work / Inbox / Project / Settings",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/a-shell/home-shell--work.png", "docs/qa/screen-census/a-shell/home-shell--needs-you.png", "docs/qa/screen-census/a-shell/home-shell--reconnecting.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "The glass dock and server header are solid. The shell's weak points are a redundant tab subtitle, a status dot that changes colour with no word, and live-looking rows while the server isn't answering.",
+    "issues": [
+      {"severity": "high", "principle": "C2 · Words match the state", "what": "Reconnecting: the status line says “Laptop isn't answering”, yet the Running row below still shows a bright green dot and “Working · 2m ago”.", "fix": "While the connection is down, mute live marks. Supporting line: “Last seen working · 2m ago”, with a grey dot."},
+      {"severity": "high", "principle": "U2 · For everyone", "what": "The header's server dot turns blue while reconnecting and red when lost, with no word in the header.", "fix": "Add the state word next to the name while it isn't Connected (“Laptop · reconnecting”), or let the one status line carry the state and keep the dot neutral."},
+      {"severity": "medium", "principle": "U6 · One thing at a time", "what": "Under the server name, the header repeats the tab name (“Work”, “Inbox”), which the dock already shows in bold.", "fix": "Remove the subtitle, or use it for something the dock doesn't say (the project on Work)."},
+      {"severity": "medium", "principle": "P7 · One action, one mark", "what": "The same running conversation is a static dot on Work and a spinning ring on Inbox.", "fix": "Use KitStatusMark working in both places."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "embedded-connection-status-banner",
+    "area": "a-shell",
+    "title": "[Connection status banner]",
+    "kind": "overlay",
+    "images": ["docs/qa/screen-census/a-shell/embedded-connection-status-banner--inbox.png", "docs/qa/screen-census/a-shell/embedded-connection-status-banner--lost.png", "docs/qa/screen-census/a-shell/embedded-connection-status-banner--chat.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 2, "principles": 3},
+    "suggested": "fix",
+    "summary": "One condition has three wordings and two implementations (Work's own line and the shell banner), each with two trailing actions.",
+    "issues": [
+      {"severity": "high", "principle": "P7 · One kit, one language", "what": "Work says “Laptop isn't answering”, Inbox says “Reconnecting to Laptop…” and then “Connection lost”, and chat says “Laptop isn't answering” for the same situation.", "fix": "Use one KitStatusLine source with fixed stages: “Reconnecting to Laptop…” (first 8 s), then “Laptop isn't answering” with Try again. Every tab and the conversation read from it."},
+      {"severity": "medium", "principle": "§6 · One trailing action", "what": "Each line carries both a “Try again” text button and a “⋯” button.", "fix": "Keep Try again. Make tapping the line itself open the details sheet."},
+      {"severity": "medium", "principle": "U5 · One kit, one language", "what": "Inbox's lost state leaves an orphan “Saved servers” row with no section header directly under the line.", "fix": "Keep the list's section structure under the status line in every state."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "connection-status-details-sheet",
+    "area": "a-shell",
+    "title": "Connection lost / Reconnecting",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/a-shell/connection-status-details-sheet.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 2, "principles": 2},
+    "suggested": "fix",
+    "summary": "The raw socket error is laid open above the actions, and the title “Reconnecting” disagrees with an error that says the connection was refused.",
+    "issues": [
+      {"severity": "high", "principle": "P4 · Detail on request", "what": "A mono block “Cannot reach http://192.168.1.20:4096: Connection refused (errno = 111)” sits above Try again.", "fix": "Body in words: “Laptop refused the connection. OpenCode may have stopped on it.” Put the raw text in a collapsed Details row with copy, below the actions."},
+      {"severity": "high", "principle": "C2 · Words match the state", "what": "The title “Reconnecting” sits over a refused-connection error, with a filled “Try again”, so the person can't tell whether the app is already retrying.", "fix": "Title the state (“Laptop refused the connection”). Say “Trying again every 10 s” if that is true. Keep Try again as primary and Switch server as tertiary."},
+      {"severity": "medium", "principle": "C6 · Plain words", "what": "“What you see stays available while OpenCode is checked. Live updates resume on their own.” is passive and vague.", "fix": "“You can keep reading. Updates resume when Laptop answers.”"}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "server-switcher-sheet",
+    "area": "a-shell",
+    "title": "[Server switcher]",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/a-shell/server-switcher-sheet.png"],
+    "scores": {"ui": 3, "ux": 4, "motion": null, "copy": 4, "principles": 3},
+    "suggested": "fix",
+    "summary": "Simple and correct, but it has no title, marks the current server twice, and pins a destructive Disconnect at thumb height.",
+    "issues": [
+      {"severity": "medium", "principle": "U6 · One thing at a time", "what": "The current server has both the filled accent circle and a trailing check.", "fix": "Keep KitRowIcon(current) and “Connected”, and drop the check."},
+      {"severity": "medium", "principle": "X3 · Destructive apart", "what": "“Disconnect” is a full-width error-outlined button at the bottom, right under Manage servers, where the thumb rests.", "fix": "Move Disconnect into the current server row's menu (KitRowMenu, error-coloured) or into Manage servers."},
+      {"severity": "low", "principle": "§1 · Screen", "what": "The sheet has no title.", "fix": "Title it “Servers”."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "desktop-release-notice",
+    "area": "a-shell",
+    "title": "OpenCode {tag} is available.",
+    "kind": "overlay",
+    "images": ["docs/qa/screen-census/a-shell/desktop-release-notice.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": null, "principles": 3},
+    "suggested": "keep",
+    "summary": "Desktop-only. The snackbar text draws as boxes in the harness, so copy can't be judged here. The same overlap as the update notice applies if it ever shows on phone width.",
+    "issues": [
+      {"severity": "low", "principle": "U3 · Nothing hidden", "what": "At phone width, the snackbar covers the pinned New conversation button and half of the Solo · Team control.", "fix": "Lift snackbars above the pinned action block (see shorebird-update-notice)."}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "shorebird-update-notice",
+    "area": "a-shell",
+    "title": "Shorebird update ready — restart to apply.",
+    "kind": "overlay",
+    "images": ["docs/qa/screen-census/a-shell/shorebird-update-notice--receiving.png", "docs/qa/screen-census/a-shell/shorebird-update-notice--ready.png"],
+    "scores": {"ui": 2, "ux": 2, "motion": null, "copy": 2, "principles": 2},
+    "suggested": "fix",
+    "summary": "It names the delivery tool, hides the primary action while it shows, and its only button is “Got it” instead of restarting.",
+    "issues": [
+      {"severity": "high", "principle": "C3 · Plain words", "what": "The source copy is “Receiving Shorebird update…” and “Shorebird update ready — restart to apply.” (the render's boxes are a harness artefact).", "fix": "“Update ready. Restart to use it.” Say nothing while it downloads."},
+      {"severity": "high", "principle": "U3 · Nothing hidden", "what": "The snackbar is drawn over the pinned New conversation button and half of the Solo · Team control. In the ready state it stays until dismissed, so the page's main action is covered.", "fix": "Give the scaffold's snackbar a bottom margin equal to the pinned action block, or show the notice as the one KitStatusLine at the top of Work."},
+      {"severity": "medium", "principle": "C5 · Verbs that do", "what": "The only action, “Got it”, dismisses the notice. Nothing restarts the app.", "fix": "Action “Restart now”: restart the app after confirming nothing is mid-send. Otherwise say “Applies next time you open the app”."},
+      {"severity": "medium", "principle": "P7 · Snackbar is done-with-undo", "what": "The receiving state is a snackbar with a spinner, which is progress in a done-with-undo container.", "fix": "Show nothing while downloading, and show the ready notice once."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "bootstrap-gate",
+    "area": "a-shell",
+    "title": "OpenCode could not start",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/a-shell/bootstrap-gate--starting.png", "docs/qa/screen-census/a-shell/bootstrap-gate--failed.png"],
+    "scores": {"ui": 2, "ux": 2, "motion": null, "copy": 2, "principles": 2},
+    "suggested": "fix",
+    "summary": "The very first screen is a bare spinner with no timeout. Its failure names a cause (“Secure storage is locked”) and gives no way forward.",
+    "issues": [
+      {"severity": "high", "principle": "C2 · Words match the state", "what": "“Starting OpenCode…” and “OpenCode could not start” describe the app reading its own storage as if the OpenCode server were starting. That confuses the app with the server.", "fix": "“Opening…” while loading. On failure, title it “Can't read your saved servers”."},
+      {"severity": "high", "principle": "C4 · Honest waiting", "what": "The failure body is only “Secure storage is locked”, plus a centred compact Try again. It gives no next step and no way out.", "fix": "Body: “Unlock your phone, then try again. If Android reset its secure storage, you'll need to sign in to your servers again.” Primary Try again. Secondary “Start fresh” (confirmed; explains that saved sign-ins are removed). Raw error under Details."},
+      {"severity": "high", "principle": "P3 · Honest waiting", "what": "The spinner has no 8 s escape.", "fix": "After 8 s: “Still opening…” with Details and Try again."},
+      {"severity": "medium", "principle": "U5 · One kit, one language", "what": "The failure uses the old centred icon, title and compact button, not KitStateView.", "fix": "Use KitStateView page size with a drawing, left-aligned, with full-width actions."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "demo",
+    "area": "a-shell",
+    "title": "Offline demo",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/a-shell/demo.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "A good idea with an ad-hoc frame: a small flask title bar, a disclaimer paragraph, a centred empty state, and a mystery “Simulated reply” label beside Send.",
+    "issues": [
+      {"severity": "medium", "principle": "U5 · One kit, one language", "what": "The top bar is custom (small flask icon and small title, with unlabelled reset and close icons), and a two-line disclaimer sits right under it.", "fix": "Use a KitScreen top bar titled “Try it offline”, with a KitStatusLine “Simulated · nothing is saved” and a “Start over” action in the overflow."},
+      {"severity": "medium", "principle": "C2 · Plain words", "what": "“Simulated reply” sits inside the composer beside Send, reading like a chip or a button.", "fix": "Remove it. The empty state says “Tap send to try the sample”."},
+      {"severity": "low", "principle": "U8 · Craft", "what": "The empty state is centred, while the rest of the kit's states are left-aligned.", "fix": "Use KitStateView with a small drawing."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "embedded-context-menu-region",
+    "area": "a-shell",
+    "title": "[Desktop right-click context menu]",
+    "kind": "overlay",
+    "images": ["docs/qa/screen-census/a-shell/embedded-context-menu-region.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 4, "principles": 4},
+    "suggested": "keep",
+    "summary": "A correct desktop menu with destructive Delete last and error-coloured. One craft nit.",
+    "issues": [
+      {"severity": "low", "principle": "U5 · Craft", "what": "The menu has a hard black 2 dp outline that no other menu has.", "fix": "Use the theme's menu surface and elevation without the outline."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "confirm-sheet",
+    "area": "a-shell",
+    "title": "[Generic confirmation sheet: caller-supplied title]",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/a-shell/confirm-sheet.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 4, "principles": 4},
+    "suggested": "keep",
+    "summary": "The right shape for a confirmation (tonal icon, question title, one-line consequence, full-width error primary, Cancel below). It should become the only confirmation shape in the app.",
+    "issues": [
+      {"severity": "medium", "principle": "P7 · One kit, one language", "what": "Worktrees, cloud environments, shell stop, question dismiss and org switch still confirm with AlertDialogs, with right-aligned buttons.", "fix": "Route every non-typing confirmation through showConfirmSheet. Keep dialogs only where a name must be typed."}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "external-link-dialog",
+    "area": "a-shell",
+    "title": "Open external link? / Open insecure HTTP link?",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/a-shell/external-link-dialog--https.png", "docs/qa/screen-census/a-shell/external-link-dialog--insecure-http.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 4, "principles": 4},
+    "suggested": "fix",
+    "summary": "It does the security job (host first, in mono, with a plain warning for HTTP), but on the risky variant the risky choice is the filled primary.",
+    "issues": [
+      {"severity": "medium", "principle": "§2 · Destructive never primary", "what": "On the insecure-HTTP dialog, “Open HTTP link” is the filled button and Cancel is text, so the risky path is the emphasised one.", "fix": "For http, make Cancel the filled button (“Don't open”) and “Open anyway” an error-toned text button."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "embedded-product-states",
+    "area": "a-shell",
+    "title": "[Shared empty / error / refresh / gated states]",
+    "kind": "overlay",
+    "images": ["docs/qa/screen-census/a-shell/embedded-product-states--error.png", "docs/qa/screen-census/a-shell/embedded-product-states--empty.png"],
+    "scores": {"ui": 2, "ux": 2, "motion": null, "copy": 2, "principles": 2},
+    "suggested": "rethink",
+    "summary": "The old shared state (centred small icon, raw error as the only text, compact tonal button, Report a bug) is still used by about 18 screens. It is why the app has two error styles.",
+    "issues": [
+      {"severity": "high", "principle": "U5 · One kit, one language", "what": "Centred icon, one line and compact buttons, next to KitStateView's left-aligned drawing, title, body, full-width actions and Details elsewhere. Projects, Worktrees, Cloud environments, Commands, Tasks and Tools all use this old one.", "fix": "Reimplement ProductErrorState and ProductEmptyState as thin wrappers over KitStateView (inline size), so every caller migrates in one change. Add the widgets to the design_standard_test list."},
+      {"severity": "high", "principle": "C3 · Detail on request", "what": "The error has no title. Its message is the raw string “Could not load commands. Cannot reach http://192.168.1.20:4096: timed out”.", "fix": "Title “Couldn't load commands”, body “Laptop took too long to answer.” The raw text goes under Details, with copy."},
+      {"severity": "medium", "principle": "X5 · Clear next step", "what": "“Report a bug” is offered for a network timeout, and the empty state uses an info icon with no first step.", "fix": "Show Report only for unexpected errors. For network errors, offer Switch server. Give the empty state the page's first action."}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "global-sessions",
+    "area": "e-workspace",
+    "title": "All sessions",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/e-workspace/global-sessions--loaded.png", "docs/qa/screen-census/e-workspace/global-sessions--search.png", "docs/qa/screen-census/e-workspace/global-sessions--error.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 2, "principles": 3},
+    "suggested": "fix",
+    "summary": "Search works, but projects are named by path fragments with full paths under each, groups are wrapped in bordered cards, and the filter row runs off the screen.",
+    "issues": [
+      {"severity": "high", "principle": "C3 · Plain words", "what": "Group headers read “dev/shopfront / /home/dev/shopfront”, “workspace/shopfront / /workspace/shopfront”. The same project is “dev/shopfront” in the list and “shopfront” in search results.", "fix": "Use the project name as the header. Add a location word (“on ci-sandbox”) only when two names collide. The path goes in the group's menu › Details."},
+      {"severity": "medium", "principle": "U5 · One kit, one language", "what": "Each project is a bordered card with 12 dp outer rails, and rows have no leading icon (unlike Work).", "fix": "Use a SectionLabel with a count per project, and KitRows on 16 dp rails with the same leading chat or status icon as Work. No cards."},
+      {"severity": "medium", "principle": "U3 · Nothing clipped", "what": "The filter chips run off the right edge (“dev/shop…” is cut) with no scroll hint.", "fix": "Collapse the per-project chips into one “All projects ⌄” chip that opens a picker sheet."},
+      {"severity": "medium", "principle": "C4 · Honest errors", "what": "The error reads “Could not search sessions: the server took too long to answer” (engine word, no full stop), offers Report a bug for a timeout, and the filters stay live above it.", "fix": "“Laptop took too long to answer.” Primary Try again, tertiary Switch server. Dim the filters while in error."},
+      {"severity": "low", "principle": "C6 · Plain words", "what": "“1 conversations in one project”.", "fix": "Pluralise: “1 conversation in 1 project”."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "global-sessions-continue-here-sheet",
+    "area": "e-workspace",
+    "title": "Continue this session here?",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/e-workspace/global-sessions-continue-here-sheet.png"],
+    "scores": {"ui": 4, "ux": 3, "motion": null, "copy": 2, "principles": 3},
+    "suggested": "fix",
+    "summary": "The confirm shape is right, but the words explain the server's plumbing instead of naming the two projects and saying whether this can be undone.",
+    "issues": [
+      {"severity": "high", "principle": "C3 · Plain words", "what": "“…will belong to your current project through the server's sync system. It stops belonging to the project it runs in now.” names neither project and uses engine words.", "fix": "Title “Move to shopfront?”. Body: ““Profile the image pipeline” moves from perf-lab to shopfront.” Add “You can move it back later” if true, or “This can't be undone” if not."},
+      {"severity": "low", "principle": "C6 · Title length", "what": "The title wraps to two centred lines.", "fix": "Use the shorter title above."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "isolated-task-sheet",
+    "area": "e-workspace",
+    "title": "New task in a fresh worktree",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/e-workspace/isolated-task-sheet--form.png", "docs/qa/screen-census/e-workspace/isolated-task-sheet--creating.png", "docs/qa/screen-census/e-workspace/isolated-task-sheet--preparing.png", "docs/qa/screen-census/e-workspace/isolated-task-sheet--failed.png"],
+    "scores": {"ui": 3, "ux": 2, "motion": null, "copy": 2, "principles": 2},
+    "suggested": "rethink",
+    "summary": "It promises a task but only asks for a worktree name, speaks Git internals, has a garbled waiting line, and ends a failed setup in a dead-end “Close”.",
+    "issues": [
+      {"severity": "high", "principle": "X5 · Clear next step", "what": "The title says “New task”, but the only input is “Worktree name (optional)”. What the agent should do is never asked.", "fix": "Lead with “What should it work on?” (the first prompt). Fold the name under “Options”. “Start” creates the copy, runs setup, then sends the prompt."},
+      {"severity": "high", "principle": "C3 · Plain words", "what": "“worktree” and “Git worktree and branch” appear, a mono path sits at the top, and the body runs to three sentences.", "fix": "Title “Start in a separate copy”. Body “Works on its own branch, so it can't clash with your other conversations.” Path and branch under Details."},
+      {"severity": "high", "principle": "C2 · Plain words", "what": "The creating state reads “Stopping now cannot undo a create the server may already be running.”", "fix": "“If you stop waiting, the copy may still be made. You'll find it in Manage project.”"},
+      {"severity": "high", "principle": "X4 · Every state designed", "what": "The failed state shows raw red “setup: npm install exited 1” and only a “Close” button, although the copy exists and could be used.", "fix": "Title “Setup failed in coupon-banner”. Primary “Start anyway”, secondary “Run setup again”, tertiary “Remove the copy”. The setup log goes under Details."},
+      {"severity": "medium", "principle": "§2 · Button hierarchy", "what": "“Stop waiting” and “Close” are compact buttons pinned to the right.", "fix": "Use full-width stacked actions per §2."},
+      {"severity": "medium", "principle": "C4 · Honest waiting", "what": "It gives no time expectation, though npm install can take minutes.", "fix": "Say “Setup usually takes 1–3 minutes” and show the elapsed time."}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "manage-project",
+    "area": "e-workspace",
+    "title": "Manage project",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/e-workspace/manage-project.png"],
+    "scores": {"ui": 4, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "A clean KitRow hub whose words drift: this feature is called worktree here, isolated task on Work, directory in Move, and cloud environments come with adapter jargon.",
+    "issues": [
+      {"severity": "medium", "principle": "C3 · Plain words", "what": "“Create, discover, open, and remove adapter-backed environments”. The header row also shows the path /home/dev/shopfront.", "fix": "“Run this project on a cloud machine.” Header supporting line: “On Laptop”, with the path in Details."},
+      {"severity": "medium", "principle": "P7 · One action, one name", "what": "The same concept is “Worktrees · isolated Git branches” here, “Isolated task” on Work, and “directory” in the Move sheet.", "fix": "Pick one noun (for example “Separate copies”, or “Worktrees” everywhere) and use it on Work, in Manage, in Move and in the task sheet."},
+      {"severity": "low", "principle": "U8 · Craft", "what": "A section called “Coding” groups Worktrees, Cloud environments and Project health.", "fix": "Call it “Advanced”, or split it into “Where it runs” and “Health”."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "managed-workspaces",
+    "area": "e-workspace",
+    "title": "Cloud environments",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/e-workspace/managed-workspaces--loaded.png", "docs/qa/screen-census/e-workspace/managed-workspaces--empty.png", "docs/qa/screen-census/e-workspace/managed-workspaces--error.png"],
+    "scores": {"ui": 2, "ux": 2, "motion": null, "copy": 2, "principles": 2},
+    "suggested": "rethink",
+    "summary": "An engine console: four technical facts per row, raw adapter ids, two look-alike refresh icons, an outlined FAB off the kit, and an error that still offers to create.",
+    "issues": [
+      {"severity": "high", "principle": "C3 · Plain words", "what": "A row reads “opencode/ci-sandbox · daytona · Connected · /workspace/shopfront”. Adapters repeat their id under the name (“Daytona … daytona”). The section header is “Adapters”.", "fix": "Row: title ci-sandbox, supporting “Daytona · Connected”. Id and path go under the row menu › Details. Rename Adapters to “Providers” and drop the repeated id."},
+      {"severity": "high", "principle": "X5 · Clear next step", "what": "Two unlabelled, near-identical app-bar icons (sync arrows for Discover, a circular arrow for Refresh).", "fix": "Refresh by KitRefresh pull. Discover moves to the overflow as “Find existing environments”."},
+      {"severity": "high", "principle": "U5 · One kit, one language", "what": "An extended FAB “New environment” with a heavy black outline, which the kit doesn't have (Worktrees has the same).", "fix": "A KitButton.primary pinned full width at the bottom (standard §1)."},
+      {"severity": "high", "principle": "X4 · Every state designed", "what": "The error shows raw “Could not list environments: adapter daytona is not configured” with Report a bug, and New environment is still offered.", "fix": "KitStateView “Daytona isn't set up on Laptop”, body with the one next step, raw text in Details. Hide New environment until a provider works."},
+      {"severity": "medium", "principle": "U2 · Not by colour alone", "what": "The connected environment is shown by painting the whole row accent.", "fix": "Use KitRowIcon(current: true) with a supporting line starting “Connected ·”."}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "managed-workspaces-create-dialog",
+    "area": "e-workspace",
+    "title": "New managed workspace",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/managed-workspaces-create-dialog.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 2, "principles": 3},
+    "suggested": "fix",
+    "summary": "Short, but in adapter language, with a placeholder-only branch field and no hint that creation takes minutes.",
+    "issues": [
+      {"severity": "high", "principle": "C3 · Plain words", "what": "The field is labelled “Adapter”, and the body says “OpenCode configures adapter-specific details on the server.”", "fix": "Label “Provider”. Body “Laptop sets it up and opens it here when it's ready (usually a few minutes).”"},
+      {"severity": "medium", "principle": "U8 · Craft", "what": "The branch field has only a placeholder, “Branch (optional)”, which disappears as the person types.", "fix": "Use a floating label “Branch”, helper “Leave empty to use main”."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "managed-workspaces-remove-dialog",
+    "area": "e-workspace",
+    "title": "Remove {name}?",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/managed-workspaces-remove-dialog.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "Type-to-confirm is right for this, but the body hedges (“may permanently delete … or worktree”) instead of saying what will happen.",
+    "issues": [
+      {"severity": "medium", "principle": "X3 · Say exactly what", "what": "“The server adapter may permanently delete the remote environment or worktree.”", "fix": "Per provider: “Deletes the Daytona sandbox perf-lab and everything in it. Conversations stay in history.”"},
+      {"severity": "low", "principle": "P7 · One action, one name", "what": "The dialog says “Delete”, while the ledger and menu say “Remove”.", "fix": "Use one verb in the menu, the title and the button."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "project-folder-new-dialog",
+    "area": "e-workspace",
+    "title": "Create a new folder",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/project-folder-new-dialog.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 4, "principles": 4},
+    "suggested": "keep",
+    "summary": "A short text entry in a dialog, as the standard intends. The name is pre-focused and the outcome is stated.",
+    "issues": [
+      {"severity": "low", "principle": "C3 · Plain words", "what": "“in /root/projects on this device” (the app says “this phone” elsewhere).", "fix": "“Made in your projects folder on this phone.” The path goes in the helper text."}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "project-folder-open-dialog",
+    "area": "e-workspace",
+    "title": "Open a project folder",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/project-folder-open-dialog--filled.png", "docs/qa/screen-census/e-workspace/project-folder-open-dialog--missing.png"],
+    "scores": {"ui": 4, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "On a remote server, typing a full absolute path on a phone keyboard is the only way in, and the not-found error is a dead end.",
+    "issues": [
+      {"severity": "medium", "principle": "X9 · Fewest taps", "what": "The only way to open a folder on a remote server is typing “/home/dev/loyalty-app” by hand.", "fix": "Where the server can list files, open the folder browser (as on the phone server), with “Enter a path” as its tertiary."},
+      {"severity": "medium", "principle": "X4 · Every state designed", "what": "“There is no folder at /home/dev/loyalty-app.” gives no way forward and repeats the path the field already shows.", "fix": "Error “No folder there.” plus a tertiary “Create it” where the server allows."}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "project-health",
+    "area": "e-workspace",
+    "title": "Project health",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/e-workspace/project-health--loaded.png", "docs/qa/screen-census/e-workspace/project-health--no-git.png", "docs/qa/screen-census/e-workspace/project-health--error.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "A useful developer page, but its states contradict themselves, errors look like successes, and a filled primary sits inside a list section.",
+    "issues": [
+      {"severity": "high", "principle": "C2 · Words match the state", "what": "No-git shows “0 changed” beside “Git is not initialized”. The error says “unavailable on this server” and still offers Try again.", "fix": "Hide the count when Git is missing. Say “Couldn't read Git status” plus Try again for a failure. Say “This server doesn't report Git status” with no retry when it's unsupported."},
+      {"severity": "medium", "principle": "U2 · Not by colour alone", "what": "The failed YAML language server shows a grey ✗ in the same tone as the ✓ rows, with the lowercase word “error”, no reason and no action.", "fix": "Error-tone icon, supporting line with the reason (“Crashed on start”), and tap for Details with the raw error and Restart where supported."},
+      {"severity": "medium", "principle": "U4 · One primary", "what": "A full-width filled “Initialize Git” sits inside the Version control list.", "fix": "Make it a row with a trailing text action “Set up”, or a tonal button. Keep filled buttons for a page's single job."},
+      {"severity": "medium", "principle": "C3 · Plain words", "what": "Every language-server row repeats /home/dev/shopfront. States are lowercase (“connected”, “error”) next to “Enabled/Disabled”. Counts read “1/2”.", "fix": "Drop the repeated path. Use sentence-case states. Write counts as “1 of 2 running”."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "project-health-git-init-dialog",
+    "area": "e-workspace",
+    "title": "Initialize Git repository?",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/project-health-git-init-dialog.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 4, "principles": 4},
+    "suggested": "keep",
+    "summary": "It says what will run and that nothing is committed. Its audience is developers, so “git init” is fair.",
+    "issues": [
+      {"severity": "low", "principle": "C6 · Plain words", "what": "“This enables branch, working-tree, and Review features.”", "fix": "“Then you can review changes and work on branches.”"}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "projects",
+    "area": "e-workspace",
+    "title": "Projects",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/e-workspace/projects--loaded.png", "docs/qa/screen-census/e-workspace/projects--error.png", "docs/qa/screen-census/e-workspace/projects--read-only.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "Rows carry two trailing icons, the current project is marked by paint, the counts read “3 of 3” and “0 of 0”, and the read-only variant is a different page with an old empty state.",
+    "issues": [
+      {"severity": "high", "principle": "§6 · One trailing action", "what": "Every row has a pencil plus a chevron (or check): two trailing targets 24 dp apart.", "fix": "Put Rename in the row's KitRowMenu. Keep one trailing chevron."},
+      {"severity": "medium", "principle": "U2 · Current mark", "what": "The current project is shown by painting its title, path and worktree line accent, plus a check.", "fix": "Use KitRowIcon(current: true) with a supporting line starting “Current ·”."},
+      {"severity": "medium", "principle": "C2 · Plain words", "what": "The header count reads “3 of 3” when nothing is filtered, and “0 of 0” on error.", "fix": "Show “3”, and “2 of 3” only while a search filters. Hide the count in error."},
+      {"severity": "medium", "principle": "U5 · One kit, one language", "what": "The error is the old centred ProductErrorState with Report a bug for a timeout. The read-only variant is titled “Project context”, says “Configured folder”, and tells the person to go to Work with no button.", "fix": "KitStateView for both. The read-only page keeps the title “Projects”, says “This server works in one folder”, and has a primary “New conversation”."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "projects-rename-dialog",
+    "area": "e-workspace",
+    "title": "Rename project",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/projects-rename-dialog.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 4, "principles": 4},
+    "suggested": "keep",
+    "summary": "Pre-filled, focused, with the reset rule in one sentence. This is the right container for a short entry.",
+    "issues": [],
+    "quickWin": false
+  },
+  {
+    "pageId": "running-work-sheet",
+    "area": "e-workspace",
+    "title": "Tasks",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/e-workspace/running-work-sheet--loaded.png", "docs/qa/screen-census/e-workspace/running-work-sheet--empty.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "The list is clear, but its one filled button (“Run in background”) doesn't say what goes to the background, “Idle” is filed under Finished, and the empty state uses a success tick.",
+    "issues": [
+      {"severity": "high", "principle": "C5 · Verbs that say what happens", "what": "A full-width filled “Run in background” heads the list. It actually frees the blocked conversation while the task keeps running, but the label says neither.", "fix": "“Keep chatting while it runs”. Show it only while the conversation is blocked, as a tonal button under the running row it applies to."},
+      {"severity": "medium", "principle": "C2 · Words match the state", "what": "“Update the checkout README · Idle” is listed under “Finished 3” with a ⊘ mark.", "fix": "Say “Stopped” if it ended, or keep Idle agents under their own “Idle” label."},
+      {"severity": "medium", "principle": "C3 · Detail on request", "what": "“Exit code 1 · 2:00” in red.", "fix": "“Failed · 2:00”. The exit code goes in the output screen's Details."},
+      {"severity": "medium", "principle": "U5 · One kit, one language", "what": "The empty state is old centred text under a check-mark icon, which reads as success.", "fix": "KitStateView inline with a neutral icon: “Nothing running”."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "shell-output",
+    "area": "e-workspace",
+    "title": "Command output",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/e-workspace/shell-output.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "Live output with a follow switch is right, but Stop sits beside the frequent Change timeout and the header is the raw command with its env var and absolute binary path.",
+    "issues": [
+      {"severity": "high", "principle": "X3 · Destructive apart", "what": "The error-coloured “Stop command” sits in the same row as the outlined “Change timeout”.", "fix": "KitActionStack: Change timeout on its own line. Stop on a separate line below, error-coloured and confirmed (already confirmed)."},
+      {"severity": "medium", "principle": "C3 · Detail on request", "what": "The bold title line is “FLUTTER_TEST=1 /usr/local/flutter/bin/flutter test test/checkout”.", "fix": "Show the command as typed (“flutter test test/checkout”) in mono. The environment and absolute path go in Details."},
+      {"severity": "medium", "principle": "C4 · Honest waiting", "what": "“Running · 2:14” gives no hint of when the timeout will stop it.", "fix": "“Running · 2:14 · stops in 12:46”."},
+      {"severity": "low", "principle": "U7 · Craft", "what": "The output box ends mid-screen with about 40% empty below.", "fix": "Let the output fill to the bottom safe area."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "shell-output-stop-dialog",
+    "area": "e-workspace",
+    "title": "Stop this command?",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/shell-output-stop-dialog.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 4, "principles": 3},
+    "suggested": "keep",
+    "summary": "It honestly states the surprising consequence (the saved output is removed from the server). Only the container is off-pattern.",
+    "issues": [
+      {"severity": "medium", "principle": "P7 · Container", "what": "An AlertDialog, while conversation delete and archive confirm in sheets.", "fix": "Use showConfirmSheet with the same copy."}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "shell-output-timeout-sheet",
+    "area": "e-workspace",
+    "title": "Time remaining",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/e-workspace/shell-output-timeout-sheet.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "A bare text list with two leading edges and no mark for the current timeout. Its title names the result, not the choice.",
+    "issues": [
+      {"severity": "medium", "principle": "U7 · One leading edge", "what": "The title and subtitle sit at 20 dp, and the options are indented to about 37 dp.", "fix": "Use KitRows on 16 dp rails, with the title on the same edge."},
+      {"severity": "medium", "principle": "X5 · Clear choice", "what": "The current timeout isn't marked, and the options are plain text with no selection affordance.", "fix": "Radio marks, with the current one selected and “Now: 15 minutes” in the subtitle."},
+      {"severity": "medium", "principle": "C6 · Plain words", "what": "“Time remaining” over “The new timeout starts now.”", "fix": "Title “Stop it after…”, subtitle “Counting from now.”"}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "session-destination-sheet",
+    "area": "e-workspace",
+    "title": "Move session",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/e-workspace/session-destination-sheet--move.png", "docs/qa/screen-census/e-workspace/session-destination-sheet--warp.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 2, "principles": 3},
+    "suggested": "fix",
+    "summary": "Destinations are identified by full paths (one wraps two lines through .local/share/opencode/worktree). Rows mix radio and chevron, and the current row looks disabled.",
+    "issues": [
+      {"severity": "high", "principle": "C3 · Plain words", "what": "“/home/dev/.local/share/opencode/worktree/shopfront/checkout-retry”, “Choose another directory”, “daytona · connected”.", "fix": "Name and kind only: “checkout-retry · separate copy”, “api · folder in shopfront”, “ci-sandbox · Daytona”. Paths go in Details."},
+      {"severity": "medium", "principle": "X8 · Clear affordance", "what": "Rows carry both a radio and a trailing chevron, so it's unclear whether a tap selects or navigates.", "fix": "Plain rows with a chevron (tap goes to the confirmation). Mark the current row with KitRowIcon(current) and “Current ·”, not grey."},
+      {"severity": "medium", "principle": "U6 · Once per screen", "what": "The disconnected perf-lab says “disconnected” in both its supporting line and its trailing label. The /warp variant is also titled “Move conversation”.", "fix": "Say the state once. Title the warp variant “Move to a cloud machine”."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "session-destination-confirm-dialog",
+    "area": "e-workspace",
+    "title": "Move session?",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/session-destination-confirm-dialog.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "It offers the right choice, but the three stacked right-aligned buttons are in reverse order, and it doesn't say what happens to changes left behind.",
+    "issues": [
+      {"severity": "medium", "principle": "§2 · Button hierarchy", "what": "Cancel is on top, “Move only” in the middle and the filled “Move with changes” at the bottom, all right-aligned.", "fix": "A confirm sheet: primary “Move with changes”, secondary “Move without changes”, tertiary Cancel, full width, top to bottom."},
+      {"severity": "medium", "principle": "C6 · Plain words", "what": "“3 changed files are present… those working changes”.", "fix": "“You have 3 changed files. Bring them along, or leave them in shopfront?”"}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "console-organization-sheet",
+    "area": "e-workspace",
+    "title": "Switch organization",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/e-workspace/console-organization-sheet.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 2, "principles": 3},
+    "suggested": "fix",
+    "summary": "It lists the same account twice as a header, shows raw org ids as supporting lines, and repeats the radio-plus-chevron row.",
+    "issues": [
+      {"severity": "high", "principle": "U6 · Once per screen", "what": "“dev@shopfront.example · opencode.ai” heads two separate groups.", "fix": "Group all of an account's organizations under one SectionLabel."},
+      {"severity": "medium", "principle": "C3 · Plain words", "what": "Supporting lines are ids: “org_personal”, “org_agency”, “org_shopfront”.", "fix": "Drop them, or show something the person recognises (role or plan). The id goes in Details."},
+      {"severity": "medium", "principle": "X8 · Clear affordance", "what": "Radio and chevron on every row, and the current org greyed like a disabled row.", "fix": "Same fix as the Move sheet: chevron rows plus the KitRowIcon(current) mark."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "console-organization-switch-dialog",
+    "area": "e-workspace",
+    "title": "Switch organization?",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/console-organization-switch-dialog.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "Short and clear, apart from a doubled period and an unanswered question about running work.",
+    "issues": [
+      {"severity": "medium", "principle": "C6 · Craft", "what": "“…reload using Shopfront Inc..” (doubled period).", "fix": "Don't append a period after a name that ends in one, or rephrase: “Models and providers will come from Shopfront Inc.”"},
+      {"severity": "medium", "principle": "X3 · Say what happens", "what": "It doesn't say whether running conversations or billing are affected.", "fix": "Add one line: “Running conversations keep their current model.” (or whatever is true)."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "workspace",
+    "area": "e-workspace",
+    "title": "Work",
+    "kind": "tab",
+    "images": ["docs/qa/screen-census/e-workspace/workspace--loaded.png", "docs/qa/screen-census/e-workspace/workspace--needs-you.png", "docs/qa/screen-census/e-workspace/workspace--empty.png", "docs/qa/screen-census/e-workspace/workspace--loading.png"],
+    "scores": {"ui": 3, "ux": 2, "motion": null, "copy": 3, "principles": 2},
+    "suggested": "rethink",
+    "summary": "The home of the app starts work three ways at once (Solo · Team switch, half-width New conversation, Isolated task) in a pinned block that takes a fifth of the screen, and shows the AI Team twice.",
+    "issues": [
+      {"severity": "high", "principle": "U4 · One thing at a time", "what": "The pinned block above the dock stacks a Solo · Team segmented control, then a half-width filled “New conversation” beside an “Isolated task” text button. That is about 190 dp (21% of the screen) of controls with mixed alignment.", "fix": "Pin one full-width “New conversation”. A small trailing chevron (or long-press) opens a choice sheet: Conversation · Team task · In a separate copy, with one line each. Remove the segmented control and the side text button."},
+      {"severity": "high", "principle": "U6 · Once per screen", "what": "The AI Team appears twice: the “AI Team · Give a bigger job to a team” card in the list, and the “Team” segment right under it. In the empty project the promo card also competes with the empty state's first step.", "fix": "One presence: the Team choice in the new-work sheet. Show the promo as a dismissible KitNotice only until first use, and never in an empty project."},
+      {"severity": "medium", "principle": "M5 · No layout shift", "what": "Loading shows the primary full width and “Other projects” above the fold. Once loaded, the primary shrinks to make room for Isolated task and Other projects jumps below the fold.", "fix": "Keep the pinned block's layout identical in loading and loaded states. Reserve the list's height with skeletons."},
+      {"severity": "medium", "principle": "§6 · One trailing action", "what": "The Recent conversations header carries “☰ All conversations” plus a ⋮ whose centre sits about 12 dp left of the rows' ⋮ column. The Running and Pinned headers show a lone “1” at the far right.", "fix": "Header with one text action “See all”. Move the ⋮ items into it or into the page overflow. Align trailing controls to one column. Drop single-item counts."},
+      {"severity": "medium", "principle": "C6 · Plain words", "what": "The empty state's title is in a bold body style, and its body runs to two long lines ending “Start one with New conversation.”", "fix": "KitStateView inline title “No conversations yet”, body “Start one below. The ones that need you appear first.”"}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "workspace-directory-details-dialog",
+    "area": "e-workspace",
+    "title": "<directory basename>",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/workspace-directory-details-dialog.png"],
+    "scores": {"ui": 3, "ux": 2, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "A blocking dialog whose only content is a path and “Close”. It has no copy and no action, triggered from a list row that already shows a truncated path.",
+    "issues": [
+      {"severity": "medium", "principle": "X8 · Container fits the task", "what": "An AlertDialog (“api / /home/dev/shopfront/packages/api / Close”) for information that isn't blocking.", "fix": "Make the folder row open the project context sheet with a Details row (mono, tap to copy), or copy on tap with a snackbar."},
+      {"severity": "medium", "principle": "C3 · Detail on request", "what": "The row above the list reads “Active conversation's project · /home/dev/shopfront/…”, with the path truncated in the main list.", "fix": "Supporting line “In packages/api”. The full path lives only in Details."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "workspace-context-sheet",
+    "area": "e-workspace",
+    "title": "[Project and workspace context]",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/e-workspace/workspace-context-sheet.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "A useful switchboard with no title. Its header shows a raw path, and it calls cloud environments “Workspace” with a raw id.",
+    "issues": [
+      {"severity": "medium", "principle": "C3 · Plain words", "what": "Header “shopfront / /home/dev/shopfront”. Under the section “Workspace”, the options are “This computer” and “opencode/ci-sandbox / /workspace/shopfront”.", "fix": "Title “shopfront”, supporting “On Laptop”. Section “Runs on” with rows “Laptop” and “ci-sandbox · Daytona”. Paths go in Details."},
+      {"severity": "medium", "principle": "P7 · One action, one name", "what": "The same feature is “Workspace” here and “Cloud environments” in Manage project.", "fix": "Use one name everywhere."},
+      {"severity": "low", "principle": "U2 · Current mark", "what": "“This computer” is painted accent, with a trailing check.", "fix": "KitRowIcon(current) with a “Current ·” line."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "workspace-session-details-sheet",
+    "area": "e-workspace",
+    "title": "<session title>",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/e-workspace/workspace-session-details-sheet.png"],
+    "scores": {"ui": 2, "ux": 2, "motion": null, "copy": 2, "principles": 2},
+    "suggested": "rethink",
+    "summary": "Five bare, unlabelled lines (path, cost, diff, file count, share URL) in a sheet narrower than the screen. Nothing can be copied and nothing can be done.",
+    "issues": [
+      {"severity": "high", "principle": "U5 · One kit, one language", "what": "Unlabelled values: “/home/dev/shopfront”, “$1.18”, “+212 −40”, “9 files”, “Shared: https://opncd.ai/share/k3v9Qd2m”. The sheet is inset 32 dp from both screen edges, unlike every other sheet.", "fix": "Full-width sheet of KitRows with labels: Folder, Cost, Changes (“+212 −40 in 9 files”, opens Review), Shared link. Tap copies, and the link row's menu has Copy link and Stop sharing."},
+      {"severity": "medium", "principle": "P4 · Copyable", "what": "The share URL and path can't be copied.", "fix": "One-tap copy on every technical value."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "workspace-rename-session-dialog",
+    "area": "e-workspace",
+    "title": "Rename session",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/workspace-rename-session-dialog.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 4, "principles": 4},
+    "suggested": "keep",
+    "summary": "Pre-filled and focused, with a verb-labelled button. It says “conversation”, matching the rest of the app.",
+    "issues": [],
+    "quickWin": false
+  },
+  {
+    "pageId": "workspace-archive-session-sheet",
+    "area": "e-workspace",
+    "title": "Archive session?",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/e-workspace/workspace-archive-session-sheet.png"],
+    "scores": {"ui": 4, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "A full confirmation for a reversible action. The standard's answer is to act and offer Undo.",
+    "issues": [
+      {"severity": "medium", "principle": "P7 · Snackbar is done-with-undo", "what": "Archiving (reversible) asks first with a filled primary, the same weight as Delete.", "fix": "Archive at once and show a snackbar “Archived · Undo”."},
+      {"severity": "medium", "principle": "C2 · Plain words", "what": "“…will be hidden from recent conversations” doesn't say where to find it again.", "fix": "Snackbar text: “Archived. Find it under Archived conversations.”"}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "workspace-share-session-sheet",
+    "area": "e-workspace",
+    "title": "Share this session?",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/e-workspace/workspace-share-session-sheet.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 4, "principles": 4},
+    "suggested": "keep",
+    "summary": "It does the trust job: says who can see it and warns about secrets, with a verb button.",
+    "issues": [
+      {"severity": "low", "principle": "C6 · Two sentences", "what": "The body is three sentences over three centred lines.", "fix": "“Anyone with the link can read this conversation. Don't share secrets or private files.”"}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "workspace-delete-session-sheet",
+    "area": "e-workspace",
+    "title": "Delete session?",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/e-workspace/workspace-delete-session-sheet.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 4, "principles": 4},
+    "suggested": "keep",
+    "summary": "A correct destructive confirmation: names the conversation, says it's permanent, full-width error button.",
+    "issues": [
+      {"severity": "low", "principle": "X3 · Say exactly what", "what": "For a shared conversation, it doesn't say that the public link stops working.", "fix": "Add “Its shared link stops working.” when the conversation is shared."}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "workspace-archived-sheet",
+    "area": "e-workspace",
+    "title": "[Archived sessions]",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/e-workspace/workspace-archived-sheet.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 2, "principles": 3},
+    "suggested": "fix",
+    "summary": "It has no title. Every row's supporting line is the same raw path, it uses a 3-D box icon, and Restore is buried in a menu.",
+    "issues": [
+      {"severity": "medium", "principle": "C3 · Plain words", "what": "Both rows read “/home/dev/shopfront” under the title.", "fix": "Supporting line “Archived 3d ago”."},
+      {"severity": "medium", "principle": "§1 · Screen", "what": "No title or count, and the ⋮ sits about 20 dp inside the edge, off the rail.", "fix": "Title “Archived · 2”. Trailing “Restore” text action as the row's one action, with Delete in the menu."},
+      {"severity": "low", "principle": "U9 · One icon family", "what": "Rows use a 3-D box icon, while the entry row on Work uses the archive-box icon.", "fix": "Use the archive icon."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "workspace-folder-chooser",
+    "area": "e-workspace",
+    "title": "Choose a project folder",
+    "kind": "tab",
+    "images": ["docs/qa/screen-census/e-workspace/workspace-folder-chooser--phone-server.png", "docs/qa/screen-census/e-workspace/workspace-folder-chooser--remote-server.png", "docs/qa/screen-census/e-workspace/workspace-folder-chooser--error.png"],
+    "scores": {"ui": 4, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "Built on KitStateView with a drawing, but the error state keeps the happy title and hides Retry behind a lone “…”. The body repeats the title, and the tertiaries sit side by side.",
+    "issues": [
+      {"severity": "high", "principle": "C2 · Words match the state", "what": "When the project list fails, the title and body stay “Choose a project folder / Choose a project folder to start a conversation.” Only the drawing changes, and Retry sits behind a bare “…” button.", "fix": "Title “Couldn't load your projects”, body with the next step, “Try again” as a visible tertiary. The raw error goes under Details."},
+      {"severity": "medium", "principle": "C6 · Plain words", "what": "The body repeats the title word for word.", "fix": "“Conversations run inside a folder on Laptop. Pick one to start.”"},
+      {"severity": "medium", "principle": "§2 · Stacked tertiaries", "what": "“Choose from opened projects” and “Search all conversations” sit side by side on one line.", "fix": "Stack them left-aligned, one per line."},
+      {"severity": "low", "principle": "C5 · Plain words", "what": "“Open a project folder” next to “Choose from opened projects”: open and opened read as the same action.", "fix": "“Enter a folder path” (remote) and “Recent projects”."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "worktrees",
+    "area": "e-workspace",
+    "title": "Worktrees",
+    "kind": "screen",
+    "images": ["docs/qa/screen-census/e-workspace/worktrees--loaded.png", "docs/qa/screen-census/e-workspace/worktrees--empty.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "An outlined FAB off the kit, an empty state boxed in a card with its own duplicate “New worktree”, and rows that say nothing about their state.",
+    "issues": [
+      {"severity": "high", "principle": "U5 · One kit, one language", "what": "An extended FAB with a black outline, plus a second “New worktree” link inside a bordered empty-state card: two calls to action for one action.", "fix": "One KitButton.primary pinned at the bottom. KitStateView inline without the card or the duplicate link."},
+      {"severity": "medium", "principle": "U8 · Type from the theme", "what": "The “Worktrees ⓘ” section label is letter-spaced and styled differently from “Primary”. There is a divider only between the two rows, and the ⋮ sits off the 16 dp rail.", "fix": "Use SectionLabel for both headers, no divider, and trailing controls on the rail."},
+      {"severity": "medium", "principle": "X4 · State in the row", "what": "Rows show only the branch (“opencode/checkout-retry”). Nothing says whether a copy has changes or which conversation uses it.", "fix": "Supporting line “2 changed files · Fix flaky checkout”."},
+      {"severity": "medium", "principle": "C3 · Detail on request", "what": "The primary row shows “Default project · /home/dev/shopfront”, painted in accent colour.", "fix": "“Main copy · Current”. Path in Details. Use the KitRowIcon current mark."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "worktrees-reset-dialog",
+    "area": "e-workspace",
+    "title": "Reset {name}?",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/worktrees-reset-dialog.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 4, "principles": 4},
+    "suggested": "keep",
+    "summary": "A strong destructive confirmation: a warning line with the changed-file count, exactly what is discarded, and “This cannot be undone.”",
+    "issues": [
+      {"severity": "low", "principle": "X3 · Consistent friction", "what": "Reset is as permanent as Delete but doesn't ask the person to type the name, while Delete does.", "fix": "Either require typing for both, or for neither when there are no changes."}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "worktrees-create-dialog",
+    "area": "e-workspace",
+    "title": "New worktree",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/worktrees-create-dialog.png"],
+    "scores": {"ui": 3, "ux": 4, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "A short entry form whose helper text is cut off mid-sentence.",
+    "issues": [
+      {"severity": "high", "principle": "P-a · Nothing cut", "what": "The helper reads “OpenCode makes the name URL-safe …”, truncated at 100% text.", "fix": "Let the helper wrap to two lines and shorten it: “Spaces become dashes.”"},
+      {"severity": "low", "principle": "C3 · Plain words", "what": "“isolated Git branch and working directory. Project startup tasks run automatically.”", "fix": "“A separate copy on its own branch. The project's setup runs in it.”"}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "worktrees-remove-dialog",
+    "area": "e-workspace",
+    "title": "Remove {name}?",
+    "kind": "dialog",
+    "images": ["docs/qa/screen-census/e-workspace/worktrees-remove-dialog.png"],
+    "scores": {"ui": 4, "ux": 4, "motion": null, "copy": 4, "principles": 4},
+    "suggested": "keep",
+    "summary": "Warning, exact consequence, what survives (conversation history) and type-to-confirm. This is the reference for heavy deletes.",
+    "issues": [
+      {"severity": "low", "principle": "P7 · One action, one name", "what": "The title says “Delete dark-mode?”, while the menu and ledger say Remove.", "fix": "Use one verb."}
+    ],
+    "quickWin": false
+  },
+  {
+    "pageId": "project-folder-browser",
+    "area": "e-workspace",
+    "title": "Open a project",
+    "kind": "sheet",
+    "images": ["docs/qa/screen-census/e-workspace/project-folder-browser--projects.png", "docs/qa/screen-census/e-workspace/project-folder-browser--inside.png", "docs/qa/screen-census/e-workspace/project-folder-browser--loading.png", "docs/qa/screen-census/e-workspace/project-folder-browser--error.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "Browsing with Git and OpenCode marks is a real improvement, but opening a marked project takes two taps, and a heavy inline New project form is pinned under every folder, including inside a project.",
+    "issues": [
+      {"severity": "medium", "principle": "X9 · Fewest taps", "what": "Rows marked “OpenCode project” or “Git repository” navigate into the folder, and opening takes a second tap on “Open shopfront”.", "fix": "Tapping a project-marked row opens it. Keep a trailing “look inside” chevron for browsing."},
+      {"severity": "medium", "principle": "U4 · One thing at a time", "what": "The pinned bottom holds a “New project” label, a name field with a tonal Create beside it, a two-line hint and “Enter a path”: about a quarter of the sheet. Inside shopfront it offers to create a new project nested in shopfront.", "fix": "Replace it with a single tertiary “New project…” that opens the name dialog, always in the projects folder."},
+      {"severity": "medium", "principle": "U8 · Type from the theme", "what": "The sheet title “Open a project” is titleMedium, while other sheets use the large title style.", "fix": "Use the shared sheet title style."},
+      {"severity": "medium", "principle": "C4 · Honest errors", "what": "“The app isn't allowed to read it” offers only Try again, which can't fix a permission.", "fix": "Primary “Go up one folder”. Details carry the raw error."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "embedded-mobile-task-list",
+    "area": "e-workspace",
+    "title": "[Task list tool view]",
+    "kind": "overlay",
+    "images": ["docs/qa/screen-census/e-workspace/embedded-mobile-task-list.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 2, "principles": 3},
+    "suggested": "fix",
+    "summary": "Three progress readouts that disagree (2/5, 2 of 4, bar), an engine label, and two side-by-side buttons inside a chat card.",
+    "issues": [
+      {"severity": "high", "principle": "C2 · Words match the state", "what": "The header says “2/5 completed” and the body says “2 of 4 done” (cancelled counted differently), with a bar as a third readout.", "fix": "One readout: “2 of 4 done” in the header (cancelled excluded and shown struck through), plus the bar. Remove the body line."},
+      {"severity": "high", "principle": "C3 · Plain words", "what": "“Server-reported tasks · mobile view”.", "fix": "Remove the label."},
+      {"severity": "medium", "principle": "§2 · Button hierarchy", "what": "An outlined “Show unfinished only” and a text “Copy all tasks” sit side by side inside the card.", "fix": "Make the filter a FilterChip, and move Copy into the card's overflow."},
+      {"severity": "low", "principle": "U2 · Not by colour alone", "what": "“High priority” is bold accent blue while other priorities are muted, so priority is carried mostly by colour weight.", "fix": "Mark only high priority, with a small “High” badge in the muted style."}
+    ],
+    "quickWin": true
+  },
+  {
+    "pageId": "embedded-session-inventory-footer",
+    "area": "e-workspace",
+    "title": "[Session inventory footer]",
+    "kind": "overlay",
+    "images": ["docs/qa/screen-census/e-workspace/embedded-session-inventory-footer--more.png", "docs/qa/screen-census/e-workspace/embedded-session-inventory-footer--error.png"],
+    "scores": {"ui": 3, "ux": 3, "motion": null, "copy": 3, "principles": 3},
+    "suggested": "fix",
+    "summary": "A “Load more” button the standard forbids, and a raw red error line with a centred Try again. The section header vanishes in the error state.",
+    "issues": [
+      {"severity": "high", "principle": "§4 · Progress and loading", "what": "A centred “Load more conversations” text button ends the list.", "fix": "Load the next page when the list nears its end, with KitSkeletonRows while it loads."},
+      {"severity": "medium", "principle": "U5 · One kit, one language", "what": "The error is red body text (“Could not load older conversations: the server took too long”) over a centred “Try again”, and the “Recent conversations” header disappears.", "fix": "KitNotice inline: “Couldn't load older conversations” with Try again, keeping the section header."}
+    ],
+    "quickWin": true
+  }
+]

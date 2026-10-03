@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/guide_screen.dart';
+import 'package:opencode_mobile/ui/search/search_index.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tailscale_setup_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -67,6 +69,8 @@ Future<ConnectionController> _controller() async {
     ..status = StreamStatus.connected;
 }
 
+final _en = lookupAppLocalizations(const Locale('en'));
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final messenger =
@@ -119,26 +123,45 @@ void main() {
       }
     }
 
-    await open('settings-tailscale');
+    // What left the welcome is found by search: Tailscale as a way of
+    // Saved servers › Add server, External agents inside Tools; the guide
+    // is a hub row.
+    Future<void> searchAndOpen(String query, String id) async {
+      // The header's command launcher reads the same index.
+      final context = tester.element(find.byType(SettingsScreen));
+      final scope = SearchScope.of(context, controller);
+      unawaited(
+        searchEntries(
+          _en,
+          scope,
+          query,
+        ).firstWhere((entry) => entry.id == id).open(context, scope),
+      );
+      // Bounded: a destination may keep a progress indicator spinning.
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    await searchAndOpen(_en.tailscaleTitle, 'settings-tailscale');
     expect(find.byType(TailscaleSetupScreen), findsOneWidget);
     await tester.pageBack();
     for (var i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
+    // The guide is a hub row of its own now (target-ia §1.3 row 19).
     await open('settings-setup-guide');
     expect(find.byType(GuideScreen), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    final externalAgents = find.byKey(
-      const ValueKey('settings-external-agents'),
+    final scope = SearchScope.of(
+      tester.element(find.byType(SettingsScreen)),
+      controller,
     );
-    await tester.scrollUntilVisible(
-      externalAgents,
-      -200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(externalAgents, findsOneWidget);
+    expect([
+      for (final entry in searchEntries(_en, scope, _en.a2aTitle)) entry.id,
+    ], contains('settings-external-agents'));
   });
 }

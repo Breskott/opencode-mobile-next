@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/state/connection.dart';
@@ -12,6 +13,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 Widget _host(Widget child) => MaterialApp(
   theme: AppTheme.light(),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   home: Scaffold(body: SingleChildScrollView(child: child)),
 );
 
@@ -80,31 +83,34 @@ void main() {
   });
 
   group('TranscriptMarker switches', () {
-    testWidgets('model switch renders the divider pill with tooltip detail', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _host(
-          V2TranscriptRow(
-            part: _tagged(
-              type: 'v2:switch',
-              kind: 'model',
-              text: 'gpt-5.6-sol · high',
-              header: 'gpt-5.6-sol',
+    testWidgets(
+      'model switch renders the divider line with what it switched to',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            V2TranscriptRow(
+              part: _tagged(
+                type: 'v2:switch',
+                kind: 'model',
+                text: 'gpt-5.6-sol · high',
+                header: 'gpt-5.6-sol',
+              ),
+              messageId: 'msg_1',
             ),
-            messageId: 'msg_1',
           ),
-        ),
-      );
-      expect(
-        find.byKey(const ValueKey('transcript-marker-model-switched-msg_1')),
-        findsOneWidget,
-      );
-      expect(find.text('Model → gpt-5.6-sol · high'), findsOneWidget);
-      expect(find.byIcon(AppIconography.processor), findsOneWidget);
-      final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
-      expect(tooltip.message, 'Previously gpt-5.6-sol');
-    });
+        );
+        expect(
+          find.byKey(const ValueKey('transcript-marker-model-switched-msg_1')),
+          findsOneWidget,
+        );
+        expect(find.text('Model → gpt-5.6-sol · high'), findsOneWidget);
+        expect(find.byIcon(AppIconography.processor), findsOneWidget);
+        // The switch says what it switched to; the previous value is history
+        // (chat-1 rethink: a hover-only detail never reached touch).
+        expect(find.byType(Tooltip), findsNothing);
+        expect(find.textContaining('Previously'), findsNothing);
+      },
+    );
 
     testWidgets('agent switch renders its own icon and copy', (tester) async {
       await tester.pumpWidget(
@@ -125,9 +131,7 @@ void main() {
       expect(find.byType(Tooltip), findsNothing);
     });
 
-    testWidgets('location switch shows the basename with full-path detail', (
-      tester,
-    ) async {
+    testWidgets('location switch shows the folder it moved to', (tester) async {
       await tester.pumpWidget(
         _host(
           V2TranscriptRow(
@@ -146,11 +150,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Moved → other-project'), findsOneWidget);
-      expect(find.byIcon(Icons.drive_file_move_outline), findsOneWidget);
-      expect(
-        tester.widget<Tooltip>(find.byType(Tooltip)).message,
-        '/tmp/other-project',
-      );
+      expect(find.byIcon(AppIconography.folderOpen), findsOneWidget);
+      expect(find.byType(Tooltip), findsNothing);
     });
   });
 
@@ -224,7 +225,7 @@ void main() {
       expect(find.textContaining('My Skill'), findsOneWidget);
     });
 
-    testWidgets('unknown variants degrade to a generic server notice', (
+    testWidgets('an unknown type with nothing but its name is not drawn', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -240,7 +241,28 @@ void main() {
           ),
         ),
       );
-      expect(find.textContaining('Server message'), findsOneWidget);
+      // Only a type name ("idle", "brand-new-variant"): nothing to read.
+      expect(find.textContaining('Server message'), findsNothing);
+      expect(find.text('brand-new-variant'), findsNothing);
+    });
+
+    testWidgets('an unknown message with real text is still shown', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          V2TranscriptRow(
+            part: _tagged(
+              type: 'v2:notice',
+              kind: 'unknown',
+              text: 'The server restarted while this ran.',
+              header: 'Server message',
+            ),
+            messageId: 'msg_8',
+          ),
+        ),
+      );
+      expect(find.text('Server message'), findsOneWidget);
     });
   });
 
@@ -286,7 +308,10 @@ void main() {
         find.byKey(const ValueKey('compaction-completed-msg_9')),
         findsOneWidget,
       );
-      expect(find.textContaining('Context compacted'), findsOneWidget);
+      expect(
+        find.textContaining('Earlier messages were summarized'),
+        findsOneWidget,
+      );
       expect(find.byIcon(AppIconography.collapse), findsOneWidget);
 
       await tester.tap(
@@ -316,12 +341,12 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('Compaction failed'), findsOneWidget);
-      // What it means for the reader first, then the server's reason.
+      // What it means for the reader; the server's own text is not copy.
       expect(
         find.textContaining('still too long for the model'),
         findsOneWidget,
       );
-      expect(find.textContaining('ran out of room'), findsOneWidget);
+      expect(find.textContaining('ran out of room'), findsNothing);
       // An old failure is history: nothing to press.
       expect(find.byKey(const Key('transcript-notice-action')), findsNothing);
     });
@@ -476,21 +501,22 @@ void main() {
       ModelPickerApplyScope scope,
     ) => MaterialApp(
       theme: AppTheme.light(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: ModelCatalogView(controller: controller, applyScope: scope),
       ),
     );
 
-    testWidgets('classic scope keeps the v1 wording', (tester) async {
+    // Since 531bb6ab (rethink R1-R6) the classic apply names what it applies:
+    // "Use <model>" (or "Use <model> · <agent>" once an agent is chosen).
+    testWidgets('classic scope names the model it applies', (tester) async {
       await tester.pumpWidget(
         picker(await controller(), ModelPickerApplyScope.classic),
       );
       await tester.pump();
-      expect(find.text('Use model and mode'), findsOneWidget);
-      expect(
-        find.byKey(const Key('model-picker-session-scope-note')),
-        findsNothing,
-      );
+      expect(find.text('Use GPT-5.6 Sol'), findsOneWidget);
+      expect(find.text('Use for this conversation'), findsNothing);
     });
 
     testWidgets('session scope labels the apply for this session', (
@@ -500,17 +526,9 @@ void main() {
         picker(await controller(), ModelPickerApplyScope.session),
       );
       await tester.pump();
+      // The apply action names the scope; the sheet's subtitle adds when it
+      // applies (test/revamp/slice_p3_3_model_sheet_test.dart).
       expect(find.text('Use for this conversation'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('model-picker-options')));
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const Key('model-picker-session-scope-note')),
-        findsOneWidget,
-      );
-      expect(
-        find.text("Applies to this conversation's next turns."),
-        findsOneWidget,
-      );
     });
 
     testWidgets('new-sessions scope labels the apply as the default', (
@@ -522,7 +540,7 @@ void main() {
       await tester.pump();
       expect(find.text('Use for new conversations'), findsOneWidget);
       expect(
-        find.byKey(const Key('model-picker-session-scope-note')),
+        find.text("Applies to this conversation's next turns."),
         findsNothing,
       );
     });

@@ -4,15 +4,53 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/screens/running_work_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/managed_shell_fakes.dart';
 
-Future<ConnectionController> connection(FakeManagedShellRepository repo) async {
+class _Conn extends ConnectionController {
+  _Conn(super.store, this.transport);
+  final ServerGateway? transport;
+  @override
+  Future<ServerGateway?> prepareActionTransport() async => transport;
+}
+
+class _AbortGateway implements ServerGateway {
+  final aborted = <String>[];
+  @override
+  Future<void> abort(String sessionID) async => aborted.add(sessionID);
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('Unexpected ${invocation.memberName}');
+}
+
+class _RefusingRepository extends FakeManagedShellRepository {
+  _RefusingRepository({this.refuseStop = false, this.refuseLimit = false});
+  final bool refuseStop;
+  final bool refuseLimit;
+  @override
+  Future<void> stopManagedShell(String id) async {
+    if (refuseStop) throw const ProductException('The server refused.');
+    return super.stopManagedShell(id);
+  }
+
+  @override
+  Future<ManagedShell> setManagedShellTimeout(String id, Duration? timeout) {
+    if (refuseLimit) throw const ProductException('The server refused.');
+    return super.setManagedShellTimeout(id, timeout);
+  }
+}
+
+Future<ConnectionController> connection(
+  FakeManagedShellRepository repo, {
+  ServerGateway? transport,
+}) async {
   SharedPreferences.setMockInitialValues({
     'oc.profiles': jsonEncode([
       {
@@ -26,7 +64,7 @@ Future<ConnectionController> connection(FakeManagedShellRepository repo) async {
   });
   final store = ProfileStore(prefs: await SharedPreferences.getInstance());
   await store.load();
-  return ConnectionController(store)
+  return _Conn(store, transport)
     ..repository = repo
     ..status = StreamStatus.connected
     ..sessionsById = {'ses_a': Session(id: 'ses_a', title: 'Main task')};
@@ -42,10 +80,14 @@ Future<void> pump(
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.dark(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(
           size: const Size(360, 800),
           textScaler: TextScaler.linear(scale),
+          // A working row's mark spins otherwise, and never settles.
+          disableAnimations: true,
         ),
         child: child!,
       ),
@@ -54,6 +96,13 @@ Future<void> pump(
   );
   await tester.pumpAndSettle();
 }
+
+/// The sheet body as the sheet frame hosts it: scrolled by its host.
+Widget sheet(RunningWorkSheet body) =>
+    Scaffold(body: ListView(children: [body]));
+
+/// A row's supporting line (a rich text span).
+Finder line(String text) => find.textContaining(text, findRichText: true);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -77,8 +126,8 @@ void main() {
     var eligible = false;
     await pump(
       tester,
-      Scaffold(
-        body: RunningWorkSheet(
+      sheet(
+        RunningWorkSheet(
           controller: conn,
           sessionID: 'ses_a',
           availabilityChanges: changed,
@@ -88,21 +137,24 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Run in background'), findsNothing);
+    expect(find.text('Keep chatting while it runs'), findsNothing);
     support = BackgroundWorkSupport.subagents;
     eligible = true;
     changed.value++;
     await tester.pumpAndSettle();
-    expect(find.text('Run in background'), findsOneWidget);
-    // The action speaks for itself; no paragraph explains it.
+    expect(find.text('Keep chatting while it runs'), findsOneWidget);
+    // Only while it applies, one line says what moving the work frees
+    // (map infoMissing).
     expect(
-      find.textContaining('Results return to this conversation automatically.'),
-      findsNothing,
+      find.text(
+        'The work keeps running on the server and its results come back here.',
+      ),
+      findsOneWidget,
     );
     eligible = false;
     changed.value++;
     await tester.pumpAndSettle();
-    expect(find.text('Run in background'), findsNothing);
+    expect(find.text('Keep chatting while it runs'), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -126,14 +178,14 @@ void main() {
       addTearDown(conn.dispose);
       await pump(
         tester,
-        Scaffold(
-          body: RunningWorkSheet(controller: conn, sessionID: 'ses_a'),
-        ),
+        sheet(RunningWorkSheet(controller: conn, sessionID: 'ses_a')),
       );
       expect(repo.childrenReads.toSet(), {'ses_a', 'parent'});
       expect(find.byKey(const Key('work-agent-sibling')), findsOneWidget);
       expect(find.byKey(const Key('work-agent-grandchild')), findsOneWidget);
-      expect(find.text('Idle'), findsNWidgets(2));
+      // Idle has its own word, not "Finished" (map statesMissing).
+      expect(line('Agent · Idle'), findsNWidgets(2));
+      expect(line('Finished'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -147,8 +199,8 @@ void main() {
     addTearDown(conn.dispose);
     await pump(
       tester,
-      Scaffold(
-        body: RunningWorkSheet(
+      sheet(
+        RunningWorkSheet(
           controller: conn,
           sessionID: 'ses_a',
           shellIDs: const {'sh_a'},
@@ -157,8 +209,8 @@ void main() {
     );
     expect(find.byKey(const Key('work-shell-sh_a')), findsOneWidget);
     // A clean exit reads as finished, not as a code to interpret.
-    expect(find.textContaining('Exit code 0'), findsNothing);
-    expect(find.textContaining('Finished · '), findsOneWidget);
+    expect(line('Exit code 0'), findsNothing);
+    expect(line('Command · Finished · '), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -170,20 +222,16 @@ void main() {
       addTearDown(conn.dispose);
       await pump(
         tester,
-        Scaffold(
-          body: RunningWorkSheet(controller: conn, sessionID: 'ses_a'),
-        ),
+        sheet(RunningWorkSheet(controller: conn, sessionID: 'ses_a')),
         scale: 2.5,
       );
-      expect(find.text('Tasks'), findsOneWidget);
       expect(find.textContaining('has not confirmed support'), findsNothing);
-      expect(find.textContaining('Agents and commands related'), findsNothing);
       await tester.scrollUntilVisible(
-        find.text('No tasks yet'),
+        find.text('Nothing running'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('No tasks yet'), findsOneWidget);
+      expect(find.text('Nothing running'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -198,8 +246,8 @@ void main() {
       var requests = 0;
       await pump(
         tester,
-        Scaffold(
-          body: RunningWorkSheet(
+        sheet(
+          RunningWorkSheet(
             controller: conn,
             sessionID: 'ses_a',
             backgroundSupport: BackgroundWorkSupport.subagentsAndShells,
@@ -210,7 +258,7 @@ void main() {
           ),
         ),
       );
-      await tester.tap(find.text('Run in background'));
+      await tester.tap(find.text('Keep chatting while it runs'));
       await tester.pumpAndSettle();
       expect(requests, 1);
       expect(find.textContaining('Background work requested.'), findsOneWidget);
@@ -218,14 +266,11 @@ void main() {
         find.text('Subagents are continuing in the background.'),
         findsNothing,
       );
-      expect(
-        tester
-            .widget<FilledButton>(
-              find.widgetWithText(FilledButton, 'Run in background'),
-            )
-            .onPressed,
-        isNull,
-      );
+      // The offer is replaced by the receipt; it cannot be asked twice.
+      expect(find.text('Keep chatting while it runs'), findsNothing);
+      await tester.tap(find.textContaining('Background work requested.'));
+      await tester.pump();
+      expect(requests, 1);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -240,7 +285,7 @@ void main() {
         tester,
         ShellOutputScreen(controller: conn, shell: repo.shells.first),
       );
-      await tester.tap(find.widgetWithText(TextButton, 'Stop command'));
+      await tester.tap(find.byKey(const Key('shell-output-stop')));
       await tester.pumpAndSettle();
       final coveredReads = repo.outputReads;
       repo.identity = 'server-2';
@@ -249,7 +294,7 @@ void main() {
       conn.notifyListeners();
       await tester.pump(const Duration(seconds: 2));
       expect(repo.outputReads, coveredReads);
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text('Keep running'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(seconds: 2));
       await tester.pumpAndSettle();
@@ -318,9 +363,7 @@ void main() {
       addTearDown(conn.dispose);
       await pump(
         tester,
-        Scaffold(
-          body: RunningWorkSheet(controller: conn, sessionID: 'ses_a'),
-        ),
+        sheet(RunningWorkSheet(controller: conn, sessionID: 'ses_a')),
       );
       expect(find.text('Commands'), findsNothing);
       expect(find.byKey(const Key('work-agent-ses_child')), findsOneWidget);
@@ -341,21 +384,25 @@ void main() {
       tester,
       ShellOutputScreen(controller: conn, shell: repo.shells.first),
     );
-    await tester.tap(find.widgetWithText(TextButton, 'Stop command'));
+    await tester.tap(find.byKey(const Key('shell-output-stop')));
     await tester.pumpAndSettle();
     expect(repo.stopCalls, 0);
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.text('Keep running'));
     await tester.pumpAndSettle();
     expect(repo.stopCalls, 0);
-    await tester.tap(find.widgetWithText(TextButton, 'Stop command'));
+    await tester.tap(find.byKey(const Key('shell-output-stop')));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Stop command'));
+    await tester.tap(find.byKey(const Key('shell-output-stop-confirm')));
     await tester.pumpAndSettle();
     expect(repo.stopCalls, 1);
-    expect(find.text(repo.output), findsOneWidget);
-    expect(find.widgetWithText(TextButton, 'Stop command'), findsNothing);
-    expect(find.text('Follow output'), findsNothing);
-    expect(find.text('Stopped'), findsOneWidget);
+    // The loaded output stays; the acts on a running command are gone.
+    expect(find.textContaining('Draft restoration'), findsOneWidget);
+    expect(find.byKey(const Key('shell-output-stop')), findsNothing);
+    expect(find.byKey(const Key('shell-output-limit')), findsNothing);
+    expect(
+      tester.widget<KitText>(find.byKey(const Key('shell-output-status'))).text,
+      'Stopped',
+    );
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -371,13 +418,109 @@ void main() {
     );
     await tester.tap(find.text('Change timeout'));
     await tester.pumpAndSettle();
+    expect(find.text('Stop it after…'), findsOneWidget);
     await tester.tap(find.text('5 minutes'));
     await tester.pumpAndSettle();
+    // The limit set here is said on the page, with the time left.
+    expect(find.textContaining('stops in'), findsOneWidget);
     await tester.tap(find.text('Change timeout'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('No timeout'));
     await tester.pumpAndSettle();
     expect(repo.timeouts, [const Duration(minutes: 5), null]);
+    expect(find.textContaining('no time limit'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a command about to hit its time limit says so on its page', (
+    tester,
+  ) async {
+    final repo = FakeManagedShellRepository();
+    final conn = await connection(repo);
+    addTearDown(conn.dispose);
+    await pump(
+      tester,
+      ShellOutputScreen(controller: conn, shell: repo.shells.first),
+    );
+    expect(find.byKey(const Key('shell-output-about-to-stop')), findsNothing);
+    await tester.tap(find.text('Change timeout'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('1 minute'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('shell-output-about-to-stop')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a time limit the server refuses is said with Try again', (
+    tester,
+  ) async {
+    final repo = _RefusingRepository(refuseLimit: true);
+    final conn = await connection(repo);
+    addTearDown(conn.dispose);
+    await pump(
+      tester,
+      ShellOutputScreen(controller: conn, shell: repo.shells.first),
+    );
+    await tester.tap(find.text('Change timeout'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('15 minutes'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('shell-output-limit-failed')), findsOneWidget);
+    expect(find.text("Couldn't change the time limit."), findsOneWidget);
+    expect(find.textContaining('stops in'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a stop the server refuses keeps the question open', (
+    tester,
+  ) async {
+    final repo = _RefusingRepository(refuseStop: true);
+    final conn = await connection(repo);
+    addTearDown(conn.dispose);
+    await pump(
+      tester,
+      ShellOutputScreen(controller: conn, shell: repo.shells.first),
+    );
+    await tester.tap(find.byKey(const Key('shell-output-stop')));
+    await tester.pumpAndSettle();
+    // The safer path is offered before anything is removed.
+    expect(find.text('Copy output first'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('shell-output-stop-confirm')));
+    await tester.pumpAndSettle();
+    expect(repo.stopCalls, 0);
+    expect(find.byKey(const Key('shell-output-stop-confirm')), findsOneWidget);
+    await tester.tap(find.text('Keep running'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('shell-output-stop')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a running agent is stopped from its row, asked first', (
+    tester,
+  ) async {
+    final gateway = _AbortGateway();
+    final repo = FakeManagedShellRepository()..shells = [];
+    final conn = await connection(repo, transport: gateway)
+      ..sessionsById['ses_child'] = Session(
+        id: 'ses_child',
+        title: 'Review navigation',
+        parentID: 'ses_a',
+      )
+      ..busySessions = {'ses_child'};
+    addTearDown(conn.dispose);
+    await pump(
+      tester,
+      sheet(RunningWorkSheet(controller: conn, sessionID: 'ses_a')),
+    );
+    await tester.longPress(find.byKey(const Key('work-agent-ses_child')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Stop “Review navigation”'));
+    await tester.pumpAndSettle();
+    expect(find.text('Stop “Review navigation”?'), findsOneWidget);
+    expect(gateway.aborted, isEmpty);
+    await tester.tap(find.byKey(const Key('running-work-stop-agent-confirm')));
+    await tester.pumpAndSettle();
+    expect(gateway.aborted, ['ses_child']);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -395,12 +538,12 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
       await tester.pumpAndSettle();
       expect(repo.outputReads, greaterThan(initial));
-      await tester.tap(find.widgetWithText(TextButton, 'Stop command'));
+      await tester.tap(find.byKey(const Key('shell-output-stop')));
       await tester.pumpAndSettle();
       final covered = repo.outputReads;
       await tester.pump(const Duration(seconds: 6));
       expect(repo.outputReads, covered);
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text('Keep running'));
       await tester.pumpAndSettle();
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
@@ -448,12 +591,10 @@ void main() {
       conn.notifyListeners();
       await tester.pumpAndSettle();
       expect(find.textContaining('project changed'), findsOneWidget);
-      final refresh = tester.widget<IconButton>(
-        find.byWidgetPredicate(
-          (widget) => widget is IconButton && widget.tooltip == 'Refresh',
-        ),
-      );
-      expect(refresh.onPressed, isNull);
+      // Old-server controls are gone: no Stop, no time limit, and Refresh
+      // waits in the overflow with its reason instead of in the bar.
+      expect(find.byKey(const Key('shell-output-stop')), findsNothing);
+      expect(find.byKey(const Key('shell-output-refresh')), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -472,9 +613,7 @@ void main() {
       addTearDown(conn.dispose);
       await pump(
         tester,
-        Scaffold(
-          body: RunningWorkSheet(controller: conn, sessionID: 'ses_a'),
-        ),
+        sheet(RunningWorkSheet(controller: conn, sessionID: 'ses_a')),
         scale: 2.5,
       );
       expect(tester.takeException(), isNull);
@@ -496,73 +635,84 @@ void main() {
     },
   );
 
-  testWidgets('Tasks separates what runs from what is over, by outcome', (
-    tester,
-  ) async {
-    final started = DateTime.now().subtract(const Duration(minutes: 3));
-    ManagedShell shell(
-      String id,
-      String command,
-      ManagedShellStatus status, {
-      int? exitCode,
-    }) => ManagedShell(
-      id: id,
-      sessionID: 'ses_a',
-      command: command,
-      status: status,
-      exitCode: exitCode,
-      startedAt: started,
-      completedAt: status == ManagedShellStatus.running
-          ? null
-          : started.add(const Duration(seconds: 30)),
-    );
-    final repo = FakeManagedShellRepository()
-      ..shells = [
-        shell(
-          'sh_ok',
-          'flutter analyze',
-          ManagedShellStatus.exited,
-          exitCode: 0,
-        ),
-        shell('sh_live', 'uvicorn main:app', ManagedShellStatus.running),
-        shell('sh_bad', 'flutter test', ManagedShellStatus.exited, exitCode: 1),
-        shell(
-          'sh_term',
-          'uvicorn old',
-          ManagedShellStatus.exited,
-          exitCode: 143,
-        ),
-      ];
-    final conn = await connection(repo);
-    addTearDown(conn.dispose);
-    await pump(
-      tester,
-      Scaffold(
-        body: RunningWorkSheet(
-          controller: conn,
-          sessionID: 'ses_a',
-          shellIDs: const {'sh_ok', 'sh_live', 'sh_bad', 'sh_term'},
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Running first, whatever order the server listed them in.
-    final live = tester.getTopLeft(find.byKey(const Key('work-shell-sh_live')));
-    for (final id in ['sh_ok', 'sh_bad', 'sh_term']) {
-      expect(
-        live.dy,
-        lessThan(tester.getTopLeft(find.byKey(Key('work-shell-$id'))).dy),
+  testWidgets(
+    'one list by urgency: failed first, then running, then the rest newest first',
+    (tester) async {
+      final started = DateTime.now().subtract(const Duration(minutes: 3));
+      ManagedShell shell(
+        String id,
+        String command,
+        ManagedShellStatus status, {
+        int? exitCode,
+        Duration offset = Duration.zero,
+      }) => ManagedShell(
+        id: id,
+        sessionID: 'ses_a',
+        command: command,
+        status: status,
+        exitCode: exitCode,
+        startedAt: started.add(offset),
+        completedAt: status == ManagedShellStatus.running
+            ? null
+            : started.add(offset).add(const Duration(seconds: 30)),
       );
-    }
-    expect(find.byKey(const Key('work-row-live')), findsOneWidget);
-    // Outcomes in words a person uses: a clean exit finished, a non-zero
-    // exit is named, a terminated server was stopped rather than "failed".
-    expect(find.textContaining('Exit code 1'), findsOneWidget);
-    expect(find.textContaining('Exit code 143'), findsNothing);
-    expect(find.textContaining('Stopped · '), findsOneWidget);
-    expect(find.textContaining('Exit code 0'), findsNothing);
-  });
+      final repo = FakeManagedShellRepository()
+        ..shells = [
+          shell(
+            'sh_ok',
+            'flutter analyze',
+            ManagedShellStatus.exited,
+            exitCode: 0,
+          ),
+          shell('sh_live', 'uvicorn main:app', ManagedShellStatus.running),
+          shell(
+            'sh_bad',
+            'flutter test',
+            ManagedShellStatus.exited,
+            exitCode: 1,
+          ),
+          shell(
+            'sh_term',
+            'uvicorn old',
+            ManagedShellStatus.exited,
+            exitCode: 143,
+            offset: const Duration(minutes: 1),
+          ),
+        ];
+      final conn = await connection(repo);
+      addTearDown(conn.dispose);
+      await pump(
+        tester,
+        sheet(
+          RunningWorkSheet(
+            controller: conn,
+            sessionID: 'ses_a',
+            shellIDs: const {'sh_ok', 'sh_live', 'sh_bad', 'sh_term'},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Whatever order the server listed them in: the failed run needs the
+      // person, so it leads; then what runs now; then the rest, newest
+      // first (the stopped server ended after the clean analyze).
+      double top(String id) =>
+          tester.getTopLeft(find.byKey(Key('work-shell-$id'))).dy;
+      expect(top('sh_bad'), lessThan(top('sh_live')));
+      expect(top('sh_live'), lessThan(top('sh_term')));
+      expect(top('sh_term'), lessThan(top('sh_ok')));
+      // Finished work, newest first, in one list: no state sections.
+      expect(find.text('Running'), findsNothing);
+      expect(find.text('Finished'), findsNothing);
+      // Outcomes in words a person uses: a clean exit finished, a non-zero
+      // exit failed, a terminated server was stopped rather than "failed".
+      expect(line('Command · Running · '), findsOneWidget);
+      expect(line('Command · Failed · 0:30'), findsOneWidget);
+      expect(line('Command · Stopped · 0:30'), findsOneWidget);
+      expect(line('Command · Finished · 0:30'), findsOneWidget);
+      expect(line('Exit code'), findsNothing);
+    },
+  );
 
   test('a command is named by what it runs, not where it lives', () {
     expect(

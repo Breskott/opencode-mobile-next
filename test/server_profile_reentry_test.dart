@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/server_probe.dart';
 import 'package:opencode_mobile/main.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
@@ -149,6 +151,20 @@ Widget _serversApp(
   child: const MaterialApp(home: ServersScreen()),
 );
 
+/// Removing a server first waits for the home-screen widget, launcher
+/// shortcut and tile writes; their channels have no handler in a widget test
+/// and would never answer, so they answer here.
+void _answerDeviceSurfaces(WidgetTester tester) {
+  final messenger = tester.binding.defaultBinaryMessenger;
+  for (final channel in const [
+    MethodChannel('oc/background'),
+    MethodChannel('oc/shortcut'),
+  ]) {
+    messenger.setMockMethodCallHandler(channel, (_) async => null);
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -172,8 +188,11 @@ void main() {
     );
     await tester.pump();
     expect(connection.connectCalls, 0);
-    expect(find.text('Connection token re-entry required'), findsOneWidget);
-    expect(find.text('Nothing is listening on this device'), findsNothing);
+    expect(
+      find.text("Can't read the saved token for Workstation"),
+      findsOneWidget,
+    );
+    expect(find.text('Nothing answered on this phone'), findsNothing);
     await tester.tap(find.text('Workstation'));
     await tester.pumpAndSettle();
     expect(find.text('Re-enter connection token'), findsNWidgets(2));
@@ -205,13 +224,21 @@ void main() {
       await tester.pump();
 
       expect(connection.connectCalls, 0);
-      expect(find.byKey(const Key('password-reentry-banner')), findsOneWidget);
-      expect(find.text('Password re-entry required'), findsOneWidget);
+      // One status line says it, with the way forward; the row agrees.
+      expect(
+        find.text("Can't read the saved password for Workstation"),
+        findsOneWidget,
+      );
+      expect(find.text('Enter the password'), findsOneWidget);
+      expect(
+        find.textContaining("Can't read the saved password"),
+        findsNWidgets(2),
+      );
       expect(
         find.bySemanticsLabel(
-          RegExp('Password re-entry required for the active server'),
+          RegExp("Can't read the saved password for Workstation"),
         ),
-        findsOneWidget,
+        findsWidgets,
       );
       semantics.dispose();
 
@@ -232,9 +259,14 @@ void main() {
   ) async {
     final (store, connection) = await _memoryState(failUpsert: true);
     addTearDown(connection.dispose);
+    // Save & connect checks the server first; it answers, so what fails is
+    // the save itself.
+    serverProbe = ({required baseUrl, username, password}) async =>
+        const ServerProbeResult.success('1.0.0');
+    addTearDown(() => serverProbe = probeServerConnection);
     await tester.pumpWidget(_serversApp(store, connection));
 
-    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.longPress(find.text('Workstation'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
@@ -251,14 +283,17 @@ void main() {
   ) async {
     final (store, connection) = await _memoryState(failRemove: true);
     addTearDown(connection.dispose);
+    _answerDeviceSurfaces(tester);
     await tester.pumpWidget(_serversApp(store, connection));
 
-    // Long-press no longer deletes; the row menu (and swipe) do.
-    await tester.tap(find.byType(PopupMenuButton<String>));
+    // Long-press opens the row actions; removal still needs confirmation.
+    await tester.longPress(find.text('Workstation'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Remove'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
+    await tester.tap(
+      find.byKey(const ValueKey('confirm-remove-server-server-1')),
+    );
     await tester.pumpAndSettle();
 
     expect(store.removeCalls, 1);

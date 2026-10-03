@@ -10,6 +10,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/desktop/desktop_interaction.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitNavBar;
 import 'package:opencode_mobile/ui/screens/files_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -98,10 +99,27 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final bars = _scrollbars(tester).toList();
-    expect(bars, hasLength(1), reason: 'exactly one thumb, never a pair');
-    expect(bars.single.thumbVisibility, isTrue);
-    expect(bars.single.controller, isNotNull);
+    // The file list has exactly one thumb, never a pair. The page's status
+    // line is a separate, bounded scroller of its own (98c064bd: a
+    // large-text status scrolls above the keyboard), so it may carry its own
+    // thumb; no two scrollbars ever share one scrollable.
+    final listBars = tester
+        .widgetList<Scrollbar>(
+          find.descendant(
+            of: find.byType(ListView),
+            matching: find.byType(Scrollbar),
+          ),
+        )
+        .toList();
+    expect(listBars, hasLength(1), reason: 'exactly one thumb, never a pair');
+    expect(listBars.single.thumbVisibility, isTrue);
+    expect(listBars.single.controller, isNotNull);
+    final controllers = [for (final bar in _scrollbars(tester)) bar.controller];
+    expect(
+      controllers.toSet(),
+      hasLength(controllers.length),
+      reason: 'two thumbs on one scrollable',
+    );
   });
 
   testWidgets('android gets no desktop scrollbar', (tester) async {
@@ -180,8 +198,10 @@ void main() {
 
     for (final destination in const ['Work', 'Inbox', 'Project', 'Settings']) {
       await tester.tap(
+        // The dock is KitNavBar since c36409dc (KitNav: dock, rail and
+        // sidebar from one destination list).
         find.descendant(
-          of: find.byType(NavigationBar),
+          of: find.byType(KitNavBar),
           matching: find.text(destination),
         ),
       );

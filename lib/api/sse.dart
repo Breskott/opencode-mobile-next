@@ -6,6 +6,7 @@ import 'package:dio/dio.dart' show CancelToken, Response, ResponseBody;
 
 import '../domain/server_gateway.dart';
 import 'models.dart';
+import '../diagnostics/perf_trace.dart';
 
 export '../domain/server_gateway.dart' show LiveEventChannel, StreamStatus;
 
@@ -29,6 +30,7 @@ class EventStream implements LiveEventChannel {
   StreamSubscription<Uint8List>? _subscription;
   Completer<void>? _streamDone;
   Timer? _retryTimer;
+  Timer? _silenceTimer;
   bool _running = false;
   bool _disposed = false;
   int _attempt = 0;
@@ -45,6 +47,12 @@ class EventStream implements LiveEventChannel {
   /// After this many failed attempts we stop showing "reconnecting".
   static const _giveUpVisualAfter = 6;
   static const _backoffResetAfter = Duration(seconds: 30);
+
+  /// OpenCode 1 writes `server.heartbeat` every 10 s on both streams. Once a
+  /// connection has shown one, this much silence means the connection is
+  /// dead even though it never closed, and it is replaced. Until then the
+  /// server may predate heartbeats, so silence proves nothing.
+  static const silenceLimit = Duration(seconds: 35);
 
   // Tool output and assistant messages can legitimately exceed 64 KiB. Keep a
   // generous, explicit ceiling so those events are delivered without allowing
@@ -65,6 +73,8 @@ class EventStream implements LiveEventChannel {
     _generation += 1;
     _retryTimer?.cancel();
     _retryTimer = null;
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
     _cancelToken?.cancel('Event stream disposed');
     _cancelToken = null;
     final subscription = _subscription;
@@ -95,6 +105,7 @@ class EventStream implements LiveEventChannel {
               ? StreamStatus.disconnected
               : StreamStatus.reconnecting,
         );
+        if (!_isCurrent(generation)) return;
         _retryTimer = Timer(Duration(milliseconds: ms), () {
           _retryTimer = null;
           if (_isCurrent(generation)) _connect();
@@ -104,10 +115,16 @@ class EventStream implements LiveEventChannel {
   }
 
   Future<void> _pump(int generation) async {
+    if (!_isCurrent(generation)) return;
     Timer? backoffResetTimer;
     CancelToken? requestCancelToken;
     StreamSubscription<Uint8List>? subscription;
     var subscriptionTerminated = false;
+    // Time from (re)connect to the first event: how long the live view
+    // waits before anything can move.
+    final connectStarted = PerfTrace.nowMicros;
+    final attempt = _attempt;
+    var sawEvent = false;
     try {
       final cancelToken = CancelToken();
       requestCancelToken = cancelToken;
@@ -127,12 +144,33 @@ class EventStream implements LiveEventChannel {
       _streamDone = done;
 
       void finish([Object? error, StackTrace? stackTrace]) {
+        _silenceTimer?.cancel();
+        _silenceTimer = null;
         if (done.isCompleted) return;
         if (error == null) {
           done.complete();
         } else {
           done.completeError(error, stackTrace);
         }
+      }
+
+      // A connection the server stopped writing to reads as live forever:
+      // the chat would wait for words that go elsewhere. After the first
+      // heartbeat, every byte restarts the countdown; running out ends this
+      // connection quietly and the loop above opens a fresh one.
+      var heartbeatSeen = false;
+      void armSilenceWatch() {
+        if (!heartbeatSeen || !_isCurrent(generation)) return;
+        _silenceTimer?.cancel();
+        _silenceTimer = Timer(silenceLimit, () {
+          _silenceTimer = null;
+          if (!_isCurrent(generation)) return;
+          // A dead connection may never answer a cancel: drop it without
+          // waiting, so the replacement is not held up behind it.
+          subscriptionTerminated = true;
+          unawaited(subscription?.cancel());
+          finish();
+        });
       }
 
       void processLine(List<int> lineBytes) {
@@ -148,7 +186,21 @@ class EventStream implements LiveEventChannel {
             final event = global
                 ? EventEnvelope.fromGlobalJson(json)
                 : EventEnvelope.fromJson(json);
-            if (event.type.isNotEmpty) onEvent(event);
+            if (event.type == 'server.heartbeat' && !heartbeatSeen) {
+              heartbeatSeen = true;
+              armSilenceWatch();
+            }
+            if (event.type.isNotEmpty) {
+              if (!sawEvent) {
+                sawEvent = true;
+                PerfTrace.recordSince(
+                  global ? 'events.first.global' : 'events.first',
+                  connectStarted,
+                  attrs: {'api': 'oc1', 'attempt': attempt},
+                );
+              }
+              onEvent(event);
+            }
           }
         } catch (_) {
           // Malformed frame - skip it rather than killing the stream.
@@ -158,6 +210,7 @@ class EventStream implements LiveEventChannel {
       subscription = response.data!.stream.cast<Uint8List>().listen(
         (chunk) {
           if (!_isCurrent(generation)) return;
+          armSilenceWatch();
           for (final byte in chunk) {
             if (discardingOversizedLine) {
               if (byte == 10) discardingOversizedLine = false;

@@ -79,14 +79,14 @@
         {
           "id": "root-connecting-termux-secondary",
           "type": "button",
-          "label": "Termux setup",
+          "label": "On this phone",
           "key": "saved-server-open-termux",
           "file": "lib/ui/widgets/saved_server_connection_card.dart",
-          "line": 446,
+          "line": 328,
           "action": "navigate",
-          "target": "termux-setup",
-          "targetWidget": "/termux-setup",
-          "effect": "onOpenTermuxSetup -> navigator.pushNamed('/termux-setup') (main.dart:1416).",
+          "target": "termux-setup-installed",
+          "targetWidget": "openThisPhone",
+          "effect": "onOpenTermuxSetup (main.dart:1658): the phone's own Termux server -> openThisPhone(kind: termux), where Start is; any other loopback server -> openPhoneSetupStart.",
           "gates": [
             "failed",
             "primaryIsRetry && onOpenTermuxSetup != null",
@@ -134,11 +134,11 @@
           "label": "Check Termux",
           "key": "saved-server-open-termux",
           "file": "lib/ui/widgets/saved_server_connection_card.dart",
-          "line": 380,
+          "line": 255,
           "action": "navigate",
-          "target": "termux-setup",
-          "targetWidget": "/termux-setup",
-          "effect": "Primary action when ConnectionFailure.primary == openTermuxSetup: navigator.pushNamed('/termux-setup').",
+          "target": "phone-setup-start",
+          "targetWidget": "openPhoneSetupStart",
+          "effect": "Primary when ConnectionFailure.primary == openTermuxSetup: onOpenTermuxSetup -> openPhoneSetupStart for a loopback server that is not the phone's managed one, openThisPhone(kind: termux) for the managed one.",
           "gates": [
             "failure.primary == ConnectionFailureAction.openTermuxSetup && onOpenTermuxSetup != null",
             "widget.supportsTermux && !widget.usesConnectionToken && isLoopbackHost(Uri.tryParse(widget.baseUrl)?.host ?? '') (card) and !conn.usesConnectionToken && platformCapabilities.supportsTermux (_Root)"
@@ -209,6 +209,22 @@
             "failure.primary == retry or its callback is null"
           ],
           "destructive": false
+        },
+        {
+          "id": "root-connecting-open-in-app-setup",
+          "type": "button",
+          "label": "Open setup",
+          "key": "saved-server-open-in-app-setup",
+          "line": 322,
+          "action": "navigate",
+          "target": "phone-setup-start",
+          "targetWidget": "openPhoneSetupStart",
+          "effect": "onOpenInAppSetup (main.dart:1636): the in-app server would not start -> openPhoneSetupStart(context), whose ready hero starts and connects it.",
+          "gates": [
+            "inAppServer && startFailure != null"
+          ],
+          "destructive": false,
+          "file": "lib/ui/widgets/saved_server_connection_card.dart"
         }
       ]
     },
@@ -245,13 +261,6 @@
           "widget": "ServersScreen",
           "file": "lib/ui/screens/servers_screen.dart",
           "line": 224
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "TermuxSetupScreen",
-          "file": "lib/ui/screens/termux_setup_screen.dart",
-          "line": 1448
         },
         {
           "page": "global-shortcuts",
@@ -387,7 +396,7 @@
           "action": "open-sheet",
           "target": "server-switcher-sheet",
           "targetWidget": "showServerSwitcher",
-          "effect": "_openServerSwitcher(conn): showServerSwitcher(context, conn); the returned choice is acted on after the sheet closed: pushNamed('/servers', arguments: ServersRouteRequest), pushNamed('/termux-setup'), or conn.disconnect() + pushNamedAndRemoveUntil('/servers').",
+          "effect": "_openServerSwitcher(conn): showServerSwitcher(context, conn); the returned choice is acted on after the sheet closed: pushNamed('/servers', arguments: ServersRouteRequest), openThisPhone(kind: termux) for ServerSwitcherOpenPhoneSetup, runPhoneServerAction for a This phone card action (manage opens This phone), or conn.disconnect() + pushNamedAndRemoveUntil('/servers').",
           "gates": [],
           "destructive": false
         },
@@ -456,6 +465,37 @@
           "gates": [
             "conn.status != StreamStatus.connected",
             "!controller.passwordRejected"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-app-exit-keep-running",
+          "type": "button",
+          "label": "Keep it running",
+          "key": "app-exit-keep-running",
+          "file": "lib/ui/widgets/app_exit_notice.dart",
+          "line": 76,
+          "action": "navigate",
+          "target": "notifications-settings",
+          "targetWidget": "openKeepRunningScreen",
+          "effect": "AppExitNoticeLine (app_exit_notice.dart): KitAction onPressed -> openKeepRunningScreen(context); offered only when notice.offersKeepAlive, after Android ended the app while the built-in server ran (AppExitRecovery).",
+          "gates": [
+            "recovery.notice != null && notice.offersKeepAlive"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-app-exit-dismiss",
+          "type": "icon-button",
+          "label": "Dismiss",
+          "key": "kit-notice-dismiss",
+          "file": "lib/ui/kit/kit_notice.dart",
+          "line": 140,
+          "action": "other",
+          "target": null,
+          "effect": "AppExitNoticeLine's KitNotice.onDismiss -> recovery.dismiss(): the notice folds away and does not return.",
+          "gates": [
+            "recovery.notice != null"
           ],
           "destructive": false
         }
@@ -576,16 +616,16 @@
         {
           "id": "server-switcher-sheet-phone-manage",
           "key": "termux-running-server-manage",
-          "target": "termux-setup",
-          "targetWidget": "/termux-setup",
+          "target": "termux-setup-installed",
+          "targetWidget": "openThisPhone",
           "gates": [],
           "destructive": false,
           "type": "menu-item",
-          "label": "Manage setup (phone server card menu)",
+          "label": "Manage (phone server card menu)",
           "file": "lib/ui/widgets/termux_running_server_entry.dart",
           "line": 128,
           "action": "navigate",
-          "effect": "Pops ServerSwitcherOpenPhoneSetup; the shell pushes '/termux-setup'."
+          "effect": "Pops ServerSwitcherOpenPhoneSetup; the shell opens This phone for Termux (openThisPhone(kind: termux), home_screen.dart:540)."
         },
         {
           "id": "server-switcher-sheet-phone-forget",
@@ -1054,11 +1094,69 @@
           "action": "other",
           "target": null,
           "targetWidget": null,
-          "effect": "onDismiss -> adds (session.id, idle) to _dismissedDigests (view state only, not persisted).",
+          "effect": "onDismiss -> hides (session.id, idle) at once with KitUndo; when the window closes, controller.dismissReturnBrief(ReturnBrief.single(run)) saves it as reviewed (the same mark as Work's Mark as reviewed); a refused save brings the row back.",
           "gates": [
             "digest expanded"
           ],
           "destructive": false
+        },
+        {
+          "id": "activity-auto-row",
+          "type": "list-tile",
+          "label": "<what it was done to> / <what was done> · <when>",
+          "key": "activity-auto-<actId>",
+          "file": "lib/ui/screens/activity_screen.dart",
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionID>",
+          "effect": "P6.2 While you were away: one automatic act (reconnect, request allowed by itself, queued message sent, heat pause/stop/resume) from controller.automaticActsHere, sorted newest first together with the finished rows below everything that waits. A tap opens the conversation it was done to (_openChat); server-wide acts have no page to open.",
+          "gates": [
+            "act of the shown server or project, not acknowledged",
+            "onTap only when the act names a conversation"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-auto-dismiss",
+          "type": "swipe",
+          "label": "Dismiss",
+          "key": "activity-auto-dismiss-<actId>",
+          "file": "lib/ui/screens/activity_screen.dart",
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "KitSwipeAction (and its row-menu twin): hides the act with KitUndo; on commit AutomaticActivityController.acknowledge([id]) (oc.automaticActivity.<profileId>); a refused save brings it back.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "activity-auto-undo",
+          "type": "button",
+          "label": "Undo",
+          "key": "activity-auto-undo-<actId>",
+          "file": "lib/ui/screens/activity_screen.dart",
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "AutomaticActivityController.undo(id): runs the act's in-memory inverse at most once; the line then says Undone, Undo didn't go through, or Undo not confirmed.",
+          "gates": [
+            "history.canUndo(id): only acts recorded with a real inverse, this process"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-project-decision",
+          "type": "list-tile",
+          "label": "Review project decision",
+          "key": null,
+          "line": 1,
+          "action": "navigate",
+          "target": "team-project-overview",
+          "targetWidget": null,
+          "effect": "Routes fixture request to owning project; legacy engines keep the existing gate flow.",
+          "gates": [],
+          "destructive": false,
+          "file": "lib/ui/screens/team/project_destination.dart"
         }
       ]
     },
@@ -1152,10 +1250,10 @@
           "label": "Dismiss",
           "key": null,
           "line": 1279,
-          "action": "open-dialog",
-          "target": "question-sheet-dismiss-dialog",
-          "targetWidget": "_reject",
-          "effect": "_reject(): opens the dismiss confirmation dialog.",
+          "action": "open-sheet",
+          "target": "confirm-sheet",
+          "targetWidget": "showKitConfirm",
+          "effect": "_reject(): showKitConfirm (destructive, 'Dismiss this request?'); on confirm controller.rejectQuestion(question.id, expectedRequest: request) and routes.close().",
           "gates": [
             "!_busy"
           ],
@@ -1170,56 +1268,11 @@
           "action": "submit",
           "target": null,
           "targetWidget": null,
-          "effect": "_submit(): controller.answerQuestion(question.id, answers, expectedRequest: request) then routes.close().",
+          "effect": "_submit(): controller.answerQuestion(question.id, answers, expectedRequest: request) then routes.close(). Pinned to the sheet foot through showKitSheet primaryListenable (slice-P3.11a); enables once every prompt is answered.",
           "gates": [
             "_complete && !_busy"
           ],
           "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "question-sheet-dismiss-dialog",
-      "title": "Dismiss this request?",
-      "kind": "dialog",
-      "file": "lib/ui/screens/activity_screen.dart",
-      "widget": "_reject",
-      "presentedBy": [],
-      "line": 1129,
-      "purpose": "Confirms rejecting a pending question ('OpenCode will continue without answers to these questions.').",
-      "reachedFrom": [
-        {
-          "page": "question-sheet",
-          "element": "question-sheet-dismiss"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "question-sheet-dismiss-dialog-cancel",
-          "type": "button",
-          "label": "Cancel",
-          "key": null,
-          "line": 1137,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop(context, false).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "question-sheet-dismiss-dialog-confirm",
-          "type": "button",
-          "label": "Dismiss",
-          "key": null,
-          "line": 1141,
-          "action": "mutate",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop(context, true) then controller.rejectQuestion(question.id, expectedRequest: request) and routes.close().",
-          "gates": [],
-          "destructive": true
         }
       ]
     },
@@ -1749,9 +1802,9 @@
           "key": null,
           "line": 889,
           "action": "navigate",
-          "target": "run",
-          "targetWidget": "RunScreen",
-          "effect": "_pushTeamDestination: pushes RunScreen(controller: team, runId: link.id); without _controller.orchestration pushes plain ActivityScreen.",
+          "target": "team-conversation",
+          "targetWidget": "TeamConversationScreen",
+          "effect": "_pushTeamDestination: pushes TeamConversation.route(team, runId: link.id), the task's conversation (P0.3); without _controller.orchestration pushes plain ActivityScreen.",
           "gates": [
             "_controller.orchestration != null (else ActivityScreen)"
           ],
@@ -2075,12 +2128,12 @@
       "id": "confirm-sheet",
       "title": "[Generic confirmation sheet: caller-supplied title]",
       "kind": "sheet",
-      "file": "lib/ui/widgets/confirm_sheet.dart",
-      "widget": "showConfirmSheet",
+      "file": "lib/ui/kit/kit_confirm_sheet.dart",
+      "widget": "showKitConfirm",
       "presentedBy": [
         "showConfirmSheet"
       ],
-      "line": 23,
+      "line": 58,
       "purpose": "Shared bottom-sheet confirmation (icon, title, message, one primary action, cancel). Callers supply copy, keys and the destructive flag and perform the actual mutation after it returns true; caller agents record their own instances.",
       "reachedFrom": [],
       "gates": [
@@ -2092,26 +2145,28 @@
           "type": "button",
           "label": "<confirmLabel>",
           "key": "<confirmKey>",
-          "line": 68,
+          "line": 422,
           "action": "dismiss",
           "target": null,
           "targetWidget": null,
           "effect": "Navigator.pop(context, true) (HapticFeedback.mediumImpact when destructive); the caller then performs the confirmed action.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_confirm_sheet.dart"
         },
         {
           "id": "confirm-sheet-cancel",
           "type": "button",
           "label": "<cancelLabel> (default 'Cancel')",
           "key": null,
-          "line": 85,
+          "line": 431,
           "action": "dismiss",
           "target": null,
           "targetWidget": null,
           "effect": "Navigator.pop(context, false).",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_confirm_sheet.dart"
         }
       ]
     },
@@ -2168,13 +2223,14 @@
           "type": "gesture",
           "label": "[drop files]",
           "key": "composer-drop-highlight",
-          "line": 105,
+          "line": 96,
           "action": "other",
           "target": "file-drop-failed-dialog",
           "targetWidget": null,
           "effect": "DropTarget.onDragDone -> _handle(files) -> host onDrop(List<DroppedFile>) (ChatScreen attachment pipeline); a throw opens the drop-failed dialog.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/desktop/file_drop.dart"
         }
       ],
       "embeddedIn": [
@@ -2202,39 +2258,42 @@
           "type": "gesture",
           "label": "[right-click]",
           "key": null,
-          "line": 100,
+          "line": 103,
           "action": "other",
           "target": null,
           "targetWidget": null,
           "effect": "GestureDetector.onSecondaryTapDown -> _open(globalPosition) -> showContextMenu(context, position, widget.actions()); opens overflow menu.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_context_region.dart"
         },
         {
           "id": "embedded-context-menu-region-keyboard",
           "type": "gesture",
           "label": "Shift+F10 / Menu key",
           "key": null,
-          "line": 78,
+          "line": 81,
           "action": "other",
           "target": null,
           "targetWidget": null,
           "effect": "CallbackShortcuts -> _openFromKeyboard opens the same menu at the row centre (row must have focus).",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_context_region.dart"
         },
         {
           "id": "embedded-context-menu-region-item",
           "type": "menu-item",
           "label": "<action label>",
           "key": "<action.menuKey>",
-          "line": 131,
+          "line": 656,
           "action": "other",
           "target": null,
           "targetWidget": null,
           "effect": "PopupMenuItem template: after selection calls actions[selected].onSelected() supplied by the host; destructive entries are rendered in the error colour.",
           "gates": [],
-          "destructive": false
+          "destructive": false,
+          "file": "lib/ui/kit/kit_menu.dart"
         }
       ],
       "embeddedIn": [
@@ -2423,6 +2482,19 @@
           "effect": "Embeds ChatScreen(sessionID: DemoGateway.sessionID, showAppBar: false, emptyState: _DemoTaskIntroduction, initialText: DemoCopy.prompt, handoffStore) under a ProviderScope overriding connProvider/bootstrapProvider; all chat elements apply.",
           "gates": [],
           "destructive": false
+        },
+        {
+          "id": "demo-team-projects",
+          "type": "button",
+          "label": "Try AI Team demo",
+          "key": "demo-team-projects",
+          "line": 115,
+          "action": "navigate",
+          "target": "team-project-demo",
+          "targetWidget": null,
+          "effect": "Opens isolated simulator without server setup; kept after Leave demo so compact headers preserve the direct exit.",
+          "gates": [],
+          "destructive": false
         }
       ]
     },
@@ -2501,57 +2573,6 @@
           "destructive": false
         }
       ]
-    },
-    {
-      "id": "attention-overview",
-      "title": "Server attention",
-      "kind": "screen",
-      "file": "lib/ui/screens/attention_overview_screen.dart",
-      "widget": "AttentionOverviewScreen",
-      "presentedBy": [],
-      "line": 12,
-      "purpose": "Local per-saved-server overview (selected/inactive, data source, pending/running/unread counts or 'unknown'); never switches profiles itself.",
-      "reachedFrom": [
-        {
-          "page": "?",
-          "element": null,
-          "widget": "ServersScreen app-bar icon 'Server attention'",
-          "file": "lib/ui/screens/servers_screen.dart",
-          "line": 396
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "attention-overview-monitor-settings",
-          "type": "icon-button",
-          "label": "Monitoring settings",
-          "key": null,
-          "line": 34,
-          "action": "navigate",
-          "target": "profile-monitor",
-          "targetWidget": "ProfileMonitorScreen",
-          "effect": "Pushes ProfileMonitorScreen(controller).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "attention-overview-open-profile",
-          "type": "button",
-          "label": "Open server / Choose server…",
-          "key": null,
-          "line": 141,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Per profile card: when the profile is still readable and saved calls host onOpenProfile(profileID); ServersScreen's host pops this route with the id and runs its own safe switch flow. Disabled (with 'navigation unavailable' text) when onOpenProfile == null.",
-          "gates": [
-            "onOpenProfile != null",
-            "controller.isProfileReadable(item.profileID)"
-          ],
-          "destructive": false
-        }
-      ]
     }
   ],
   "notPages": [
@@ -2566,18 +2587,6 @@
     {
       "file": "lib/ui/widgets/connection_failure.dart",
       "reason": "ConnectionFailure.diagnose model + ConnectionFailureAction enum used by SavedServerConnectionCard; no widgets"
-    },
-    {
-      "file": "lib/ui/widgets/glass_surface.dart",
-      "reason": "pure rendering helper (frosted dock surface), no interactive element"
-    },
-    {
-      "file": "lib/ui/widgets/retained_tab_view.dart",
-      "reason": "keeps root tab bodies alive and cross-fades them; no interactive element"
-    },
-    {
-      "file": "lib/ui/widgets/entrance.dart",
-      "reason": "EntranceReveal animation wrapper; no interactive element"
     },
     {
       "file": "lib/ui/app_iconography.dart",
@@ -2612,6 +2621,7 @@
     "ShortcutHelp lists shortcuts not bound in shortcuts.dart (Mod+Enter send, Mod+C copy transcript, F2/Shift+F2 recent model, context keys): they live in chat/composer code owned by other agents (shortcuts.dart:121-129).",
     "Hard-coded English strings (not in app_en.arb): 'Try again' and 'Report a bug' in ProductErrorState (product_states.dart:242,252), 'Requires an OpenCode N server' (product_states.dart:410), 'Drop to attach' (file_drop.dart:133), desktop release snackbar + 'View' (desktop_release_check.dart:245-247), Shorebird snackbars + 'Got it' (shorebird_update_notice.dart:140,156-157), MaterialApp title 'OpenCode Mobile', fallback profile name 'OpenCode' (home_screen.dart:183).",
     "No in-app caller of pushNamed('/activity'), '/requests' or '/home'-with-initialTab was found; HomeScreen.initialTab is only ever the default 0 in lib/.",
-    "CapabilitiesScreen tab bodies are other agents' screens in embedded mode; element targets use the '<owner>-<tab>-tab' naming and targetWidget for resolution."
+    "CapabilitiesScreen tab bodies are other agents' screens in embedded mode; element targets use the '<owner>-<tab>-tab' naming and targetWidget for resolution.",
+    "slice P1.3/P1.5 (2026-09-27): the route table's '/termux-setup' (TermuxSetupScreen) is replaced by '/this-phone' (ThisPhoneScreen, still Android only); root-connecting's Termux action goes to This phone or phone setup, and its in-app 'Open setup' goes to phone setup start."
   ]
 }

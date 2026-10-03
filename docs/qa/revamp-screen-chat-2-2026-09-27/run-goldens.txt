@@ -1,0 +1,26 @@
+00:00 +0: loading test/revamp/screen_chat_2_golden_test.dart
+00:00 +0: (setUpAll)
+00:00 +0: active context · phone · dark
+00:01 +1: note · phone · dark
+00:01 +2: subagents · phone · dark
+00:01 +3: web sources · phone · dark
+00:01 +4: active context · wide · dark
+00:01 +5: note · wide · dark
+00:02 +6: subagents · wide · dark
+00:02 +7: web sources · wide · dark
+00:02 +8: active context message · dark
+00:02 +9: note discard question · dark
+00:02 +10: subagent row menu · dark
+00:02 +11: active context · phone · light
+00:03 +12: note · phone · light
+00:03 +13: subagents · phone · light
+00:03 +14: web sources · phone · light
+00:03 +15: active context · wide · light
+00:03 +16: note · wide · light
+00:03 +17: subagents · wide · light
+00:03 +18: web sources · wide · light
+00:04 +19: active context message · light
+00:04 +20: note discard question · light
+00:04 +21: subagent row menu · light
+00:04 +22: (tearDownAll)
+00:04 +22: All tests passed!

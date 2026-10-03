@@ -1,3 +1,4 @@
+export 'team_project_gateway.dart';
 import '../orchestration/events/cursor.dart';
 import '../orchestration/events/orchestration_event.dart';
 import '../orchestration/models/activity_event.dart';
@@ -76,6 +77,17 @@ class OrchestrationHostIdentity {
 class OrchestrationCapabilities {
   const OrchestrationCapabilities({
     this.projects = false,
+    this.projectLifecycle = false,
+    this.livingSpec = false,
+    this.projectLanes = false,
+    this.projectPlacement = false,
+    this.projectVerification = false,
+    this.projectMergeQueue = false,
+    this.projectPromotion = false,
+    this.projectResume = false,
+    this.projectBudgets = false,
+    this.projectDigest = false,
+
     this.runs = false,
     this.runSteps = false,
     this.workGraph = false,
@@ -99,6 +111,19 @@ class OrchestrationCapabilities {
     this.mergeReadiness = false,
     this.phoneHost = false,
   });
+
+  final bool projectLifecycle;
+  final bool livingSpec;
+  final bool projectLanes;
+  final bool projectPlacement;
+  final bool projectVerification;
+  final bool projectMergeQueue;
+  final bool projectPromotion;
+
+  /// The engine can resume interrupted work (resumeProject/resumeTask).
+  final bool projectResume;
+  final bool projectBudgets;
+  final bool projectDigest;
 
   /// Project (rig) listing.
   final bool projects;
@@ -286,6 +311,17 @@ class OrchestrationCapabilities {
   /// Every switch by name, for diagnostics and consistency tests.
   Map<String, bool> asMap() => {
     'projects': projects,
+    'projectLifecycle': projectLifecycle,
+    'livingSpec': livingSpec,
+    'projectLanes': projectLanes,
+    'projectPlacement': projectPlacement,
+    'projectVerification': projectVerification,
+    'projectMergeQueue': projectMergeQueue,
+    'projectPromotion': projectPromotion,
+    'projectResume': projectResume,
+    'projectBudgets': projectBudgets,
+    'projectDigest': projectDigest,
+
     'runs': runs,
     'runSteps': runSteps,
     'workGraph': workGraph,

@@ -1,9 +1,9 @@
 // TEAM-116: the dispatch cycle. Derivation over the recorded normal-run
 // event log and over hand-built evidence (each stall reason with its
-// window), the provider-limit regex over a transcript, the strip's
-// done / current / future rendering, reduced motion, 320dp at 2.5x in
-// both directions and both languages, and the placement on the card,
-// the run Overview and the Work sheet.
+// window), the provider-limit regex over a transcript, and the step's Now
+// line that replaced the strip (slice-P5.1): each stall as a reason in the
+// person's words, the Why in place, 320dp at 2.5x in both directions, and
+// the placement in Task details, the conversation and the Work sheet.
 
 import 'dart:async';
 import 'dart:convert';
@@ -22,11 +22,10 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
-import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/task_details_sheet.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamConversationScreen;
 import 'package:opencode_mobile/ui/screens/team/work_sheet.dart';
-import 'package:opencode_mobile/ui/widgets/team_card.dart';
-import 'package:opencode_mobile/ui/widgets/team_cycle_strip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Directory _findFixtureRoot() {
@@ -355,26 +354,6 @@ void main() {
     return (controller, gateway);
   }
 
-  /// Lets a sent control's receipt timer run out so no timer outlives
-  /// the test.
-  Future<void> drain(WidgetTester tester) async {
-    await tester.pump(const Duration(seconds: 6));
-    await tester.pump();
-  }
-
-  /// Pushes [events] through the stream and lets the debounce refetch.
-  Future<void> feed(
-    WidgetTester tester,
-    _Gateway gateway,
-    List<OrchestrationEvent> events,
-  ) async {
-    for (final event in events) {
-      gateway.stream.add(event);
-    }
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-  }
-
   Widget app(
     Widget home, {
     bool reduceMotion = true,
@@ -404,32 +383,35 @@ void main() {
 
   Finder key(String name) => find.byKey(ValueKey(name));
 
-  String clockLabel(WidgetTester tester, DateTime at) =>
-      MaterialLocalizations.of(
-        tester.element(find.byType(TeamCycleStrip)),
-      ).formatTimeOfDay(
-        TimeOfDay.fromDateTime(at.toLocal()),
-        alwaysUse24HourFormat: true,
-      );
-
-  Future<String> semanticsOf(WidgetTester tester) async {
-    final handle = tester.ensureSemantics();
-    await tester.pump();
-    final strip = key('team-cycle-strip');
-    final node = tester.getSemantics(
-      find
-          .descendant(
-            of: strip,
-            matching: find.byWidgetPredicate(
-              (w) => w is Semantics && w.properties.label != null,
-            ),
-          )
-          .first,
+  /// The step's Now line on the Work sheet (slice-P5.1: it replaced the
+  /// strip), over the fixture's run.
+  Future<void> pumpSheet(
+    WidgetTester tester,
+    OrchestrationController controller,
+  ) async {
+    await tester.pumpWidget(
+      app(
+        WorkSheet(
+          controller: controller,
+          workId: 'oc-loy',
+          onJump: (_) {},
+          now: () => clock,
+        ),
+      ),
     );
-    final label = node.label;
-    handle.dispose();
-    return label;
+    await tester.pump();
   }
+
+  String words(WidgetTester tester, String name) => tester
+      .widgetList<RichText>(
+        find.descendant(
+          of: key(name),
+          matching: find.byType(RichText),
+          matchRoot: true,
+        ),
+      )
+      .map((text) => text.text.toPlainText())
+      .join(' ');
 
   // ---------------------------------------------------------------------
   // Derivation
@@ -795,7 +777,6 @@ void main() {
       );
       expect(cycle.isDone(DispatchStep.handedToMerge), isTrue);
       expect(cycle.reachedAt[DispatchStep.handedToMerge], handedAt);
-      expect(teamCycleCurrentStep(cycle), DispatchStep.handedToMerge);
       expect(cycle.step, DispatchStep.merged);
       expect(cycle.isTerminal, isFalse);
       expect(cycle.since, handedAt);
@@ -938,9 +919,8 @@ void main() {
       expect(controller.cycleFor('nope'), same(DispatchCycle.none));
     });
 
-    testWidgets('the tick runs only while a strip watches a moving cycle', (
-      tester,
-    ) async {
+    testWidgets('the tick runs only while a Now line watches a moving '
+        'cycle', (tester) async {
       final (controller, _) = await boot(
         configure: (g) => g.workOverride = [
           _item(updatedAt: clock.subtract(const Duration(minutes: 1))),
@@ -949,23 +929,24 @@ void main() {
       expect(controller.debugCycleTicking, isFalse);
       controller.cycleFor('oc-loy');
       expect(controller.debugCycleTicking, isFalse);
-      await tester.pumpWidget(
-        app(TeamCycleStrip(controller: controller, workId: 'oc-loy')),
-      );
-      await tester.pump();
+      await pumpSheet(tester, controller);
       expect(controller.debugCycleTicking, isTrue);
       expect(
-        find.text('Waiting for an agent · usually 1–5 min'),
-        findsOneWidget,
+        words(tester, 'team-work-sheet-now-text'),
+        'Waiting for a worker · 1 min',
       );
 
       // Three minutes pass with no event: the tick re-derives and the
-      // strip now says why it waits.
+      // line now says why it waits, in the person's words.
       clock = clock.add(const Duration(minutes: 3));
       await tester.pump(const Duration(seconds: 31));
       expect(
-        find.text('The host has not started an agent yet'),
-        findsOneWidget,
+        words(tester, 'team-work-sheet-now-text'),
+        'Taking longer than expected · 4 min',
+      );
+      expect(
+        words(tester, 'team-work-sheet-now-reason'),
+        'No worker has been reported yet.',
       );
 
       await tester.pumpWidget(const SizedBox());
@@ -974,238 +955,44 @@ void main() {
   });
 
   // ---------------------------------------------------------------------
-  // Strip
+  // The step's Now line (slice-P5.1: it replaced the strip)
   // ---------------------------------------------------------------------
 
-  group('strip', () {
-    testWidgets('done steps carry a check and time, the current step '
-        'pulses, the rest sit dim', (tester) async {
-      final t0 = clock.subtract(const Duration(minutes: 4));
-      final t1 = t0.add(const Duration(minutes: 1, seconds: 7));
-      final t2 = t0.add(const Duration(minutes: 2, seconds: 40));
-      final (controller, gateway) = await boot(
-        configure: (g) => g
-          ..workOverride = [
-            _item(
-              status: 'in_progress',
-              assignee: 'gastown__polecat-bl-48k',
-              sessionId: 'bl-48k',
-              updatedAt: t2,
-            ),
-          ]
-          // The agent has said nothing yet: no output, so not working.
-          ..outputs['bl-48k'] = const [],
-      );
-      await tester.pumpWidget(
-        app(
-          TeamCycleStrip(controller: controller, workId: 'oc-loy'),
-          reduceMotion: false,
-        ),
-      );
-      await feed(tester, gateway, [
-        _bead(t0),
-        _session(t1, SessionChange.woke),
-        _bead(
-          t2,
-          status: 'in_progress',
-          assignee: 'gastown__polecat-bl-48k',
-          metadata: const {
-            'gc.routed_to': 'ocproof/gastown.polecat',
-            'gc.session_id': 'bl-48k',
-          },
-        ),
-      ]);
-      final cycle = controller.cycleFor('oc-loy');
-      expect(cycle.step, DispatchStep.working);
-      expect(cycle.reachedAt[DispatchStep.routed], t0);
-      expect(cycle.reachedAt[DispatchStep.agentStarting], t1);
-      expect(cycle.reachedAt[DispatchStep.claimed], t2);
-
-      for (final step in DispatchStep.dots) {
-        expect(key('team-cycle-step-${step.name}'), findsOneWidget);
-      }
-      expect(key('team-cycle-end'), findsOneWidget);
-      // Done steps show their time.
-      expect(find.text(clockLabel(tester, t0)), findsOneWidget);
-      expect(find.text(clockLabel(tester, t1)), findsOneWidget);
-      expect(find.text(clockLabel(tester, t2)), findsOneWidget);
-      // The current step is the only one that breathes.
-      final state = tester.state<TeamCycleStripState>(
-        find.byType(TeamCycleStrip),
-      );
-      expect(state.debugHasAnimation, isTrue);
-      expect(
-        find.descendant(
-          of: key('team-cycle-strip'),
-          matching: find.byType(ScaleTransition),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: key('team-cycle-step-working'),
-          matching: find.byType(ScaleTransition),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        await semanticsOf(tester),
-        'Step 4 of 6, Working, since ${clockLabel(tester, t2)}',
-      );
-      expect(key('team-cycle-hint'), findsNothing);
-      expect(key('team-cycle-stall'), findsNothing);
-      expect(key('team-cycle-actions'), findsNothing);
-      await tester.pumpWidget(const SizedBox());
-    });
-
-    testWidgets('reduced motion: static, no ticker; merged: none either', (
-      tester,
-    ) async {
-      final t0 = clock.subtract(const Duration(minutes: 1));
-      final (controller, gateway) = await boot(
-        configure: (g) => g.workOverride = [_item(updatedAt: t0)],
-      );
-      await tester.pumpWidget(
-        app(TeamCycleStrip(controller: controller, workId: 'oc-loy')),
-      );
-      await tester.pump();
-      final state = tester.state<TeamCycleStripState>(
-        find.byType(TeamCycleStrip),
-      );
-      expect(state.debugHasAnimation, isFalse);
-      expect(tester.binding.transientCallbackCount, 0);
-      expect(
-        find.descendant(
-          of: key('team-cycle-strip'),
-          matching: find.byType(ScaleTransition),
-        ),
-        findsNothing,
-      );
-      expect(
-        await semanticsOf(tester),
-        'Step 2 of 6, Agent starting, since ${clockLabel(tester, t0)}',
-      );
-      expect(
-        find.text('Waiting for an agent · usually 1–5 min'),
-        findsOneWidget,
-      );
-
-      // Merged with motion allowed: still no controller.
-      gateway.workOverride = [
-        _item(status: 'closed', branch: 'polecat/oc-loy', updatedAt: clock),
-      ];
-      await tester.pumpWidget(
-        app(
-          TeamCycleStrip(controller: controller, workId: 'oc-loy'),
-          reduceMotion: false,
-        ),
-      );
-      await feed(tester, gateway, [
-        _bead(clock, change: BeadChange.closed, status: 'closed'),
-      ]);
-      expect(controller.cycleFor('oc-loy').isTerminal, isTrue);
-      final merged = tester.state<TeamCycleStripState>(
-        find.byType(TeamCycleStrip),
-      );
-      expect(merged.debugHasAnimation, isFalse);
-      expect(
-        find.descendant(
-          of: key('team-cycle-strip'),
-          matching: find.byType(ScaleTransition),
-        ),
-        findsNothing,
-      );
-      expect(
-        await semanticsOf(tester),
-        'All 6 steps done, merged at ${clockLabel(tester, clock)}',
-      );
-      expect(controller.debugCycleTicking, isFalse);
-    });
-
-    testWidgets('hostNotStarted: sentence, Refresh and the How sheet', (
-      tester,
-    ) async {
+  group('now line', () {
+    testWidgets('hostNotStarted: the reason in words and the Why in place, '
+        'with Refresh; no engine step names', (tester) async {
       final t0 = clock.subtract(const Duration(minutes: 4));
       final (controller, _) = await boot(
         configure: (g) => g.workOverride = [_item(updatedAt: t0)],
       );
-      await tester.pumpWidget(
-        app(TeamCycleStrip(controller: controller, workId: 'oc-loy')),
-      );
-      await tester.pump();
+      await pumpSheet(tester, controller);
       expect(
-        find.text('The host has not started an agent yet'),
-        findsOneWidget,
+        words(tester, 'team-work-sheet-now-reason'),
+        'No worker has been reported yet.',
       );
-      expect(key('team-cycle-hint'), findsNothing);
-      expect(key('team-cycle-action-refresh'), findsOneWidget);
-      expect(key('team-cycle-action-how'), findsOneWidget);
-
-      await tester.tap(key('team-cycle-action-how'));
+      for (final engine in ['Routed', 'Claimed', 'Pushed', 'Handed to merge']) {
+        expect(find.text(engine), findsNothing, reason: engine);
+      }
+      expect(key('team-work-sheet-now-why-fold'), findsNothing);
+      await tester.tap(key('team-work-sheet-now-why'));
       await tester.pumpAndSettle();
-      expect(key('team-cycle-how-sheet'), findsOneWidget);
+      // What the retired "How the host dispatches" sheet said, in place.
       expect(
         find.text(
-          'The first model turn takes 10–60 seconds before the agent claims '
-          'the work, so 2–6 minutes from routed to claimed is normal.',
+          'The team looks for new work regularly and starts a worker for '
+          'it when one is free.',
         ),
         findsOneWidget,
       );
-      await tester.tap(key('team-cycle-how-close'));
-      await tester.pumpAndSettle();
-      expect(key('team-cycle-how-sheet'), findsNothing);
-
       final before = controller.lastRefreshedAt;
       clock = clock.add(const Duration(seconds: 5));
-      await tester.tap(key('team-cycle-action-refresh'));
+      await tester.tap(key('team-work-sheet-now-refresh'));
       await tester.pumpAndSettle();
       expect(controller.lastRefreshedAt, isNot(before));
     });
 
-    testWidgets('agentCannotStart: sentence and the How sheet first', (
-      tester,
-    ) async {
-      final t0 = clock.subtract(const Duration(minutes: 2));
-      final (controller, gateway) = await boot(
-        configure: (g) => g.workOverride = [_item(updatedAt: t0)],
-      );
-      await tester.pumpWidget(
-        app(TeamCycleStrip(controller: controller, workId: 'oc-loy')),
-      );
-      await feed(tester, gateway, [
-        _bead(t0),
-        for (var i = 0; i < 2; i++) ...[
-          _session(
-            t0.add(Duration(seconds: 10 + i * 40)),
-            SessionChange.woke,
-            template: 'ocproof/gastown.polecat',
-          ),
-          _session(
-            t0.add(Duration(seconds: 30 + i * 40)),
-            SessionChange.stopped,
-            template: 'ocproof/gastown.polecat',
-          ),
-        ],
-      ]);
-      expect(
-        find.text('The agent could not start on the host'),
-        findsOneWidget,
-      );
-      final buttons = tester
-          .widgetList(
-            find.descendant(
-              of: key('team-cycle-actions'),
-              matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
-            ),
-          )
-          .toList();
-      expect(buttons.length, 2);
-      expect(buttons.first.key, const ValueKey('team-cycle-action-how'));
-      expect(buttons.last.key, const ValueKey('team-cycle-action-refresh'));
-    });
-
-    testWidgets('providerLimit from the probed transcript: Open agent '
-        'output, and Stop in two steps', (tester) async {
+    testWidgets('providerLimit from the probed transcript: said as the AI '
+        "service's limit", (tester) async {
       final t0 = clock.subtract(const Duration(minutes: 2));
       final (controller, gateway) = await boot(
         configure: (g) => g
@@ -1225,11 +1012,6 @@ void main() {
               sessionId: 'bl-48k',
               pool: 'ocproof/gastown.polecat',
             ),
-            OrchestrationAgent(
-              id: 'gastown.refinery',
-              name: 'ocproof/gastown.refinery',
-              state: AgentState.idle,
-            ),
           ]
           ..outputs['bl-48k'] = const [
             AgentOutputText('Starting ACP…\n'),
@@ -1239,109 +1021,22 @@ void main() {
       // Nobody watches the output yet: no probe, no stall.
       expect(controller.cycleFor('oc-loy').stalled, isFalse);
       expect(gateway.outputOpened, isEmpty);
-
-      await tester.pumpWidget(
-        app(TeamCycleStrip(controller: controller, workId: 'oc-loy')),
-      );
+      await pumpSheet(tester, controller);
       await tester.pumpAndSettle();
       expect(gateway.outputOpened, ['bl-48k']);
-      expect(controller.debugCycleProbes, {'bl-48k'});
       expect(
-        controller.cycleTranscriptFor('oc-loy'),
-        contains('usage limit has been reached'),
+        controller.cycleFor('oc-loy').stallReason,
+        DispatchStall.providerLimit,
       );
-      final cycle = controller.cycleFor('oc-loy');
-      expect(cycle.stallReason, DispatchStall.providerLimit);
       expect(
-        find.text('The model provider reached its usage limit'),
-        findsOneWidget,
+        words(tester, 'team-work-sheet-now-reason'),
+        'The AI service reported a usage limit.',
       );
-      expect(key('team-cycle-action-output'), findsOneWidget);
-      expect(key('team-cycle-action-stop'), findsOneWidget);
-      expect(controller.cycleAgentFor('oc-loy'), 'gastown.furiosa');
-
-      // Open agent output → the AgentOutputScreen for that agent.
-      await tester.tap(key('team-cycle-action-output'));
-      await tester.pumpAndSettle();
-      expect(find.byType(AgentOutputScreen), findsOneWidget);
-      expect(
-        tester
-            .widget<AgentOutputScreen>(find.byType(AgentOutputScreen))
-            .agentId,
-        'gastown.furiosa',
-      );
-      tester.state<NavigatorState>(find.byType(Navigator)).pop();
-      await tester.pumpAndSettle();
-
-      // Stop: the first tap asks, backing out sends nothing.
-      await tester.tap(key('team-cycle-action-stop'));
-      await tester.pumpAndSettle();
-      expect(key('team-cycle-stop-confirm'), findsOneWidget);
-      expect(find.text('Stop ocproof/gastown.furiosa?'), findsOneWidget);
-      tester.state<NavigatorState>(find.byType(Navigator)).pop();
-      await tester.pumpAndSettle();
-      expect(gateway.inner.controlCalls, isEmpty);
-
-      await tester.tap(key('team-cycle-action-stop'));
-      await tester.pumpAndSettle();
-      await tester.tap(key('team-cycle-stop-confirm-action'));
-      await tester.pumpAndSettle();
-      expect(gateway.inner.controlCalls.length, 1);
-      expect(gateway.inner.controlCalls.single.verb, 'controlAgent');
-      expect(gateway.inner.controlCalls.single.target, 'gastown.furiosa');
-      expect(gateway.inner.controlCalls.single.arg, AgentControlAction.stop);
-      expect(key('team-cycle-receipt'), findsOneWidget);
-      await drain(tester);
-
-      // Leaving the strip releases the probe; the text stays.
-      await tester.pumpWidget(const SizedBox());
-      expect(controller.debugCycleProbes, isEmpty);
-      expect(controller.cycleTranscriptFor('oc-loy'), isNotNull);
+      expect(find.textContaining('model provider'), findsNothing);
     });
 
-    testWidgets('providerLimit without controls: no Stop', (tester) async {
-      final t0 = clock.subtract(const Duration(minutes: 2));
-      final (controller, _) = await boot(
-        configure: (g) => g
-          ..capabilitiesOverride = const OrchestrationCapabilities(
-            runs: true,
-            agents: true,
-            agentOutput: true,
-            eventStream: true,
-          )
-          ..workOverride = [
-            _item(
-              status: 'in_progress',
-              assignee: 'gastown__polecat-bl-48k',
-              sessionId: 'bl-48k',
-              updatedAt: t0,
-            ),
-          ]
-          ..agentsOverride = const [
-            OrchestrationAgent(
-              id: 'gastown.furiosa',
-              name: 'ocproof/gastown.furiosa',
-              state: AgentState.working,
-              sessionId: 'bl-48k',
-            ),
-          ]
-          ..outputs['bl-48k'] = const [
-            AgentOutputText('Error: quota exceeded for this account'),
-          ],
-      );
-      await tester.pumpWidget(
-        app(TeamCycleStrip(controller: controller, workId: 'oc-loy')),
-      );
-      await tester.pumpAndSettle();
-      expect(
-        find.text('The model provider reached its usage limit'),
-        findsOneWidget,
-      );
-      expect(key('team-cycle-action-output'), findsOneWidget);
-      expect(key('team-cycle-action-stop'), findsNothing);
-    });
-
-    testWidgets('workingLong: sentence and Open agent output', (tester) async {
+    testWidgets('workingLong: longer than expected, never "nothing is '
+        'happening"', (tester) async {
       final t0 = clock.subtract(const Duration(minutes: 40));
       final (controller, _) = await boot(
         configure: (g) => g.workOverride = [
@@ -1354,219 +1049,53 @@ void main() {
           ),
         ],
       );
-      await tester.pumpWidget(
-        app(TeamCycleStrip(controller: controller, workId: 'oc-loy')),
-      );
-      await tester.pump();
+      await pumpSheet(tester, controller);
       expect(
-        find.text("Still working — check the agent's output"),
-        findsOneWidget,
+        words(tester, 'team-work-sheet-now-reason'),
+        'The work is taking longer than expected.',
       );
-      expect(key('team-cycle-action-output'), findsOneWidget);
-      expect(key('team-cycle-action-stop'), findsNothing);
-      expect(key('team-cycle-action-refresh'), findsNothing);
     });
 
-    testWidgets('TEAM-117: the refinery bead the day before, no update time: '
-        'checks without times, the merge sentence, never the clock', (
-      tester,
-    ) async {
-      final item = _item(
-        assignee: 'ocproof/gastown.refinery',
-        sessionId: 'bl-48k',
-        branch: 'polecat/oc-loy',
-        createdAt: clock.subtract(const Duration(hours: 20)),
-      );
-      final (controller, _) = await boot(
-        configure: (g) => g..workOverride = [item],
-      );
-      await tester.pumpWidget(
-        app(TeamCycleStrip(controller: controller, workId: 'oc-loy')),
-      );
-      await tester.pump();
-      for (final step in DispatchStep.dots) {
-        expect(key('team-cycle-step-${step.name}'), findsOneWidget);
-      }
-      expect(
-        find.descendant(
-          of: key('team-cycle-strip'),
-          matching: find.textContaining(clockLabel(tester, clock)),
-        ),
-        findsNothing,
-      );
-      expect(find.text('Handed to merge'), findsOneWidget);
-      expect(find.text('Waiting for the merge agent'), findsOneWidget);
-      expect(await semanticsOf(tester), 'Step 6 of 6, Handed to merge');
-    });
-
-    testWidgets('mergeWaiting: Nudge refinery with controls, Refresh '
-        'without', (tester) async {
-      final t0 = clock.subtract(const Duration(minutes: 20));
-      final item = _item(
-        assignee: 'ocproof/gastown.refinery',
-        sessionId: 'bl-48k',
-        branch: 'polecat/oc-loy',
-        updatedAt: t0,
-      );
-      final (controller, gateway) = await boot(
-        configure: (g) => g
-          ..workOverride = [item]
-          ..agentsOverride = const [
-            OrchestrationAgent(
-              id: 'gastown.refinery',
-              name: 'ocproof/gastown.refinery',
-              state: AgentState.idle,
+    for (final (tag, locale, direction) in [
+      ('ltr en', const Locale('en'), null),
+      ('rtl ar', const Locale('ar'), TextDirection.rtl),
+    ]) {
+      testWidgets('320dp 2.5x $tag: the Now line and its Why fit', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(320, 1400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final t0 = clock.subtract(const Duration(minutes: 4));
+        final (controller, _) = await boot(
+          configure: (g) => g.workOverride = [_item(updatedAt: t0)],
+        );
+        await tester.pumpWidget(
+          app(
+            WorkSheet(
+              controller: controller,
+              workId: 'oc-loy',
+              onJump: (_) {},
+              now: () => clock,
             ),
-          ],
-      );
-      await tester.pumpWidget(
-        app(TeamCycleStrip(controller: controller, workId: 'oc-loy')),
-      );
-      await tester.pump();
-      expect(find.text('Waiting for the merge agent'), findsOneWidget);
-      expect(key('team-cycle-action-nudge'), findsOneWidget);
-      expect(controller.cycleRefineryFor('oc-loy'), 'gastown.refinery');
-      await tester.tap(key('team-cycle-action-nudge'));
-      await tester.pumpAndSettle();
-      expect(gateway.inner.controlCalls.single.target, 'gastown.refinery');
-      expect(gateway.inner.controlCalls.single.arg, AgentControlAction.nudge);
-      await drain(tester);
-
-      final (readOnly, _) = await boot(
-        configure: (g) => g
-          ..capabilitiesOverride = const OrchestrationCapabilities(
-            runs: true,
-            agents: true,
-            eventStream: true,
-          )
-          ..workOverride = [item],
-      );
-      await tester.pumpWidget(
-        app(TeamCycleStrip(controller: readOnly, workId: 'oc-loy')),
-      );
-      await tester.pump();
-      expect(key('team-cycle-action-nudge'), findsNothing);
-      expect(key('team-cycle-action-refresh'), findsOneWidget);
-    });
-
-    for (final direction in TextDirection.values) {
-      for (final locale in const [Locale('en'), Locale('ar')]) {
-        final tag = '${direction.name} ${locale.languageCode}';
-        testWidgets('320dp 2.5x $tag: the strip wraps to rows and fits', (
-          tester,
-        ) async {
-          tester.view.physicalSize = const Size(320, 900);
-          tester.view.devicePixelRatio = 1;
-          addTearDown(tester.view.resetPhysicalSize);
-          addTearDown(tester.view.resetDevicePixelRatio);
-          final t0 = clock.subtract(const Duration(minutes: 4));
-          final (controller, _) = await boot(
-            configure: (g) => g.workOverride = [_item(updatedAt: t0)],
-          );
-          await tester.pumpWidget(
-            app(
-              TeamCycleStrip(controller: controller, workId: 'oc-loy'),
-              locale: locale,
-              direction: direction,
-              textScale: 2.5,
-            ),
-          );
-          await tester.pump();
-          expect(tester.takeException(), isNull);
-          expect(tester.getSize(key('team-cycle-strip')).width, 320);
-          final tops = {
-            for (final step in DispatchStep.dots)
-              tester.getTopLeft(key('team-cycle-step-${step.name}')).dy,
-          };
-          expect(tops.length, greaterThanOrEqualTo(2));
-          for (final step in DispatchStep.dots) {
-            final rect = tester.getRect(key('team-cycle-step-${step.name}'));
-            expect(rect.left, greaterThanOrEqualTo(0));
-            expect(rect.right, lessThanOrEqualTo(320));
-          }
-          expect(key('team-cycle-stall'), findsOneWidget);
-          expect(key('team-cycle-action-refresh'), findsOneWidget);
-          if (locale.languageCode == 'ar') {
-            expect(find.text('لم يبدأ المضيف وكيلًا بعد'), findsOneWidget);
-            expect(find.text('الوكيل يبدأ'), findsOneWidget);
-          } else {
-            expect(
-              find.text('The host has not started an agent yet'),
-              findsOneWidget,
-            );
-          }
-          final refresh = key('team-cycle-action-refresh');
-          await tester.ensureVisible(refresh);
-          await tester.pump();
-          expect(refresh.hitTestable(), findsOneWidget);
-        });
-      }
+            locale: locale,
+            direction: direction,
+            textScale: 2.5,
+          ),
+        );
+        await tester.pump();
+        await tester.tap(key('team-work-sheet-now-why'));
+        await tester.pumpAndSettle();
+        expect(key('team-work-sheet-now-why-fold'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
     }
   });
 
-  // ---------------------------------------------------------------------
-  // Placement
-  // ---------------------------------------------------------------------
-
   group('placement', () {
-    testWidgets('the card shows the compact strip under its headline '
-        'batch row', (tester) async {
-      // The fixture convoy tracks oc-loy, routed and waiting for an agent.
-      // The recorded bead carries no `updated_at` (TEAM-117): the routing
-      // is reached at an unknown time, so the line names no time — never
-      // the moment the app looked — and, created the day before with no
-      // agent, the wait is a stall rather than the usual one.
-      final (controller, gateway) = await boot();
-      await tester.pumpWidget(
-        app(TeamCard(controller: controller, onOpen: () {})),
-      );
-      await tester.pump();
-      expect(key('team-card-cycle'), findsOneWidget);
-      expect(
-        tester.getTopLeft(key('team-card-cycle')).dy,
-        greaterThan(tester.getTopLeft(key('team-card-run-oc-xru')).dy),
-      );
-      expect(key('team-cycle-current'), findsOneWidget);
-      expect(
-        tester.widget<Text>(key('team-cycle-current')).data,
-        'Agent starting',
-      );
-      expect(
-        find.descendant(
-          of: key('team-card-cycle'),
-          matching: find.textContaining(clockLabel(tester, clock)),
-        ),
-        findsNothing,
-      );
-      expect(
-        find.text('The host has not started an agent yet'),
-        findsOneWidget,
-      );
-      // Compact: dots, no chips, no buttons.
-      expect(key('team-cycle-dot-routed'), findsOneWidget);
-      expect(key('team-cycle-step-routed'), findsNothing);
-      expect(key('team-cycle-actions'), findsNothing);
-      expect(await semanticsOf(tester), 'Step 2 of 6, Agent starting');
-
-      // A completed batch shows no strip.
-      gateway.runsOverride = [
-        OrchestrationRun(
-          id: 'oc-xru',
-          title: 'Add subtract function to calc.py',
-          state: RunState.completed,
-          kind: RunKind.batch,
-          stepCount: 1,
-          completedSteps: 1,
-          updatedAt: clock,
-        ),
-      ];
-      await controller.refresh();
-      await tester.pump();
-      expect(key('team-card-cycle'), findsNothing);
-    });
-
-    testWidgets('the run Overview shows the full strip over the batch '
-        'line, and nothing for a formula run', (tester) async {
+    testWidgets('Task details shows the four stages (P3.5: the run page '
+        'is retired)', (tester) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -1574,53 +1103,84 @@ void main() {
       final (controller, _) = await boot();
       await tester.pumpWidget(
         app(
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
+          Scaffold(
+            body: SingleChildScrollView(
+              child: TeamTaskDetails(
+                controller: controller,
+                runId: 'oc-xru',
+                now: () => clock,
+              ),
+            ),
+          ),
           scroll: false,
         ),
       );
       await tester.pump();
-      expect(key('team-run-cycle'), findsOneWidget);
-      expect(key('team-run-batch'), findsOneWidget);
-      expect(
-        tester.getTopLeft(key('team-run-cycle')).dy,
-        lessThan(tester.getTopLeft(key('team-run-batch')).dy),
-      );
-      expect(key('team-cycle-step-agentStarting'), findsOneWidget);
-      // TEAM-117: the routed step's check carries no time (the bead has
-      // no `updated_at`), and a day without an agent is a stall.
-      expect(key('team-cycle-step-routed'), findsOneWidget);
-      expect(
-        find.descendant(
-          of: key('team-run-cycle'),
-          matching: find.textContaining(clockLabel(tester, clock)),
-        ),
-        findsNothing,
-      );
-      expect(
-        find.text('The host has not started an agent yet'),
-        findsOneWidget,
-      );
-
-      final formula = (await controller.gateway!.runs())
-          .where((r) => r.kind == RunKind.formula)
-          .firstOrNull;
-      if (formula != null) {
-        await tester.pumpWidget(
-          app(
-            RunScreen(
-              controller: controller,
-              runId: formula.id,
-              now: () => clock,
-            ),
-            scroll: false,
+      // The eight-step strip became four plain stages.
+      expect(key('team-run-cycle'), findsNothing);
+      expect(key('team-task-details-stage'), findsOneWidget);
+      for (final stage in ['Planned', 'Working', 'In review', 'Merged']) {
+        expect(
+          find.descendant(
+            of: key('team-task-details-stage'),
+            matching: find.text(stage),
           ),
+          findsOneWidget,
+          reason: stage,
         );
-        await tester.pump();
-        expect(key('team-run-cycle'), findsNothing);
       }
     });
 
-    testWidgets('the Work sheet shows the full strip at the top', (
+    testWidgets('the conversation says why it waits, with no time it cannot '
+        'know (TEAM-117)', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final (controller, _) = await boot();
+      await tester.pumpWidget(
+        app(
+          TeamConversationScreen(
+            team: controller,
+            runId: 'oc-xru',
+            now: () => clock,
+          ),
+          scroll: false,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      // TEAM-117: routed a day ago with no agent is a stall, said in
+      // words (slice-P5.1: the person's, not the host's); the routing time
+      // is unknown, so no time is invented.
+      final now = key('team-conversation-now-text');
+      expect(now, findsOneWidget);
+      expect(
+        words(tester, 'team-conversation-now-text'),
+        'Taking longer than expected',
+      );
+      expect(
+        words(tester, 'team-conversation-now-reason'),
+        'No worker has been reported yet.',
+      );
+      expect(
+        find.descendant(
+          of: now,
+          matching: find.textContaining(
+            MaterialLocalizations.of(
+              tester.element(find.byType(TeamConversationScreen)),
+            ).formatTimeOfDay(
+              TimeOfDay.fromDateTime(clock.toLocal()),
+              alwaysUse24HourFormat: true,
+            ),
+            findRichText: true,
+          ),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets("the Work sheet's first part is the step's Now line", (
       tester,
     ) async {
       final t0 = clock.subtract(const Duration(minutes: 1));
@@ -1636,25 +1196,21 @@ void main() {
           ]
           ..outputs['bl-48k'] = const [],
       );
-      await tester.pumpWidget(
-        app(
-          WorkSheet(controller: controller, workId: 'oc-loy', onJump: (_) {}),
-        ),
-      );
-      await tester.pump();
-      expect(key('team-work-sheet-cycle'), findsOneWidget);
+      await pumpSheet(tester, controller);
+      expect(key('team-work-sheet-now'), findsOneWidget);
       expect(
-        tester.getTopLeft(key('team-work-sheet-cycle')).dy,
-        lessThan(tester.getTopLeft(key('team-work-sheet-state')).dy),
+        tester.getTopLeft(key('team-work-sheet-now')).dy,
+        lessThan(tester.getTopLeft(key('team-work-sheet-owner')).dy),
+      );
+      // The title is the kit sheet's own header (screen-team-3).
+      expect(key('team-work-sheet-title'), findsNothing);
+      expect(
+        words(tester, 'team-work-sheet-now-text'),
+        startsWith('Working on your task'),
       );
       expect(
-        tester.getTopLeft(key('team-work-sheet-cycle')).dy,
-        greaterThan(tester.getTopLeft(key('team-work-sheet-title')).dy),
-      );
-      expect(key('team-cycle-step-claimed'), findsOneWidget);
-      expect(
-        await semanticsOf(tester),
-        'Step 4 of 6, Working, since ${clockLabel(tester, t0)}',
+        words(tester, 'team-work-sheet-now-next'),
+        'Next: the changes are reviewed',
       );
     });
   });

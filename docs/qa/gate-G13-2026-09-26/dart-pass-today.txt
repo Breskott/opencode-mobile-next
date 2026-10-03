@@ -1,0 +1,6 @@
+$ flutter test -j 1 test/kit_map_gate_test.dart
+00:00 +0: loading test/kit_map_gate_test.dart
+00:00 +0: the kit map gate passes on the committed map
+00:00 +1: the kit map gate self-test passes
+00:00 +2: All tests passed!
+exit=0

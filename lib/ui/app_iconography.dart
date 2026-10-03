@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
+export 'kit/kit_icon.dart' show AppGlyph, AppBrandMark;
 
 /// Product verbs and destinations, independent of the underlying icon package.
 ///
@@ -359,6 +360,13 @@ abstract final class AppIconography {
     fontFamily: 'AppPhosphorRegular',
     matchTextDirection: false,
   );
+
+  /// Wrap long lines (KitCodeBlock.md; Phosphor text-align-justify).
+  static const wrapText = IconData(
+    0xe482,
+    fontFamily: 'AppPhosphorRegular',
+    matchTextDirection: false,
+  );
   static const article = IconData(
     0xe0a8,
     fontFamily: 'AppPhosphorRegular',
@@ -591,6 +599,13 @@ abstract final class AppIconography {
   );
   static const inbox = IconData(
     0xe010,
+    fontFamily: 'AppPhosphorRegular',
+    matchTextDirection: false,
+  );
+
+  /// The AI Team's board (columns of cards).
+  static const kanban = IconData(
+    0xeb54,
     fontFamily: 'AppPhosphorRegular',
     matchTextDirection: false,
   );
@@ -944,114 +959,4 @@ abstract final class AppIconography {
     fontFamily: 'AppPhosphorRegular',
     matchTextDirection: false,
   );
-}
-
-// Static background glyphs preserve release font tree shaking.
-const _duotoneBackgrounds = <int, IconData>{
-  0xe17f: IconData(
-    0xe17e,
-    fontFamily: 'AppPhosphorDuotone',
-    matchTextDirection: false,
-  ),
-  0xe25b: IconData(
-    0xe25a,
-    fontFamily: 'AppPhosphorDuotone',
-    matchTextDirection: false,
-  ),
-  0xe0d1: IconData(
-    0xe0d0,
-    fontFamily: 'AppPhosphorDuotone',
-    matchTextDirection: false,
-  ),
-};
-
-/// Renders regular and duotone glyphs with one optional accessibility label.
-///
-/// This is decoration, not a tap target: place it inside an IconButton or other
-/// accessible control. Let that control's tooltip or visible text name the
-/// action; use [semanticLabel] only for a standalone informative glyph.
-class AppGlyph extends StatelessWidget {
-  const AppGlyph(
-    this.icon, {
-    super.key,
-    this.size,
-    this.color,
-    this.semanticLabel,
-    this.textDirection,
-  });
-
-  final IconData icon;
-  final double? size;
-  final Color? color;
-  final String? semanticLabel;
-
-  /// Pass an explicit direction for technical marks that must not mirror.
-  /// Navigation arrows follow the surrounding direction by default; technical
-  /// glyph data preserves its orientation.
-  final TextDirection? textDirection;
-
-  @override
-  Widget build(BuildContext context) {
-    final foreground = Icon(
-      icon,
-      size: size,
-      color: color,
-      textDirection: textDirection,
-    );
-    final secondary = icon.fontFamily == 'AppPhosphorDuotone'
-        ? _duotoneBackgrounds[icon.codePoint]
-        : null;
-    final glyph = ExcludeSemantics(
-      child: secondary == null || MediaQuery.highContrastOf(context)
-          ? foreground
-          : Stack(
-              alignment: Alignment.center,
-              children: [
-                Opacity(
-                  opacity: .2,
-                  child: Icon(
-                    secondary,
-                    size: size,
-                    color: color,
-                    textDirection: textDirection,
-                  ),
-                ),
-                foreground,
-              ],
-            ),
-    );
-    final label = semanticLabel;
-    return label == null
-        ? glyph
-        : Semantics(label: label, image: true, child: glyph);
-  }
-}
-
-/// The open portal identity without a launcher background or shadow.
-///
-/// Decorative by default. A standalone mark may supply [semanticLabel]; a
-/// neighboring app title already communicates the identity and needs no label.
-class AppBrandMark extends StatelessWidget {
-  const AppBrandMark({super.key, this.size = 32, this.semanticLabel});
-
-  final double size;
-  final String? semanticLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final mark = SvgPicture.asset(
-      'assets/branding/open-portal/mark.svg',
-      width: size,
-      height: size,
-      colorFilter: ColorFilter.mode(
-        Theme.of(context).colorScheme.primary,
-        BlendMode.srcIn,
-      ),
-      excludeFromSemantics: true,
-    );
-    final label = semanticLabel;
-    return label == null
-        ? mark
-        : Semantics(label: label, image: true, child: mark);
-  }
 }

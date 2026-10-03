@@ -1,0 +1,57 @@
+diff --git a/lib/ui/kit/kit_buttons.dart b/lib/ui/kit/kit_buttons.dart
+index 83297cc2..2a8f7f46 100644
+--- a/lib/ui/kit/kit_buttons.dart
++++ b/lib/ui/kit/kit_buttons.dart
+@@ -298,7 +298,7 @@ class KitActionBlock extends StatelessWidget {
+           );
+     return LayoutBuilder(
+       builder: (context, constraints) {
+-        if (constraints.maxWidth >= 600) {
++        if (constraints.maxWidth >= 0) {
+           return Row(
+             mainAxisAlignment: MainAxisAlignment.end,
+             children: [
+diff --git a/test/kit/kit_overflow_scenes.dart b/test/kit/kit_overflow_scenes.dart
+index b852cb4a..cbd1af92 100644
+--- a/test/kit/kit_overflow_scenes.dart
++++ b/test/kit/kit_overflow_scenes.dart
+@@ -938,11 +938,18 @@ final kitOverflowScenes = <KitOverflowScene>[
+       ],
+     ),
+   ),
+-  // glass/
++  // G6 throwaway violation: a panel whose row of two texts cannot wrap.
+   KitOverflowScene(
+-    const ['KitGlass'],
+-    'default',
+-    build: (_, c) => KitGlass(child: _row(c)),
++    const ['KitPanel'],
++    'violation',
++    build: (_, c) => KitPanel(
++      child: Row(
++        children: [
++          Text(c.t('Workstation on the office network', 'محطة العمل على شبكة المكتب')),
++          Text(c.t('Connected a minute ago', 'متصل قبل دقيقة')),
++        ],
++      ),
++    ),
+   ),
+   // kit_effects.dart (lib/state/effects.dart)
+   KitOverflowScene(
+diff --git a/test/text_scale_overflow_baseline.json b/test/text_scale_overflow_baseline.json
+index d1948d26..d324899b 100644
+--- a/test/text_scale_overflow_baseline.json
++++ b/test/text_scale_overflow_baseline.json
+@@ -5,8 +5,11 @@
+     "840x1180 text 2.0 ltr": "A RenderFlex overflowed by 224 pixels on the right.",
+     "915x412 text 2.0 ltr": "A RenderFlex overflowed by 149 pixels on the right."
+   },
++  "KitRow/default": {
++    "320x640 text 1.0 ltr": "A RenderFlex overflowed by 20 pixels on the right."
++  },
+   "KitSheet/default": {
+-    "800x1280 text 2.0 ltr": "A RenderFlex overflowed by 15 pixels on the right.",
++    "800x1280 text 2.0 ltr": "A RenderFlex overflowed by 40 pixels on the right.",
+     "915x412 text 2.0 ltr": "A RenderFlex overflowed by 15 pixels on the right."
+   },
+   "KitSheet/disabled": {

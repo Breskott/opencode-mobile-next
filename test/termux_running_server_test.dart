@@ -17,6 +17,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/local_server_controls.dart';
 import 'package:opencode_mobile/state/termux_running_server.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
+import 'package:opencode_mobile/termux/termux_reach.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/widgets/termux_running_server_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -138,15 +139,20 @@ void main() {
     },
   );
 
-  test('permission denied never sends a command or health request', () async {
-    capabilities['permissionGranted'] = false;
-    expect(
-      (await detectTermuxRunningServer()).state,
-      TermuxRunningServerState.denied,
-    );
-    expect(calls.map((call) => call.method), ['getCapabilities']);
-    expect(probes, isEmpty);
-  });
+  test(
+    'permission denied sends no command; one look at the app-authored loopback says whether OpenCode answers',
+    () async {
+      capabilities['permissionGranted'] = false;
+      final observed = await detectTermuxRunningServer();
+      expect(observed.state, TermuxRunningServerState.denied);
+      expect(observed.problem, TermuxProblem.accessNeeded);
+      expect(observed.heardOnPhone, isTrue);
+      expect(calls.map((call) => call.method), ['getCapabilities']);
+      expect(probes, [TermuxBridge.managedServerUrl]);
+      health = const ServerProbeResult.failure('refused');
+      expect((await detectTermuxRunningServer()).heardOnPhone, isFalse);
+    },
+  );
 
   test(
     'missing Termux and a stopped or switching runtime are not running',
@@ -226,21 +232,26 @@ void main() {
         home: Scaffold(
           body: RepaintBoundary(
             key: const ValueKey('capture'),
-            child: MediaQuery(
-              data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
-              child: SingleChildScrollView(
-                child: TermuxRunningServerEntry(
-                  profiles: profiles ?? [remote, local],
-                  busy: false,
-                  revision: 0,
-                  onConnect: onConnect ?? (_) {},
-                  onEnterCredentials: onCredentials ?? (_, _) {},
-                  actions: actions,
-                  connectedProfileID: connectedProfileID,
-                  onDisconnect: onDisconnect,
-                  onForget: onForget,
-                  onManage: onManage,
-                  busyConversations: busyConversations,
+            child: Builder(
+              builder: (context) => MediaQuery(
+                // Preserve the simulated viewport for KitRow's trailing bound.
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: TextScaler.linear(textScale)),
+                child: SingleChildScrollView(
+                  child: TermuxRunningServerEntry(
+                    profiles: profiles ?? [remote, local],
+                    busy: false,
+                    revision: 0,
+                    onConnect: onConnect ?? (_) {},
+                    onEnterCredentials: onCredentials ?? (_, _) {},
+                    actions: actions,
+                    connectedProfileID: connectedProfileID,
+                    onDisconnect: onDisconnect,
+                    onForget: onForget,
+                    onManage: onManage,
+                    busyConversations: busyConversations,
+                  ),
                 ),
               ),
             ),
@@ -405,7 +416,13 @@ void main() {
       capabilities['permissionGranted'] = false;
       await entry(tester);
       expect(
-        find.text('Allow Termux access in phone setup to check for a server.'),
+        find.textContaining(
+          'OpenCode is running in Termux, but this app can\'t reach Termux yet.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('termux-running-server-fix')),
         findsOneWidget,
       );
       expect(
@@ -414,10 +431,27 @@ void main() {
       );
       capabilities['permissionGranted'] = true;
       health = const ServerProbeResult.failure('unreachable');
-      await tester.tap(find.byTooltip('Try again'));
+      // No expect inside the handler: it would run inside pumpAndSettle.
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'getCapabilities') return capabilities;
+        return {'exitCode': 0, 'stdout': status, 'stderr': ''};
+      });
+      // Coming back to the app reads the phone again.
+      for (final state in [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(state);
+      }
       await tester.pumpAndSettle();
       expect(
-        find.text('Could not check the server on this phone.'),
+        find.textContaining(
+          'OpenCode 1 is set up in Termux but isn\'t answering.',
+        ),
         findsOneWidget,
       );
     },
@@ -488,14 +522,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final card = find.byKey(const ValueKey('termux-running-server'));
+    final card = find.byKey(const ValueKey('termux-lead'));
     expect(card, findsOneWidget);
-    // A live server the app found outranks every generic choice, including
-    // the question itself.
+    // A live server the app found leads the page: no welcome hero and no
+    // question; the other ways follow it, compact.
+    expect(find.byKey(const ValueKey('servers-welcome-hero')), findsNothing);
+    expect(find.byKey(const ValueKey('welcome-question')), findsNothing);
     final cardBottom = tester.getRect(card).bottom;
     expect(
-      tester.getRect(find.byKey(const ValueKey('welcome-question'))).top,
-      greaterThanOrEqualTo(cardBottom),
+      tester.getRect(find.byKey(const ValueKey('welcome-choice-in-app'))).top,
+      greaterThan(cardBottom),
     );
     expect(
       tester.getRect(find.byKey(const ValueKey('welcome-choice-computer'))).top,
@@ -534,9 +570,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final connect = find.byKey(
-        const ValueKey('termux-running-server-connect'),
-      );
+      final connect = find.byKey(const ValueKey('termux-lead-connect'));
       await tester.ensureVisible(connect);
       await tester.tap(connect);
       await tester.pumpAndSettle();
@@ -576,13 +610,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final connect = find.byKey(
-        const ValueKey('termux-running-server-connect'),
-      );
+      final connect = find.byKey(const ValueKey('termux-lead-connect'));
       await tester.ensureVisible(connect);
       await tester.tap(connect);
       await tester.pumpAndSettle();
-      final url = tester.widget<TextField>(
+      final url = tester.widget<TextFormField>(
         find.byKey(const ValueKey('server-url-field')),
       );
       expect(url.controller!.text, TermuxBridge.managedServerUrl);
@@ -632,6 +664,14 @@ void main() {
     const stoppedStatus = 'phase=stopped\nport=4096\nruntime=opencode1\n';
     Finder key(String name) =>
         find.byKey(ValueKey('termux-running-server-$name'));
+    // Restart, Stop and the rest are in the row's menu (one row per server,
+    // no buttons in rows).
+    Future<void> menu(WidgetTester tester, String name) async {
+      await tester.tap(key('menu'));
+      await tester.pumpAndSettle();
+      await tester.tap(key(name));
+      await tester.pumpAndSettle();
+    }
 
     test(
       'a stopped, set-up server is observed as stopped, not absent',
@@ -667,15 +707,18 @@ void main() {
           stop: () async {},
         ),
       );
-      expect(find.text('Server on this phone is stopped'), findsOneWidget);
+      expect(find.text('This phone · Termux'), findsOneWidget);
+      expect(find.text('OpenCode 1 · Stopped'), findsOneWidget);
       expect(key('connect'), findsNothing);
+      // Nothing to restart or stop: no menu offers them.
+      expect(key('menu'), findsNothing);
       expect(key('restart'), findsNothing);
       expect(key('stop'), findsNothing);
       await tester.tap(key('start'));
       await tester.pumpAndSettle();
       // Starting loses nothing, so it does not ask first.
       expect(restarts, 1);
-      expect(find.text('Server found on this phone'), findsOneWidget);
+      expect(find.text('OpenCode 1 · Running'), findsOneWidget);
       expect(key('connect'), findsOneWidget);
     });
 
@@ -695,8 +738,7 @@ void main() {
           },
         ),
       );
-      await tester.tap(key('restart'));
-      await tester.pumpAndSettle();
+      await menu(tester, 'restart');
       expect(
         find.byKey(const ValueKey('restart-local-server-sheet')),
         findsOneWidget,
@@ -707,30 +749,27 @@ void main() {
       await tester.pumpAndSettle();
       expect(restarts, 0);
 
-      await tester.tap(key('restart'));
-      await tester.pumpAndSettle();
+      await menu(tester, 'restart');
       await tester.tap(
         find.byKey(const ValueKey('confirm-restart-local-server')),
       );
       await tester.pumpAndSettle();
       expect(restarts, 1);
 
-      await tester.tap(key('stop'));
-      await tester.pumpAndSettle();
+      await menu(tester, 'stop');
       await tester.tapAt(const Offset(5, 5));
       await tester.pumpAndSettle();
       expect(stops, 0);
 
-      await tester.tap(key('stop'));
-      await tester.pumpAndSettle();
+      await menu(tester, 'stop');
       await tester.tap(find.text('Stop local server').last);
       await tester.pumpAndSettle();
       expect(stops, 1);
-      // The card stays, now offering Start: nothing was taken away.
+      // The row stays, now offering Start: nothing was taken away.
       expect(key('start'), findsOneWidget);
     });
 
-    testWidgets('a failed control says so on the card and keeps its buttons', (
+    testWidgets('a failed control says so in the row and keeps its controls', (
       tester,
     ) async {
       await entry(
@@ -741,16 +780,22 @@ void main() {
           stop: () async => throw const LocalServerControlFailure(''),
         ),
       );
-      await tester.tap(key('restart'));
-      await tester.pumpAndSettle();
+      await menu(tester, 'restart');
       await tester.tap(
         find.byKey(const ValueKey('confirm-restart-local-server')),
       );
       await tester.pumpAndSettle();
-      // The manager's own words when it gave any.
-      expect(find.text('proot is missing'), findsOneWidget);
+      // Native diagnostics are classified into authored recovery copy.
+      expect(find.text('proot is missing'), findsNothing);
+      expect(
+        find.text(
+          lookupAppLocalizations(const Locale('en')).productErrorTermux,
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(key('menu'));
+      await tester.pumpAndSettle();
       expect(key('restart'), findsOneWidget);
-
       await tester.tap(key('stop'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Stop local server').last);
@@ -762,7 +807,7 @@ void main() {
     });
 
     testWidgets(
-      'the connected server stays on the card with Open and Disconnect',
+      'the connected server is marked, with Disconnect, and no Open',
       (tester) async {
         final opened = <ServerProfile>[];
         var disconnects = 0;
@@ -776,14 +821,16 @@ void main() {
           onForget: forgotten.add,
           onManage: () => managed++,
         );
+        // The current mark: the word leads the row's line.
+        expect(find.text('Connected · OpenCode 1 · Running'), findsOneWidget);
         expect(
-          find.text('Connected to the server on this phone'),
+          find.byKey(const ValueKey('kit-row-current-mark')),
           findsOneWidget,
         );
-        expect(find.text('Open'), findsOneWidget);
-        await tester.tap(key('connect'));
-        await tester.pumpAndSettle();
-        expect(opened, [local]);
+        // Already connected: no button leading to where the person is.
+        expect(find.text('Open'), findsNothing);
+        expect(key('connect'), findsNothing);
+        expect(opened, isEmpty);
 
         await tester.tap(key('menu'));
         await tester.pumpAndSettle();
@@ -814,11 +861,11 @@ void main() {
           onDisconnect: () async {},
           onForget: (_) {},
         );
-        await tester.tap(key('menu'));
-        await tester.pumpAndSettle();
+        // Nothing to disconnect from and nothing saved to forget: no menu
+        // at all, rather than an empty one.
+        expect(key('menu'), findsNothing);
         expect(key('disconnect'), findsNothing);
         expect(key('forget'), findsNothing);
-        expect(key('recheck'), findsOneWidget);
       },
     );
 
@@ -837,8 +884,14 @@ void main() {
           ),
         );
         expect(tester.takeException(), isNull);
-        for (final name in ['connect', 'restart', 'stop', 'menu']) {
+        for (final name in ['connect', 'menu']) {
           await tester.ensureVisible(key(name));
+          expect(tester.getSize(key(name)).height, greaterThanOrEqualTo(48));
+        }
+        await tester.tap(key('menu'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        for (final name in ['restart', 'stop']) {
           expect(tester.getSize(key(name)).height, greaterThanOrEqualTo(48));
         }
       });

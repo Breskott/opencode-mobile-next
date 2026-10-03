@@ -15,6 +15,7 @@ import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/server_capabilities_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -67,24 +68,50 @@ Future<ConnectionController> _controller(
 Widget _app(
   ConnectionController controller, {
   Locale locale = const Locale('en'),
+  String? focus,
 }) => MaterialApp(
   theme: AppTheme.light(),
   locale: locale,
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
-  home: ServerCapabilitiesScreen(controller: controller),
+  home: ServerCapabilitiesScreen(controller: controller, focusFeature: focus),
 );
+
+/// Unfolds the one "… work here" row so the available features are built.
+Future<void> _unfold(WidgetTester tester) async {
+  final fold = find.byKey(const ValueKey('capabilities-available-fold'));
+  if (fold.evaluate().isEmpty) return;
+  await tester.tap(fold);
+  await tester.pumpAndSettle();
+}
+
+/// The feature ids of the rows in list order, from their keys.
+List<String> _order(WidgetTester tester) => [
+  for (final element
+      in find
+          .byWidgetPredicate(
+            (widget) =>
+                widget is KitRow &&
+                widget.key is ValueKey<String> &&
+                (widget.key! as ValueKey<String>).value.startsWith(
+                  'capability-',
+                ),
+          )
+          .evaluate())
+    (element.widget.key! as ValueKey<String>).value,
+];
 
 Finder _key(String key) => find.byKey(ValueKey(key));
 
-/// The ids listed under a heading, read from the row keys. The list is lazy,
+/// The ids listed with a state (available, unavailable, device), read from
+/// the row keys. The list is lazy,
 /// so the whole screen is laid out on a very tall surface first.
 Set<String> _listed(WidgetTester tester, String slug) => {
   for (final element
       in find
           .byWidgetPredicate(
             (widget) =>
-                widget is ListTile &&
+                widget is KitRow &&
                 widget.key is ValueKey<String> &&
                 (widget.key! as ValueKey<String>).value.startsWith(
                   'capability-$slug-',
@@ -113,7 +140,10 @@ void main() {
           (_) async => null,
         );
   });
-  tearDown(() => debugPlatformCapabilities = null);
+  tearDown(() {
+    debugPlatformCapabilities = null;
+    KitCapabilities.debugReset();
+  });
 
   test('feature ids are unique and every one has words in both languages', () {
     final ids = [for (final feature in serverFeatures) feature.id];
@@ -131,11 +161,19 @@ void main() {
     final l10n = lookupAppLocalizations(const Locale('en'));
     final words = [
       l10n.capabilityScreenTitle,
+      // capabilityScreenIntroWithGaps is left out on purpose: like the
+      // kit's "Works on …" line, it says where missing features work, and
+      // R16 names "other OpenCode servers" there once.
       l10n.capabilityScreenIntro('Workstation'),
-      l10n.capabilityGroupAvailable,
-      l10n.capabilityGroupUnavailable,
-      l10n.capabilityGroupDevice,
       l10n.capabilityAllAvailable,
+      l10n.capabilityStateHere,
+      l10n.capabilityStateNotServer,
+      l10n.capabilityStateNotDevice,
+      l10n.capabilityNeedsAndroid,
+      l10n.capabilityAvailableCount(17),
+      l10n.capabilityAvailableCountDetail,
+      l10n.capabilityAddServer,
+      l10n.capabilityAddServerDetail,
       for (final feature in serverFeatures) ...[
         feature.title(l10n),
         feature.detail(l10n),
@@ -146,7 +184,7 @@ void main() {
     }
   });
 
-  testWidgets('OpenCode 1: everything it serves is under Available here', (
+  testWidgets('OpenCode 1: everything it serves unfolds from one row', (
     tester,
   ) async {
     _tall(tester);
@@ -156,7 +194,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Workstation'), findsOneWidget);
-    expect(find.text('Available here'), findsOneWidget);
+    // Folded: only the missing feature and the one summary row show.
+    expect(_listed(tester, 'available'), isEmpty);
+    expect(find.textContaining('features work here'), findsOneWidget);
+    await _unfold(tester);
     final available = _listed(tester, 'available');
     expect(
       available,
@@ -180,7 +221,7 @@ void main() {
     );
     // allV1 leaves the plugin inventory off: it is the one server-side gap.
     expect(_listed(tester, 'unavailable'), {'plugins'});
-    expect(_key('capabilities-device'), findsNothing);
+    expect(_listed(tester, 'device'), isEmpty);
     // Nothing is listed twice.
     expect(available.intersection(_listed(tester, 'unavailable')), isEmpty);
   });
@@ -195,12 +236,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api2ServerCapabilities.shellSettings, isFalse);
-    expect(find.text('Not available on this server'), findsOneWidget);
+    await _unfold(tester);
     expect(_listed(tester, 'unavailable'), contains('shell'));
     expect(_listed(tester, 'available'), isNot(contains('shell')));
     expect(
       find.descendant(
-        of: _key('capabilities-unavailable'),
+        of: _key('capability-unavailable-shell'),
         matching: find.text('Default shell'),
       ),
       findsOneWidget,
@@ -242,6 +283,7 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
+      await _unfold(tester);
 
       final available = _listed(tester, 'available');
       final unavailable = _listed(tester, 'unavailable');
@@ -270,13 +312,13 @@ void main() {
       expect(unavailable, containsAll(['files', 'terminal', 'mcp', 'usage']));
       // The phone still does what the phone does.
       expect(available, contains('background-notifications'));
-      expect(_key('capabilities-device'), findsNothing);
+      expect(_listed(tester, 'device'), isEmpty);
       expect(_key('server-capabilities-all'), findsNothing);
     });
   }
 
   testWidgets(
-    'a desktop lists what the device cannot do under its own heading',
+    'a desktop says what the device cannot do, not blaming the server',
     (tester) async {
       _tall(tester);
       debugPlatformCapabilities = const PlatformCapabilities(
@@ -290,9 +332,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // The server does everything, so it is not blamed for the device.
-      expect(_key('capabilities-unavailable'), findsNothing);
+      expect(_listed(tester, 'unavailable'), isEmpty);
       expect(_key('server-capabilities-all'), findsOneWidget);
-      expect(find.text('Not available on this device'), findsOneWidget);
+      expect(
+        find.textContaining('Not on this device', findRichText: true),
+        findsNWidgets(3),
+      );
       expect(_listed(tester, 'device'), {
         'background-notifications',
         'on-this-phone',
@@ -301,10 +346,104 @@ void main() {
     },
   );
 
+  testWidgets('one list: what is missing first, each saying where to get it', (
+    tester,
+  ) async {
+    _tall(tester);
+    final controller = await _controller(
+      codexServerCapabilities,
+      usageStatistics: false,
+    );
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    await _unfold(tester);
+
+    final order = _order(tester);
+    final firstAvailable = order.indexWhere(
+      (key) => key.startsWith('capability-available-'),
+    );
+    final lastMissing = order.lastIndexWhere(
+      (key) => !key.startsWith('capability-available-'),
+    );
+    expect(lastMissing, lessThan(firstAvailable));
+    // A missing server feature says so in words. Which servers have it is
+    // said once in the intro; a row repeats it only when its answer differs
+    // from the most common one (R16).
+    final files = _key('capability-unavailable-files');
+    expect(
+      find.descendant(
+        of: files,
+        matching: find.textContaining('Not on this server', findRichText: true),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: files,
+        matching: find.textContaining('Works on', findRichText: true),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: _key('capability-unavailable-worktrees'),
+        matching: find.textContaining('Works on', findRichText: true),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Missing features work on other OpenCode servers.'),
+      findsOneWidget,
+    );
+    // No state headings: one list.
+    expect(find.text('Not available on this server'), findsNothing);
+    expect(find.text('Available here'), findsNothing);
+  });
+
+  testWidgets('opened about one feature: that feature is first', (
+    tester,
+  ) async {
+    _tall(tester);
+    final controller = await _controller(ServerCapabilities.allV1);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller, focus: 'terminal'));
+    await tester.pumpAndSettle();
+
+    // Available, yet shown first without unfolding.
+    expect(_order(tester).first, 'capability-available-terminal');
+  });
+
+  testWidgets('Add a server appears only when the app can open that flow', (
+    tester,
+  ) async {
+    _tall(tester);
+    final controller = await _controller(codexServerCapabilities);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    expect(_key('capabilities-add-server'), findsNothing);
+
+    final requests = <KitEnableRequest>[];
+    KitCapabilities.registerFlow(
+      KitEnableFlows.addServer,
+      (context, request) async => requests.add(request),
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('capabilities-add-server'));
+    await tester.pumpAndSettle();
+    expect(requests.single.capability, 'server.any');
+    expect(requests.single.source, 'server-capabilities');
+  });
+
   group('layout at 320 dp and 2.5x text', () {
     for (final locale in const [Locale('en'), Locale('ar')]) {
       testWidgets('no overflow in ${locale.languageCode}', (tester) async {
-        const phone = Size(320, 640);
+        // 320 dp wide; tall enough that every row is laid out at once, so
+        // the check is about width, not scrolling.
+        const phone = Size(320, 30000);
         tester.view.devicePixelRatio = 1;
         tester.view.physicalSize = phone;
         addTearDown(tester.view.reset);
@@ -320,32 +459,25 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
+        await _unfold(tester);
         expect(tester.takeException(), isNull);
         expect(
           Directionality.of(tester.element(_key('server-capabilities'))),
           locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
         );
-        // Walk the whole list so every row is laid out and painted.
-        final scrollable = find
-            .descendant(
-              of: _key('server-capabilities'),
-              matching: find.byType(Scrollable),
-            )
-            .first;
         for (final feature in serverFeatures) {
           final row = find.byWidgetPredicate(
             (widget) =>
-                widget is ListTile &&
+                widget is KitRow &&
                 widget.key is ValueKey<String> &&
                 (widget.key! as ValueKey<String>).value.endsWith(
                   '-${feature.id}',
                 ),
           );
-          await tester.scrollUntilVisible(row, 250, scrollable: scrollable);
-          expect(tester.takeException(), isNull, reason: feature.id);
+          expect(row, findsOneWidget, reason: feature.id);
           expect(
             tester.getSize(row).width,
-            lessThanOrEqualTo(phone.width),
+            lessThanOrEqualTo(320),
             reason: feature.id,
           );
         }

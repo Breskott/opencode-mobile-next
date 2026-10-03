@@ -20,7 +20,7 @@ void main() {
 
   test('loopback offers retry without assuming Termux hosts the endpoint', () {
     final f = d('Health check failed: connection refused');
-    expect(f.title, 'Nothing is listening on this device');
+    expect(f.title, 'Nothing answered on this phone');
     expect(f.primary, ConnectionFailureAction.retry);
     expect(f.checks.join(' '), contains('Termux'));
     expect(f.checks.join(' '), contains('adb reverse'));
@@ -36,7 +36,7 @@ void main() {
     'a bare "Health check failed" on loopback still gets the loopback advice',
     () {
       final f = d('Health check failed');
-      expect(f.title, 'Nothing is listening on this device');
+      expect(f.title, 'Nothing answered on this phone');
     },
   );
 
@@ -96,7 +96,7 @@ void main() {
     final f = d('Health check failed', codex: true);
     expect(f.title, 'Could not connect');
     expect(f.checks.join(' '), contains('agent server'));
-    expect(f.checks.join(' '), isNot(contains('Nothing is listening')));
+    expect(f.checks.join(' '), isNot(contains('Nothing answered')));
   });
 
   test('certificate problems name the certificate', () {
@@ -114,7 +114,9 @@ void main() {
       url: 'https://dev.tail.net:4096',
     );
     expect(f.title, 'Server not reachable');
-    expect(f.explanation, contains('dev.tail.net:4096'));
+    // The address is under Details (the card's), not in the words.
+    expect(f.explanation, isNot(contains('dev.tail.net')));
+    expect(f.tailnet, isFalse);
     expect(f.primary, ConnectionFailureAction.retry);
   });
 
@@ -143,5 +145,91 @@ void main() {
   test('the raw error is kept verbatim for the details expander', () {
     const raw = 'Health check failed: SocketException: weird';
     expect(d(raw).rawError, raw);
+  });
+
+  test('the app-managed phone server that does not answer is stopped, and '
+      'starting it is the fix', () {
+    final failure = ConnectionFailure.diagnose(
+      error: 'Connection refused',
+      baseUrl: 'http://127.0.0.1:4096',
+      supportsTermux: true,
+      managedPhoneServer: true,
+    );
+    expect(failure.primary, ConnectionFailureAction.startPhoneServer);
+    expect(failure.title, 'The server on this phone is stopped');
+    // No advice about tunnels and SSH for a server the app runs itself.
+    expect(failure.checks.join(' '), isNot(contains('adb')));
+
+    // Any other loopback server keeps the general advice.
+    expect(
+      ConnectionFailure.diagnose(
+        error: 'Connection refused',
+        baseUrl: 'http://127.0.0.1:4096',
+        supportsTermux: true,
+      ).primary,
+      ConnectionFailureAction.retry,
+    );
+  });
+
+  test('OpenCode inside the app: starting it is the fix, and nothing is '
+      'said about Termux, tunnels or passwords', () {
+    for (final error in const [
+      'Connection refused',
+      'Health check timed out',
+      'HTTP 401 Unauthorized',
+    ]) {
+      final failure = ConnectionFailure.diagnose(
+        error: error,
+        baseUrl: 'http://127.0.0.1:4097',
+        supportsTermux: true,
+        inAppServer: true,
+        attempts: 4,
+      );
+      expect(failure.primary, ConnectionFailureAction.startPhoneServer);
+      expect(failure.checks, isEmpty, reason: error);
+      expect(
+        '${failure.title} ${failure.explanation}',
+        isNot(
+          matches(RegExp('Termux|adb|tunnel|password', caseSensitive: false)),
+        ),
+        reason: error,
+      );
+    }
+    expect(
+      ConnectionFailure.diagnose(
+        error: 'Connection refused',
+        baseUrl: 'http://127.0.0.1:4097',
+        supportsTermux: true,
+        inAppServer: true,
+      ).title,
+      'OpenCode inside the app is stopped',
+    );
+    expect(
+      ConnectionFailure.diagnose(
+        error: 'the server stopped',
+        baseUrl: 'http://127.0.0.1:4097',
+        supportsTermux: true,
+        inAppServer: true,
+        inAppStartFailed: true,
+      ).title,
+      'OpenCode inside the app did not start',
+    );
+  });
+
+  test('a Tailscale address that did not answer says to check Tailscale', () {
+    final f = d(
+      'Health check failed: connection refused',
+      url: 'http://100.101.102.103:4096',
+    );
+    expect(f.tailnet, isTrue);
+    expect(f.checks.first, contains('Tailscale'));
+    expect(ConnectionFailure.isTailnetHost('laptop.tail1234.ts.net'), isTrue);
+    expect(ConnectionFailure.isTailnetHost('100.63.0.1'), isFalse);
+    expect(ConnectionFailure.isTailnetHost('192.168.1.2'), isFalse);
+    // A refused sign-in means Tailscale did its part.
+    expect(
+      d('Health check failed (HTTP 401)', url: 'http://100.64.0.2').tailnet,
+      isFalse,
+    );
   });
 }

@@ -1,15 +1,21 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
+import 'package:opencode_mobile/ui/search/search_index.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
-import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_job_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/fake_setup_engine.dart';
 
 class _RemoteStore extends ProfileStore {
   _RemoteStore({required super.prefs});
@@ -49,7 +55,6 @@ Widget _app(
       ).copyWith(textScaler: TextScaler.linear(scale)),
       child: child!,
     ),
-    routes: {'/termux-setup': (_) => const TermuxSetupScreen()},
     home: servers
         ? const ServersScreen()
         : Scaffold(
@@ -60,7 +65,14 @@ Widget _app(
 
 void main() {
   const channel = MethodChannel('oc/termux');
-  setUp(() => debugPlatformCapabilities = const PlatformCapabilities.android());
+  setUp(() {
+    debugPlatformCapabilities = const PlatformCapabilities.android();
+    // No Termux job: phone setup's start screen also reads Termux's setup
+    // engine (320269a2, P1.7); this file is about the Termux discovery.
+    final previousTermux = PhoneSetup.termux;
+    PhoneSetup.termux = FakeSetupEngine();
+    addTearDown(() => PhoneSetup.termux = previousTermux);
+  });
   tearDown(() {
     debugPlatformCapabilities = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -69,7 +81,7 @@ void main() {
 
   for (final scale in [1.0, 2.5]) {
     testWidgets(
-      'Settings exposes phone Termux above server tools at ${scale}x',
+      'Settings finds this phone through Saved servers at ${scale}x',
       (tester) async {
         tester.view.physicalSize = const Size(390, 844);
         tester.view.devicePixelRatio = 1;
@@ -78,40 +90,21 @@ void main() {
         addTearDown(controller.dispose);
         await tester.pumpWidget(_app(controller, scale: scale));
         await tester.pumpAndSettle();
-        final phone = find.byKey(const ValueKey('settings-on-this-phone'));
+        // Adding a server on this phone is one of Add server's ways (R3):
+        // the hub holds no second door to it, search finds it there.
         expect(
-          find.descendant(of: phone, matching: find.text('On this phone')),
-          findsOneWidget,
+          find.byKey(const ValueKey('settings-on-this-phone')),
+          findsNothing,
         );
-        expect(find.text('Run OpenCode here with Termux'), findsOneWidget);
-        // A Connection row: above everything that depends on the server.
-        expect(
-          find.descendant(
-            of: find.byKey(const ValueKey('settings-group-connection')),
-            matching: phone,
-          ),
-          findsOneWidget,
-        );
-        expect(
-          tester.getTopLeft(phone).dy,
-          lessThan(
-            tester
-                .getTopLeft(
-                  find.byKey(const ValueKey('settings-group-agent-setup')),
-                )
-                .dy,
-          ),
-        );
-        // Reachable by scrolling alone: no search, no expander to open first.
-        await tester.ensureVisible(phone);
-        await tester.pumpAndSettle();
-        expect(phone.hitTestable(), findsOneWidget);
-        await tester.enterText(
-          find.byKey(const Key('library-search')),
+        // The header's command launcher finds it, from the same index.
+        final context = tester.element(find.byType(SettingsScreen));
+        final result = searchEntries(
+          lookupAppLocalizations(const Locale('en')),
+          SearchScope.of(context, controller),
           'local termux',
-        );
-        await tester.pumpAndSettle();
-        expect(find.text('On this phone'), findsOneWidget);
+        ).where((entry) => entry.id == 'settings-on-this-phone');
+        expect(result, hasLength(1));
+        expect(result.single.title, 'On this phone');
         expect(find.text('Models & agents'), findsNothing);
         expect(tester.takeException(), isNull);
       },
@@ -142,19 +135,79 @@ void main() {
         addTearDown(controller.dispose);
         await tester.pumpWidget(_app(controller));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('On this phone'));
+        final context = tester.element(find.byType(SettingsScreen));
+        final scope = SearchScope.of(context, controller);
+        unawaited(
+          searchEntries(
+                lookupAppLocalizations(const Locale('en')),
+                scope,
+                'termux',
+              )
+              .firstWhere((entry) => entry.id == 'settings-on-this-phone')
+              .open(context, scope),
+        );
         await tester.pumpAndSettle();
-        expect(find.byType(TermuxSetupScreen), findsOneWidget);
+        // The phone setup screen; Termux is one of its other ways.
+        expect(find.byType(PhoneSetupStartScreen), findsOneWidget);
+        // It gives reading a stopped setup a few seconds before it shows.
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pumpAndSettle();
+        final otherWays = find.byKey(
+          const ValueKey('phone-setup-start-other-ways'),
+        );
+        // Below the drawing, under the fold on this surface: scroll to it
+        // and let that frame land before the tap.
+        await tester.ensureVisible(otherWays);
+        await tester.pumpAndSettle();
+        await tester.tap(otherWays);
+        await tester.pumpAndSettle();
+        final useTermux = find.byKey(
+          const ValueKey('phone-setup-start-use-termux'),
+        );
+        await tester.ensureVisible(useTermux);
+        await tester.pumpAndSettle();
+        await tester.tap(useTermux);
+        await tester.pumpAndSettle();
+        // Termux is a host of the same setup (935945d6, P1.2): Use Termux
+        // opens that job's progress, whose first rows wait on the person.
+        expect(find.byType(PhoneSetupTermuxJobScreen), findsOneWidget);
         if (state == 'not installed') {
-          expect(find.text('Get Termux'), findsOneWidget);
+          expect(
+            find.textContaining(
+              'Install the current F-Droid build of Termux, then return here.',
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.byKey(const ValueKey('phone-setup-termux-get')),
+            findsOneWidget,
+          );
+          expect(
+            find.byKey(const ValueKey('phone-setup-termux-allow')),
+            findsNothing,
+          );
         }
         if (state == 'permission needed') {
-          expect(find.text('Connect Termux once'), findsOneWidget);
+          expect(
+            find.textContaining(
+              'In Termux, paste the copied line and press Enter.',
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.byKey(const ValueKey('phone-setup-termux-allow')),
+            findsOneWidget,
+          );
         }
         if (state == 'unsupported version') {
+          expect(find.textContaining('This Termux is too old'), findsWidgets);
           expect(
-            find.textContaining('This version of Termux is too old'),
+            find.byKey(const ValueKey('phone-setup-termux-get-current')),
             findsOneWidget,
+          );
+          expect(
+            find.byKey(const ValueKey('phone-setup-termux-allow')),
+            findsNothing,
           );
         }
         expect(controller.store.activeId, 'remote');
@@ -162,27 +215,41 @@ void main() {
           controller.store.profiles.single.baseUrl,
           'https://work.example',
         );
-        expect(calls, ['getCapabilities']);
+        // Only reads: the setup screen and the Termux screen each look once.
+        expect(calls.toSet(), {'getCapabilities'});
         await tester.pageBack();
         await tester.pumpAndSettle();
-        expect(find.text('On this phone'), findsOneWidget);
+        // Back through the setup screen to Settings. Its Termux look has
+        // timeouts of its own (up to 10 s); let them run out.
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 11));
+        expect(find.byType(SettingsScreen), findsOneWidget);
       },
     );
   }
 
   testWidgets(
-    'saved remote Servers has a direct Termux route without expansion',
+    'saved remote Servers has a direct phone setup route without expansion',
     (tester) async {
       final controller = await _state();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller, servers: true));
       await tester.pumpAndSettle();
+      // One of Add server's ways in, no expander to open first (R3).
+      await tester.tap(find.byKey(const ValueKey('servers-add')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('quick-add-phone-card')),
+      );
+      await tester.pumpAndSettle();
       expect(find.text('On this phone').hitTestable(), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('quick-add-termux-card')),
+        find.byKey(const ValueKey('quick-add-phone-card')),
         findsOneWidget,
       );
-      expect(find.text('Connect with Tailscale'), findsNothing);
+      // The other ways in sit together under Connect to.
+      expect(find.text('Connect with Tailscale'), findsOneWidget);
     },
   );
 

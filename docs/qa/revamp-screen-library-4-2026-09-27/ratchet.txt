@@ -1,0 +1,58 @@
+00:00 +31 -2: Some tests failed.
+00:00 +6 -1: G17 colour: every colour comes from a ThemeRoles role [E]
+00:00 +6 -2: G21 look and motion: numbers and effects come from the kit [E]
+  G17: lib/ui/widgets/quota_monitor_section.dart uses "attention roles" x3 (new — baseline has none) — use KitNeedsYou or KitRequestCard (LOOK-4, LOOK-24; STANDARDS.md §18 G17)
+  G21: lib/ui/kit/chat/kit_markdown.dart uses "EdgeInsets numeric" x1 (new — baseline has none) — use KitTokens spacing or KitScreen (LAY-6, LAY-7, KIT-9; STANDARDS.md §18 G21)
+  G21: lib/ui/kit/kit_board_lane.dart uses "EdgeInsets numeric" x2 (new — baseline has none) — use KitTokens spacing or KitScreen (LAY-6, LAY-7, KIT-9; STANDARDS.md §18 G21)
+  G21: lib/ui/kit/kit_checklist.dart uses "SizedBox numeric" x1 (new — baseline has none) — use KitTokens spacing (LAY-7, KIT-9; STANDARDS.md §18 G21)
+  G21: lib/ui/kit/kit_choice_list.dart uses "BorderRadius.circular(<n>" x1 (new — baseline has none) — use a KitTokens radius (LOOK-19, KIT-9; STANDARDS.md §18 G21)
+  G21: lib/ui/kit/kit_choice_list.dart uses "stroke width not KitTokens in kit" x1 (new — baseline has none) — give Border.all/BorderSide width: KitTokens.hairlineWidth(context) or focusRingWidth(context); Divider thickness: 0 (LOOK-21; STANDARDS.md §18 G21)
+  G21: lib/ui/kit/kit_dialog.dart uses "EdgeInsets numeric" x1 (new — baseline has none) — use KitTokens spacing or KitScreen (LAY-6, LAY-7, KIT-9; STANDARDS.md §18 G21)
+  G21: lib/ui/kit/kit_log_panel.dart uses "EdgeInsets numeric" x1 (new — baseline has none) — use KitTokens spacing or KitScreen (LAY-6, LAY-7, KIT-9; STANDARDS.md §18 G21)
+  G21: lib/ui/kit/kit_nav.dart uses "KitGlass(/GlassSurface(" x2 (new — baseline has none) — glass only on the navigation layer (LOOK-27; STANDARDS.md §18 G21)
+  G21: lib/ui/kit/kit_task_card.dart uses "EdgeInsets numeric" x1 (new — baseline has none) — use KitTokens spacing or KitScreen (LAY-6, LAY-7, KIT-9; STANDARDS.md §18 G21)
+  G21: lib/ui/kit/kit_task_card.dart uses "metal|chrome" x2 (new — baseline has none) — metal is dropped; rename it (LOOK-32; STANDARDS.md §18 G21)
+  G21: lib/ui/kit/kit_task_card.dart uses "Radius.circular(<n>" x2 (new — baseline has none) — use a KitTokens radius (LOOK-19, KIT-9; STANDARDS.md §18 G21)
+  G21: lib/ui/kit/kit_top_bar.dart uses "KitGlass(/GlassSurface(" x4 (new — baseline has none) — glass only on the navigation layer (LOOK-27; STANDARDS.md §18 G21)
+  G21: lib/ui/kit/kit_viewer.dart uses "stroke width not KitTokens in kit" x1 (new — baseline has none) — give Border.all/BorderSide width: KitTokens.hairlineWidth(context) or focusRingWidth(context); Divider thickness: 0 (LOOK-21; STANDARDS.md §18 G21)
+Shell:   lib/ui/screens/library/commands_screen.dart "AppBar" 1 -> 0
+Shell:   lib/ui/screens/library/commands_screen.dart "Divider" 1 -> 0
+Shell:   lib/ui/screens/library/commands_screen.dart "Icon" 3 -> 0
+Shell:   lib/ui/screens/library/commands_screen.dart "ListTile" 1 -> 0
+Shell:   lib/ui/screens/library/commands_screen.dart "ProductEmptyState(" 1 -> 0
+Shell:   lib/ui/screens/library/commands_screen.dart "ProductErrorState(" 1 -> 0
+Shell:   lib/ui/screens/library/commands_screen.dart "Scaffold" 1 -> 0
+Shell:   lib/ui/screens/library/commands_screen.dart "Text" 3 -> 0
+Shell:   lib/ui/screens/library/commands_screen.dart "TextField" 1 -> 0
+Shell:   lib/ui/screens/library/references_screen.dart "AppBar" 1 -> 0
+Shell:   lib/ui/screens/library/references_screen.dart "Clipboard.setData(" 1 -> 0
+Shell:   lib/ui/screens/library/references_screen.dart "Divider" 1 -> 0
+Shell:   lib/ui/screens/library/references_screen.dart "duration: Duration(" 1 -> 0
+Shell:   lib/ui/screens/library/references_screen.dart "Icon" 2 -> 0
+Shell:   lib/ui/screens/library/references_screen.dart "ListTile" 1 -> 0
+Shell:   lib/ui/screens/library/references_screen.dart "ProductEmptyState(" 1 -> 0
+Shell:   lib/ui/screens/library/references_screen.dart "ProductErrorState(" 1 -> 0
+Shell:   lib/ui/screens/library/references_screen.dart "Scaffold" 1 -> 0
+Shell:   lib/ui/screens/library/references_screen.dart "showSnackBar(" 1 -> 0
+Shell:   lib/ui/screens/library/references_screen.dart "SnackBar" 1 -> 0
+Shell:   lib/ui/screens/library/references_screen.dart "SnackBar(" 1 -> 0
+Shell:   lib/ui/screens/library/references_screen.dart "Text" 4 -> 0
+Shell:   lib/ui/screens/library/skill_activation.dart "CheckboxListTile" 1 -> 0
+Shell:   lib/ui/screens/library/skill_activation.dart "CircularProgressIndicator" 1 -> 0
+Shell:   lib/ui/screens/library/skill_activation.dart "Divider" 2 -> 0
+Shell:   lib/ui/screens/library/skill_activation.dart "FilledButton" 1 -> 0
+Shell:   lib/ui/screens/library/skill_activation.dart "Icon" 2 -> 0
+Shell:   lib/ui/screens/library/skill_activation.dart "IconButton" 1 -> 0
+Shell:   lib/ui/screens/library/skill_activation.dart "ListTile" 1 -> 0
+Shell:   lib/ui/screens/library/skill_activation.dart "SingleChildScrollView" 1 -> 0
+Shell:   lib/ui/screens/library/skill_activation.dart "Text" 7 -> 0
+Shell:   lib/ui/screens/library/skills_screen.dart "AppBar" 1 -> 0
+Shell:   lib/ui/screens/library/skills_screen.dart "Divider" 2 -> 0
+Shell:   lib/ui/screens/library/skills_screen.dart "Icon" 2 -> 0
+Shell:   lib/ui/screens/library/skills_screen.dart "ListTile" 1 -> 0
+Shell:   lib/ui/screens/library/skills_screen.dart "ProductEmptyState(" 1 -> 0
+Shell:   lib/ui/screens/library/skills_screen.dart "ProductErrorState(" 1 -> 0
+Shell:   lib/ui/screens/library/skills_screen.dart "Scaffold" 1 -> 0
+Shell:   lib/ui/screens/library/skills_screen.dart "SelectableText" 1 -> 0
+Shell:   lib/ui/screens/library/skills_screen.dart "showModalBottomSheet(" 2 -> 0
+Shell:   lib/ui/screens/library/skills_screen.dart "Text" 4 -> 0

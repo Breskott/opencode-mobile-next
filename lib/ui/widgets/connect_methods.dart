@@ -33,3 +33,26 @@ String connectMethodHint(IntegrationMethodInfo method, AppLocalizations l10n) {
   }
   return l10n.e7SetupAccountHint;
 }
+
+/// Providers whose subscription or browser sign-in cannot load on an
+/// OpenCode server and whose terms allow only an API key in other apps.
+/// [url] is the provider's official page for creating one; it is opened
+/// only through `openExternalLink`.
+String? providerKeyPageUrl(String integrationId) =>
+    switch (integrationId.toLowerCase()) {
+      'anthropic' => 'https://console.anthropic.com/settings/keys',
+      'google' => 'https://aistudio.google.com/apikey',
+      _ => null,
+    };
+
+/// For a key-only provider, drops the browser sign-in options when the
+/// server also advertises a key method; otherwise the list is unchanged
+/// (nothing is invented the server does not offer).
+List<IntegrationMethodInfo> keyLedConnectMethods(
+  String integrationId,
+  List<IntegrationMethodInfo> methods,
+) {
+  if (providerKeyPageUrl(integrationId) == null) return methods;
+  final keys = methods.where((m) => m.type == 'key').toList();
+  return keys.isEmpty ? methods : keys;
+}

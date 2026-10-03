@@ -12,9 +12,8 @@ import 'package:opencode_mobile/domain/server_gateway.dart'
     show StreamStatus, CommandInfo;
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
-import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_probe.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings/server_plugins_section.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _Api extends OpenCodeApi {
@@ -90,14 +89,26 @@ Widget _app(ConnectionController controller, {double textScale = 1}) =>
         ).copyWith(textScaler: TextScaler.linear(textScale)),
         child: child!,
       ),
-      // The real Plugins screen, so the section is exercised where it lives.
-      // The probe never finds an AI Team host and never touches the network.
-      home: PluginsSettingsScreen(
-        controller: controller,
-        probe: (url, {city}) async =>
-            const ProbeUnreachable(error: 'no answer'),
+      // The server's plugin inventory, hosted the way "This server" hosts it:
+      // a section inside a scrolling page.
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: ServerPluginsSection(controller: controller),
+        ),
       ),
     );
+
+/// Opens the reviewer plugin's Details (tapping its row).
+Future<void> _details(WidgetTester tester) async {
+  await tester.tap(find.text('Reviewer'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _closeSheet(WidgetTester tester) async {
+  await tester.tapAt(const Offset(5, 5));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const storage = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
@@ -110,138 +121,46 @@ void main() {
         .setMockMethodCallHandler(storage, null),
   );
 
-  testWidgets(
-    'personal command links persist and open review without running',
-    (tester) async {
-      final repository = _Repository()..plugins = [_plugin];
-      final controller = await _controller(repository);
-      await tester.pumpWidget(_app(controller));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Link commands'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('personal links apply only'), findsOneWidget);
-      await tester.tap(find.text('/review'));
-      await tester.tap(find.text('Save links'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Your command links · not verified plugin ownership'),
-        findsOneWidget,
-      );
-      expect(
-        controller.store.prefs.getString('oc.pluginCommandMappings.plugins'),
-        contains('review'),
-      );
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpWidget(_app(controller));
-      await tester.pumpAndSettle();
-      expect(find.text('Review /review'), findsOneWidget);
-      await tester.tap(find.text('Review /review'));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('command-arguments')), findsOneWidget);
-      expect(find.byKey(const ValueKey('command-submit')), findsOneWidget);
-      expect(controller.sortedSessions(), isEmpty);
-    },
-  );
-
-  testWidgets('command removed after review is checked again before Run', (
+  testWidgets('a plugin row opens its details; nothing offers command links '
+      '(slice-P3.1: plugins-mapping-dialog and its clear sheet are gone)', (
     tester,
   ) async {
     final repository = _Repository()..plugins = [_plugin];
     final controller = await _controller(repository);
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Link commands'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('/review'));
-    await tester.tap(find.text('Save links'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Review /review'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const ValueKey('command-arguments')),
-      'keep this draft',
-    );
-    repository.commands = [];
-    await tester.tap(find.byKey(const ValueKey('command-submit')));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('no longer available here'), findsOneWidget);
-    expect(find.byKey(const ValueKey('command-arguments')), findsOneWidget);
-    expect(controller.sortedSessions(), isEmpty);
-  });
-
-  testWidgets('clearing personal links requires confirmation', (tester) async {
-    final repository = _Repository()..plugins = [_plugin];
-    final controller = await _controller(repository);
-    await tester.pumpWidget(_app(controller));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Link commands'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('/review'));
-    await tester.tap(find.text('Save links'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Clear personal links'));
-    await tester.pumpAndSettle();
-    expect(find.text('Clear all personal command links?'), findsOneWidget);
-    await tester.tap(find.text('Cancel').hitTestable());
-    await tester.pumpAndSettle();
-    expect(find.text('Review /review'), findsOneWidget);
-    await tester.tap(find.text('Clear personal links'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Clear links').hitTestable());
-    await tester.pumpAndSettle();
-    expect(find.text('Review /review'), findsNothing);
+    // The row is the one way in: no row menu, no page menu.
+    expect(find.byKey(const ValueKey('plugin-menu-reviewer')), findsNothing);
+    expect(find.byKey(const ValueKey('plugins-section-menu')), findsNothing);
+    expect(find.text('Link commands'), findsNothing);
+    expect(find.text('Clear personal command links'), findsNothing);
+    await _details(tester);
+    expect(find.byKey(const ValueKey('plugin-details-sheet')), findsOneWidget);
+    expect(find.text('Package · @example/reviewer'), findsOneWidget);
     expect(find.text('reviewer'), findsOneWidget);
-    expect(
-      controller.store.prefs.containsKey('oc.pluginCommandMappings.plugins'),
-      isFalse,
-    );
+    expect(find.textContaining('command links'), findsNothing);
+    // Reading the inventory never asks for the server's commands.
+    expect(repository.commandCalls, 0);
+    await _closeSheet(tester);
+    expect(find.byKey(const ValueKey('plugin-details-sheet')), findsNothing);
   });
 
-  testWidgets('removed command never opens a stale mapped action', (
-    tester,
-  ) async {
-    final repository = _Repository()..plugins = [_plugin];
-    final controller = await _controller(repository);
-    await tester.pumpWidget(_app(controller));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Link commands'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('/review'));
-    await tester.tap(find.text('Save links'));
-    await tester.pumpAndSettle();
-    repository.commands = [];
-    await tester.tap(find.text('Review /review'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('command-submit')), findsNothing);
-    expect(find.textContaining('no longer available here'), findsOneWidget);
-  });
-
-  testWidgets('one Plugins screen: "In this app" above "On the server"', (
+  testWidgets('the server section carries its own label and plugin group', (
     tester,
   ) async {
     final repository = _Repository()..plugins = [_plugin];
     await tester.pumpWidget(_app(await _controller(repository)));
     await tester.pumpAndSettle();
 
-    expect(find.byType(AppBar), findsOneWidget);
-    expect(
-      find.descendant(of: find.byType(AppBar), matching: find.text('Plugins')),
-      findsOneWidget,
-    );
-    final app = find.text('In this app');
-    final server = find.text('On the server');
-    expect(app, findsOneWidget);
-    expect(server, findsOneWidget);
-    expect(tester.getTopLeft(app).dy, lessThan(tester.getTopLeft(server).dy));
-    final team = find.byKey(const ValueKey('plugins-ai-team-row'));
-    expect(tester.getTopLeft(team).dy, lessThan(tester.getTopLeft(server).dy));
+    expect(find.text('Plugins on this server'), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('plugins-section-server')),
-        matching: find.text('reviewer'),
+        of: find.byKey(const ValueKey('plugins-section-server-group')),
+        matching: find.text('Reviewer'),
       ),
       findsOneWidget,
     );
+    expect(find.text('Loaded by the server for this project.'), findsNothing);
   });
 
   testWidgets('unsupported servers make no plugin request', (tester) async {
@@ -250,16 +169,8 @@ void main() {
       _app(await _controller(repository, supported: false)),
     );
     await tester.pumpAndSettle();
-    // Hide, don't disable: without an inventory the "On the server" section
-    // is absent, while "In this app" stays.
-    expect(find.byKey(const ValueKey('plugins-section-server')), findsNothing);
-    expect(find.text('On the server'), findsNothing);
-    expect(
-      find.text('This server does not support plugin inspection.'),
-      findsNothing,
-    );
-    expect(find.byKey(const ValueKey('plugins-section-app')), findsOneWidget);
-    expect(find.byKey(const ValueKey('plugins-ai-team-row')), findsOneWidget);
+    // The host hides the section without an inventory; the section itself
+    // never asks the server for one either.
     expect(repository.calls, 0);
   });
 
@@ -296,7 +207,7 @@ void main() {
     await tester.pumpAndSettle();
     oldResponse.complete([_plugin]);
     await tester.pumpAndSettle();
-    expect(find.text('reviewer'), findsNothing);
+    expect(find.text('Reviewer'), findsNothing);
     expect(find.text('No plugins reported for this project.'), findsOneWidget);
     expect(repository.calls, 2);
   });
@@ -313,33 +224,6 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('late review validation cannot open a prior-location dialog', (
-    tester,
-  ) async {
-    final repository = _Repository()..plugins = [_plugin];
-    final controller = await _controller(repository);
-    await tester.pumpWidget(_app(controller));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Link commands'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('/review'));
-    await tester.tap(find.text('Save links'));
-    await tester.pumpAndSettle();
-
-    repository.commandGate = Completer<List<CommandInfo>>();
-    await tester.tap(find.text('Review /review'));
-    await tester.pump();
-    controller.directory = '/new-location';
-    controller.locationRevision++;
-    controller.notifyListeners();
-    repository.commandGate!.complete(repository.commands);
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('command-arguments')), findsNothing);
-    expect(find.byType(AlertDialog), findsNothing);
-    expect(find.textContaining('no longer available here'), findsNothing);
-  });
-
   testWidgets('plugin events and reconnect refetch current inventory', (
     tester,
   ) async {
@@ -352,13 +236,16 @@ void main() {
       EventEnvelope(type: 'plugin.updated', properties: {}),
     );
     await tester.pumpAndSettle();
-    expect(find.text('reviewer'), findsOneWidget);
+    expect(find.text('Reviewer'), findsOneWidget);
+    // Where it comes from is under its Details.
+    await _details(tester);
     expect(find.text('Package · @example/reviewer'), findsOneWidget);
     expect(find.text('Terminal UI declared'), findsOneWidget);
+    await _closeSheet(tester);
     controller.status = StreamStatus.disconnected;
     controller.notifyListeners();
     await tester.pumpAndSettle();
-    expect(find.text('reviewer'), findsNothing);
+    expect(find.text('Reviewer'), findsNothing);
     repository.plugins = [];
     controller.status = StreamStatus.connected;
     controller.notifyListeners();

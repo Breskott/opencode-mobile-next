@@ -1,0 +1,14 @@
+# New behaviour tests run against the part at e14769a6 (before this fix), 2026-09-27
+# $ flutter test -j 1 test/kit/kit_motion_parts_test.dart   (lib/ui/kit/motion/kit_motion_parts.dart = git show e14769a6:...)
+Expected: ['init']
+  Actual: ['init', 'init', 'dispose']
+   Which: at location [1] is ['init', 'init', 'dispose'] which longer than expected
+00:01 +20 -1: KitSwap the leaving child keeps its state until it has faded out [E]
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'box-a'>]: []>
+   Which: means none were found but one was expected
+00:01 +20 -2: KitSwap a change mid-swap fades each leaving child on from its current opacity [E]
+Expected: _DebugSize:<Size(96.0, 56.0)>
+  Actual: _DebugSize:<Size(96.3, 56.3)>
+00:01 +29 -3: KitAnimatedBox turning outlined on and off animates only the paint (RenderBox size and child offset are constant) [E]
+00:02 +37 -3: Some tests failed.

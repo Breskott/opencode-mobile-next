@@ -12,6 +12,8 @@ import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/kit_field_finders.dart';
+import 'support/server_editor.dart';
 
 /// Stands in for a real serve password. Never a live one.
 const _password = 'fixture-not-a-live-serve-password-000000000';
@@ -74,10 +76,30 @@ Future<void> pumpEditor(WidgetTester tester) async {
   // Open the editor from the first-run welcome card.
   await openFirstRunConnect(tester);
   expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
+  // The fields these tests read sit under "Enter the address instead".
+  await openServerManualAddress(tester);
 }
 
 String fieldText(WidgetTester tester, String key) =>
-    tester.widget<TextField>(find.byKey(ValueKey(key))).controller!.text;
+    editableOf(tester, find.byKey(ValueKey(key))).controller!.text;
+
+/// A paired password is held for the save rather than typed into the field
+/// (71417a2f): the field shows "Saved" with Replace, so no editable carries
+/// (or could render) the value.
+void expectHeldPassword(WidgetTester tester) {
+  expect(find.byKey(const ValueKey('server-password-field')), findsNothing);
+  expect(find.byKey(const ValueKey('server-password-replace')), findsOneWidget);
+}
+
+/// The passwords the probe was handed, newest last: proof the held password
+/// is the pairing code's one.
+final _probedPasswords = <String?>[];
+
+ServerProbe _answer(ServerProbeResult result) =>
+    ({required baseUrl, username, password}) async {
+      _probedPasswords.add(password);
+      return result;
+    };
 
 void main() {
   setUp(() {
@@ -90,6 +112,7 @@ void main() {
   });
 
   tearDown(() {
+    _probedPasswords.clear();
     serverProbe = probeServerConnection;
     debugPlatformCapabilities = null;
   });
@@ -97,11 +120,12 @@ void main() {
   testWidgets('pasting a pairing code fills url, username and password', (
     tester,
   ) async {
-    serverProbe = ({required baseUrl, username, password}) async =>
-        const ServerProbeResult.success(
-          '0.0.0-beta-18600',
-          flavor: ServerFlavor.v2,
-        );
+    serverProbe = _answer(
+      const ServerProbeResult.success(
+        '0.0.0-beta-18600',
+        flavor: ServerFlavor.v2,
+      ),
+    );
     await pumpEditor(tester);
     setClipboard(tester, pairJson());
 
@@ -109,8 +133,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fieldText(tester, 'server-url-field'), 'http://127.0.0.1:4097');
+    await openServerMoreOptions(tester);
     expect(fieldText(tester, 'server-username-field'), 'opencode');
-    expect(fieldText(tester, 'server-password-field'), _password);
+    expectHeldPassword(tester);
+    expect(_probedPasswords.last, _password);
   });
 
   testWidgets('the confirmation names the host it chose', (tester) async {
@@ -145,8 +171,9 @@ void main() {
   testWidgets('the pairing password never appears in the confirmation', (
     tester,
   ) async {
-    serverProbe = ({required baseUrl, username, password}) async =>
-        const ServerProbeResult.success('1.0.0', flavor: ServerFlavor.v2);
+    serverProbe = _answer(
+      const ServerProbeResult.success('1.0.0', flavor: ServerFlavor.v2),
+    );
     await pumpEditor(tester);
     setClipboard(tester, pairJson());
 
@@ -165,12 +192,10 @@ void main() {
         reason: 'the serve password must never be rendered as plain text',
       );
     }
-    // And it is in the password field, which is obscured.
-    final field = tester.widget<TextField>(
-      find.byKey(const ValueKey('server-password-field')),
-    );
-    expect(field.obscureText, isTrue);
-    expect(field.controller!.text, _password);
+    // It is held for the save, never in an editable (let alone a visible
+    // one), and it is what the check used.
+    expectHeldPassword(tester);
+    expect(_probedPasswords.last, _password);
   });
 
   testWidgets('a failure names every address and what happened to it', (
@@ -227,7 +252,8 @@ void main() {
       find.byKey(const ValueKey('server-pairing-failure')),
       findsOneWidget,
     );
-    expect(find.textContaining('HTTPS is required'), findsWidgets);
+    // Plain words since slice-qa-ui (637b1827, B9).
+    expect(find.textContaining('https://'), findsWidgets);
   });
 
   testWidgets('a malformed pairing code fails honestly without a crash', (
@@ -272,8 +298,9 @@ void main() {
   testWidgets('a pairing code pasted into the URL field is never left there', (
     tester,
   ) async {
-    serverProbe = ({required baseUrl, username, password}) async =>
-        const ServerProbeResult.success('1.0.0', flavor: ServerFlavor.v2);
+    serverProbe = _answer(
+      const ServerProbeResult.success('1.0.0', flavor: ServerFlavor.v2),
+    );
     await pumpEditor(tester);
 
     // The payload carries the password; the URL field must not hold it even
@@ -288,21 +315,25 @@ void main() {
     expect(url, isNot(contains(_password)));
     expect(url, isNot(contains('"urls"')));
     expect(url, 'http://127.0.0.1:4097');
-    expect(fieldText(tester, 'server-password-field'), _password);
+    expectHeldPassword(tester);
+    expect(_probedPasswords.last, _password);
   });
 
   testWidgets('a pairing code in the clipboard is honoured by the password '
       'paste button too', (tester) async {
-    serverProbe = ({required baseUrl, username, password}) async =>
-        const ServerProbeResult.success('1.0.0', flavor: ServerFlavor.v2);
+    serverProbe = _answer(
+      const ServerProbeResult.success('1.0.0', flavor: ServerFlavor.v2),
+    );
     await pumpEditor(tester);
     setClipboard(tester, pairJson());
 
     await tester.tap(find.byKey(const ValueKey('server-password-paste')));
     await tester.pumpAndSettle();
 
-    // Not the raw JSON stuffed into the password field.
-    expect(fieldText(tester, 'server-password-field'), _password);
+    // Not the raw JSON stuffed into the password field: the pairing
+    // password is held, and it is what the check used.
+    expectHeldPassword(tester);
+    expect(_probedPasswords.last, _password);
     expect(fieldText(tester, 'server-url-field'), 'http://127.0.0.1:4097');
   });
 

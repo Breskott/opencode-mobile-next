@@ -4,13 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
+import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_termux_job_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 
+import 'support/fake_setup_engine.dart';
+import 'support/server_editor.dart';
 import 'support/setup_capture_preferences.dart';
+import 'support/voice_device_channel.dart';
 
 class _Store extends ProfileStore {
   _Store({required super.prefs, required this.saved});
@@ -61,7 +68,7 @@ Widget _app(_Store store, _Connection controller, {double scale = 1}) =>
         ),
         routes: {
           '/home': (_) => const Scaffold(body: Text('Connected')),
-          '/termux-setup': (context) => Scaffold(
+          '/this-phone': (context) => Scaffold(
             body: Text(
               'Termux route: ${ModalRoute.of(context)!.settings.arguments}',
             ),
@@ -135,14 +142,13 @@ void main() {
         'v1': 'OpenCode 1',
         'v2': 'OpenCode 2',
       }.entries) {
-        final finder = find.byKey(ValueKey('server-generation-${entry.key}'));
+        // The generation leads the row's supporting line (standard §6).
+        final finder = find.byKey(ValueKey('server-row-${entry.key}'));
         await _reveal(tester, finder);
-        expect(tester.widget<Text>(finder).data, entry.value);
+        // The kind, never the address (that is in the row menu's Details).
+        expect(_supporting(tester, entry.key), entry.value);
       }
-      expect(
-        find.byKey(const ValueKey('server-generation-codex')),
-        findsNothing,
-      );
+      expect(_supporting(tester, 'codex'), isNot(contains('OpenCode')));
       expect(store.saved.first.flavor, ServerFlavor.v1);
     },
   );
@@ -165,16 +171,24 @@ void main() {
       addTearDown(conn.dispose);
       await tester.pumpWidget(_app(store, conn));
       await tester.pumpAndSettle();
-      final entry = find.byKey(const ValueKey('connect-existing-opencode2'));
-      await _reveal(tester, entry);
+      // Add server's default choice pairs OpenCode 1 or 2 (R3: no separate
+      // "Connect OpenCode 2" door on the list).
+      expect(
+        find.byKey(const ValueKey('connect-existing-opencode2')),
+        findsNothing,
+      );
+      final entry = find.byKey(const ValueKey('servers-add'));
       await tester.tap(entry);
       await tester.pumpAndSettle();
-      expect(find.text('OpenCode 2'), findsOneWidget);
-      expect(find.text('OpenCode 1 or 2'), findsOneWidget);
+      // The same autodetecting editor: OpenCode, 1 or 2, chosen.
+      expect(find.text('OpenCode on a computer'), findsOneWidget);
+      // The check after the address says which one it found; no line
+      // promising it up front.
       expect(
         find.byKey(const ValueKey('opencode-autodetect-help')),
-        findsOneWidget,
+        findsNothing,
       );
+      await openServerManualAddress(tester);
       final url = find.byKey(const ValueKey('server-url-field'));
       await _reveal(tester, url);
       await tester.enterText(url, 'https://existing.example');
@@ -212,20 +226,29 @@ void main() {
             flavor: ServerFlavor.v2,
           ),
       ]);
-      addTearDown(conn.dispose);
       await tester.pumpWidget(_app(store, conn));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('OpenCode one'));
+      // The phone's own server is the one "This phone · Termux" row; a remote one
+      // keeps its saved name.
+      await tester.tap(
+        find.text(
+          mode == 'mixed-remote' ? 'OpenCode one' : 'This phone · Termux',
+        ),
+      );
       await tester.pumpAndSettle();
       expect(conn.connectCalls, mode == 'mixed-local' ? 0 : 1);
       expect(
-        find.text('Termux route: null'),
+        find.text('Termux route: PhoneHostKind.termux'),
         mode == 'mixed-local' ? findsOneWidget : findsNothing,
       );
       expect(store.saved.first.flavor, ServerFlavor.v1);
       if (mode != 'single-local') {
         expect(store.saved.last.flavor, ServerFlavor.v2);
       }
+      // The connection's server monitor keeps a refresh timer; the tree goes
+      // first, then the connection, before the test's timer check.
+      await tester.pumpWidget(const SizedBox());
+      conn.dispose();
     });
   }
 
@@ -245,7 +268,8 @@ void main() {
         addTearDown(conn.dispose);
         await tester.pumpWidget(_app(store, conn));
         await tester.pumpAndSettle();
-        await tester.tap(find.byType(PopupMenuButton<String>).first);
+        // A saved server's menu opens on long-press of its row (71417a2f).
+        await tester.longPress(find.byKey(const ValueKey('server-row-server')));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Edit'));
         await tester.pumpAndSettle();
@@ -260,10 +284,12 @@ void main() {
         final saved = store.saved.single;
         expect(saved.flavor, changed ? ServerFlavor.v1 : ServerFlavor.v2);
         expect(saved.serverVersion, changed ? isNull : '0.0.0-beta');
-        final label = tester.widget<Text>(
-          find.byKey(const ValueKey('server-generation-server')),
+        // The row says what the server is, never where: its address moved
+        // to the menu's Details.
+        expect(
+          _supporting(tester, 'server'),
+          changed ? 'OpenCode' : 'OpenCode 2',
         );
-        expect(label.data, changed ? 'OpenCode' : 'OpenCode 2');
       },
     );
   }
@@ -271,6 +297,8 @@ void main() {
   testWidgets('known OC1 user reaches phone setup with no runtime forced', (
     tester,
   ) async {
+    // Phone setup's pre-flight reads the device when its screen opens.
+    answerVoiceDeviceProbe();
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -285,16 +313,42 @@ void main() {
     addTearDown(conn.dispose);
     await tester.pumpWidget(_app(store, conn, scale: 2));
     await tester.pumpAndSettle();
-    final entry = find.byKey(const ValueKey('quick-add-termux-card'));
+    PhoneSetup.engine = FakeSetupEngine();
+    // Termux is phone setup's second host with its own engine (P1.2); a
+    // channel engine would wait on a platform that is not there.
+    PhoneSetup.termux = FakeSetupEngine();
+    // Phone setup v2: Add server's "On this phone" opens phone setup, and
+    // Termux (where OpenCode 1 or 2 is chosen) is one of its Other ways.
+    await tester.tap(find.byKey(const ValueKey('servers-add')));
+    await tester.pumpAndSettle();
+    final entry = find.byKey(const ValueKey('quick-add-phone-card'));
     await _reveal(tester, entry);
-    expect(
-      find.text('Set up OpenCode 1 or 2 here with Termux.'),
-      findsOneWidget,
-    );
     await tester.tap(entry);
     await tester.pumpAndSettle();
-    expect(find.text('Termux route: null'), findsOneWidget);
+    expect(find.byType(PhoneSetupStartScreen), findsOneWidget);
+    final otherWays = find.byKey(
+      const ValueKey('phone-setup-start-other-ways'),
+    );
+    await tester.ensureVisible(otherWays);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Other ways'));
+    await tester.pumpAndSettle();
+    final termux = find.byKey(const ValueKey('phone-setup-start-use-termux'));
+    await tester.ensureVisible(termux);
+    await tester.pumpAndSettle();
+    await tester.tap(termux);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    // Termux is a host of phone setup: installing is the v2 job with Termux
+    // as its host (P1.2, 935945d6), its progress, not a wizard.
+    expect(find.byType(PhoneSetupTermuxJobScreen), findsOneWidget);
     expect(store.saved.single.flavor, ServerFlavor.v1);
     expect(tester.takeException(), isNull);
   });
 }
+
+/// The saved server row's supporting line: its state and generation.
+String _supporting(WidgetTester tester, String id) => tester
+    .widget<KitRow>(find.byKey(ValueKey('server-row-$id')))
+    .supporting!
+    .toPlainText();

@@ -1,0 +1,81 @@
+00:00 +0: loading test/kit/kit_request_card_test.dart
+00:00 +0: test/kit/kit_request_card_test.dart: every kind waiting KitRequestKind.permission: glyph, caption, words and fitting answers
+00:00 +1: test/kit/kit_request_card_test.dart: every kind waiting KitRequestKind.question: glyph, caption, words and fitting answers
+00:00 +2: test/kit/kit_request_card_test.dart: every kind waiting KitRequestKind.form: glyph, caption, words and fitting answers
+00:00 +3: test/kit/kit_request_card_test.dart: every kind waiting KitRequestKind.choice: glyph, caption, words and fitting answers
+00:00 +4: test/kit/kit_request_card_test.dart: every kind waiting KitRequestKind.gate: glyph, caption, words and fitting answers
+00:00 +5: test/kit/kit_request_card_test.dart: every kind waiting KitRequestKind.reply: glyph, caption, words and fitting answers
+00:00 +6: test/kit/kit_request_card_test.dart: permission (P4.1a) Allow once / Reject in place; one tap, once; one haptic
+00:01 +7: test/kit/kit_request_card_test.dart: permission (P4.1a) no haptic with Vibration off
+00:01 +8: test/kit/kit_request_card_test.dart: permission (P4.1a) disabled: the reason shows under the answers
+00:01 +9: test/kit/kit_request_card_test.dart: choice (P4.1a: an option sends with Undo) a tap sends once; sending shows the receipt on the chosen row; answered keeps Undo inside the window
+00:01 +10: test/kit/kit_request_card_test.dart: Something else opens a KitField whose draft survives and is sent by Send
+00:01 +11: test/kit/kit_request_card_test.dart: reply: Send is disabled with its reason while empty
+00:01 +12: test/kit/kit_request_card_test.dart: phases sending: "{answer} · Sending…", then Not confirmed yet with Try again at 8 s
+00:01 +13: test/kit/kit_request_card_test.dart: phases answered collapses to a row with no attention colour
+00:01 +14: test/kit/kit_request_card_test.dart: phases answered elsewhere says where
+00:01 +15: test/kit/kit_request_card_test.dart: phases expired: the words and nothing to press
+00:01 +16: test/kit/kit_request_card_test.dart: phases waiting-refused: the receipt sits above the answers
+00:01 +17: test/kit/kit_request_card_test.dart: announcements: appear, sending, answered — three; the same state again — none
+00:01 +18: test/kit/kit_request_card_test.dart: shortcuts (§8.2) focused: A allows, D rejects
+00:01 +19: test/kit/kit_request_card_test.dart: shortcuts (§8.2) without focus nothing happens
+00:01 +20: test/kit/kit_request_card_test.dart: shortcuts (§8.2) 2 sends the second choice
+00:01 +21: test/kit/kit_request_card_test.dart: shortcuts (§8.2) typing in Something else answers nothing
+00:01 +22: test/kit/kit_request_card_test.dart: shortcuts (§8.2) in sending, A does nothing
+00:01 +23: test/kit/kit_request_card_test.dart: shortcuts (§8.2) under an Arabic layout, physical A still allows
+00:01 +24: test/kit/kit_request_card_test.dart: targets and large text 48 dp targets; the decide buttons are 8 dp apart
+00:01 +25: test/kit/kit_request_card_test.dart: targets and large text 360 dp: side by side at 1.0, stacked at 2.0
+00:01 +26: test/kit/kit_request_card_test.dart: targets and large text 2.0 text on 360x740: at most 45 % of the window, the primary in sight
+00:01 +27: test/kit/kit_request_card_test.dart: targets and large text no overflow at 320 dp, 2.0 text
+00:01 +28: test/kit/kit_request_card_test.dart: targets and large text no overflow at 360 dp, 2.0 text
+00:02 +29: test/kit/kit_request_card_test.dart: targets and large text no overflow at 412 dp, 2.0 text
+00:02 +30: test/kit/kit_request_card_test.dart: targets and large text no overflow at 600 dp, 2.0 text
+00:02 +31: test/kit/kit_request_card_test.dart: targets and large text no overflow at 840 dp, 2.0 text
+00:02 +32: test/kit/kit_request_card_test.dart: targets and large text no overflow at 1280 dp, 2.0 text
+00:02 +33: test/kit/kit_request_card_test.dart: asserts (G37) ifIgnored is not empty
+00:02 +34: test/kit/kit_request_card_test.dart: asserts (G37) sending needs a receipt with since and an answer
+00:02 +35: test/kit/kit_request_card_test.dart: asserts (G37) answered needs a confirmed receipt
+00:02 +36: test/kit/kit_request_card_test.dart: asserts (G37) answeredElsewhere needs its receipt
+00:02 +37: test/kit/kit_request_card_test.dart: asserts (G37) expired has no receipt
+00:02 +38: test/kit/kit_request_card_test.dart: asserts (G37) an answer in the sheet needs onDetails
+00:02 +39: test/kit/kit_request_card_test.dart: asserts (G37) more choices than fit need onDetails
+00:02 +40: test/kit/kit_request_card_test.dart: asserts (G37) at most one tertiary
+00:02 +41: test/kit/kit_request_card_test.dart: asserts (G37) the answers fit the kind
+00:02 +42: test/kit/kit_request_card_test.dart: legacy constructor (KIT-43) the pre-v2 shape compiles and keeps kit-request-card
+00:02 +43: test/kit/kit_request_card_test.dart: legacy constructor (KIT-43) tone attention paints the needs-you look
+00:02 +44: test/kit/kit_request_card_test.dart: legacy constructor (KIT-43) no tone: a plain surface1 card, no accent tint (LOOK-6)
+00:02 +45: test/kit/kit_request_card_test.dart: details Details calls onDetails once
+00:02 +46: test/kit/kit_request_card_test.dart: details "{n} more answers" only past maxChoicesInPlace
+00:02 +47: test/kit/kit_request_card_test.dart: reduced motion: every phase settles after one pump (G8)
+00:02 +48: loading test/goldens/kit/kit_request_card_golden_test.dart
+00:03 +48: test/goldens/kit/kit_request_card_golden_test.dart: (setUpAll)
+00:03 +48: test/goldens/kit/kit_request_card_golden_test.dart: permission_waiting · dark
+00:03 +49: test/goldens/kit/kit_request_card_golden_test.dart: question_waiting · dark
+00:04 +50: test/goldens/kit/kit_request_card_golden_test.dart: form_waiting · dark
+00:04 +51: test/goldens/kit/kit_request_card_golden_test.dart: choice_waiting · dark
+00:04 +52: test/goldens/kit/kit_request_card_golden_test.dart: gate_waiting · dark
+00:04 +53: test/goldens/kit/kit_request_card_golden_test.dart: reply_waiting · dark
+00:04 +54: test/goldens/kit/kit_request_card_golden_test.dart: waiting_refused · dark
+00:04 +55: test/goldens/kit/kit_request_card_golden_test.dart: disabled · dark
+00:04 +56: test/goldens/kit/kit_request_card_golden_test.dart: sending · dark
+00:04 +57: test/goldens/kit/kit_request_card_golden_test.dart: sending_escalated · dark
+00:04 +58: test/goldens/kit/kit_request_card_golden_test.dart: answered · dark
+00:04 +59: test/goldens/kit/kit_request_card_golden_test.dart: answered_elsewhere · dark
+00:05 +60: test/goldens/kit/kit_request_card_golden_test.dart: expired · dark
+00:05 +61: test/goldens/kit/kit_request_card_golden_test.dart: permission_waiting · 1280x800 · dark
+00:05 +62: test/goldens/kit/kit_request_card_golden_test.dart: permission_waiting · light
+00:05 +63: test/goldens/kit/kit_request_card_golden_test.dart: question_waiting · light
+00:05 +64: test/goldens/kit/kit_request_card_golden_test.dart: form_waiting · light
+00:05 +65: test/goldens/kit/kit_request_card_golden_test.dart: choice_waiting · light
+00:05 +66: test/goldens/kit/kit_request_card_golden_test.dart: gate_waiting · light
+00:05 +67: test/goldens/kit/kit_request_card_golden_test.dart: reply_waiting · light
+00:05 +68: test/goldens/kit/kit_request_card_golden_test.dart: waiting_refused · light
+00:05 +69: test/goldens/kit/kit_request_card_golden_test.dart: disabled · light
+00:05 +70: test/goldens/kit/kit_request_card_golden_test.dart: sending · light
+00:05 +71: test/goldens/kit/kit_request_card_golden_test.dart: sending_escalated · light
+00:05 +72: test/goldens/kit/kit_request_card_golden_test.dart: answered · light
+00:06 +73: test/goldens/kit/kit_request_card_golden_test.dart: answered_elsewhere · light
+00:06 +74: test/goldens/kit/kit_request_card_golden_test.dart: expired · light
+00:06 +75: test/goldens/kit/kit_request_card_golden_test.dart: permission_waiting · 1280x800 · light
+00:06 +76: test/goldens/kit/kit_request_card_golden_test.dart: (tearDownAll)
+00:06 +76: All tests passed!

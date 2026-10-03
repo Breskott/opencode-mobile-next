@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
+import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -129,6 +132,8 @@ class _WorkspaceLocationController extends ConnectionController {
 }
 
 Widget _app(Widget home, {double textScale = 1}) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   home: Builder(
     builder: (context) => MediaQuery(
       data: MediaQuery.of(
@@ -268,6 +273,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.gitInitializationCalls, 1);
+    // The result is now a notice at the top of the list, rather than a
+    // snackbar. Return to it from the large-text setup row.
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('git-initialized')),
+      -80,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Git repository initialized'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('master'),
@@ -408,39 +420,30 @@ void main() {
     );
     // Sessions come first now (audit UX-101): search is reachable before the
     // single management route at the foot of the list.
+    // The list's own scrollable: since Work is a KitScreen (9dbcc1a7,
+    // 23b2efb5) the page's status slot comes first in the tree.
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('search-all-sessions')),
       160,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.byKey(const ValueKey('search-all-sessions')), findsOneWidget);
-    // Open the project sheet to disclose management.
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('current-project-entry')),
-      -160,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('current-project-entry')));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('manage-project-entry')),
-    );
-    await tester.tap(find.byKey(const ValueKey('manage-project-entry')));
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('project-health-entry')),
-      160,
       scrollable: find
           .descendant(
-            of: find.byKey(const ValueKey('manage-project-list')),
+            of: find.byType(CustomScrollView),
             matching: find.byType(Scrollable),
           )
           .first,
     );
-    expect(find.byKey(const ValueKey('project-health-entry')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('project-health-entry')));
+    expect(find.byKey(const ValueKey('search-all-sessions')), findsOneWidget);
+    // Project health is a Project tab tool (Manage project merged into
+    // the tab, slice-P3.11a).
+    await tester.pumpWidget(
+      _app(ProjectHub(controller: controller), textScale: 2),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('project-hub-health')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('project-hub-health')));
     await tester.pumpAndSettle();
 
     expect(find.byType(ProjectHealthScreen), findsOneWidget);
@@ -473,11 +476,120 @@ void main() {
     expect(find.text('OpenCode Mobile'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('current-project-entry')));
     await tester.pumpAndSettle();
+    expect(find.text('/tmp/runtime-probe'), findsNothing);
+    await tester.tap(find.text('Details'));
+    await tester.pumpAndSettle();
     expect(find.text('/tmp/runtime-probe'), findsOneWidget);
     expect(find.text('OpenCode Mobile'), findsNothing);
     expect(controller.directory, '/tmp/runtime-probe');
     expect(controller.locations, [
       (directory: '/tmp/runtime-probe', workspace: null),
     ]);
+  });
+  group('slice-R13', () {
+    testWidgets('no refresh in the top bar and no counts beside the labels; '
+        'pulling down reloads every section', (tester) async {
+      final repository = _HealthRepository();
+      await tester.pumpWidget(
+        _app(ProjectHealthScreen(repository: repository)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('refresh-project-health')),
+        findsNothing,
+      );
+      expect(find.text('1 changed'), findsNothing);
+      expect(find.text('1 of 2 running'), findsNothing);
+      expect(find.text('1 of 1 on'), findsNothing);
+      // The rows still say each state in words.
+      expect(find.textContaining('Not running'), findsOneWidget);
+
+      final before = repository.versionControlCalls;
+      await tester.fling(
+        find.byKey(const ValueKey('project-health-list')),
+        const Offset(0, 400),
+        1000,
+      );
+      await tester.pumpAndSettle();
+      expect(repository.versionControlCalls, greaterThan(before));
+    });
+
+    testWidgets('every section label starts on the gutter, one section gap '
+        'under the section above', (tester) async {
+      final repository = _HealthRepository();
+      await tester.pumpWidget(
+        _app(ProjectHealthScreen(repository: repository)),
+      );
+      await tester.pumpAndSettle();
+
+      Rect group(String text) => tester.getRect(
+        find
+            .ancestor(of: find.text(text), matching: find.byType(KitRowGroup))
+            .first,
+      );
+      final vcs = group('feature/mobile');
+      final services = group('Dart analysis server');
+      // The words start where the panel does: the one inset (R4).
+      final panel = tester
+          .getTopLeft(
+            find
+                .descendant(
+                  of: find
+                      .ancestor(
+                        of: find.text('feature/mobile'),
+                        matching: find.byType(KitRowGroup),
+                      )
+                      .first,
+                  matching: find.byType(Material),
+                )
+                .first,
+          )
+          .dx;
+      for (final label in ['Version control', 'Language services']) {
+        expect(tester.getTopLeft(find.text(label)).dx, panel);
+      }
+      expect(
+        tester.getTopLeft(find.text('Language services')).dy - vcs.bottom,
+        moreOrLessEquals(22, epsilon: 0.01),
+      );
+      expect(
+        tester.getTopLeft(find.text('Formatters')).dy - services.bottom,
+        moreOrLessEquals(22, epsilon: 0.01),
+      );
+    });
+
+    testWidgets('a section that cannot be read keeps its label and a section '
+        'gap', (tester) async {
+      final repository = _HealthRepository()
+        ..versionControlError = const ProductException('Unavailable here');
+      await tester.pumpWidget(
+        _app(ProjectHealthScreen(repository: repository)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.widgetWithText(KitSectionLabel, 'Version control'),
+        findsOneWidget,
+      );
+      final notice = find.ancestor(
+        of: find.text('Unavailable here'),
+        matching: find.byType(KitNotice),
+      );
+      expect(
+        tester.getTopLeft(find.text('Version control')).dx,
+        tester.getTopLeft(notice.first).dx,
+      );
+      final services = find.ancestor(
+        of: find.text('Dart analysis server'),
+        matching: find.byType(KitRowGroup),
+      );
+      expect(
+        tester.getTopLeft(find.text('Language services')).dy -
+            tester.getRect(notice.first).bottom,
+        moreOrLessEquals(22, epsilon: 0.01),
+      );
+      expect(services, findsOneWidget);
+    });
   });
 }

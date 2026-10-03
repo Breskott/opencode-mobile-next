@@ -13,6 +13,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/provider_quota_overview.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/provider_quota_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/usage_hub_screen.dart';
@@ -178,21 +179,13 @@ ProviderQuotaSnapshot _snapshot({
   return ProviderQuotaSnapshot.fromJson(value);
 }
 
-Finder get _readButton => find.ancestor(
-  of: find.text(_l10n.quotaRead),
-  matching: find.byWidgetPredicate((widget) => widget is FilledButton),
-);
-
-Finder get _retryButton => find.widgetWithText(TextButton, _l10n.quotaRefresh);
-Finder get _stopButton =>
-    find.widgetWithText(TextButton, _l10n.quotaForgetConsent);
-Finder get _refreshIcon => find.byTooltip(_l10n.quotaRefresh);
-Finder get _primaryBar => find.byWidgetPredicate(
-  (widget) =>
-      widget is LinearProgressIndicator &&
-      widget.semanticsLabel ==
-          _l10n.quotaWindowRemainingLabel(_l10n.quotaPrimaryWindow),
-);
+Finder get _readButton => find.byKey(const ValueKey('quota-read'));
+Finder get _consentSwitch => find.byKey(const ValueKey('quota-consent'));
+Finder get _retryButton => find.byKey(const ValueKey('quota-retry'));
+Finder get _stopButton => find.byKey(const ValueKey('quota-stop'));
+Finder get _refreshIcon => find.byKey(const ValueKey('quota-refresh'));
+Finder get _primaryBar =>
+    find.byKey(const ValueKey('quota-window-bar-primary'));
 
 Future<void> _frames(WidgetTester tester) async {
   // Bounded even when the controlled read leaves an indeterminate bar visible.
@@ -228,7 +221,10 @@ Future<void> _reveal(
   if (target.evaluate().isEmpty) {
     // The list is lazy and, with the monitoring section at its end, long: a
     // row above the current position is not built. Search from the top.
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, 100000));
+    tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position
+        .jumpTo(0);
     await tester.pump();
   }
   if (target.evaluate().isEmpty) {
@@ -289,10 +285,10 @@ Future<void> _pumpQuota(WidgetTester tester, _Harness h) => _pumpHome(
 
 Future<void> _consentAndRead(WidgetTester tester, _Harness h) async {
   final before = h.gateways.length;
-  await _reveal(tester, find.byType(Checkbox));
-  await tester.tap(find.byType(Checkbox));
+  await _reveal(tester, _consentSwitch);
+  await tester.tap(_consentSwitch);
   await tester.pump();
-  expect(h.gateways, hasLength(before), reason: 'Checkbox alone is not a read');
+  expect(h.gateways, hasLength(before), reason: 'Consent alone is not a read');
   await _reveal(tester, _readButton);
   await tester.tap(_readButton);
   await tester.pump();
@@ -434,9 +430,17 @@ void main() {
     );
     await store.setActiveId(profile.id);
     final secureCallsAfterSetup = secureMethods.length;
+    // Saving a server reads its team engine token back; the quota screens
+    // themselves read no secret.
+    final secureReadsAfterSetup = secureMethods
+        .where((method) => method == 'read')
+        .length;
     addTearDown(() {
       expect(secureMethods, hasLength(secureCallsAfterSetup));
-      expect(secureMethods.where((method) => method == 'read'), isEmpty);
+      expect(
+        secureMethods.where((method) => method == 'read'),
+        hasLength(secureReadsAfterSetup),
+      );
     });
 
     final connection = _Connection(store);
@@ -465,37 +469,40 @@ void main() {
     final before = {for (final key in prefs.getKeys()) key: prefs.get(key)};
     await _pumpQuota(tester, h);
 
-    expect(find.text(_l10n.quotaSetupTitle), findsOneWidget);
-    expect(find.text(_origin), findsOneWidget);
-    expect(find.text(providerQuotaPath), findsOneWidget);
-    expect(find.text(_l10n.quotaSetupGuide), findsOneWidget);
-    expect(_l10n.quotaSetupGuide, contains('tool/quota/README.md'));
-    expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
-    expect(tester.widget<FilledButton>(_readButton).onPressed, isNull);
+    expect(
+      find.text(_l10n.quotaNeedsCollector('Synthetic collector')),
+      findsOneWidget,
+    );
+    await _reveal(tester, find.byKey(const ValueKey('quota-details')));
+    await tester.tap(find.text('Details'));
+    await _frames(tester);
+    // The collector's address is a technical value, in Details only.
+    expect(find.textContaining(_origin), findsOneWidget);
+    expect(find.textContaining(providerQuotaPath), findsOneWidget);
+    expect(find.text(_l10n.quotaCollectorHowTo), findsOneWidget);
+    expect(_l10n.quotaCollectorStepInstall('x'), isNot(contains('tool/quota')));
+    await _reveal(tester, _consentSwitch);
+    expect(tester.widget<Switch>(_consentSwitch).value, isFalse);
+    expect(tester.widget<KitButton>(_readButton).onPressed, isNull);
     expect(_refreshIcon, findsNothing);
+    await _reveal(tester, _readButton);
     await tester.tap(_readButton);
     await tester.pump(const Duration(seconds: 2));
     expect(h.gateways, isEmpty);
 
     await _consentAndRead(tester, h);
     expect(h.overview.loading, isTrue);
+    await _frames(tester);
     expect(
-      tester
-          .widgetList<IconButton>(find.byType(IconButton))
-          .singleWhere((button) => button.tooltip == _l10n.quotaRefresh)
-          .onPressed,
+      tester.widget<KitTopBar>(find.byType(KitTopBar)).actions.single.onPressed,
       isNull,
     );
-    expect(
-      tester
-          .widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
-          .semanticsLabel,
-      _l10n.quotaLoading,
-    );
+    expect(find.text(_l10n.quotaLoading), findsOneWidget);
+    expect(tester.widget<KitScreen>(find.byType(KitScreen)).loading, isTrue);
     await tester.pump(const Duration(seconds: 5));
     expect(h.gateways, hasLength(1), reason: 'No polling or duplicate read');
     await _finishRead(tester, h, _snapshot());
-    expect(find.text('74.5% remaining'), findsOneWidget);
+    expect(find.textContaining('About 75% left'), findsOneWidget);
     expect({for (final key in prefs.getKeys()) key: prefs.get(key)}, before);
     _expectNoPrivateCopy();
   });
@@ -509,19 +516,30 @@ void main() {
             profile.baseUrl = '$_origin/?token=$_privateError',
       );
       await _pumpQuota(tester, h);
-      expect(find.text(_origin), findsOneWidget);
-      expect(find.text(_l10n.quotaSetupNeeded), findsOneWidget);
-      expect(tester.widget<Checkbox>(find.byType(Checkbox)).onChanged, isNull);
-      expect(tester.widget<FilledButton>(_readButton).onPressed, isNull);
+      await _reveal(tester, _consentSwitch);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('quota-setup-needed')),
+          matching: find.text(_l10n.quotaSetupNeeded),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.widget<Switch>(_consentSwitch).onChanged, isNull);
+      expect(tester.widget<KitButton>(_readButton).onPressed, isNull);
       expect(h.gateways, isEmpty);
+      // Only the origin is shown, in Details; the query never is.
+      await _reveal(tester, find.byKey(const ValueKey('quota-details')));
+      await tester.tap(find.text('Details'));
+      await _frames(tester);
+      expect(find.textContaining(_origin), findsOneWidget);
       _expectNoPrivateCopy();
     },
   );
 
   for (final sample in [
-    (used: 0.0, remaining: '100%', progress: 1.0, usedLabel: '0%'),
-    (used: 100.0, remaining: '0%', progress: 0.0, usedLabel: '100%'),
-    (used: 25.5, remaining: '74.5%', progress: .745, usedLabel: '25.5%'),
+    (used: 0.0, remaining: '100%', progress: 0.0, usedLabel: '0%'),
+    (used: 100.0, remaining: '0%', progress: 1.0, usedLabel: '100%'),
+    (used: 25.5, remaining: '75%', progress: .255, usedLabel: '25.5%'),
   ]) {
     testWidgets('${sample.used}% used displays ${sample.remaining} remaining', (
       tester,
@@ -530,19 +548,24 @@ void main() {
       await _pumpQuota(tester, h);
       await _consentAndRead(tester, h);
       await _finishRead(tester, h, _snapshot(usedPercent: sample.used));
-      expect(find.text(_l10n.quotaRemaining(sample.remaining)), findsOneWidget);
-      expect(find.text(_l10n.quotaUsed(sample.usedLabel)), findsOneWidget);
       expect(
-        tester.widget<LinearProgressIndicator>(_primaryBar).value,
+        find.textContaining('About ${sample.remaining} left'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(
+          _l10n.quotaUsed(sample.usedLabel),
+          findRichText: true,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<KitProgressRow>(_primaryBar).value,
         closeTo(sample.progress, .000001),
       );
       final progress = tester.getSemantics(_primaryBar).getSemanticsData();
-      expect(
-        progress.label,
-        _l10n.quotaWindowRemainingLabel(_l10n.quotaPrimaryWindow),
-      );
-      // Flutter 3.47 range semantics require a number, not localized prose.
-      expect(progress.value, sample.remaining.replaceFirst('%', ''));
+      expect(progress.label, contains('About ${sample.remaining} left'));
+      expect(progress.label, contains('${sample.usedLabel} used'));
       expect(find.text(_l10n.quotaUseBlocked), findsNothing);
       _expectNoPrivateCopy();
     });
@@ -555,7 +578,7 @@ void main() {
       await _pumpQuota(tester, h);
       await _consentAndRead(tester, h);
       await _finishRead(tester, h, _snapshot());
-      expect(find.text(_l10n.quotaHours(5)), findsOneWidget);
+      expect(find.textContaining('5-hour window'), findsOneWidget);
 
       await _refresh(tester, h);
       await _finishRead(
@@ -570,11 +593,11 @@ void main() {
           },
         ),
       );
-      expect(find.text('74.5% remaining'), findsOneWidget);
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
-      expect(find.text(_l10n.quotaResetUnknown), findsNWidgets(2));
+      expect(find.textContaining('About 75% left'), findsOneWidget);
+      expect(find.byType(KitProgressRow), findsOneWidget);
+      expect(find.textContaining('resets'), findsNothing);
       expect(find.textContaining('Reported reset:'), findsNothing);
-      expect(find.text(_l10n.quotaHours(5)), findsNothing);
+      expect(find.textContaining('5-hour window'), findsNothing);
 
       await _refresh(tester, h);
       await _finishRead(
@@ -595,10 +618,20 @@ void main() {
           },
         ),
       );
-      expect(find.text(_l10n.quotaNotReported), findsNWidgets(2));
-      expect(find.text(_l10n.quotaResetUnknown), findsNWidgets(2));
-      expect(find.byType(LinearProgressIndicator), findsNothing);
-      expect(find.textContaining('% remaining'), findsNothing);
+      // Windows the collector did not report are left out; the reading
+      // says in words that no limit was reported (slice-close-misc).
+      expect(
+        find.text(
+          _l10n.quotaCollectorNoWindows(
+            _l10n.quotaCodex,
+            'Synthetic collector',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('resets'), findsNothing);
+      expect(find.byType(KitProgressRow), findsNothing);
+      expect(find.textContaining('% left'), findsNothing);
 
       await _refresh(tester, h);
       await _finishRead(
@@ -610,9 +643,16 @@ void main() {
           },
         ),
       );
-      expect(find.text(_l10n.quotaNotReported), findsOneWidget);
-      expect(find.text(_l10n.quotaPrimaryWindow), findsNothing);
-      expect(find.byType(LinearProgressIndicator), findsNothing);
+      expect(
+        find.text(
+          _l10n.quotaCollectorNoWindows(
+            _l10n.quotaCodex,
+            'Synthetic collector',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(KitProgressRow), findsNothing);
     },
   );
 
@@ -625,13 +665,19 @@ void main() {
       final previous = _snapshot();
       await _finishRead(tester, h, previous);
       await _refresh(tester, h);
-      expect(find.text('74.5% remaining'), findsOneWidget);
+      expect(find.textContaining('About 75% left'), findsOneWidget);
       h.gateways.last.result.completeError(StateError(_privateError));
       await _frames(tester);
 
       expect(find.text(_l10n.quotaUnavailable), findsOneWidget);
-      expect(find.text(_l10n.quotaStale), findsOneWidget);
-      expect(find.text('74.5% remaining'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('quota-stale')),
+          matching: find.text(_l10n.quotaStale),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('About 75% left'), findsOneWidget);
       expect(h.overview.snapshot, same(previous));
       _expectNoPrivateCopy();
       await _reveal(tester, _retryButton);
@@ -639,8 +685,8 @@ void main() {
       await tester.pump();
       expect(h.gateways, hasLength(3));
       await _finishRead(tester, h, _snapshot(usedPercent: 50));
-      expect(find.text('50% remaining'), findsOneWidget);
-      expect(find.text('74.5% remaining'), findsNothing);
+      expect(find.textContaining('About 50% left'), findsOneWidget);
+      expect(find.textContaining('About 75% left'), findsNothing);
       expect(find.text(_l10n.quotaUnavailable), findsNothing);
       expect(find.text(_l10n.quotaStale), findsNothing);
     },
@@ -717,9 +763,9 @@ void main() {
           reason: '${status.name}/${account.name}',
         );
         expect(find.text(_l10n.quotaCollectorAuth), findsNothing);
-        expect(find.text(_l10n.quotaCodexAccount), findsNothing);
-        expect(find.textContaining('% remaining'), findsNothing);
-        expect(find.byType(LinearProgressIndicator), findsNothing);
+        expect(find.textContaining('from the quota collector'), findsNothing);
+        expect(find.textContaining('% left'), findsNothing);
+        expect(find.byType(KitProgressRow), findsNothing);
         _expectNoPrivateCopy();
       }
     },
@@ -738,7 +784,7 @@ void main() {
         ),
         (
           const ProviderQuotaFailure(QuotaFailureKind.unsupported),
-          _l10n.quotaCollectorMissing,
+          _l10n.quotaNeedsCollector('Synthetic collector'),
         ),
         (
           const ProviderQuotaFailure(QuotaFailureKind.unavailable),
@@ -760,8 +806,14 @@ void main() {
         await _frames(tester);
         expect(find.text(cases[index].$2), findsOneWidget);
         expect(find.text(_l10n.quotaProviderAuth), findsNothing);
-        expect(find.byType(LinearProgressIndicator), findsNothing);
-        expect(_retryButton, findsOneWidget);
+        expect(find.byType(KitProgressRow), findsNothing);
+        // A missing collector is not retried: nothing to retry until it
+        // is installed, and the top bar keeps Refresh (slice-close-misc).
+        final missing =
+            cases[index].$1 is ProviderQuotaFailure &&
+            (cases[index].$1 as ProviderQuotaFailure).kind ==
+                QuotaFailureKind.unsupported;
+        expect(_retryButton, missing ? findsNothing : findsOneWidget);
         _expectNoPrivateCopy();
       }
     },
@@ -785,7 +837,7 @@ void main() {
         h.connection.signal();
         await _frames(tester);
         expect(find.text(_l10n.quotaSourceChanged), findsOneWidget);
-        expect(find.textContaining('% remaining'), findsNothing);
+        expect(find.textContaining('% left'), findsNothing);
         expect(_refreshIcon, findsNothing);
         expect(_stopButton, findsNothing);
         expect(h.overview.snapshot, isNull);
@@ -793,7 +845,7 @@ void main() {
         expect(oldRead.closes, 1);
         oldRead.result.complete(_snapshot(usedPercent: 1));
         await _frames(tester);
-        expect(find.text('99% remaining'), findsNothing);
+        expect(find.textContaining('About 99% left'), findsNothing);
         expect(h.gateways, hasLength(2));
         expect(tester.takeException(), isNull);
       },
@@ -801,7 +853,7 @@ void main() {
   }
 
   testWidgets(
-    'stop using the collector cancels reads and requires fresh checkbox consent',
+    'stop using the collector cancels reads and requires fresh switch consent',
     (tester) async {
       final h = await harness(tester);
       await _pumpQuota(tester, h);
@@ -816,15 +868,15 @@ void main() {
       expect(h.overview.snapshot, isNull);
       expect(h.overview.consented, isFalse);
       expect(cancelled.closes, 1);
-      expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
-      expect(tester.widget<FilledButton>(_readButton).onPressed, isNull);
+      expect(tester.widget<Switch>(_consentSwitch).value, isFalse);
+      expect(tester.widget<KitButton>(_readButton).onPressed, isNull);
       cancelled.result.complete(_snapshot(usedPercent: 1));
       await _frames(tester);
-      expect(find.textContaining('% remaining'), findsNothing);
+      expect(find.textContaining('% left'), findsNothing);
       expect(h.gateways, hasLength(2));
       await _consentAndRead(tester, h);
       await _finishRead(tester, h, _snapshot(usedPercent: 50));
-      expect(find.text('50% remaining'), findsOneWidget);
+      expect(find.textContaining('About 50% left'), findsOneWidget);
     },
   );
 
@@ -841,17 +893,23 @@ void main() {
       await tester.pump();
       expect(cancelled.closes, 1);
       expect(h.overview.canRead, isFalse);
-      expect(find.text(_l10n.quotaStale), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('quota-stale')),
+          matching: find.text(_l10n.quotaStale),
+        ),
+        findsOneWidget,
+      );
       cancelled.result.complete(_snapshot(usedPercent: 1));
       await tester.pump();
       binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await _frames(tester);
       expect(h.gateways, hasLength(2));
-      expect(find.text('74.5% remaining'), findsOneWidget);
-      expect(find.text('99% remaining'), findsNothing);
+      expect(find.textContaining('About 75% left'), findsOneWidget);
+      expect(find.textContaining('About 99% left'), findsNothing);
       await _refresh(tester, h);
       await _finishRead(tester, h, _snapshot(usedPercent: 50));
-      expect(find.text('50% remaining'), findsOneWidget);
+      expect(find.textContaining('About 50% left'), findsOneWidget);
     },
   );
 
@@ -897,15 +955,21 @@ void main() {
           },
         ),
       );
-      expect(find.text('0% remaining'), findsOneWidget);
-      expect(find.text(_l10n.quotaResetPassed), findsNothing);
+      expect(find.textContaining('About 0% left'), findsOneWidget);
+      expect(find.textContaining(_l10n.quotaAnswerResetPassed), findsNothing);
       h.now = h.now.add(const Duration(seconds: 2));
       await tester.pump(const Duration(seconds: 2));
-      expect(find.text(_l10n.quotaResetPassed), findsOneWidget);
-      expect(find.text(_l10n.quotaStale), findsOneWidget);
-      expect(find.text('0% remaining'), findsOneWidget);
-      expect(find.text('100% remaining'), findsNothing);
-      expect(tester.widget<LinearProgressIndicator>(_primaryBar).value, 0);
+      expect(find.textContaining(_l10n.quotaAnswerResetPassed), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('quota-stale')),
+          matching: find.text(_l10n.quotaStale),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('About 0% left'), findsOneWidget);
+      expect(find.textContaining('About 100% left'), findsNothing);
+      expect(tester.widget<KitProgressRow>(_primaryBar).value, 1);
       expect(h.gateways, hasLength(1));
     },
   );
@@ -942,15 +1006,15 @@ void main() {
       await tester.tap(_retryButton);
       await tester.pump();
       await _finishRead(tester, h, _snapshot());
-      await _reveal(tester, find.text('74.5% remaining'));
+      await _reveal(tester, find.textContaining('About 75% left'));
       await _reveal(tester, _stopButton);
       await tester.tap(_stopButton);
       await _frames(tester);
-      await _reveal(tester, find.byType(Checkbox));
-      expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
+      await _reveal(tester, _consentSwitch);
+      expect(tester.widget<Switch>(_consentSwitch).value, isFalse);
       await _reveal(tester, _readButton);
       expect(tester.getRect(_readButton).bottom, lessThanOrEqualTo(420));
-      expect(tester.widget<FilledButton>(_readButton).onPressed, isNull);
+      expect(tester.widget<KitButton>(_readButton).onPressed, isNull);
       expect(tester.takeException(), isNull);
     },
   );
@@ -960,18 +1024,18 @@ void main() {
   ) async {
     final h = await harness(tester);
     await _pumpQuota(tester, h);
-    await _reveal(tester, find.byType(CheckboxListTile));
-    await _tabTo(tester, find.byType(CheckboxListTile));
+    await _reveal(tester, _consentSwitch);
+    await _tabTo(tester, _consentSwitch);
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
     await tester.pump();
-    expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isTrue);
+    expect(tester.widget<Switch>(_consentSwitch).value, isTrue);
     expect(h.gateways, isEmpty);
     await _tabTo(tester, _readButton);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
     expect(h.gateways, hasLength(1));
     await _finishRead(tester, h, _snapshot());
-    expect(find.text('74.5% remaining'), findsOneWidget);
+    expect(find.textContaining('About 75% left'), findsOneWidget);
   });
 
   testWidgets(
@@ -984,18 +1048,31 @@ void main() {
         ownedOverview: h.overview,
         size: const Size(420, 1600),
       );
-      final minimax = find.widgetWithText(ChoiceChip, _l10n.quotaMiniMax);
+      final minimax = find.byKey(const ValueKey('quota-provider-minimax'));
       await _reveal(tester, minimax);
       await tester.tap(minimax);
       await _frames(tester);
       expect(h.gateways, isEmpty);
       expect(h.overview.consented, isFalse);
-      expect(find.text('/ocmn/quota/v1/minimax'), findsOneWidget);
+      await _reveal(tester, find.byKey(const ValueKey('quota-details')));
+      await tester.tap(find.text('Details'));
+      await _frames(tester);
+      expect(find.textContaining('/ocmn/quota/v1/minimax'), findsOneWidget);
       await _consentAndRead(tester, h);
       await _finishRead(tester, h, _snapshot(provider: QuotaProvider.minimax));
-      expect(find.text(_l10n.quotaMiniMaxAccount), findsOneWidget);
+      expect(
+        find.text(
+          _l10n.quotaCollectorFrom(_l10n.quotaMiniMax, 'Synthetic collector'),
+        ),
+        findsOneWidget,
+      );
+      // The source-bound caveat is technical: it is said in Details.
+      await _reveal(tester, find.byKey(const ValueKey('quota-details')));
+      if (find.text(_l10n.quotaMiniMaxSourceBound).evaluate().isEmpty) {
+        await tester.tap(find.text('Details'));
+        await _frames(tester);
+      }
       expect(find.text(_l10n.quotaMiniMaxSourceBound), findsOneWidget);
-      expect(find.text(_l10n.quotaClaudeAccount), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -1018,11 +1095,8 @@ void main() {
         await _finishRead(tester, h, _snapshot());
         await tester.pump(const Duration(seconds: 1));
         final progress = tester.getSemantics(_primaryBar).getSemanticsData();
-        expect(
-          progress.label,
-          _l10n.quotaWindowRemainingLabel(_l10n.quotaPrimaryWindow),
-        );
-        expect(progress.value, '74.5');
+        expect(progress.label, contains('About 75% left'));
+        expect(progress.label, contains('25.5% used'));
         expect(_refreshIcon.hitTestable(), findsOneWidget);
         expect(_stopButton.hitTestable(), findsOneWidget);
         expect(tester.getSize(_stopButton).height, greaterThanOrEqualTo(48));
@@ -1031,7 +1105,7 @@ void main() {
         await expectLater(tester, meetsGuideline(textContrastGuideline));
         expect(tester.binding.hasScheduledFrame, isFalse);
         await tester.pump(const Duration(seconds: 1));
-        expect(tester.widget<LinearProgressIndicator>(_primaryBar).value, .745);
+        expect(tester.widget<KitProgressRow>(_primaryBar).value, .255);
         expect(h.gateways, hasLength(1));
         expect(tester.takeException(), isNull);
       },
@@ -1061,8 +1135,8 @@ void main() {
         await _finishRead(tester, first, _snapshot());
         current.value = second;
         await _frames(tester);
-        expect(find.text(_l10n.quotaCodexAccount), findsNothing);
-        expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
+        expect(find.textContaining('from the quota collector'), findsNothing);
+        expect(tester.widget<Switch>(_consentSwitch).value, isFalse);
         expect(second.gateways, isEmpty);
         expect(second.overview.consented, isFalse);
       } finally {
@@ -1086,24 +1160,23 @@ void main() {
       );
       await _consentAndRead(tester, h);
       final old = h.gateways.last;
-      final claude = find.widgetWithText(ChoiceChip, _l10n.quotaClaude);
+      final claude = find.byKey(const ValueKey('quota-provider-claude'));
       await _reveal(tester, claude);
       await tester.tap(claude);
       await _frames(tester);
       expect(old.closes, 1);
       expect(h.overview.consented, isFalse);
-      expect(find.byType(Checkbox), findsNothing);
+      expect(_consentSwitch, findsNothing);
       expect(find.text(_l10n.quotaClaudeUnavailable), findsOneWidget);
       old.result.complete(_snapshot());
       await _frames(tester);
-      expect(find.text(_l10n.quotaCodexAccount), findsNothing);
+      expect(find.textContaining('from the quota collector'), findsNothing);
       expect(h.gateways, hasLength(1));
       await h.overview.allowAndRefresh();
       await _frames(tester);
       expect(h.gateways, hasLength(1));
       expect(_readButton, findsNothing);
-      expect(find.text(_l10n.quotaClaudeAccount), findsNothing);
-      expect(find.text(_l10n.quotaCodexAccount), findsNothing);
+      expect(find.textContaining('from the quota collector'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -1125,12 +1198,24 @@ void main() {
         );
         await _consentAndRead(tester, h);
         await _finishRead(tester, h, _snapshot());
-        await tester.drag(find.byType(ListView), const Offset(0, 5000));
+        // Reposition without a pull-to-refresh gesture: this case tests
+        // provider selection, which must never dispatch another quota read.
+        tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position
+            .jumpTo(0);
         await _frames(tester);
-        final claude = find.widgetWithText(ChoiceChip, _l10n.quotaClaude);
+        final claude = find.byKey(const ValueKey('quota-provider-claude'));
         await _reveal(tester, claude);
         expect(tester.getSize(claude).height, greaterThanOrEqualTo(48));
-        await _tabTo(tester, claude);
+        // The segmented group has one Tab stop; arrows reach its other choices.
+        await _tabTo(
+          tester,
+          find.byKey(const ValueKey('quota-provider-codex')),
+        );
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+        await tester.pump();
+        expect(_focusWithin(claude), isTrue);
         await tester.sendKeyEvent(LogicalKeyboardKey.space);
         await _frames(tester);
         expect(h.overview.provider, QuotaProvider.claude);
@@ -1147,7 +1232,7 @@ void main() {
           isSemantics(label: _l10n.quotaClaudeUnavailable, isLiveRegion: true),
         );
         await expectLater(tester, meetsGuideline(textContrastGuideline));
-        expect(find.byType(Checkbox), findsNothing);
+        expect(_consentSwitch, findsNothing);
         expect(_readButton, findsNothing);
         expect(_retryButton, findsNothing);
         expect(_stopButton, findsNothing);
@@ -1155,19 +1240,27 @@ void main() {
         expect(h.gateways, hasLength(1));
         expect(h.gateways.single.reads, 1);
 
-        await tester.drag(find.byType(ListView), const Offset(0, 5000));
+        // Reposition without a pull-to-refresh gesture: this case tests
+        // provider selection, which must never dispatch another quota read.
+        tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position
+            .jumpTo(0);
         await _frames(tester);
-        final codex = find.widgetWithText(ChoiceChip, _l10n.quotaCodex);
+        final codex = find.byKey(const ValueKey('quota-provider-codex'));
         await _reveal(tester, codex);
-        await _tabTo(tester, codex);
+        await _tabTo(tester, claude);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+        await tester.pump();
+        expect(_focusWithin(codex), isTrue);
         await tester.sendKeyEvent(LogicalKeyboardKey.space);
         await _frames(tester);
         expect(h.overview.provider, QuotaProvider.codex);
         expect(h.overview.consented, isFalse);
-        await _reveal(tester, find.byType(Checkbox));
-        expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
+        await _reveal(tester, _consentSwitch);
+        expect(tester.widget<Switch>(_consentSwitch).value, isFalse);
         await _reveal(tester, _readButton);
-        expect(tester.widget<FilledButton>(_readButton).onPressed, isNull);
+        expect(tester.widget<KitButton>(_readButton).onPressed, isNull);
         expect(h.gateways, hasLength(1));
         expect(tester.takeException(), isNull);
       },
@@ -1213,9 +1306,9 @@ void main() {
         findsOneWidget,
       );
       expect(find.byKey(const ValueKey('usage-section-spent')), findsNothing);
-      expect(find.byType(TabBar), findsNothing);
-      expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
-      expect(tester.widget<FilledButton>(_readButton).onPressed, isNull);
+      expect(find.byType(KitTabSwitcher), findsNothing);
+      expect(tester.widget<Switch>(_consentSwitch).value, isFalse);
+      expect(tester.widget<KitButton>(_readButton).onPressed, isNull);
       expect(h.gateways, isEmpty);
       await tester.pageBack();
       await tester.pump();
@@ -1236,37 +1329,9 @@ void main() {
         reopenedRoute.animation!,
         AnimationStatus.completed,
       );
-      expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
+      expect(tester.widget<Switch>(_consentSwitch).value, isFalse);
       expect(_refreshIcon, findsNothing);
       expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets(
-    'personal threshold is saved and attention requires explicit opt-in',
-    (tester) async {
-      final h = await harness(tester);
-      await _pumpQuota(tester, h);
-      await _consentAndRead(tester, h);
-      await _finishRead(tester, h, _snapshot(usedPercent: 100));
-      final threshold = find.byKey(const ValueKey('quota-threshold-primary'));
-      await _reveal(tester, threshold);
-      await tester.tap(threshold);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(_l10n.quotaBudgetPercent('90')).last);
-      await tester.pumpAndSettle();
-      expect(find.text(_l10n.quotaBudgetAttention), findsNothing);
-      final optIn = find.widgetWithText(SwitchListTile, _l10n.quotaBudgetOptIn);
-      await _reveal(tester, optIn);
-      await tester.tap(optIn);
-      await tester.pumpAndSettle();
-      await tester.drag(find.byType(ListView), const Offset(0, 1600));
-      await tester.pumpAndSettle();
-      expect(find.text(_l10n.quotaBudgetAttention), findsOneWidget);
-      expect(
-        h.connection.store.prefs.getString('oc.budgets.quota-profile-a'),
-        isNotNull,
-      );
     },
   );
 
@@ -1279,30 +1344,22 @@ void main() {
       await _consentAndRead(tester, h);
       await _finishRead(tester, h, _snapshot(at: h.now));
       expect(h.connection.quotaMonitor.sources, isEmpty);
-      final enable = find.widgetWithText(TextButton, _l10n.quotaMonitorEnable);
+      // One row names what it turns on and what that does; no sheet or
+      // dialog asks again (the enrol dialog merged into the page,
+      // slice-P3.11a).
+      final enable = find.byKey(const ValueKey('quota-enable-monitoring'));
       await _reveal(tester, enable);
-      await tester.tap(enable);
-      await tester.pumpAndSettle();
-      final dialog = find.byType(AlertDialog);
       expect(
-        find.descendant(
-          of: dialog,
-          matching: find.text(_l10n.quotaMonitorConsent),
+        find.text(
+          _l10n.quotaMonitorOffer(_l10n.quotaCodex, 'Synthetic collector'),
         ),
         findsOneWidget,
       );
-      await tester.tap(
-        find.descendant(of: dialog, matching: find.text(_l10n.workCancel)),
-      );
-      await tester.pumpAndSettle();
-      expect(h.connection.quotaMonitor.sources, isEmpty);
+      expect(find.byType(AlertDialog), findsNothing);
       await tester.tap(enable);
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.widgetWithText(FilledButton, _l10n.quotaMonitorEnable),
-        ),
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
       );
       await tester.pumpAndSettle();
       expect(h.connection.quotaMonitor.sources, hasLength(1));
@@ -1323,9 +1380,8 @@ void main() {
         findsOneWidget,
       );
       expect(h.connection.store.activeId, 'quota-profile-a');
-      final disable = find.widgetWithText(
-        TextButton,
-        _l10n.quotaMonitorDisable,
+      final disable = find.text(
+        _l10n.quotaMonitorDisable(_l10n.quotaCodex, 'Synthetic collector'),
       );
       await _reveal(tester, disable);
       await tester.tap(disable);
@@ -1336,56 +1392,60 @@ void main() {
   );
 
   final capturePath = Platform.environment['OC_QUOTA_CAPTURE'];
-  testWidgets('synthetic remaining usage rendered preview', (tester) async {
-    // Opt-in only, with a pre-existing output directory. This is a synthetic
-    // widget rendering, not a device capture or an automatically updated golden.
-    final output = File(capturePath!);
-    expect(
-      output.parent.existsSync(),
-      isTrue,
-      reason:
-          'Verify/create the capture parent before setting OC_QUOTA_CAPTURE',
-    );
-    final h = await harness(tester);
-    await loadCaptureFonts();
-    addTearDown(tester.view.reset);
-    tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(411, 1100);
-    final boundary = GlobalKey();
-    await tester.pumpWidget(
-      RepaintBoundary(
-        key: boundary,
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: captureTheme(light: true),
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: true),
-            child: child!,
-          ),
-          home: _OverviewOwner(
-            overview: h.overview,
-            child: ProviderQuotaScreen(
-              controller: h.connection,
+  testWidgets(
+    'synthetic remaining usage rendered preview',
+    (tester) async {
+      // Opt-in only, with a pre-existing output directory. This is a synthetic
+      // widget rendering, not a device capture or an automatically updated golden.
+      final output = File(capturePath!);
+      expect(
+        output.parent.existsSync(),
+        isTrue,
+        reason:
+            'Verify/create the capture parent before setting OC_QUOTA_CAPTURE',
+      );
+      final h = await harness(tester);
+      await loadCaptureFonts();
+      addTearDown(tester.view.reset);
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(411, 1100);
+      final boundary = GlobalKey();
+      await tester.pumpWidget(
+        RepaintBoundary(
+          key: boundary,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: captureTheme(light: true),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child!,
+            ),
+            home: _OverviewOwner(
               overview: h.overview,
+              child: ProviderQuotaScreen(
+                controller: h.connection,
+                overview: h.overview,
+              ),
             ),
           ),
         ),
-      ),
-    );
-    await _frames(tester);
-    await _consentAndRead(tester, h);
-    await _finishRead(tester, h, _snapshot());
-    await tester.pump(const Duration(seconds: 1));
-    expect(find.text(_origin), findsOneWidget);
-    expect(find.text('74.5% remaining'), findsOneWidget);
-    expect(find.text(_l10n.quotaNotReported), findsOneWidget);
-    _expectNoPrivateCopy();
-    expect(tester.takeException(), isNull);
-    final png = await capturePng(tester, boundary, pixelRatio: 1);
-    expect(png, isNotEmpty);
-    output.writeAsBytesSync(png, flush: true);
-  }, skip: capturePath == null || capturePath.trim().isEmpty);
+      );
+      await _frames(tester);
+      await _consentAndRead(tester, h);
+      await _finishRead(tester, h, _snapshot());
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.textContaining('About 75% left'), findsOneWidget);
+      // An unreported window is left out (slice-close-misc).
+      expect(find.text('Not reported'), findsNothing);
+      _expectNoPrivateCopy();
+      expect(tester.takeException(), isNull);
+      final png = await capturePng(tester, boundary, pixelRatio: 1);
+      expect(png, isNotEmpty);
+      output.writeAsBytesSync(png, flush: true);
+    },
+    skip: capturePath == null || capturePath.trim().isEmpty,
+  );
 }

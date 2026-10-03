@@ -1,5 +1,11 @@
 part of '../library_screen.dart';
 
+/// "Skills" (map `skills`, proposal keep), built from kit parts
+/// (screen-library-4): a plain panel of [KitRow]s that says what each skill
+/// does, with the loading skeleton, an empty page that says what skills
+/// are, and a failed load that explains itself. A tap opens the one skill
+/// sheet ([_showSkillSheet]): from a conversation it adds the skill, from
+/// Skills alone it previews it.
 class SkillsScreen extends StatefulWidget {
   final ConnectionController controller;
 
@@ -45,11 +51,7 @@ class _SkillsScreenState extends State<SkillsScreen> {
     if (widget.sessionID == null) {
       _load();
     } else {
-      setState(
-        () => _error = lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).skillLocationChanged,
-      );
+      setState(() => _error = _libraryCopy(context).skillLocationChanged);
     }
   }
 
@@ -61,11 +63,7 @@ class _SkillsScreenState extends State<SkillsScreen> {
 
   Future<void> _load() async {
     if (widget.sessionID != null && _location != _chatLocation) {
-      setState(
-        () => _error = lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).skillLocationChanged,
-      );
+      setState(() => _error = _libraryCopy(context).skillLocationChanged);
       return;
     }
     final generation = ++_loadGeneration;
@@ -75,9 +73,7 @@ class _SkillsScreenState extends State<SkillsScreen> {
       if (!mounted || generation != _loadGeneration) return;
       if (repository == null) {
         throw ProductException(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryOpenCodeIsReconnecting,
+          _libraryCopy(context).e7LibraryOpenCodeIsReconnecting,
         );
       }
       final skills = await repository.listSkills();
@@ -94,125 +90,106 @@ class _SkillsScreenState extends State<SkillsScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.embedded
-      ? _body()
-      : Scaffold(
-          appBar: AppBar(
-            title: Text(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7LibrarySkills,
-            ),
+  Widget build(BuildContext context) {
+    final l10n = _libraryCopy(context);
+    return KitScreen(
+      width: KitScreenWidth.list,
+      topBar: widget.embedded ? null : KitTopBar(title: l10n.e7LibrarySkills),
+      loading: _skills == null && _error == null,
+      loadingLabel: l10n.skillsScreenLoading,
+      body: KitRefresh(
+        onRefresh: _load,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsetsDirectional.only(
+            bottom: KitScreen.endPadding(context),
           ),
-          body: _body(),
-        );
-
-  Widget _body() => ProductRefreshBody(
-    message: _skills == null ? null : _error,
-    onRetry: _load,
-    child: _content(),
-  );
-
-  Widget _content() => _skills == null && _error == null
-      ? const LoadingList()
-      : _error != null && _skills == null
-      ? ProductErrorState(message: _error!, onRetry: _load)
-      : _skills!.isEmpty
-      ? RefreshIndicator(
-          onRefresh: _load,
-          child: ProductEmptyState(
-            icon: Icons.extension_off_outlined,
-            title: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).e7LibraryNoSkillsAvailable,
-            message: lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).emptyTeachSkillsMessage,
-          ),
-        )
-      : RefreshIndicator(
-          onRefresh: _load,
-          child: ListView.separated(
-            physics: const AlwaysScrollableScrollPhysics(),
-            itemCount: _skills!.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final skill = _skills![index];
-              return ListTile(
-                leading: const Icon(AppIconography.extensions),
-                title: Text(skill.name),
-                subtitle: Text(
-                  skill.description ?? skill.location,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: const Icon(AppIconography.chevronRight),
-                onTap: () => _showSkill(skill),
-              );
-            },
-          ),
-        );
-
-  Future<void> _showSkill(SkillInfo skill) async {
-    if (widget.sessionID case final sessionID?) {
-      final used = await showModalBottomSheet<bool>(
-        context: context,
-        isScrollControlled: true,
-        isDismissible: false,
-        enableDrag: false,
-        builder: (_) => _SkillActivationSheet(
-          controller: widget.controller,
-          sessionID: sessionID,
-          skill: skill,
-          location: _location,
-        ),
-      );
-      if (mounted && used == true) Navigator.of(context).pop(true);
-      return;
-    }
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * .82,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  skill.name,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 12),
-                child: SelectableText(
-                  skill.location,
-                  style: TextStyle(
-                    color: AppTheme.mutedOf(Theme.of(context)),
-                    fontFamily: AppTheme.monoFamily,
-                    fontSize: AppTheme.captionFontSize,
-                  ),
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: FilePreviewBody(
-                  key: const Key('skill-content-preview'),
-                  data: FilePreviewData(
-                    name: 'SKILL.md',
-                    mimeType: 'text/markdown',
-                    text: skill.content,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          children: _content(context),
         ),
       ),
     );
+  }
+
+  List<Widget> _content(BuildContext context) {
+    final l10n = _libraryCopy(context);
+    final tokens = KitTokens.of(context);
+    Widget railed(Widget child) => Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.gutter,
+        end: tokens.gutter,
+        bottom: tokens.space3,
+      ),
+      child: child,
+    );
+    final skills = _skills;
+    final error = _error;
+    if (skills == null) {
+      if (error == null) {
+        return const [KitSkeletonRows(key: ValueKey('skills-loading'))];
+      }
+      return [
+        railed(
+          KitStateView.error(
+            key: const ValueKey('skills-load-failed'),
+            title: l10n.skillsScreenLoadFailed,
+            body: error,
+            reportSource: 'skills',
+            size: KitStateSize.inline,
+            retry: KitAction(label: l10n.commonRetry, onPressed: _load),
+          ),
+        ),
+      ];
+    }
+    return [
+      if (error != null)
+        railed(
+          KitNotice.error(
+            key: const ValueKey('product-refresh-failed'),
+            title: l10n.refreshFailed,
+            message: error,
+            retry: KitAction(label: l10n.refreshRetry, onPressed: _load),
+          ),
+        ),
+      if (skills.isEmpty)
+        railed(
+          KitStateView(
+            key: const ValueKey('skills-empty'),
+            size: KitStateSize.inline,
+            icon: AppIconography.extensions,
+            title: l10n.e7LibraryNoSkillsAvailable,
+            body: l10n.emptyTeachSkillsMessage,
+          ),
+        )
+      else
+        KitRowGroup(
+          children: [
+            for (final skill in skills)
+              KitRow(
+                key: ValueKey('skill-${skill.name}'),
+                leading: const KitRowIcon(AppIconography.extensions),
+                title: skill.name,
+                supporting: TextSpan(
+                  text: skill.description?.trim().isNotEmpty == true
+                      ? skill.description
+                      : KitBidi.ltr(skill.location),
+                ),
+                supportingMaxLines: 2,
+                trailing: const KitChevron(),
+                onTap: () => _showSkill(skill),
+              ),
+          ],
+        ),
+    ];
+  }
+
+  Future<void> _showSkill(SkillInfo skill) async {
+    final used = await _showSkillSheet(
+      context,
+      controller: widget.controller,
+      skill: skill,
+      location: _location,
+      sessionID: widget.sessionID,
+    );
+    if (mounted && used == true) Navigator.of(context).pop(true);
   }
 }

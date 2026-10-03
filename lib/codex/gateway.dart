@@ -9,6 +9,7 @@ import '../domain/agent_account.dart';
 import 'account.dart';
 import 'mappers.dart';
 import 'transport.dart';
+import '../diagnostics/perf_trace.dart';
 
 const codexServerCapabilities = ServerCapabilities(
   agentAccount: true,
@@ -29,6 +30,7 @@ const codexServerCapabilities = ServerCapabilities(
   sessionImportExport: false,
   sessionNotes: false,
   serverCatalog: false,
+  slashCommands: false,
   profileAttentionPolling: false,
   managedWorkspaces: false,
   workspaceWarp: false,
@@ -425,6 +427,7 @@ class CodexGateway
     List<PromptAgentMention> agentMentions = const [],
     PromptDelivery? delivery,
   }) async {
+    PromptTrace.sent(sessionID);
     if (attachments.isNotEmpty ||
         agentMentions.isNotEmpty ||
         delivery != null ||

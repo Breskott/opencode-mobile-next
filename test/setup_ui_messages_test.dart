@@ -11,7 +11,9 @@ void main() {
     final l10n = AppLocalizationsEn();
     final error = validateServerProfileUrl('http://remote.example');
     expect(error, isNotNull);
-    expect(setupUiMessage(l10n, error!), error);
+    // Plain words since slice-qa-ui (637b1827, B9): the validator's English
+    // detail maps to the person-facing sentence with the way forward.
+    expect(setupUiMessage(l10n, error!), l10n.e7SetupLocalHttp);
     expect(
       setupUiMessage(l10n, 'OpenCode server exited (code 17)'),
       'OpenCode server exited (code 17)',

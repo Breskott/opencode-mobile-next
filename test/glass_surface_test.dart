@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_effects.dart';
 import 'package:opencode_mobile/ui/theme_packs.dart';
-import 'package:opencode_mobile/ui/widgets/glass_surface.dart';
+import 'package:opencode_mobile/ui/kit/glass/kit_glass.dart';
 import 'package:opencode_mobile/ui/widgets/product_states.dart';
+
+/// The bottom dock's glass as the shell draws it: a dimmed [KitGlass] at
+/// the floating tab bar's 22 dp corners (the retired GlassSurface did this).
+Widget _dock(Widget child) => KitGlass(
+  dim: true,
+  borderRadius: const BorderRadius.all(Radius.circular(22)),
+  child: child,
+);
 
 void main() {
   for (final media in <String, MediaQueryData>{
@@ -19,14 +29,14 @@ void main() {
             theme: AppTheme.dark(),
             home: MediaQuery(
               data: media.value,
-              child: const GlassSurface(child: Text('Workspace')),
+              child: _dock(Text('Workspace')),
             ),
           ),
         );
         final decorations = tester
             .widgetList<DecoratedBox>(
               find.descendant(
-                of: find.byType(GlassSurface),
+                of: find.byType(KitGlass),
                 matching: find.byType(DecoratedBox),
               ),
             )
@@ -43,27 +53,54 @@ void main() {
     );
   }
 
+  testWidgets('the dock turned to solid by Settings › Appearance › Glass', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: KitEffectsScope(
+          effects: const KitEffects(glass: false),
+          child: _dock(const SizedBox(width: 320, height: 72)),
+        ),
+      ),
+    );
+    expect(find.byType(BackdropFilter), findsNothing);
+    final fills = tester
+        .widgetList<DecoratedBox>(
+          find.descendant(
+            of: find.byType(KitGlass),
+            matching: find.byType(DecoratedBox),
+          ),
+        )
+        .map((box) => box.decoration)
+        .whereType<BoxDecoration>()
+        .where((box) => box.color != null);
+    // Visual language §6: glass off is a solid surface2 at 94 %.
+    expect(fills.single.color!.a, closeTo(.94, .001));
+  });
+
   testWidgets('frosted material clips a single backdrop filter', (
     tester,
   ) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.dark(),
-        home: const GlassSurface(child: SizedBox(width: 320, height: 72)),
+        home: _dock(SizedBox(width: 320, height: 72)),
       ),
     );
     expect(find.byType(BackdropFilter), findsOneWidget);
     expect(
       find.ancestor(
         of: find.byType(BackdropFilter),
-        matching: find.byType(ClipRRect),
+        matching: find.byWidgetPredicate((w) => w is ClipRRect),
       ),
       findsOneWidget,
     );
     final fills = tester
         .widgetList<DecoratedBox>(
           find.descendant(
-            of: find.byType(GlassSurface),
+            of: find.byType(KitGlass),
             matching: find.byType(DecoratedBox),
           ),
         )
@@ -86,13 +123,13 @@ void main() {
           await tester.pumpWidget(
             MaterialApp(
               theme: theme,
-              home: const GlassSurface(child: SizedBox(width: 320, height: 72)),
+              home: _dock(SizedBox(width: 320, height: 72)),
             ),
           );
           final fill = tester
               .widgetList<DecoratedBox>(
                 find.descendant(
-                  of: find.byType(GlassSurface),
+                  of: find.byType(KitGlass),
                   matching: find.byType(DecoratedBox),
                 ),
               )
@@ -112,7 +149,7 @@ void main() {
                 );
                 for (final background in [surface, selected]) {
                   final luminances = [
-                    GlassSurface.foregroundColor(theme).computeLuminance(),
+                    KitGlass.foregroundColor(theme).computeLuminance(),
                     background.computeLuminance(),
                   ]..sort();
                   final contrast =
@@ -137,7 +174,10 @@ void main() {
   }
 
   for (final dark in [false, true]) {
-    testWidgets('error snackbar has readable ${dark ? 'dark' : 'light'} text', (
+    // A failure is a kit alert now, never a snackbar (KIT-34): the alert's
+    // own contrast is the kit's (KitDialog galleries); this checks the
+    // failure still reaches the person, readable, in both themes.
+    testWidgets('an action failure is an alert in ${dark ? 'dark' : 'light'}', (
       tester,
     ) async {
       final theme = dark ? AppTheme.dark() : AppTheme.light();
@@ -156,13 +196,17 @@ void main() {
       );
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
-      final snackbar = tester.widget<SnackBar>(find.byType(SnackBar));
-      final copy = tester.widget<Text>(find.text('Unable to save'));
-      expect(snackbar.backgroundColor, theme.colorScheme.error);
-      expect(copy.style?.color, theme.colorScheme.onError);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(find.text("Couldn't finish that"), findsOneWidget);
+      expect(find.text('Unable to save'), findsOneWidget);
+      final body = tester.renderObject<RenderParagraph>(
+        find.text('Unable to save'),
+      );
+      final colour = body.text.style?.color;
+      expect(colour, isNotNull);
       final luminances = [
-        snackbar.backgroundColor!.computeLuminance(),
-        copy.style!.color!.computeLuminance(),
+        colour!.computeLuminance(),
+        theme.colorScheme.surface.computeLuminance(),
       ]..sort();
       expect(
         (luminances.last + .05) / (luminances.first + .05),

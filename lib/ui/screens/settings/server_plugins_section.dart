@@ -3,21 +3,51 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../domain/plugin_inventory.dart';
-import '../../../domain/server_gateway.dart' show StreamStatus, CommandInfo;
-import '../../../state/plugin_command_mappings.dart';
-import '../../widgets/run_command_dialog.dart';
-import '../../widgets/confirm_sheet.dart';
+import '../../../domain/server_gateway.dart' show StreamStatus;
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../app_theme.dart';
+import '../../kit/kit.dart';
+
+/// What the "On the server" section offers the Plugins page's top bar:
+/// "Refresh plugins". The section fills it in; the page listens and builds
+/// its top bar from it, so the section's action lives on the page it acts
+/// on, not on a label.
+class ServerPluginsActions extends ChangeNotifier {
+  VoidCallback? _refresh;
+
+  /// Reloads the server's plugins; null while it cannot run.
+  VoidCallback? get refresh => _refresh;
+
+  void _set(VoidCallback? refresh) {
+    if ((refresh == null) == (_refresh == null)) {
+      _refresh = refresh;
+      return;
+    }
+    _refresh = refresh;
+    notifyListeners();
+  }
+}
 
 /// The "On the server" section of the one Plugins screen
-/// (settings/plugins_screen.dart): the server's plugin inventory and the
-/// personal command links. It is a section, not a page, so Plugins has one
-/// home; the host only builds it when the server has a plugin inventory.
+/// (settings/plugins_screen.dart): the server's plugin inventory, carded in
+/// one row group like "In this app". It is a section, not a page, so
+/// Plugins has one home; the host only builds it when the server has a
+/// plugin inventory. Its refresh goes to the page's top bar through
+/// [actions].
+///
+/// The personal command links (map pages `plugins-mapping-dialog` and
+/// `plugins-clear-mappings-sheet`) were removed by slice-P3.1: a plugin's
+/// commands are run from the command sheet, which lists what the server
+/// offers (target-ia §1.4).
 class ServerPluginsSection extends StatefulWidget {
-  const ServerPluginsSection({super.key, required this.controller});
+  const ServerPluginsSection({
+    super.key,
+    required this.controller,
+    this.actions,
+  });
   final ConnectionController controller;
+  final ServerPluginsActions? actions;
   @override
   State<ServerPluginsSection> createState() => _ServerPluginsSectionState();
 }
@@ -30,26 +60,7 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
   bool _failed = false;
   bool _reloadQueued = false;
   int _request = 0;
-  bool _editingMapping = false;
-  bool _mappingLoading = false;
-  Map<String, List<String>> _mappings = {};
-  PluginCommandMappings? get _mappingStore {
-    final id = _controller.profile?.id;
-    return id == null
-        ? null
-        : PluginCommandMappings(
-            _controller.store.prefs,
-            id,
-            () => _controller.isProfileReadable(id),
-          );
-  }
 
-  String get _mappingScope => PluginCommandMappings.scope(
-    baseUrl: _controller.profile?.baseUrl ?? '',
-    username: _controller.profile?.username,
-    directory: _controller.directory,
-    workspace: _controller.workspace,
-  );
   ConnectionController get _controller => widget.controller;
   bool get _connected =>
       _controller.status == StreamStatus.connected &&
@@ -101,7 +112,6 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
       _detach(oldWidget.controller);
       _request++;
       _plugins = null;
-      _mappings = {};
       _loading = false;
       _failed = false;
       _reloadQueued = false;
@@ -116,7 +126,6 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
       _source = _scope;
       _request++;
       _plugins = null;
-      _mappings = {};
       _loading = false;
       _failed = false;
       _reloadQueued = false;
@@ -140,12 +149,7 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
     bool current() => mounted && request == _request && scope == _scope;
     try {
       final result = await gateway.listPlugins();
-      if (current()) {
-        setState(() {
-          _plugins = result;
-          _mappings = _mappingStore?.load(_mappingScope) ?? {};
-        });
-      }
+      if (current()) setState(() => _plugins = result);
     } catch (_) {
       if (current()) setState(() => _failed = true);
     } finally {
@@ -163,342 +167,175 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
   void dispose() {
     _request++;
     _detach(_controller);
+    // The page may be going too: drop the callback without notifying.
+    widget.actions?._refresh = null;
     super.dispose();
+  }
+
+  /// Publishes what the top bar can offer after this frame (never during a
+  /// build).
+  void _publishActions() {
+    final actions = widget.actions;
+    if (actions == null) return;
+    final refresh = _connected && _supported && !_loading
+        ? () {
+            if (mounted) unawaited(_load());
+          }
+        : null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) actions._set(refresh);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    return Padding(
+    final plugins = _plugins ?? const <PluginInfo>[];
+    final builtIn = [
+      for (final plugin in plugins)
+        if (plugin.source == PluginSourceKind.builtin) plugin,
+    ];
+    final added = [
+      for (final plugin in plugins)
+        if (plugin.source != PluginSourceKind.builtin) plugin,
+    ];
+    final builtInActive = builtIn
+        .where((plugin) => plugin.status == PluginStatus.active)
+        .length;
+    final builtInFailed = builtIn
+        .where((plugin) => plugin.status == PluginStatus.failed)
+        .length;
+    _publishActions();
+    final tokens = KitTokens.of(context);
+    Widget group(List<Widget> children) => KitRowGroup(
+      key: const ValueKey('plugins-section-server-group'),
+      label: l10n.pluginsSectionOnServer,
+      children: children,
+    );
+    return Column(
       key: const ValueKey('plugins-section-server'),
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 20, bottom: 4),
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      l10n.pluginsSectionOnServer,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: AppTheme.mutedOf(theme),
-                      ),
-                    ),
-                  ),
-                ),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        KitLoadingBar(
+          loading: _connected && _supported && _loading,
+          label: l10n.pluginsLoading,
+        ),
+        if (!_supported)
+          group([_message(l10n.pluginsUnsupported)])
+        else if (!_connected)
+          group([_message(l10n.pluginsDisconnected)])
+        else ...[
+          if (_failed)
+            Padding(
+              padding: EdgeInsetsDirectional.only(
+                start: tokens.gutter,
+                end: tokens.gutter,
+                bottom: tokens.space3,
               ),
-              if (_connected && _supported)
-                IconButton(
-                  tooltip: l10n.pluginsRefresh,
-                  onPressed: _loading ? null : _load,
-                  icon: const Icon(AppIconography.retry),
-                ),
-            ],
-          ),
-          Text(l10n.pluginsDescription),
-          if (_mappingStore != null)
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TextButton.icon(
-                icon: const Icon(AppIconography.unlink),
-                label: Text(l10n.pluginMappingClearAll),
-                onPressed: _editingMapping ? null : _clearMappings,
+              child: KitNotice(
+                tone: AppStatusTone.failure,
+                message: l10n.pluginsLoadFailed,
+                actions: [
+                  KitAction(
+                    label: l10n.pluginsRetry,
+                    onPressed: _loading ? null : _load,
+                  ),
+                ],
               ),
             ),
-          const SizedBox(height: 12),
-          if (!_supported)
-            Text(l10n.pluginsUnsupported)
-          else if (!_connected)
-            Text(l10n.pluginsDisconnected)
-          else ...[
-            if (_loading || _mappingLoading) const LinearProgressIndicator(),
-            if (_failed) ...[
-              Text(l10n.pluginsLoadFailed),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton(
-                  onPressed: _loading ? null : _load,
-                  child: Text(l10n.pluginsRetry),
+          if (_plugins == null && _loading && !_failed)
+            const KitSkeletonRows(count: 3)
+          else if (_plugins?.isEmpty == true && !_loading && !_failed)
+            group([_message(l10n.pluginsEmpty)])
+          else if (plugins.isNotEmpty)
+            // What the person added is listed openly; the server's own
+            // plugins fold into one row, open when one of them failed.
+            group([
+              for (final plugin in added) _row(plugin, l10n),
+              if (builtIn.isNotEmpty)
+                KitExpandRow(
+                  key: ValueKey('plugins-builtin-${builtInFailed > 0}'),
+                  headerKey: const ValueKey('plugins-builtin-group'),
+                  initiallyExpanded: builtInFailed > 0,
+                  leading: KitRow.icon(context, AppIconography.extensions),
+                  title: l10n.pluginsBuiltinGroup,
+                  supporting: TextSpan(
+                    children: [
+                      TextSpan(text: l10n.pluginsBuiltinActive(builtInActive)),
+                      if (builtInFailed > 0)
+                        TextSpan(
+                          text:
+                              ' · ${l10n.pluginsBuiltinFailed(builtInFailed)}',
+                          style: KitText.styleOf(
+                            context,
+                            KitTextRole.secondary,
+                            tone: KitTextTone.danger,
+                          ),
+                        ),
+                    ],
+                  ),
+                  children: [for (final plugin in builtIn) _row(plugin, l10n)],
                 ),
-              ),
-            ],
-            if (_plugins?.isEmpty == true && !_loading && !_failed)
-              Text(l10n.pluginsEmpty),
-            for (final plugin in _plugins ?? const <PluginInfo>[]) ...[
-              _row(plugin, l10n),
-              const Divider(height: 1),
-            ],
-          ],
+            ]),
         ],
-      ),
+      ],
     );
   }
 
-  AppLocalizations get _l10n =>
-      lookupAppLocalizations(Localizations.localeOf(context));
+  /// A state of the section as its one row: unsupported, disconnected or
+  /// empty, in words.
+  Widget _message(String text) => KitRow(
+    key: const ValueKey('plugins-section-message'),
+    title: text,
+    titleMaxLines: 3,
+  );
 
-  void _mappingError(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  Future<void> _clearMappings() async {
-    if (_editingMapping) return;
-    final store = _mappingStore;
-    final scope = _scope;
-    if (store == null) return;
-    setState(() => _editingMapping = true);
-    try {
-      final confirmed = await showConfirmSheet(
-        context,
-        title: _l10n.pluginMappingClearTitle,
-        message: _l10n.pluginMappingClearDescription,
-        confirmLabel: _l10n.pluginMappingClearConfirm,
-        cancelLabel: MaterialLocalizations.of(context).cancelButtonLabel,
-        icon: AppIconography.unlink,
-        destructive: true,
-      );
-      if (!confirmed || !mounted) return;
-      if (scope != _scope) {
-        throw StateError(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7LibraryLocationChanged,
-        );
-      }
-      setState(() => _mappingLoading = true);
-      await store.clear();
-      if (mounted && scope == _scope) setState(() => _mappings = {});
-    } catch (_) {
-      if (mounted && scope == _scope) {
-        _mappingError(_l10n.pluginMappingClearFailed);
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _editingMapping = false;
-          _mappingLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _editMapping(PluginInfo plugin) async {
-    if (_editingMapping || plugin.id == null) return;
-    final scope = _scope;
-    final mappingScope = _mappingScope;
-    final store = _mappingStore;
-    if (store == null) return;
-    setState(() {
-      _editingMapping = true;
-      _mappingLoading = true;
-    });
-    try {
-      final commands = await _controller.repository!.listCommands();
-      if (!mounted || scope != _scope) return;
-      final available = {
-        for (final command in commands.take(512))
-          if (PluginCommandMappings.validName(command.name)) command.name,
-      };
-      final selected = {...?_mappings[plugin.id]};
-      final names = {...selected, ...available}.toList()..sort();
-      bool saving = false;
-      String? error;
-      setState(() => _mappingLoading = false);
-      final saved = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => StatefulBuilder(
-          builder: (dialogContext, update) => PopScope(
-            canPop: !saving,
-            child: AlertDialog(
-              scrollable: true,
-              title: Text(_l10n.pluginMappingManage),
-              content: SizedBox(
-                width: 480,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_l10n.pluginMappingDescription),
-                    const SizedBox(height: 12),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (names.isEmpty) Text(_l10n.pluginMappingEmpty),
-                        for (final name in names)
-                          CheckboxListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text('/$name'),
-                            subtitle: available.contains(name)
-                                ? null
-                                : Text(_l10n.pluginMappingUnavailable),
-                            value: selected.contains(name),
-                            onChanged: saving
-                                ? null
-                                : (value) => update(() {
-                                    if (value == true) {
-                                      if (selected.length >=
-                                          PluginCommandMappings.maxCommands) {
-                                        error = _l10n.pluginMappingLimit;
-                                      } else {
-                                        selected.add(name);
-                                        error = null;
-                                      }
-                                    } else {
-                                      selected.remove(name);
-                                      error = null;
-                                    }
-                                  }),
-                          ),
-                      ],
-                    ),
-                    if (error != null)
-                      Text(
-                        error!,
-                        style: TextStyle(
-                          color: Theme.of(dialogContext).colorScheme.error,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: saving ? null : () => Navigator.pop(dialogContext),
-                  child: Text(
-                    MaterialLocalizations.of(context).cancelButtonLabel,
-                  ),
-                ),
-                FilledButton(
-                  onPressed: saving
-                      ? null
-                      : () async {
-                          update(() {
-                            saving = true;
-                            error = null;
-                          });
-                          try {
-                            if (!mounted || scope != _scope) {
-                              throw StateError(
-                                lookupAppLocalizations(
-                                  Localizations.localeOf(context),
-                                ).e7LibraryLocationChanged,
-                              );
-                            }
-                            await store.set(mappingScope, plugin.id!, selected);
-                            if (!dialogContext.mounted) return;
-                            if (!mounted || scope != _scope) {
-                              Navigator.pop(dialogContext);
-                              return;
-                            }
-                            Navigator.pop(dialogContext, true);
-                          } catch (_) {
-                            if (dialogContext.mounted) {
-                              if (!mounted || scope != _scope) {
-                                Navigator.pop(dialogContext);
-                                return;
-                              }
-                              update(() {
-                                saving = false;
-                                error = _l10n.pluginMappingSaveFailed;
-                              });
-                            }
-                          }
-                        },
-                  child: Text(_l10n.pluginMappingSave),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-      if (mounted && scope == _scope && saved == true) {
-        setState(() => _mappings = store.load(mappingScope));
-      }
-    } catch (_) {
-      if (mounted && scope == _scope) {
-        _mappingError(_l10n.pluginMappingLoadFailed);
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _editingMapping = false;
-          _mappingLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _reviewCommand(PluginInfo plugin, String name) async {
-    if (_editingMapping) return;
-    final scope = _scope;
-    final store = _mappingStore;
-    final mappingScope = _mappingScope;
-    final repository = _controller.repository;
-    if (store == null || repository == null) return;
-    setState(() {
-      _editingMapping = true;
-      _mappingLoading = true;
-    });
-    Future<bool> valid() async {
-      if (!mounted || scope != _scope || !_supported || !_connected) {
-        return false;
-      }
-      final plugins = await (repository as PluginGateway).listPlugins();
-      if (!mounted || scope != _scope || !_supported || !_connected) {
-        return false;
-      }
-      final commands = await repository.listCommands();
-      return mounted &&
-          scope == _scope &&
-          store.load(mappingScope)[plugin.id]?.contains(name) == true &&
-          plugins.any(
-            (p) => p.id == plugin.id && p.status == PluginStatus.active,
-          ) &&
-          commands.any((c) => c.name == name);
-    }
-
-    try {
-      if (!await valid()) {
-        if (mounted && scope == _scope) {
-          _mappingError(_l10n.pluginMappingUnavailable);
-        }
-        return;
-      }
-      if (!mounted) return;
-      setState(() => _mappingLoading = false);
-      final sessionID = await showRunCommandDialog(
-        context,
-        controller: _controller,
-        command: CommandInfo(name: name, subtask: false),
-        validateCommand: valid,
-      );
-      if (mounted && sessionID != null && scope == _scope) {
-        Navigator.of(context).pushNamed('/chat/$sessionID');
-      }
-    } catch (_) {
-      if (mounted && scope == _scope) {
-        _mappingError(_l10n.pluginMappingUnavailable);
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _editingMapping = false;
-          _mappingLoading = false;
-        });
-      }
-    }
-  }
-
+  /// One plugin as a kit row (§6): its state as the leading mark, a plain
+  /// name, and one line that says where it stands. Tapping the row opens
+  /// its details, where the raw id is.
   Widget _row(PluginInfo plugin, AppLocalizations l10n) {
-    final theme = Theme.of(context);
+    final id = plugin.id;
+    final failed = plugin.status == PluginStatus.failed;
+    return KitRow(
+      key: ValueKey('plugin-row-${id ?? plugins.indexOf(plugin)}'),
+      leading: KitStatusMark(
+        state: switch (plugin.status) {
+          PluginStatus.active => KitMarkState.done,
+          PluginStatus.failed => KitMarkState.failed,
+          PluginStatus.unknown => KitMarkState.waiting,
+        },
+      ),
+      title: pluginDisplayName(plugin, l10n),
+      titleKey: ValueKey('plugin-title-${id ?? ''}'),
+      supporting: TextSpan(
+        text: _statusWord(plugin, l10n),
+        style: failed
+            ? KitText.styleOf(
+                context,
+                KitTextRole.secondary,
+                tone: KitTextTone.danger,
+              )
+            : null,
+      ),
+      trailing: const KitChevron(),
+      onTap: () => unawaited(_details(plugin)),
+    );
+  }
+
+  List<PluginInfo> get plugins => _plugins ?? const [];
+
+  String _statusWord(PluginInfo plugin, AppLocalizations l10n) =>
+      switch (plugin.status) {
+        PluginStatus.active => l10n.pluginsStatusActive,
+        PluginStatus.failed => l10n.pluginsStatusFailedToLoad,
+        PluginStatus.unknown => l10n.pluginsStatusUnknown,
+      };
+
+  /// What a person may want to know about one plugin and rarely does:
+  /// where it comes from, and the id the server knows it by, in mono.
+  Future<void> _details(PluginInfo plugin) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final source = switch (plugin.source) {
       PluginSourceKind.builtin => l10n.pluginsSourceBuiltin,
       PluginSourceKind.package => l10n.pluginsSourcePackage,
@@ -506,84 +343,137 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
       PluginSourceKind.sdk => l10n.pluginsSourceSdk,
       PluginSourceKind.unknown => l10n.pluginsSourceUnknown,
     };
-    final status = switch (plugin.status) {
-      PluginStatus.active => l10n.pluginsStatusActive,
-      PluginStatus.failed => l10n.pluginsStatusFailed,
-      PluginStatus.unknown => l10n.pluginsStatusUnknown,
-    };
-    final tone = switch (plugin.status) {
-      PluginStatus.active => AppStatusTone.ok,
-      PluginStatus.failed => AppStatusTone.failure,
-      PluginStatus.unknown => AppStatusTone.neutral,
-    };
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            plugin.status == PluginStatus.active
-                ? AppIconography.checkCircle
-                : plugin.status == PluginStatus.failed
-                ? AppIconography.error
-                : AppIconography.question,
-            color: AppTheme.statusColor(theme, tone),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+    final failed = plugin.status == PluginStatus.failed;
+    return showKitSheet<void>(
+      context,
+      title: pluginDisplayName(plugin, l10n),
+      sheetKey: const ValueKey('plugin-details-sheet'),
+      body: (sheetContext) {
+        final tokens = KitTokens.of(sheetContext);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            KitText(
+              _statusWord(plugin, l10n),
+              role: KitTextRole.secondary,
+              tone: failed ? KitTextTone.danger : KitTextTone.secondary,
+            ),
+            if (failed) ...[
+              SizedBox(height: tokens.space1),
+              KitText(l10n.pluginsFailureDetail, role: KitTextRole.secondary),
+            ],
+            SizedBox(height: tokens.space3),
+            // The package name only when it says more than the id below.
+            KitText(
+              plugin.packageName == null || plugin.packageName == plugin.id
+                  ? source
+                  : '$source · ${plugin.packageName}',
+              role: KitTextRole.body,
+            ),
+            if (plugin.terminalUi)
+              KitText(l10n.pluginsTerminalUi, role: KitTextRole.body),
+            SizedBox(height: tokens.space3),
+            KitDetailsFold(
+              initiallyExpanded: true,
+              values: [
+                KitTechnicalValue(
+                  l10n.pluginsDetailsId,
                   plugin.id ?? l10n.pluginsUnnamed,
-                  style: theme.textTheme.titleMedium,
+                  key: const ValueKey('plugin-details-id'),
                 ),
-                Text(
-                  status,
-                  style: TextStyle(color: AppTheme.statusColor(theme, tone)),
-                ),
-                Text(
-                  plugin.packageName == null
-                      ? source
-                      : '$source · ${plugin.packageName}',
-                ),
-                if (plugin.terminalUi) Text(l10n.pluginsTerminalUi),
-                if (plugin.id case final id?) ...[
-                  if ((_mappings[id] ?? []).isNotEmpty)
-                    Text(l10n.pluginMappingPersonal),
-                  for (final name in _mappings[id] ?? const <String>[])
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: TextButton.icon(
-                        icon: const Icon(AppIconography.play),
-                        label: Text(l10n.pluginMappingReview(name)),
-                        onPressed:
-                            !_connected ||
-                                _editingMapping ||
-                                plugin.status != PluginStatus.active
-                            ? null
-                            : () => _reviewCommand(plugin, name),
-                      ),
-                    ),
-                  if (PluginCommandMappings.validName(id))
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: TextButton.icon(
-                        icon: const Icon(AppIconography.link),
-                        label: Text(l10n.pluginMappingManage),
-                        onPressed: !_connected || _editingMapping
-                            ? null
-                            : () => _editMapping(plugin),
-                      ),
-                    ),
-                ],
-                if (plugin.status == PluginStatus.failed)
-                  Text(l10n.pluginsFailureDetail),
               ],
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
+}
+
+/// A plugin's name for people (docs/design/phone-server-screens-cleanup-
+/// 2026-09-24.md §3). The server reports only an id, so the name is a
+/// readable form of the id's last part: the namespace (`opencode.`) and
+/// category words (`tool`, `config`) go, the rest is in sentence case with
+/// the known acronyms in capitals. `opencode.tool.input.repair` is "Input
+/// repair", `opencode.config.mcp` is "MCP", `@example/opencode-wakatime` is
+/// "Wakatime". The raw id stays under the plugin's Details.
+String pluginDisplayName(PluginInfo plugin, AppLocalizations l10n) {
+  final id = plugin.id;
+  if (id == null) return l10n.pluginsUnnamed;
+  return readablePluginName(id);
+}
+
+/// [pluginDisplayName] for a known id.
+String readablePluginName(String id) {
+  var name = id.trim();
+  if (name.startsWith('@')) {
+    final slash = name.indexOf('/');
+    if (slash > 0) name = name.substring(slash + 1);
+  }
+  final version = name.indexOf('@');
+  if (version > 0) name = name.substring(0, version);
+  if (name.contains('/')) name = name.split('/').last;
+  var parts = name.split('.').where((part) => part.isNotEmpty).toList();
+  if (parts.length > 1) parts = parts.sublist(1);
+  const categories = {
+    'tool',
+    'tools',
+    'config',
+    'plugin',
+    'plugins',
+    'provider',
+    'providers',
+    'builtin',
+    'core',
+  };
+  while (parts.length > 1 && categories.contains(parts.first.toLowerCase())) {
+    parts.removeAt(0);
+  }
+  final words = [
+    for (final part in parts)
+      ...part
+          .replaceAllMapped(
+            RegExp(r'([a-z0-9])([A-Z])'),
+            (match) => '${match[1]} ${match[2]}',
+          )
+          .split(RegExp(r'[-_\s]+'))
+          .where((word) => word.isNotEmpty),
+  ];
+  while (words.length > 1 &&
+      const {'opencode', 'plugin'}.contains(words.first.toLowerCase())) {
+    words.removeAt(0);
+  }
+  if (words.isEmpty) return id;
+  const acronyms = {
+    'ai': 'AI',
+    'api': 'API',
+    'cli': 'CLI',
+    'git': 'GIT',
+    'http': 'HTTP',
+    'https': 'HTTPS',
+    'id': 'ID',
+    'json': 'JSON',
+    'llm': 'LLM',
+    'lsp': 'LSP',
+    'mcp': 'MCP',
+    'pr': 'PR',
+    'sdk': 'SDK',
+    'ssh': 'SSH',
+    'tui': 'TUI',
+    'ui': 'UI',
+    'url': 'URL',
+  };
+  final shown = <String>[];
+  for (var i = 0; i < words.length; i++) {
+    final word = words[i].toLowerCase();
+    if (acronyms[word] case final acronym?) {
+      shown.add(acronym);
+    } else if (i == 0) {
+      shown.add(KitText.sentenceCase(word));
+    } else {
+      shown.add(word);
+    }
+  }
+  return shown.join(' ');
 }

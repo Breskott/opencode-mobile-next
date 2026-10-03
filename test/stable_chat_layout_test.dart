@@ -11,6 +11,8 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart'
+    show KitIconButton, KitMenuPanel, KitTopBar;
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -124,7 +126,7 @@ Finder get _send => find.byKey(const Key('chat-send-button'));
 Finder get _stop => find.byKey(const Key('chat-stop-button'));
 
 String _draftText(WidgetTester tester) =>
-    tester.widget<TextField>(_field).controller!.text;
+    tester.widget<TextFormField>(_field).controller!.text;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -156,18 +158,19 @@ void main() {
         expect(_tasks, findsNothing);
         expect(find.byTooltip('Tasks · 0 running'), findsNothing);
         final titleRect = tester.getRect(_title);
-        expect(tester.widget<Text>(_title).maxLines, 1);
-        final appBar = tester.getRect(find.byType(AppBar));
+        final appBar = tester.getRect(find.byType(KitTopBar));
         expect(titleRect.top, greaterThanOrEqualTo(appBar.top));
         expect(titleRect.bottom, lessThanOrEqualTo(appBar.bottom + .5));
 
         await tester.tap(find.byKey(const ValueKey('session-actions-button')));
         await tester.pumpAndSettle();
         expect(find.text(_longTitle), findsWidgets);
-        await tester.ensureVisible(find.text('Results'));
+        // Task details are the conversation menu's Subagents (P10.2).
+        final results = find.byKey(const ValueKey('session-menu-subagents'));
+        await tester.ensureVisible(results);
         await tester.pumpAndSettle();
-        expect(find.text('Results').hitTestable(), findsOneWidget);
-        await tester.tap(find.text('Results'));
+        expect(results.hitTestable(), findsOneWidget);
+        await tester.tap(results);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         expect(find.byKey(const Key('running-work-sheet')), findsOneWidget);
@@ -186,17 +189,23 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(_tasks, findsNothing);
     expect(find.text('Tasks'), findsNothing);
-    expect(tester.widget<Text>(_title).maxLines, 1);
+    expect(
+      find.descendant(of: find.byType(KitTopBar), matching: _title),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('a short title stays on one line in the 64dp toolbar at 1x', (
+  testWidgets('a short title stays on one line in a one-row bar at 1x', (
     tester,
   ) async {
     final conn = await _controller(_Api(title: 'Fix CI'));
     addTearDown(conn.dispose);
     await _pumpChat(tester, conn, size: const Size(390, 844));
     expect(tester.takeException(), isNull);
-    expect(tester.getSize(find.byType(AppBar)).height, 64);
+    expect(
+      tester.getSize(find.byType(KitTopBar)).height,
+      lessThanOrEqualTo(64),
+    );
     expect(tester.getSize(_title).height, lessThanOrEqualTo(31));
   });
 
@@ -214,19 +223,16 @@ void main() {
       final actions = find.byKey(const ValueKey('message-actions-a1'));
       expect(actions, findsOneWidget);
       expect(find.text('…'), findsNothing);
-      // A visible disc bounds the glyph so it reads as a control.
-      expect(
-        find.byKey(const ValueKey('message-actions-disc-a1')),
-        findsOneWidget,
-      );
       final size = tester.getSize(actions);
       expect(size.width, greaterThanOrEqualTo(44));
       expect(size.height, greaterThanOrEqualTo(44));
-      expect(find.bySemanticsLabel('Message actions'), findsOneWidget);
+      expect(find.bySemanticsLabel('More for this reply'), findsOneWidget);
 
       await tester.tap(actions);
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('message-action-copy')), findsOneWidget);
+      // More opens the kit's one menu; Copy stays beside it, not in it.
+      expect(find.byType(KitMenuPanel), findsOneWidget);
+      expect(find.byKey(const ValueKey('message-menu-copy')), findsNothing);
       semantics.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -234,8 +240,8 @@ void main() {
 
   for (final scale in [1.0, 2.0, 2.5]) {
     testWidgets(
-      'at 320dp and ${scale}x the keyboard leaves the field, Send and Stop '
-      'on screen while a run is active, and the draft survives',
+      'at 320dp and ${scale}x the keyboard leaves the field and Send on '
+      'screen while a run is active, and the draft survives',
       (tester) async {
         final conn = await _controller(_Api(title: _longTitle));
         addTearDown(conn.dispose);
@@ -255,22 +261,24 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         expect(tester.takeException(), isNull);
         const visibleBottom = 640.0 - 300;
-        final appBarBottom = tester.getRect(find.byType(AppBar)).bottom;
+        final appBarBottom = tester.getRect(find.byType(KitTopBar)).bottom;
         expect(tester.getRect(_field).top, greaterThanOrEqualTo(appBarBottom));
         expect(tester.getRect(_field).bottom, lessThanOrEqualTo(visibleBottom));
         expect(tester.getRect(_send).bottom, lessThanOrEqualTo(visibleBottom));
-        expect(tester.widget<IconButton>(_send).onPressed, isNotNull);
+        expect(
+          tester.getSemantics(_send),
+          isSemantics(isEnabled: true, hasTapAction: true),
+        );
 
-        // A run starts: Stop joins Send, both stay above the keyboard, and
-        // the delivery strip does not push them off screen.
+        // A run starts: Send stays above the keyboard, and the delivery
+        // words do not push it off screen. Stop is on the running turn, never
+        // in the composer.
         conn.busySessions.add(_sessionID);
         conn.notifyListeners();
         await _pumpFrames(tester);
         expect(tester.takeException(), isNull);
-        expect(_stop, findsOneWidget);
-        expect(find.byKey(const Key('composer-queue-hint')), findsOneWidget);
-        expect(tester.widget<IconButton>(_stop).onPressed, isNotNull);
-        expect(tester.getRect(_stop).bottom, lessThanOrEqualTo(visibleBottom));
+        expect(find.byKey(const ValueKey('kit-composer-stop')), findsNothing);
+        expect(find.text('Sends after this reply'), findsOneWidget);
         expect(tester.getRect(_send).bottom, lessThanOrEqualTo(visibleBottom));
         expect(tester.getRect(_field).bottom, lessThanOrEqualTo(visibleBottom));
         expect(tester.getRect(_field).top, greaterThanOrEqualTo(appBarBottom));
@@ -283,8 +291,11 @@ void main() {
         final fieldRect = tester.getRect(_field);
         expect(
           fieldRect.height,
-          greaterThanOrEqualTo(editor.preferredLineHeight + 22),
+          greaterThanOrEqualTo(editor.preferredLineHeight),
         );
+        // KitField gives the editor a 48 dp target; its composer variant
+        // has no inner padding (the glass supplies the surrounding inset).
+        expect(fieldRect.height, greaterThanOrEqualTo(48));
         final editableTop = editor.localToGlobal(Offset.zero).dy;
         expect(
           editableTop,
@@ -295,7 +306,18 @@ void main() {
           editableTop + editor.size.height,
           lessThanOrEqualTo(fieldRect.bottom),
         );
-        expect(tester.widget<TextField>(_field).focusNode!.hasFocus, isTrue);
+        expect(
+          tester
+              .widget<EditableText>(
+                find.descendant(
+                  of: _field,
+                  matching: find.byType(EditableText),
+                ),
+              )
+              .focusNode
+              .hasFocus,
+          isTrue,
+        );
 
         // Compact rendering must not turn the editor into a single-line
         // input, which would silently remove newlines from user edits.
@@ -318,40 +340,38 @@ void main() {
     );
   }
 
-  testWidgets(
-    'rotating from phone to wide width swaps the Tasks shortcut without '
-    'remounting the editor or losing the draft',
-    (tester) async {
-      final conn = await _controller(_Api(title: _longTitle));
-      addTearDown(conn.dispose);
-      await _pumpChat(tester, conn, size: const Size(360, 740));
-      // The shortcut is contextual now: rotate while a related task is active.
-      conn.sessionsById['child-task'] = Session(
-        id: 'child-task',
-        parentID: _sessionID,
-        title: 'Run checkout tests',
-      );
-      conn.busySessions.add('child-task');
-      conn.notifyListeners();
-      await tester.pumpAndSettle();
-      await tester.enterText(_field, 'Still writing');
-      await tester.pump();
-      final editable = find.descendant(
-        of: _field,
-        matching: find.byType(EditableText),
-      );
-      final editor = tester.state<EditableTextState>(editable);
-      expect(tester.widget(_tasks), isA<IconButton>());
+  testWidgets('rotating a phone keeps the Tasks shortcut in the bar without '
+      'remounting the editor or losing the draft', (tester) async {
+    final conn = await _controller(_Api(title: _longTitle));
+    addTearDown(conn.dispose);
+    await _pumpChat(tester, conn, size: const Size(360, 740));
+    // The shortcut is contextual now: rotate while a related task is active.
+    conn.sessionsById['child-task'] = Session(
+      id: 'child-task',
+      parentID: _sessionID,
+      title: 'Run checkout tests',
+    );
+    conn.busySessions.add('child-task');
+    conn.notifyListeners();
+    await tester.pumpAndSettle();
+    await tester.enterText(_field, 'Still writing');
+    await tester.pump();
+    final editable = find.descendant(
+      of: _field,
+      matching: find.byType(EditableText),
+    );
+    final editor = tester.state<EditableTextState>(editable);
+    expect(tester.widget(_tasks), isA<KitIconButton>());
 
-      tester.view.physicalSize = const Size(740, 360);
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      expect(tester.widget(_tasks), isA<TextButton>());
-      expect(find.text('Tasks'), findsOneWidget);
-      expect(tester.state<EditableTextState>(editable), same(editor));
-      expect(_draftText(tester), 'Still writing');
-      await tester.pump(const Duration(milliseconds: 700));
-      expect(conn.sessionDraft(_sessionID), 'Still writing');
-    },
-  );
+    // A phone on its side is short: the bar keeps its phone arrangement
+    // (KitTopBar, kit-v2.md §8.1).
+    tester.view.physicalSize = const Size(740, 360);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(tester.widget(_tasks), isA<KitIconButton>());
+    expect(tester.state<EditableTextState>(editable), same(editor));
+    expect(_draftText(tester), 'Still writing');
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(conn.sessionDraft(_sessionID), 'Still writing');
+  });
 }

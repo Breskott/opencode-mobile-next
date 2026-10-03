@@ -4,6 +4,7 @@ import 'support/complete_message_history.dart';
 // assistant long-press actions, and earlier-messages pill gating.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +14,7 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 import 'package:opencode_mobile/ui/widgets/tool_card.dart';
@@ -258,11 +260,11 @@ void main() {
 
     // A running group starts summarized, with its status still visible.
     expect(find.byKey(const Key('embedded-tool-row')), findsNothing);
-    await tester.tap(find.byKey(const Key('tool-call-group-header')));
+    await tester.tap(find.byKey(const Key('work-group-header')));
     await tester.pump();
     expect(find.byKey(const Key('embedded-tool-row')), findsWidgets);
 
-    await tester.tap(find.byKey(const Key('tool-call-group-header')));
+    await tester.tap(find.byKey(const Key('work-group-header')));
     await tester.pump();
     expect(find.byKey(const Key('embedded-tool-row')), findsNothing);
 
@@ -310,16 +312,18 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('assistant-text-block')),
-        matching: find.byType(SelectableText),
+        matching: find.byType(KitSelectable),
       ),
       findsOneWidget,
     );
+    // Copy sits beside More, so More's menu does not repeat it.
+    expect(find.byKey(const ValueKey('message-copy-assistant-1')), findsOne);
     await tester.tap(find.byKey(const ValueKey('message-actions-assistant-1')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('message-action-copy')), findsOneWidget);
-    expect(find.byKey(const ValueKey('message-action-fork')), findsNothing);
-    expect(find.byKey(const ValueKey('message-action-delete')), findsOneWidget);
+    expect(find.byKey(const ValueKey('message-menu-copy')), findsNothing);
+    expect(find.byKey(const ValueKey('message-menu-fork')), findsNothing);
+    expect(find.byKey(const ValueKey('message-menu-delete')), findsOneWidget);
   });
 
   testWidgets('a prompt carries no control row; long-press opens its menu', (
@@ -345,8 +349,10 @@ void main() {
     await tester.longPress(find.text('Fix the login bug'));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('message-action-copy')), findsOneWidget);
-    expect(find.byKey(const ValueKey('message-action-fork')), findsOneWidget);
+    // The bubble's own menu (KitMessage.prompt): the same entries as the
+    // right-click menu.
+    expect(find.byKey(const ValueKey('message-menu-copy')), findsOneWidget);
+    expect(find.byKey(const ValueKey('message-menu-fork')), findsOneWidget);
   });
 
   testWidgets('copy complete reply includes its fragments but no other turn', (
@@ -398,10 +404,15 @@ void main() {
       find.byKey(const ValueKey('message-actions-assistant-1')),
       findsNothing,
     );
-    await tester.tap(find.byKey(const ValueKey('message-actions-assistant-2')));
-    await tester.pumpAndSettle();
-    expect(find.text('Copy complete reply'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('message-action-copy')));
+    final copy = find.byKey(const ValueKey('message-copy-assistant-2'));
+    expect(
+      find.descendant(
+        of: copy,
+        matching: find.byTooltip('Copy complete reply'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(copy);
     await tester.pumpAndSettle();
 
     expect(copied, ['First paragraph.\n\nSecond paragraph.']);
@@ -430,12 +441,12 @@ void main() {
       controller.repository = repository;
       await tester.pumpAndSettle();
 
+      expect(find.byTooltip('Copy complete reply'), findsOneWidget);
       await tester.tap(
         find.byKey(const ValueKey('message-actions-assistant-1')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Copy complete reply'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('message-action-delete')));
+      await tester.tap(find.byKey(const ValueKey('message-menu-delete')));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Delete message'));
       await tester.pumpAndSettle();
@@ -461,10 +472,9 @@ void main() {
       ];
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('message-actions-assistant-1')));
-    await tester.pumpAndSettle();
-    expect(find.text('Copy loaded reply'), findsOneWidget);
-    expect(find.text('Copy complete reply'), findsNothing);
+    // The footer's Copy names what it copies.
+    expect(find.byTooltip('Copy loaded reply'), findsOneWidget);
+    expect(find.byTooltip('Copy complete reply'), findsNothing);
   });
 
   testWidgets(
@@ -490,20 +500,36 @@ void main() {
       controller.notifyListeners();
       await tester.pump(const Duration(milliseconds: 400));
 
-      // A turn in progress has no footer yet; the menu is a long-press away
-      // (on the message's margin here, since prose itself is selectable).
+      // A turn in progress has no footer yet; the menu is a long-press away.
       expect(
         find.byKey(const ValueKey('message-actions-assistant-1')),
         findsNothing,
       );
-      await tester.longPressAt(
-        tester.getTopLeft(find.byKey(const ValueKey('message-assistant-1'))) +
-            const Offset(2, 2),
+      // The prose fills the conversation's width (a long-press on the words
+      // selects them), so the turn's menu is read from the actions it
+      // offers a screen reader and a long-press past the words alike.
+      final semantics = tester.ensureSemantics();
+      await tester.pump();
+      final turn = find.descendant(
+        of: find.byKey(const ValueKey('message-assistant-1')),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.customSemanticsActions != null,
+        ),
       );
-      await tester.pump(const Duration(milliseconds: 400));
-
-      expect(find.text('Copy reply so far'), findsOneWidget);
-      expect(find.text('Copy complete reply'), findsNothing);
+      final ids =
+          tester
+              .getSemantics(turn.first)
+              .getSemanticsData()
+              .customSemanticsActionIds ??
+          const <int>[];
+      final labels = [
+        for (final id in ids) CustomSemanticsAction.getAction(id)?.label,
+      ];
+      expect(labels, contains('Copy reply so far'));
+      expect(labels, isNot(contains('Copy complete reply')));
+      semantics.dispose();
     },
   );
 
@@ -539,11 +565,11 @@ void main() {
       await _pumpChat(tester, api);
       await tester.pumpAndSettle();
 
-      expect(find.text('Read 1 file, 1 step was not run'), findsOneWidget);
+      expect(find.text('Read 1 file · 1 not run'), findsOneWidget);
       expect(find.text('Exploring'), findsNothing);
       expect(find.text('Explored'), findsNothing);
       expect(find.byKey(const Key('embedded-tool-row')), findsNothing);
-      final group = find.byKey(const Key('tool-call-group'));
+      final group = find.byKey(const Key('work-group'));
       expect(
         find.descendant(
           of: group,
@@ -552,10 +578,8 @@ void main() {
         findsNothing,
       );
       expect(
-        tester
-            .getSemantics(find.byKey(const Key('tool-call-group-header')))
-            .label,
-        contains('includes steps not run'),
+        find.descendant(of: group, matching: find.byType(KitStatusMark)),
+        findsNothing,
       );
       semantics.dispose();
     },

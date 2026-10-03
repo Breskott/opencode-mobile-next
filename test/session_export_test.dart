@@ -14,6 +14,8 @@ import 'package:opencode_mobile/api2/gateway_operations.dart';
 import 'package:opencode_mobile/api2/transport.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_progress.dart';
+import 'package:opencode_mobile/ui/kit/kit_row_parts.dart';
 import 'package:opencode_mobile/ui/screens/session_export_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -30,7 +32,8 @@ class _Export extends ProductRepository implements SessionExportGateway {
   CancelToken? token;
   Object? error;
   @override
-  bool get sessionExportSupported => true;
+  bool get sessionExportSupported => supported;
+  bool supported = true;
   @override
   Future<Uint8List> exportSession(
     String id, {
@@ -60,6 +63,9 @@ class _Controller extends ConnectionController {
   Future<ServerOperationsGateway?> prepareActionRepository() async =>
       repository;
 }
+
+const _saveJson = 'Save complete conversation';
+const _saveMarkdown = 'Save readable transcript';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -151,6 +157,7 @@ void main() {
     WidgetTester tester,
     SaveSessionExport save, {
     Size? size,
+    bool supported = true,
   }) async {
     if (size != null) {
       tester.view.physicalSize = size;
@@ -158,7 +165,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
     }
-    final gateway = _Export();
+    final gateway = _Export()..supported = supported;
     final controller = _Controller(
       ProfileStore(prefs: await SharedPreferences.getInstance()),
     )..repository = gateway;
@@ -186,7 +193,7 @@ void main() {
       saved = bytes;
       return Uri.file('/backup.json');
     }, size: const Size(411, 891));
-    await tester.tap(find.text('Save file'));
+    await tester.tap(find.text(_saveJson));
     await tester.pumpAndSettle();
     gateway.bytes[0] = 0x58;
     expect(gateway.options, [true]);
@@ -222,7 +229,7 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.text('Save file'));
+    await tester.tap(find.text(_saveJson));
     await tester.pumpAndSettle();
     expect(gateway.ids, ['ses_full']);
     expect(oldSaves, 1);
@@ -238,7 +245,7 @@ void main() {
         started.complete();
         return release.future;
       });
-      await tester.tap(find.text('Save file'));
+      await tester.tap(find.text(_saveJson));
       await tester.pump();
       expect(started.isCompleted, isTrue);
       controller.repository = _Export();
@@ -258,12 +265,13 @@ void main() {
     );
     gateway.emitInvalidProgress = true;
     gateway.wait = Completer<void>();
-    await tester.tap(find.text('Save file'));
+    await tester.tap(find.text(_saveJson));
     await tester.pump();
-    final indicator = tester.widget<LinearProgressIndicator>(
-      find.byType(LinearProgressIndicator),
+    final indicator = tester.widget<KitProgressView>(
+      find.byType(KitProgressView),
     );
-    expect(indicator.value, 1.0);
+    expect(indicator.progress.value, 1.0);
+    expect(find.text('Downloading complete conversation…'), findsOneWidget);
     gateway.wait!.complete();
     await tester.pumpAndSettle();
   });
@@ -278,7 +286,7 @@ void main() {
     });
     await tester.tap(find.text('Readable transcript · Markdown'));
     await tester.pump();
-    await tester.tap(find.text('Save file'));
+    await tester.tap(find.text(_saveMarkdown));
     await tester.pumpAndSettle();
     expect(gateway.options, isEmpty);
     expect(find.text('Conversation saved'), findsNothing);
@@ -297,7 +305,7 @@ void main() {
       return null;
     });
     gateway.wait = Completer<void>();
-    await tester.tap(find.text('Save file'));
+    await tester.tap(find.text(_saveJson));
     await tester.pump();
     await tester.tap(find.text('Cancel download'));
     await tester.pump();
@@ -306,7 +314,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(saves, 0);
     gateway.wait = Completer<void>();
-    await tester.tap(find.text('Save file'));
+    await tester.tap(find.text(_saveJson));
     await tester.pump();
     controller.repository = _Export();
     gateway.wait!.complete();
@@ -321,11 +329,11 @@ void main() {
       (name, bytes, mime) async => Uri.file('/out'),
     );
     gateway.error = const Api2AuthRequired('not authorized');
-    await tester.tap(find.text('Save file'));
+    await tester.tap(find.text(_saveJson));
     await tester.pumpAndSettle();
     expect(find.textContaining('server denied access'), findsOneWidget);
     gateway.error = null;
-    await tester.tap(find.text('Save file'));
+    await tester.tap(find.text(_saveJson));
     await tester.pumpAndSettle();
     expect(gateway.options, [true, true]);
     expect(find.text('Conversation saved'), findsOneWidget);
@@ -368,7 +376,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Save file').hitTestable(), findsOneWidget);
+      expect(find.text(_saveJson).hitTestable(), findsOneWidget);
       final preview = Platform.environment['OC_EXPORT_PREVIEW'];
       if (preview != null && width == 411) {
         await tester.runAsync(() async {
@@ -382,18 +390,136 @@ void main() {
         });
       }
       await tester.scrollUntilVisible(
-        find.byType(SwitchListTile),
+        find.byType(KitSwitchRow),
         200,
         scrollable: find.byType(Scrollable),
       );
-      await tester.ensureVisible(find.byType(SwitchListTile));
+      await tester.ensureVisible(find.byType(KitSwitchRow));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(find.byType(KitSwitchRow));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Save file'));
+      await tester.tap(find.text(_saveJson));
       await tester.pumpAndSettle();
       expect(gateway.options, [false]);
       expect(tester.takeException(), isNull);
+    });
+  }
+
+  // screen-chat-3 (revamp): the map record's missing state, info and the
+  // server without the complete copy.
+
+  testWidgets(
+    'a server without the complete copy explains it and starts on the '
+    'transcript',
+    (tester) async {
+      Uint8List? saved;
+      final (_, gateway) = await screen(tester, (name, bytes, mime) async {
+        expect(name, 'opencode-ses_full.md');
+        saved = bytes;
+        return Uri.file('/t.md');
+      }, supported: false);
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          "This server can't send a complete copy. Save the readable "
+          'transcript instead.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(KitSwitchRow), findsNothing);
+      // Tapping the unavailable choice changes nothing.
+      await tester.tap(find.text('Complete conversation · JSON'));
+      await tester.pumpAndSettle();
+      expect(find.text(_saveJson), findsNothing);
+      await tester.tap(find.text(_saveMarkdown));
+      await tester.pumpAndSettle();
+      expect(utf8.decode(saved!), 'loaded markdown');
+      expect(gateway.ids, isEmpty);
+      expect(find.text('Conversation saved'), findsOneWidget);
+    },
+  );
+
+  testWidgets('a file the device cannot write says so and allows retry', (
+    tester,
+  ) async {
+    var attempts = 0;
+    final (_, gateway) = await screen(tester, (name, bytes, mime) async {
+      attempts++;
+      if (attempts == 1) throw const FileSystemException('denied');
+      return Uri.file('/backup.json');
+    });
+    await tester.tap(find.text(_saveJson));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining("Couldn't write the file on this device"),
+      findsOneWidget,
+    );
+    expect(find.text('Conversation saved'), findsNothing);
+    await tester.tap(find.text(_saveJson));
+    await tester.pumpAndSettle();
+    expect(attempts, 2);
+    expect(gateway.options, [true, true]);
+    expect(find.textContaining("Couldn't write the file"), findsNothing);
+    expect(find.text('Conversation saved'), findsOneWidget);
+  });
+
+  testWidgets('redaction says what it keeps and belongs to JSON only', (
+    tester,
+  ) async {
+    await screen(tester, (name, bytes, mime) async => null);
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining(
+        'Keeps who wrote each message; the words become placeholders',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byType(KitSwitchRow));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('unredacted file may contain'), findsOneWidget);
+    await tester.tap(find.text('Readable transcript · Markdown'));
+    await tester.pumpAndSettle();
+    expect(find.byType(KitSwitchRow), findsNothing);
+    expect(find.textContaining('unredacted file may contain'), findsNothing);
+    expect(find.text(_saveMarkdown), findsOneWidget);
+  });
+
+  testWidgets('a server that turns out to lack the copy moves to the '
+      'transcript', (tester) async {
+    final (_, gateway) = await screen(tester, (name, bytes, mime) async {
+      return null;
+    });
+    gateway.error = const SessionExportUnsupported();
+    await tester.tap(find.text(_saveJson));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('does not support JSON export'), findsOneWidget);
+    expect(find.text(_saveMarkdown), findsOneWidget);
+  });
+
+  for (final size in const [
+    Size(360, 800),
+    Size(412, 915),
+    Size(915, 412),
+    Size(800, 1280),
+    Size(1280, 800),
+    Size(1600, 1000),
+  ]) {
+    testWidgets('lays out at ${size.width.toInt()}x${size.height.toInt()} '
+        'while downloading', (tester) async {
+      final (_, gateway) = await screen(
+        tester,
+        (name, bytes, mime) async => null,
+        size: size,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      gateway.wait = Completer<void>();
+      await tester.tap(find.text(_saveJson));
+      await tester.pump();
+      expect(find.text('Cancel download'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      gateway.wait!.complete();
+      await tester.pumpAndSettle();
     });
   }
 }

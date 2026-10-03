@@ -1,0 +1,158 @@
+00:00 +0: loading test/revamp/shared_system_1_test.dart
+00:00 +0: test/revamp/shared_system_1_test.dart: ProductErrorState is a KitStateView an unexpected error: a title, the cause, Try again and Report a bug
+00:00 +1: test/revamp/shared_system_1_test.dart: ProductErrorState is a KitStateView a network error offers Switch server, not Report
+00:00 +2: test/revamp/shared_system_1_test.dart: ProductErrorState is a KitStateView a caller title and errorKind win; raw details fold away
+00:00 +3: test/revamp/shared_system_1_test.dart: ProductEmptyState and ProductInlineEmpty are KitStateViews with the one action
+00:00 +4: test/revamp/shared_system_1_test.dart: a refresh failure is a notice over the kept content
+00:00 +5: test/revamp/shared_system_1_test.dart: showProductError is an alert, never a snackbar
+00:00 +6: test/revamp/shared_system_1_test.dart: GatedRow is an unavailable KitRow with its reason
+00:00 +7: test/revamp/shared_system_1_test.dart: run-command sheet says what the command does and what the field takes
+00:01 +8: test/revamp/shared_system_1_test.dart: run-command sheet defaults to the most recent conversation and can change it
+00:01 +9: test/revamp/shared_system_1_test.dart: run-command sheet a failed run stays in the sheet with the arguments kept
+00:01 +10: test/revamp/shared_system_1_test.dart: run-command sheet a run in flight cannot be sent twice
+00:01 +11: loading test/revamp/shared_system_1_golden_test.dart
+00:02 +11: test/revamp/shared_system_1_golden_test.dart: (setUpAll)
+00:02 +11: test/revamp/shared_system_1_golden_test.dart: product error, unexpected (dark, 412x915)
+00:03 +12: test/revamp/shared_system_1_golden_test.dart: product error, network (dark, 412x915)
+00:03 +13: test/revamp/shared_system_1_golden_test.dart: product empty (dark, 412x915)
+00:03 +14: test/revamp/shared_system_1_golden_test.dart: refresh notice, section, gated row, inline empty (dark, 412x915)
+00:03 +15: test/revamp/shared_system_1_golden_test.dart: external link, https (dark, 412x915)
+00:03 +16: test/revamp/shared_system_1_golden_test.dart: external link, insecure http (dark, 412x915)
+00:03 +17: test/revamp/shared_system_1_golden_test.dart: external link, blocked (dark, 412x915)
+00:03 +18: test/revamp/shared_system_1_golden_test.dart: run command, idle (dark, 412x915)
+00:03 +19: test/revamp/shared_system_1_golden_test.dart: run command, run failed (dark, 412x915)
+00:04 +20: test/revamp/shared_system_1_golden_test.dart: product error, unexpected (dark, 1280x800)
+00:04 +21: test/revamp/shared_system_1_golden_test.dart: product error, network (dark, 1280x800)
+00:04 +22: test/revamp/shared_system_1_golden_test.dart: product empty (dark, 1280x800)
+00:04 +23: test/revamp/shared_system_1_golden_test.dart: refresh notice, section, gated row, inline empty (dark, 1280x800)
+00:04 +24: test/revamp/shared_system_1_golden_test.dart: external link, https (dark, 1280x800)
+00:04 +25: test/revamp/shared_system_1_golden_test.dart: external link, insecure http (dark, 1280x800)
+00:04 +26: test/revamp/shared_system_1_golden_test.dart: external link, blocked (dark, 1280x800)
+00:04 +27: test/revamp/shared_system_1_golden_test.dart: run command, idle (dark, 1280x800)
+00:04 +28: test/revamp/shared_system_1_golden_test.dart: run command, run failed (dark, 1280x800)
+00:04 +29: test/revamp/shared_system_1_golden_test.dart: product error, unexpected (light, 412x915)
+00:04 +30: test/revamp/shared_system_1_golden_test.dart: product error, network (light, 412x915)
+00:04 +31: test/revamp/shared_system_1_golden_test.dart: product empty (light, 412x915)
+00:05 +32: test/revamp/shared_system_1_golden_test.dart: refresh notice, section, gated row, inline empty (light, 412x915)
+00:05 +33: test/revamp/shared_system_1_golden_test.dart: external link, https (light, 412x915)
+00:05 +34: test/revamp/shared_system_1_golden_test.dart: external link, insecure http (light, 412x915)
+00:05 +35: test/revamp/shared_system_1_golden_test.dart: external link, blocked (light, 412x915)
+00:05 +36: test/revamp/shared_system_1_golden_test.dart: run command, idle (light, 412x915)
+00:05 +37: test/revamp/shared_system_1_golden_test.dart: run command, run failed (light, 412x915)
+00:05 +38: test/revamp/shared_system_1_golden_test.dart: product error, unexpected (light, 1280x800)
+00:05 +39: test/revamp/shared_system_1_golden_test.dart: product error, network (light, 1280x800)
+00:05 +40: test/revamp/shared_system_1_golden_test.dart: product empty (light, 1280x800)
+00:05 +41: test/revamp/shared_system_1_golden_test.dart: refresh notice, section, gated row, inline empty (light, 1280x800)
+00:05 +42: test/revamp/shared_system_1_golden_test.dart: external link, https (light, 1280x800)
+00:05 +43: test/revamp/shared_system_1_golden_test.dart: external link, insecure http (light, 1280x800)
+00:05 +44: test/revamp/shared_system_1_golden_test.dart: external link, blocked (light, 1280x800)
+00:05 +45: test/revamp/shared_system_1_golden_test.dart: run command, idle (light, 1280x800)
+00:05 +46: test/revamp/shared_system_1_golden_test.dart: run command, run failed (light, 1280x800)
+00:06 +47: test/revamp/shared_system_1_golden_test.dart: (tearDownAll)
+00:06 +47: loading test/external_link_test.dart
+00:06 +47: test/external_link_test.dart: safeExternalLinkUri accepts https and normalizes the scheme case
+00:06 +48: test/external_link_test.dart: safeExternalLinkUri accepts http so the caller can warn, not so it opens silently
+00:06 +49: test/external_link_test.dart: safeExternalLinkUri refuses every scheme a link label cannot describe
+00:06 +50: test/external_link_test.dart: safeExternalLinkUri refuses embedded credentials in any form
+00:06 +51: test/external_link_test.dart: safeExternalLinkUri refuses hostless, empty, and unparseable values
+00:06 +52: test/external_link_test.dart: safeExternalLinkUri refuses an overlong URL rather than passing it to the platform
+00:06 +53: test/external_link_test.dart: externalLinkHost names the port only when the URL does
+00:06 +54: test/external_link_test.dart: openExternalLink blocks a hostile scheme without asking the platform
+00:07 +55: test/external_link_test.dart: openExternalLink https still asks before leaving the app
+00:07 +56: test/external_link_test.dart: openExternalLink declining the confirmation opens nothing
+00:07 +57: test/external_link_test.dart: openExternalLink reports when no app can handle an allowed link
+00:07 +58: test/external_link_test.dart: openExternalLink reports a launcher failure instead of throwing
+00:07 +59: test/external_link_test.dart: openExternalLink never answers with a snackbar (KIT-34)
+00:07 +60: test/external_link_test.dart: openExternalLink insecure http: "Don't open" is the way back
+00:08 +61: test/external_link_test.dart: openExternalLink copy the link instead copies the full address and opens nothing
+00:08 +62: test/external_link_test.dart: openExternalLink the full address is one tap away under Details
+00:08 +63: loading test/glass_surface_test.dart
+00:09 +63: test/glass_surface_test.dart: high contrast uses opaque navigation without decorative depth
+00:10 +64: test/glass_surface_test.dart: accessible navigation uses opaque navigation without decorative depth
+00:10 +65: test/glass_surface_test.dart: reduced motion uses opaque navigation without decorative depth
+00:10 +66: test/glass_surface_test.dart: the dock turned to solid by Settings › Appearance › Glass
+00:10 +67: test/glass_surface_test.dart: frosted material clips a single backdrop filter
+00:10 +68: test/glass_surface_test.dart: frosted foreground contrast opencode light
+00:10 +69: test/glass_surface_test.dart: frosted foreground contrast opencode dark
+00:10 +70: test/glass_surface_test.dart: frosted foreground contrast catppuccin light
+00:10 +71: test/glass_surface_test.dart: frosted foreground contrast catppuccin dark
+00:10 +72: test/glass_surface_test.dart: frosted foreground contrast gruvbox light
+00:10 +73: test/glass_surface_test.dart: frosted foreground contrast gruvbox dark
+00:10 +74: test/glass_surface_test.dart: frosted foreground contrast solarized light
+00:10 +75: test/glass_surface_test.dart: frosted foreground contrast solarized dark
+00:10 +76: test/glass_surface_test.dart: frosted foreground contrast dracula light
+00:10 +77: test/glass_surface_test.dart: frosted foreground contrast dracula dark
+00:10 +78: test/glass_surface_test.dart: frosted foreground contrast nord light
+00:10 +79: test/glass_surface_test.dart: frosted foreground contrast nord dark
+00:10 +80: test/glass_surface_test.dart: frosted foreground contrast tokyoNight light
+00:10 +81: test/glass_surface_test.dart: frosted foreground contrast tokyoNight dark
+00:10 +82: test/glass_surface_test.dart: frosted foreground contrast oneDark light
+00:10 +83: test/glass_surface_test.dart: frosted foreground contrast oneDark dark
+00:10 +84: test/glass_surface_test.dart: frosted foreground contrast monokai light
+00:10 +85: test/glass_surface_test.dart: frosted foreground contrast monokai dark
+00:10 +86: test/glass_surface_test.dart: frosted foreground contrast rosePine light
+00:10 +87: test/glass_surface_test.dart: frosted foreground contrast rosePine dark
+00:10 +88: test/glass_surface_test.dart: frosted foreground contrast everforest light
+00:10 +89: test/glass_surface_test.dart: frosted foreground contrast everforest dark
+00:10 +90: test/glass_surface_test.dart: frosted foreground contrast kanagawa light
+00:10 +91: test/glass_surface_test.dart: frosted foreground contrast kanagawa dark
+00:10 +92: test/glass_surface_test.dart: frosted foreground contrast ayu light
+00:10 +93: test/glass_surface_test.dart: frosted foreground contrast ayu dark
+00:10 +94: test/glass_surface_test.dart: frosted foreground contrast nightOwl light
+00:10 +95: test/glass_surface_test.dart: frosted foreground contrast nightOwl dark
+00:10 +96: test/glass_surface_test.dart: frosted foreground contrast github light
+00:10 +97: test/glass_surface_test.dart: frosted foreground contrast github dark
+00:10 +98: test/glass_surface_test.dart: frosted foreground contrast palenight light
+00:10 +99: test/glass_surface_test.dart: frosted foreground contrast palenight dark
+00:10 +100: test/glass_surface_test.dart: frosted foreground contrast synthwave light
+00:10 +101: test/glass_surface_test.dart: frosted foreground contrast synthwave dark
+00:10 +102: test/glass_surface_test.dart: frosted foreground contrast cobalt light
+00:10 +103: test/glass_surface_test.dart: frosted foreground contrast cobalt dark
+00:10 +104: test/glass_surface_test.dart: frosted foreground contrast midnight light
+00:10 +105: test/glass_surface_test.dart: frosted foreground contrast midnight dark
+00:10 +106: test/glass_surface_test.dart: frosted foreground contrast paper light
+00:10 +107: test/glass_surface_test.dart: frosted foreground contrast paper dark
+00:10 +108: test/glass_surface_test.dart: frosted foreground contrast forest light
+00:10 +109: test/glass_surface_test.dart: frosted foreground contrast forest dark
+00:10 +110: test/glass_surface_test.dart: frosted foreground contrast ocean light
+00:10 +111: test/glass_surface_test.dart: frosted foreground contrast ocean dark
+00:10 +112: test/glass_surface_test.dart: frosted foreground contrast sunset light
+00:10 +113: test/glass_surface_test.dart: frosted foreground contrast sunset dark
+00:10 +114: test/glass_surface_test.dart: frosted foreground contrast sakura light
+00:10 +115: test/glass_surface_test.dart: frosted foreground contrast sakura dark
+00:10 +116: test/glass_surface_test.dart: frosted foreground contrast lavender light
+00:10 +117: test/glass_surface_test.dart: frosted foreground contrast lavender dark
+00:10 +118: test/glass_surface_test.dart: frosted foreground contrast mint light
+00:10 +119: test/glass_surface_test.dart: frosted foreground contrast mint dark
+00:10 +120: test/glass_surface_test.dart: frosted foreground contrast coffee light
+00:10 +121: test/glass_surface_test.dart: frosted foreground contrast coffee dark
+00:10 +122: test/glass_surface_test.dart: frosted foreground contrast slate light
+00:10 +123: test/glass_surface_test.dart: frosted foreground contrast slate dark
+00:11 +124: test/glass_surface_test.dart: frosted foreground contrast amber light
+00:11 +125: test/glass_surface_test.dart: frosted foreground contrast amber dark
+00:11 +126: test/glass_surface_test.dart: frosted foreground contrast highContrast light
+00:11 +127: test/glass_surface_test.dart: frosted foreground contrast highContrast dark
+00:11 +128: test/glass_surface_test.dart: an action failure is an alert in light
+00:11 +129: test/glass_surface_test.dart: an action failure is an alert in dark
+00:11 +130: loading test/bug_report_test.dart
+00:12 +130: test/bug_report_test.dart: bug report URL prefills the template, version, and platform, and nothing else
+00:12 +131: test/bug_report_test.dart: bug report URL falls back to an unknown version when the plugin never answers
+00:12 +132: test/bug_report_test.dart: bug report URL labels every platform the seam can report
+00:12 +133: test/bug_report_test.dart: openBugReport fallback a failed launch copies the link and explains in one pump
+00:12 +134: test/bug_report_test.dart: the failure surface carries the report affordance ProductErrorState offers Report a bug next to Try again
+00:12 +135: test/bug_report_test.dart: l10n localizations still load alongside the feedback imports
+00:12 +136: loading test/product_error_text_test.dart
+00:13 +136: test/product_error_text_test.dart: productErrorText passes a ProductException message through unchanged
+00:13 +137: test/product_error_text_test.dart: productErrorText passes an ApiException message through unchanged
+00:13 +138: test/product_error_text_test.dart: productErrorText treats a plain string as already-composed product copy
+00:13 +139: test/product_error_text_test.dart: productErrorText collapses a StateError to the generic connectivity line
+00:13 +140: test/product_error_text_test.dart: productErrorText collapses a SocketException to the generic connectivity line
+00:13 +141: test/product_error_text_test.dart: productErrorText names the missing keyring instead of blaming the server
+00:13 +142: test/product_error_text_test.dart: productErrorText shows a PlatformException message rather than "unreachable"
+00:13 +143: test/product_error_text_test.dart: productErrorText collapses unknown objects to the generic connectivity line
+00:13 +144: test/product_error_text_test.dart: OpenCodeApi.errorBodyDetail extracts the message field from a JSON error body string
+00:13 +145: test/product_error_text_test.dart: OpenCodeApi.errorBodyDetail extracts the nested data.message field from a decoded map
+00:13 +146: test/product_error_text_test.dart: OpenCodeApi.errorBodyDetail truncates a non-JSON (HTML) body to about 120 characters
+00:13 +147: test/product_error_text_test.dart: OpenCodeApi.errorBodyDetail collapses whitespace runs in the extracted detail
+00:13 +148: test/product_error_text_test.dart: OpenCodeApi.errorBodyDetail returns null for missing or empty bodies
+00:13 +149: All tests passed!

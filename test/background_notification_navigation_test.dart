@@ -209,13 +209,22 @@ void main() {
     final chat = tester.widget<ChatScreen>(find.byType(ChatScreen));
     expect(chat.sessionID, 'session-1');
     expect(find.text('Edit a file'), findsOneWidget);
-    expect(find.text('Allow once'), findsNothing);
+    // The card answers in place (chat-5); Details opens the exact request.
+    expect(find.byKey(const Key('permission-card-allow')), findsOneWidget);
+    expect(find.byKey(const Key('permission-sheet')), findsNothing);
     await tester.tap(find.byKey(const Key('permission-card-review')));
     await tester.pumpAndSettle();
-    expect(find.text('Allow once'), findsOneWidget);
+    final sheet = find.byKey(const Key('permission-sheet'));
+    expect(sheet, findsOneWidget);
+    expect(
+      find.descendant(of: sheet, matching: find.text('Allow once')),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('question notification opens the exact answer sheet', (
+  // P4.2a: the notification lands on the question's card in its
+  // conversation, never on a sheet over the Inbox list.
+  testWidgets('question notification lands on the question card in its chat', (
     tester,
   ) async {
     final controller = await _controllerFor(CodingAlertKind.question);
@@ -226,10 +235,10 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
-    expect(find.byType(ActivityScreen), findsOneWidget);
-    expect(find.text('Deployment'), findsWidgets);
-    expect(find.text('Which target should be used?'), findsWidgets);
-    expect(find.text('Send answers'), findsOneWidget);
+    final chat = tester.widget<ChatScreen>(find.byType(ChatScreen));
+    expect(chat.sessionID, 'session-1');
+    expect(chat.landOnRequestID, 'question-1');
+    expect(find.text('Send answers'), findsNothing);
   });
 
   testWidgets('widget row tap on the active profile opens its exact chat', (

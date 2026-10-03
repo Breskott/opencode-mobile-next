@@ -3,9 +3,13 @@
 set -euo pipefail
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 task_root="$(mktemp -d)"
-trap 'rm -rf -- "$task_root"' EXIT
+cases_root="$(mktemp -d)"
+trap 'rm -rf -- "$task_root" "$cases_root"' EXIT
 mkdir -p "$task_root/dist" "$task_root/scripts" "$task_root/mock-bin" "$task_root/docs/releases" "$task_root/artifact"
 cp "$repo_root/scripts/"{release.sh,release_github.sh,verify_github_release.py} "$task_root/scripts/"
+# Preflight reads the candidate's own quality workflow for its shard count.
+mkdir -p "$task_root/.github/workflows"
+cp "$repo_root/.github/workflows/android-quality.yml" "$task_root/.github/workflows/"
 printf 'version: 1.0.43+49\n' > "$task_root/pubspec.yaml"
 printf '# OpenCode Mobile 1.0.43+49\n\nFixture release notes.\n' > "$task_root/docs/releases/v1.0.43+49.md"
 printf 'fixture signed APK bytes\n' > "$task_root/artifact/opencode-mobile-1.0.43+49.apk"
@@ -80,12 +84,44 @@ def release():
     if flag('MOCK_DUPLICATE_ASSET'):
         assets.append(dict(id=4, name='opencode-mobile-1.0.43+49.apk'))
     return dict(id=int(os.getenv('MOCK_PAYLOAD_ID', '1')), tag_name=os.getenv('MOCK_RELEASE_TAG', 'v1.0.43+49'), assets=assets, draft=not ((root/'published').exists() or flag('MOCK_PUBLISHED')), prerelease=flag('MOCK_PRERELEASE'), body='wrong notes' if flag('MOCK_NOTES') else notes)
+def quality_jobs():
+    """Jobs of one android-quality run; MOCK_JOBS selects a broken variant."""
+    import re
+    workflow = (root/'.github/workflows/android-quality.yml').read_text()
+    shards = len(re.search(r'shard: \[([^\]]*)\]', workflow).group(1).split(','))
+    variant = os.getenv('MOCK_JOBS', 'full')
+    checks = ['Verify generated OpenCode SDK integrity', 'Test generated OpenCode SDK', 'Analyze generated OpenCode SDK', 'Analyze', 'Check the serial test runner', 'Run Android release lint']
+    build = ['Check out source', 'Compile test-signed release APK', 'Verify release artifact exists', 'Upload test-signed APK']
+    def job(name, steps, conclusion='success', step_conclusion='success'):
+        return dict(name=name, conclusion=conclusion, steps=[dict(name=step, conclusion=step_conclusion) for step in steps])
+    if variant == 'legacy':
+        # The old single-job shape: every step in one successful job.
+        steps = checks + ['Test'] + build
+        jobs = [job('verify', steps)]
+        return dict(total_count=len(jobs), jobs=jobs)
+    if variant == 'apk-only':
+        jobs = [job('checks', [], 'skipped'), job('test (shard ${{ matrix.shard }}/${{ strategy.job-total }})', [], 'skipped'), job('build', build), job('gate', ['Require every quality job'])]
+        return dict(total_count=len(jobs), jobs=jobs)
+    count = shards - 1 if variant == 'fewer-shards' else shards
+    jobs = [job('checks', checks, step_conclusion='skipped' if variant == 'lint-skipped' else 'success')]
+    for index in range(1, count + 1):
+        if variant == 'shard-missing' and index == count:
+            continue
+        conclusion = 'failure' if variant == 'shard-failed' and index == 3 else 'success'
+        step = 'skipped' if variant == 'shard-test-skipped' and index == 2 else 'success'
+        jobs.append(job(f'test (shard {index}/{count})', ['Set up pinned Flutter', 'Test'], conclusion, step))
+    if variant == 'duplicate-shard':
+        jobs.append(job(f'test (shard 1/{count})', ['Test']))
+    jobs.append(job('build', build[:-2] if variant == 'build-unverified' else build))
+    jobs.append(job('gate', ['Require every quality job'], 'failure' if variant == 'gate-failed' else 'success'))
+    if variant == 'gate-missing':
+        jobs.pop()
+    return dict(total_count=len(jobs) + (1 if variant == 'truncated' else 0), jobs=jobs)
 if args[0] == 'api':
     path = args[1]
     assert path.startswith('repos/Eslamasabry/opencode-mobile-next/')
     if '/jobs?' in path:
-        names = ['Verify generated OpenCode SDK integrity', 'Test generated OpenCode SDK', 'Analyze generated OpenCode SDK', 'Analyze', 'Check the serial test runner', 'Test', 'Run Android release lint', 'Compile test-signed release APK', 'Verify release artifact exists']
-        print(json.dumps(dict(jobs=[dict(conclusion='success', steps=[dict(name=name, conclusion='skipped' if name == 'Test' and flag('MOCK_APK_ONLY') else 'success') for name in names])])))
+        print(json.dumps(quality_jobs()))
     elif '/actions/runs/' in path:
         workflow = 'android-quality' if path.endswith('/101') else 'android-release'
         print(json.dumps(dict(head_sha=head, path=f'.github/workflows/{workflow}.yml', status='completed', conclusion='failure' if flag('MOCK_CI_FAILED') else 'success', event='workflow_dispatch')))
@@ -147,11 +183,34 @@ chmod +x "$task_root/mock-bin/"*
 # release.sh prefers configured Android SDK tools; supply fixture tools there too.
 mkdir -p "$task_root/sdk/build-tools/99.0.0"
 cp "$task_root/mock-bin/"{apksigner,aapt} "$task_root/sdk/build-tools/99.0.0/"
+base_root="$task_root"
 case_number=0
-run_case() {
-  local expected="$1" mode="$2"
+# Every case runs in its own clone of the fixture (its own logs and state
+# files), a few at a time; a failure leaves a marker and the end reports it.
+max_parallel=6
+spawn_case() {
+  local body="$1" number="$2"
   shift 2
+  while [[ "$(jobs -rp | wc -l)" -ge "$max_parallel" ]]; do wait -n || true; done
+  (
+    set +e
+    task_root="$cases_root/$number"
+    mkdir -p "$task_root"
+    cp -a "$base_root/." "$task_root"
+    ( set -e; "$body" "$number" "$@" ) || touch "$cases_root/failed"
+  ) &
+}
+run_case() {
   case_number=$((case_number + 1))
+  spawn_case run_case_body "$case_number" "$@"
+}
+run_draft_case() {
+  case_number=$((case_number + 1))
+  spawn_case run_draft_case_body "$case_number" "$@"
+}
+run_case_body() {
+  local case_number="$1" expected="$2" mode="$3"
+  shift 3
   rm -f "$task_root/published" "$task_root/release-fetch-count"
   : > "$task_root/commands.log"
   local result=0
@@ -188,7 +247,13 @@ run_case fail publish MOCK_TAG_MISSING=true
 run_case fail publish MOCK_TAG_HEAD=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 run_case fail publish MOCK_CI_HEAD=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 run_case fail publish MOCK_CI_FAILED=true
-run_case fail publish MOCK_APK_ONLY=true
+# Quality evidence: one run whose checks, build, gate and every test shard of
+# the workflow passed. The old single-job shape and partial runs are refused.
+for variant in apk-only legacy shard-missing shard-failed shard-test-skipped \
+  fewer-shards duplicate-shard lint-skipped build-unverified gate-failed \
+  gate-missing truncated; do
+  run_case fail publish MOCK_JOBS="$variant"
+done
 run_case fail publish MOCK_PUBLISHED=true
 run_case fail publish MOCK_PRERELEASE=true
 run_case fail publish MOCK_NOTES=true
@@ -216,10 +281,9 @@ source = (Path(sys.argv[1])/'.github/workflows/android-release.yml').read_text()
 body = source.split('      - name: Create draft stable GitHub release\n', 1)[1].split('        run: |\n', 1)[1]
 (Path(sys.argv[2])/'stage-draft.sh').write_text('\n'.join(line[10:] if line.startswith('          ') else line for line in body.splitlines())+'\n')
 PYWORKFLOW
-run_draft_case() {
-  local expected="$1"
-  shift
-  case_number=$((case_number + 1))
+run_draft_case_body() {
+  local case_number="$1" expected="$2"
+  shift 2
   rm -f "$task_root/draft-touched"
   local result=0
   env PATH="$task_root/mock-bin:$PATH" MOCK_ROOT="$task_root" \
@@ -238,4 +302,9 @@ run_draft_case() {
 run_draft_case pass
 run_draft_case pass MOCK_RELEASE_ABSENT=true
 run_draft_case fail MOCK_PUBLISHED=true
+wait
+if [[ -e "$cases_root/failed" ]]; then
+  echo 'FAIL: a publication contract case failed (output above)' >&2
+  exit 1
+fi
 echo "PASS: $case_number GitHub publication contract cases"

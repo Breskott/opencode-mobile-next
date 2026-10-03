@@ -1,0 +1,89 @@
+{
+  "runtime": "1.18.32",
+  "archive_sha256": "763af386ef88a8cab18df00fcf055690e5a55e31a7088beabe02307142a6adce",
+  "network": "isolated_loopback_only",
+  "credentials": "fake_only",
+  "scope": "provider_loading_not_inference_or_browser_exchange",
+  "observations": [
+    {
+      "stage": "stored_oauth",
+      "providers": {
+        "anthropic": {
+          "connected": true,
+          "loaded": false,
+          "browser_method": false
+        },
+        "google": {
+          "connected": true,
+          "loaded": false,
+          "browser_method": false
+        },
+        "openai": {
+          "connected": true,
+          "loaded": true,
+          "browser_method": true
+        }
+      }
+    },
+    {
+      "stage": "oauth_after_idle_dispose",
+      "providers": {
+        "anthropic": {
+          "connected": true,
+          "loaded": false,
+          "browser_method": false
+        },
+        "google": {
+          "connected": true,
+          "loaded": false,
+          "browser_method": false
+        },
+        "openai": {
+          "connected": true,
+          "loaded": true,
+          "browser_method": true
+        }
+      }
+    },
+    {
+      "stage": "keys_saved_before_dispose",
+      "providers": {
+        "anthropic": {
+          "connected": true,
+          "loaded": false,
+          "browser_method": false
+        },
+        "google": {
+          "connected": true,
+          "loaded": false,
+          "browser_method": false
+        },
+        "openai": {
+          "connected": true,
+          "loaded": true,
+          "browser_method": true
+        }
+      }
+    },
+    {
+      "stage": "keys_after_idle_dispose",
+      "providers": {
+        "anthropic": {
+          "connected": true,
+          "loaded": true,
+          "browser_method": false
+        },
+        "google": {
+          "connected": true,
+          "loaded": true,
+          "browser_method": false
+        },
+        "openai": {
+          "connected": true,
+          "loaded": true,
+          "browser_method": true
+        }
+      }
+    }
+  ]
+}

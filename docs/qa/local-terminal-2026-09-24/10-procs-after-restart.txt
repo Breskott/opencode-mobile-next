@@ -1,0 +1,5 @@
+3 processes of u0_a193 (the app itself included)
+   PID   PPID USER            RSS NAME                     ARGS (cut at 150)
+ 11726    366 u0_a193      208284 io.github.eslamasabry.opencode_mobile io.github.eslamasabry.opencode_mobile
+ 13412  11726 u0_a193        3364 libproot.so              libproot.so --root-id --kill-on-exit --link2symlink -L --sysvipc --rootfs=/data/user/0/io.github.eslamasabry.opencode_mobile/files/linux/ubuntu --bind
+ 13416  13412 u0_a193        4052 bash                     bash -l

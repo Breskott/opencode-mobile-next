@@ -7,6 +7,7 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/screens/isolated_task_sheet.dart';
 import 'package:opencode_mobile/ui/screens/worktrees_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -97,6 +98,12 @@ class _Controller extends ConnectionController {
   @override
   ServerCapabilities get capabilities => capabilityOverride;
 
+  /// The selected profile (the draft's owner), when a test sets one.
+  ServerProfile? profileOverride;
+
+  @override
+  ServerProfile? get profile => profileOverride ?? super.profile;
+
   @override
   Future<ServerOperationsGateway?> prepareActionRepository() async {
     await beforeRepository?.call();
@@ -130,9 +137,33 @@ class _Controller extends ConnectionController {
   }) => selectLocation(directory: directory, workspace: workspace);
 }
 
+/// One prompt the sheet sent.
+class _Prompt {
+  const _Prompt(this.sessionID, this.text);
+  final String sessionID;
+  final String text;
+}
+
 class _Gateway implements ServerGateway {
   _Gateway(this.controller);
   final _Controller controller;
+  final prompts = <_Prompt>[];
+  Object? promptError;
+
+  @override
+  Future<void> promptAsync(
+    String sessionID, {
+    required String text,
+    ModelRef? model,
+    String? agent,
+    String? variant,
+    List<PromptAttachment> attachments = const [],
+    List<PromptAgentMention> agentMentions = const [],
+    PromptDelivery? delivery,
+  }) async {
+    if (promptError case final error?) throw error;
+    prompts.add(_Prompt(sessionID, text));
+  }
 
   @override
   Future<Session> createSession() async {
@@ -206,6 +237,7 @@ Future<_HostState> _openSheet(
   _Controller controller, {
   Duration timeout = const Duration(seconds: 45),
   String? name,
+  String? task,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -215,9 +247,16 @@ Future<_HostState> _openSheet(
   await tester.tap(find.byKey(const Key('open-sheet')));
   await tester.pumpAndSettle();
   expect(find.byKey(const Key('isolated-task-sheet')), findsOneWidget);
+  if (task != null) {
+    await tester.enterText(find.byKey(const Key('isolated-task-prompt')), task);
+  }
   if (name != null) {
+    await tester.tap(find.byKey(const Key('isolated-task-options')));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('isolated-task-name')), name);
   }
+  await tester.ensureVisible(find.byKey(const Key('isolated-task-start')));
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('isolated-task-start')));
   await tester.pump();
   return tester.state<_HostState>(find.byType(_Host));
@@ -261,7 +300,7 @@ void main() {
     await tester.pumpAndSettle();
     // Retain the original callback to exercise a stale queued tap as well.
     final start = tester
-        .widget<FilledButton>(find.byKey(const Key('isolated-task-start')))
+        .widget<KitButton>(find.byKey(const Key('isolated-task-start')))
         .onPressed!;
     controller.repository = other;
     controller.adoptConnectedProfileForTesting(
@@ -289,7 +328,10 @@ void main() {
     await tester.pumpAndSettle();
     start();
     await tester.pumpAndSettle();
-    expect(find.textContaining('Close this sheet'), findsOneWidget);
+    expect(
+      find.textContaining('start again from the project you want'),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('isolated-task-start')), findsNothing);
     expect(original.createProjectDirectory, isNull);
     expect(other.createProjectDirectory, isNull);
@@ -459,18 +501,16 @@ void main() {
     addTearDown(controller.dispose);
     final host = await _openSheet(tester, controller, name: 'wake-fix');
 
-    expect(find.text('Creating the worktree…'), findsOneWidget);
+    expect(find.text('Making the copy…'), findsOneWidget);
     expect(repository.createName, 'wake-fix');
     expect(repository.createProjectDirectory, '/work/app');
     expect(find.byKey(const Key('isolated-task-stop')), findsOneWidget);
 
     repository.create.complete(_created);
     await tester.pump();
-    expect(
-      find.text('wake-fix was created. OpenCode is preparing it…'),
-      findsOneWidget,
-    );
-    expect(find.text('Branch opencode/wake-fix'), findsOneWidget);
+    expect(find.text('Setting up wake-fix…'), findsOneWidget);
+    // The branch and folder are technical: under Details only.
+    expect(find.text('opencode/wake-fix'), findsNothing);
     expect(controller.locations, isEmpty, reason: 'no switch before ready');
 
     _ready(controller);
@@ -497,7 +537,7 @@ void main() {
 
     _ready(controller);
     await tester.pump();
-    expect(find.text('Creating the worktree…'), findsOneWidget);
+    expect(find.text('Making the copy…'), findsOneWidget);
 
     repository.create.complete(_created);
     await tester.pumpAndSettle();
@@ -521,7 +561,7 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
 
     expect(
-      find.text('wake-fix was created, but its setup status is not confirmed.'),
+      find.text("wake-fix is made, but its setup hasn't reported back."),
       findsOneWidget,
     );
     expect(controller.createdSessions, isEmpty);
@@ -529,10 +569,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('isolated-task-keep-waiting')));
     await tester.pump();
-    expect(
-      find.text('wake-fix was created. OpenCode is preparing it…'),
-      findsOneWidget,
-    );
+    expect(find.text('Setting up wake-fix…'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     expect(find.byKey(const Key('isolated-task-open-anyway')), findsOneWidget);
 
@@ -577,7 +614,8 @@ void main() {
     await _openSheet(tester, controller);
     expect(
       find.text(
-        'Stopping now cannot undo a create the server may already be running.',
+        'If you stop waiting, the copy may still be made. '
+        "You'll find it under Project › Worktrees.",
       ),
       findsOneWidget,
     );
@@ -591,40 +629,274 @@ void main() {
     expect(repository.removeCalls, isEmpty);
   });
 
-  testWidgets('failed preparation keeps the worktree listed', (tester) async {
+  void failSetup(_Controller controller) => controller.handleEventForTesting(
+    EventEnvelope(
+      type: 'worktree.failed',
+      directory: _directory,
+      project: 'project-1',
+      properties: const {'message': 'setup script exited 1'},
+    ),
+  );
+
+  testWidgets('a failed setup names the copy, keeps the setup output under '
+      'Details, and offers Start anyway, Remove the copy and Close', (
+    tester,
+  ) async {
     final repository = _Repository();
     final controller = await _controller(repository);
     addTearDown(controller.dispose);
     final host = await _openSheet(tester, controller);
     repository.create.complete(_created);
     await tester.pump();
-    controller.handleEventForTesting(
-      EventEnvelope(
-        type: 'worktree.failed',
-        directory: _directory,
-        project: 'project-1',
-        properties: const {'message': 'setup script exited 1'},
-      ),
-    );
+    failSetup(controller);
     await tester.pump();
 
-    expect(
-      find.text('OpenCode could not prepare the worktree.'),
-      findsOneWidget,
-    );
-    expect(find.text('setup script exited 1'), findsOneWidget);
+    expect(find.text('Setup failed in wake-fix'), findsOneWidget);
     expect(
       find.text(
-        'wake-fix stays listed under Manage project. Nothing was deleted.',
+        "The copy is made, but its setup didn't finish. Start in it anyway, "
+        'or remove it.',
       ),
       findsOneWidget,
     );
-    expect(find.byKey(const Key('isolated-task-open-anyway')), findsNothing);
+    // The script's own words are technical: never the body, only Details.
+    expect(find.textContaining('setup script exited 1'), findsNothing);
+    await tester.ensureVisible(find.byKey(const Key('isolated-task-details')));
+    await tester.tap(find.byKey(const Key('isolated-task-details')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('setup script exited 1'), findsOneWidget);
+    expect(find.text('What the setup reported'), findsOneWidget);
+
+    expect(find.byKey(const Key('isolated-task-start-anyway')), findsOneWidget);
+    expect(find.byKey(const Key('isolated-task-remove')), findsOneWidget);
+    expect(find.byKey(const Key('isolated-task-dismiss')), findsOneWidget);
     await tester.tap(find.byKey(const Key('isolated-task-dismiss')));
     await tester.pumpAndSettle();
     expect(host.results, [null]);
     expect(controller.createdSessions, isEmpty);
+    expect(repository.removeCalls, isEmpty, reason: 'never an implicit delete');
+  });
+
+  testWidgets('Start anyway opens the conversation in a copy whose setup '
+      'failed and sends the task', (tester) async {
+    final repository = _Repository();
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    final gateway = controller.api! as _Gateway;
+    final host = await _openSheet(tester, controller, task: 'Fix the login');
+    repository.create.complete(_created);
+    await tester.pump();
+    failSetup(controller);
+    await tester.pump();
+
+    await tester.ensureVisible(
+      find.byKey(const Key('isolated-task-start-anyway')),
+    );
+    await tester.tap(find.byKey(const Key('isolated-task-start-anyway')));
+    await tester.pumpAndSettle();
+    expect(controller.locations, [_directory]);
+    expect(host.results.single?.id, 'ses_1');
+    expect(gateway.prompts.single.sessionID, 'ses_1');
+    expect(gateway.prompts.single.text, 'Fix the login');
+  });
+
+  testWidgets('Remove the copy asks once, removes it and returns to the form '
+      'with the words kept', (tester) async {
+    final repository = _Repository();
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await _openSheet(tester, controller, task: 'Fix the login');
+    repository.create.complete(_created);
+    await tester.pump();
+    failSetup(controller);
+    await tester.pump();
+
+    await tester.ensureVisible(find.byKey(const Key('isolated-task-remove')));
+    await tester.tap(find.byKey(const Key('isolated-task-remove')));
+    await tester.pumpAndSettle();
+    expect(find.text('Remove wake-fix?'), findsOneWidget);
     expect(repository.removeCalls, isEmpty);
+    await tester.tap(find.byKey(const Key('isolated-task-remove-confirm')));
+    await tester.pumpAndSettle();
+
+    expect(repository.removeCalls, [_directory]);
+    expect(find.byKey(const Key('isolated-task-removed')), findsOneWidget);
+    expect(find.text('Removed wake-fix. You can start again.'), findsOneWidget);
+    expect(find.text('Fix the login'), findsOneWidget);
+    expect(find.byKey(const Key('isolated-task-start')), findsOneWidget);
+    expect(controller.createdSessions, isEmpty);
+  });
+
+  testWidgets('a typed task is sent to the new conversation once it opens', (
+    tester,
+  ) async {
+    final repository = _Repository();
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    final gateway = controller.api! as _Gateway;
+    final host = await _openSheet(tester, controller, task: 'Fix the login');
+    repository.create.complete(_created);
+    await tester.pump();
+    expect(gateway.prompts, isEmpty, reason: 'nothing before the copy');
+    _ready(controller);
+    await tester.pumpAndSettle();
+
+    expect(host.results.single?.id, 'ses_1');
+    expect(gateway.prompts, hasLength(1));
+    expect(gateway.prompts.single.sessionID, 'ses_1');
+    expect(gateway.prompts.single.text, 'Fix the login');
+  });
+
+  testWidgets('with no task typed the conversation opens blank', (
+    tester,
+  ) async {
+    final repository = _Repository();
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    final gateway = controller.api! as _Gateway;
+    final host = await _openSheet(tester, controller);
+    repository.create.complete(_created);
+    await tester.pump();
+    _ready(controller);
+    await tester.pumpAndSettle();
+    expect(host.results.single?.id, 'ses_1');
+    expect(gateway.prompts, isEmpty);
+  });
+
+  testWidgets('a task that could not be sent waits as the conversation\'s '
+      'draft, and the sheet says so before opening it', (tester) async {
+    final repository = _Repository();
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    final gateway = controller.api! as _Gateway
+      ..promptError = const ProductException('upstream 502');
+    final host = await _openSheet(tester, controller, task: 'Fix the login');
+    repository.create.complete(_created);
+    await tester.pump();
+    _ready(controller);
+    await tester.pumpAndSettle();
+
+    expect(host.results, isEmpty);
+    expect(find.text("Couldn't send your task"), findsOneWidget);
+    expect(
+      find.text(
+        "It's waiting in the conversation's message box, ready to send.",
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('upstream 502'), findsNothing);
+    expect(gateway.prompts, isEmpty);
+    expect(controller.sessionDraft('ses_1'), 'Fix the login');
+
+    await tester.tap(find.byKey(const Key('isolated-task-open-conversation')));
+    await tester.pumpAndSettle();
+    expect(host.results.single?.id, 'ses_1');
+  });
+
+  testWidgets('a failed create says so in words and Try again sends the same '
+      'request again', (tester) async {
+    final repository = _Repository();
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await _openSheet(tester, controller, task: 'Fix the login');
+    repository.create.completeError(
+      ApiException('fatal: not a git repository', statusCode: 500),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text("Couldn't make the copy"), findsOneWidget);
+    expect(find.textContaining('fatal: not a git repository'), findsNothing);
+
+    repository.create = Completer<WorktreeInfo>();
+    await tester.ensureVisible(
+      find.byKey(const Key('isolated-task-try-again')),
+    );
+    await tester.tap(find.byKey(const Key('isolated-task-try-again')));
+    await tester.pump();
+    expect(find.text('Making the copy…'), findsOneWidget);
+    repository.create.complete(_created);
+    await tester.pump();
+    _ready(controller);
+    await tester.pumpAndSettle();
+    expect(controller.createdSessions, hasLength(1));
+    expect((controller.api! as _Gateway).prompts.single.text, 'Fix the login');
+  });
+
+  testWidgets('a task typed and closed is back on the next open, and gone '
+      'once it reached its conversation', (tester) async {
+    final repository = _Repository();
+    final controller = await _controller(repository)
+      ..profileOverride = ServerProfile(
+        id: 'remote',
+        name: 'remote',
+        baseUrl: 'http://127.0.0.1:1',
+      );
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: _Host(
+          controller: controller,
+          timeout: const Duration(seconds: 45),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('open-sheet')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('isolated-task-prompt')),
+      'Fix the login',
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('isolated-task-close')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('isolated-task-close')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('open-sheet')));
+    await tester.pumpAndSettle();
+    expect(find.text('Fix the login'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('isolated-task-start')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('isolated-task-start')));
+    await tester.pump();
+    repository.create.complete(_created);
+    await tester.pump();
+    _ready(controller);
+    await tester.pumpAndSettle();
+    expect((controller.api! as _Gateway).prompts.single.text, 'Fix the login');
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('oc.draft.isolated.task.remote'), isNull);
+  });
+
+  testWidgets('the form asks what to work on first and keeps the name under '
+      'Options', (tester) async {
+    final repository = _Repository();
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: _Host(
+          controller: controller,
+          timeout: const Duration(seconds: 45),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('open-sheet')));
+    await tester.pumpAndSettle();
+    expect(find.text('Start in a separate copy'), findsOneWidget);
+    expect(
+      find.text(
+        "Works on its own branch, so it can't clash with your other "
+        'conversations.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('What should it work on?'), findsOneWidget);
+    expect(find.byKey(const Key('isolated-task-name')), findsNothing);
+    expect(find.textContaining('worktree'), findsNothing);
+    await tester.tap(find.byKey(const Key('isolated-task-options')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('isolated-task-name')), findsOneWidget);
+    expect(find.text('Start'), findsOneWidget);
   });
 
   testWidgets('a scope that resolves to another project refuses the session', (

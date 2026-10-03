@@ -170,7 +170,9 @@ void main() {
           await tester.tap(find.text('Open'));
           await tester.pumpAndSettle();
           expect(
-            Directionality.of(tester.element(find.byType(BottomSheet))),
+            Directionality.of(
+              tester.element(find.byKey(const ValueKey('kit-sheet-content'))),
+            ),
             locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
           );
           expect(
@@ -186,7 +188,7 @@ void main() {
           expect(tester.takeException(), isNull);
           await tester.tap(cancel);
           await tester.pumpAndSettle();
-          expect(find.byType(BottomSheet), findsNothing);
+          expect(find.byKey(const ValueKey('kit-sheet-content')), findsNothing);
           expect(manager.selectedPack.id, 'base');
         },
       );
@@ -247,7 +249,15 @@ void main() {
           );
           await tester.pumpAndSettle();
           final model = find.text('GPT-5.4');
-          await tester.ensureVisible(model);
+          final list = find
+              .byWidgetPredicate(
+                (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+              )
+              .first;
+          // The kit model sheet (fa9fc679, 3fcace2c) puts search, tabs and a
+          // pinned "Use model" above and below the list; at 2.5x the first
+          // model is past what the lazy list has built, so scroll to it.
+          await tester.scrollUntilVisible(model, 120, scrollable: list);
           await tester.pumpAndSettle();
           expect(model, findsOneWidget);
           expect(tester.takeException(), isNull);
@@ -257,7 +267,9 @@ void main() {
                 ? 'إغلاق اختيار النموذج'
                 : 'Close model selector',
           );
-          await tester.ensureVisible(close);
+          // Back up to the header the list scrolled away.
+          await tester.scrollUntilVisible(close, -120, scrollable: list);
+          await tester.pumpAndSettle();
           await tester.tap(close);
           expect(closed, isTrue);
         },

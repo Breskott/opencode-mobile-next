@@ -2,26 +2,39 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/ui/kit/chat/kit_markdown.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 
 void main() {
   group('looksLikeFilePath', () {
     test('accepts anchored and extensioned paths', () {
-      expect(looksLikeFilePath('/tmp/opencode/shots/home-desktop.png'), isTrue);
-      expect(looksLikeFilePath('lib/state/connection.dart'), isTrue);
-      expect(looksLikeFilePath('lib/state/connection.dart:1146'), isTrue);
-      expect(looksLikeFilePath('~/notes/todo.md'), isTrue);
-      expect(looksLikeFilePath('./scripts/run.sh'), isTrue);
-      expect(looksLikeFilePath('/tmp/rec-stop'), isTrue);
+      expect(
+        KitMarkdown.looksLikeFilePath('/tmp/opencode/shots/home-desktop.png'),
+        isTrue,
+      );
+      expect(
+        KitMarkdown.looksLikeFilePath('lib/state/connection.dart'),
+        isTrue,
+      );
+      expect(
+        KitMarkdown.looksLikeFilePath('lib/state/connection.dart:1146'),
+        isTrue,
+      );
+      expect(KitMarkdown.looksLikeFilePath('~/notes/todo.md'), isTrue);
+      expect(KitMarkdown.looksLikeFilePath('./scripts/run.sh'), isTrue);
+      expect(KitMarkdown.looksLikeFilePath('/tmp/rec-stop'), isTrue);
     });
 
     test('rejects non-paths', () {
-      expect(looksLikeFilePath('and/or'), isFalse);
-      expect(looksLikeFilePath('https://example.com/a.png'), isFalse);
-      expect(looksLikeFilePath('flutter test'), isFalse);
-      expect(looksLikeFilePath('a/b c/d.txt'), isFalse);
-      expect(looksLikeFilePath('foo.dart'), isFalse);
-      expect(looksLikeFilePath('x/y'), isFalse);
+      expect(KitMarkdown.looksLikeFilePath('and/or'), isFalse);
+      expect(
+        KitMarkdown.looksLikeFilePath('https://example.com/a.png'),
+        isFalse,
+      );
+      expect(KitMarkdown.looksLikeFilePath('flutter test'), isFalse);
+      expect(KitMarkdown.looksLikeFilePath('a/b c/d.txt'), isFalse);
+      expect(KitMarkdown.looksLikeFilePath('foo.dart'), isFalse);
+      expect(KitMarkdown.looksLikeFilePath('x/y'), isFalse);
     });
   });
 
@@ -147,7 +160,7 @@ void main() {
     expect(validated, isEmpty);
   });
 
-  testWidgets('without a scope, path-like spans render as plain chips', (
+  testWidgets('without a scope, path-like spans render as plain code', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -156,7 +169,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('lib/a/b.dart'), findsOneWidget);
+    // Inline code is part of the sentence now, not a boxed widget.
+    expect(
+      find.textContaining('lib/a/b.dart', findRichText: true),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('path-link-lib/a/b.dart')), findsNothing);
   });
 }

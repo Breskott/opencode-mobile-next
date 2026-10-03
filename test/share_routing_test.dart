@@ -133,6 +133,8 @@ Widget _app(ConnectionController controller, ShareIntent share) =>
       child: OcApp(updateService: _NoUpdateService(), shareIntent: share),
     );
 
+final _shareFailed = find.byKey(const ValueKey('kit-status-app:share-failed'));
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -174,8 +176,12 @@ void main() {
     expect(find.textContaining('Connect to a server'), findsOneWidget);
     expect(share.pending.value, 'paste me later');
     expect(find.byType(ChatScreen), findsNothing);
-    // Let the snackbar's own timer run out before the tree is torn down.
-    await tester.pump(const Duration(seconds: 5));
+    // Let the snackbar's own timer and the controller's connection wait
+    // (eight seconds, owned by the controller since 3d64653c) run out
+    // before the tree is torn down; the share still waits after both.
+    await tester.pump(const Duration(seconds: 9));
+    expect(share.pending.value, 'paste me later');
+    expect(find.byType(ChatScreen), findsNothing);
   });
 
   testWidgets(
@@ -207,7 +213,7 @@ void main() {
         'latest startup text',
       );
       expect(share.pending.value, isNull);
-      expect(find.byType(MaterialBanner), findsNothing);
+      expect(_shareFailed, findsNothing);
       await tester.pump(const Duration(seconds: 5));
     },
   );
@@ -230,31 +236,24 @@ void main() {
     expect(share.pending.value, 'keep this shared text');
     expect(find.byType(ChatScreen), findsNothing);
     expect(find.textContaining('sensitive raw'), findsNothing);
-    expect(find.byType(MaterialBanner), findsOneWidget);
+    expect(_shareFailed, findsOneWidget);
+    expect(
+      find.text("Shared text saved · couldn't open a conversation"),
+      findsOneWidget,
+    );
     await controller.refreshSessions();
     await tester.pump(const Duration(seconds: 8));
     expect(api.created, 1);
-    expect(
-      find.descendant(
-        of: find.byType(MaterialBanner),
-        matching: find.text('Try again'),
-      ),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('share-failed-retry')), findsOneWidget);
 
     api.createError = null;
-    await tester.tap(
-      find.descendant(
-        of: find.byType(MaterialBanner),
-        matching: find.text('Try again'),
-      ),
-    );
+    await tester.tap(find.byKey(const ValueKey('share-failed-retry')));
     await tester.pumpAndSettle();
     final chat = tester.widget<ChatScreen>(find.byType(ChatScreen));
     expect(chat.initialText, 'keep this shared text');
     expect(api.created, 2);
     expect(share.pending.value, isNull);
-    expect(find.byType(MaterialBanner), findsNothing);
+    expect(_shareFailed, findsNothing);
   });
 
   testWidgets('a newer share survives an older in-flight creation failure', (
@@ -301,13 +300,56 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ChatScreen), findsNothing);
     expect(share.pending.value, 'review in the right connection');
+    expect(find.byKey(const ValueKey('share-failed-retry')), findsOneWidget);
+    expect(api.created, 1);
+  });
+
+  testWidgets('a failed share can be discarded with Undo, and says so twice', (
+    tester,
+  ) async {
+    final controller = await _controller(connected: true);
+    addTearDown(controller.dispose);
+    final api = controller.api! as _ShareApi;
+    api.createError = StateError('refused');
+    final share = ShareIntent(channel: const MethodChannel('oc/share-test'));
+    addTearDown(share.dispose);
+    await tester.pumpWidget(_app(controller, share));
+    await tester.pumpAndSettle();
+    share.pending.value = 'drop me';
+    await tester.pumpAndSettle();
+    expect(_shareFailed, findsOneWidget);
+
+    // Try again fails again: the line says so instead of repeating itself.
+    await tester.tap(find.byKey(const ValueKey('share-failed-retry')));
+    await tester.pumpAndSettle();
+    expect(api.created, 2);
     expect(
-      find.descendant(
-        of: find.byType(MaterialBanner),
-        matching: find.text('Try again'),
-      ),
+      find.text("Still couldn't open a conversation · shared text saved"),
       findsOneWidget,
     );
-    expect(api.created, 1);
+
+    // More › Discard: the text goes only when the Undo bar goes.
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discard shared text'));
+    await tester.pumpAndSettle();
+    expect(_shareFailed, findsNothing);
+    expect(find.text('Shared text discarded'), findsOneWidget);
+    expect(share.pending.value, 'drop me');
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(_shareFailed, findsOneWidget);
+    expect(share.pending.value, 'drop me');
+
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discard shared text'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 9));
+    await tester.pumpAndSettle();
+    expect(share.pending.value, isNull);
+    expect(_shareFailed, findsNothing);
+    expect(api.created, 2);
   });
 }

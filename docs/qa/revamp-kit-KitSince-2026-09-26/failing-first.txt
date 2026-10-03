@@ -1,0 +1,71 @@
+# failing-first (TEST-2): the new ticks-change test run against kit_since.dart at 2877d8f2 (the fix reverted)
+# $ flutter test -j 1 test/kit/kit_since_test.dart --plain-name 'changing only ticks mid-wait still turns slow at exactly 8 s'
+00:00 +0: loading test/kit/kit_since_test.dart
+00:00 +0: changing only ticks mid-wait still turns slow at exactly 8 s
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: KitSincePhase:<KitSincePhase.slow>
+  Actual: KitSincePhase:<KitSincePhase.waiting>
+slow at exactly 8 s
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (test/kit/kit_since_test.dart:141:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  test/kit/kit_since_test.dart line 141
+The test description was:
+  changing only ticks mid-wait still turns slow at exactly 8 s
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +0 -1: changing only ticks mid-wait still turns slow at exactly 8 s [E]
+  Test failed. See exception logs above.
+  The test description was: changing only ticks mid-wait still turns slow at exactly 8 s
+  
+00:00 +0 -1: Some tests failed.
+
+Failing tests:
+  test/kit/kit_since_test.dart: changing only ticks mid-wait still turns slow at exactly 8 s
+
+# failing-first (TEST-2): the new number-format test run with the ARB placeholders as at 2877d8f2 (no "format"; the fix reverted, gen-l10n rerun)
+# $ flutter test -j 1 test/kit/kit_since_test.dart --plain-name 'the labels format their numbers with intl for the locale'
+00:00 +0: loading test/kit/kit_since_test.dart
+00:00 +0: the labels format their numbers with intl for the locale
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: 'Waiting 1,234 min'
+  Actual: 'Waiting 1234 min'
+   Which: is different.
+          Expected: Waiting 1,234 min
+            Actual: Waiting 1234 min
+                             ^
+           Differ at offset 9
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (test/kit/kit_since_test.dart:237:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  test/kit/kit_since_test.dart line 237
+The test description was:
+  the labels format their numbers with intl for the locale
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +0 -1: the labels format their numbers with intl for the locale [E]
+  Test failed. See exception logs above.
+  The test description was: the labels format their numbers with intl for the locale
+  
+00:00 +0 -1: Some tests failed.
+
+Failing tests:
+  test/kit/kit_since_test.dart: the labels format their numbers with intl for the locale

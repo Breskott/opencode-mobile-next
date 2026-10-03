@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api2/events.dart';
@@ -171,6 +172,8 @@ void main() {
         throw ApiException('write failed', statusCode: 503);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: ModelCatalogView(
             controller: controller,
@@ -180,15 +183,13 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.byKey(const Key('model-picker-options')));
-    await tester.pumpAndSettle();
+    // The agent is chosen from the footer's menu (no dialog); the choice
+    // is staged until the apply action.
     await tester.tap(find.byKey(const Key('model-picker-agent')));
     await tester.pumpAndSettle();
-    await tester.tap(find.textContaining('plan · primary').last);
+    await tester.tap(find.byKey(const ValueKey('model-picker-agent-plan')));
     await tester.pumpAndSettle();
     expect(api.writes, isEmpty);
-    await tester.tap(find.text('Done'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Use for this conversation'));
     await tester.pumpAndSettle();
     expect(

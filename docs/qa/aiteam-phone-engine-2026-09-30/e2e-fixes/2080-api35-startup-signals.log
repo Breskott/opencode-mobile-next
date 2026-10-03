@@ -1,0 +1,6 @@
+F/libc    ( 3821): Fatal signal 31 (SIGSYS), code 1 (SYS_SECCOMP), syscall 444 in tid 3821 (libaiteam_sandb), pid 3821 (libaiteam_sandb)
+F/DEBUG   ( 3831): Timestamp: 2026-09-30 18:30:14.288077494+0400
+F/DEBUG   ( 3831): Cause: seccomp prevented call to disallowed x86_64 system call 444
+F/libc    ( 3841): Fatal signal 31 (SIGSYS), code 1 (SYS_SECCOMP), syscall 444 in tid 3841 (libaiteam_sandb), pid 3841 (libaiteam_sandb)
+F/DEBUG   ( 3844): Timestamp: 2026-09-30 18:30:14.537475037+0400
+F/DEBUG   ( 3844): Cause: seccomp prevented call to disallowed x86_64 system call 444

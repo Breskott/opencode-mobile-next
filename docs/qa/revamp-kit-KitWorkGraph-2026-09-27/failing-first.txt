@@ -1,0 +1,18 @@
+Fix round 2 (review finding 2): the new test "a two-line title grows its row,
+no overflow" run against the previous kit_work_graph.dart (git show HEAD, the
+fixed-height rows computed from scale(16)*1.3*2 + scale(14)*1.3 + 2*space2),
+then the fixed file restored.
+
+$ flutter test -j 1 test/kit/kit_work_graph_test.dart --plain-name "two-line title"
+00:00 +0: KitWorkGraph rows a two-line title grows its row, no overflow · text 1.0
+A RenderFlex overflowed by 4.2 pixels on the bottom.
+The overflowing RenderFlex has an orientation of Axis.vertical.
+A RenderFlex overflowed by 4.2 pixels on the bottom.
+A RenderFlex overflowed by 4.2 pixels on the bottom.
+Expected: null
+  Actual: 'Multiple exceptions (3) were detected during the running of the current test, ...
+00:01 +0 -1: KitWorkGraph rows a two-line title grows its row, no overflow · text 1.0 [E]
+  Test failed. See exception logs above.
+
+With the fix (rows are a Column of intrinsic-height rows, floor
+tokens.rowHeightTwoLine): run-kit-work-graph-test.txt, 28 passed.

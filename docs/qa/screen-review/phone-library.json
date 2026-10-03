@@ -1,0 +1,2519 @@
+[
+ {
+  "pageId": "builtin-server-setup",
+  "area": "h-termux",
+  "title": "OpenCode inside the app",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/h-termux/builtin-server-setup--fresh.png",
+   "docs/qa/screen-census/h-termux/builtin-server-setup--ubuntu-ready.png",
+   "docs/qa/screen-census/h-termux/builtin-server-setup--running.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "A legacy second front door for the same in-app Ubuntu that phone setup v2 already sets up, built as an unmigrated four-step form with half-width buttons, raw addresses and a duplicated title.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P1 One thing at a time / U6",
+    "what": "This screen installs the same in-app Ubuntu + OpenCode that phone setup v2 (phone-setup-start → progress → ready) installs, with a different look, a different step list (Download Ubuntu / Install OpenCode / Start the server / Connect) and a different OpenCode 1/2 choice. It is still reached from the connection-failure card (main.dart onOpenInAppSetup) and from every Termux wizard state (\"Set it up\").",
+    "fix": "Point both entries at phone setup v2 (openPhoneSetupStart, or the On this phone manage screen when installed) and delete BuiltinServerScreen. The OpenCode 1/2 choice becomes a row in phone setup Customize."
+   },
+   {
+    "severity": "high",
+    "principle": "U6 / C6",
+    "what": "The top bar says \"OpenCode inside the app\" and the first line repeats it: \"Run OpenCode inside the app — no Termux\", then an Experimental chip and a four-line paragraph before step 1.",
+    "fix": "One title only. Replace the header block with one muted line: \"Runs on this phone only. Nothing else to install.\""
+   },
+   {
+    "severity": "high",
+    "principle": "C3 Plain words",
+    "what": "\"Running on this phone at 127.0.0.1:4097\", \"Canonical's Ubuntu Base 24.04, checked against its published checksum\", \"Node.js, Git and OpenCode 1.18.29 are downloaded into Ubuntu\" are all above any Details fold.",
+    "fix": "State words only (\"Running\", \"Installed · OpenCode 1\"); address, checksum and versions in a collapsed Details row in mono."
+   },
+   {
+    "severity": "high",
+    "principle": "U5 / standard §2",
+    "what": "Download Ubuntu, Install OpenCode and Connect are half-width filled pills; Stop (outlined, filled-square icon) sits on one line beside a \"Show log\" text button; \"Remove Ubuntu\" is indented 16 dp further than the rail.",
+    "fix": "One full-width filled primary per state, KitActionStack for Stop / Show log on lines of their own, Remove Ubuntu as a destructive KitRow at the end."
+   },
+   {
+    "severity": "medium",
+    "principle": "X9 / P3",
+    "what": "Start the server and Connect are two more manual steps after the install finishes, so a finished install still needs three taps to reach a conversation.",
+    "fix": "After install, start and connect automatically and land on the ready moment (\"OpenCode is ready\" + Create and open), as phone setup v2 does."
+   },
+   {
+    "severity": "medium",
+    "principle": "standard §2 (disabled needs a reason)",
+    "what": "After install the OpenCode 1 / OpenCode 2 segmented control turns grey with no word saying why it cannot change.",
+    "fix": "Show \"OpenCode 1 · 1.18.29\" as a row; switching lives in its menu (\"Switch to OpenCode 2…\", confirmed)."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "builtin-server-log-sheet",
+  "area": "h-termux",
+  "title": "Server log",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/builtin-server-log-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A usable log, but it wraps mid-token, stacks two headers and calls a running server's log \"LAST OUTPUT\".",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C2 Words match the state",
+    "what": "The server is running, yet the panel header reads \"LAST OUTPUT\".",
+    "fix": "Drop the inner header; the sheet title \"Server log\" is enough, with \"Live\" as a small status word while the server runs."
+   },
+   {
+    "severity": "medium",
+    "principle": "Regression row 16 pattern",
+    "what": "Log lines wrap mid-token (\"--\" / \"hostname\", \"http://\" / \"127.0.0.1:4097\") in large mono; the setup log was fixed to one line per line with sideways scroll.",
+    "fix": "Use TerminalView(framed: false) with mono bodySmall, no wrap, newest line followed — the same widget as phone-setup-progress Details."
+   },
+   {
+    "severity": "medium",
+    "principle": "U6",
+    "what": "Title row with a close X, then a second header row \"LAST OUTPUT\" with its own icon and a copy icon — two headers for one log.",
+    "fix": "One header: \"Server log\" + copy icon action; the drag handle closes the sheet, so drop the X."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "builtin-server-remove-confirm-sheet",
+  "area": "h-termux",
+  "title": "Remove the built-in Ubuntu?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/builtin-server-remove-confirm-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A clear destructive confirm that forgets to say it cannot be undone and leaves a dead server entry behind.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P10 Earn trust / X3",
+    "what": "Says what is deleted (\"Ubuntu, OpenCode and every project folder inside it\") but not that it is permanent or how much space comes back; \"The saved server entry stays.\" leaves a server row that points at nothing.",
+    "fix": "Body: \"Deletes Ubuntu, OpenCode and every project in it, and frees 1.1 GB. This can't be undone.\" Remove the saved entry too, or say \"You can set it up again from On this phone.\""
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "development-services",
+  "area": "h-termux",
+  "title": "Development services",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/h-termux/development-services--empty.png",
+   "docs/qa/screen-census/h-termux/development-services--registered.png",
+   "docs/qa/screen-census/h-termux/development-services--running.png",
+   "docs/qa/screen-census/h-termux/development-services--unsupported.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "An unmigrated card dashboard: a permanent hero card, five buttons per service, raw paths and IPs, and the same disclaimer on every card.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "U5 / standard §3, §6",
+    "what": "The intro card (\"Project commands, logs, and preview links\" + a filled Register service button) stays at the top even when services exist; each service is a card with up to five buttons (Start, Stop, Restart, Logs, Visit) plus a bare copy icon, wrapping onto two rows.",
+    "fix": "KitScreen list: one KitRow per service (status dot, name, supporting \"Running · npm run dev\"), one trailing action (Start or Stop), Logs / Restart / Open preview / Copy link / Remove in KitRowMenu. Empty state = KitStateView \"No dev commands yet\" + \"Add a dev command\"; afterwards Add is the top-bar + action."
+   },
+   {
+    "severity": "high",
+    "principle": "standard §2 (disabled button)",
+    "what": "In the running state a disabled Start stays on screen beside Stop and Restart.",
+    "fix": "Hide Start while running; the row's one trailing action becomes Stop."
+   },
+   {
+    "severity": "high",
+    "principle": "X3 destructive apart",
+    "what": "\"Remove configuration\" is accent-coloured, sits directly under Visit, and is not error-styled.",
+    "fix": "Move it into the row menu as an error-coloured \"Remove…\" that confirms."
+   },
+   {
+    "severity": "high",
+    "principle": "C3 Plain words",
+    "what": "\"/work/shopfront\" and \"http://192.168.1.20:5173\" in the body; the verb \"Register service\".",
+    "fix": "Say the project name (\"in shopfront\"), the verb \"Add a dev command\", preview address under Details or as the \"Open preview\" menu item."
+   },
+   {
+    "severity": "medium",
+    "principle": "C6",
+    "what": "\"Command status does not confirm that your app is ready or reachable.\" is repeated inside every service card.",
+    "fix": "Say it once as a muted section footnote, or fold it into the state word (\"Command running\")."
+   },
+   {
+    "severity": "medium",
+    "principle": "standard §5",
+    "what": "On a server without tracked commands the explanation is a loose full-contrast paragraph between the hero card and the list.",
+    "fix": "KitStatusLine at the top: \"This server can save commands but can't run them.\""
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "development-services-confirm-sheet",
+  "area": "h-termux",
+  "title": "{Start | Stop | Restart | Forget last run | Remove configuration} · {service name}",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/development-services-confirm-sheet--start.png",
+   "docs/qa/screen-census/h-termux/development-services-confirm-sheet--remove.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Confirms a harmless Start with engine copy, and uses the same question-mark icon for a destructive remove.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "X9 / P1",
+    "what": "Starting a saved dev command asks for confirmation although nothing is lost; Start is the frequent action.",
+    "fix": "Start runs at once; a snackbar \"Started Shopfront preview\" offers Stop. Keep confirmation for Remove only."
+   },
+   {
+    "severity": "high",
+    "principle": "C3 Plain words",
+    "what": "\"It uses the server's environment. Keep it in the foreground; this panel cannot manage detached processes.\" and, for remove, \"its local ownership record\".",
+    "fix": "Remove: \"Remove Shopfront preview? It leaves this list. If it's running, it keeps running — stop it first.\""
+   },
+   {
+    "severity": "medium",
+    "principle": "U9 / C6",
+    "what": "Both the Start and the destructive Remove sheet lead with the same question-mark icon; \"Remove configuration · Shopfront preview\" wraps onto two lines.",
+    "fix": "Trash icon on an error tint for Remove, play icon for Start; title \"Remove Shopfront preview?\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "U8",
+    "what": "The path and the command are centred plain text under the body.",
+    "fix": "Left-aligned mono in a Details row, or drop them — the row already names the command."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "development-services-logs-sheet",
+  "area": "h-termux",
+  "title": "{service name} · Logs",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/development-services-logs-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Two log lines in a tall sheet whose only button refreshes the wrong thing and whose intro is jargon.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3 Plain words",
+    "what": "\"Bounded log tail. Earlier output may be omitted. Logs are kept on the server, not saved on this phone.\"",
+    "fix": "\"The last lines from the server.\" (one muted line)."
+   },
+   {
+    "severity": "high",
+    "principle": "X4 / P3",
+    "what": "The log does not follow new output; the only control is a full-width outlined \"Refresh status\" button — it names the status, not the log.",
+    "fix": "Poll while the sheet is open (the screen already polls every 5 s), follow the newest line, and drop the button."
+   },
+   {
+    "severity": "medium",
+    "principle": "P4 copyable",
+    "what": "No way to copy the log.",
+    "fix": "Copy icon in the sheet header, same as the setup terminal."
+   },
+   {
+    "severity": "medium",
+    "principle": "U7",
+    "what": "The sheet opens to ~80 % height for two lines of output; the bottom two-thirds is empty.",
+    "fix": "Size to content with a half-height start, expand on drag."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "development-services-editor-sheet",
+  "area": "h-termux",
+  "title": "Register service",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/development-services-editor-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A plain form whose counters, path header and paragraph-long helpers make three fields feel heavy.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "U8 craft",
+    "what": "Character counters 0/80, 0/4096 and 0/2048 show under every empty field.",
+    "fix": "Show a counter only within 10 % of the limit."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3 / C6",
+    "what": "Title \"Register service\" with a bold \"/work/shopfront\" under it; the preview helper runs three lines (\"localhost points to this phone. No ports are exposed or forwarded for you.\").",
+    "fix": "Title \"Add a dev command\", subtitle \"in shopfront\"; helper \"An address this phone can open, like http://192.168.1.20:5173\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "X2 (unsaved input)",
+    "what": "No Cancel is visible and the source has no discard guard, so a swipe-down after typing a long command loses it silently.",
+    "fix": "Confirm \"Discard this command?\" when fields are dirty (PopScope / sheet dismiss guard)."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "local-agent-page",
+  "area": "h-termux",
+  "title": "Claude Code",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/h-termux/local-agent-page--offer.png",
+   "docs/qa/screen-census/h-termux/local-agent-page--installing.png",
+   "docs/qa/screen-census/h-termux/local-agent-page--sign-in.png",
+   "docs/qa/screen-census/h-termux/local-agent-page--ready.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "Claude Code's own page wraps every state in a card with right-aligned button clusters, repeats its name, and speaks engine (Paseo daemon, 127.0.0.1, three version numbers).",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "U6 / standard §3",
+    "what": "Top bar \"Claude Code\", then a bordered card titled \"Claude Code on this phone\" holding all content — a card used to wrap a message, and the name twice.",
+    "fix": "Page-size KitStateView with no card; the top bar keeps \"Claude Code\"; state title (\"Ready to set up\" / \"Setting up…\" / \"Sign in to Claude\" / \"Running\") as the block title."
+   },
+   {
+    "severity": "high",
+    "principle": "standard §2",
+    "what": "Right-aligned button clusters: \"Not now\" + \"Set up Claude Code\"; in sign-in \"I already signed in\" + outlined \"Refresh\" on one row and filled \"Sign in to Claude\" on another; Connect right-aligned.",
+    "fix": "Full-width stack: primary, secondary, tertiary, left-aligned tertiary."
+   },
+   {
+    "severity": "high",
+    "principle": "C3 Plain words",
+    "what": "\"the Paseo daemon\", step \"Paseo daemon\", \"It listens on this phone only (127.0.0.1)\", \"Claude Code 2.1.278 · Paseo 0.8.0 · Node.js v24.21.0\".",
+    "fix": "Steps: Tools · Claude Code · Sign in · Start. Versions and address under a folded Details row."
+   },
+   {
+    "severity": "high",
+    "principle": "C2 contradictions",
+    "what": "The offer warns \"Android may stop Termux in the background\" and the installer says \"The install keeps going in Termux\" although the body says it installs into the Ubuntu the app manages.",
+    "fix": "Name the host the phone really uses (\"in this app\" or \"in Termux\"), from the same source that picks the host."
+   },
+   {
+    "severity": "medium",
+    "principle": "P4 / standard §3.6",
+    "what": "While installing, the raw live log fills most of the card as main content.",
+    "fix": "Checklist + progress line as the content; log folded under Details (as phone-setup-progress does)."
+   },
+   {
+    "severity": "medium",
+    "principle": "X9",
+    "what": "The page polls every 2 s, yet sign-in offers both \"Refresh\" and \"I already signed in\".",
+    "fix": "Detect sign-in automatically; keep one tertiary \"Check again\" that appears after 8 s."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "phone-setup-customize-sheet",
+  "area": "h-termux",
+  "title": "Choose what to install | Add tools",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/phone-setup-customize-sheet--first-setup.png",
+   "docs/qa/screen-census/h-termux/phone-setup-customize-sheet--add-tools.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Required items look switched off and the sheet exists for a single real choice.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "U2 / standard §2",
+    "what": "Linux base, Git SSH and certificates, Node.js and OpenCode are disabled switches in the ON position but painted grey, so they read as OFF; the only lit switch is Python — it looks like only Python will install.",
+    "fix": "One line with a check mark: \"Always included: Linux base, Git and SSH, Node.js, OpenCode\". Switches only for optional tools."
+   },
+   {
+    "severity": "medium",
+    "principle": "C5",
+    "what": "\"Done\" does not say what happens next.",
+    "fix": "\"Save choices\", or make the sheet's primary the setup itself: \"Set up · about 4 min\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "C2 one name",
+    "what": "\"Git, SSH and certificates\" here vs \"Git and SSH\" on the progress screen; \"~30 MB\", \"~165 MB\" tildes.",
+    "fix": "One name everywhere; \"about 30 MB\"."
+   },
+   {
+    "severity": "low",
+    "principle": "P1",
+    "what": "Add-tools mode is a whole sheet for one switch with a disabled \"Add\" and \"Nothing chosen yet\".",
+    "fix": "With a single optional tool, offer it directly on the This phone row menu: \"Add Python (30 MB)\"."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "phone-setup-progress",
+  "area": "h-termux",
+  "title": "Setting up OpenCode on this phone",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/h-termux/phone-setup-progress--running.png",
+   "docs/qa/screen-census/h-termux/phone-setup-progress--details-open.png",
+   "docs/qa/screen-census/h-termux/phone-setup-progress--failed.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 4
+  },
+  "suggested": "fix",
+  "summary": "The best screen in the area — real stages, sizes and a time left — let down by a mislabelled Cancel, a two-line title and a log that pushes the checklist away.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P7 one action one name",
+    "what": "The red \"Cancel\" opens a sheet titled \"Stop setup?\" whose button is \"Stop setup\".",
+    "fix": "Label it \"Stop setup\" on the screen too."
+   },
+   {
+    "severity": "medium",
+    "principle": "C6",
+    "what": "\"Setting up OpenCode on this phone\" wraps to two lines at display size; \"~2 min left\" uses a tilde.",
+    "fix": "\"Setting up OpenCode\"; \"About 2 min left\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "X5",
+    "what": "With Details open, the checklist scrolls away and only the \"OpenCode\" row stays between the pinned head and the log; log lines are clipped at the right edge with no hint that they scroll sideways.",
+    "fix": "Pin the current step row with the head; fade the log's right edge to show it scrolls."
+   },
+   {
+    "severity": "low",
+    "principle": "standard §3",
+    "what": "Failed state: title \"Setup didn't finish\" with no body; the reason lives only as a two-line error-red supporting line on the Node.js row.",
+    "fix": "Body \"No internet connection. Continue when you're back online.\"; the row says \"Stopped here\"."
+   },
+   {
+    "severity": "low",
+    "principle": "M4",
+    "what": "The hand-off back after an add-tools job waits a hard-coded 1200 ms (phone_setup_progress_screen.dart:83), not a KitMotion token.",
+    "fix": "Use KitMotion.celebration (1.4 s) or pop on the finished drawing's completion."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "phone-setup-progress-stop-sheet",
+  "area": "h-termux",
+  "title": "Stop setting up?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/phone-setup-progress-stop-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "Short, true and calm: \"What's finished stays installed.\"",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "C4",
+    "what": "Does not say how to resume.",
+    "fix": "Add \"Continue any time from On this phone.\""
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "phone-setup-ready",
+  "area": "h-termux",
+  "title": "OpenCode is ready",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/h-termux/phone-setup-ready.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "A clean finished moment with one field, one primary and a quiet alternative.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "P7",
+    "what": "Uses a close X top-right while the start and progress screens use a back arrow.",
+    "fix": "Keep the X only if Back from here would return to a finished progress screen; otherwise use back for consistency."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "phone-setup-start",
+  "area": "h-termux",
+  "title": "On this phone",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/h-termux/phone-setup-start--first-time.png",
+   "docs/qa/screen-census/h-termux/phone-setup-start--stopped-part-way.png",
+   "docs/qa/screen-census/h-termux/phone-setup-start--ready-in-app.png",
+   "docs/qa/screen-census/h-termux/phone-setup-start--termux-other-ways.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 4
+  },
+  "suggested": "fix",
+  "summary": "Strong first-run page with a drawn hero and one primary; the verbs are bare and the stopped state looks disabled.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C5",
+    "what": "Primary buttons read \"Set up\" and \"Open\" — they do not say what.",
+    "fix": "\"Set up OpenCode\" and \"Start a conversation\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "U2 / P3",
+    "what": "Stopped-part-way: the drawing is greyed and the 50 % bar is grey, so resumable progress reads as disabled.",
+    "fix": "Accent bar and a lit first stage; title \"Setup is half done\"."
+   },
+   {
+    "severity": "low",
+    "principle": "C6",
+    "what": "\"~165 MB\" tilde.",
+    "fix": "\"about 165 MB\"."
+   },
+   {
+    "severity": "low",
+    "principle": "X5",
+    "what": "The primary sits mid-screen with ~40 % empty space below it.",
+    "fix": "Anchor the action block lower (pinned bottom on phones per standard §1)."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "termux-processes",
+  "area": "h-termux",
+  "title": "Running now",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-processes--loaded.png",
+   "docs/qa/screen-census/h-termux/termux-processes--empty.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A genuinely useful process monitor with swatch-like stop controls, engine names and an undesigned empty state.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "X1 / P-b / U2",
+    "what": "The orphan row's trailing control is a bare pink square with no label (reads as a colour swatch); \"Stop all\" uses the same pink square as its icon.",
+    "fix": "Kit stop icon (the circle-stop used on On this phone) with a visible \"Stop\" label, or move per-row Stop into KitRowMenu."
+   },
+   {
+    "severity": "high",
+    "principle": "X4 / standard §3",
+    "what": "Empty: \"0 processes · CPU 0.0%\" headline and a bare line \"Nothing is running in the phone server\".",
+    "fix": "KitStateView: \"Nothing running\" / \"OpenCode and its helpers show here while they work.\""
+   },
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "\"Orphans\", \"CPU 108%\" with no explanation of multi-core, raw process names (manager.sh, gc, dolt).",
+    "fix": "\"Left running\" as the group name; \"108% CPU (more than one core)\"; friendly names with the raw name as supporting text."
+   },
+   {
+    "severity": "medium",
+    "principle": "U8",
+    "what": "The \"9 processes · CPU 108%\" headline is set larger than the screen title.",
+    "fix": "Title-medium summary line under the top bar."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "termux-processes-stop-one-sheet",
+  "area": "h-termux",
+  "title": "Stop {name}?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-processes-stop-one-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "Plain, honest confirm: \"It gets a polite stop, then a forced one after 5 seconds.\"",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "P7",
+    "what": "The cancel word changes across this area: Keep, Cancel, Keep going, Keep running, Keep it.",
+    "fix": "Pick one pattern: \"Keep running\" for stops, \"Cancel\" elsewhere."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "termux-processes-stop-group-sheet",
+  "area": "h-termux",
+  "title": "Stop every process in {group}?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-processes-stop-group-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 4
+  },
+  "suggested": "fix",
+  "summary": "Clear count and verb, but it never says that stopping the AI Team group stops the team's work.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "X3 / P10",
+    "what": "\"Stop every process in AI Team?\" does not say that running team tasks stop with them.",
+    "fix": "Body: \"3 processes stop. Any task the team is working on stops too; you can start the team again.\""
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "termux-processes-details-sheet",
+  "area": "h-termux",
+  "title": "<process name>",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-processes-details-sheet--stoppable.png",
+   "docs/qa/screen-census/h-termux/termux-processes-details-sheet--orphan.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Shows the truth but not what it means, with a half-width Stop and nothing copyable.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "standard §2",
+    "what": "Stop is a half-width filled error button, left-aligned.",
+    "fix": "Full-width error-tonal \"Stop java\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "P4 copyable",
+    "what": "Command and folder are shown in mono but cannot be copied; \"PID 300 · parent 1\" sits as the subtitle.",
+    "fix": "Copy icon on the command; PID/parent under a Details row."
+   },
+   {
+    "severity": "medium",
+    "principle": "C4",
+    "what": "The orphan form does not explain itself (why it is safe, what started it) and stops without a second confirm.",
+    "fix": "One line: \"Left running by an MCP helper; nothing is waiting on it.\" Keep the one-tap stop, add an Undo-less snackbar \"Stopped\"."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "termux-setup",
+  "area": "h-termux",
+  "title": "On-device setup",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup--switch-pending.png",
+   "docs/qa/screen-census/h-termux/termux-setup--setup-help-open.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "The runtime-switch recovery speaks in timeouts and raw output, puts its explanation under the buttons, and Setup help offers to install what is already running.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3 / C4",
+    "what": "\"OpenCode server did not become authenticated and ready within 30 seconds\", \"Last setup output: [oc] Checking the selected runtime\", \"The runtime switch has not finished… Your saved runtime data is retained.\"",
+    "fix": "Title \"Switching to OpenCode 2 stopped\"; body \"OpenCode 2 didn't start. Try again, or go back to OpenCode 1 — your conversations are kept.\"; output under Details."
+   },
+   {
+    "severity": "high",
+    "principle": "standard §3 slot order",
+    "what": "The explanation paragraph sits below the two buttons in full-contrast body text, and the last output line appears twice (body and the LAST OUTPUT panel).",
+    "fix": "KitStateView order: title, body, actions, folded Details."
+   },
+   {
+    "severity": "high",
+    "principle": "C2",
+    "what": "Setup help, unfolded on a running install, says \"Install OpenCode 1 (1.18.29) on this phone using Ubuntu. The app manages this installation and reuses existing Ubuntu files.\"",
+    "fix": "Setup help lists only \"Connect a server by address\" and \"Set up in this app instead\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "C5",
+    "what": "\"Continue to app\" does not say where it goes.",
+    "fix": "\"Open conversations\"."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "termux-setup-switch-runtime-sheet",
+  "area": "h-termux",
+  "title": "Switch to {runtime}?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-switch-runtime-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 4
+  },
+  "suggested": "fix",
+  "summary": "Honest and reversible, but four sentences and a vague button.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C6 / C5",
+    "what": "Four sentences; button \"Switch version\".",
+    "fix": "Body: \"Stops this phone's server and anything it is running. Conversations stay with each version; projects are shared. You can switch back.\" Button \"Switch to OpenCode 2\"."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "termux-setup-update-sheet",
+  "area": "h-termux",
+  "title": "Update managed OpenCode?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-update-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "Offers to \"update\" 1.18.29 to 1.18.29 in engine words.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C2 Words match the state",
+    "what": "\"Installed version: 1.18.29\" followed by \"The app will install OpenCode 1 1.18.29\" — an update to the same version.",
+    "fix": "When nothing newer exists, the Update row says \"Up to date · 1.18.29\" and opens nothing; otherwise title \"Update to 1.19.0?\"."
+   },
+   {
+    "severity": "high",
+    "principle": "C3",
+    "what": "\"Update managed OpenCode?\", \"restart only the managed local server\", \"Active generation should be stopped first\".",
+    "fix": "\"OpenCode restarts for a few seconds. A reply that is still running stops.\""
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "termux-setup-restart-sheet",
+  "area": "h-termux",
+  "title": "Restart the local server?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-restart-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "Short and reassuring: it keeps the project and reconnects.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "C3",
+    "what": "\"the local server\" is the only place the phone's server is called that.",
+    "fix": "\"Restart OpenCode on this phone?\""
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "termux-setup-unsupported",
+  "area": "h-termux",
+  "title": "On-device setup is Android only",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-unsupported.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A desktop dead-end with raw backticks and stale \"requires Termux\" copy, floating under an empty top half.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3 (regression row 15 pattern)",
+    "what": "Body contains raw backticks: \"run `opencode serve` and add its address\"; \"On-device setup requires Termux on Android\" is no longer true (the in-app server exists).",
+    "fix": "Title \"Connect a server\"; the command in a copyable mono box; body \"Run OpenCode on this computer, then add its address.\""
+   },
+   {
+    "severity": "medium",
+    "principle": "U7 (regression row 1 pattern)",
+    "what": "The content block starts ~700 px down under an empty top; the top bar still says \"On this phone\" on a desktop.",
+    "fix": "Anchor content under the top bar; title \"Set up a server\"."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "termux-setup-get-termux",
+  "area": "h-termux",
+  "title": "Get Termux",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-get-termux.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "Four competing paths on one screen, and an intro that describes two of them while showing three.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P1 / U4",
+    "what": "Filled \"Set it up\" (in-app), full-width tonal \"Download page\", \"Try again\" and \"Connect existing server\" all compete; header \"Choose your server setup\" says \"Connect an existing server, or use Termux\" but the first option is neither.",
+    "fix": "On Android, \"On this phone\" opens phone-setup-start. The Termux wizard is reached only from its \"Other ways › Use Termux\" row, and starts at Get Termux with one primary (\"Get Termux\", via openExternalLink) and one tertiary (\"I've installed it\")."
+   },
+   {
+    "severity": "high",
+    "principle": "C3",
+    "what": "\"Install the current F-Droid build of Termux\", \"Experimental\".",
+    "fix": "\"Install Termux from F-Droid, then come back.\" with the store host shown before leaving."
+   },
+   {
+    "severity": "medium",
+    "principle": "C5",
+    "what": "\"Try again\" — try what?",
+    "fix": "\"I've installed Termux\"."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "termux-setup-connect-termux",
+  "area": "h-termux",
+  "title": "Connect Termux once",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-connect-termux--first-visit.png",
+   "docs/qa/screen-census/h-termux/termux-setup-connect-termux--no-answer.png",
+   "docs/qa/screen-census/h-termux/termux-setup-connect-termux--paste-guide.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A thoughtful paste guide built as cards inside cards, with \"bridge-unlocked\" jargon and a redundant Verify button.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "U5 kit only",
+    "what": "Three bordered cards, each holding a mock-UI inner card (Command copied, ~ $ Paste, bridge-unlocked Enter) — card in card, ad-hoc illustrations outside the KitScene style.",
+    "fix": "A single KitScene drawing of the three moves, or numbered KitRows with a small line-art illustration each."
+   },
+   {
+    "severity": "high",
+    "principle": "C3",
+    "what": "\"bridge-unlocked\", \"run the unlock line\", an unexplained \"App settings\" text button.",
+    "fix": "\"When Termux shows Done, come back here.\"; \"App settings\" → \"Allow the permission in Settings\" shown only after a denial."
+   },
+   {
+    "severity": "medium",
+    "principle": "P1 / X9",
+    "what": "Copy & open Termux (filled) and Verify & continue (full-width tonal) stack, while the text says \"When you return, we will check the connection automatically.\"",
+    "fix": "Drop Verify; show a tertiary \"Check now\" only after 8 s back in the app."
+   },
+   {
+    "severity": "medium",
+    "principle": "U6",
+    "what": "The \"Run OpenCode inside the app — no Termux · Set it up\" block repeats at the bottom of every wizard state.",
+    "fix": "Remove it from the wizard; it is the front door, not a footer."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "termux-setup-choose",
+  "area": "h-termux",
+  "title": "Choose how to continue",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-choose--fresh-phone.png",
+   "docs/qa/screen-census/h-termux/termux-setup-choose--opencode2-picked.png",
+   "docs/qa/screen-census/h-termux/termux-setup-choose--ubuntu-only.png",
+   "docs/qa/screen-census/h-termux/termux-setup-choose--check-failed.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "Leads with \"No managed Ubuntu installation found\", mixes Claude Code into the runtime choice and always shows a second, competing setup path.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3 / C2",
+    "what": "Fresh phone headline \"No managed Ubuntu installation found.\" (negative, jargon), then a heading \"Managed Ubuntu installation\" whose paragraph repeats the radio choice.",
+    "fix": "Headline \"Which OpenCode should run here?\"; one muted line \"About 10 minutes the first time.\""
+   },
+   {
+    "severity": "high",
+    "principle": "P1",
+    "what": "\"Install & start\" (filled) and \"Set it up\" (tonal, in-app, experimental) are both on every state — two unexplained ways to do the same thing.",
+    "fix": "Drop the in-app block from the Termux wizard."
+   },
+   {
+    "severity": "medium",
+    "principle": "X4",
+    "what": "check-failed keeps \"Install & start\" as the filled primary under \"Could not check the installed environment.\"",
+    "fix": "Primary \"Check again\"; install as a tertiary \"Install anyway…\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "P1",
+    "what": "Claude Code is a third radio beside OpenCode 1 / OpenCode 2 although it installs next to OpenCode, not instead of it.",
+    "fix": "Radio for OpenCode 1/2; \"Also add Claude Code\" as a KitSwitchRow."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "termux-setup-checking",
+  "area": "h-termux",
+  "title": "[Checking Termux]",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-checking.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Two loaders at once and a competing setup button while the app waits on Termux.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "standard §4 one bar",
+    "what": "A loading bar under the top bar and a \"Checking Termux...\" spinner row show together.",
+    "fix": "Keep the bar; the step line says \"Checking Termux…\", and after 8 s \"Termux isn't answering — open Termux once, then come back\" with Retry."
+   },
+   {
+    "severity": "medium",
+    "principle": "P1",
+    "what": "The in-app \"Set it up\" tonal button is the most prominent thing on screen while the check runs.",
+    "fix": "Remove it from the wizard."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "termux-setup-connected",
+  "area": "h-termux",
+  "title": "[OpenCode is running on this phone]",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-connected.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "The success moment is buried under the wizard steps and seven actions.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "U4 / P1",
+    "what": "After success the screen shows the finished wizard steps, then \"Connect to OpenCode 1\" link, filled \"Continue to app\", tonal Restart, Update, Stop, the Claude Code row and the in-app \"Set it up\" block.",
+    "fix": "KitStateView \"OpenCode is running on this phone\" with primary \"Switch to this phone\" (another server is in use) and tertiary \"Keep using Laptop\"; server controls live on the installed screen."
+   },
+   {
+    "severity": "high",
+    "principle": "C3",
+    "what": "\"The local runtime is ready. Your current remote connection is unchanged.\"",
+    "fix": "\"You're still connected to Laptop.\""
+   },
+   {
+    "severity": "medium",
+    "principle": "C2",
+    "what": "\"Connect to OpenCode 1\" and \"Continue to app\" — which one switches servers is unclear.",
+    "fix": "One action named for its result."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "termux-setup-failed",
+  "area": "h-termux",
+  "title": "[Setup failed]",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-failed--install-failed.png",
+   "docs/qa/screen-census/h-termux/termux-setup-failed--termux-too-old.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "Contradicts itself three times: installation failed, no Ubuntu found (while the log says Ubuntu is ready), then a Retry that \"resumes\"; and the too-old-Termux state waits for output that can never come.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C2 (census observation)",
+    "what": "install-failed: \"OpenCode installation failed\", then \"No managed Ubuntu installation found.\" while the log reads \"[oc] Ubuntu environment is ready\", then \"Retry — resumes where setup left off\".",
+    "fix": "Title \"No internet connection during install\"; body \"Ubuntu is ready; OpenCode didn't download.\"; primary \"Try again\"."
+   },
+   {
+    "severity": "high",
+    "principle": "C4",
+    "what": "The error line is raw: \"Last setup output: [oc] ERROR: npm install failed (exit 1)\"; the cause (ECONNRESET network reset) is only in the log.",
+    "fix": "Map known failures (network, disk, Termux permission) to plain titles; log under Details."
+   },
+   {
+    "severity": "high",
+    "principle": "C2 / X4",
+    "what": "termux-too-old: LAST OUTPUT panel says \"Waiting for Termux output… Setup messages will appear here when Termux responds\" directly under \"This version of Termux is too old for the app to control it\"; the primary \"Retry — resumes where setup left off\" cannot fix an old Termux.",
+    "fix": "Hide the log panel; primary \"Get the current Termux\" (openExternalLink); tertiary \"Check again\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "C5",
+    "what": "Button label carries an explanation after an em dash.",
+    "fix": "Button \"Try again\"; the explanation, if needed, in the body."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "termux-setup-installed",
+  "area": "h-termux",
+  "title": "On this phone: {runtime}",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-installed--running.png",
+   "docs/qa/screen-census/h-termux/termux-setup-installed--stopped.png",
+   "docs/qa/screen-census/h-termux/termux-setup-installed--needs-attention.png",
+   "docs/qa/screen-census/h-termux/termux-setup-installed--other-versions-open.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Regression row 11 fixed the button chaos; what remains is a second tonal button, vague verbs and a needs-attention state that contradicts itself.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C2",
+    "what": "needs-attention: \"OpenCode needs attention\", \"did not become authenticated and ready within 30 seconds\", \"Last setup output: [oc] ERROR: npm install failed (exit 1)\" — then primary \"Start installed OpenCode\"; the raw log panel is open at the bottom.",
+    "fix": "If the install failed, say so and make \"Reinstall\" primary; if it only failed to start, say \"OpenCode didn't start\" with \"Start again\"; log folded under Details."
+   },
+   {
+    "severity": "medium",
+    "principle": "standard §2",
+    "what": "Unfolding \"Other OpenCode versions\" reveals a full-width tonal \"Try OpenCode 2\" — a second tonal button under Restart.",
+    "fix": "KitRow \"Switch to OpenCode 2\" with a chevron."
+   },
+   {
+    "severity": "medium",
+    "principle": "C5",
+    "what": "\"Continue to app\", \"Start installed OpenCode\".",
+    "fix": "\"Open conversations\", \"Start OpenCode\"."
+   },
+   {
+    "severity": "low",
+    "principle": "C6",
+    "what": "\"Running · OpenCode 1 · version 1.18.29\" repeats itself.",
+    "fix": "\"Running · OpenCode 1.18.29\"."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "termux-setup-start-installed-sheet",
+  "area": "h-termux",
+  "title": "Start installed OpenCode?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-start-installed-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Confirms a harmless Start with a paragraph about packages.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "X9",
+    "what": "Starting an installed server asks first although nothing is lost.",
+    "fix": "Start directly; show progress in the page state."
+   },
+   {
+    "severity": "medium",
+    "principle": "C6",
+    "what": "\"Start OpenCode 2.0.10 using the existing installation and connect to it. Only this app's local server restarts; no packages are downloaded or updated.\"",
+    "fix": "If kept: \"Starts OpenCode 2.0.10 and connects. Nothing is downloaded.\""
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "termux-setup-replace-installed-sheet",
+  "area": "h-termux",
+  "title": "Replace installed OpenCode?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-replace-installed-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "\"Replace OpenCode 2.0.10 with 2.0.10\" — a reinstall dressed as a replacement.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C2 (census observation)",
+    "what": "Body reads \"Replace OpenCode 2.0.10 with 2.0.10 and restart this app's local server.\"",
+    "fix": "Title \"Reinstall OpenCode 2.0.10?\"; body \"Downloads it again and restarts it. Projects and Ubuntu files are kept.\"; button \"Reinstall\"."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "termux-setup-unchecked-install-sheet",
+  "area": "h-termux",
+  "title": "Continue without an installation check?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-unchecked-install-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A two-line title, four sentences and a button that names the wrong thing.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C6 / C5",
+    "what": "Title \"Continue without an installation check?\" wraps to two lines; button \"Continue with Ubuntu\" does not say it installs; question-mark icon.",
+    "fix": "Title \"Install without checking?\"; body \"The app couldn't see what's installed. Installing may replace OpenCode 1; Ubuntu files are kept.\"; primary \"Install anyway\", secondary \"Check again\", warning icon."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "termux-setup-installing",
+  "area": "h-termux",
+  "title": "[Setup progress: Preparing setup / Setting up Ubuntu / Installing OpenCode / Getting models ready / Starting local server / Restarting local server / Switching to {runtime}]",
+  "kind": "onboarding-step",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-setup-installing--setting-up-ubuntu.png",
+   "docs/qa/screen-census/h-termux/termux-setup-installing--getting-models-ready.png",
+   "docs/qa/screen-census/h-termux/termux-setup-installing--switching.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "The Termux install shows a raw log as the whole wait, where phone setup v2 shows stages, sizes and time left.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P3 / P4 / standard §3.6",
+    "what": "Main content during a 10–15 minute wait is LIVE OUTPUT: \"[oc] Installing proot-distro\", \"Downloading rootfs tarball… 41.2 MiB / 58.9 MiB\"; no stage list, no determinate bar.",
+    "fix": "Reuse the phone-setup-progress layout: KitStatusMark checklist, determinate bar with \"41 of 59 MB · about 3 min left\", log under Details."
+   },
+   {
+    "severity": "high",
+    "principle": "C2",
+    "what": "Switching shows \"[oc] Installing OpenCode 0.0.0-beta-18600\" while the rest of the app calls OpenCode 2 \"2.0.10\".",
+    "fix": "Show the version the app will report after install, or none."
+   },
+   {
+    "severity": "medium",
+    "principle": "C2",
+    "what": "\"First-time setup can take 10–15 minutes\" here vs \"About 4 minutes\" on phone setup v2.",
+    "fix": "State the estimate per path and label the path (\"in Termux\")."
+   },
+   {
+    "severity": "medium",
+    "principle": "X7 escape",
+    "what": "No Stop/Cancel is offered during the install.",
+    "fix": "Tertiary \"Stop setup\" with the same confirm as phone setup."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "termux-storage",
+  "area": "h-termux",
+  "title": "Storage on this phone",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-storage--intro.png",
+   "docs/qa/screen-census/h-termux/termux-storage--scanning.png",
+   "docs/qa/screen-census/h-termux/termux-storage--report.png",
+   "docs/qa/screen-census/h-termux/termux-storage--category-open.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A good report once it exists, behind an extra tap, a four-line paragraph and a scan that shows raw paths.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3",
+    "what": "Scanning shows raw paths as the main content: \"/data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu\", \"~/.npm/_cacache\".",
+    "fix": "Show the four category rows with skeleton sizes filling in; the log under Details."
+   },
+   {
+    "severity": "medium",
+    "principle": "X9",
+    "what": "Intro requires tapping \"Scan storage\" (half-width) under a four-line paragraph before anything appears.",
+    "fix": "Scan on open (the result is cached with \"Scanned 2 min ago\")."
+   },
+   {
+    "severity": "medium",
+    "principle": "P7 one action one name",
+    "what": "Category action \"Clean\" (tonal, trash icon, not error-coloured) opens a sheet \"Delete 700 MB of Build caches?\" with \"Delete 700 MB\".",
+    "fix": "One verb, \"Delete 700 MB\", error-tonal."
+   },
+   {
+    "severity": "medium",
+    "principle": "U8",
+    "what": "\"Measuring storage\" headline is set in accent green display type — the only coloured title in the area.",
+    "fix": "On-surface title, accent only for the progress."
+   },
+   {
+    "severity": "low",
+    "principle": "C6",
+    "what": "\"Not removed from here\" repeated on three rows; \"6 GB measured in Termux\" under the title \"Storage on this phone\".",
+    "fix": "Group those three under a \"Kept\" label; drop \"in Termux\" unless the phone uses Termux."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "termux-storage-clean-sheet",
+  "area": "h-termux",
+  "title": "Remove {size} of {category}?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/termux-storage-clean-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A precise destructive confirm with one sentence too many and a chore (rescan) handed to the person.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C6 / X9",
+    "what": "Four sentences, ending \"Scan again afterward to update the measured sizes.\"",
+    "fix": "\"Deletes the npm and Gradle download caches (700 MB). They download again when needed. Stop builds first.\" Rescan automatically after delete."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-local-agent-onboarding-block",
+  "area": "h-termux",
+  "title": "Claude Code on this phone",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/h-termux/embedded-local-agent-onboarding-block--needs-ubuntu.png",
+   "docs/qa/screen-census/h-termux/embedded-local-agent-onboarding-block--failed.png",
+   "docs/qa/screen-census/h-termux/embedded-local-agent-onboarding-block--menu-open.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "A dead end when Ubuntu is missing, a failure that blames the wrong step, and a card with a right-aligned button.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "X4 / X5",
+    "what": "needs-ubuntu: \"Finish the On this phone setup first, then come back here.\" with only an outlined \"Refresh\".",
+    "fix": "Primary \"Set up this phone\" opening phone-setup-start; drop Refresh (the block polls)."
+   },
+   {
+    "severity": "high",
+    "principle": "C2",
+    "what": "failed: the checklist marks Node.js as failed, but the log shows \"[claude] Node.js v24.21.0\" installed and the error during the Paseo install; the summary is raw (\"It stopped: npm install failed: ECONNRESET\").",
+    "fix": "Mark the step that failed; say \"The download was interrupted. Check your connection and try again.\""
+   },
+   {
+    "severity": "medium",
+    "principle": "X3",
+    "what": "Menu: \"Remove from this phone\" is not error-coloured; \"Update Claude Code\" duplicates the inline Update link.",
+    "fix": "Destructive entry error-coloured; keep Update in one place."
+   },
+   {
+    "severity": "medium",
+    "principle": "standard §2",
+    "what": "\"Try again\" sits alone, right-aligned, at the bottom of the card.",
+    "fix": "Full-width primary."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "local-agent-project-sheet",
+  "area": "h-termux",
+  "title": "Choose a project folder",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/local-agent-project-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Clear choice list; the verb is vague and a typed path is the only way beyond two folders.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C5",
+    "what": "\"Continue\" does not say what happens.",
+    "fix": "\"Open shopfront\" (names the selection)."
+   },
+   {
+    "severity": "medium",
+    "principle": "Regression row 17",
+    "what": "Other folders only by typing \"Or type a path inside Ubuntu\"; the folder browser built for setup-ready is not reused.",
+    "fix": "Replace the text field with a \"Browse folders…\" row using the shared folder browser."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-local-agent-server-entry",
+  "area": "h-termux",
+  "title": "Claude Code on this phone",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/h-termux/embedded-local-agent-server-entry--running.png",
+   "docs/qa/screen-census/h-termux/embedded-local-agent-server-entry--stopped.png",
+   "docs/qa/screen-census/h-termux/embedded-local-agent-server-entry--menu-open.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Tidy rows on the kit; Claude Code borrows the phone icon and the phone set-up row is still offered.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "U9",
+    "what": "\"Claude Code on this phone\" uses the same phone icon as \"This phone · Termux\", so two different agents look identical.",
+    "fix": "An agent/Claude mark as its leading icon."
+   },
+   {
+    "severity": "medium",
+    "principle": "U6 (regression row 12 pattern)",
+    "what": "With OpenCode already running on this phone, the \"On this phone — Run a coding agent right here\" setup row still appears under the list.",
+    "fix": "Hide or rename that row once the phone runs a server (\"Add tools to this phone\")."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-managed-server-health",
+  "area": "h-termux",
+  "title": "On-device server",
+  "kind": "overlay",
+  "images": [],
+  "scores": {
+   "ui": null,
+   "ux": null,
+   "motion": null,
+   "copy": null,
+   "principles": null
+  },
+  "suggested": "keep",
+  "summary": "Not rendered: ManagedServerHealth no longer exists; its recovery switch lives on as \"Restart after a crash\" on On this phone, reviewed there.",
+  "issues": [],
+  "quickWin": false
+ },
+ {
+  "pageId": "stop-local-agents-confirm-sheet",
+  "area": "h-termux",
+  "title": "Stop Claude Code on this phone?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/stop-local-agents-confirm-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "Says exactly what is interrupted and what stays, with \"Keep running\" as the safe way out.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "C6",
+    "what": "Title wraps to two lines; body is three sentences.",
+    "fix": "\"Stop Claude Code?\" — the context already says this phone."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "restart-local-agents-sheet",
+  "area": "h-termux",
+  "title": "Restart Claude Code on this phone?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/restart-local-agents-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "Short and honest; nothing to add.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "C6",
+    "what": "Title wraps to two lines.",
+    "fix": "\"Restart Claude Code?\""
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "remove-local-agents-confirm-sheet",
+  "area": "h-termux",
+  "title": "Remove Claude Code from this phone?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/h-termux/remove-local-agents-confirm-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "States what is deleted, the size and what stays.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "U9",
+    "what": "Icon is a broken link, not the trash used by every other delete.",
+    "fix": "Trash icon on an error tint."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-setup-terminal",
+  "area": "h-termux",
+  "title": "LIVE OUTPUT / LAST OUTPUT",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/h-termux/embedded-setup-terminal--live-output.png",
+   "docs/qa/screen-census/h-termux/embedded-setup-terminal--last-output.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "The Termux path shows its log open as page content with a voice waveform icon and wrapped lines — the opposite of the fixed phone-setup Details.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "P4 / standard §3.6",
+    "what": "During install and after failure the terminal panel is open as the main content of On this phone, not a collapsed Details row.",
+    "fix": "Put it in KitStateView's Details slot, collapsed by default (as phone-setup-progress does)."
+   },
+   {
+    "severity": "medium",
+    "principle": "U9 / U7",
+    "what": "Header \"LIVE OUTPUT\" in uppercase with an audio-waveform icon; its divider runs full-bleed past the 16 dp rails.",
+    "fix": "Header \"Details\" (sentence case), text icon, divider on the rails."
+   },
+   {
+    "severity": "medium",
+    "principle": "Regression row 16 pattern",
+    "what": "Long lines wrap mid-token (\"Setting up nodejs\" / \"(24.21.0-1nodesource1) …\"); \"[oc]\" lines are painted in the brand accent.",
+    "fix": "TerminalView(framed: false) no wrap; accent only for errors/warnings, muted for \"[oc]\" markers."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "embedded-termux-attention-line",
+  "area": "h-termux",
+  "title": "Something is still running on this phone",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/h-termux/embedded-termux-attention-line.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Blames OpenCode for a leftover helper while OpenCode is visibly working right below it.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C2",
+    "what": "Says \"OpenCode has been busy in shopfront for 1 h 2 min with nothing to do\" — the culprit is an orphaned MCP helper (minimax-coding-plan-mcp), and directly under it Running shows OpenCode working on \"Fix flaky checkout test\".",
+    "fix": "\"A leftover helper has used the CPU for 1 h with nothing waiting on it.\" Actions: \"Stop it\" (confirmed) and \"See what's running\"."
+   },
+   {
+    "severity": "low",
+    "principle": "U7",
+    "what": "Divider below the line runs full-bleed.",
+    "fix": "Divider on the 16 dp rails."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "embedded-termux-running-server-entry",
+  "area": "h-termux",
+  "title": "Server on this phone",
+  "kind": "overlay",
+  "images": [
+   "docs/qa/screen-census/h-termux/embedded-termux-running-server-entry--running.png",
+   "docs/qa/screen-census/h-termux/embedded-termux-running-server-entry--menu-open.png",
+   "docs/qa/screen-census/h-termux/embedded-termux-running-server-entry--stopped.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "One row per state, menu for the rest, Stop error-coloured — the regression row 12/14 fixes hold.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "X3",
+    "what": "\"Forget saved sign-in\" in the menu is not error-coloured although it removes the saved entry.",
+    "fix": "Error colour + confirm."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "catalog",
+  "area": "j2-library",
+  "title": "Models and agents",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/j2-library/catalog.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "A solid picker with a pinned choice bar, undermined by a banner that contradicts the rows and an edge-to-edge tinted card.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C2",
+    "what": "Banner \"This server returned a basic catalog. Capability and context details are unavailable.\" while every row shows \"200K context\" (GPT-4.1 included).",
+    "fix": "Hide context when unknown; show the banner only if something is actually missing, as a one-line KitNotice."
+   },
+   {
+    "severity": "medium",
+    "principle": "U5 / U7",
+    "what": "The banner is a full-bleed tinted card with no side rails; the selected row is a filled rounded card at 8 dp while rows sit on 16 dp; the tab chips are centred while everything else is left-aligned.",
+    "fix": "KitNotice on the rails; selection as a leading check + current mark on the KitRow; left-aligned segmented tabs."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3 / C6",
+    "what": "Pinned bar \"Default mode · build\"; title \"Models and agents\" but only models are listed.",
+    "fix": "\"Build mode\"; title \"Models\" (agents live under Options)."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "command-auth-sheet",
+  "area": "j2-library",
+  "title": "<provider name> / <method label>",
+  "kind": "sheet",
+  "images": [],
+  "scores": {
+   "ui": null,
+   "ux": null,
+   "motion": null,
+   "copy": null,
+   "principles": null
+  },
+  "suggested": "rethink",
+  "summary": "Not rendered (harness cannot set the connected profile); its copy shows a flow that narrates internal recovery mechanics instead of telling the person what to do.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3 / C4",
+    "what": "States from app_en.arb: \"The server may have started sign-in, but the app could not safely recover its attempt. Check on the server before retrying; automatic restart is blocked to avoid duplicate processes.\"; \"Could not complete or confirm server sign-in. Check the existing attempt before starting another.\"; \"The server reported that sign-in completed. Refresh Providers to see its current connections.\"",
+    "fix": "Three plain states: \"Signing in on the server…\" (with Check now after 8 s), \"Signed in\" (auto-refresh Providers), \"Sign-in didn't finish — Try again\". Internal attempt/recovery language removed."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "command-auth-sheet-confirm-sheet",
+  "area": "j2-library",
+  "title": "Start sign-in on the server?",
+  "kind": "sheet",
+  "images": [],
+  "scores": {
+   "ui": null,
+   "ux": null,
+   "motion": null,
+   "copy": null,
+   "principles": null
+  },
+  "suggested": "keep",
+  "summary": "Not rendered (reached only via command-auth-sheet); its copy is clear enough: a question title and a verb button, with a three-sentence trust warning that could lose one sentence.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "C6",
+    "what": "\"OpenCode will execute this provider's declared sign-in method on the selected server. Continue only if you trust that server and provider. The app does not run or copy a shell command on your phone.\"",
+    "fix": "\"Runs the provider's sign-in on your server. Continue only if you trust both.\""
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "commands",
+  "area": "j2-library",
+  "title": "Server commands",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/j2-library/commands.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Simple and working, but built from raw ListTile with a mis-railed search field and two run metaphors per row.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "U5 / U7",
+    "what": "Search field inset 12 dp while the title and rows use 16 dp; dividers run full-bleed; plain ListTile instead of KitRow.",
+    "fix": "KitScreen + KitRow; search on the rails; no dividers (spacing)."
+   },
+   {
+    "severity": "low",
+    "principle": "U9",
+    "what": "Leading lightning icon and trailing play icon on every row; tapping opens a confirmation dialog, not an instant run.",
+    "fix": "Drop the trailing play; use a chevron since the row opens a dialog."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "credential-management-sheet",
+  "area": "j2-library",
+  "title": "<provider name>",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/j2-library/credential-management-sheet.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "Tells the person the app does not know which account is active, and lays three text buttons (Remove included) side by side under each account.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3 / C2",
+    "what": "\"Active account unknown. The saved-account list does not report which account is active.\"",
+    "fix": "Drop the line; show no current mark when unknown. One muted line: \"OpenCode picks which account to use.\""
+   },
+   {
+    "severity": "high",
+    "principle": "standard §6 / X3",
+    "what": "Each account shows \"Set active\", \"Rename account\" and \"Remove\" as a row of text buttons; Remove is accent-coloured beside the frequent actions.",
+    "fix": "KitRow per account with KitRowMenu: Use this account, Rename…, Remove… (error-coloured, confirmed)."
+   },
+   {
+    "severity": "medium",
+    "principle": "U7",
+    "what": "\"Refresh accounts\" and the account name are indented 16–32 dp past the rail.",
+    "fix": "Everything on the 16 dp rail; refresh via pull-to-refresh (KitRefresh)."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "credential-management-sheet-remove-sheet",
+  "area": "j2-library",
+  "title": "Remove {label}?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/j2-library/credential-management-sheet-remove-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Right structure, but the body explains server internals instead of consequences.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3",
+    "what": "\"This does not edit environment configuration; the server determines which account, if any, becomes active afterward.\"",
+    "fix": "\"Removes Primary key from this server. Projects that use it will need another Anthropic account.\""
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "credential-management-sheet-rename-dialog",
+  "area": "j2-library",
+  "title": "Rename account",
+  "kind": "dialog",
+  "images": [
+   "docs/qa/screen-census/j2-library/credential-management-sheet-rename-dialog.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "A dialog for short text entry, used correctly.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "U8",
+    "what": "Counter \"11/128\" always visible.",
+    "fix": "Show it only near the limit."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "integrations-mcp-oauth-code-dialog",
+  "area": "j2-library",
+  "title": "Complete MCP authorization",
+  "kind": "dialog",
+  "images": [
+   "docs/qa/screen-census/j2-library/integrations-mcp-oauth-code-dialog.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "The one instruction the person needs is cut off at 100 % text.",
+  "issues": [
+   {
+    "severity": "critical",
+    "principle": "P-a / U3 truncation",
+    "what": "Helper text reads \"Paste the complete callback URL whe…\" — truncated to one line at default text size.",
+    "fix": "Put the instruction in the dialog body above the field (\"Paste the address your browser ended on.\"), helper maxLines 3."
+   },
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "\"Complete MCP authorization\", \"Callback URL or code\"; \"Back\" instead of Cancel.",
+    "fix": "Title \"Finish signing in\"; field \"Address or code\"; \"Cancel\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "P6 one hand",
+    "what": "No paste affordance for a long URL.",
+    "fix": "Paste icon as the field suffix."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "integrations-oauth-code-dialog",
+  "area": "j2-library",
+  "title": "Finish {provider}",
+  "kind": "dialog",
+  "images": [],
+  "scores": {
+   "ui": null,
+   "ux": null,
+   "motion": null,
+   "copy": null,
+   "principles": null
+  },
+  "suggested": "keep",
+  "summary": "Not rendered (the legacy OAuth branch cancels in the harness); it shares the MCP code dialog's pattern — verify its helper text is not truncated like integrations-mcp-oauth-code-dialog.",
+  "issues": [],
+  "quickWin": false
+ },
+ {
+  "pageId": "integrations-oauth-inputs-dialog",
+  "area": "j2-library",
+  "title": "<method label>",
+  "kind": "dialog",
+  "images": [
+   "docs/qa/screen-census/j2-library/integrations-oauth-inputs-dialog.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "One unexplained field and a generic Continue.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C4 / C5",
+    "what": "\"Sign in with Groq\" asks only for \"Workspace URL\" with no example or reason; primary \"Continue\".",
+    "fix": "Helper \"Your Groq workspace address, like https://acme.groq.com\"; primary \"Open Groq sign-in\"."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "integrations",
+  "area": "j2-library",
+  "title": "Providers | MCP | MCP and integrations",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/j2-library/integrations--loaded.png"
+  ],
+  "scores": {
+   "ui": 2,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "rethink",
+  "summary": "The owner's \"Wttf\" pattern again: every provider row carries Connect plus a repeated \"Manage accounts\" line, the page opens with an internal limitation, and three titles fight over one screen.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "U5 / standard §6 (regression row 10 pattern)",
+    "what": "Every provider row has a Connect tonal button and, on its own right-aligned line, \"Manage accounts\" — even for providers never connected; Ollama adds a third line \"Server sign-in\"; Anthropic uses a \"Disconnect\" text button where others use tonal Connect.",
+    "fix": "KitRow per provider: status in the supporting line (\"Connected · Primary key\"), one trailing action (Connect when not connected, chevron to the account sheet when connected); Server sign-in / Manage accounts / Disconnect in KitRowMenu."
+   },
+   {
+    "severity": "high",
+    "principle": "C3 / P1",
+    "what": "The first paragraph, full contrast: \"This server cannot recover earlier sign-ins. Legacy sign-ins work only while their original screen and connection remain available.\"",
+    "fix": "Delete it; if a pending sign-in exists, show a KitNotice on that provider's row only."
+   },
+   {
+    "severity": "high",
+    "principle": "P1 / C6",
+    "what": "Title \"MCP and integrations\" while the first half is Providers (the ledger lists \"Providers | MCP | MCP and integrations\"); model credentials, MCP servers and Resources share one long scroll.",
+    "fix": "Two Library entries — \"Providers\" (credentials) and \"MCP servers\" (tools, resources) — or one screen with a top segmented control."
+   },
+   {
+    "severity": "medium",
+    "principle": "U8",
+    "what": "Uppercase letter-spaced labels \"PROVIDERS\", \"MCP ⓘ SERVERS\", \"RESOURCES\" with an info icon wedged inside the label.",
+    "fix": "SectionLabel in sentence case; the info as a trailing icon."
+   },
+   {
+    "severity": "medium",
+    "principle": "standard §6",
+    "what": "Each MCP server row stacks a text action (Disconnect / Authenticate / Try again) and a separate right-aligned \"Remove\" line.",
+    "fix": "One trailing action; Remove in the row menu."
+   },
+   {
+    "severity": "low",
+    "principle": "C6",
+    "what": "\"API key - Sign in with Google\" joins methods with a hyphen; \"Stored credential: Primary key\".",
+    "fix": "\"API key or Google sign-in\"; \"Connected · Primary key\"."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "integrations-remove-mcp-sheet",
+  "area": "j2-library",
+  "title": "Remove {name}?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/j2-library/integrations-remove-mcp-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 2,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "\"Remove docs?\" — and then it explains that remove does not remove.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C2 / X3",
+    "what": "Body: \"Remove this MCP server from the current project's runtime… This does not erase persistent server configuration; it may return after a server restart.\" The action is destructive-styled but not permanent.",
+    "fix": "Split: \"Turn off until restart\" (neutral) and \"Delete from configuration…\" (error, confirmed, says it is permanent)."
+   },
+   {
+    "severity": "medium",
+    "principle": "X4",
+    "what": "Behind the sheet, the docs row shows a bare spinner where its action was, with no words.",
+    "fix": "KitStatusLine/row supporting line \"Disconnecting…\"."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "integrations-authorization-launch-dialog",
+  "area": "j2-library",
+  "title": "Open authorization page?",
+  "kind": "dialog",
+  "images": [
+   "docs/qa/screen-census/j2-library/integrations-authorization-launch-dialog.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 4
+  },
+  "suggested": "fix",
+  "summary": "Does the right thing (shows the host before leaving) with form-like labels.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C6",
+    "what": "Title wraps (\"Open authorization page?\"); labels \"Destination host\" and \"OpenCode instructions\" read like a form.",
+    "fix": "Title \"Open mcp.example.com?\"; body \"Approve access in your browser, then come back.\""
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "integrations-disconnect-provider-sheet",
+  "area": "j2-library",
+  "title": "Disconnect {provider}?",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/j2-library/integrations-disconnect-provider-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Clear title, internal body.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3",
+    "what": "\"New prompts will stop using it after the provider runtime refreshes. An active response is not stopped.\"",
+    "fix": "\"Removes the Anthropic key from this server. A reply already running finishes first.\" Button \"Disconnect\"."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "integrations-connect-method-sheet",
+  "area": "j2-library",
+  "title": "[Choose connection method]",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/j2-library/integrations-connect-method-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Two options with no heading — the sheet never says which provider it is for.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "X8 / C6",
+    "what": "No title; \"Sign in with Google · Sign in with your account\" repeats itself.",
+    "fix": "Title \"Connect Google\"; \"Sign in with Google · Opens Google in your browser\"; \"API key · Paste a key from Google AI Studio\"."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "integrations-connect-key-dialog",
+  "area": "j2-library",
+  "title": "Connect {provider}",
+  "kind": "dialog",
+  "images": [
+   "docs/qa/screen-census/j2-library/integrations-connect-key-dialog.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Obscured field done right; no help finding a key and no paste shortcut.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C4 / P6",
+    "what": "Just \"API key\" with no hint where to get one and no paste button; no show/hide to check a pasted key.",
+    "fix": "Helper link \"Get a key at platform.openai.com\" (openExternalLink), paste suffix icon, eye toggle."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "integrations-forget-pending-auth-sheet",
+  "area": "j2-library",
+  "title": "Forget on this device",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/j2-library/integrations-forget-pending-auth-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "A trash icon in accent, no question mark, and a body about \"recovery records\".",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3",
+    "what": "\"Remove only this device's recovery record? This does not cancel a server command, revoke credentials, or finish authorization. The server attempt may keep running until it expires.\"",
+    "fix": "Title \"Forget this sign-in?\"; body \"The app stops tracking it. An open browser sign-in expires on its own.\"; button \"Forget\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "P7",
+    "what": "Trash icon on an accent tint with an accent primary; the screen behind is titled \"Providers\" (third title for this page).",
+    "fix": "Neutral icon (it deletes nothing on the server); one title for the screen."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "integrations-forget-uncertain-auth-sheet",
+  "area": "j2-library",
+  "title": "Forget uncertain start?",
+  "kind": "sheet",
+  "images": [],
+  "scores": {
+   "ui": null,
+   "ux": null,
+   "motion": null,
+   "copy": null,
+   "principles": null
+  },
+  "suggested": "rethink",
+  "summary": "Not rendered (no seeding seam); its copy exposes an internal state as the title.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3",
+    "what": "Title \"Forget uncertain start?\", button \"Forget uncertain start\", body \"This clears only the local retry block. It does not cancel sign-in on the server…\" (app_en.arb uncertainAuthForget*).",
+    "fix": "Title \"Clear this unfinished sign-in?\"; body \"Check the server first so you don't start a second sign-in.\"; button \"Clear\"."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "references",
+  "area": "j2-library",
+  "title": "References",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/j2-library/references.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Raw ids and repo paths as the rows, and no word on what a reference is.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "C3",
+    "what": "Titles \"design-system\", \"api-contract\"; supporting lines are repo paths (docs/design/design-standard.md, contracts/openapi.yaml).",
+    "fix": "Readable names (\"Design system\"), description as the supporting line, path under the row's detail/preview."
+   },
+   {
+    "severity": "medium",
+    "principle": "X5",
+    "what": "No intro — the person cannot tell what References are for; only a copy icon per row.",
+    "fix": "One muted line: \"Files your agent reads first.\" Row tap previews the file."
+   },
+   {
+    "severity": "low",
+    "principle": "U7",
+    "what": "Divider runs full-bleed while rows sit on the rails; raw ListTile.",
+    "fix": "KitRow, no divider."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "skill-activation-sheet",
+  "area": "j2-library",
+  "title": "<skill name>",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/j2-library/skill-activation-sheet.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 3,
+   "principles": 4
+  },
+  "suggested": "fix",
+  "summary": "A good sheet with a pinned primary; the name shows twice and the view toggle's colours say the opposite of its state.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "U2",
+    "what": "Rendered/Raw toggle: the unselected \"Raw\" is accent-coloured, the selected \"Rendered\" is grey.",
+    "fix": "Kit segmented control with a filled selected segment."
+   },
+   {
+    "severity": "medium",
+    "principle": "U6",
+    "what": "\"Code review\" is the sheet title and again the Markdown H1 directly below.",
+    "fix": "Strip the first H1 when it equals the title."
+   },
+   {
+    "severity": "low",
+    "principle": "P7",
+    "what": "\"Run agent now\" is a checkbox where the app uses switches.",
+    "fix": "KitSwitchRow."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "skills",
+  "area": "j2-library",
+  "title": "Skills",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/j2-library/skills.png"
+  ],
+  "scores": {
+   "ui": 4,
+   "ux": 4,
+   "motion": null,
+   "copy": 4,
+   "principles": 4
+  },
+  "suggested": "keep",
+  "summary": "A plain list that says what each skill does.",
+  "issues": [
+   {
+    "severity": "low",
+    "principle": "U7",
+    "what": "Divider runs full-bleed from x = 0.",
+    "fix": "KitRow spacing, no divider."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "skills-preview-sheet",
+  "area": "j2-library",
+  "title": "<skill name>",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/j2-library/skills-preview-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Shows the skill but offers nothing to do with it, repeats its name and inverts the toggle colours.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "X5",
+    "what": "No action — the preview cannot add the skill to a conversation.",
+    "fix": "Pinned \"Use in a conversation\" primary (reusing skill-activation)."
+   },
+   {
+    "severity": "medium",
+    "principle": "U2 / U6",
+    "what": "Same Rendered/Raw colour inversion and duplicated H1 as skill-activation-sheet.",
+    "fix": "Same fix."
+   },
+   {
+    "severity": "low",
+    "principle": "C3",
+    "what": "Path \".opencode/skills/code-review/SKILL.md\" under the title.",
+    "fix": "Move to a Details row."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "mcp-setup",
+  "area": "j2-library",
+  "title": "Add MCP server",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/j2-library/mcp-setup.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 2
+  },
+  "suggested": "fix",
+  "summary": "A complete form that shows bearer tokens in clear and puts every advanced knob above the fold.",
+  "issues": [
+   {
+    "severity": "critical",
+    "principle": "C1 / P10 secrets",
+    "what": "\"HTTP headers\" is a plain multi-line field whose own hint is \"Authorization=Bearer token\" — tokens are typed and displayed in clear (screen-recordable), while the API-key dialog elsewhere obscures its field.",
+    "fix": "Header rows as key + obscured value with a reveal eye; never prefill saved header values on edit."
+   },
+   {
+    "severity": "high",
+    "principle": "C3 / P4",
+    "what": "\"Persisted configuration\", \"Writes only to /home/dev/shopfront.\", \"MCP endpoint URL\", \"Detect OAuth automatically\", \"Timeout in milliseconds\" all visible at once.",
+    "fix": "Name + address first; scope as one row (\"This project\"); Headers, OAuth detection and Timeout (in seconds) under a collapsed \"Advanced\" KitExpandRow."
+   },
+   {
+    "severity": "medium",
+    "principle": "U4",
+    "what": "Two stacked segmented controls with bold labels compete with the form fields.",
+    "fix": "Scope as a KitRow with a menu; Remote/Local as the first choice only."
+   }
+  ],
+  "quickWin": false
+ },
+ {
+  "pageId": "tools",
+  "area": "j2-library",
+  "title": "Tools and capabilities",
+  "kind": "screen",
+  "images": [
+   "docs/qa/screen-census/j2-library/tools.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 2,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "Shows the model as a raw id twice and a counter strip of jargon above two tools.",
+  "issues": [
+   {
+    "severity": "high",
+    "principle": "C3",
+    "what": "Header: \"claude-sonnet-4\" and mono \"anthropic/claude-sonnet-4\"; strip \"2 usable  2 registered  Background subagents enabled\" with no separators.",
+    "fix": "Header \"Claude Sonnet 4 · Anthropic\" + Change; one muted line \"2 tools · background agents on\"."
+   },
+   {
+    "severity": "medium",
+    "principle": "U8 / U7",
+    "what": "Tool names in mono as titles with the plain description louder; the chevron sits ~8 dp from the right edge and dividers run to it.",
+    "fix": "Title = plain description, supporting = tool id in mono; right rail 16 dp."
+   },
+   {
+    "severity": "low",
+    "principle": "P1",
+    "what": "\"Search 2 tools\" field for two items.",
+    "fix": "Show search from ~8 tools up."
+   }
+  ],
+  "quickWin": true
+ },
+ {
+  "pageId": "tools-detail-sheet",
+  "area": "j2-library",
+  "title": "<tool id>",
+  "kind": "sheet",
+  "images": [
+   "docs/qa/screen-census/j2-library/tools-detail-sheet.png"
+  ],
+  "scores": {
+   "ui": 3,
+   "ux": 3,
+   "motion": null,
+   "copy": 3,
+   "principles": 3
+  },
+  "suggested": "fix",
+  "summary": "The raw JSON schema is the whole content.",
+  "issues": [
+   {
+    "severity": "medium",
+    "principle": "P4 detail on request",
+    "what": "\"Parameter schema\" JSON fills the sheet; no plain summary.",
+    "fix": "\"Takes: command — text\" as rows; JSON schema folded under Details with its own copy."
+   }
+  ],
+  "quickWin": true
+ }
+]

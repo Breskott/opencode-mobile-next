@@ -1,0 +1,433 @@
+{
+ "area": "d-chat-sheets",
+ "renderedAt": "2026-09-26T02:56:06.803051Z",
+ "declaredShots": [
+  {
+   "page": "permission-sheet",
+   "state": "command"
+  },
+  {
+   "page": "permission-sheet",
+   "state": "edit-diff"
+  },
+  {
+   "page": "permission-sheet",
+   "state": "reject-with-message"
+  },
+  {
+   "page": "permission-sheet-always-dialog",
+   "state": "default"
+  },
+  {
+   "page": "embedded-permission-attention-card",
+   "state": "command"
+  },
+  {
+   "page": "embedded-permission-attention-card",
+   "state": "edit"
+  },
+  {
+   "page": "session-approvals-sheet",
+   "state": "ask"
+  },
+  {
+   "page": "session-approvals-sheet",
+   "state": "auto"
+  },
+  {
+   "page": "embedded-auto-approval-indicator",
+   "state": "on"
+  },
+  {
+   "page": "embedded-auto-approval-indicator",
+   "state": "paused"
+  },
+  {
+   "page": "timeline-sheet",
+   "state": "loaded"
+  },
+  {
+   "page": "timeline-sheet",
+   "state": "search"
+  },
+  {
+   "page": "timeline-sheet",
+   "state": "fork"
+  },
+  {
+   "page": "todos-sheet",
+   "state": "loaded"
+  },
+  {
+   "page": "todos-sheet",
+   "state": "empty"
+  },
+  {
+   "page": "embedded-question-attention-card",
+   "state": "inline"
+  },
+  {
+   "page": "embedded-question-attention-card",
+   "state": "summary"
+  },
+  {
+   "page": "embedded-question-options",
+   "state": "multi-select"
+  },
+  {
+   "page": "embedded-question-options",
+   "state": "custom-answer"
+  },
+  {
+   "page": "voice-model-setup-sheet",
+   "state": "not-installed"
+  },
+  {
+   "page": "voice-model-setup-sheet",
+   "state": "downloading"
+  },
+  {
+   "page": "voice-model-setup-sheet",
+   "state": "installed"
+  },
+  {
+   "page": "voice-model-setup-sheet-delete-dialog",
+   "state": "default"
+  },
+  {
+   "page": "voice-composer-sheet",
+   "state": "listening"
+  },
+  {
+   "page": "voice-composer-sheet",
+   "state": "draft"
+  },
+  {
+   "page": "voice-composer-sheet",
+   "state": "mic-denied"
+  },
+  {
+   "page": "voice-composer-sheet",
+   "state": "conversation-ready"
+  },
+  {
+   "page": "embedded-voice-conversation-controls",
+   "state": "default"
+  },
+  {
+   "page": "voice-notices",
+   "state": "default"
+  },
+  {
+   "page": "embedded-tool-card",
+   "state": "shell"
+  },
+  {
+   "page": "embedded-tool-card",
+   "state": "long-output"
+  },
+  {
+   "page": "embedded-tool-card",
+   "state": "edit"
+  },
+  {
+   "page": "embedded-tool-card",
+   "state": "subagent"
+  },
+  {
+   "page": "embedded-markdown-text",
+   "state": "default"
+  },
+  {
+   "page": "markdown-code-reader",
+   "state": "default"
+  },
+  {
+   "page": "embedded-completion-digest-card",
+   "state": "default"
+  },
+  {
+   "page": "form-sheet",
+   "state": "sheet"
+  },
+  {
+   "page": "form-sheet",
+   "state": "full-screen"
+  },
+  {
+   "page": "form-sheet-dismiss-confirm-sheet",
+   "state": "default"
+  },
+  {
+   "page": "form-sheet-date-picker",
+   "state": "default"
+  }
+ ],
+ "notRendered": {
+  "embedded-return-brief-panel": "removed from the code: ReturnBriefPanel/ReturnBriefCard no longer exist (the 2026-09-24 Work tab cleanup moved \"Unreviewed\" into the session rows; see test/return_brief_widget_test.dart)",
+  "embedded-return-brief-panel-status-dialog": "removed from the code with the return brief card (lib/ui/widgets/return_brief_card.dart no longer exists)"
+ },
+ "shots": [
+  {
+   "page": "permission-sheet",
+   "state": "command",
+   "image": "d-chat-sheets/permission-sheet--command.png",
+   "note": "Opened from the chat card Review; a v1 shell command request."
+  },
+  {
+   "page": "permission-sheet",
+   "state": "edit-diff",
+   "image": "d-chat-sheets/permission-sheet--edit-diff.png",
+   "note": "An edit request with the diff preview the server attached."
+  },
+  {
+   "page": "permission-sheet",
+   "state": "reject-with-message",
+   "image": "d-chat-sheets/permission-sheet--reject-with-message.png",
+   "note": "OpenCode 2 \"Reject…\" with the reason field. Presented with the same sheet options as showPermissionSheet (the v2 marker that turns the field on is private to the controller)."
+  },
+  {
+   "page": "permission-sheet-always-dialog",
+   "state": "default",
+   "image": "d-chat-sheets/permission-sheet-always-dialog.png",
+   "note": "Always allow tapped on the shell command request. Review: the separator in \"Settings ▯ Saved permissions\" draws as a missing glyph with the capture fonts."
+  },
+  {
+   "page": "embedded-permission-attention-card",
+   "state": "command",
+   "image": "d-chat-sheets/embedded-permission-attention-card--command.png",
+   "note": "Host: the chat, above the composer, while the shell call waits."
+  },
+  {
+   "page": "embedded-permission-attention-card",
+   "state": "edit",
+   "image": "d-chat-sheets/embedded-permission-attention-card--edit.png",
+   "note": "Host: the chat; an edit request."
+  },
+  {
+   "page": "session-approvals-sheet",
+   "state": "ask",
+   "image": "d-chat-sheets/session-approvals-sheet--ask.png",
+   "note": "Conversation menu › Conversation actions › Approvals; default."
+  },
+  {
+   "page": "session-approvals-sheet",
+   "state": "auto",
+   "image": "d-chat-sheets/session-approvals-sheet--auto.png",
+   "note": "Opened from the auto-approval indicator while it is on."
+  },
+  {
+   "page": "embedded-auto-approval-indicator",
+   "state": "on",
+   "image": "d-chat-sheets/embedded-auto-approval-indicator--on.png",
+   "note": "Host: the chat, strip above the composer; a turn is running."
+  },
+  {
+   "page": "embedded-auto-approval-indicator",
+   "state": "paused",
+   "image": "d-chat-sheets/embedded-auto-approval-indicator--paused.png",
+   "note": "Host: the chat after the connection dropped."
+  },
+  {
+   "page": "timeline-sheet",
+   "state": "loaded",
+   "image": "d-chat-sheets/timeline-sheet--loaded.png",
+   "note": "Conversation menu › Timeline."
+  },
+  {
+   "page": "timeline-sheet",
+   "state": "search",
+   "image": "d-chat-sheets/timeline-sheet--search.png",
+   "note": "Searching the timeline for \"coupon\"."
+  },
+  {
+   "page": "timeline-sheet",
+   "state": "fork",
+   "image": "d-chat-sheets/timeline-sheet--fork.png",
+   "note": "Command launcher › Fork from prompt: pick a prompt to fork."
+  },
+  {
+   "page": "todos-sheet",
+   "state": "loaded",
+   "image": "d-chat-sheets/todos-sheet--loaded.png",
+   "note": "Conversation menu › Todos."
+  },
+  {
+   "page": "todos-sheet",
+   "state": "empty",
+   "image": "d-chat-sheets/todos-sheet--empty.png",
+   "note": "Conversation menu › Todos with none planned."
+  },
+  {
+   "page": "embedded-question-attention-card",
+   "state": "inline",
+   "image": "d-chat-sheets/embedded-question-attention-card--inline.png",
+   "note": "Host: the chat; one prompt answered by a tap."
+  },
+  {
+   "page": "embedded-question-attention-card",
+   "state": "summary",
+   "image": "d-chat-sheets/embedded-question-attention-card--summary.png",
+   "note": "Host: the chat; three prompts, so the card summarises and Answer opens the full sheet."
+  },
+  {
+   "page": "embedded-question-options",
+   "state": "multi-select",
+   "image": "d-chat-sheets/embedded-question-options--multi-select.png",
+   "note": "Host: the chat question card; two of three checks chosen."
+  },
+  {
+   "page": "embedded-question-options",
+   "state": "custom-answer",
+   "image": "d-chat-sheets/embedded-question-options--custom-answer.png",
+   "note": "Host: the chat question card with a free-text answer typed."
+  },
+  {
+   "page": "voice-model-setup-sheet",
+   "state": "not-installed",
+   "image": "d-chat-sheets/voice-model-setup-sheet--not-installed.png",
+   "warnings": [
+    "A ValueNotifier<int> was used after being disposed. Once you have called dispose() on a ValueNotifier<int>, it can no longer be used."
+   ],
+   "note": "Composer tools › Voice input before any model is downloaded."
+  },
+  {
+   "page": "voice-model-setup-sheet",
+   "state": "downloading",
+   "image": "d-chat-sheets/voice-model-setup-sheet--downloading.png",
+   "warnings": [
+    "A ValueNotifier<int> was used after being disposed. Once you have called dispose() on a ValueNotifier<int>, it can no longer be used."
+   ],
+   "note": "Download in progress (frozen at 38%)."
+  },
+  {
+   "page": "voice-model-setup-sheet",
+   "state": "installed",
+   "image": "d-chat-sheets/voice-model-setup-sheet--installed.png",
+   "note": "The balanced pack installed (as from Settings › Voice)."
+  },
+  {
+   "page": "voice-model-setup-sheet-delete-dialog",
+   "state": "default",
+   "image": "d-chat-sheets/voice-model-setup-sheet-delete-dialog.png",
+   "note": "Delete on the installed pack."
+  },
+  {
+   "page": "voice-composer-sheet",
+   "state": "listening",
+   "image": "d-chat-sheets/voice-composer-sheet--listening.png",
+   "warnings": [
+    "A ValueNotifier<int> was used after being disposed. Once you have called dispose() on a ValueNotifier<int>, it can no longer be used."
+   ],
+   "note": "Composer tools › Voice input, recording (fake recorder, 0:07)."
+  },
+  {
+   "page": "voice-composer-sheet",
+   "state": "draft",
+   "image": "d-chat-sheets/voice-composer-sheet--draft.png",
+   "warnings": [
+    "A ValueNotifier<int> was used after being disposed. Once you have called dispose() on a ValueNotifier<int>, it can no longer be used."
+   ],
+   "note": "Transcript ready for review (fake recognizer)."
+  },
+  {
+   "page": "voice-composer-sheet",
+   "state": "mic-denied",
+   "image": "d-chat-sheets/voice-composer-sheet--mic-denied.png",
+   "warnings": [
+    "A ValueNotifier<int> was used after being disposed. Once you have called dispose() on a ValueNotifier<int>, it can no longer be used."
+   ],
+   "note": "Microphone permission permanently denied."
+  },
+  {
+   "page": "voice-composer-sheet",
+   "state": "conversation-ready",
+   "image": "d-chat-sheets/voice-composer-sheet--conversation-ready.png",
+   "warnings": [
+    "A ValueNotifier<int> was used after being disposed. Once you have called dispose() on a ValueNotifier<int>, it can no longer be used."
+   ],
+   "note": "Composer tools › Voice conversation: the sheet waits for Start listening."
+  },
+  {
+   "page": "embedded-voice-conversation-controls",
+   "state": "default",
+   "image": "d-chat-sheets/embedded-voice-conversation-controls.png",
+   "warnings": [
+    "A ValueNotifier<int> was used after being disposed. Once you have called dispose() on a ValueNotifier<int>, it can no longer be used."
+   ],
+   "note": "Host: the chat in voice conversation mode, sheet closed."
+  },
+  {
+   "page": "voice-notices",
+   "state": "default",
+   "image": "d-chat-sheets/voice-notices.png",
+   "note": "Full-screen notices (reached from Settings › Voice). Review: raw Markdown (#, **, backticks) with the file's hard line breaks."
+  },
+  {
+   "page": "embedded-tool-card",
+   "state": "shell",
+   "image": "d-chat-sheets/embedded-tool-card--shell.png",
+   "note": "Host: the chat; the folded work opened, the shell call expanded."
+  },
+  {
+   "page": "embedded-tool-card",
+   "state": "long-output",
+   "image": "d-chat-sheets/embedded-tool-card--long-output.png",
+   "note": "Host: the chat; a 41-line shell output. Review: it renders in full inline (no 13-line cap, no See all) and pushes the card header off screen; the edit card does cap with See all."
+  },
+  {
+   "page": "embedded-tool-card",
+   "state": "edit",
+   "image": "d-chat-sheets/embedded-tool-card--edit.png",
+   "note": "Host: the chat; the edit call expanded with its diff."
+  },
+  {
+   "page": "embedded-tool-card",
+   "state": "subagent",
+   "image": "d-chat-sheets/embedded-tool-card--subagent.png",
+   "note": "Host: the chat; an OpenCode 2 subagent call with its session link."
+  },
+  {
+   "page": "embedded-markdown-text",
+   "state": "default",
+   "image": "d-chat-sheets/embedded-markdown-text.png",
+   "note": "Host: the chat; heading, list, link, path chip, table, code block and choices."
+  },
+  {
+   "page": "markdown-code-reader",
+   "state": "default",
+   "image": "d-chat-sheets/markdown-code-reader.png",
+   "note": "Code options › Full screen on the reply code block."
+  },
+  {
+   "page": "embedded-completion-digest-card",
+   "state": "default",
+   "image": "d-chat-sheets/embedded-completion-digest-card.png",
+   "note": "Host: Activity › Completion digests, one idle session expanded."
+  },
+  {
+   "page": "form-sheet",
+   "state": "sheet",
+   "image": "d-chat-sheets/form-sheet--sheet.png",
+   "note": "Chat form card › Answer: four fields, so a bottom sheet."
+  },
+  {
+   "page": "form-sheet",
+   "state": "full-screen",
+   "image": "d-chat-sheets/form-sheet--full-screen.png",
+   "note": "Six fields, so the full-screen dialog variant. Review: the \"pinned\" Send answers bar floats mid-screen under the last field with black bands, instead of sitting at the bottom."
+  },
+  {
+   "page": "form-sheet-dismiss-confirm-sheet",
+   "state": "default",
+   "image": "d-chat-sheets/form-sheet-dismiss-confirm-sheet.png",
+   "note": "Dismiss tapped on the form sheet."
+  },
+  {
+   "page": "form-sheet-date-picker",
+   "state": "default",
+   "image": "d-chat-sheets/form-sheet-date-picker.png",
+   "note": "The deploy date field tapped (stock Material date picker)."
+  }
+ ]
+}

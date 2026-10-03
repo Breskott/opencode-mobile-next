@@ -221,7 +221,10 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(PopupMenuButton<String>).last);
+    // A row's actions are its long-press menu (KIT-28): no per-row ⋮.
+    await tester.longPress(find.text('old'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Pin on this device'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Pin on this device'));
     await tester.pumpAndSettle();
@@ -231,10 +234,13 @@ void main() {
       tester.getTopLeft(find.text('old')).dy,
       lessThan(tester.getTopLeft(find.text('new')).dy),
     );
-    expect(find.text('Pinned'), findsOneWidget);
-    await tester.tap(find.byType(PopupMenuButton<String>).first);
+    // One list: the pin leads it with its pin mark, under no Pinned header.
+    expect(find.text('Pinned'), findsNothing);
+    await tester.longPress(find.text('old'));
     await tester.pumpAndSettle();
     expect(find.text('Unpin'), findsOneWidget);
+    await tester.ensureVisible(find.text('Unpin'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Unpin'));
     await tester.pumpAndSettle();
     expect(c.isSessionPinned('old'), isFalse);

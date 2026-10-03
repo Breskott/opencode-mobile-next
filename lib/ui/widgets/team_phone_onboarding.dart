@@ -1,38 +1,70 @@
-/// The optional on-device AI Team step of the Termux setup (TEAM-302,
-/// 03-onboarding-on-device §2): the "Also run an AI team on this phone"
-/// block shown after step 3 succeeds, the five visible steps with the same
-/// live output panel the OpenCode install uses, the success card and the
-/// honest failure copy of §5.
+/// AI Team on this phone through phone setup v2 (programme P1.7): the one
+/// way a phone's team is set up, whichever host runs OpenCode (inside the
+/// app or in Termux).
 ///
-/// Everything here reads and drives [TermuxTeamRuntime] (TEAM-301). The
-/// runtime's state file is the truth: leaving the screen and coming back
-/// resumes the view from `aiteam.sh status`, and a verb that finished while
-/// the app was away shows as done. The block is absent (not disabled)
-/// while [TermuxTeamRuntime.supportsAiTeam] is false.
+/// - [openTeamOnThisPhone] is "Set up AI Team on this phone" everywhere
+///   (the team's intro, Plugins' AI Team, the Termux "On this phone"
+///   section). It opens Add tools with AI Team switched on, on the host of
+///   the connected server, and runs it as a v2 job through that host's
+///   progress screen: its steps, success and failure are the setup's own
+///   rows (the old five-step block of the Termux wizard is gone). When AI
+///   Team is installed already it goes straight on.
+/// - [TeamPhoneReadyScreen] is the ready page after it: it turns the team
+///   on for the project (in-app: [BuiltinTeam.turnOn]; Termux:
+///   [TermuxTeamRuntime] `install` check, `init`, `start`), shows the
+///   stages as they pass, says what went wrong with the one retry, and ends
+///   with "Give the team a first task", which lands in its conversation.
+/// - [TeamPhoneKilledNotice] says on the team page that Android stopped the
+///   phone's Termux team, with "Start the team again".
+///
+/// Built from kit parts only (kit-v2 §9); the ready page uses phone setup's
+/// own hero ([PhoneSetupHero]), so it reads as the same family as
+/// phone-setup-ready.
 library;
 
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-import '../../domain/workspace_paths.dart';
+import '../../builtin/setup/components.dart' show SetupComponentIds;
+import '../../builtin/setup/phone_setup.dart';
+import '../../builtin/setup/setup_contract.dart';
+import '../../builtin/team/builtin_team.dart';
+import '../../builtin/team/builtin_team_job.dart';
+import '../../diagnostics/failed_job_report.dart';
+import '../../feedback/bug_report.dart' show failedJobReportAction;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../../state/orchestration_store.dart';
+import '../../state/orchestration.dart';
 import '../../state/profiles.dart';
 import '../../termux/bridge.dart';
 import '../../termux/team_runtime.dart';
 import '../app_theme.dart';
-import 'setup_terminal.dart';
+import '../kit/kit.dart';
+import '../kit/scenes/setup_ready_scene.dart';
+import '../kit/scenes/setup_unplugged_scene.dart';
+import '../kit/scenes/team_scenes.dart';
+import '../screens/phone_setup/phone_setup_hero.dart';
+import '../screens/phone_setup/phone_setup_routes.dart';
+import '../screens/phone_setup/phone_setup_termux_job_screen.dart'
+    show openPhoneSetupTermuxJob;
+import '../screens/project_folder_actions.dart';
+import '../screens/team_conversation/team_conversation.dart';
+import 'product_states.dart' show productErrorDetails, productErrorText;
+import 'builtin_team_section.dart'
+    show
+        builtinTeamFailureText,
+        builtinTeamProjectName,
+        builtinTeamStageRows,
+        sharedBuiltinTeam;
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
 TermuxTeamRuntime? _sharedRuntime;
 
-/// The runtime the on-device widgets share; one instance per app so the
-/// manifest and the arm64 probe are read once.
+/// The Termux team runtime the phone's widgets share; one instance per app
+/// so the arm64 probe is read once.
 TermuxTeamRuntime get teamPhoneRuntime =>
     debugTeamPhoneRuntime ?? (_sharedRuntime ??= TermuxTeamRuntime());
 
@@ -40,127 +72,18 @@ TermuxTeamRuntime get teamPhoneRuntime =>
 @visibleForTesting
 TermuxTeamRuntime? debugTeamPhoneRuntime;
 
-/// How often the steps view re-reads status and the log while a verb runs.
+/// How often the Termux section re-reads status while a verb runs.
 const teamPhonePollInterval = Duration(seconds: 2);
 
-/// The spike's estimate when the manifest declares no sizes.
-const _fallbackDownloadMb = 250;
+/// The host a phone's team is installed on: Termux for the Termux server,
+/// the app's own Linux otherwise.
+SetupHostKind teamPhoneHostOf(ServerProfile profile) =>
+    TermuxBridge.managesServerUrl(profile.baseUrl)
+    ? SetupHostKind.termux
+    : SetupHostKind.builtin;
 
-/// The download size line's number: the manifest's declared bytes, rounded
-/// up to whole megabytes, or the spike estimate.
-int teamPhoneDownloadMb(TeamRuntimeManifest? manifest) {
-  final bytes = manifest?.totalBytes ?? 0;
-  if (bytes <= 0) return _fallbackDownloadMb;
-  return (bytes / (1000 * 1000)).ceil();
-}
-
-/// The five visible steps of 03-onboarding §2.
-enum TeamPhoneStep { download, packages, city, start, connect }
-
-enum TeamPhoneStepState { idle, running, done, error }
-
-/// The step [phase] belongs to, and whether it is under way, done or failed
-/// there. `connect` is the app's own step: done once the profile carries
-/// the phone config ([connected]).
-Map<TeamPhoneStep, TeamPhoneStepState> teamPhoneStepStates(
-  TeamRuntimeStatus status, {
-  required bool connected,
-}) {
-  final states = {
-    for (final step in TeamPhoneStep.values) step: TeamPhoneStepState.idle,
-  };
-  void doneThrough(TeamPhoneStep last) {
-    for (final step in TeamPhoneStep.values) {
-      states[step] = TeamPhoneStepState.done;
-      if (step == last) break;
-    }
-  }
-
-  switch (status.phase) {
-    case TeamRuntimePhase.idle:
-    case TeamRuntimePhase.unknown:
-      break;
-    case TeamRuntimePhase.queued:
-      final step = _stepForVerb(status.verb);
-      if (step != null) {
-        if (step.index > 0) doneThrough(TeamPhoneStep.values[step.index - 1]);
-        states[step] = TeamPhoneStepState.running;
-      }
-    case TeamRuntimePhase.downloading:
-    case TeamRuntimePhase.verifying:
-      states[TeamPhoneStep.download] = TeamPhoneStepState.running;
-    case TeamRuntimePhase.installingPackages:
-      doneThrough(TeamPhoneStep.download);
-      states[TeamPhoneStep.packages] = TeamPhoneStepState.running;
-    case TeamRuntimePhase.installed:
-      doneThrough(TeamPhoneStep.packages);
-    case TeamRuntimePhase.creatingCity:
-      doneThrough(TeamPhoneStep.packages);
-      states[TeamPhoneStep.city] = TeamPhoneStepState.running;
-    case TeamRuntimePhase.cityReady:
-    case TeamRuntimePhase.stopped:
-      doneThrough(TeamPhoneStep.city);
-    case TeamRuntimePhase.starting:
-      doneThrough(TeamPhoneStep.city);
-      states[TeamPhoneStep.start] = TeamPhoneStepState.running;
-    case TeamRuntimePhase.ready:
-      if (status.health != 'ok' && !status.killedByAndroid) {
-        doneThrough(TeamPhoneStep.city);
-        states[TeamPhoneStep.start] = TeamPhoneStepState.error;
-        break;
-      }
-      doneThrough(TeamPhoneStep.start);
-      states[TeamPhoneStep.connect] = connected
-          ? TeamPhoneStepState.done
-          : TeamPhoneStepState.running;
-    case TeamRuntimePhase.stopping:
-    case TeamRuntimePhase.removing:
-      doneThrough(TeamPhoneStep.city);
-    case TeamRuntimePhase.failed:
-      final step = teamPhoneFailedStep(status);
-      if (step.index > 0) doneThrough(TeamPhoneStep.values[step.index - 1]);
-      states[step] = TeamPhoneStepState.error;
-  }
-  return states;
-}
-
-TeamPhoneStep? _stepForVerb(String verb) => switch (verb) {
-  'install' => TeamPhoneStep.download,
-  'init' => TeamPhoneStep.city,
-  'start' => TeamPhoneStep.start,
-  _ => null,
-};
-
-/// Which step a failed [status] belongs to, from its reason first (the
-/// install verb spans two steps) and its verb second.
-TeamPhoneStep teamPhoneFailedStep(TeamRuntimeStatus status) {
-  final reason = status.reason ?? '';
-  if (status.phase == TeamRuntimePhase.ready) return TeamPhoneStep.start;
-  if (reason == 'packages') return TeamPhoneStep.packages;
-  if (reason.startsWith('checksum-mismatch') ||
-      reason == 'download' ||
-      reason == 'unsupported-arch' ||
-      reason.startsWith('manifest')) {
-    return TeamPhoneStep.download;
-  }
-  if (reason == 'no-space') {
-    return status.verb == 'init' ? TeamPhoneStep.city : TeamPhoneStep.download;
-  }
-  if (reason.startsWith('project') ||
-      reason.startsWith('gc-') ||
-      reason == 'not-installed') {
-    return TeamPhoneStep.city;
-  }
-  if (reason == 'supervisor-exited' ||
-      reason == 'health-timeout' ||
-      reason == 'no-city') {
-    return TeamPhoneStep.start;
-  }
-  return _stepForVerb(status.verb) ?? TeamPhoneStep.download;
-}
-
-/// The honest sentence for a failed [status] (03-onboarding §5); the
-/// checksum refusal gets its own.
+/// The honest sentence for a failed Termux team [status] (03-onboarding
+/// §5); the checksum refusal gets its own.
 String teamPhoneFailureText(AppLocalizations l10n, TeamRuntimeStatus status) {
   final reason = status.reason ?? '';
   if (status.phase == TeamRuntimePhase.ready && !status.isReady) {
@@ -179,9 +102,9 @@ String teamPhoneFailureText(AppLocalizations l10n, TeamRuntimeStatus status) {
       detail.isEmpty ? '' : '${detail.split(':').last.trim()}.',
     );
   }
-  if (reason == 'download' || reason.startsWith('manifest')) {
-    return l10n.teamUiPhoneFailedDownload;
-  }
+  final download = status.downloadFailure;
+  if (download != null) return teamPhoneDownloadFailureText(l10n, download);
+  if (reason.startsWith('manifest')) return l10n.teamUiPhoneFailedDownload;
   if (reason == 'packages') return l10n.teamUiPhoneFailedPackages;
   if (reason.startsWith('project')) return l10n.teamUiPhoneFailedProject;
   if (reason.startsWith('gc-') ||
@@ -199,23 +122,54 @@ String teamPhoneFailureText(AppLocalizations l10n, TeamRuntimeStatus status) {
   if (reason == 'interrupted' || error.contains('stopped unexpectedly')) {
     return l10n.teamUiPhoneFailedInterrupted;
   }
-  return l10n.teamUiPhoneFailedReason(
-    error.isNotEmpty ? error : (reason.isNotEmpty ? reason : status.rawPhase),
-  );
+  // The script's own sentence when it is one; its output said in words
+  // otherwise. A bare reason id or phase is not words: the output folded
+  // under Details says what it was.
+  if (error.isEmpty) return l10n.productErrorTermux;
+  return l10n.teamUiPhoneFailedReason(productErrorText(error, l10n: l10n));
 }
 
-/// The Termux (managed) profile the on-device team belongs to, or null.
-ServerProfile? teamPhoneProfileOf(ConnectionController connection) {
-  final profile = connection.profile;
-  if (profile != null && TermuxBridge.managesServerUrl(profile.baseUrl)) {
-    return profile;
-  }
-  return null;
+/// The runtime's own words for a failed [status] (the step, the reason id
+/// and the script's last error), for Details and reports only.
+String teamPhoneFailureDetails(TeamRuntimeStatus status) =>
+    _TermuxTeamFailure(status).toString();
+
+/// Why a download failed, naming the server that was asked, so a user can
+/// tell a phone that is offline from a server that refused the file (issue
+/// #87: a download pointed at a private address failed as "did not finish").
+String teamPhoneDownloadFailureText(
+  AppLocalizations l10n,
+  TeamDownloadFailure failure,
+) {
+  final host = failure.host;
+  if (host.isEmpty) return l10n.teamUiPhoneFailedDownload;
+  final code = failure.code?.toString() ?? '?';
+  return switch (failure.kind) {
+    TeamDownloadFailureKind.dns => l10n.teamUiPhoneFailedDownloadDns(host),
+    TeamDownloadFailureKind.connect => l10n.teamUiPhoneFailedDownloadConnect(
+      host,
+    ),
+    TeamDownloadFailureKind.timeout => l10n.teamUiPhoneFailedDownloadTimeout(
+      host,
+    ),
+    TeamDownloadFailureKind.tls => l10n.teamUiPhoneFailedDownloadTls(host),
+    TeamDownloadFailureKind.http => l10n.teamUiPhoneFailedDownloadHttp(
+      host,
+      code,
+    ),
+    TeamDownloadFailureKind.interrupted =>
+      l10n.teamUiPhoneFailedDownloadInterrupted(host),
+    TeamDownloadFailureKind.write => l10n.teamUiPhoneFailedDownloadWrite,
+    TeamDownloadFailureKind.other => l10n.teamUiPhoneFailedDownloadOther(
+      host,
+      code,
+    ),
+  };
 }
 
-/// Writes the phone config onto [profile] and lets the connection build its
-/// controller (03 §3). The store instance is the source of truth for the
-/// connected profile, so the same object is updated and saved.
+/// Writes the Termux team's config onto [profile] and lets the connection
+/// build its controller (03 §3). The store instance is the source of truth
+/// for the connected profile, so the same object is updated and saved.
 Future<void> teamPhoneEnable(
   ConnectionController connection,
   ServerProfile profile,
@@ -228,889 +182,622 @@ Future<void> teamPhoneEnable(
   connection.syncOrchestration();
 }
 
-enum _View { checking, hidden, offer, steps, success, failed, killed }
+/// Runs the Add tools job for [ids] on [host] and shows its progress until
+/// it closes. Tests replace it; the app runs the host's own progress screen
+/// (the in-app one, or the Termux one with its person steps).
+@visibleForTesting
+Future<void> Function(
+  BuildContext context,
+  SetupHostKind host,
+  Set<String> ids,
+)?
+debugTeamPhoneRunJob;
 
-/// The block after step 3 of the Termux setup: offer, steps, success.
-class TeamPhoneOnboardingBlock extends StatefulWidget {
-  const TeamPhoneOnboardingBlock({
+Future<void> _runJob(
+  BuildContext context,
+  SetupHostKind host,
+  Set<String> ids,
+) async {
+  final override = debugTeamPhoneRunJob;
+  if (override != null) return override(context, host, ids);
+  if (host == SetupHostKind.termux) {
+    return openPhoneSetupTermuxJob(context, adding: ids);
+  }
+  await PhoneSetup.engine.run(ids, params: SetupJobParams.adding(ids));
+  if (context.mounted) await openPhoneSetupProgress(context);
+}
+
+/// Whether [progress] is a finished job that put AI Team on the phone.
+bool _installedTeam(SetupProgress progress) =>
+    progress.state == SetupState.done &&
+    progress.components.any(
+      (component) =>
+          component.id == SetupComponentIds.aiTeam &&
+          (component.state == ComponentState.done ||
+              component.state == ComponentState.skipped),
+    );
+
+/// "Set up AI Team on this phone": Add tools with AI Team switched on, on
+/// the host of the connected server, then the ready page that turns it on
+/// for the project. AI Team that is installed already skips straight to
+/// the ready page. Returns once the person is back where they started.
+Future<void> openTeamOnThisPhone(
+  BuildContext context,
+  ConnectionController connection, {
+  TermuxTeamRuntime? runtime,
+}) async {
+  final profile = connection.profile;
+  if (profile == null) return;
+  final host = teamPhoneHostOf(profile);
+  final engine = PhoneSetup.of(host);
+  var installed = false;
+  try {
+    installed = (await engine.installedOptional()).contains(
+      SetupComponentIds.aiTeam,
+    );
+  } catch (_) {
+    // Unknown: the Add tools sheet reads it again and says so.
+  }
+  if (!context.mounted) return;
+  if (!installed) {
+    final ids = await showPhoneSetupCustomize(
+      context,
+      addMode: true,
+      selected: const {SetupComponentIds.aiTeam},
+      host: host,
+    );
+    if (ids == null || ids.isEmpty || !context.mounted) return;
+    final before = engine.progress.value.jobId;
+    await _runJob(context, host, ids);
+    if (!context.mounted) return;
+    final after = engine.progress.value;
+    // Left before it finished, or it failed: the progress screen said so
+    // and keeps Continue; the team is not on yet.
+    if (!ids.contains(SetupComponentIds.aiTeam) ||
+        after.jobId == before ||
+        !_installedTeam(after)) {
+      return;
+    }
+  }
+  await pushKitPage<void>(
+    context,
+    (_) => TeamPhoneReadyScreen(
+      connection: connection,
+      host: host,
+      runtime: runtime,
+    ),
+    settings: const RouteSettings(name: teamPhoneReadyRouteName),
+  );
+}
+
+/// The ready page's route name.
+const teamPhoneReadyRouteName = 'team-phone-ready';
+
+/// A Termux step that did not reach the phase it should have.
+class _TermuxTeamFailure implements Exception {
+  const _TermuxTeamFailure(this.status);
+
+  final TeamRuntimeStatus status;
+
+  /// What a failure report carries: the step and why, in the runtime's own
+  /// words (the report redacts it).
+  @override
+  String toString() => [
+    'aiteam.sh ${status.verb}: ${status.rawPhase}',
+    if (status.reason case final reason? when reason.isNotEmpty) reason,
+    if (status.lastError case final error? when error.isNotEmpty) error,
+  ].join('\n');
+}
+
+/// The turn-on of the Termux team, one at a time, kept outside the page so
+/// it goes on when the person leaves (the in-app one is
+/// [BuiltinTeamJob.shared]).
+final teamPhoneTermuxJob = BuiltinTeamJob();
+
+/// Turns the Termux team on for [project]: the programs the v2 job
+/// installed are recorded (`install` checks and downloads nothing when they
+/// are there), the store is made next to the project (`init`), the
+/// supervisor starts, and the profile gets the team's config.
+Future<void> _turnOnTermux(
+  TermuxTeamRuntime runtime,
+  ConnectionController connection,
+  ServerProfile profile,
+  String project,
+  void Function(BuiltinTeamStage stage) onStage,
+) async {
+  onStage(BuiltinTeamStage.preparing);
+  var status = await runtime.install();
+  if (status.phase != TeamRuntimePhase.installed) {
+    throw _TermuxTeamFailure(status);
+  }
+  onStage(BuiltinTeamStage.addingProject);
+  status = await runtime.init(project);
+  if (status.phase != TeamRuntimePhase.cityReady) {
+    throw _TermuxTeamFailure(status);
+  }
+  onStage(BuiltinTeamStage.starting);
+  status = await runtime.start();
+  if (!status.isReady) throw _TermuxTeamFailure(status);
+  onStage(BuiltinTeamStage.waiting);
+  await teamPhoneEnable(connection, profile, runtime, status);
+}
+
+/// Gives the in-app profile the team's plugin config, as Plugins' AI Team
+/// section does after its own turn-on.
+Future<void> _enableBuiltin(
+  ConnectionController connection,
+  ServerProfile profile,
+) async {
+  profile.orchestration = BuiltinTeam.config();
+  await connection.store.upsert(profile);
+  connection.syncOrchestration();
+}
+
+/// The words for what stopped a turn-on.
+String teamPhoneTurnOnFailureText(AppLocalizations l10n, Object error) =>
+    switch (error) {
+      final BuiltinTeamException e => builtinTeamFailureText(l10n, e),
+      final _TermuxTeamFailure e => teamPhoneFailureText(l10n, e.status),
+      final TermuxBridgeException e =>
+        '${l10n.teamUiPhoneDispatchFailed} ${productErrorText(e, l10n: l10n)}',
+      final other => l10n.aiteamComponentFailed(
+        productErrorText(other, l10n: l10n),
+      ),
+    };
+
+enum _Ready { choose, turningOn, failed, ready }
+
+/// The ready page after AI Team is on the phone (phone-setup-ready's team
+/// moment, map: team-phone-onboarding-success): it turns the team on for
+/// the open project, shows the stages as they pass, and ends with "Give
+/// the team a first task".
+///
+/// With no project open it asks for one first, through the same folder
+/// sheet Work uses. A failure names what went wrong and offers the one
+/// retry. Leaving never stops the turn-on: it is the app's one job, and
+/// coming back follows it.
+class TeamPhoneReadyScreen extends StatefulWidget {
+  const TeamPhoneReadyScreen({
     super.key,
     required this.connection,
-    required this.profile,
-    required this.onOpenWorkspace,
+    required this.host,
     this.runtime,
+    this.team,
+    this.chooseProject,
+    this.startTask,
   });
 
   final ConnectionController connection;
 
-  /// The Termux server profile the team belongs to.
-  final ServerProfile profile;
+  /// Where the team was installed: the app's own Linux or Termux.
+  final SetupHostKind host;
 
-  /// What the success card's Open Workspace does.
-  final VoidCallback onOpenWorkspace;
-
+  /// The Termux team runtime; tests pass a fake.
   final TermuxTeamRuntime? runtime;
 
+  /// The in-app team; tests pass a fake.
+  final BuiltinTeam? team;
+
+  /// Picks the project when none is open; the folder sheet by default.
+  final Future<String?> Function(BuildContext context)? chooseProject;
+
+  /// "Give the team a first task"; [TeamConversation.start] by default.
+  final Future<void> Function(
+    BuildContext context,
+    OrchestrationController team,
+  )?
+  startTask;
+
   @override
-  State<TeamPhoneOnboardingBlock> createState() =>
-      _TeamPhoneOnboardingBlockState();
+  State<TeamPhoneReadyScreen> createState() => _TeamPhoneReadyScreenState();
 }
 
-class _TeamPhoneOnboardingBlockState extends State<TeamPhoneOnboardingBlock> {
-  TermuxTeamRuntime get _runtime => widget.runtime ?? teamPhoneRuntime;
-  OrchestrationStore get _prefs => widget.connection.orchestrationStore;
+class _TeamPhoneReadyScreenState extends State<TeamPhoneReadyScreen> {
+  bool get _termux => widget.host == SetupHostKind.termux;
 
-  _View _view = _View.checking;
-  TeamRuntimeStatus _status = const TeamRuntimeStatus(
-    phase: TeamRuntimePhase.idle,
-  );
-  TeamRuntimeManifest? _manifest;
-  String _log = '';
+  BuiltinTeamJob get _job =>
+      _termux ? teamPhoneTermuxJob : BuiltinTeamJob.shared;
+
+  TermuxTeamRuntime get _runtime => widget.runtime ?? teamPhoneRuntime;
+
+  _Ready _state = _Ready.choose;
   String? _project;
-  String? _dispatchError;
-  bool _busy = false;
-  bool _connected = false;
-  Timer? _poll;
-  final ScrollController _logController = ScrollController();
+  bool _wasRunning = false;
+  bool _starting = false;
+
+  /// Moves the stage times on while the job runs.
+  Timer? _ticker;
 
   @override
   void initState() {
     super.initState();
-    unawaited(_load());
+    _job.addListener(_onJob);
+    widget.connection.addListener(_onConnection);
+    if (_job.running) {
+      // Came back to a turn-on that is still going: follow it.
+      _project = _job.project;
+      _state = _Ready.turningOn;
+      _wasRunning = true;
+      _syncTicker();
+      return;
+    }
+    final open = widget.connection.directory;
+    if (open != null && open.trim().isNotEmpty) {
+      _project = open;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_turnOn());
+      });
+    }
   }
 
   @override
   void dispose() {
-    _poll?.cancel();
-    _logController.dispose();
+    _job.removeListener(_onJob);
+    widget.connection.removeListener(_onConnection);
+    _ticker?.cancel();
     super.dispose();
   }
 
-  Future<void> _load() async {
-    final runtime = _runtime;
-    if (!await runtime.supportsAiTeam) {
-      if (mounted) setState(() => _view = _View.hidden);
-      return;
-    }
-    _manifest = await runtime.manifest();
-    TeamRuntimeStatus status;
-    try {
-      status = await runtime.status();
-    } on TermuxBridgeException {
-      status = const TeamRuntimeStatus(phase: TeamRuntimePhase.idle);
-    }
-    if (!mounted) return;
-    _connected =
-        widget.profile.orchestration?.hostMode == OrchestrationHostMode.phone;
-    _project = status.project.isNotEmpty ? status.project : null;
-    await _connectIfReady(status);
-    if (!mounted) return;
-    _apply(status);
-    if (status.busy) {
-      _log = await runtime.logTail();
-      if (mounted) setState(_startPolling);
-    } else if (status.phase == TeamRuntimePhase.failed) {
-      // A failure the app comes back to keeps its last output on screen.
-      await _refreshLog();
-    }
+  void _onConnection() {
+    if (mounted) setState(() {});
   }
 
-  /// A team that came up while the app was away (or before this build)
-  /// still gets its config: the Connect step is the app's own.
-  Future<void> _connectIfReady(TeamRuntimeStatus status) async {
-    if (_connected || !status.isReady) return;
-    await teamPhoneEnable(widget.connection, widget.profile, _runtime, status);
-    _connected = true;
-  }
-
-  /// Chooses the view for [status]: an untouched runtime shows the offer
-  /// (or nothing, once skipped); a runtime with history shows where it got
-  /// to. A supervisor that is up but not answering reads as a failure, not
-  /// a success.
-  void _apply(TeamRuntimeStatus status) {
-    _status = status;
-    final _View next;
-    if (status.busy) {
-      next = _View.steps;
-    } else {
-      switch (status.phase) {
-        case TeamRuntimePhase.idle:
-        case TeamRuntimePhase.unknown:
-          next = _prefs.phoneOffer(widget.profile.id) == PhoneOffer.open
-              ? _View.offer
-              : _View.hidden;
-        case TeamRuntimePhase.ready:
-          next = status.killedByAndroid
-              ? _View.killed
-              : status.isReady
-              ? _View.success
-              : _View.failed;
-        case TeamRuntimePhase.failed:
-          next = _View.failed;
-        default:
-          next = _View.steps;
-      }
-    }
-    if (!mounted) return;
-    setState(() => _view = next);
-  }
-
-  void _startPolling() {
-    _poll?.cancel();
-    _poll = Timer.periodic(teamPhonePollInterval, (_) => _tick());
-  }
-
-  void _stopPolling() {
-    _poll?.cancel();
-    _poll = null;
-  }
-
-  Future<void> _tick() async {
-    final runtime = _runtime;
-    try {
-      final status = await runtime.status();
-      final log = await runtime.logTail();
-      if (!mounted) return;
-      _appendLog(log);
-      if (_busy) {
-        // The sequence below owns the view; the tick only feeds the panel
-        // and the step list.
-        setState(() => _status = status);
-        return;
-      }
-      if (!status.busy) {
-        _stopPolling();
-        await _connectIfReady(status);
-        if (!mounted) return;
-      }
-      _apply(status);
-    } on TermuxBridgeException {
-      // Keep polling: the bridge answers again once Termux is back.
-    }
-  }
-
-  void _appendLog(String log) {
-    if (log == _log) return;
-    final follow =
-        !_logController.hasClients ||
-        _logController.position.maxScrollExtent -
-                _logController.position.pixels <
-            48;
-    _log = log;
-    if (follow) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_logController.hasClients) return;
-        _logController.jumpTo(_logController.position.maxScrollExtent);
+  void _syncTicker() {
+    if (_job.running) {
+      _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
       });
+    } else {
+      _ticker?.cancel();
+      _ticker = null;
     }
   }
 
-  Future<void> _skip() async {
-    await _prefs.setPhoneOffer(widget.profile.id, PhoneOffer.skipped);
-    if (mounted) setState(() => _view = _View.hidden);
+  void _onJob() {
+    if (!mounted) return;
+    final finished = _wasRunning && !_job.running;
+    _wasRunning = _job.running;
+    _syncTicker();
+    setState(() {
+      if (finished) {
+        _state = _job.error == null ? _Ready.ready : _Ready.failed;
+      }
+    });
   }
 
-  /// The project the city is created next to: the folder Workspace last
-  /// opened on this server when it is one of the managed projects, else the
-  /// server's first project, else one the person names here.
-  Future<String?> _chooseProject() async {
-    final projects = await _runtime.managedProjects();
-    if (!mounted) return null;
-    final saved = widget.connection.store
-        .locationFor(widget.profile.id)
-        ?.directory;
-    if (saved != null && projects.contains(saved)) return saved;
-    if (projects.length == 1) return projects.first;
-    return showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => _ProjectSheet(projects: projects, runtime: _runtime),
+  Future<void> _choose() async {
+    final choose =
+        widget.chooseProject ??
+        (context) =>
+            ProjectFolderActions.openFolder(context, widget.connection);
+    final path = await choose(context);
+    if (path == null || !mounted) return;
+    setState(() => _project = path);
+    await _turnOn();
+  }
+
+  Future<void> _turnOn() async {
+    final project = _project;
+    final profile = widget.connection.profile;
+    if (project == null || profile == null || _job.running) return;
+    final l10n = _copy(context);
+    final connection = widget.connection;
+    setState(() => _state = _Ready.turningOn);
+    if (_termux) {
+      final runtime = _runtime;
+      await _job.run(
+        stages: BuiltinTeamStage.values,
+        project: project,
+        work: (onStage) =>
+            _turnOnTermux(runtime, connection, profile, project, onStage),
+      );
+    } else {
+      final team = widget.team ?? sharedBuiltinTeam;
+      final notice = l10n.aiteamComponentNotice;
+      await _job.run(
+        stages: BuiltinTeamStage.values,
+        project: project,
+        work: (onStage) async {
+          await team.turnOn(project, notice: notice, onStage: onStage);
+          await _enableBuiltin(connection, profile);
+        },
+      );
+    }
+  }
+
+  Future<void> _firstTask() async {
+    final team = widget.connection.orchestration;
+    if (team == null || _starting) return;
+    setState(() => _starting = true);
+    final start =
+        widget.startTask ??
+        (context, team) async {
+          final record = await TeamConversation.start(context, team);
+          // The task was given and its conversation closed again: the
+          // team is on, so this page has done its part.
+          if (record != null &&
+              record.status != MutationStatus.rejected &&
+              context.mounted) {
+            Navigator.of(context).maybePop();
+          }
+        };
+    try {
+      await start(context, team);
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
+  }
+
+  void _close() => Navigator.of(context).maybePop();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _copy(context);
+    final tokens = KitTokens.of(context);
+    final name = builtinTeamProjectName(_project ?? _job.project ?? '');
+    final job = _job;
+    final running = job.running;
+    final stages = job.stages.isEmpty
+        ? null
+        : Column(
+            key: const ValueKey('team-phone-ready-stages'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final row in builtinTeamStageRows(
+                l10n,
+                job,
+                failed: _state == _Ready.failed,
+                project: name,
+              ))
+                Padding(
+                  padding: EdgeInsetsDirectional.only(bottom: tokens.space1),
+                  child: row,
+                ),
+            ],
+          );
+    final error = job.error;
+    final detail = error is BuiltinTeamException ? error.detail.trim() : '';
+
+    final Widget body;
+    switch (_state) {
+      case _Ready.choose:
+        body = PhoneSetupHero(
+          key: const ValueKey('team-phone-ready-choose'),
+          scene: const TeamWakingScene(),
+          title: l10n.teamPhoneReadyChooseTitle,
+          titleKey: const ValueKey('team-phone-ready-title'),
+          body: l10n.aiteamComponentTurnOnBody,
+          primary: KitAction(
+            key: const ValueKey('team-phone-ready-choose-project'),
+            label: l10n.teamUiPhoneChooseProjectTitle,
+            onPressed: () => unawaited(_choose()),
+          ),
+        );
+      case _Ready.turningOn:
+        body = PhoneSetupHero(
+          key: const ValueKey('team-phone-ready-turning-on'),
+          scene: const TeamWakingScene(),
+          ambient: running,
+          title: l10n.teamPhoneReadyTurningOnTitle,
+          titleKey: const ValueKey('team-phone-ready-title'),
+          body: l10n.aiteamComponentTurnOnExpectation,
+          progress: const KitProgress.waiting(),
+          content: stages,
+        );
+      case _Ready.failed:
+        body = PhoneSetupHero(
+          key: const ValueKey('team-phone-ready-failed'),
+          scene: const SetupUnpluggedScene(),
+          title: l10n.teamPhoneReadyFailedTitle,
+          titleKey: const ValueKey('team-phone-ready-title'),
+          body: error == null ? null : teamPhoneTurnOnFailureText(l10n, error),
+          bodyKey: const ValueKey('team-phone-ready-failure'),
+          bodyTone: AppStatusTone.failure,
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ?stages,
+              // The raw output, last and folded (KIT-33).
+              if (detail.isNotEmpty)
+                KitDetailsFold(
+                  label: l10n.aiteamComponentShowDetails,
+                  text: detail,
+                  foldKey: const ValueKey('team-phone-ready-details'),
+                ),
+            ],
+          ),
+          primary: KitAction(
+            key: const ValueKey('team-phone-ready-retry'),
+            label: l10n.aiteamComponentTurnOn(name),
+            icon: AppIconography.retry,
+            onPressed: () => unawaited(_turnOn()),
+          ),
+          // Report this failure (P8.4), with what stopped the turn-on.
+          tertiary: [
+            ?failedJobReportAction(
+              context,
+              key: const ValueKey('team-phone-ready-report'),
+              title: error == null
+                  ? null
+                  : teamPhoneTurnOnFailureText(l10n, error),
+              capture: () => FailedJobReport.teamSetup(_job),
+            ),
+          ],
+        );
+      case _Ready.ready:
+        final team = widget.connection.orchestration;
+        body = PhoneSetupHero(
+          key: const ValueKey('team-phone-ready-done'),
+          scene: const SetupReadyScene(),
+          entranceDuration: KitMotion.celebration,
+          title: l10n.teamUiPhoneSuccessTitle,
+          titleKey: const ValueKey('team-phone-ready-title'),
+          body: l10n.teamPhoneReadyBody(name),
+          liveRegion: false,
+          primary: KitAction(
+            key: const ValueKey('team-phone-ready-first-task'),
+            label: l10n.teamPhoneReadyFirstTask,
+            icon: AppIconography.add,
+            working: _starting,
+            onPressed: team == null || _starting
+                ? null
+                : () => unawaited(_firstTask()),
+          ),
+        );
+    }
+    return KitScreen(
+      // Close only, as phone-setup-ready: the drawing and its title are
+      // the page's heading, and leaving never stops the turn-on.
+      topBar: KitTopBar(
+        title: '',
+        exit: KitTopBarExit.close,
+        exitKey: const ValueKey('team-phone-ready-close'),
+        onExit: _close,
+      ),
+      width: KitScreenWidth.reading,
+      body: KeyedSubtree(key: const ValueKey('team-phone-ready'), child: body),
     );
   }
+}
 
-  Future<void> _setUp() async {
-    final project = _project ?? await _chooseProject();
-    if (project == null || !mounted) return;
-    _project = project;
-    await _run(from: TeamPhoneStep.download);
+/// The team page's word that Android stopped the phone's Termux team while
+/// the app was away (map: team-phone-onboarding-killed, merged into the
+/// team page), with "Start the team again". Nothing when the team runs
+/// somewhere else, runs fine, or its state cannot be read.
+class TeamPhoneKilledNotice extends StatefulWidget {
+  const TeamPhoneKilledNotice({
+    super.key,
+    required this.controller,
+    this.runtime,
+    this.onKilledChanged,
+  });
+
+  final OrchestrationController controller;
+
+  /// The Termux team runtime; tests pass a fake.
+  final TermuxTeamRuntime? runtime;
+
+  /// Told whenever the notice starts or stops saying Android stopped the
+  /// team, so the page under it says nothing that contradicts it (no "not
+  /// answering, the app keeps trying" under "start the team again").
+  final ValueChanged<bool>? onKilledChanged;
+
+  /// Whether [config] is the team Termux runs on this phone (the in-app
+  /// team restarts by itself).
+  static bool appliesTo(OrchestrationConfig config) =>
+      config.hostMode == OrchestrationHostMode.phone &&
+      !BuiltinTeam.isBuiltinConfig(config) &&
+      TermuxBridge.supported;
+
+  @override
+  State<TeamPhoneKilledNotice> createState() => _TeamPhoneKilledNoticeState();
+}
+
+class _TeamPhoneKilledNoticeState extends State<TeamPhoneKilledNotice> {
+  TermuxTeamRuntime get _runtime => widget.runtime ?? teamPhoneRuntime;
+
+  bool _killed = false;
+  bool _busy = false;
+  String? _error;
+
+  /// The raw failure behind [_error], for Copy details only.
+  String? _errorDetails;
+
+  @override
+  void initState() {
+    super.initState();
+    if (TeamPhoneKilledNotice.appliesTo(widget.controller.config)) {
+      unawaited(_read());
+    }
   }
 
-  /// Continues from where the runtime got to: nothing installed → install;
-  /// installed → init; a city → start.
-  Future<void> _resume() async {
-    final status = _status;
-    final TeamPhoneStep from;
-    if (status.hasCity) {
-      from = TeamPhoneStep.start;
-    } else if (status.installed) {
-      from = TeamPhoneStep.city;
-    } else {
-      from = TeamPhoneStep.download;
-    }
-    if (from != TeamPhoneStep.start) {
-      final project = _project ?? await _chooseProject();
-      if (project == null || !mounted) return;
-      _project = project;
-    }
-    await _run(from: from);
-  }
-
-  Future<void> _retry() async {
-    final status = _status;
-    if (status.phase != TeamRuntimePhase.failed) return _resume();
-    final step = teamPhoneFailedStep(status);
-    final from = switch (step) {
-      TeamPhoneStep.download ||
-      TeamPhoneStep.packages => TeamPhoneStep.download,
-      TeamPhoneStep.city => TeamPhoneStep.city,
-      TeamPhoneStep.start || TeamPhoneStep.connect => TeamPhoneStep.start,
-    };
-    if (from == TeamPhoneStep.city || !status.installed) {
-      final project = _project ?? await _chooseProject();
-      if (project == null || !mounted) return;
-      _project = project;
-    }
-    await _run(from: from);
-  }
-
-  Future<void> _run({required TeamPhoneStep from}) async {
-    final runtime = _runtime;
-    setState(() {
-      _busy = true;
-      _dispatchError = null;
-      _view = _View.steps;
-      _status = TeamRuntimeStatus(
-        phase: TeamRuntimePhase.queued,
-        verb: switch (from) {
-          TeamPhoneStep.download || TeamPhoneStep.packages => 'install',
-          TeamPhoneStep.city => 'init',
-          _ => 'start',
-        },
-        busy: true,
-        installed: _status.installed,
-        city: _status.city,
-        project: _status.project,
-      );
-      _startPolling();
-    });
+  Future<void> _read() async {
+    bool killed;
     try {
-      var status = _status;
-      if (from.index <= TeamPhoneStep.packages.index) {
-        status = await runtime.install();
-        if (!mounted) return;
-        if (status.phase != TeamRuntimePhase.installed) {
-          return _finish(status);
-        }
-      }
-      if (from.index <= TeamPhoneStep.city.index) {
-        status = await runtime.init(_project!);
-        if (!mounted) return;
-        if (status.phase != TeamRuntimePhase.cityReady) {
-          return _finish(status);
-        }
-      }
-      status = await runtime.start();
-      if (!mounted) return;
-      if (!status.isReady) return _finish(status);
-      setState(() => _status = status);
-      await teamPhoneEnable(widget.connection, widget.profile, runtime, status);
-      if (!mounted) return;
-      _connected = true;
-      _finish(status);
-    } on TermuxBridgeException catch (error) {
-      if (!mounted) return;
-      _stopPolling();
-      setState(() {
-        _busy = false;
-        _dispatchError = error.message;
-        _view = _View.failed;
-      });
+      killed = (await _runtime.status()).killedByAndroid;
+    } catch (_) {
+      killed = false;
     }
+    if (mounted && killed != _killed) _setKilled(killed);
   }
 
-  void _finish(TeamRuntimeStatus status) {
-    _stopPolling();
-    _busy = false;
-    _project = status.project.isNotEmpty ? status.project : _project;
-    _apply(status);
-    if (status.phase == TeamRuntimePhase.failed) {
-      unawaited(_refreshLog());
-    }
+  void _setKilled(bool killed) {
+    setState(() => _killed = killed);
+    widget.onKilledChanged?.call(killed);
   }
 
-  Future<void> _refreshLog() async {
-    final log = await _runtime.logTail();
-    if (mounted) setState(() => _appendLog(log));
-  }
-
-  Future<void> _startAgain() async {
+  Future<void> _start() async {
+    final l10n = _copy(context);
     setState(() {
       _busy = true;
-      _dispatchError = null;
+      _error = null;
+      _errorDetails = null;
     });
     try {
       final status = await _runtime.start();
       if (!mounted) return;
-      if (status.isReady && !_connected) {
-        await teamPhoneEnable(
-          widget.connection,
-          widget.profile,
-          _runtime,
-          status,
-        );
-        _connected = true;
+      if (status.isReady) {
+        _setKilled(false);
+        await widget.controller.retry();
+      } else {
+        setState(() {
+          _error = teamPhoneFailureText(l10n, status);
+          _errorDetails = teamPhoneFailureDetails(status);
+        });
       }
-      _busy = false;
-      _apply(status);
-    } on TermuxBridgeException catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _dispatchError = error.message;
-        _view = _View.failed;
-      });
-    }
-  }
-
-  Future<void> _copyLog() async {
-    final l10n = _copy(context);
-    await Clipboard.setData(ClipboardData(text: _log));
-    if (!mounted) return;
-    ScaffoldMessenger.maybeOf(
-      context,
-    )?.showSnackBar(SnackBar(content: Text(l10n.workCopied)));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return switch (_view) {
-      _View.checking || _View.hidden => const SizedBox.shrink(),
-      _View.offer => _offer(context),
-      _View.steps => _steps(context),
-      _View.success => _success(context),
-      _View.failed => _failed(context),
-      _View.killed => _killed(context),
-    };
-  }
-
-  Widget _card(
-    BuildContext context, {
-    required Key key,
-    required Widget child,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
-      key: key,
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: child,
-    );
-  }
-
-  Widget _offer(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = theme.textTheme.bodySmall?.copyWith(
-      color: AppTheme.mutedOf(theme),
-      height: 1.4,
-    );
-    return _card(
-      context,
-      key: const ValueKey('team-phone-offer'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.teamUiPhoneOptionalTag,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.w700,
-              letterSpacing: .6,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(l10n.teamUiPhoneOfferTitle, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 6),
-          Text(
-            l10n.teamUiPhoneOfferBody,
-            style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.teamUiPhoneOfferSize(teamPhoneDownloadMb(_manifest)),
-            key: const ValueKey('team-phone-offer-size'),
-            style: muted,
-          ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                AppIconography.warning,
-                size: 18,
-                color: AppTheme.statusColor(theme, AppStatusTone.attention),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.teamUiPhoneOfferWarning,
-                  key: const ValueKey('team-phone-offer-warning'),
-                  style: theme.textTheme.bodySmall?.copyWith(height: 1.4),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.end,
-            children: [
-              FilledButton(
-                key: const ValueKey('team-phone-skip'),
-                onPressed: _skip,
-                child: Text(l10n.teamUiPhoneSkip),
-              ),
-              OutlinedButton(
-                key: const ValueKey('team-phone-set-up'),
-                onPressed: _setUp,
-                child: Text(l10n.teamUiPhoneSetUp),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _stepList(BuildContext context) {
-    final l10n = _copy(context);
-    final states = teamPhoneStepStates(_status, connected: _connected);
-    final titles = {
-      TeamPhoneStep.download: l10n.teamUiPhoneStepDownload,
-      TeamPhoneStep.packages: l10n.teamUiPhoneStepPackages,
-      TeamPhoneStep.city: l10n.teamUiPhoneStepCity,
-      TeamPhoneStep.start: l10n.teamUiPhoneStepStart,
-      TeamPhoneStep.connect: l10n.teamUiPhoneStepConnect,
-    };
-    return Column(
-      key: const ValueKey('team-phone-steps'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final step in TeamPhoneStep.values)
-          _StepRow(
-            key: ValueKey('team-phone-step-${step.name}'),
-            number: step.index + 1,
-            title: titles[step]!,
-            state: states[step]!,
-          ),
-      ],
-    );
-  }
-
-  Widget _steps(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final running = _busy || _status.busy;
-    final project = _project ?? _status.project;
-    return _card(
-      context,
-      key: const ValueKey('team-phone-setup'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.teamUiPhoneSetupRunning,
-            style: theme.textTheme.titleMedium,
-          ),
-          if (project.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              l10n.teamUiPhoneProjectLine(project),
-              key: const ValueKey('team-phone-project'),
-              textDirection: TextDirection.ltr,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-                fontFamily: AppTheme.monoFamily,
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          _stepList(context),
-          const SizedBox(height: 12),
-          SetupTerminal(
-            output: _log,
-            running: running,
-            controller: _logController,
-            onCopy: _log.isEmpty ? null : _copyLog,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.teamUiPhoneLeaveNote,
-            key: const ValueKey('team-phone-leave-note'),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
-            ),
-          ),
-          if (!running) ...[
-            const SizedBox(height: 12),
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: FilledButton.icon(
-                key: const ValueKey('team-phone-continue'),
-                onPressed: _resume,
-                icon: const Icon(AppIconography.play),
-                label: Text(l10n.teamUiPhoneContinue),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _success(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    return _card(
-      context,
-      key: const ValueKey('team-phone-success'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                AppIconography.checkCircle,
-                size: 20,
-                color: AppTheme.statusColor(theme, AppStatusTone.ok),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '${l10n.teamUiPhoneSuccessTitle} · '
-                  '${l10n.teamUiPhoneAgentsReady(_status.agents ?? 0)}',
-                  key: const ValueKey('team-phone-success-title'),
-                  style: theme.textTheme.titleMedium,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            l10n.teamUiPhoneOfferWarning,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: FilledButton.icon(
-              key: const ValueKey('team-phone-open-workspace'),
-              onPressed: widget.onOpenWorkspace,
-              icon: const Icon(AppIconography.forward),
-              label: Text(l10n.teamUiPhoneOpenWorkspace),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _failed(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final dispatch = _dispatchError;
-    return _card(
-      context,
-      key: const ValueKey('team-phone-failed'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.teamUiPhoneFailedTitle,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.error,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            dispatch != null
-                ? '${l10n.teamUiPhoneDispatchFailed} $dispatch'
-                : teamPhoneFailureText(l10n, _status),
-            key: const ValueKey('team-phone-failed-reason'),
-            style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-          ),
-          const SizedBox(height: 12),
-          _stepList(context),
-          const SizedBox(height: 12),
-          SetupTerminal(
-            output: _log,
-            running: false,
-            controller: _logController,
-            onCopy: _log.isEmpty ? null : _copyLog,
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: FilledButton.icon(
-              key: const ValueKey('team-phone-retry'),
-              onPressed: _busy ? null : _retry,
-              icon: const Icon(AppIconography.retry),
-              label: Text(l10n.teamUiPhoneRetry),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _killed(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    return _card(
-      context,
-      key: const ValueKey('team-phone-killed'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                AppIconography.warning,
-                size: 20,
-                color: AppTheme.statusColor(theme, AppStatusTone.attention),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.teamUiPhoneKilled,
-                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: FilledButton.icon(
-              key: const ValueKey('team-phone-start-again'),
-              onPressed: _busy ? null : _startAgain,
-              icon: const Icon(AppIconography.play),
-              label: Text(l10n.teamUiPhoneStartAgain),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StepRow extends StatelessWidget {
-  const _StepRow({
-    super.key,
-    required this.number,
-    required this.title,
-    required this.state,
-  });
-
-  final int number;
-  final String title;
-  final TeamPhoneStepState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final Widget leading;
-    final Color color;
-    switch (state) {
-      case TeamPhoneStepState.idle:
-        color = AppTheme.mutedOf(theme);
-        leading = Text(
-          '$number',
-          style: theme.textTheme.labelMedium?.copyWith(color: color),
-        );
-      case TeamPhoneStepState.running:
-        color = scheme.primary;
-        leading = SizedBox.square(
-          dimension: 16,
-          child: CircularProgressIndicator(strokeWidth: 2, color: color),
-        );
-      case TeamPhoneStepState.done:
-        color = AppTheme.statusColor(theme, AppStatusTone.ok);
-        leading = Icon(AppIconography.check, size: 18, color: color);
-      case TeamPhoneStepState.error:
-        color = scheme.error;
-        leading = Icon(AppIconography.error, size: 18, color: color);
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 24, height: 20, child: Center(child: leading)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              title,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: state == TeamPhoneStepState.idle
-                    ? AppTheme.mutedOf(theme)
-                    : scheme.onSurface,
-                fontWeight: state == TeamPhoneStepState.running
-                    ? FontWeight.w600
-                    : null,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Picks one of the managed server's project folders, or names a new one
-/// when there are none. Pops with the chosen `/root/projects/<name>`.
-class _ProjectSheet extends StatefulWidget {
-  const _ProjectSheet({required this.projects, required this.runtime});
-
-  final List<String> projects;
-  final TermuxTeamRuntime runtime;
-
-  @override
-  State<_ProjectSheet> createState() => _ProjectSheetState();
-}
-
-class _ProjectSheetState extends State<_ProjectSheet> {
-  late String? _selected = widget.projects.isEmpty
-      ? null
-      : widget.projects.first;
-  final _name = TextEditingController();
-  String? _problem;
-  bool _creating = false;
-
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
-
-  Future<void> _create() async {
-    final problem = projectFolderNameProblem(_name.text);
-    if (problem != null) {
-      setState(() => _problem = problem);
-      return;
-    }
-    setState(() {
-      _creating = true;
-      _problem = null;
-    });
-    try {
-      final path = await widget.runtime.createManagedProject(_name.text);
-      if (mounted) Navigator.of(context).pop(path);
     } on TermuxBridgeException catch (error) {
       if (mounted) {
         setState(() {
-          _creating = false;
-          _problem = error.toString();
+          _error = l10n.teamUiPhoneActionFailed(
+            productErrorText(error, l10n: l10n),
+          );
+          _errorDetails = productErrorDetails(error);
         });
       }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_killed) return const SizedBox.shrink();
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    return SingleChildScrollView(
-      key: const ValueKey('team-phone-project-sheet'),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            l10n.teamUiPhoneChooseProjectTitle,
-            style: theme.textTheme.titleLarge,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            widget.projects.isEmpty
-                ? l10n.teamUiPhoneNoProjects(managedProjectsDirectory)
-                : l10n.teamUiPhoneChooseProjectBody,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.mutedOf(theme),
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (widget.projects.isEmpty) ...[
-            TextField(
-              key: const ValueKey('team-phone-new-folder'),
-              controller: _name,
-              enabled: !_creating,
-              autofocus: true,
-              textDirection: TextDirection.ltr,
-              decoration: InputDecoration(
-                labelText: l10n.teamUiPhoneNewFolderLabel,
-                errorText: _problem,
-                border: const OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => _create(),
-            ),
-            const SizedBox(height: 12),
-            FilledButton(
-              key: const ValueKey('team-phone-create-folder'),
-              onPressed: _creating ? null : _create,
-              child: Text(l10n.teamUiPhoneCreateAndContinue),
-            ),
-          ] else ...[
-            RadioGroup<String>(
-              groupValue: _selected,
-              onChanged: (value) => setState(() => _selected = value),
-              child: Column(
-                children: [
-                  for (var i = 0; i < widget.projects.length; i++)
-                    RadioListTile<String>(
-                      key: ValueKey('team-phone-project-$i'),
-                      contentPadding: EdgeInsets.zero,
-                      value: widget.projects[i],
-                      title: Text(
-                        widget.projects[i].split('/').last,
-                        style: theme.textTheme.bodyLarge,
-                      ),
-                      subtitle: Text(
-                        widget.projects[i],
-                        textDirection: TextDirection.ltr,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontFamily: AppTheme.monoFamily,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            FilledButton(
-              key: const ValueKey('team-phone-project-continue'),
-              onPressed: _selected == null
-                  ? null
-                  : () => Navigator.of(context).pop(_selected),
-              child: Text(l10n.teamUiPhoneContinue),
-            ),
-          ],
-        ],
+    final tokens = KitTokens.of(context);
+    final start = KitAction(
+      key: const ValueKey('team-phone-killed-start'),
+      label: l10n.teamPhoneStartTeamAgain,
+      icon: AppIconography.play,
+      working: _busy,
+      onPressed: _busy ? null : () => unawaited(_start()),
+    );
+    return Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(
+        tokens.gutter,
+        tokens.space2,
+        tokens.gutter,
+        tokens.space2,
       ),
+      child: _error == null
+          ? KitNotice(
+              key: const ValueKey('team-phone-killed'),
+              icon: AppIconography.warning,
+              // Neutral, as Claude Code's "Android stopped it": amber is
+              // needs-you only (LOOK-4).
+              tone: AppStatusTone.neutral,
+              message: l10n.teamUiPhoneKilled,
+              actions: [start],
+            )
+          // A start that failed: the words, Start again, and the raw
+          // output only behind Copy details.
+          : KitNotice.error(
+              key: const ValueKey('team-phone-killed'),
+              message: _error!,
+              details: _errorDetails,
+              retry: start,
+            ),
     );
   }
 }

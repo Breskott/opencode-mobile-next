@@ -7,13 +7,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/state/migration_runner.dart';
 import 'package:opencode_mobile/state/session_drafts.dart';
 import 'package:opencode_mobile/state/draft_attachments.dart';
+import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
@@ -114,7 +117,11 @@ Future<void> _pumpChat(WidgetTester tester, ConnectionController conn) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(conn)],
-      child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ChatScreen(sessionID: 'session-1'),
+      ),
     ),
   );
   await tester.pump();
@@ -325,7 +332,7 @@ void main() {
       await _pumpChat(tester, c);
       await tester.pumpAndSettle();
       expect(find.textContaining('server.txt'), findsWidgets);
-      await tester.tap(find.byTooltip('Remove attachment server.txt'));
+      await tester.tap(find.bySemanticsLabel('Remove server.txt'));
       await tester.pump(const Duration(milliseconds: 700));
       await tester.pumpAndSettle();
       expect(c.savedSessionDraft('session-1'), isNull);
@@ -357,9 +364,16 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         tester
-            .widget<TextField>(find.byKey(const Key('chat-composer-field')))
-            .readOnly,
-        isTrue,
+            .widget<TextField>(
+              _inner(find.byKey(const Key('chat-composer-field'))),
+            )
+            .enabled,
+        isFalse,
+      );
+      // The pill says why typing waits.
+      expect(
+        find.textContaining('Answer the question about this draft first'),
+        findsOneWidget,
       );
       await tester.pump(const Duration(milliseconds: 700));
       expect(c.savedSessionDraft('session-1')!.text, 'Keep text');
@@ -535,6 +549,8 @@ void main() {
       ProviderScope(
         overrides: [connProvider.overrideWithValue(c)],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
               context,
@@ -566,9 +582,10 @@ void main() {
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('leave-unsaved-draft')), findsOneWidget);
-    await tester.ensureVisible(find.text('Keep editing'));
-    await tester.tap(find.text('Keep editing'));
+    // Back keeps editing: the sheet's own way out.
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('leave-unsaved-draft')), findsNothing);
     tester.view.viewInsets = const FakeViewPadding(bottom: 260);
     addTearDown(tester.view.resetViewInsets);
     await tester.pumpAndSettle();
@@ -576,7 +593,9 @@ void main() {
     expect(find.byKey(const ValueKey('draft-save-error')), findsOneWidget);
     expect(
       tester
-          .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+          .widget<TextField>(
+            _inner(find.byKey(const Key('chat-composer-field'))),
+          )
           .controller!
           .text,
       'Keep this draft',
@@ -590,6 +609,129 @@ void main() {
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
     expect(find.text('Open chat'), findsOneWidget);
+  });
+
+  group('leaving with a draft that could not be saved', () {
+    Future<(ConnectionController, _DraftStorage)> open(
+      WidgetTester tester, {
+      String text = 'Keep this draft',
+    }) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      late _DraftStorage disk;
+      final c = await _controller(
+        _FakeApi(),
+        configureStorage: (value) => disk = value,
+      );
+      addTearDown(c.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [connProvider.overrideWithValue(c)],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ChatScreen(sessionID: 'session-1'),
+                    ),
+                  ),
+                  child: const Text('Open chat'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open chat'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('chat-composer-field')),
+        text,
+      );
+      disk.refuse = true;
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      return (c, disk);
+    }
+
+    testWidgets('the sheet offers what it says: copy and leave first, try '
+        'saving again, or leave without saving', (tester) async {
+      await open(tester);
+      expect(find.byKey(const ValueKey('leave-unsaved-draft')), findsOneWidget);
+      expect(find.text("Your draft isn't saved"), findsOneWidget);
+      expect(find.textContaining('Copy your text to keep it'), findsOneWidget);
+      // Every action the words name is there, and nothing else.
+      expect(find.text('Copy draft and leave'), findsOneWidget);
+      expect(find.text('Try saving again'), findsOneWidget);
+      expect(find.text('Leave without saving'), findsOneWidget);
+      expect(find.text('Keep editing'), findsNothing);
+      // Copy is the main answer: the first button, above the others.
+      final copy = tester.getTopLeft(find.text('Copy draft and leave')).dy;
+      expect(
+        copy,
+        lessThan(tester.getTopLeft(find.text('Try saving again')).dy),
+      );
+      expect(
+        copy,
+        lessThan(tester.getTopLeft(find.text('Leave without saving')).dy),
+      );
+    });
+
+    testWidgets('Copy draft and leave copies the text, then leaves', (
+      tester,
+    ) async {
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await open(tester);
+      await tester.tap(find.text('Copy draft and leave'));
+      await tester.pumpAndSettle();
+      expect(copied, 'Keep this draft');
+      expect(find.text('Open chat'), findsOneWidget);
+    });
+
+    testWidgets('Try saving again says so when it fails, and leaves once the '
+        'draft is saved', (tester) async {
+      final (c, disk) = await open(tester);
+      await tester.tap(find.text('Try saving again'));
+      await tester.pumpAndSettle();
+      // Still refused: the sheet stays, says so, and the chat is still here.
+      expect(find.byKey(const ValueKey('leave-unsaved-draft')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('leave-draft-still-failing')),
+        findsOneWidget,
+      );
+      disk.refuse = false;
+      await tester.tap(find.text('Try saving again'));
+      await tester.pumpAndSettle();
+      expect(c.sessionDraft('session-1'), 'Keep this draft');
+      expect(find.text('Open chat'), findsOneWidget);
+    });
+
+    testWidgets('Leave without saving leaves', (tester) async {
+      await open(tester);
+      await tester.tap(find.text('Leave without saving'));
+      await tester.pumpAndSettle();
+      expect(find.text('Open chat'), findsOneWidget);
+    });
   });
 
   test('session drafts persist and reload', () async {
@@ -613,92 +755,122 @@ void main() {
     expect(reloaded['session-1']?.updatedAt, 5);
   });
 
-  test(
-    'legacy removal is acknowledged and cannot remove a server-owned draft',
-    () async {
-      late _DraftStorage disk;
-      final c = await _controller(
-        _FakeApi(),
-        twoProfiles: true,
-        configureStorage: (value) => disk = value,
-      );
-      addTearDown(c.dispose);
-      const legacy = SessionDraft(
-        sessionID: 'old',
-        text: 'Older thought',
-        updatedAt: 10,
-      );
-      const owned = SessionDraft(
-        sessionID: 'owned',
-        profileID: 'profile-1',
-        text: 'Keep owned',
-        updatedAt: 12,
-      );
-      await c.store.prefs.setString(
-        'oc.sessionDrafts',
-        jsonEncode([legacy.toJson(), owned.toJson()]),
-      );
-      expect(c.legacySessionDrafts.single.text, 'Older thought');
-      expect(c.sessionDraft('old'), isNull);
-      expect(await c.removeLegacySessionDraft(owned), isFalse);
-      disk.refuse = true;
-      expect(await c.removeLegacySessionDraft(legacy), isFalse);
-      expect(c.legacySessionDrafts, hasLength(1));
-      disk.refuse = false;
-      expect(await c.removeLegacySessionDraft(legacy), isTrue);
-      expect(c.legacySessionDrafts, isEmpty);
-      expect(c.sessionDraft('owned'), 'Keep owned');
-      expect(await c.removeLegacySessionDraft(legacy), isFalse);
-    },
-  );
-
-  testWidgets('older draft review appends text and retains the saved source', (
-    tester,
-  ) async {
-    final c = await _controller(_FakeApi(), twoProfiles: true);
+  test('older drafts move into Saved prompts once; a refused write keeps them '
+      'and says so; server-owned drafts stay', () async {
+    late _DraftStorage disk;
+    final c = await _controller(
+      _FakeApi(),
+      twoProfiles: true,
+      configureStorage: (value) => disk = value,
+    );
     addTearDown(c.dispose);
+    const legacy = SessionDraft(
+      sessionID: 'old',
+      text: 'Older thought',
+      updatedAt: 10,
+    );
+    const owned = SessionDraft(
+      sessionID: 'owned',
+      profileID: 'profile-1',
+      text: 'Keep owned',
+      updatedAt: 12,
+    );
     await c.store.prefs.setString(
       'oc.sessionDrafts',
-      jsonEncode([
-        const SessionDraft(
-          sessionID: 'old',
-          text: 'مرحبا old idea 🌍',
-          updatedAt: 10,
-        ).toJson(),
-        const SessionDraft(
-          sessionID: 'session-1',
-          profileID: 'profile-1',
-          text: 'Current thought',
-          updatedAt: 11,
-        ).toJson(),
-      ]),
+      jsonEncode([legacy.toJson(), owned.toJson()]),
     );
-    await _pumpChat(tester, c);
-    await tester.tap(find.byKey(const Key('composer-tools-button')));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('composer-tools-prompts')));
-    await tester.tap(find.byKey(const Key('composer-tools-prompts')));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(
-      find.byKey(const Key('composer-tool-legacy-drafts')),
+    expect(c.sessionDraft('old'), isNull);
+    disk.refuse = true;
+    final refused = await c.migrateOlderDrafts();
+    expect(refused.complete, isFalse);
+    expect(c.olderDraftsBlocker, DraftMigrationBlocker.storage);
+    expect(
+      c.store.prefs.getString('oc.sessionDrafts'),
+      contains('Older thought'),
     );
-    await tester.tap(find.byKey(const Key('composer-tool-legacy-drafts')));
-    await tester.pumpAndSettle();
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const Key('legacy-drafts-search')),
-      'old idea',
+    disk.refuse = false;
+    final done = await c.migrateOlderDrafts();
+    expect((done.complete, done.migrated), (true, 1));
+    expect(c.olderDraftsBlocker, isNull);
+    expect(c.promptStash.single.text, 'Older thought');
+    expect(c.sessionDraft('owned'), 'Keep owned');
+    expect(
+      c.store.prefs.getString('oc.sessionDrafts'),
+      isNot(contains('Older thought')),
     );
-    await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('legacy-draft-old')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Insert into draft'));
-    await tester.pumpAndSettle();
-    await tester.pumpAndSettle();
-    expect(c.sessionDraft('session-1'), 'Current thought\n\nمرحبا old idea 🌍');
-    expect(c.legacySessionDrafts.single.text, 'مرحبا old idea 🌍');
-    expect(tester.takeException(), isNull);
+    expect((await c.migrateOlderDrafts()).alreadyComplete, isTrue);
+    expect(c.promptStash, hasLength(1));
   });
+
+  testWidgets(
+    'an older draft shows up in Saved prompts and restores at once with Undo',
+    (tester) async {
+      final c = await _controller(_FakeApi(), twoProfiles: true);
+      addTearDown(c.dispose);
+      await c.store.prefs.setString(
+        'oc.sessionDrafts',
+        jsonEncode([
+          const SessionDraft(
+            sessionID: 'old',
+            text: 'مرحبا old idea 🌍',
+            updatedAt: 10,
+          ).toJson(),
+          const SessionDraft(
+            sessionID: 'session-1',
+            profileID: 'profile-1',
+            text: 'Current thought',
+            updatedAt: 11,
+          ).toJson(),
+        ]),
+      );
+      await _pumpChat(tester, c);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('composer-tools-button')));
+      await tester.pumpAndSettle();
+      await Scrollable.ensureVisible(
+        tester.element(find.byKey(const Key('composer-tools-prompts'))),
+        alignment: .5,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('composer-tools-prompts')));
+      await tester.pumpAndSettle();
+      // The older drafts page is gone; its drafts live in Saved prompts.
+      expect(find.text('Older drafts'), findsNothing);
+      await Scrollable.ensureVisible(
+        tester.element(find.byKey(const Key('composer-tool-saved'))),
+        alignment: .5,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('composer-tool-saved')));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('مرحبا old idea 🌍'), findsOneWidget);
+      await tester.tap(find.text('مرحبا old idea 🌍'));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      // No question first: the draft is replaced now, with Undo.
+      expect(find.text('Restore saved prompt?'), findsNothing);
+      expect(c.sessionDraft('session-1'), 'مرحبا old idea 🌍');
+      expect(find.text('Saved prompt restored'), findsOneWidget);
+      // The replaced draft is safe in Saved prompts until Undo.
+      expect(
+        c.promptStash.map((p) => p.text),
+        containsAll(['Current thought', 'مرحبا old idea 🌍']),
+      );
+      await tester.tap(find.text('Undo'));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(c.sessionDraft('session-1'), 'Current thought');
+      // Undo takes the safety copy away again; the saved source stays.
+      expect(c.promptStash.single.text, 'مرحبا old idea 🌍');
+      expect(tester.takeException(), isNull);
+      KitUndo.commitPending();
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
   test(
     'a full store refuses new drafts without evicting unsent work',
@@ -769,7 +941,9 @@ void main() {
     await _pumpChat(tester, controller);
     expect(
       tester
-          .widget<TextField>(find.byKey(const Key('chat-composer-field')))
+          .widget<TextField>(
+            _inner(find.byKey(const Key('chat-composer-field'))),
+          )
           .controller
           ?.text,
       'unsent thought',
@@ -791,7 +965,7 @@ void main() {
       'send me',
     );
     await tester.pump();
-    await tester.tap(find.byTooltip('Send'));
+    await tester.tap(find.byTooltip('Send when back online'));
     await tester.pump();
     await tester.pump();
 
@@ -800,3 +974,8 @@ void main() {
     expect(controller.sessionDraft('session-1'), isNull);
   });
 }
+
+/// The composer's field is a KitField (a TextFormField); its TextField
+/// holds the controller and focus node.
+Finder _inner(Finder field) =>
+    find.descendant(of: field, matching: find.byType(TextField));

@@ -1,14 +1,26 @@
-/// The Work sheet (02-ux §4.2): what a row of the Work tab or a node of
-/// the graph opens. Title with its Gas City term ("Work · bead oc-loy"),
-/// the dispatch cycle strip (TEAM-116: which step, since when, why it
-/// waits), state and owner, the description as markdown, what it depends on and
-/// what waits on it as chips that jump to the other item's sheet, the
-/// branch and worktree in LTR mono, "Open session" only when the adapter
-/// can link sessions and this item carries one (Gas City never does), the
-/// output excerpt and validation result when the host sent them, the
-/// timestamps, then the Technical details expander with every raw field.
-/// Actions (Assign to…, Close, Reopen, Nudge owner) are Sprint B.
+/// The Work sheet (02-ux §4.2): what a step row of a task, a node of the
+/// graph, a gate chip, the merge changes or a board card opens. The sheet
+/// is titled with the item's title and its Gas City term ("Work · bead
+/// oc-loy"); then the step's Now line (slice-P5.1: what is happening to
+/// it, since when, what comes next, and why it waits after 8 s), owner,
+/// the description as markdown, what it depends on and what waits on it
+/// as rows that open the other item's
+/// sheet in this one's place, "Open this step's conversation" only when the
+/// adapter can link sessions and this item carries one (Gas City never
+/// does) or else the working agent's conversation, the output excerpt and
+/// validation result when the host sent them, the timestamps, and last one
+/// Technical details fold with the branch, the worktree and every raw
+/// field (KIT-33).
+///
+/// Map work-sheet is `redesign`: this is the kit-only rebuild of today's
+/// layout (MAP-1); the "Step · task" structure with one primary per
+/// state waits for its slice.
+///
+/// Kit only (KIT-1): [showKitSheet], [KitText], [KitIcon], [KitRowGroup]
+/// rows, [KitMarkdown], [KitCodeBlock], [KitDetailsFold], [KitStateView].
 library;
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -17,48 +29,80 @@ import '../../../l10n/app_localizations.dart';
 import '../../../orchestration/adapters/gascity/gascity_mappers.dart'
     show WorkItemGasCity;
 import '../../../state/orchestration.dart';
-import '../../app_theme.dart';
-import '../../widgets/markdown.dart';
+import '../../app_iconography.dart';
+import '../../app_theme.dart' show AppStatusTone;
+import '../../kit/chat/kit_markdown.dart';
+import '../../kit/kit_buttons.dart';
+import '../../kit/kit_code_block.dart';
+
+import '../../kit/kit_icon.dart';
+import '../../kit/kit_row.dart';
+import '../../kit/kit_row_parts.dart' show KitChevron;
+import '../../kit/kit_sheet.dart';
+import '../../kit/kit_state_view.dart';
+import '../../kit/kit_technical_value.dart';
+import '../../kit/kit_text.dart';
+import '../../kit/kit_tokens.dart';
 import '../../widgets/relative_time.dart';
-import '../../widgets/team_cycle_strip.dart';
+import '../../widgets/team_now_line_view.dart';
 import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_vocabulary.dart';
+import '../team_conversation/team_conversation.dart'
+    show openTeamAgentConversation;
+import 'team_agents_screen.dart' show teamAgentNickname;
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-/// Opens the Work sheet for [workId]. Dependency and blocking chips close
-/// this sheet and open the other item's, so [context] must outlive the
-/// sheet (the run screen's does). [onOpenSession] receives the linked
-/// OpenCode session id; without it no "Open session" is offered.
+WorkItem? _itemIn(OrchestrationSnapshot snapshot, String workId) {
+  for (final candidate in snapshot.work) {
+    if (candidate.id == workId) return candidate;
+  }
+  return null;
+}
+
+/// Opens the Work sheet for [workId]. Dependency and blocking rows close
+/// this sheet and open the other item's in its place (no sheet on a
+/// sheet, KIT-16), so [context] must outlive the sheet (the run screen's
+/// does). [onOpenSession] receives the linked OpenCode session id; without
+/// it no "Open this step's conversation" is offered.
 Future<void> showWorkSheet(
   BuildContext context,
   OrchestrationController controller,
   String workId, {
   DateTime Function()? now,
   ValueChanged<String>? onOpenSession,
-}) => showModalBottomSheet<void>(
-  context: context,
-  showDragHandle: true,
-  isScrollControlled: true,
-  useSafeArea: true,
-  builder: (sheetContext) => WorkSheet(
-    controller: controller,
-    workId: workId,
-    now: now,
-    onOpenSession: onOpenSession,
-    onJump: (id) {
-      Navigator.of(sheetContext).pop();
-      showWorkSheet(
-        context,
-        controller,
-        id,
-        now: now,
-        onOpenSession: onOpenSession,
-      );
-    },
-  ),
-);
+}) {
+  final l10n = _copy(context);
+  final item = _itemIn(controller.snapshot, workId);
+  return showKitSheet<void>(
+    context,
+    sheetKey: const ValueKey('team-work-sheet'),
+    title: item?.title ?? l10n.teamWorkSheetMissingTitle,
+    // The task it belongs to, in the person's words; the host's own term
+    // and id wait under Technical details.
+    subtitle: item == null ? null : _taskOf(controller.snapshot, item),
+    icon: AppIconography.checklist,
+    body: (sheetContext) => WorkSheet(
+      controller: controller,
+      workId: workId,
+      now: now,
+      onOpenSession: onOpenSession,
+      onJump: (id) {
+        Navigator.of(sheetContext).pop();
+        unawaited(
+          showWorkSheet(
+            context,
+            controller,
+            id,
+            now: now,
+            onOpenSession: onOpenSession,
+          ),
+        );
+      },
+    ),
+  );
+}
 
 /// The OpenCode session an item links to, when the host recorded one
 /// (`opencode_session_id` on the item or its metadata). Gas City agents
@@ -68,6 +112,36 @@ String? workSessionLink(WorkItem item) {
   return _text(item.raw['opencode_session_id']) ??
       _text(metadata['opencode_session_id']) ??
       _text(metadata['oc.session_id']);
+}
+
+/// The agent working on [item] now, when the host lists one.
+OrchestrationAgent? _agentOn(OrchestrationSnapshot snapshot, WorkItem item) {
+  if (item.state != WorkState.working) return null;
+  for (final agent in snapshot.agents) {
+    if (agent.currentWorkId == item.id) return agent;
+  }
+  return null;
+}
+
+/// The title of the task [item] belongs to, else its project; null when
+/// the snapshot names neither.
+String? _taskOf(OrchestrationSnapshot snapshot, WorkItem item) {
+  for (final run in snapshot.runs) {
+    // A one-step task shares its step's title: the title says it once.
+    if (run.id == item.runId) return run.title == item.title ? null : run.title;
+  }
+  final project = item.projectId?.trim();
+  return project == null || project.isEmpty ? null : project;
+}
+
+/// An owner as the person knows it: the agent's own name, never the host's
+/// handle ("ocproof/gastown.furiosa" reads "furiosa"). The full handle
+/// stays under Technical details.
+String? workOwnerShortName(OrchestrationSnapshot snapshot, WorkItem item) {
+  final owner = workOwnerName(snapshot, item);
+  if (owner == null) return null;
+  final tail = owner.split('/').last.split('.').last.trim();
+  return tail.isEmpty ? owner : tail;
 }
 
 /// Who owns an item: the agent on it (by work id, id, name or session),
@@ -87,14 +161,6 @@ String? workOwnerName(OrchestrationSnapshot snapshot, WorkItem item) {
     }
   }
   return assignee;
-}
-
-/// The letter of an owner glyph: the first letter of the last segment of
-/// the name ("ocproof/gastown.refinery" → "R").
-String workOwnerInitial(String name) {
-  final last = name.split(RegExp(r'[/.\s]+')).where((s) => s.isNotEmpty);
-  final word = last.isEmpty ? name : last.last;
-  return word.isEmpty ? '' : word.substring(0, 1).toUpperCase();
 }
 
 /// The output excerpt the host attached to an item, if any.
@@ -168,6 +234,8 @@ Map<String, Object?> _map(Object? value) => value is Map
     ? {for (final entry in value.entries) '${entry.key}': entry.value}
     : const {};
 
+/// The Work sheet's body: everything under the sheet's title. It rebuilds
+/// with the controller, so the strip, the state and the rows stay live.
 class WorkSheet extends StatelessWidget {
   const WorkSheet({
     super.key,
@@ -189,23 +257,17 @@ class WorkSheet extends StatelessWidget {
     listenable: controller,
     builder: (context, _) {
       final l10n = _copy(context);
-      final theme = Theme.of(context);
       final snapshot = controller.snapshot;
-      WorkItem? item;
-      for (final candidate in snapshot.work) {
-        if (candidate.id == workId) {
-          item = candidate;
-          break;
-        }
-      }
+      final item = _itemIn(snapshot, workId);
       if (item == null) {
-        return Padding(
+        // Gone from the host meanwhile: a designed state that says what
+        // happened and where the rest is, not an empty sheet.
+        return KitStateView(
           key: const ValueKey('team-work-sheet-missing'),
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-          child: Text(
-            l10n.teamUiWorkSheetMissing,
-            style: theme.textTheme.bodyMedium,
-          ),
+          size: KitStateSize.inline,
+          icon: AppIconography.cloudOff,
+          title: l10n.teamUiWorkSheetMissing,
+          body: l10n.teamWorkSheetMissingBody,
         );
       }
       return _Body(
@@ -215,11 +277,34 @@ class WorkSheet extends StatelessWidget {
         snapshot: snapshot,
         sessionLink: controller.capabilities.sessionLink,
         now: (now ?? DateTime.now)(),
+        clock: now ?? DateTime.now,
         onJump: onJump,
         onOpenSession: onOpenSession,
       );
     },
   );
+}
+
+/// A section's name above its content (sentence case, LOOK-15).
+class _Heading extends StatelessWidget {
+  const _Heading(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        top: tokens.space4,
+        bottom: tokens.labelGap,
+      ),
+      child: Semantics(
+        header: true,
+        child: KitText(text, role: KitTextRole.label),
+      ),
+    );
+  }
 }
 
 class _Body extends StatelessWidget {
@@ -230,6 +315,7 @@ class _Body extends StatelessWidget {
     required this.snapshot,
     required this.sessionLink,
     required this.now,
+    required this.clock,
     required this.onJump,
     required this.onOpenSession,
   });
@@ -239,14 +325,16 @@ class _Body extends StatelessWidget {
   final OrchestrationSnapshot snapshot;
   final bool sessionLink;
   final DateTime now;
+
+  /// The page's clock, for the Now line's 8 s explanation.
+  final DateTime Function() clock;
   final ValueChanged<String> onJump;
   final ValueChanged<String>? onOpenSession;
 
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    final tokens = KitTokens.of(context);
     final byId = {for (final w in snapshot.work) w.id: w};
     final dependencies = [
       for (final id in {...item.dependsOn})
@@ -258,212 +346,180 @@ class _Body extends StatelessWidget {
           (other.id, other),
     ];
     final description = _text(item.raw['description']);
-    final owner = workOwnerName(snapshot, item);
+    final owner = workOwnerShortName(snapshot, item);
     final link = workSessionLink(item);
     final output = workOutputExcerpt(item);
     final validation = WorkValidation.of(item);
-    final (icon, tone) = teamWorkGlyph(item.state);
-    final color = AppTheme.statusColor(theme, tone);
     final openSession = onOpenSession;
+    final agent = _agentOn(snapshot, item);
+    final closedAt = _closedAt(item);
+    OrchestrationRun? run;
+    for (final candidate in snapshot.runs) {
+      if (candidate.id == item.runId) run = candidate;
+    }
 
-    Widget heading(String text) => Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 6),
-      child: Text(
-        text,
-        style: theme.textTheme.labelLarge?.copyWith(color: muted),
-      ),
-    );
-
-    Widget chips(String prefix, List<(String, WorkItem?)> items) => Wrap(
-      spacing: 8,
-      runSpacing: 8,
+    Widget rows(String prefix, List<(String, WorkItem?)> items) => KitRowGroup(
+      margin: EdgeInsetsDirectional.zero,
       children: [
         for (final (id, other) in items)
-          ActionChip(
+          KitRow(
             key: ValueKey('team-work-$prefix-$id'),
-            avatar: other == null
-                ? null
-                : Icon(
-                    teamWorkGlyph(other.state).$1,
-                    size: 16,
-                    color: AppTheme.statusColor(
-                      theme,
-                      teamWorkGlyph(other.state).$2,
-                    ),
-                  ),
-            label: Text(
-              other?.title ?? id,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            leading: other == null
+                ? KitRow.icon(context, AppIconography.cloudOff)
+                : teamWorkMark(other.state).leading(context),
+            title: other?.title ?? id,
+            titleMaxLines: 2,
+            supporting: TextSpan(
+              text: other == null
+                  ? l10n.teamWorkSheetNotOnHost
+                  : teamWorkStateWord(l10n, other.state),
             ),
-            onPressed: other == null ? null : () => onJump(id),
+            trailing: other == null ? null : const KitChevron(),
+            onTap: other == null ? null : () => onJump(id),
           ),
       ],
     );
 
-    return SingleChildScrollView(
-      key: const ValueKey('team-work-sheet'),
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            item.title,
-            key: const ValueKey('team-work-sheet-title'),
-            style: theme.textTheme.titleLarge?.copyWith(height: 1.2),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // The step's Now line: what is happening to it, for how long and
+        // what comes next, in the person's words (slice-P5.1; it replaced
+        // the dispatch cycle strip and its seven engine steps). A step in
+        // no task says its state on the owner line instead.
+        if (run != null) ...[
+          TeamNowLineView(
+            keyPrefix: 'team-work-sheet',
+            watchCycles: controller,
+            watchWorkId: item.id,
+            clock: clock,
+            input: TeamNowInput.forRun(
+              activityKey: '${controller.profileId}:work:${item.id}',
+              run: run,
+              work: [item],
+              cycleOf: controller.cycleFor,
+              agents: snapshot.agents,
+              connected: controller.phase == OrchestrationPhase.ready,
+              now: now,
+            ),
+            // The step's conversation is its own row below; checking
+            // again is this sheet's one way out.
+            wayOut: (action) => action == TeamNowAction.refresh
+                ? KitAction(
+                    key: const ValueKey('team-work-sheet-now-refresh'),
+                    label: l10n.teamUiRefresh,
+                    onPressed: () => unawaited(controller.refresh()),
+                  )
+                : null,
           ),
-          const SizedBox(height: 2),
-          TeamTermRow(l10n.teamUiWorkTerm(item.id)),
-          const SizedBox(height: 12),
-          TeamCycleStrip(
-            key: const ValueKey('team-work-sheet-cycle'),
-            controller: controller,
-            workId: item.id,
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 16,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 18, color: color),
-                  const SizedBox(width: 6),
-                  Text(
-                    teamWorkStateWord(l10n, item.state),
-                    key: const ValueKey('team-work-sheet-state'),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(AppIconography.person, size: 18, color: muted),
-                  const SizedBox(width: 6),
-                  Text(
-                    owner ?? l10n.teamUiWorkOwnerNone,
-                    key: const ValueKey('team-work-sheet-owner'),
-                    textDirection: owner == null ? null : TextDirection.ltr,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          if (description != null) ...[
-            heading(l10n.teamUiWorkSheetDescription),
-            MarkdownText(
-              description,
-              key: const ValueKey('team-work-sheet-description'),
-              selectable: false,
-            ),
-          ],
-          if (dependencies.isNotEmpty) ...[
-            heading(l10n.teamUiWorkSheetDependencies),
-            chips('dependency', dependencies),
-          ],
-          if (blocking.isNotEmpty) ...[
-            heading(l10n.teamUiWorkSheetBlocking),
-            chips('blocking', blocking),
-          ],
-          if (item.branch != null || item.workDir != null) ...[
-            heading(l10n.teamUiWorkSheetCode),
-            if (item.branch case final branch?)
-              TeamIdentityRow(
-                key: const ValueKey('team-work-sheet-branch'),
-                label: l10n.teamUiWorkSheetBranch,
-                value: branch,
-                mono: true,
-              ),
-            if (item.workDir case final dir?)
-              TeamIdentityRow(
-                key: const ValueKey('team-work-sheet-worktree'),
-                label: l10n.teamUiWorkSheetWorktree,
-                value: dir,
-                mono: true,
-              ),
-            if (item.target case final target?)
-              TeamIdentityRow(
-                label: l10n.teamUiWorkSheetTarget,
-                value: target,
-                mono: true,
-              ),
-          ],
-          if (sessionLink && link != null && openSession != null) ...[
-            const SizedBox(height: 16),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: FilledButton.tonalIcon(
-                key: const ValueKey('team-work-sheet-open-session'),
-                onPressed: () => openSession(link),
-                icon: const Icon(AppIconography.chat),
-                label: Text(l10n.teamUiWorkSheetOpenSession),
-              ),
-            ),
-          ],
-          if (output != null) ...[
-            heading(l10n.teamUiWorkSheetOutput),
-            Container(
-              key: const ValueKey('team-work-sheet-output'),
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                output,
-                textDirection: TextDirection.ltr,
-                maxLines: 12,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontFamily: AppTheme.monoFamily,
-                  fontSize: AppTheme.codeFontSize,
-                  height: AppTheme.codeLineHeight,
-                ),
-              ),
-            ),
-          ],
-          if (validation != null) ...[
-            heading(l10n.teamUiWorkSheetValidation),
-            _ValidationRow(validation: validation),
-          ],
-          heading(l10n.teamUiWorkSheetTimestamps),
-          if (item.createdAt case final at?)
-            TeamIdentityRow(
-              key: const ValueKey('team-work-sheet-created'),
-              label: l10n.teamUiWorkSheetCreated,
-              value: _stamp(context, l10n, at),
-            ),
-          if (item.updatedAt case final at?)
-            TeamIdentityRow(
-              key: const ValueKey('team-work-sheet-updated'),
-              label: l10n.teamUiWorkSheetUpdated,
-              value: _stamp(context, l10n, at),
-            ),
-          if (_closedAt(item) case final at?)
-            TeamIdentityRow(
-              label: l10n.teamUiWorkSheetClosed,
-              value: _stamp(context, l10n, at),
-            ),
-          if (item.createdAt == null &&
-              item.updatedAt == null &&
-              _closedAt(item) == null)
-            Text(
-              l10n.teamUiWorkSheetNoTimestamps,
-              style: theme.textTheme.bodySmall?.copyWith(color: muted),
-            ),
-          const SizedBox(height: 12),
-          _TechnicalDetails(item: item, dependencies: dependencies),
+          SizedBox(height: tokens.space3),
         ],
-      ),
+        // The Now line above carries the state; this line says only who
+        // owns the work, by the agent's name.
+        Row(
+          children: [
+            const KitIcon(
+              AppIconography.person,
+              size: KitIconSize.small,
+              tone: KitTextTone.secondary,
+            ),
+            SizedBox(width: tokens.space2),
+            Flexible(
+              child: KitText(
+                [
+                  if (run == null) teamWorkStateWord(l10n, item.state),
+                  owner ?? l10n.teamUiWorkOwnerNone,
+                ].join(teamUsageSeparator),
+                key: const ValueKey('team-work-sheet-owner'),
+                role: KitTextRole.secondary,
+              ),
+            ),
+          ],
+        ),
+        if (description != null) ...[
+          _Heading(l10n.teamUiWorkSheetDescription),
+          KitMarkdown(
+            description,
+            key: const ValueKey('team-work-sheet-description'),
+            selectable: false,
+          ),
+        ],
+        if (dependencies.isNotEmpty) ...[
+          _Heading(l10n.teamUiWorkSheetDependencies),
+          rows('dependency', dependencies),
+        ],
+        if (blocking.isNotEmpty) ...[
+          _Heading(l10n.teamUiWorkSheetBlocking),
+          rows('blocking', blocking),
+        ],
+        if (sessionLink && link != null && openSession != null) ...[
+          SizedBox(height: tokens.space4),
+          KitButton.secondary(
+            key: const ValueKey('team-work-sheet-open-session'),
+            onPressed: () => openSession(link),
+            icon: AppIconography.chat,
+            label: l10n.teamWorkSheetOpenStepConversation,
+          ),
+        ] else if (agent != null) ...[
+          // The work itself is shown in one place: the agent's own
+          // conversation on the chat page (Live output when it has none).
+          SizedBox(height: tokens.space4),
+          KitButton.secondary(
+            key: const ValueKey('team-work-sheet-open-conversation'),
+            onPressed: () =>
+                openTeamAgentConversation(context, agent, team: controller),
+            icon: AppIconography.chat,
+            label: l10n.teamWorkSheetOpenAgentConversation(
+              teamAgentNickname(agent) ??
+                  teamAgentRoleWord(l10n, teamAgentRole(agent)),
+            ),
+          ),
+        ],
+        if (output != null) ...[
+          _Heading(l10n.teamUiWorkSheetOutput),
+          KitCodeBlock(
+            text: output,
+            kind: KitCodeKind.output,
+            blockKey: const ValueKey('team-work-sheet-output'),
+          ),
+        ],
+        if (validation != null) ...[
+          _Heading(l10n.teamUiWorkSheetValidation),
+          _ValidationRow(validation: validation),
+        ],
+        _Heading(l10n.teamUiWorkSheetTimestamps),
+        if (item.createdAt case final at?)
+          TeamIdentityRow(
+            key: const ValueKey('team-work-sheet-created'),
+            label: l10n.teamUiWorkSheetCreated,
+            value: _stamp(context, l10n, at),
+          ),
+        if (item.updatedAt case final at?)
+          TeamIdentityRow(
+            key: const ValueKey('team-work-sheet-updated'),
+            label: l10n.teamUiWorkSheetUpdated,
+            value: _stamp(context, l10n, at),
+          ),
+        if (closedAt != null)
+          TeamIdentityRow(
+            label: l10n.teamUiWorkSheetClosed,
+            value: _stamp(context, l10n, closedAt),
+          ),
+        if (item.createdAt == null &&
+            item.updatedAt == null &&
+            closedAt == null)
+          KitText(
+            l10n.teamUiWorkSheetNoTimestamps,
+            role: KitTextRole.secondary,
+          ),
+        SizedBox(height: tokens.space3),
+        KitDetailsFold(
+          foldKey: const ValueKey('team-work-sheet-technical'),
+          label: l10n.teamUiTechnicalDetails,
+          values: _technicalValues(l10n, item, dependencies),
+        ),
+      ],
     );
   }
 
@@ -487,6 +543,7 @@ class _Body extends StatelessWidget {
   }
 }
 
+/// Passed, failed or recorded, with the host's summary under the word.
 class _ValidationRow extends StatelessWidget {
   const _ValidationRow({required this.validation});
 
@@ -495,51 +552,26 @@ class _ValidationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final (icon, tone, word) = switch (validation.passed) {
-      true => (
-        AppIconography.checkCircle,
-        AppStatusTone.ok,
-        l10n.teamUiWorkSheetValidationPassed,
-      ),
-      false => (
-        AppIconography.error,
-        AppStatusTone.failure,
-        l10n.teamUiWorkSheetValidationFailed,
-      ),
-      null => (
-        AppIconography.info,
-        AppStatusTone.neutral,
-        l10n.teamUiWorkSheetValidationUnknown,
-      ),
+    final tokens = KitTokens.of(context);
+    final (tone, word) = switch (validation.passed) {
+      true => (AppStatusTone.ok, l10n.teamUiWorkSheetValidationPassed),
+      false => (AppStatusTone.failure, l10n.teamUiWorkSheetValidationFailed),
+      null => (AppStatusTone.neutral, l10n.teamUiWorkSheetValidationUnknown),
     };
-    final color = AppTheme.statusColor(theme, tone);
     final summary = validation.summary;
     return Row(
       key: const ValueKey('team-work-sheet-validation'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Icon(icon, size: 18, color: color),
-        ),
-        const SizedBox(width: 8),
+        KitIcon.status(tone),
+        SizedBox(width: tokens.space2),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                word,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              KitText(word, role: KitTextRole.rowTitle),
               if (summary != null && summary != word)
-                Text(
-                  summary,
-                  style: theme.textTheme.bodySmall?.copyWith(height: 1.35),
-                ),
+                KitText(summary, role: KitTextRole.secondary),
             ],
           ),
         ),
@@ -548,103 +580,73 @@ class _ValidationRow extends StatelessWidget {
   }
 }
 
-/// The Technical details expander (02-ux §8): the product values, then
-/// every raw scalar the provider sent, each with a copy button.
-class _TechnicalDetails extends StatelessWidget {
-  const _TechnicalDetails({required this.item, required this.dependencies});
-
-  final WorkItem item;
-  final List<(String, WorkItem?)> dependencies;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    const shown = {'id', 'title', 'status', 'description'};
-    final scalars = <(String, String)>[];
-    void collect(Map<String, Object?> map, String prefix) {
-      for (final entry in map.entries) {
-        final value = entry.value;
-        if (prefix.isEmpty && shown.contains(entry.key)) continue;
-        if (value is String || value is num || value is bool) {
-          scalars.add(('$prefix${entry.key}', '$value'));
-        }
+/// Technical details (02-ux §8, KIT-33): where the code lives (branch,
+/// worktree, merge target), the product values, then every raw scalar the
+/// provider sent. Each value shows once, mono, left to right, copyable.
+List<KitTechnicalValue> _technicalValues(
+  AppLocalizations l10n,
+  WorkItem item,
+  List<(String, WorkItem?)> dependencies,
+) {
+  const shown = {'id', 'title', 'status', 'description'};
+  final scalars = <(String, String)>[];
+  void collect(Map<String, Object?> map, String prefix) {
+    for (final entry in map.entries) {
+      final value = entry.value;
+      if (prefix.isEmpty && shown.contains(entry.key)) continue;
+      if (value is String || value is num || value is bool) {
+        scalars.add(('$prefix${entry.key}', '$value'));
       }
     }
-
-    collect(item.raw, '');
-    collect(_map(item.raw['metadata']), 'metadata.');
-    scalars.sort((a, b) => a.$1.compareTo(b.$1));
-    return Theme(
-      data: theme.copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        key: const ValueKey('team-work-sheet-technical'),
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: const EdgeInsets.only(bottom: 8),
-        title: Text(
-          l10n.teamUiTechnicalDetails,
-          style: theme.textTheme.titleMedium,
-        ),
-        children: [
-          Text(
-            l10n.teamUiHomeHostRawHeading,
-            style: theme.textTheme.labelLarge?.copyWith(color: muted),
-          ),
-          const SizedBox(height: 4),
-          TeamTechnicalValue(label: l10n.teamUiWorkLabelId, value: item.id),
-          TeamTechnicalValue(
-            label: l10n.teamUiWorkLabelRawState,
-            value: item.rawState ?? '',
-          ),
-          if (item.issueType case final type?)
-            TeamTechnicalValue(label: l10n.teamUiWorkLabelType, value: type),
-          if (item.runId case final run?)
-            TeamTechnicalValue(label: l10n.teamUiWorkLabelRun, value: run),
-          if (item.parentId case final parent?)
-            TeamTechnicalValue(
-              label: l10n.teamUiWorkLabelParent,
-              value: parent,
-            ),
-          if (item.projectId case final project?)
-            TeamTechnicalValue(
-              label: l10n.teamUiWorkLabelProject,
-              value: project,
-            ),
-          if (item.assignee case final assignee?)
-            TeamTechnicalValue(
-              label: l10n.teamUiWorkLabelAssignee,
-              value: assignee,
-            ),
-          if (item.sessionId case final session?)
-            TeamTechnicalValue(
-              label: l10n.teamUiWorkLabelSession,
-              value: session,
-            ),
-          if (item.sessionName case final name?)
-            TeamTechnicalValue(
-              label: l10n.teamUiWorkLabelSessionName,
-              value: name,
-            ),
-          if (item.labels.isNotEmpty)
-            TeamTechnicalValue(
-              label: l10n.teamUiWorkLabelLabels,
-              value: item.labels.join(', '),
-            ),
-          if (dependencies.isNotEmpty)
-            TeamTechnicalValue(
-              label: l10n.teamUiWorkLabelDependsOn,
-              value: [for (final (id, _) in dependencies) id].join(', '),
-            ),
-          if (item.closedReason case final reason?)
-            TeamTechnicalValue(
-              label: l10n.teamUiWorkLabelClosedReason,
-              value: reason,
-            ),
-          for (final (key, value) in scalars)
-            TeamTechnicalValue(label: key, value: value),
-        ],
-      ),
-    );
   }
+
+  collect(item.raw, '');
+  collect(_map(item.raw['metadata']), 'metadata.');
+  scalars.sort((a, b) => a.$1.compareTo(b.$1));
+  KitTechnicalValue value(String label, String value, {Key? key}) =>
+      KitTechnicalValue(label, value, copyable: value.isNotEmpty, key: key);
+  return [
+    if (item.branch case final branch?)
+      value(
+        l10n.teamUiWorkSheetBranch,
+        branch,
+        key: const ValueKey('team-work-sheet-branch'),
+      ),
+    if (item.workDir case final dir?)
+      value(
+        l10n.teamUiWorkSheetWorktree,
+        dir,
+        key: const ValueKey('team-work-sheet-worktree'),
+      ),
+    if (item.target case final target?)
+      value(
+        l10n.teamUiWorkSheetTarget,
+        target,
+        key: const ValueKey('team-work-sheet-target'),
+      ),
+    value(l10n.teamUiWorkLabelId, item.id),
+    value(l10n.teamUiWorkLabelRawState, item.rawState ?? ''),
+    if (item.issueType case final type?) value(l10n.teamUiWorkLabelType, type),
+    if (item.runId case final run?) value(l10n.teamUiWorkLabelRun, run),
+    if (item.parentId case final parent?)
+      value(l10n.teamUiWorkLabelParent, parent),
+    if (item.projectId case final project?)
+      value(l10n.teamUiWorkLabelProject, project),
+    if (item.assignee case final assignee?)
+      value(l10n.teamUiWorkLabelAssignee, assignee),
+    if (item.sessionId case final session?)
+      value(l10n.teamUiWorkLabelSession, session),
+    if (item.sessionName case final name?)
+      value(l10n.teamUiWorkLabelSessionName, name),
+    if (item.labels.isNotEmpty)
+      value(l10n.teamUiWorkLabelLabels, item.labels.join(', ')),
+    if (dependencies.isNotEmpty)
+      value(
+        l10n.teamUiWorkLabelDependsOn,
+        [for (final (id, _) in dependencies) id].join(', '),
+      ),
+    if (item.closedReason case final reason?)
+      value(l10n.teamUiWorkLabelClosedReason, reason),
+    for (final (key, raw) in scalars) value(key, raw),
+  ];
 }

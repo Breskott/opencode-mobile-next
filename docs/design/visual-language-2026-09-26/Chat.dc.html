@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Conversation — working, needs you</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&amp;family=Geist+Mono:wght@400..600&amp;display=swap">
+<style>
+body{margin:0;background:#0B0C0E}
+.tk{--bg:#0B0C0E;--s1:#141518;--s2:#1B1C20;--s3:#26282D;--line:rgba(255,255,255,.07);--t1:#F3F3F1;--t2:#A3A5AB;--t3:#8A8D94;--on-acc:#03140B;--warn:#FFB547;--warn-line:rgba(255,181,71,.34);--kw:#C7A6FF;--str:#FFB88A;--ty:#7FD1FF;--add:#3DDC8A;--del:#FF7A7A}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+code{font-family:'Geist Mono',ui-monospace,monospace;font-size:.9em;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:5px}
+a{color:#3DDC8A}a:hover{color:#74E9AD}
+</style>
+</helmet>
+<div class="tk" style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: var(--bg); color: var(--t1); font-family: Geist, 'Helvetica Neue', system-ui, sans-serif; --acc: {{accent}}">
+
+<div style="display: flex; align-items: center; gap: 4px; height: 58px; padding: 8px 6px 0 4px; box-sizing: border-box; border-bottom: 1px solid var(--line)">
+<button style="width: 44px; height: 44px; display: grid; place-items: center; color: var(--t2)" aria-label="Back to Work">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+</button>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px">
+<div style="font-size: 16px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Fix flaky checkout test</div>
+<div style="font-size: 12.5px; color: var(--warn); display: flex; align-items: center; gap: 6px"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--warn)"></span>Needs you · shopfront</div>
+</div>
+<button style="width: 44px; height: 44px; display: grid; place-items: center; color: var(--t2)" aria-label="Conversation menu">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
+</button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 16px; padding: 18px 16px 0">
+
+<div style="align-self: flex-end; max-width: 82%; background: var(--s2); border-radius: 20px 20px 6px 20px; padding: 11px 14px; font-size: 15px; line-height: 21px">Fix the flaky checkout test. It fails about one run in five on CI.</div>
+
+<div style="font-size: 15.5px; line-height: 23px; padding: 0 2px">The flakiness comes from <code>CheckoutBloc</code> racing the price refresh: <code>applyCoupon()</code> awaits the network before the total settles, so the assertion sometimes reads the old total. I made the test wait for the settled state.</div>
+
+<button style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px 0 10px; border-radius: 999px; background: var(--s1); align-self: flex-start; font-size: 13.5px; color: var(--t2)" aria-expanded="false">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>
+Read 3 files · edited 1
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+</button>
+
+<div style="background: var(--s1); border-radius: 16px; overflow: hidden; border: 1px solid var(--line)">
+<div style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 6px 0 12px; border-bottom: 1px solid var(--line); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; color: var(--t2)">
+<span style="flex-grow: 1">checkout_test.dart</span><span style="color: var(--add)">+6</span><span style="color: var(--del)">−2</span>
+<button style="width: 36px; height: 36px; display: grid; place-items: center; color: var(--t3)" aria-label="Copy code">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>
+</button>
+</div>
+<pre style="margin: 0; padding: 11px 14px 13px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12.5px; line-height: 19px; color: var(--t1); white-space: pre; overflow: hidden"><span style="color: var(--kw)">await</span> tester.pumpUntil(
+  () =&gt; bloc.state <span style="color: var(--kw)">is</span> <span style="color: var(--ty)">CheckoutSettled</span>,
+  timeout: <span style="color: var(--kw)">const</span> <span style="color: var(--ty)">Duration</span>(seconds: 5),
+);
+expect(find.text(<span style="color: var(--str)">'$42.00'</span>), findsOneWidget);</pre>
+</div>
+
+<div style="background: var(--s1); border: 1px solid var(--warn-line); border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 0 0 4px rgba(255,181,71,.06)">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="width: 34px; height: 34px; flex-shrink: 0; border-radius: 11px; background: rgba(255,181,71,.15); color: var(--warn); display: grid; place-items: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9l3 3-3 3M13 15h4"/></svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 1px">
+<div style="font-size: 16.5px; font-weight: 600; letter-spacing: -0.01em">Run this command?</div>
+<div style="font-size: 13px; color: var(--t3)">To check the fix · in shopfront</div>
+</div>
+</div>
+<div style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 13px; line-height: 19px; background: var(--bg); border-radius: 10px; padding: 10px 12px; color: var(--t1)"><span style="color: var(--t3)">$ </span>flutter test test/checkout_test.dart</div>
+<div style="display: flex; gap: 10px">
+<button style="flex-grow: 1; height: 46px; border-radius: 14px; background: var(--s3); font-size: 15px; font-weight: 550">Don’t run</button>
+<button style="flex-grow: 1; height: 46px; border-radius: 14px; background: var(--acc); color: var(--on-acc); font-size: 15px; font-weight: 600">Run once</button>
+</div>
+<button style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 32px; font-size: 13.5px; color: var(--t2)">Always allow <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12.5px">flutter test</span> here</button>
+</div>
+
+</div>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 28px 12px 14px; background: linear-gradient(to bottom, rgba(11,12,14,0), var(--bg) 40%)">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 8px 7px 7px 7px; border-radius: 26px; background: var(--s2); border: 1px solid var(--line)">
+<label for="reply" style="position: absolute; width: 1px; height: 1px; overflow: hidden">Reply</label>
+<input id="reply" placeholder="Reply, or steer the work" style="height: 36px; padding: 0 10px; background: none; border: 0; outline: none; color: var(--t1); font: 15px Geist, system-ui, sans-serif">
+<div style="display: flex; align-items: center; gap: 6px">
+<button style="width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: var(--t2)" aria-label="Attach">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+<button style="height: 32px; padding: 0 10px; border-radius: 999px; background: var(--s3); font-size: 12.5px; font-weight: 550; color: var(--t2); display: flex; align-items: center; gap: 4px">Sonnet 4
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+<div style="flex-grow: 1"></div>
+<button style="width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: var(--t2)" aria-label="Talk">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+</button>
+<button style="width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--t1); color: var(--bg)" aria-label="Stop the agent">
+<svg width="14" height="14" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg>
+</button>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#3DDC8A","options":["#3DDC8A","#5AB0FF","#FF8A4C","#C7A6FF"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#3DDC8A' };
+  }
+}
+</script>
+</body>
+</html>

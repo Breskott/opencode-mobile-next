@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
+import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
-import 'package:opencode_mobile/ui/widgets/first_run_choice.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/fake_setup_engine.dart';
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
+import 'support/voice_device_channel.dart';
 
 Future<(ProfileStore, ConnectionController)> _state() async {
   SharedPreferences.setMockInitialValues({});
@@ -84,6 +90,14 @@ final Finder _editorList = find
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (_) async => null,
+        );
+  });
+
   test('bare pasted addresses gain the right scheme', () {
     expect(
       normalizeServerProfileUrl('192.0.2.7:4096'),
@@ -116,7 +130,7 @@ void main() {
     expect(find.text('Keep your work moving.'), findsOneWidget);
     expect(find.text('Where does your coding agent run?'), findsOneWidget);
     expect(
-      find.descendant(of: welcome, matching: find.byType(FirstRunChoice)),
+      find.descendant(of: welcome, matching: _welcomeChoice),
       findsNWidgets(3),
     );
     expect(find.text('On my computer'), findsOneWidget);
@@ -151,7 +165,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
 
-    expect(find.byType(FirstRunChoice), findsNWidgets(2));
+    expect(_welcomeChoice, findsNWidgets(2));
     expect(find.text('On my computer'), findsOneWidget);
     expect(find.text('Just show me'), findsOneWidget);
     expect(find.text('On this phone'), findsNothing);
@@ -182,12 +196,22 @@ void main() {
   ) async {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
+    final previousEngine = PhoneSetup.engine;
+    final previousTermux = PhoneSetup.termux;
+    PhoneSetup.engine = FakeSetupEngine();
+    PhoneSetup.termux = FakeSetupEngine();
+    addTearDown(() {
+      PhoneSetup.engine = previousEngine;
+      PhoneSetup.termux = previousTermux;
+    });
+    // "On this phone" opens phone setup, whose pre-flight reads the device.
+    answerVoiceDeviceProbe();
     await tester.pumpWidget(
       _app(
         store,
         controller,
         routes: {
-          '/termux-setup': (_) => Scaffold(
+          '/this-phone': (_) => Scaffold(
             appBar: AppBar(title: const Text('Termux')),
             body: const Text('termux-route'),
           ),
@@ -195,9 +219,16 @@ void main() {
       ),
     );
 
+    // Phone setup v2: "On this phone" opens its own screen (A), where the
+    // in-app setup leads; Termux moved behind it, under Other ways.
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('welcome-choice-phone')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('welcome-choice-phone')));
     await tester.pumpAndSettle();
-    expect(find.text('termux-route'), findsOneWidget);
+    expect(find.byType(PhoneSetupStartScreen), findsOneWidget);
+    expect(find.text('termux-route'), findsNothing);
     await tester.pageBack();
     await tester.pumpAndSettle();
 
@@ -209,7 +240,11 @@ void main() {
     for (var i = 0; i < 8; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect(find.text('Offline demo'), findsOneWidget);
+    expect(find.text('Try it offline'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('demo-leave')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('first-run-welcome')), findsOneWidget);
+    expect(store.profiles, isEmpty);
   });
 
   testWidgets('a saved profile keeps the ordinary server list', (tester) async {
@@ -234,16 +269,11 @@ void main() {
     expect(find.byKey(const ValueKey('first-run-welcome')), findsNothing);
     expect(find.text('Workstation'), findsOneWidget);
     expect(find.text('Add server'), findsOneWidget);
-    expect(find.text('Try demo'), findsOneWidget);
-    await tester.tap(find.text('Try demo'));
-    for (var i = 0; i < 8; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.text('Offline demo'), findsOneWidget);
+    // R3 keeps the demo on the first-run welcome; saved servers have one
+    // way on, Add server, alongside their existing connection rows.
+    expect(find.text('Try demo'), findsNothing);
+    expect(find.byKey(const ValueKey('first-run-welcome')), findsNothing);
     expect(store.profiles.single.name, 'Workstation');
-    await tester.tap(find.byTooltip('Exit demo'));
-    await tester.pumpAndSettle();
-    expect(find.text('Workstation'), findsOneWidget);
   });
 
   for (final active in [false, true]) {
@@ -265,7 +295,7 @@ void main() {
         final controller = ConnectionController(store);
         addTearDown(controller.dispose);
         await tester.pumpWidget(_app(store, controller));
-        await tester.tap(find.byType(PopupMenuButton<String>));
+        await tester.longPress(find.text('Workstation'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Edit'));
         await tester.pumpAndSettle();
@@ -308,6 +338,73 @@ void main() {
     });
   }
 
+  // Emulator QA B3 (font scale 2.0 on a 1080×2400, 420 dpi phone): the
+  // choices ran under the gesture bar at the bottom, whose handle looked like
+  // it struck through "Connect to an agent". The page scrolls, every choice
+  // ends above the gesture bar, and a row's icon never covers its words.
+  for (final direction in TextDirection.values) {
+    testWidgets('welcome at 2.0 text on a gesture phone, ${direction.name}', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1080, 2400)
+        ..devicePixelRatio = 2.625
+        ..padding = const FakeViewPadding(top: 63, bottom: 63);
+      addTearDown(tester.view.reset);
+      final (store, controller) = await _state();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _app(store, controller, textScale: 2, direction: direction),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      const height = 2400 / 2.625;
+      const gestureBar = 63 / 2.625;
+      // The picture steps aside for large text: the choices are what the
+      // person came for.
+      expect(find.byKey(const ValueKey('servers-welcome-hero')), findsNothing);
+
+      final list = find.byType(Scrollable).first;
+      final position = tester.state<ScrollableState>(list).position;
+      // Taller than the screen at 2.0: it must scroll to its end. The lazy
+      // list learns its full length as it goes, so jump until it stops.
+      expect(position.maxScrollExtent, greaterThan(0));
+      for (
+        var i = 0;
+        i < 10 && position.pixels < position.maxScrollExtent;
+        i++
+      ) {
+        position.jumpTo(position.maxScrollExtent);
+        await tester.pumpAndSettle();
+      }
+
+      for (final key in ['computer', 'phone', 'demo']) {
+        final choice = find.byKey(ValueKey('welcome-choice-$key'));
+        expect(choice, findsOneWidget, reason: key);
+        final rect = tester.getRect(choice);
+        expect(
+          rect.bottom,
+          lessThanOrEqualTo(height - gestureBar),
+          reason: key,
+        );
+
+        final icon = tester.getRect(
+          find.descendant(of: choice, matching: find.byType(Icon)).first,
+        );
+        final words = find.descendant(of: choice, matching: find.byType(Text));
+        for (final element in words.evaluate()) {
+          final text = tester.getRect(
+            find.byElementPredicate((e) => e == element),
+          );
+          if (text.width == 0) continue;
+          expect(icon.overlaps(text), isFalse, reason: '$key: icon over words');
+        }
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('pasting a bare address into the editor fills the scheme', (
     tester,
   ) async {
@@ -315,6 +412,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -324,7 +422,7 @@ void main() {
 
     expect(
       tester
-          .widget<TextField>(find.byKey(const ValueKey('server-url-field')))
+          .widget<TextFormField>(find.byKey(const ValueKey('server-url-field')))
           .controller
           ?.text,
       'https://192.0.2.7:4096',
@@ -346,6 +444,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -359,6 +458,11 @@ void main() {
       200,
       scrollable: _editorList,
     );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('test-server-connection')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('test-server-connection')));
     await tester.pumpAndSettle();
 
@@ -384,6 +488,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -397,6 +502,11 @@ void main() {
       200,
       scrollable: _editorList,
     );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('test-server-connection')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('test-server-connection')));
     await tester.pumpAndSettle();
 
@@ -408,7 +518,11 @@ void main() {
       find.byKey(const ValueKey('server-url-field')),
       'https://box.example:4097',
     );
+    // It folds away (design standard §10), then it is gone — before the
+    // automatic check of the new address (autoTestPause) could run.
     await tester.pump();
+    await tester.pump(KitMotion.standard);
+    await tester.pump(KitMotion.standard);
     expect(find.byKey(const ValueKey('server-test-failure')), findsNothing);
   });
 
@@ -439,6 +553,7 @@ void main() {
       ),
     );
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -452,6 +567,11 @@ void main() {
       200,
       scrollable: _editorList,
     );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('test-server-connection')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('test-server-connection')));
     await tester.pumpAndSettle();
 
@@ -485,6 +605,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -498,6 +619,11 @@ void main() {
       200,
       scrollable: _editorList,
     );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('test-server-connection')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('test-server-connection')));
     await tester.pumpAndSettle();
 
@@ -519,6 +645,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -532,6 +659,11 @@ void main() {
       200,
       scrollable: _editorList,
     );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('test-server-connection')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('test-server-connection')));
     await tester.pumpAndSettle();
 
@@ -542,3 +674,10 @@ void main() {
     );
   });
 }
+
+/// One of the welcome's answers (its rows are keyed `welcome-choice-*`).
+final _welcomeChoice = find.byWidgetPredicate(
+  (w) =>
+      w.key is ValueKey<String> &&
+      (w.key! as ValueKey<String>).value.startsWith('welcome-choice-'),
+);

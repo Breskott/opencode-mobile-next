@@ -5,6 +5,7 @@ import android.app.Activity
 import android.app.ActivityManager
 import android.app.PendingIntent
 import android.app.NotificationManager
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class MainActivity : FlutterActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var permissionResult: MethodChannel.Result? = null
+    private var runCommandAccessResult: MethodChannel.Result? = null
     private var microphonePermissionResult: MethodChannel.Result? = null
     private var backgroundPermissionResult: MethodChannel.Result? = null
     private var cameraPermissionResult: MethodChannel.Result? = null
@@ -43,14 +45,22 @@ class MainActivity : FlutterActivity() {
     private var linkDartReady = false
     private var readAloud: ReadAloudBridge? = null
     private var localPdf: LocalPdfBridge? = null
+    private var networkMonitor: NetworkMonitor? = null
+    private var projectExport: ProjectExportBridge? = null
+    private val voiceDownloadNotifications by lazy { VoiceDownloadNotifications(this) }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         TailscaleHandoff(this, flutterEngine.dartExecutor.binaryMessenger)
+        networkMonitor?.dispose()
+        networkMonitor = NetworkMonitor(this, flutterEngine.dartExecutor.binaryMessenger)
         localPdf?.dispose()
         localPdf = LocalPdfBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         readAloud?.dispose()
         readAloud = ReadAloudBridge(this, flutterEngine.dartExecutor.binaryMessenger)
+        // Export projects on This phone (oc/project_export).
+        projectExport?.dispose()
+        projectExport = ProjectExportBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         captureCodingAlertOpen(intent)
         captureSharedText(intent)
         captureLaunchAction(intent)
@@ -130,6 +140,12 @@ class MainActivity : FlutterActivity() {
                             pendingSharedText = null
                             result.success(text)
                         }
+                        "shareText" -> result.success(
+                            shareTextOut(
+                                call.argument<String>("text"),
+                                call.argument<String>("subject"),
+                            ),
+                        )
                         else -> result.notImplemented()
                     }
                 }
@@ -141,6 +157,7 @@ class MainActivity : FlutterActivity() {
                     "getSigningCertificateSha256" ->
                         result.success(signingCertificateSha256())
                     "requestRunCommandPermission" -> requestRunCommandPermission(result)
+                    "requestRunCommandAccess" -> requestRunCommandAccess(result)
                     "openTermux" -> result.success(openTermux())
                     "openAppSettings" -> {
                         startActivity(
@@ -152,10 +169,19 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
                     "runInTermux" -> runInTermux(call, result)
+                    "startSetup", "setupStatus", "cancelSetup", "completeSetupStep",
+                    "setupHostInstalled", "setupRun" -> handleTermuxSetup(call, result)
                     "openTermuxSession" -> openTermuxSession(call, result)
                     else -> result.notImplemented()
                 }
             }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, BUILTIN_LINUX_CHANNEL_NAME)
+            .setMethodCallHandler { call, result -> handleBuiltinLinux(call, result) }
+        // Why the previous process ended, and keep-alive settings (oc/lifecycle).
+        AppLifecycle.register(this, flutterEngine.dartExecutor.binaryMessenger) {
+            requestBatteryOptimizationExemption()
+        }
+        LocalTerminal.get(applicationContext).register(flutterEngine.dartExecutor.binaryMessenger)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, VOICE_CHANNEL_NAME)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -170,7 +196,7 @@ class MainActivity : FlutterActivity() {
                         )
                         result.success(null)
                     }
-                    else -> result.notImplemented()
+                    else -> if (!voiceDownloadNotifications.handle(call, result)) result.notImplemented()
                 }
             }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CAMERA_CHANNEL_NAME)
@@ -210,6 +236,22 @@ class MainActivity : FlutterActivity() {
                         requestBatteryOptimizationExemption()
                         result.success(backgroundStatus())
                     }
+                    // P0.6: lets the Notifications page send a blocked person
+                    // straight to this app's notification settings, not just
+                    // the general app-info page the other channels open.
+                    "openAppSettings" -> {
+                        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                        } else {
+                            Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:$packageName")
+                            )
+                        }
+                        startActivity(intent)
+                        result.success(null)
+                    }
                     "monitorNetworkPolicy" -> {
                         val connectivity = getSystemService(ConnectivityManager::class.java)
                         val capabilities = connectivity.getNetworkCapabilities(connectivity.activeNetwork)
@@ -233,7 +275,9 @@ class MainActivity : FlutterActivity() {
                                     profileID = call.argument<String>("profileID").orEmpty(),
                                     allowActions = call.argument<Boolean>("allowActions") ?: true,
                                     monitorToken = call.argument<String>("monitorToken").orEmpty(),
-                                    subtext = call.argument<String>("subtext").orEmpty()
+                                    subtext = call.argument<String>("subtext").orEmpty(),
+                                    title = call.argument<String>("title").orEmpty(),
+                                    text = call.argument<String>("text").orEmpty()
                                 )
                             )
                         )
@@ -297,6 +341,10 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        projectExport?.dispose()
+        projectExport = null
+        networkMonitor?.dispose()
+        networkMonitor = null
         localPdf?.dispose()
         localPdf = null
         readAloud?.dispose()
@@ -311,22 +359,316 @@ class MainActivity : FlutterActivity() {
         super.cleanUpFlutterEngine(flutterEngine)
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (projectExport?.onActivityResult(requestCode, resultCode, data) == true) return
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
     override fun onResume() {
         super.onResume()
+        BuiltinLinux.get(applicationContext).setActivityResumed(true)
         readAloud?.resume()
     }
 
     override fun onPause() {
+        BuiltinLinux.get(applicationContext).setActivityResumed(false)
         readAloud?.pause()
         super.onPause()
     }
 
     override fun onDestroy() {
+        networkMonitor?.dispose()
+        networkMonitor = null
+        voiceDownloadNotifications.dispose()
         localPdf?.dispose()
         localPdf = null
         readAloud?.dispose()
         readAloud = null
         super.onDestroy()
+    }
+
+    /**
+     * The built-in Ubuntu (BuiltinLinux.kt). Anything that waits on proot runs
+     * off the main thread and answers back on it.
+     */
+    private fun handleBuiltinLinux(call: MethodCall, result: MethodChannel.Result) {
+        val linux = BuiltinLinux.get(applicationContext)
+        val main = Handler(Looper.getMainLooper())
+        fun inBackground(work: () -> Any?) {
+            Thread {
+                try {
+                    val value = work()
+                    main.post { result.success(value) }
+                } catch (error: Throwable) {
+                    main.post {
+                        if (error is PhoneEngineNative.Failure) {
+                            result.error(error.code, "The phone engine is unavailable.", null)
+                        } else if (call.method in setOf("startPhoneEngine", "phoneEngineStatus",
+                            "phoneEngineCredentials", "stopPhoneEngine", "deletePhoneEngine",
+                            "startProtectedPhoneServer", "runPhoneEngineBoundaryProbe")) {
+                            result.error("engine_unavailable", "The phone engine is unavailable.", null)
+                        } else if (error is SetupPersistenceException) {
+                            result.error(SetupPersistenceException.CODE, null, null)
+                        } else {
+                            result.error("builtin_linux", error.message ?: error.javaClass.simpleName, null)
+                        }
+                    }
+                }
+            }.start()
+        }
+        when (call.method) {
+            "runPhoneEngineBoundaryProbe" -> inBackground { linux.runPhoneEngineBoundaryProbe() }
+            "startPhoneEngine", "phoneEngineStatus", "phoneEngineCredentials",
+            "stopPhoneEngine", "deletePhoneEngine", "startProtectedPhoneServer" -> {
+                val profile = call.argument<String>("profileId")
+                if (profile == null) {
+                    result.error("invalid_profile", "The phone engine is unavailable.", null)
+                    return
+                }
+                inBackground {
+                    when (call.method) {
+                        "startPhoneEngine" -> linux.startPhoneEngine(profile,
+                            call.argument<Int>("port") ?: 4098, call.argument<String>("notice"))
+                        "phoneEngineStatus" -> linux.phoneEngineStatus(profile)
+                        "phoneEngineCredentials" -> linux.phoneEngineCredentials(profile)
+                        "stopPhoneEngine" -> linux.stopPhoneEngine(profile)
+                        "deletePhoneEngine" -> { linux.deletePhoneEngine(profile); null }
+                        else -> {
+                            val script = call.argument<String>("script")
+                                ?: throw PhoneEngineNative.Failure("invalid_script")
+                            linux.startProtectedPhoneServer(profile, script,
+                                call.argument<Int>("port") ?: 4097)
+                            null
+                        }
+                    }
+                }
+            }
+            "status" -> inBackground {
+                mapOf(
+                    "installed" to linux.installed,
+                    "phase" to linux.phase,
+                    "message" to linux.message,
+                    "serverRunning" to linux.serverRunning,
+                    "serverRestartWanted" to linux.serverRestartWanted,
+                    "serverRecoveryGeneration" to linux.serverRecoveryGeneration,
+                    "serverPort" to linux.port,
+                    "serverUptimeMs" to linux.serverUptimeMs,
+                    "services" to linux.runningServices(),
+                    "abi" to (Build.SUPPORTED_ABIS.firstOrNull() ?: ""),
+                    "bytesUsed" to linux.bytesUsed(),
+                )
+            }
+            "installUbuntu" -> inBackground {
+                linux.installInBackground()
+                null
+            }
+            "run" -> {
+                val script = call.argument<String>("script")
+                if (script == null) {
+                    result.error("builtin_linux", "No script to run", null)
+                    return
+                }
+                val timeout = (call.argument<Int>("timeoutSeconds") ?: 600).toLong()
+                inBackground {
+                    val run = linux.run(script, timeout)
+                    mapOf("exitCode" to run.exitCode, "output" to run.output)
+                }
+            }
+            "startServer" -> {
+                val script = call.argument<String>("script")
+                val port = call.argument<Int>("port")
+                if (script == null || port == null) {
+                    result.error("builtin_linux", "A server needs a script and a port", null)
+                    return
+                }
+                inBackground {
+                    linux.startServer(script, port)
+                    null
+                }
+            }
+            "restartServer" -> {
+                val script = call.argument<String>("script")
+                val port = call.argument<Int>("port")
+                val generation = call.argument<Number>("expectedGeneration")?.toLong()
+                if (script == null || port == null || generation == null) {
+                    result.error("recovery_unavailable", "The phone server could not restart.", null)
+                    return
+                }
+                inBackground {
+                    linux.restartServer(script, port, generation)
+                    null
+                }
+            }
+            "cancelServerRecovery" -> {
+                linux.cancelServerRecovery()
+                result.success(null)
+            }
+            "confirmServerRecovery" -> {
+                val generation = call.argument<Number>("expectedGeneration")?.toLong()
+                try {
+                    check(generation != null)
+                    linux.confirmServerRecovery(generation)
+                    result.success(null)
+                } catch (_: Exception) {
+                    result.error("recovery_unavailable", "The phone server could not restart.", null)
+                }
+            }
+            "stopServer" -> {
+                linux.requestServerStop()
+                inBackground {
+                    linux.stopServer(forPhoneEngineSetup = call.argument<Boolean>("phoneEngineSetup") == true)
+                    null
+                }
+            }
+            "serverLog" -> {
+                val tail = call.argument<Int>("tailBytes") ?: 16_384
+                inBackground { linux.serverLogTail(tail) }
+            }
+            // Keeps the phone awake while a reply runs on the in-app server
+            // (bounded: every hold times out; the app renews it).
+            "holdAwakeForWork" -> {
+                val on = call.argument<Boolean>("on") == true
+                val forMs = call.argument<Number>("forMs")?.toLong() ?: 0L
+                inBackground { linux.holdAwakeForWork(on, forMs) }
+            }
+            "performance" -> inBackground { linux.performance() }
+            // Named long-running services beside the OpenCode server (the AI
+            // Team supervisor); the server itself is the service "server".
+            "startService" -> {
+                val name = call.argument<String>("name")
+                val script = call.argument<String>("script")
+                if (name == null || script == null) {
+                    result.error("builtin_linux", "A service needs a name and a script", null)
+                    return
+                }
+                val port = call.argument<Int>("port")
+                val notice = call.argument<String>("notice")
+                inBackground {
+                    linux.startService(name, script, port, notice)
+                    null
+                }
+            }
+            "stopService" -> {
+                val name = call.argument<String>("name")
+                if (name == null) {
+                    result.error("builtin_linux", "Which service?", null)
+                    return
+                }
+                if (name == BuiltinLinux.SERVER) linux.requestServerStop()
+                inBackground {
+                    linux.stopService(name)
+                    null
+                }
+            }
+            "serviceLog" -> {
+                val name = call.argument<String>("name") ?: BuiltinLinux.SERVER
+                val tail = call.argument<Int>("tailBytes") ?: 16_384
+                inBackground { linux.serviceLogTail(name, tail) }
+            }
+            "uninstall", "removeRuntime" -> inBackground {
+                linux.uninstall(
+                    alsoDeleteProjects = call.argument<Boolean>("alsoDeleteProjects") == true,
+                    confirmationName = call.argument<String>("confirmationName"),
+                )
+                null
+            }
+            "projectStorage" -> inBackground { linux.projectStorage() }
+            // The phone setup job (SetupRunner.kt). The runner is made off
+            // the main thread: its first use reads setup.json.
+            "startSetup" -> {
+                val jobId = call.argument<String>("jobId")
+                val components = call.argument<List<Map<String, Any?>>>("components")
+                if (jobId.isNullOrEmpty() || components.isNullOrEmpty()) {
+                    result.error("builtin_linux", "A setup job needs an id and components", null)
+                    return
+                }
+                val params = call.argument<Map<String, Any?>>("params")
+                val texts = call.argument<Map<String, String>>("texts").orEmpty()
+                inBackground {
+                    SetupRunner.get(applicationContext).start(
+                        jobId,
+                        components.map(::setupSpec),
+                        params?.let { org.json.JSONObject(it) },
+                        SetupRunner.Texts(
+                            channel = texts["channel"] ?: "Setup",
+                            title = texts["title"] ?: "",
+                            progress = texts["progress"] ?: "{percent}%",
+                            done = texts["done"] ?: "",
+                            stopped = texts["stopped"] ?: "",
+                        ),
+                    )
+                    null
+                }
+            }
+            "setupStatus" -> inBackground { SetupRunner.get(applicationContext).status() }
+            "cancelSetup" -> inBackground {
+                SetupRunner.get(applicationContext).cancel()
+                null
+            }
+            "completeSetupStep" -> {
+                val jobId = call.argument<String>("jobId")
+                val id = call.argument<String>("id")
+                if (jobId == null || id == null) {
+                    result.error("builtin_linux", "A step needs a job and an id", null)
+                    return
+                }
+                val ok = call.argument<Boolean>("ok") == true
+                val error = call.argument<String>("error")
+                val version = call.argument<String>("version")
+                inBackground {
+                    SetupRunner.get(applicationContext).completeStep(jobId, id, ok, error, version)
+                    null
+                }
+            }
+            // P0.8 pre-flight, low space: the device-wide Storage settings
+            // (not this app's own App Info) is where freeing space actually
+            // happens. Falls back to App Info on a ROM that hides it.
+            "openStorageSettings" -> {
+                result.success(openStorageSettingsIntent())
+            }
+            else -> result.notImplemented()
+        }
+    }
+
+    private fun openStorageSettingsIntent(): Boolean {
+        val candidates = listOf(
+            Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS),
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.parse("package:$packageName"),
+            ),
+        )
+        for (intent in candidates) {
+            try {
+                startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                return true
+            } catch (error: ActivityNotFoundException) {
+                // The next candidate.
+            } catch (error: SecurityException) {
+                // Not exported on this build; try the next one.
+            }
+        }
+        return false
+    }
+
+    private fun setupSpec(raw: Map<String, Any?>): SetupRunner.Spec {
+        fun strings(value: Any?): Map<String, String> =
+            (value as? Map<*, *>)?.entries
+                ?.filter { it.key is String && it.value is String }
+                ?.associate { it.key as String to it.value as String }
+                .orEmpty()
+        return SetupRunner.Spec(
+            id = raw["id"] as? String ?: error("A setup component needs an id"),
+            script = raw["script"] as? String,
+            native = raw["native"] == true,
+            step = raw["step"] == true,
+            weight = (raw["weight"] as? Number)?.toDouble() ?: 1.0,
+            skipped = raw["skipped"] == true,
+            version = raw["version"] as? String,
+            stage = raw["stage"] as? String,
+            labels = strings(raw["labels"]),
+            data = strings(raw["data"]),
+        )
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -408,7 +750,7 @@ class MainActivity : FlutterActivity() {
         // replayed either.
         intent.action = Intent.ACTION_MAIN
         intent.data = null
-        if (text.isBlank() || text.length > LINK_MAX_LENGTH) return false
+        if (!SessionLinkIngress.accepts(text)) return false
         pendingSessionLink = text
         return true
     }
@@ -426,6 +768,30 @@ class MainActivity : FlutterActivity() {
         if (action !in LAUNCH_ACTIONS) return false
         pendingLaunchAction = action
         return true
+    }
+
+    /// Shares [text] out through the system chooser (Report a problem's
+    /// Share). This app is left out of the targets: sharing the report to
+    /// ourselves would start a session with it. True once the chooser opened.
+    private fun shareTextOut(text: String?, subject: String?): Boolean {
+        if (text.isNullOrEmpty()) return false
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+            if (!subject.isNullOrEmpty()) putExtra(Intent.EXTRA_SUBJECT, subject)
+        }
+        val chooser = Intent.createChooser(send, null).apply {
+            putExtra(
+                Intent.EXTRA_EXCLUDE_COMPONENTS,
+                arrayOf(ComponentName(this@MainActivity, MainActivity::class.java)),
+            )
+        }
+        return try {
+            startActivity(chooser)
+            true
+        } catch (error: ActivityNotFoundException) {
+            false
+        }
     }
 
     /// Text shared from another app through the system share sheet. Only
@@ -484,11 +850,27 @@ class MainActivity : FlutterActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (voiceDownloadNotifications.onPermissionResult(requestCode, grantResults)) return
         when (requestCode) {
             RUN_COMMAND_PERMISSION_REQUEST -> {
+                val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
+                val access = runCommandAccessResult
+                runCommandAccessResult = null
+                if (access != null) {
+                    // Android answers "no" without a dialog once the person
+                    // chose "Don't allow" twice: then only Settings can.
+                    access.success(
+                        when {
+                            granted -> "granted"
+                            !shouldShowRequestPermissionRationale(RUN_COMMAND_PERMISSION) ->
+                                "permanentlyDenied"
+                            else -> "denied"
+                        }
+                    )
+                }
                 val result = permissionResult ?: return
                 permissionResult = null
-                result.success(grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED)
+                result.success(granted)
             }
             MICROPHONE_PERMISSION_REQUEST -> {
                 val result = microphonePermissionResult ?: return
@@ -694,12 +1076,84 @@ class MainActivity : FlutterActivity() {
             result.success(true)
             return
         }
-        if (permissionResult != null) {
+        if (permissionResult != null || runCommandAccessResult != null) {
             result.error("permission_in_progress", "A permission request is already open.", null)
             return
         }
         permissionResult = result
         requestPermissions(arrayOf(RUN_COMMAND_PERMISSION), RUN_COMMAND_PERMISSION_REQUEST)
+    }
+
+    /**
+     * The same request as [requestRunCommandPermission], answered in words:
+     * `granted`, `denied`, `permanentlyDenied` (Android no longer shows the
+     * dialog; the app's settings page is the only way) or `missing` (no
+     * Termux to ask for). Read-only until the person answers the dialog.
+     */
+    private fun requestRunCommandAccess(result: MethodChannel.Result) {
+        if (!isPackageInstalled(TERMUX_PACKAGE)) {
+            result.success("missing")
+            return
+        }
+        if (hasRunCommandPermission()) {
+            result.success("granted")
+            return
+        }
+        if (runCommandAccessResult != null || permissionResult != null) {
+            result.error("permission_in_progress", "A permission request is already open.", null)
+            return
+        }
+        runCommandAccessResult = result
+        requestPermissions(arrayOf(RUN_COMMAND_PERMISSION), RUN_COMMAND_PERMISSION_REQUEST)
+    }
+
+    /** V2 setup keeps the exact RUN_COMMAND permission/service boundary. */
+    private fun handleTermuxSetup(call: MethodCall, result: MethodChannel.Result) {
+        if (!hasRunCommandPermission()) {
+            result.error("permission_denied", "Termux RUN_COMMAND permission is required.", null)
+            return
+        }
+        if (!isRunCommandServiceAvailable()) {
+            result.error("service_unavailable", "Termux RunCommandService is unavailable.", null)
+            return
+        }
+        Thread({
+            try {
+                val runner = TermuxSetupRunner.get(applicationContext)
+                val answer: Any? = when (call.method) {
+                    "startSetup" -> {
+                        runner.start(
+                            call.argument<String>("jobId") ?: error("A setup job needs an id"),
+                            call.argument<List<Map<String, Any?>>>("components").orEmpty(),
+                            call.argument<Map<String, Any?>>("params").orEmpty(),
+                        )
+                        null
+                    }
+                    "setupStatus" -> runner.status()
+                    "cancelSetup" -> { runner.cancel(); null }
+                    "completeSetupStep" -> {
+                        runner.completeStep(
+                            call.argument<String>("jobId") ?: error("A step needs a job"),
+                            call.argument<String>("id") ?: error("A step needs an id"),
+                            call.argument<Boolean>("ok") == true,
+                            call.argument<String>("version"),
+                        )
+                        null
+                    }
+                    "setupHostInstalled" -> runner.installed()
+                    "setupRun" -> runner.run(
+                        call.argument<String>("script") ?: error("A check needs a script"),
+                        call.argument<Number>("timeoutMs")?.toLong() ?: 120_000,
+                    )
+                    else -> null
+                }
+                handler.post { result.success(answer) }
+            } catch (_: Exception) {
+                // No raw exception, command or provider output crosses into
+                // diagnostic copy; callers must recheck durable status.
+                handler.post { result.error("termux_setup", "Termux setup could not be confirmed. Check Termux and retry status.", null) }
+            }
+        }, "oc-termux-setup").start()
     }
 
     private fun runInTermux(call: MethodCall, result: MethodChannel.Result) {
@@ -877,6 +1331,8 @@ class MainActivity : FlutterActivity() {
 
         private const val CHANNEL_NAME = "oc/termux"
         private const val VOICE_CHANNEL_NAME = "oc/voice"
+        private const val BUILTIN_LINUX_CHANNEL_NAME =
+            "io.github.eslamasabry.opencode_mobile/builtin_linux"
         private const val CAMERA_CHANNEL_NAME = "oc/camera"
         private const val BACKGROUND_CHANNEL_NAME = "oc/background"
         private const val SHARE_CHANNEL_NAME = "oc/share"
@@ -886,13 +1342,20 @@ class MainActivity : FlutterActivity() {
         private const val LINK_SCHEME = "opencode-mobile"
         private const val LINK_HOST = "session"
         private const val TEAM_LINK_HOST = "team"
-        private const val LINK_MAX_LENGTH = 1024
         // Intent extra set by res/xml/shortcuts.xml; values are the shortcut
         // ids Dart's LaunchAction enum understands.
         const val EXTRA_LAUNCH_ACTION = "oc.shortcut"
         // The static shortcut ids plus the Quick Settings tile's action
         // (AttentionTileService.LAUNCH_ACTION_ACTIVITY).
-        private val LAUNCH_ACTIONS = setOf("connect", "new_task", "activity")
+        private val LAUNCH_ACTIONS = setOf(
+            "connect",
+            "new_task",
+            "activity",
+            // The phone setup notifications: SetupService.LAUNCH_ACTION_PROGRESS
+            // and LAUNCH_ACTION_DONE.
+            "phone_setup",
+            "phone_setup_done",
+        )
         // Intent extras set by PinnedSessionShortcuts; a pinned-session tap
         // carries exactly these two IDs and nothing else.
         const val EXTRA_LAUNCH_PROFILE = "oc.shortcut.profile"

@@ -1,0 +1,493 @@
+{
+ "area": "i1-team-core",
+ "renderedAt": "2026-09-26T02:56:06.805249Z",
+ "declaredShots": [
+  {
+   "page": "team-home",
+   "state": "loaded"
+  },
+  {
+   "page": "team-home",
+   "state": "empty"
+  },
+  {
+   "page": "team-home",
+   "state": "error"
+  },
+  {
+   "page": "team-home",
+   "state": "not-answering"
+  },
+  {
+   "page": "team-home-runs-tab",
+   "state": "search-open"
+  },
+  {
+   "page": "team-home-runs-tab",
+   "state": "filtered"
+  },
+  {
+   "page": "team-home-runs-tab",
+   "state": "done-expanded"
+  },
+  {
+   "page": "team-home-agents-tab",
+   "state": "default"
+  },
+  {
+   "page": "team-home-needs-you-tab",
+   "state": "several"
+  },
+  {
+   "page": "team-run",
+   "state": "batch"
+  },
+  {
+   "page": "team-run",
+   "state": "formula"
+  },
+  {
+   "page": "team-run",
+   "state": "missing"
+  },
+  {
+   "page": "team-run",
+   "state": "error"
+  },
+  {
+   "page": "team-run-overview-tab",
+   "state": "stop-unconfirmed"
+  },
+  {
+   "page": "team-run-overview-tab",
+   "state": "stalled"
+  },
+  {
+   "page": "team-run-overview-tab",
+   "state": "merged"
+  },
+  {
+   "page": "team-run-overview-tab",
+   "state": "details-open"
+  },
+  {
+   "page": "team-run-work-tab",
+   "state": "list"
+  },
+  {
+   "page": "team-run-work-tab",
+   "state": "graph"
+  },
+  {
+   "page": "team-run-agents-tab",
+   "state": "default"
+  },
+  {
+   "page": "team-run-timeline-tab",
+   "state": "all"
+  },
+  {
+   "page": "team-run-timeline-tab",
+   "state": "work"
+  },
+  {
+   "page": "team-run-timeline-tab",
+   "state": "empty"
+  },
+  {
+   "page": "team-run-details-sheet",
+   "state": "default"
+  },
+  {
+   "page": "team-run-cancel-confirm-sheet",
+   "state": "batch"
+  },
+  {
+   "page": "team-run-cancel-confirm-sheet",
+   "state": "formula"
+  },
+  {
+   "page": "team-agents",
+   "state": "loaded"
+  },
+  {
+   "page": "team-agents",
+   "state": "suspended-open"
+  },
+  {
+   "page": "team-agent",
+   "state": "top"
+  },
+  {
+   "page": "team-agent",
+   "state": "controls"
+  },
+  {
+   "page": "team-agent",
+   "state": "unconfirmed"
+  },
+  {
+   "page": "team-agent",
+   "state": "stopped"
+  },
+  {
+   "page": "team-agent-details-sheet",
+   "state": "default"
+  },
+  {
+   "page": "team-agent-message-sheet",
+   "state": "default"
+  },
+  {
+   "page": "team-agent-reassign-sheet",
+   "state": "default"
+  },
+  {
+   "page": "team-agent-stop-confirm-sheet",
+   "state": "default"
+  },
+  {
+   "page": "team-agent-restart-confirm-sheet",
+   "state": "default"
+  },
+  {
+   "page": "team-agent-output",
+   "state": "live"
+  },
+  {
+   "page": "team-agent-output",
+   "state": "ended"
+  },
+  {
+   "page": "team-agent-output",
+   "state": "scrolled-up"
+  },
+  {
+   "page": "embedded-team-cycle-strip",
+   "state": "host-not-started"
+  },
+  {
+   "page": "embedded-team-cycle-strip",
+   "state": "provider-limit"
+  },
+  {
+   "page": "embedded-team-cycle-strip",
+   "state": "working"
+  },
+  {
+   "page": "team-cycle-how-sheet",
+   "state": "default"
+  },
+  {
+   "page": "team-cycle-stop-confirm-sheet",
+   "state": "default"
+  },
+  {
+   "page": "embedded-team-card",
+   "state": "loaded"
+  },
+  {
+   "page": "embedded-team-card",
+   "state": "idle"
+  },
+  {
+   "page": "embedded-team-card",
+   "state": "on-phone"
+  },
+  {
+   "page": "embedded-team-card",
+   "state": "error"
+  },
+  {
+   "page": "embedded-team-receipt-chip",
+   "state": "unconfirmed"
+  },
+  {
+   "page": "embedded-team-receipt-chip",
+   "state": "not-accepted"
+  }
+ ],
+ "notRendered": {},
+ "shots": [
+  {
+   "page": "team-home",
+   "state": "loaded",
+   "image": "i1-team-core/team-home--loaded.png"
+  },
+  {
+   "page": "team-home",
+   "state": "empty",
+   "image": "i1-team-core/team-home--empty.png"
+  },
+  {
+   "page": "team-home",
+   "state": "error",
+   "image": "i1-team-core/team-home--error.png"
+  },
+  {
+   "page": "team-home",
+   "state": "not-answering",
+   "image": "i1-team-core/team-home--not-answering.png",
+   "note": "The host probe never answers; past the 8 s rule."
+  },
+  {
+   "page": "team-home-runs-tab",
+   "state": "search-open",
+   "image": "i1-team-core/team-home-runs-tab--search-open.png",
+   "note": "The redesign removed the Runs / Agents / Needs you segments: the tasks are one list on the home. Twelve tasks, so the search and the filters are offered."
+  },
+  {
+   "page": "team-home-runs-tab",
+   "state": "filtered",
+   "image": "i1-team-core/team-home-runs-tab--filtered.png",
+   "note": "Filters › Completed on the long task list."
+  },
+  {
+   "page": "team-home-runs-tab",
+   "state": "done-expanded",
+   "image": "i1-team-core/team-home-runs-tab--done-expanded.png",
+   "note": "Six tasks finished today; the rows past the first three shown."
+  },
+  {
+   "page": "team-home-agents-tab",
+   "state": "default",
+   "image": "i1-team-core/team-home-agents-tab.png",
+   "note": "The Agents segment is gone in the redesign: the home ends with one agents row that opens the Agents screen (team-agents)."
+  },
+  {
+   "page": "team-home-needs-you-tab",
+   "state": "several",
+   "image": "i1-team-core/team-home-needs-you-tab--several.png",
+   "note": "The Needs you segment is now the block at the top of the home: four open questions, one answered but unconfirmed (receipt chip)."
+  },
+  {
+   "page": "team-run",
+   "state": "batch",
+   "image": "i1-team-core/team-run--batch.png"
+  },
+  {
+   "page": "team-run",
+   "state": "formula",
+   "image": "i1-team-core/team-run--formula.png"
+  },
+  {
+   "page": "team-run",
+   "state": "missing",
+   "image": "i1-team-core/team-run--missing.png"
+  },
+  {
+   "page": "team-run",
+   "state": "error",
+   "image": "i1-team-core/team-run--error.png"
+  },
+  {
+   "page": "team-run-overview-tab",
+   "state": "stop-unconfirmed",
+   "image": "i1-team-core/team-run-overview-tab--stop-unconfirmed.png",
+   "note": "Stop run was sent; the host did not confirm (receipt chip). The Overview with a question is team-run--batch."
+  },
+  {
+   "page": "team-run-overview-tab",
+   "state": "stalled",
+   "image": "i1-team-core/team-run-overview-tab--stalled.png",
+   "note": "A step routed four minutes ago that no agent picked up."
+  },
+  {
+   "page": "team-run-overview-tab",
+   "state": "merged",
+   "image": "i1-team-core/team-run-overview-tab--merged.png",
+   "note": "A merged task, first open: its celebration."
+  },
+  {
+   "page": "team-run-overview-tab",
+   "state": "details-open",
+   "image": "i1-team-core/team-run-overview-tab--details-open.png",
+   "note": "The formula run with its Details row open."
+  },
+  {
+   "page": "team-run-work-tab",
+   "state": "list",
+   "image": "i1-team-core/team-run-work-tab--list.png"
+  },
+  {
+   "page": "team-run-work-tab",
+   "state": "graph",
+   "image": "i1-team-core/team-run-work-tab--graph.png"
+  },
+  {
+   "page": "team-run-agents-tab",
+   "state": "default",
+   "image": "i1-team-core/team-run-agents-tab.png"
+  },
+  {
+   "page": "team-run-timeline-tab",
+   "state": "all",
+   "image": "i1-team-core/team-run-timeline-tab--all.png"
+  },
+  {
+   "page": "team-run-timeline-tab",
+   "state": "work",
+   "image": "i1-team-core/team-run-timeline-tab--work.png",
+   "note": "Filtered to Work events."
+  },
+  {
+   "page": "team-run-timeline-tab",
+   "state": "empty",
+   "image": "i1-team-core/team-run-timeline-tab--empty.png"
+  },
+  {
+   "page": "team-run-details-sheet",
+   "state": "default",
+   "image": "i1-team-core/team-run-details-sheet.png"
+  },
+  {
+   "page": "team-run-cancel-confirm-sheet",
+   "state": "batch",
+   "image": "i1-team-core/team-run-cancel-confirm-sheet--batch.png"
+  },
+  {
+   "page": "team-run-cancel-confirm-sheet",
+   "state": "formula",
+   "image": "i1-team-core/team-run-cancel-confirm-sheet--formula.png"
+  },
+  {
+   "page": "team-agents",
+   "state": "loaded",
+   "image": "i1-team-core/team-agents--loaded.png"
+  },
+  {
+   "page": "team-agents",
+   "state": "suspended-open",
+   "image": "i1-team-core/team-agents--suspended-open.png"
+  },
+  {
+   "page": "team-agent",
+   "state": "top",
+   "image": "i1-team-core/team-agent--top.png"
+  },
+  {
+   "page": "team-agent",
+   "state": "controls",
+   "image": "i1-team-core/team-agent--controls.png"
+  },
+  {
+   "page": "team-agent",
+   "state": "unconfirmed",
+   "image": "i1-team-core/team-agent--unconfirmed.png",
+   "note": "After a Nudge the host did not confirm: the receipt chip."
+  },
+  {
+   "page": "team-agent",
+   "state": "stopped",
+   "image": "i1-team-core/team-agent--stopped.png",
+   "note": "A pool agent suspended on the host."
+  },
+  {
+   "page": "team-agent-details-sheet",
+   "state": "default",
+   "image": "i1-team-core/team-agent-details-sheet.png"
+  },
+  {
+   "page": "team-agent-message-sheet",
+   "state": "default",
+   "image": "i1-team-core/team-agent-message-sheet.png"
+  },
+  {
+   "page": "team-agent-reassign-sheet",
+   "state": "default",
+   "image": "i1-team-core/team-agent-reassign-sheet.png"
+  },
+  {
+   "page": "team-agent-stop-confirm-sheet",
+   "state": "default",
+   "image": "i1-team-core/team-agent-stop-confirm-sheet.png"
+  },
+  {
+   "page": "team-agent-restart-confirm-sheet",
+   "state": "default",
+   "image": "i1-team-core/team-agent-restart-confirm-sheet.png"
+  },
+  {
+   "page": "team-agent-output",
+   "state": "live",
+   "image": "i1-team-core/team-agent-output--live.png",
+   "note": "The recorded polecat transcript, following the end."
+  },
+  {
+   "page": "team-agent-output",
+   "state": "ended",
+   "image": "i1-team-core/team-agent-output--ended.png",
+   "note": "A session the host no longer serves (404)."
+  },
+  {
+   "page": "team-agent-output",
+   "state": "scrolled-up",
+   "image": "i1-team-core/team-agent-output--scrolled-up.png",
+   "note": "Dragged away from the end: Follow off, Jump to latest."
+  },
+  {
+   "page": "embedded-team-cycle-strip",
+   "state": "host-not-started",
+   "image": "i1-team-core/embedded-team-cycle-strip--host-not-started.png",
+   "note": "Host: the Work sheet over the run."
+  },
+  {
+   "page": "embedded-team-cycle-strip",
+   "state": "provider-limit",
+   "image": "i1-team-core/embedded-team-cycle-strip--provider-limit.png",
+   "note": "Host: the Work sheet over the run."
+  },
+  {
+   "page": "embedded-team-cycle-strip",
+   "state": "working",
+   "image": "i1-team-core/embedded-team-cycle-strip--working.png",
+   "note": "Host: the Work sheet over the run."
+  },
+  {
+   "page": "team-cycle-how-sheet",
+   "state": "default",
+   "image": "i1-team-core/team-cycle-how-sheet.png"
+  },
+  {
+   "page": "team-cycle-stop-confirm-sheet",
+   "state": "default",
+   "image": "i1-team-core/team-cycle-stop-confirm-sheet.png"
+  },
+  {
+   "page": "embedded-team-card",
+   "state": "loaded",
+   "error": "CensusMismatch: expected widget with key [<'team-card'>] on screen",
+   "note": "Host: the Workspace, scrolled to the AI Team card."
+  },
+  {
+   "page": "embedded-team-card",
+   "state": "idle",
+   "error": "CensusMismatch: expected widget with key [<'team-card'>] on screen",
+   "note": "Host: the Workspace. Nothing running: the idle line."
+  },
+  {
+   "page": "embedded-team-card",
+   "state": "on-phone",
+   "error": "CensusMismatch: expected widget with key [<'team-card'>] on screen",
+   "note": "Host: the Workspace. The team hosted on this phone."
+  },
+  {
+   "page": "embedded-team-card",
+   "state": "error",
+   "error": "CensusMismatch: expected widget with key [<'team-card'>] on screen",
+   "note": "Host: the Workspace. The host cannot be reached."
+  },
+  {
+   "page": "embedded-team-receipt-chip",
+   "state": "unconfirmed",
+   "image": "i1-team-core/embedded-team-receipt-chip--unconfirmed.png",
+   "note": "Host: Activity, the AI Team question row."
+  },
+  {
+   "page": "embedded-team-receipt-chip",
+   "state": "not-accepted",
+   "image": "i1-team-core/embedded-team-receipt-chip--not-accepted.png",
+   "note": "Host: Activity, the AI Team question row."
+  }
+ ]
+}

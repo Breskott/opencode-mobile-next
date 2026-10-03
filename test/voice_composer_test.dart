@@ -9,13 +9,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart' show PromptDelivery;
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/voice/controller.dart';
 import 'package:opencode_mobile/voice/model_manager.dart';
 import 'package:opencode_mobile/voice/notices.dart';
-import 'package:opencode_mobile/voice/voice_ui.dart';
+import 'package:opencode_mobile/voice/voice_ui.dart'
+    show showVoiceModelSetupSheet;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'voice_controller_test.dart';
@@ -121,10 +123,10 @@ _voice() async {
   );
 }
 
-/// UX-P0-03: voice moved behind the single leading tools button, so tests
-/// open the tools sheet and choose it. The tool runs once the sheet has
-/// finished dismissing, hence the explicit pumps rather than a settle: the
-/// voice sheet animates its own recording indicator forever.
+/// UX-P0-03: with text in the composer the mic gives way to Send, so voice
+/// input is chosen from the tools sheet. The tool runs once the sheet has
+/// finished dismissing, hence the explicit pumps rather than a settle: voice
+/// mode's level meter moves while it listens.
 Future<void> _openVoiceTool(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('composer-tools-button')));
   await tester.pumpAndSettle();
@@ -187,14 +189,14 @@ void main() {
       await _openVoiceTool(tester);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
-      expect(find.text('Audio stays on this device'), findsOneWidget);
-      expect(find.byKey(const Key('stop-voice-recording')), findsOneWidget);
-      await tester.tap(find.byKey(const Key('stop-voice-recording')));
+      // Voice is the composer's own mode: no sheet, Done in the send slot.
+      expect(find.byKey(const Key('voice-mode')), findsOneWidget);
+      final done = find.byKey(const ValueKey('kit-voice-stop-listening'));
+      expect(done, findsOneWidget);
+      await tester.tap(done);
       await tester.pump();
-      expect(voice.controller.state, VoiceComposerState.draft);
-      await tester.pump(const Duration(milliseconds: 200));
-      await tester.tap(find.byKey(const Key('insert-voice-draft')));
       await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byKey(const Key('voice-mode')), findsNothing);
 
       expect(api.promptCalls, 0);
       expect(find.text('notes.txt'), findsOneWidget);
@@ -207,8 +209,10 @@ void main() {
 
   testWidgets('model setup renders at 320dp with 2x text', (tester) async {
     final semantics = tester.ensureSemantics();
-    await tester.binding.setSurfaceSize(const Size(320, 640));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final manager = await readyVoiceModelManager();
     addTearDown(manager.dispose);
     await tester.pumpWidget(
@@ -235,12 +239,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Local voice input'), findsOneWidget);
-    expect(find.textContaining('Audio stays on this device'), findsOneWidget);
+    expect(find.text('Audio never leaves this phone.'), findsOneWidget);
     expect(find.text('High accuracy'), findsOneWidget);
     final modelTarget = find.byKey(const Key('voice-model-base'));
-    final modelNode = tester.getSemantics(modelTarget);
+    await tester.ensureVisible(modelTarget);
+    await tester.pumpAndSettle();
+    final modelNode = tester.getSemantics(
+      find.descendant(of: modelTarget, matching: find.text('Balanced')),
+    );
     expect(tester.getSize(modelTarget).height, greaterThanOrEqualTo(48));
-    expect(modelNode.flagsCollection.isButton, isTrue);
+    expect(modelNode.flagsCollection.isInMutuallyExclusiveGroup, isTrue);
+    expect(modelNode.flagsCollection.isSelected, Tristate.isTrue);
     expect(modelNode.flagsCollection.isEnabled, Tristate.isTrue);
 
     final redownloadTarget = find.byKey(const Key('voice-redownload-base'));
@@ -264,12 +273,10 @@ void main() {
           .height,
       greaterThanOrEqualTo(48),
     );
-    expect(
-      tester
-          .getSize(find.byKey(const Key('voice-model-primary-action')))
-          .height,
-      greaterThanOrEqualTo(48),
-    );
+    // The model is on the phone and in use: no primary, the secondary is
+    // Done.
+    expect(find.byKey(const Key('voice-model-primary-action')), findsNothing);
+    expect(find.text('Done'), findsOneWidget);
     expect(tester.takeException(), isNull);
     semantics.dispose();
   });
@@ -313,49 +320,50 @@ void main() {
     },
   );
 
-  testWidgets('voice draft actions stack at 320dp with 2x text', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(320, 640));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final voice = await _voice();
-    addTearDown(voice.controller.dispose);
-    await tester.pumpWidget(
-      MaterialApp(
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: const TextScaler.linear(2)),
-          child: child!,
-        ),
-        home: Builder(
-          builder: (context) => Scaffold(
-            body: FilledButton(
-              onPressed: () =>
-                  showVoiceComposerSheet(context, voice.controller),
-              child: const Text('Open voice'),
+  testWidgets(
+    'voice mode keeps Done and Leave reachable at 320dp with 2x text',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final api = _VoiceChatApi();
+      final connection = await _connection(api);
+      final voice = await _voice();
+      addTearDown(connection.dispose);
+      addTearDown(voice.controller.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [connProvider.overrideWithValue(connection)],
+          child: MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!,
+            ),
+            home: ChatScreen(
+              sessionID: 'session-1',
+              voiceController: voice.controller,
             ),
           ),
         ),
-      ),
-    );
-    await tester.tap(find.text('Open voice'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.tap(find.byKey(const Key('stop-voice-recording')));
-    await tester.pump();
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('composer-voice-button')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
-    final cancel = find.byKey(const Key('voice-composer-cancel'));
-    final insert = find.byKey(const Key('insert-voice-draft'));
-    expect(tester.getSize(cancel).height, greaterThanOrEqualTo(48));
-    expect(tester.getSize(insert).height, greaterThanOrEqualTo(48));
-    expect(tester.getTopLeft(cancel).dx, tester.getTopLeft(insert).dx);
-    expect(
-      tester.getTopLeft(insert).dy,
-      greaterThan(tester.getTopLeft(cancel).dy),
-    );
-    expect(tester.takeException(), isNull);
-  });
+      final done = find.byKey(const ValueKey('kit-voice-stop-listening'));
+      final leave = find.byTooltip('Leave voice mode');
+      for (final action in [done, leave]) {
+        expect(tester.getSize(action).height, greaterThanOrEqualTo(48));
+        expect(tester.getRect(action).left, greaterThanOrEqualTo(0));
+        expect(tester.getRect(action).right, lessThanOrEqualTo(320));
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('app background cancels an active microphone session', (
     tester,
@@ -382,7 +390,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(voice.controller.state, VoiceComposerState.listening);
-    expect(find.byKey(const Key('stop-voice-recording')), findsOneWidget);
+    expect(find.byKey(const Key('voice-mode')), findsOneWidget);
     final cancellationsBeforePause = voice.recorder.cancelCalls;
     final pausing = voice.controller.handleLifecyclePause();
     await tester.pump(const Duration(seconds: 1));
@@ -392,21 +400,38 @@ void main() {
 
     expect(voice.recorder.cancelCalls, greaterThan(cancellationsBeforePause));
     expect(voice.controller.state, VoiceComposerState.idle);
+    // A cancelled recording leaves voice mode; the composer is for typing.
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('voice-mode')), findsNothing);
   });
 
   testWidgets('exported voice notices view renders bundled license texts', (
     tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: VoiceNoticesView())),
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: VoiceNoticesView()),
+      ),
     );
     await tester.pumpAndSettle();
 
     expect(find.textContaining('ONNX Runtime'), findsOneWidget);
+    await tester.tap(find.text('ONNX Runtime'));
+    await tester.pumpAndSettle();
     expect(
       find.textContaining('Copyright (c) Microsoft Corporation'),
       findsOneWidget,
     );
+    Navigator.of(
+      tester.element(
+        find.textContaining('Copyright (c) Microsoft Corporation'),
+      ),
+    ).pop();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Whisper speech models'));
+    await tester.pumpAndSettle();
     expect(find.textContaining('Copyright (c) 2022 OpenAI'), findsOneWidget);
   });
 }

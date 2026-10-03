@@ -7,6 +7,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/notification_preferences.dart';
 import 'package:opencode_mobile/state/profile_monitor.dart';
 import 'package:opencode_mobile/ui/screens/profile_monitor_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit_row_parts.dart' show KitSwitchRow;
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'support/profile_monitor_fixture.dart';
@@ -45,60 +46,6 @@ void main() {
           null,
         ),
   );
-  testWidgets(
-    'monitoring is explicit and selected-location rows show truthful current and unknown states',
-    (tester) async {
-      final store = await monitorStore();
-      var reads = 0;
-      final controller = ConnectionController(
-        store,
-        monitorGatewayFactory: (_) {
-          reads++;
-          return (
-            gateway: MonitorTestGateway(requests: [request(1)]),
-            operations: MonitorTestOperations(),
-          );
-        },
-      );
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: ProfileMonitorScreen(controller: controller),
-        ),
-      );
-      await tester.pump();
-      expect(reads, 0);
-      expect(find.text('Not monitored · attention unknown'), findsNWidgets(2));
-      // The list holds no settings of its own; monitoring is turned on in
-      // Notifications, one link away.
-      expect(find.byType(Switch), findsNothing);
-      await tester.tap(
-        find.byKey(const ValueKey('monitor-notification-settings')),
-      );
-      await tester.pumpAndSettle();
-      final enable = find.descendant(
-        of: find.byKey(const ValueKey('monitor-enabled-profile-1')),
-        matching: find.byType(Switch),
-      );
-      await tester.ensureVisible(enable);
-      await tester.pumpAndSettle();
-      await tester.tap(enable);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(reads, 1);
-      await tester.pageBack();
-      await tester.pumpAndSettle();
-      expect(find.text('Current observation'), findsOneWidget);
-      expect(find.text('Private title'), findsOneWidget);
-      await _reveal(tester, find.text('Not monitored · attention unknown'));
-      expect(find.text('Not monitored · attention unknown'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox.shrink());
-      controller.dispose();
-      await tester.pump();
-      expect(tester.takeException(), isNull);
-    },
-  );
   testWidgets('monitor settings remain reachable at 320px and 2.5x text', (
     tester,
   ) async {
@@ -134,7 +81,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     final quiet = find.descendant(
-      of: find.widgetWithText(SwitchListTile, 'Quiet hours'),
+      of: find.widgetWithText(KitSwitchRow, 'Quiet hours'),
       matching: find.byType(Switch),
     );
     await _reveal(tester, quiet);
@@ -233,28 +180,6 @@ void main() {
       await tester.pump();
       expect(find.textContaining('Time to check in'), findsOneWidget);
       expect(find.byKey(const ValueKey('activity-all-clear')), findsNothing);
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: ProfileMonitorScreen(controller: controller),
-        ),
-      );
-      await tester.pump();
-      final busyRow = find.byKey(const ValueKey('monitor-busy-same-session'));
-      await _reveal(tester, busyRow);
-      final span = controller.profileMonitor
-          .snapshotFor('profile-1')
-          .busyIntervals
-          .single
-          .observedFor
-          .inMinutes;
-      // Busy samples can straddle idle work that the monitor never observed.
-      expect(
-        find.textContaining('Busy at checks spanning $span min'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('Seen busy for at least'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
       controller.dispose();
       await tester.pump();

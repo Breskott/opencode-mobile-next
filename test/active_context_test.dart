@@ -155,45 +155,49 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('phone context preview', (tester) async {
-    final (c, repo) = await _setup();
-    repo.rows = const [
-      ActiveContextMessage(
-        id: 'msg_01',
-        type: 'compaction',
-        content: [
-          ContextContent(
-            ContextContentKind.text,
-            'The conversation so far: improve the composer, keep drafts recoverable, and verify the Android build.',
-          ),
-        ],
-      ),
-      ActiveContextMessage(
-        id: 'msg_02',
-        type: 'user',
-        content: [
-          ContextContent(
-            ContextContentKind.text,
-            'Review the composer and explain what changed.',
-          ),
-        ],
-      ),
-      ActiveContextMessage(
-        id: 'msg_03',
-        type: 'assistant',
-        content: [
-          ContextContent(
-            ContextContentKind.toolOutput,
-            'Read chat_screen.dart and checked the draft recovery flow.',
-            name: 'read',
-          ),
-        ],
-      ),
-    ];
-    await _open(tester, c);
-    await _capture(tester, 'phone');
-    await tester.pumpWidget(const SizedBox());
-  }, skip: Platform.environment['OC_CONTEXT_PREVIEW'] == null);
+  testWidgets(
+    'phone context preview',
+    (tester) async {
+      final (c, repo) = await _setup();
+      repo.rows = const [
+        ActiveContextMessage(
+          id: 'msg_01',
+          type: 'compaction',
+          content: [
+            ContextContent(
+              ContextContentKind.text,
+              'The conversation so far: improve the composer, keep drafts recoverable, and verify the Android build.',
+            ),
+          ],
+        ),
+        ActiveContextMessage(
+          id: 'msg_02',
+          type: 'user',
+          content: [
+            ContextContent(
+              ContextContentKind.text,
+              'Review the composer and explain what changed.',
+            ),
+          ],
+        ),
+        ActiveContextMessage(
+          id: 'msg_03',
+          type: 'assistant',
+          content: [
+            ContextContent(
+              ContextContentKind.toolOutput,
+              'Read chat_screen.dart and checked the draft recovery flow.',
+              name: 'read',
+            ),
+          ],
+        ),
+      ];
+      await _open(tester, c);
+      await _capture(tester, 'phone');
+      await tester.pumpWidget(const SizedBox());
+    },
+    skip: Platform.environment['OC_CONTEXT_PREVIEW'] == null,
+  );
 
   test(
     'context GET uses session identity and authentication, retaining more than 5000 messages',
@@ -424,17 +428,20 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('active-context-msg_01')), findsNothing);
-      expect(find.text('2 of 3 messages'), findsOneWidget);
-      await tester.ensureVisible(find.text('Assistant · 1'));
+      expect(find.text('2 results'), findsOneWidget);
+      // The kind filter lives in the search field's Filter menu and shows as
+      // a removable chip in words once chosen.
+      await tester.tap(find.byTooltip('Filter'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Assistant · 1'));
       await tester.pumpAndSettle();
-      expect(find.text('1 of 3 messages'), findsOneWidget);
+      expect(find.text('1 result'), findsOneWidget);
+      expect(find.byKey(const ValueKey('active-context-msg_02')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('active-context-msg_03')));
       await tester.pumpAndSettle();
-      expect(
-        find.widgetWithText(SelectableText, 'Found مرحبا in the document.'),
-        findsOneWidget,
-      );
+      expect(find.text('Found مرحبا in the document.'), findsOneWidget);
+      // The message id sits in Details, not above the parts.
+      expect(find.text('msg_03'), findsNothing);
       String? copied;
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
@@ -451,15 +458,12 @@ void main() {
           null,
         ),
       );
-      await tester.tap(find.byTooltip('Copy'));
+      await tester.tap(find.byTooltip('Copy Tool output · read'));
       expect(copied, 'Found مرحبا in the document.');
       c.history++;
       c.notifyListeners();
       await tester.pumpAndSettle();
-      expect(
-        find.widgetWithText(SelectableText, 'Found مرحبا in the document.'),
-        findsNothing,
-      );
+      expect(find.text('Found مرحبا in the document.'), findsNothing);
       expect(find.textContaining('Reopen this inspector'), findsOneWidget);
     },
   );
@@ -555,13 +559,19 @@ void main() {
         stagedRevert: SessionRevert(messageID: 'msg_02'),
       );
       await _open(tester, c);
-      expect(find.text('1 of 1 messages'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('active-context-msg_01')),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('active-context-msg_02')), findsNothing);
       c.sessionsById['ses_test'] = Session(id: 'ses_test');
       c.history++;
       c.notifyListeners();
       await tester.pumpAndSettle();
-      expect(find.text('3 of 3 messages'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('active-context-msg_03')),
+        findsOneWidget,
+      );
       expect(repo.calls, 2);
     },
   );

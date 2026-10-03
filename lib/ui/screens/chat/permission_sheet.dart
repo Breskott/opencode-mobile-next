@@ -1,20 +1,19 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 
-import '../../../l10n/app_localizations.dart';
-
-import 'package:flutter/services.dart';
-
 import '../../../api/models.dart';
+import '../../../domain/server_gateway.dart' show PendingQuestion;
+import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
+import '../../app_iconography.dart';
+import '../../kit/kit.dart';
 import '../../permission_presentation.dart';
-import '../../app_theme.dart';
-import '../../widgets/code_highlight.dart';
-import '../../widgets/diff_view.dart';
+import '../../widgets/product_states.dart' show productErrorText;
 import '../../widgets/request_routes.dart';
 
-AppLocalizations _chatL10n(BuildContext context) =>
+AppLocalizations _l10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
 /// The glyph identifies the requested action rather than a generic admin role.
@@ -28,15 +27,280 @@ IconData permissionActionIcon(String permission) =>
       _ => AppIconography.permissions,
     };
 
-/// Presents the OpenCode 2 permission prompt as a modal bottom sheet
-/// (design doc §3). One component serves three entry points: the chat
-/// review card, the Requests tile, and notification taps.
+/// When a request card first saw its request: the start of its age words
+/// ("waiting 4 min"). Read from the app's clock so tests can pin it.
+DateTime requestSeenNow() => clock.now();
+
+/// One answer this phone sent for a permission request and has not yet
+/// seen land (STATE-10: "Sent" is never "Done").
+@immutable
+class PermissionAnswerState {
+  const PermissionAnswerState({
+    required this.reply,
+    required this.since,
+    this.message,
+    this.error,
+  });
+
+  /// `once`, `reject` or `always`.
+  final String reply;
+  final DateTime since;
+
+  /// The note sent with a rejection.
+  final String? message;
+
+  /// The server's refusal in words; null while the answer is on its way.
+  final String? error;
+
+  bool get failed => error != null;
+
+  PermissionAnswerState refused(String reason) => PermissionAnswerState(
+    reply: reply,
+    since: since,
+    message: message,
+    error: reason,
+  );
+}
+
+/// The answers in flight for one connection's permission requests, shared by
+/// the card in the conversation and the details sheet, so an answer given in
+/// either shows its receipt on the card where the request lives (K2 §4.8).
+class PermissionAnswers extends ChangeNotifier {
+  PermissionAnswers._();
+
+  static final _byController = Expando<PermissionAnswers>('permission-answers');
+
+  /// The ledger of [controller]'s requests.
+  static PermissionAnswers of(ConnectionController controller) =>
+      _byController[controller] ??= PermissionAnswers._();
+
+  final Map<String, PermissionAnswerState> _answers = {};
+
+  /// What was sent for [requestID], or null when nothing is in flight and
+  /// nothing was refused.
+  PermissionAnswerState? answerFor(String requestID) => _answers[requestID];
+
+  void _set(String requestID, PermissionAnswerState? state) {
+    if (state == null) {
+      if (_answers.remove(requestID) == null) return;
+    } else {
+      _answers[requestID] = state;
+    }
+    notifyListeners();
+  }
+}
+
+/// Sends [reply] for [permission] and records it in [PermissionAnswers]:
+/// sending while in flight, cleared once the server took it (the request
+/// then leaves the pending list and its card goes), refused with the
+/// server's words otherwise. A [note] draft is cleared only once the answer
+/// is confirmed (DATA-1).
+Future<void> answerPermissionRequest(
+  ConnectionController controller,
+  PermissionRequest permission,
+  String reply, {
+  String? message,
+  KitDraft? note,
+}) async {
+  final request = controller.permissionIdentity(permission);
+  if (!controller.isRequestPending(request)) return;
+  final answers = PermissionAnswers.of(controller);
+  final sent = PermissionAnswerState(
+    reply: reply,
+    since: clock.now(),
+    message: message,
+  );
+  answers._set(permission.id, sent);
+  try {
+    await controller.answerPermission(
+      permission.id,
+      reply,
+      message: message,
+      expectedRequest: request,
+    );
+    answers._set(permission.id, null);
+    unawaited(note?.clear());
+  } catch (error) {
+    if (!controller.isRequestPending(request)) {
+      answers._set(permission.id, null);
+      return;
+    }
+    answers._set(permission.id, sent.refused(productErrorText(error)));
+  }
+}
+
+/// The request's command, file or patterns in one line for the card: the
+/// full value lives in the details sheet.
+String? permissionSummary(PermissionRequest permission) =>
+    permission.commandPreview ??
+    permission.filePath ??
+    (permission.patterns.isEmpty ? null : permission.patterns.join(' · '));
+
+String _answerWords(AppLocalizations l10n, String reply) => switch (reply) {
+  'reject' => l10n.kitRequestReject,
+  'always' => l10n.chatUiAlwaysAllow,
+  _ => l10n.kitRequestAllowOnce,
+};
+
+/// The one card for a permission request ([KitRequestCard.ask]): the ask in
+/// plain words, the command or file, and Allow once / Reject in place.
+/// [answered] turns it into the sending line with its receipt, or puts a
+/// refusal above the answers again.
+KitRequestCard permissionRequestCard(
+  BuildContext context, {
+  required PermissionRequest permission,
+  required String who,
+  required VoidCallback? onAllow,
+  required VoidCallback? onReject,
+  String? disabledReason,
+  VoidCallback? onDetails,
+  PermissionAnswerState? answered,
+  VoidCallback? onRetry,
+  String? detail,
+  String? ifIgnored,
+  DateTime? since,
+  Key? key,
+  Key? detailsKey,
+}) {
+  final l10n = _l10n(context);
+  final title = permissionRequestTitle(permission.permission, l10n: l10n);
+  final sending = answered != null && !answered.failed;
+  return KitRequestCard.ask(
+    key: key,
+    kind: KitRequestKind.permission,
+    title: title,
+    who: who,
+    reason: KitNeedsYouReason.decision,
+    ifIgnored: ifIgnored ?? l10n.chatRequestIfIgnored,
+    announcement: l10n.chatUiPermissionNeeded(title),
+    icon: permissionActionIcon(permission.permission),
+    detail: detail ?? permission.message,
+    summary: permissionSummary(permission),
+    since: since,
+    phase: sending ? KitRequestPhase.sending : KitRequestPhase.waiting,
+    answer: answered == null ? null : _answerWords(l10n, answered.reply),
+    receipt: answered == null
+        ? null
+        : answered.failed
+        ? KitReceipt(state: KitReceiptState.refused, reason: answered.error)
+        : KitReceipt(
+            state: KitReceiptState.sending,
+            since: answered.since,
+            onRetry: onRetry,
+          ),
+    answers: KitRequestDecide(
+      onAllow: onAllow,
+      onReject: onReject,
+      disabledReason: disabledReason,
+      allowKey: const Key('permission-card-allow'),
+      rejectKey: const Key('permission-card-reject'),
+    ),
+    onDetails: onDetails,
+    detailsKey: detailsKey,
+  );
+}
+
+const _diffPermissions = {'edit', 'write', 'multiedit', 'patch'};
+const _diffMetadataKeys = ['diff', 'patch', 'preview'];
+
+/// A unified diff the server attached to an edit/write ask, from the common
+/// metadata spellings; null for other tools or when absent.
+String? _diffPreview(PermissionRequest permission) {
+  if (!_diffPermissions.contains(permission.permission.toLowerCase())) {
+    return null;
+  }
+  for (final key in _diffMetadataKeys) {
+    final value = permission.metadata[key];
+    if (value is String && value.trim().isNotEmpty) return value;
+  }
+  return null;
+}
+
+/// Opens the details of a permission [card] in the one request sheet
+/// ([showKitRequestSheet]): the whole command, file or pattern list, the
+/// change as a read-only diff, "Always allow" as a risky switch that states
+/// its scope first (it replaces the old "Confirm broader access" dialog),
+/// the note sent with Reject, and the tool's technical names last under
+/// Details. Answering here calls the card's own answers and closes.
+Future<KitRequestSheetOutcome> showPermissionDetails(
+  BuildContext context, {
+  required PermissionRequest permission,
+  required KitRequestCard card,
+  required RequestRoutes routes,
+  ValueChanged<KitUntil>? onAllowAlways,
+  KitRequestMessage? message,
+  String? contextLabel,
+}) {
+  final l10n = _l10n(context);
+  final diff = _diffPreview(permission);
+  final path = permission.filePath;
+  final command = permission.commandPreview;
+  final shown = {?command, ?path};
+  final others = permission.patterns
+      .where((pattern) => !shown.contains(pattern))
+      .toList();
+  final fullText =
+      command ??
+      path ??
+      (others.isEmpty ? l10n.chatUiAllMatchingRequests : others.join('\n'));
+  final broader = permission.always.isNotEmpty
+      ? permission.always
+      : permission.patterns;
+  return showKitRequestSheet(
+    context,
+    card: card,
+    routes: routes,
+    fullText: fullText,
+    change: diff == null
+        ? null
+        : KitDiffView(
+            files: [
+              KitDiffFile.fromPatch(path ?? l10n.chatUiPendingChange, diff),
+            ],
+          ),
+    alwaysAllow: onAllowAlways == null
+        ? null
+        : KitRequestAlwaysAllow(
+            title: l10n.chatRequestAlwaysTitle,
+            scope: l10n.chatRequestAlwaysScope(
+              broader.isEmpty
+                  ? l10n.chatUiAllMatchingRequests
+                  : KitBidi.ltr(broader.join(', ')),
+              contextLabel ?? l10n.chatUiInThisChat,
+            ),
+            onLabel: l10n.chatRequestAlwaysOn,
+            until: const [KitUntil.off],
+            onAllowAlways: onAllowAlways,
+            switchKey: const Key('permission-allow-always'),
+          ),
+    message: message,
+    details: [
+      if (permission.permission.isNotEmpty)
+        KitTechnicalValue(l10n.chatRequestDetailTool, permission.permission),
+      if (command != null && others.isNotEmpty)
+        KitTechnicalValue(l10n.chatRequestDetailPatterns, others.join('\n')),
+      if (permission.always.isNotEmpty)
+        KitTechnicalValue(
+          l10n.chatUiAlwaysAllowWouldAlsoCover,
+          permission.always.join('\n'),
+        ),
+    ],
+    sheetKey: const Key('permission-sheet'),
+  );
+}
+
+/// Presents a permission request's details (design doc §3) from any entry
+/// point: the chat card's Details, the Requests tile, notification taps.
 ///
-/// Replies retain the request's scope through transport recovery. Failures
-/// keep the sheet open with the error inline while that request is pending.
-/// v2 supports a rejection message; v1 Reject submits directly. [onShowSource], when
-/// given for a request carrying a tool source, renders the "From tool call"
-/// chip; it runs after the sheet dismisses itself.
+/// Every answer goes through [answerPermissionRequest], so its receipt shows
+/// on the conversation's card (Sending, Not confirmed yet, Not accepted);
+/// the sheet itself closes on answer and closes itself when the request is
+/// answered elsewhere. OpenCode 2 takes a note with Reject (kept as a draft
+/// until the answer lands); OpenCode 1 rejects without one. "Always allow"
+/// is offered only where the server keeps saved grants.
+///
+/// [onShowSource] is kept for its callers and no longer drawn: the card
+/// sits in the conversation under the tool call it asks about.
 Future<void> showPermissionSheet(
   BuildContext context, {
   required PermissionRequest permission,
@@ -46,50 +310,100 @@ Future<void> showPermissionSheet(
 }) async {
   final request = controller.permissionIdentity(permission);
   if (!controller.isRequestPending(request)) return;
+  final l10n = _l10n(context);
   final routes = RequestRoutes(
     changes: controller,
     isPending: () => controller.isRequestPending(request),
   );
+  final profileId = controller.profile?.id ?? controller.store.activeId ?? '';
+  final noteText = TextEditingController();
+  final note =
+      profileId.isEmpty ||
+          !controller.permissionSupportsRejectMessage(permission.id)
+      ? null
+      : KitDraft(
+          target: 'request.${permission.id}.note',
+          profileId: profileId,
+          controller: noteText,
+        );
+  void answer(String reply) {
+    final text = noteText.text.trim();
+    unawaited(
+      answerPermissionRequest(
+        controller,
+        permission,
+        reply,
+        message: reply == 'reject' && text.isNotEmpty ? text : null,
+        note: reply == 'reject' ? note : null,
+      ),
+    );
+  }
+
+  final answered = PermissionAnswers.of(controller).answerFor(permission.id);
+  final card = permissionRequestCard(
+    context,
+    permission: permission,
+    who: contextLabel ?? l10n.chatRequestWho,
+    onAllow: () => answer('once'),
+    onReject: () => answer('reject'),
+    answered: answered != null && answered.failed ? answered : null,
+  );
   try {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      clipBehavior: Clip.antiAlias,
-      constraints: const BoxConstraints(maxWidth: 720),
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
-        ),
-        child: PermissionSheet(
-          permission: permission,
-          allowDeviceActions: !controller.isIsolated,
-          routes: routes,
-          onReply: (reply, {message}) => controller.answerPermission(
-            permission.id,
-            reply,
-            message: message,
-            expectedRequest: request,
-          ),
-          supportsRejectMessage: controller.permissionSupportsRejectMessage(
-            permission.id,
-          ),
-          allowPersistentPermission:
-              controller.capabilities.persistentPermissionGrants,
-          contextLabel: contextLabel ?? _chatL10n(context).chatUiInThisChat,
-          onShowSource: onShowSource,
-        ),
-      ),
+    await showPermissionDetails(
+      context,
+      permission: permission,
+      card: card,
+      routes: routes,
+      contextLabel: contextLabel,
+      onAllowAlways: controller.capabilities.persistentPermissionGrants
+          ? (_) => answer('always')
+          : null,
+      message: note == null
+          ? null
+          : KitRequestMessage(
+              fieldLabel: l10n.chatUiTellTheAgentWhyOrWhatTo,
+              draft: note,
+              fieldKey: const Key('permission-reject-message'),
+            ),
+    );
+  } finally {
+    routes.close();
+    // The frame hands the controller back after its exit; a note being
+    // typed is already saved in its draft.
+    WidgetsBinding.instance.addPostFrameCallback((_) => noteText.dispose());
+  }
+}
+
+/// Opens the details of a one-prompt question [card] in the one request
+/// sheet: the question as sent and every option. It closes itself when the
+/// question is answered elsewhere.
+Future<KitRequestSheetOutcome> showQuestionDetails(
+  BuildContext context, {
+  required ConnectionController controller,
+  required PendingQuestion question,
+  required KitRequestCard card,
+}) async {
+  final routes = RequestRoutes(
+    changes: controller,
+    isPending: () => controller.questions.containsKey(question.id),
+  );
+  try {
+    return await showKitRequestSheet(
+      context,
+      card: card,
+      routes: routes,
+      fullText: question.prompts.firstOrNull?.question,
+      sheetKey: const Key('question-sheet'),
     );
   } finally {
     routes.close();
   }
 }
 
+/// Retired by chat-5: use [showPermissionSheet], or [permissionRequestCard]
+/// in a conversation. Kept working (KIT-43): it now draws the request as the
+/// one card, with Allow once and Reject in place and Details opening the
+/// request sheet, and replies through [onReply].
 class PermissionSheet extends StatefulWidget {
   const PermissionSheet({
     super.key,
@@ -105,11 +419,18 @@ class PermissionSheet extends StatefulWidget {
 
   final PermissionRequest permission;
   final Future<void> Function(String reply, {String? message}) onReply;
+
+  /// OpenCode 2 takes a note with Reject; without a profile to keep it as a
+  /// draft, this wrapper rejects without one.
   final bool supportsRejectMessage;
   final bool allowPersistentPermission;
   final String? contextLabel;
+
+  /// Kept for its callers; no longer drawn.
   final VoidCallback? onShowSource;
   final RequestRoutes? routes;
+
+  /// Kept for its callers; copying is the kit's own (KIT-23).
   final bool allowDeviceActions;
 
   @override
@@ -117,658 +438,74 @@ class PermissionSheet extends StatefulWidget {
 }
 
 class _PermissionSheetState extends State<PermissionSheet> {
-  late final _routes = widget.routes ?? RequestRoutes();
-  final _rejectMessage = TextEditingController();
-  bool _replying = false;
-  String? _pendingReply;
-  bool _rejecting = false;
-  Object? _error;
+  late final RequestRoutes _routes = widget.routes ?? RequestRoutes();
+  late final DateTime _seen = requestSeenNow();
+  PermissionAnswerState? _answered;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // The host that shows this wrapper goes once the request is answered.
     _routes.own(ModalRoute.of(context));
   }
 
   @override
   void dispose() {
     _routes.close();
-    _rejectMessage.dispose();
     super.dispose();
   }
 
-  Future<void> _reply(String reply, {String? message}) async {
+  Future<void> _reply(String reply) async {
     if (reply == 'always' && !widget.allowPersistentPermission) return;
-    if (_replying || !_routes.isPending) return;
-    setState(() {
-      _replying = true;
-      _pendingReply = reply;
-      _error = null;
-    });
+    if (!_routes.isPending || (_answered != null && !_answered!.failed)) {
+      return;
+    }
+    final sent = PermissionAnswerState(reply: reply, since: clock.now());
+    setState(() => _answered = sent);
     try {
-      if (reply == 'always' && !await _confirmAlways()) return;
-      if (!mounted || !_routes.isPending) return;
-      await widget.onReply(reply, message: message);
+      await widget.onReply(reply);
+      if (!mounted) return;
       _routes.close();
     } catch (error) {
       if (!mounted || !_routes.isPending) return;
-      setState(() {
-        _replying = false;
-        _error = error;
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _replying = false;
-          _pendingReply = null;
-        });
-      }
+      setState(() => _answered = sent.refused(productErrorText(error)));
     }
   }
 
-  void _startReject() {
-    if (_replying || !_routes.isPending) return;
-    if (!widget.supportsRejectMessage) {
-      // v1 reply shape has no message field: Reject submits directly.
-      _reply('reject');
-      return;
-    }
-    setState(() => _rejecting = true);
-  }
-
-  void _sendRejection() {
-    final text = _rejectMessage.text.trim();
-    // An empty reason is valid: it submits a plain rejection.
-    _reply('reject', message: text.isEmpty ? null : text);
-  }
-
-  /// The existing two-step broader-access confirmation, copy unchanged,
-  /// plus the pointer to Settings → Saved permissions.
-  Future<bool> _confirmAlways() async {
-    final permission = widget.permission;
-    final broader = permission.always.isNotEmpty
-        ? permission.always
-        : permission.patterns;
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) {
-            _routes.own(ModalRoute.of(context));
-            return AlertDialog(
-              scrollable: true,
-              icon: const Icon(AppIconography.warning),
-              title: Text(_chatL10n(context).chatUiConfirmBroaderAccess),
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _chatL10n(context).chatUiPermissionContext(
-                      permission.permission,
-                      (widget.contextLabel ??
-                          _chatL10n(context).chatUiInThisChat),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(_chatL10n(context).chatUiAlwaysAllowPatterns),
-                  const SizedBox(height: 4),
-                  SelectableText(
-                    broader.isEmpty
-                        ? _chatL10n(context).chatUiAllMatchingRequests
-                        : broader.join('\n'),
-                    style: const TextStyle(fontFamily: AppTheme.monoFamily),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _chatL10n(
-                      context,
-                    ).chatUiConsequenceFutureMatchingActionsCanRunWithout,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _chatL10n(
-                      context,
-                    ).chatUiManageSavedGrantsInSettingsSavedPermissions,
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(_chatL10n(context).chatUiKeepAsking),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: Text(_chatL10n(context).chatUiConfirmAlwaysAllow),
-                ),
-              ],
-            );
-          },
-        ) ??
-        false;
-  }
-
-  static const _diffPermissions = {'edit', 'write', 'multiedit', 'patch'};
-  static const _diffMetadataKeys = ['diff', 'patch', 'preview'];
-
-  /// A unified diff the server attached to an edit/write ask, from the
-  /// common metadata spellings; null for other tools or when absent.
-  String? get _diffPreview {
-    final permission = widget.permission;
-    if (!_diffPermissions.contains(permission.permission.toLowerCase())) {
-      return null;
-    }
-    for (final key in _diffMetadataKeys) {
-      final value = permission.metadata[key];
-      if (value is String && value.trim().isNotEmpty) return value;
-    }
-    return null;
-  }
-
-  FileDiff _pendingDiff(String diff) => FileDiff(
-    file: widget.permission.filePath ?? _chatL10n(context).chatUiPendingChange,
-    patch: diff,
+  KitRequestCard _card(BuildContext context) => permissionRequestCard(
+    context,
+    permission: widget.permission,
+    who: widget.contextLabel ?? _l10n(context).chatRequestWho,
+    since: _seen,
+    answered: _answered,
+    onAllow: () => unawaited(_reply('once')),
+    onReject: () => unawaited(_reply('reject')),
+    onRetry: () {
+      final reply = _answered?.reply;
+      if (reply == null) return;
+      setState(() => _answered = null);
+      unawaited(_reply(reply));
+    },
+    onDetails: _openDetails,
+    detailsKey: const Key('permission-card-review'),
   );
 
-  void _openFullDiff(String diff) {
+  void _openDetails() {
     if (!_routes.isPending) return;
-    final route = MaterialPageRoute<void>(
-      fullscreenDialog: true,
-      builder: (_) => DiffView.single(
-        _pendingDiff(diff),
-        allowCopy: widget.allowDeviceActions,
+    unawaited(
+      showPermissionDetails(
+        context,
+        permission: widget.permission,
+        card: _card(context),
+        routes: _routes,
+        contextLabel: widget.contextLabel,
+        onAllowAlways: widget.allowPersistentPermission
+            ? (_) => unawaited(_reply('always'))
+            : null,
       ),
     );
-    _routes.own(route);
-    Navigator.of(context).push(route);
   }
-
-  IconData get _resourceIcon => switch (widget.permission.permission) {
-    'bash' => AppIconography.terminal,
-    'read' || 'edit' => AppIconography.fileText,
-    'webfetch' => AppIconography.globe,
-    'external_directory' => AppIconography.folderOpen,
-    _ => AppIconography.permissions,
-  };
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final permission = widget.permission;
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final message = permission.message;
-    final contextLine = message == null || message.isEmpty
-        ? _chatL10n(context).chatUiPermissionRequested(
-            permission.permission.isEmpty
-                ? _chatL10n(context).chatUiPermissionFallback
-                : permission.permission,
-          )
-        : message;
-    final showSourceChip =
-        widget.onShowSource != null && permission.tool != null;
-    return Column(
-      key: const Key('permission-sheet'),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(
-          child: SingleChildScrollView(
-            padding: const EdgeInsetsDirectional.fromSTEB(20, 18, 20, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      permissionActionIcon(permission.permission),
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        permissionRequestTitle(permission.permission),
-                        style: theme.textTheme.titleMedium,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(contextLine, style: theme.textTheme.bodyMedium),
-                if (permission.commandPreview case final command?) ...[
-                  const SizedBox(height: 12),
-                  _CommandPreview(
-                    command: command,
-                    allowCopy: widget.allowDeviceActions,
-                  ),
-                ],
-                if (permission.filePath case final path?) ...[
-                  const SizedBox(height: 12),
-                  _FilePathRow(
-                    path: path,
-                    allowCopy: widget.allowDeviceActions,
-                  ),
-                ],
-                if (_diffPreview case final diff?) ...[
-                  const SizedBox(height: 12),
-                  _DiffPreviewBox(
-                    diff: diff,
-                    onSeeFull: () => _openFullDiff(diff),
-                  ),
-                ],
-                if (_resourcesCard(theme) case final resources?) ...[
-                  const SizedBox(height: 12),
-                  resources,
-                ],
-                if (widget.allowPersistentPermission &&
-                    permission.always.isNotEmpty) ...[
-                  const SizedBox(height: 14),
-                  Text(
-                    _chatL10n(context).chatUiAlwaysAllowWouldAlsoCover,
-                    style: theme.textTheme.labelLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    permission.always.join('\n'),
-                    style: const TextStyle(
-                      fontFamily: AppTheme.monoFamily,
-                      fontSize: AppTheme.codeFontSize,
-                    ),
-                  ),
-                ],
-                if (showSourceChip) ...[
-                  const SizedBox(height: 12),
-                  ActionChip(
-                    key: const Key('permission-source-chip'),
-                    avatar: const Icon(AppIconography.tools, size: 18),
-                    label: Text(_chatL10n(context).chatUiFromToolCall),
-                    onPressed: () {
-                      if (!_routes.isPending) return;
-                      final onShowSource = widget.onShowSource!;
-                      _routes.close();
-                      onShowSource();
-                    },
-                  ),
-                ],
-                if (_error != null) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    _chatL10n(context).chatUiReplyFailed(_error ?? ''),
-                    style: TextStyle(color: theme.colorScheme.error),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-        _applyBar(theme, reduceMotion),
-      ],
-    );
-  }
-
-  /// The requested patterns, minus any already shown as the command or file
-  /// preview above (those blocks carry their own Copy). Null when the
-  /// previews covered everything, so the same string never appears twice.
-  Widget? _resourcesCard(ThemeData theme) {
-    final permission = widget.permission;
-    final shown = {?permission.commandPreview, ?permission.filePath};
-    final resources = permission.patterns
-        .where((pattern) => !shown.contains(pattern))
-        .toList();
-    if (resources.isEmpty && shown.isNotEmpty) return null;
-    final rows = resources.isEmpty
-        ? [_chatL10n(context).chatUiAllMatchingRequests]
-        : resources;
-    final card = Material(
-      key: const Key('permission-resources'),
-      color: theme.colorScheme.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final resource in rows)
-              // Plain text plus a real Copy button: selection-by-long-press
-              // was both an invisible gesture and a 16dp-tall tap target.
-              ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 48),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(
-                      _resourceIcon,
-                      size: 16,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        resource,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontFamily: AppTheme.monoFamily,
-                        ),
-                      ),
-                    ),
-                    if (widget.allowDeviceActions)
-                      IconButton(
-                        tooltip: _chatL10n(
-                          context,
-                        ).chatUiCopyResource(resource),
-                        constraints: const BoxConstraints.tightFor(
-                          width: 48,
-                          height: 48,
-                        ),
-                        onPressed: () => unawaited(
-                          Clipboard.setData(ClipboardData(text: resource)),
-                        ),
-                        icon: const Icon(AppIcons.copy, size: 18),
-                      ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-    if (rows.length <= 6) return card;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 200),
-      child: SingleChildScrollView(child: card),
-    );
-  }
-
-  Widget _applyBar(ThemeData theme, bool reduceMotion) {
-    final controls = _rejecting ? _rejectPane(theme) : _triad(theme);
-    return Material(
-      key: const Key('permission-apply-bar'),
-      color: theme.colorScheme.surfaceContainerHigh,
-      elevation: 6,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 12),
-          child: reduceMotion
-              ? controls
-              : AnimatedSize(
-                  duration: const Duration(milliseconds: 240),
-                  curve: Curves.easeOutCubic,
-                  alignment: Alignment.topCenter,
-                  child: controls,
-                ),
-        ),
-      ),
-    );
-  }
-
-  Widget _pendingLabel(String label, {required bool pending}) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      if (pending) ...[
-        const SizedBox.square(
-          dimension: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        const SizedBox(width: 8),
-      ],
-      Flexible(child: Text(label, textAlign: TextAlign.center)),
-    ],
-  );
-
-  Widget _triad(ThemeData theme) {
-    final allow = FilledButton(
-      key: const Key('permission-allow-once'),
-      onPressed: _replying ? null : () => _reply('once'),
-      child: _pendingLabel(
-        _chatL10n(context).chatUiAllowOnce,
-        pending: _replying && _pendingReply == 'once',
-      ),
-    );
-    final reject = OutlinedButton(
-      key: const Key('permission-reject'),
-      onPressed: _replying ? null : _startReject,
-      child: Text(
-        widget.supportsRejectMessage
-            ? _chatL10n(context).chatUiReject1
-            : _chatL10n(context).chatUiReject,
-      ),
-    );
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final largeText = MediaQuery.textScalerOf(context).scale(14) > 20;
-            if (largeText || constraints.maxWidth < 280) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [allow, const SizedBox(height: 8), reject],
-              );
-            }
-            return Row(
-              children: [
-                Expanded(child: reject),
-                const SizedBox(width: 12),
-                Expanded(child: allow),
-              ],
-            );
-          },
-        ),
-        if (widget.allowPersistentPermission) ...[
-          const SizedBox(height: 4),
-          TextButton.icon(
-            key: const Key('permission-allow-always'),
-            onPressed: _replying ? null : () => _reply('always'),
-            icon: const Icon(AppIconography.permissions, size: 18),
-            label: Text(_chatL10n(context).chatUiAlwaysAllow),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _rejectPane(ThemeData theme) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        TextField(
-          key: const Key('permission-reject-message'),
-          controller: _rejectMessage,
-          autofocus: true,
-          minLines: 1,
-          maxLines: 3,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: _chatL10n(context).chatUiTellTheAgentWhyOrWhatTo,
-          ),
-        ),
-        const SizedBox(height: 10),
-        FilledButton.tonal(
-          key: const Key('permission-reject-send'),
-          style: FilledButton.styleFrom(
-            backgroundColor: theme.colorScheme.errorContainer,
-            foregroundColor: theme.colorScheme.onErrorContainer,
-          ),
-          onPressed: _replying ? null : _sendRejection,
-          child: _pendingLabel(
-            _chatL10n(context).chatUiSendRejection,
-            pending: _replying,
-          ),
-        ),
-        const SizedBox(height: 4),
-        TextButton(
-          onPressed: _replying
-              ? null
-              : () => setState(() => _rejecting = false),
-          child: Text(_chatL10n(context).a2aBack),
-        ),
-      ],
-    );
-  }
-}
-
-/// The shell command awaiting approval, highlighted as bash in a mono block
-/// so quoting and pipes read at a glance before the user allows it.
-class _CommandPreview extends StatelessWidget {
-  const _CommandPreview({required this.command, this.allowCopy = true});
-  final bool allowCopy;
-
-  final String command;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      key: const Key('permission-command-preview'),
-      width: double.infinity,
-      padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.hairline(theme)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text(
-              '\$',
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontFamily: AppTheme.monoFamily,
-                color: AppTheme.mutedOf(theme),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text.rich(
-              highlightedCode(command, 'bash', CodeHighlightTheme.of(context)),
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontFamily: AppTheme.monoFamily,
-                fontSize: AppTheme.codeFontSize,
-                height: 1.4,
-              ),
-            ),
-          ),
-          if (allowCopy)
-            _CopyButton(
-              text: command,
-              label: _chatL10n(context).handoffCopyCommand,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CopyButton extends StatelessWidget {
-  const _CopyButton({required this.text, required this.label});
-
-  final String text;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => IconButton(
-    tooltip: label,
-    constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-    padding: EdgeInsets.zero,
-    onPressed: () => unawaited(Clipboard.setData(ClipboardData(text: text))),
-    icon: const Icon(AppIcons.copy, size: 18),
-  );
-}
-
-/// The file an edit/write/read ask concerns: folder glyph plus the mono path.
-class _FilePathRow extends StatelessWidget {
-  const _FilePathRow({required this.path, this.allowCopy = true});
-  final bool allowCopy;
-
-  final String path;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      key: const Key('permission-file-path'),
-      children: [
-        Icon(
-          AppIconography.files,
-          size: 16,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            path,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontFamily: AppTheme.monoFamily,
-            ),
-          ),
-        ),
-        if (allowCopy)
-          _CopyButton(
-            text: path,
-            label: _chatL10n(context).chatUiCopyResource(path),
-          ),
-      ],
-    );
-  }
-}
-
-/// The pending change as a diff-highlighted mono block, capped at 240 dp
-/// with its own scroll, plus "See full diff" into the full-screen
-/// [DiffView]. (DiffView itself is a Scaffold with a close button, so it is
-/// not embedded inline where its close would dismiss the sheet.)
-class _DiffPreviewBox extends StatelessWidget {
-  const _DiffPreviewBox({required this.diff, required this.onSeeFull});
-
-  final String diff;
-  final VoidCallback onSeeFull;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 240),
-          child: Container(
-            key: const Key('permission-diff-preview'),
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppTheme.hairline(theme)),
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Text.rich(
-                  highlightedCode(diff, 'diff', CodeHighlightTheme.of(context)),
-                  softWrap: false,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontFamily: AppTheme.monoFamily,
-                    fontSize: AppTheme.codeFontSize,
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: TextButton.icon(
-            key: const Key('permission-see-full-diff'),
-            onPressed: onSeeFull,
-            icon: const Icon(AppIconography.review, size: 18),
-            label: Text(_chatL10n(context).chatUiSeeFullDiff),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => _card(context);
 }

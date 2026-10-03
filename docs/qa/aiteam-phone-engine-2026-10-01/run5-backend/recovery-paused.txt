@@ -1,0 +1,44 @@
+{
+  "id": "project-cac38c11-fb87-4b4f-9d88-863f11f43a05",
+  "status": "paused",
+  "revision": 14,
+  "settings": {
+    "autoFix": true,
+    "budget": {
+      "chosen": true,
+      "daily": null,
+      "taskTokens": null,
+      "total": null,
+      "unlimited": true
+    },
+    "chargingOnly": false,
+    "keepWorkingScreenOff": false,
+    "maxFixRounds": 2,
+    "maxLanes": 1,
+    "mode": "single",
+    "reviewLevel": "milestones"
+  },
+  "planApproved": true,
+  "planningState": null,
+  "repos": [
+    {
+      "id": "edit-1790829361113976-0",
+      "devCommit": "690f0c828a6fc4b26177735ccce6ff4b334a0d4f",
+      "mainCommit": "690f0c828a6fc4b26177735ccce6ff4b334a0d4f"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-1",
+      "status": "interrupted",
+      "reason": "pauseNeedsReconciliation",
+      "dependsOn": [],
+      "criterionResults": [],
+      "findingCount": 0
+    }
+  ],
+  "receipts": []
+}
+JOB CHECKPOINTS
+{"id":"job-32c5a765-b4b1-4129-acab-3111eff6596d","kind":"planner","taskId":"","stage":"completed","reason":null,"sessions":{"planner":"ses_f0a3f3a81ffe4popQUz8aQiVKp"},"dispatch":{"planner":"dispatched"},"usage":{"cost":0.0,"dailyCost":0.0,"day":"2026-10-01","tokens":null},"model":"zai-coding-plan/glm-5.3"}
+{"id":"job-acfb9f5b-6ccd-4206-aff7-b9630e2d3d9b","kind":"task","taskId":"task-1","stage":"interrupted","reason":"pauseNeedsReconciliation","sessions":{"worker":"ses_f0a3e703cffe45KdDfdr5AU8vc"},"dispatch":{"worker":"dispatched"},"usage":{"cost":0.0,"dailyCost":0.0,"day":"2026-10-01","tokens":null},"model":"zai-coding-plan/glm-5.3"}

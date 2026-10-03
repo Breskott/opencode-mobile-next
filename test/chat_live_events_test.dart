@@ -7,7 +7,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart'
+    show
+        KitBidi,
+        KitCodeBlock,
+        KitDiffView,
+        KitMarkdown,
+        KitMessage,
+        KitMotion,
+        KitSkeletonTranscript,
+        KitStateView,
+        KitTurn,
+        KitZoom,
+        KitUndo;
 import 'package:opencode_mobile/api/models.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
@@ -24,8 +38,8 @@ import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_context_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tools_screen.dart';
-import 'package:opencode_mobile/ui/widgets/product_states.dart';
-import 'package:opencode_mobile/ui/widgets/markdown.dart';
+import 'package:opencode_mobile/ui/widgets/app_connection_status.dart';
+import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/state/prompt_photos.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -392,6 +406,12 @@ class _RelationsProductRepository extends _FakeProductRepository {
   Future<List<Session>> listSessionChildren(String id) async => children;
 }
 
+Finder _textField(Finder field) => find.descendant(
+  of: field,
+  matching: find.byType(TextField),
+  matchRoot: true,
+);
+
 Future<ConnectionController> _controller(
   _FakeOpenCodeApi api, {
   bool savedProfile = false,
@@ -492,14 +512,23 @@ MessageWithParts _message(
   parts: parts,
 );
 
+/// History of one prompt: a running turn's live line (and its Stop) sits
+/// under it.
+Future<List<MessageWithParts>> _onePrompt(String _) async => [
+  _message('u1', 'user', [
+    Part(id: 'u1-text', messageID: 'u1', type: 'text', text: 'Hi'),
+  ]),
+];
+
 /// The transcript toggles may apply in place and leave the session sheet
 /// open; a reader would then swipe it away before reaching the app bar.
 Future<void> _dismissSheetIfOpen(WidgetTester tester) async {
   if (find.byKey(const Key('session-view-timestamps')).evaluate().isEmpty) {
     return;
   }
-  await tester.tapAt(const Offset(10, 10));
+  await tester.sendKeyEvent(LogicalKeyboardKey.escape);
   await tester.pumpAndSettle();
+  expect(find.byKey(const Key('session-menu-sheet')), findsNothing);
 }
 
 EventEnvelope _event(String type, Map<String, dynamic> properties) =>
@@ -533,17 +562,35 @@ Future<ConnectionController> _pumpChat(
   bool reduceMotion = false,
 }) async {
   final activeController = controller ?? await _controller(api);
+  final navigatorKey = GlobalKey<NavigatorState>();
   activeController.repository = repository;
   addTearDown(activeController.dispose);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(activeController)],
       child: MaterialApp(
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(disableAnimations: reduceMotion),
-          child: child!,
+        navigatorKey: navigatorKey,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+
+        builder: (context, child) => ListenableBuilder(
+          listenable: activeController,
+          builder: (context, _) => AppConditionsScope(
+            conditions: [
+              connectionKitStatus(
+                context,
+                activeController,
+                actionContext: () =>
+                    navigatorKey.currentState?.overlay?.context,
+              ),
+            ],
+            child: MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(disableAnimations: reduceMotion),
+              child: child!,
+            ),
+          ),
         ),
         home: ChatScreen(
           sessionID: 'session-1',
@@ -571,6 +618,9 @@ Future<ConnectionController> _pumpProvisionalChat(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(controller)],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
             context,
@@ -617,9 +667,29 @@ Future<void> _pumpEvent(WidgetTester tester) async {
 Future<void> _useComposerTool(WidgetTester tester, String tool) async {
   await tester.tap(find.byKey(const Key('composer-tools-button')));
   await tester.pumpAndSettle();
+  await tester.ensureVisible(find.byKey(Key('composer-tool-$tool')));
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(Key('composer-tool-$tool')));
   // The sheet resolves its choice on dismissal, so the tool it launches
   // needs a second settle.
+  await tester.pumpAndSettle();
+  await tester.pumpAndSettle();
+}
+
+/// Runs one of the command sheet's app commands by its slash word
+/// (slice-P10.1: the display toggles, retry and the plan moved here from
+/// the conversation menu).
+Future<void> _runSheetCommand(WidgetTester tester, String slash) async {
+  await _useComposerTool(tester, 'commands');
+  await tester.enterText(
+    find.byKey(const Key('command-launcher-search')),
+    slash,
+  );
+  await tester.pump();
+  final row = find.byKey(Key('command-mobile-$slash'));
+  await tester.ensureVisible(row);
+  await tester.pumpAndSettle();
+  await tester.tap(row);
   await tester.pumpAndSettle();
   await tester.pumpAndSettle();
 }
@@ -659,7 +729,7 @@ void main() {
       expect(find.byKey(const Key('running-work-indicator')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('session-actions-button')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Results'));
+      await tester.tap(find.byKey(const ValueKey('session-menu-subagents')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('work-agent-child')), findsOneWidget);
       await tester.tap(find.byKey(const Key('work-agent-child')));
@@ -709,7 +779,7 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('session-actions-button')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Results'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-subagents')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('work-agent-child')));
     await tester.pumpAndSettle();
@@ -869,7 +939,7 @@ void main() {
   testWidgets(
     'UXCHAT single foreground Stop preserves draft and targets this session',
     (tester) async {
-      final api = _FakeOpenCodeApi();
+      final api = _FakeOpenCodeApi()..messagesHandler = _onePrompt;
       final conn = await _pumpChat(tester, api, reduceMotion: true);
       await tester.enterText(
         find.byKey(const Key('chat-composer-field')),
@@ -879,8 +949,9 @@ void main() {
       conn.notifyListeners();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
-      expect(find.byTooltip('Stop'), findsOneWidget);
-      await tester.tap(find.byTooltip('Stop'));
+      // Stop is on the composer's edge, next to the running status.
+      expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('chat-stop-button')));
       await tester.pump();
       expect(api.abortCalls, 1);
       expect(find.text('Keep my draft'), findsOneWidget);
@@ -994,18 +1065,24 @@ void main() {
       await tester.pump();
       expect(
         tester
-            .widget<IconButton>(find.byKey(const Key('chat-send-button')))
-            .onPressed,
-        isNotNull,
+            .widget<GestureDetector>(find.byKey(const Key('chat-send-button')))
+            .onTap,
+        isNull,
       );
-      await tester.tap(find.byKey(const Key('chat-send-button')));
-      await tester.pumpAndSettle();
       expect(api.promptCalls, 0);
       expect(
-        tester.widget<TextField>(field).controller!.text,
+        tester.widget<TextField>(_textField(field)).controller!.text,
         'My next change',
       );
-      expect(find.textContaining('Your draft is kept'), findsOneWidget);
+      expect(find.text('Revert staged'), findsOneWidget);
+      api.sessionResult = Session(id: 'session-1');
+      controller.handleEventForTesting(
+        _event('session.revert.cleared', {'sessionID': 'session-1'}),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('chat-send-button')));
+      await tester.pumpAndSettle();
+      expect(api.prompts.single.text, 'My next change');
     },
   );
 
@@ -1092,7 +1169,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('chat-load-older')));
     await tester.pumpAndSettle();
-    expect(find.text('Older request failed'), findsOneWidget);
+    // Said in words; the raw ApiException text is details only.
+    expect(find.text('Older request failed'), findsNothing);
+    expect(
+      find.text(
+        "The server's answer didn't make sense to the app. Try again, or "
+        'report the problem.',
+      ),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('message-newest')), findsOneWidget);
     fail = false;
     await tester.tap(find.byKey(const ValueKey('chat-load-older')));
@@ -1284,7 +1369,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Conversation menu'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Timeline'));
+      await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey('timeline-search')),
@@ -1311,7 +1396,9 @@ void main() {
       );
       expect(
         tester
-            .widget<TextField>(find.byKey(const ValueKey('timeline-search')))
+            .widget<TextField>(
+              _textField(find.byKey(const ValueKey('timeline-search'))),
+            )
             .controller!
             .text,
         'window',
@@ -1474,12 +1561,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.deleteCalls, isEmpty);
-    expect(
-      find.text(
-        'Empty conversation was kept because OpenCode could not verify or remove it.',
-      ),
-      findsOneWidget,
-    );
+    // Kept quietly: an empty conversation is harmless and the list shows
+    // it, so nothing interrupts the way out.
+    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byKey(const ValueKey('product-error-alert')), findsNothing);
   });
 
   testWidgets('leaving with a typed draft keeps it silently', (tester) async {
@@ -1598,7 +1683,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pump();
@@ -1653,20 +1742,28 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Subagent · 1 of 2'), findsOneWidget);
+    expect(find.text('Delegated conversation · 1 of 2'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('subagent-parent-session')),
       findsOneWidget,
     );
+    // The chat's one status line (design standard §5): the siblings are
+    // under its More menu.
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('subagent-session-list')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Subagent conversations'), findsOneWidget);
+    expect(find.text('Subagents'), findsOneWidget);
     expect(find.text('Review mobile flow'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -1685,7 +1782,9 @@ void main() {
           ),
         ]),
       ];
-    final controller = await _pumpChat(tester, api);
+    // App-wide status belongs to an actual saved profile, like production.
+    final controller = await _controller(api, savedProfile: true);
+    await _pumpChat(tester, api, controller: controller);
     expect(find.text('Retained response'), findsOneWidget);
 
     controller
@@ -1700,14 +1799,32 @@ void main() {
       find.byKey(const ValueKey('connection-status-banner')),
       findsOneWidget,
     );
-    expect(find.text('Connection lost'), findsOneWidget);
-    expect(find.text('Try again'), findsOneWidget);
-    // The raw error and the secondary action live behind Details.
+    // The Work tab's words (design standard §5): the last attempt failed,
+    // so the line says so at once.
+    expect(find.text("Synthetic isn't answering"), findsOneWidget);
+    expect(find.text('Reconnect to Synthetic'), findsOneWidget);
+    // The raw error and the secondary action live behind Details, in the
+    // status line's menu (design standard §5: one action per line).
+    // The status line unfolds first (design standard §10).
+    await tester.pump(KitMotion.standard);
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    // The raw error waits folded under the sheet's own Details.
+    expect(find.textContaining('Endpoint is unavailable'), findsNothing);
+    final fold = find.descendant(
+      of: find.byKey(const ValueKey('connection-banner-details-sheet')),
+      matching: find.byKey(const ValueKey('kit-details-toggle')),
+    );
+    await tester.ensureVisible(fold);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(fold);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.textContaining('Endpoint is unavailable'), findsOneWidget);
-    expect(find.text('Change server'), findsOneWidget);
+    expect(find.text('Switch server'), findsOneWidget);
   });
 
   testWidgets('rehydrate never flashes a skeleton over existing messages', (
@@ -1735,7 +1852,7 @@ void main() {
 
     final controller = await _pumpChat(tester, api);
     expect(find.text('Retained response'), findsOneWidget);
-    expect(find.byType(LoadingList), findsNothing);
+    expect(find.byType(KitSkeletonTranscript), findsNothing);
 
     controller.signalDataRefreshForTesting();
     await tester.pump();
@@ -1745,15 +1862,15 @@ void main() {
     // skeleton and no full-screen error.
     expect(loads, 2);
     expect(find.text('Retained response'), findsOneWidget);
-    expect(find.byType(LoadingList), findsNothing);
-    expect(find.byType(ProductErrorState), findsNothing);
+    expect(find.byType(KitSkeletonTranscript), findsNothing);
+    expect(find.byType(KitStateView), findsNothing);
 
     // Even a failed refresh keeps the transcript instead of a dead end.
     pending!.completeError(StateError('stream reset during rehydrate'));
     await tester.pumpAndSettle();
     expect(find.text('Retained response'), findsOneWidget);
-    expect(find.byType(LoadingList), findsNothing);
-    expect(find.byType(ProductErrorState), findsNothing);
+    expect(find.byType(KitSkeletonTranscript), findsNothing);
+    expect(find.byType(KitStateView), findsNothing);
   });
 
   testWidgets('renders current OpenCode unified patches and server counts', (
@@ -1773,16 +1890,16 @@ void main() {
 
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Changes'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-changes')));
     await tester.pumpAndSettle();
-    expect(find.text('+1'), findsOneWidget);
-    expect(find.text('-1'), findsOneWidget);
+    expect(find.text('+1 −1'), findsOneWidget);
 
-    expect(find.text('@@ -1 +1 @@'), findsOneWidget);
-    expect(find.text('-old line'), findsOneWidget);
-    expect(find.text('+new line'), findsOneWidget);
-    expect(find.text('Copy patch'), findsOneWidget);
-    expect(find.byKey(const Key('review-mode-split')), findsOneWidget);
+    expect(find.text('old line', findRichText: true), findsOneWidget);
+    expect(find.text('new line', findRichText: true), findsOneWidget);
+    expect(find.byType(KitDiffView), findsOneWidget);
+    expect(find.byKey(const Key('review-mode-split')), findsNothing);
+    final diff = tester.widget<KitDiffView>(find.byType(KitDiffView));
+    expect(diff.files.single.patch, '@@ -1 +1 @@\n-old line\n+new line');
   });
 
   testWidgets('stages a selected diff comment as a composer reference', (
@@ -1802,13 +1919,16 @@ void main() {
 
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Changes'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-changes')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('review-line-2')));
+    // KitDiffView paints compact numbers under an expanded gutter hit area.
+    await tester.tapAt(
+      tester.getCenter(find.byKey(const ValueKey('review-line-0-current-8'))),
+    );
     await tester.pump();
     expect(find.byKey(const Key('review-selection-bar')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('review-comment-action')));
+    await tester.tap(find.text('Comment'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const Key('review-comment-field')),
@@ -1821,7 +1941,7 @@ void main() {
     // UX-103: review stays open so a pass can stage several findings, and
     // says how many are waiting on the prompt.
     expect(find.byKey(const Key('review-workspace')), findsOneWidget);
-    expect(find.byKey(const Key('review-staged-count')), findsOneWidget);
+    expect(find.textContaining('1 on prompt'), findsOneWidget);
 
     await tester.pageBack();
     await tester.pumpAndSettle();
@@ -1833,7 +1953,7 @@ void main() {
     expect(find.byKey(const Key('composer-reference-strip')), findsOneWidget);
     expect(find.textContaining('client.dart'), findsWidgets);
     final composer = tester.widget<TextField>(
-      find.byKey(const Key('chat-composer-field')),
+      _textField(find.byKey(const Key('chat-composer-field'))),
     );
     expect(composer.controller?.text, isEmpty);
 
@@ -1844,7 +1964,7 @@ void main() {
     expect(sent, contains('`lib/client.dart`'));
     expect(sent, contains('new line 8'));
     expect(sent, contains('Keep the retry behavior explicit.'));
-    expect(sent, contains('+new request'));
+    expect(sent, contains('```diff\nnew request\n```'));
     expect(find.byKey(const Key('composer-reference-strip')), findsNothing);
   });
 
@@ -1888,14 +2008,14 @@ void main() {
     final fieldFinder = find.byKey(const Key('chat-composer-field'));
     await tester.tap(fieldFinder);
     await tester.pump();
-    final before = tester.widget<TextField>(fieldFinder);
+    final before = tester.widget<TextField>(_textField(fieldFinder));
     expect(before.focusNode?.hasFocus, isTrue);
 
     tester.view.viewInsets = const FakeViewPadding(bottom: 400);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    final after = tester.widget<TextField>(fieldFinder);
+    final after = tester.widget<TextField>(_textField(fieldFinder));
     expect(after.focusNode, same(before.focusNode));
     expect(after.focusNode?.hasFocus, isTrue);
   });
@@ -1920,7 +2040,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pump();
@@ -1938,8 +2062,8 @@ void main() {
     expect(replacementApi.promptCalls, 0);
     expect(
       tester
-          .widget<IconButton>(find.byKey(const Key('chat-send-button')))
-          .onPressed,
+          .widget<GestureDetector>(find.byKey(const Key('chat-send-button')))
+          .onTap,
       isNull,
     );
 
@@ -1956,7 +2080,7 @@ void main() {
   ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
-    final retainedApi = _FakeOpenCodeApi();
+    final retainedApi = _FakeOpenCodeApi()..messagesHandler = _onePrompt;
     final replacementApi = _FakeOpenCodeApi();
     final readyApi = Completer<OpenCodeApi?>();
     final controller = _DelayedActionController(
@@ -1969,7 +2093,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pump();
@@ -1997,6 +2125,7 @@ void main() {
     tester,
   ) async {
     final api = _FakeOpenCodeApi()
+      ..messagesHandler = _onePrompt
       ..abortError = ApiException('server refused to stop');
     final controller = await _pumpChat(tester, api);
     controller.busySessions.add('session-1');
@@ -2011,7 +2140,15 @@ void main() {
     }
 
     expect(api.abortCalls, 1);
-    expect(find.text('server refused to stop'), findsOneWidget);
+    // Said in words; the raw ApiException text is details only.
+    expect(find.text('server refused to stop'), findsNothing);
+    expect(
+      find.text(
+        "The server's answer didn't make sense to the app. Try again, or "
+        'report the problem.',
+      ),
+      findsOneWidget,
+    );
   });
 
   test(
@@ -2081,33 +2218,35 @@ void main() {
 
     expect(api.fileContentRequests, [path]);
     expect(find.byKey(const Key('tool-output-image')), findsOneWidget);
-    expect(find.text('captcha-r1.png'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Preview generated image captcha-r1.png'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const Key('tool-output-image')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('file-preview-sheet')), findsOneWidget);
-    expect(find.byKey(const Key('file-preview-image')), findsOneWidget);
-    expect(find.byKey(const Key('file-preview-download')), findsOneWidget);
+    expect(find.byKey(const ValueKey('kit-viewer-image')), findsOneWidget);
     expect(find.byKey(const Key('file-preview-attach')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('kit-viewer-more')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('file-preview-download')), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('file-preview-attach')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('file-preview-sheet')), findsNothing);
-    expect(
-      find.bySemanticsLabel('Remove attachment captcha-r1.png'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Remove captcha-r1.png'), findsOneWidget);
 
     await tester.enterText(
       find.byKey(const Key('chat-composer-field')),
       'Please inspect this CAPTCHA.',
     );
     await tester.pump();
-    final sendButton = tester.widget<IconButton>(
-      find.byKey(const Key('chat-send-button')),
-    );
-    expect(sendButton.onPressed, isNotNull);
-    sendButton.onPressed!();
+    final send = find.byKey(const Key('chat-send-button'));
+    expect(send.hitTestable(), findsOneWidget);
+    await tester.tap(send);
     await tester.pumpAndSettle();
 
     expect(api.prompts.single.text, 'Please inspect this CAPTCHA.');
@@ -2201,16 +2340,23 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(api.fileContentRequests, [path]);
-    expect(find.byKey(const Key('file-preview-text')), findsOneWidget);
-    expect(find.byType(DataTable), findsOneWidget);
+    expect(find.byType(KitMarkdown), findsWidgets);
     expect(find.text('api.dart'), findsOneWidget);
-    expect(find.byKey(const Key('file-preview-download')), findsOneWidget);
     expect(find.byKey(const Key('file-preview-attach')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('kit-viewer-more')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('file-preview-download')), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('file-preview-raw-mode')));
-    await tester.pump();
-    expect(find.byType(DataTable), findsNothing);
-    expect(find.textContaining('| File | Status |'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('kit-viewer-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('kit-viewer-menu-source')));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('| File | Status |', findRichText: true),
+      findsOneWidget,
+    );
   });
 
   testWidgets(
@@ -2241,15 +2387,16 @@ void main() {
       await tester.tap(find.byKey(const Key('tool-output-file')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('file-preview-sheet')), findsOneWidget);
-      expect(find.text('Column 1'), findsOneWidget);
-      expect(find.text('=SUM(A1)'), findsOneWidget);
+      expect(find.byKey(const ValueKey('kit-viewer-table')), findsOneWidget);
+      expect(find.text(KitBidi.auto('name')), findsOneWidget);
+      expect(find.text(KitBidi.auto('value')), findsOneWidget);
+      expect(find.text(KitBidi.auto('=SUM(A1)')), findsOneWidget);
       expect(api.prompts, isEmpty);
     },
   );
 
-  testWidgets('groups a tool chain until assistant text appears', (
-    tester,
-  ) async {
+  testWidgets('a finished turn gathers its tool chain into one work line; '
+      'the words it said stay in view', (tester) async {
     final api = _FakeOpenCodeApi()
       ..messagesHandler = (_) async => [
         _message('assistant-tools', 'assistant', [
@@ -2326,20 +2473,24 @@ void main() {
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('tool-call-group')), findsNWidgets(2));
-    expect(find.text('Tools'), findsNWidgets(2));
-    expect(
-      find.text('Read 1 file, searched once, ran 1 command'),
-      findsOneWidget,
-    );
-    expect(find.text('Edited 2 files'), findsOneWidget);
+    // The turn is over: its work is one line (the turn model, gap 17), and
+    // the words stay below it.
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    // What was done is the title; no generic "Tools" beside it.
+    expect(find.text('Tools'), findsNothing);
+    expect(find.textContaining('Read 1 file'), findsOneWidget);
+    expect(find.textContaining('dited 2 files'), findsOneWidget);
     expect(find.text('Tool chain finished.'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('work-group'))).dy,
+      lessThan(tester.getTopLeft(find.text('Tool chain finished.')).dy),
+    );
     expect(find.text('Shell'), findsNothing);
     expect(find.text('Read'), findsNothing);
     expect(find.text('Search text'), findsNothing);
     expect(find.text('Edit'), findsNothing);
 
-    final headers = find.byKey(const Key('tool-call-group-header'));
+    final headers = find.byKey(const Key('work-group-header'));
     expect(tester.getSize(headers.first).height, greaterThanOrEqualTo(48));
     await tester.tap(headers.first);
     await tester.pumpAndSettle();
@@ -2347,17 +2498,27 @@ void main() {
     expect(find.text('Read'), findsOneWidget);
     expect(find.text('Search text'), findsOneWidget);
     expect(find.text('Shell'), findsOneWidget);
-    expect(find.text('Edit'), findsNothing);
 
-    for (final row in tester.widgetList<Container>(
-      find.byKey(const Key('embedded-tool-row')),
+    // KitToolRow: a grouped row is a line on the ground surface, never a
+    // nested card; at rest it paints no fill of its own.
+    final rows = find.byKey(const Key('embedded-tool-row'));
+    expect(rows, findsWidgets);
+    for (final box in tester.widgetList<AnimatedContainer>(
+      find.descendant(of: rows, matching: find.byType(AnimatedContainer)),
     )) {
-      expect(
-        row.decoration,
-        isNull,
-        reason: 'Grouped tool rows must not render nested cards.',
-      );
+      final decoration = box.decoration;
+      if (decoration is ShapeDecoration) {
+        expect(
+          decoration.color?.a ?? 0,
+          0,
+          reason: 'Grouped tool rows must not render nested cards.',
+        );
+      }
     }
+    expect(
+      find.descendant(of: rows, matching: find.byType(Card)),
+      findsNothing,
+    );
   });
 
   testWidgets('renders grouped tool failures as flat inline results', (
@@ -2394,7 +2555,7 @@ void main() {
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('tool-call-group')), findsOneWidget);
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
     expect(
       find.byKey(const Key('embedded-tool-error-output')),
       findsNWidgets(2),
@@ -2403,17 +2564,20 @@ void main() {
     expect(find.text('Process exited before completion'), findsOneWidget);
     expect(find.byKey(const Key('standalone-tool-error-output')), findsNothing);
 
-    for (final result in tester.widgetList<Container>(
-      find.byKey(const Key('embedded-tool-error-output')),
-    )) {
-      final decoration = result.decoration! as BoxDecoration;
-      expect(decoration.color, isNull);
-      expect(decoration.borderRadius, isNull);
-      expect((decoration.border! as Border).top.style, BorderStyle.none);
-      expect((decoration.border! as Border).right.style, BorderStyle.none);
-      expect((decoration.border! as Border).bottom.style, BorderStyle.none);
-      expect((decoration.border! as Border).left.width, 2);
-    }
+    // Each failure is the step's own capped output block (KitCodeBlock)
+    // under its row, carrying the error text; the row already says Failed.
+    final outputs = find.byKey(const Key('embedded-tool-error-output'));
+    expect(
+      find.descendant(of: outputs, matching: find.byType(KitCodeBlock)),
+      findsNWidgets(2),
+    );
+    expect(
+      find.descendant(
+        of: outputs,
+        matching: find.text('Process exited before completion'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('keeps a tool chain growing across assistant records', (
@@ -2457,12 +2621,12 @@ void main() {
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('tool-call-group')), findsOneWidget);
-    expect(find.text('Edited 1 file, ran 1 command'), findsOneWidget);
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    expect(find.text('Edited 1 file · ran 1 command'), findsOneWidget);
     expect(find.text('Edit'), findsNothing);
     expect(find.text('Shell'), findsNothing);
 
-    await tester.tap(find.byKey(const Key('tool-call-group-header')));
+    await tester.tap(find.byKey(const Key('work-group-header')));
     await tester.pumpAndSettle();
 
     expect(find.text('Edit'), findsOneWidget);
@@ -2480,10 +2644,22 @@ void main() {
           Part(type: 'text', text: 'Inspect this'),
         ], created: 1),
         _message(
+          'assistant-0',
+          'assistant',
+          [Part(type: 'text', text: 'Earlier turn')],
+          created: 2,
+          providerID: 'provider',
+          modelID: 'model-a',
+          tokens: Tokens(input: 60, output: 15),
+        ),
+        _message('user-2', 'user', [
+          Part(type: 'text', text: 'Continue'),
+        ], created: 3),
+        _message(
           'assistant-1',
           'assistant',
           [Part(type: 'text', text: 'First internal step')],
-          created: 2,
+          created: 4,
           providerID: 'provider',
           modelID: 'model-a',
           tokens: Tokens(input: 70, output: 30),
@@ -2492,7 +2668,7 @@ void main() {
           'assistant-2',
           'assistant',
           [Part(type: 'text', text: 'Second internal step')],
-          created: 3,
+          created: 5,
           providerID: 'provider',
           modelID: 'model-a',
           tokens: Tokens(input: 150, output: 50),
@@ -2501,36 +2677,28 @@ void main() {
           'assistant-3',
           'assistant',
           [Part(type: 'text', text: 'Model switched here')],
-          created: 4,
-          providerID: 'provider',
-          modelID: 'model-b',
-          tokens: Tokens(input: 40, output: 10),
-        ),
-        _message('user-2', 'user', [
-          Part(type: 'text', text: 'Continue'),
-        ], created: 5),
-        _message(
-          'assistant-4',
-          'assistant',
-          [Part(type: 'text', text: 'Same model, next turn')],
           created: 6,
           providerID: 'provider',
           modelID: 'model-b',
-          tokens: Tokens(input: 60, output: 15),
+          tokens: Tokens(input: 40, output: 10),
         ),
       ];
 
     final controller = await _pumpChat(tester, api);
     await tester.pumpAndSettle();
 
-    // Model switches always show; usage rides on the timestamps preference.
-    expect(find.textContaining('provider/model-a'), findsOneWidget);
-    expect(find.textContaining('provider/model-b'), findsOneWidget);
+    // A model switch is named once, in the footer of the turn it happened
+    // in; usage rides on the timestamps preference. Only the newest turn's
+    // footer carries these words (older turns keep Copy and More).
+    expect(
+      find.textContaining('provider/model-a → provider/model-b'),
+      findsOneWidget,
+    );
     expect(find.textContaining('350 tok'), findsNothing);
     await controller.setTranscriptTimestampsVisible(true);
     await tester.pumpAndSettle();
     expect(find.textContaining('350 tok'), findsOneWidget);
-    expect(find.textContaining('75 tok'), findsOneWidget);
+    expect(find.textContaining('75 tok'), findsNothing);
     Finder usageSegment(String value) => find.byWidgetPredicate((widget) {
       if (widget is! Text || widget.data == null) return false;
       return widget.data!
@@ -2586,14 +2754,16 @@ void main() {
     expect(find.text('Hello'), findsOneWidget);
     // A one-line thought right before a tool call is that call's title: the
     // step is one row, not a heading row and a tool row.
-    expect(find.byKey(const Key('reasoning-inline')), findsNothing);
     expect(find.byKey(const Key('reasoning-toggle')), findsNothing);
     expect(find.text('why this works'), findsOneWidget);
     expect(find.text('**why this works**'), findsNothing);
     expect(find.textContaining('search'), findsOneWidget);
     await tester.tap(find.text('why this works'));
     await _pumpEvent(tester);
-    expect(find.textContaining('"query": "chat"'), findsOneWidget);
+    expect(
+      jsonDecode(tester.widget<KitCodeBlock>(find.byType(KitCodeBlock)).text),
+      {'query': 'chat'},
+    );
     semantics.dispose();
   });
 
@@ -2634,7 +2804,9 @@ void main() {
     expect(find.byKey(const Key('reasoning-toggle')), findsOneWidget);
     await tester.tap(find.byKey(const Key('reasoning-toggle')));
     await tester.pumpAndSettle();
-    expect(find.textContaining('First reasoning fragment'), findsOneWidget);
+    // The fold is titled by the thought's first line, and opened it reads
+    // whole: both fragments in the one block.
+    expect(find.textContaining('First reasoning fragment'), findsWidgets);
     expect(find.textContaining('Second reasoning fragment'), findsOneWidget);
     expect(find.text('First answer paragraph.'), findsOneWidget);
     expect(find.text('Second answer paragraph.'), findsOneWidget);
@@ -2675,7 +2847,16 @@ void main() {
     final controller = await _pumpChat(tester, api);
     await tester.pumpAndSettle();
     expect(find.text(reasoning), findsNothing);
-    expect(find.byKey(const Key('message-meta-user-display')), findsNothing);
+    expect(
+      tester
+          .widgetList<KitMessage>(find.byType(KitMessage))
+          .singleWhere(
+            (message) =>
+                message.bubbleKey == const ValueKey('user-prompt-user-display'),
+          )
+          .time,
+      isNull,
+    );
 
     await _useComposerTool(tester, 'commands');
     await tester.pumpAndSettle();
@@ -2689,40 +2870,38 @@ void main() {
 
     expect(controller.transcriptReasoningExpanded, isTrue);
     expect(find.text(reasoning), findsOneWidget);
+    // The toggle offers Undo; the bar floats above every sheet until its
+    // window ends.
+    expect(find.text('Reasoning expanded in the transcript'), findsOneWidget);
+    await tester.pump(KitUndo.window);
+    await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Display and context'));
-    await tester.pumpAndSettle();
-    expect(
-      tester
-          .widget<SwitchListTile>(
-            find.byKey(const Key('session-view-thinking')),
-          )
-          .value,
-      isTrue,
-    );
-    await tester.tap(find.byKey(const Key('session-view-timestamps')));
-    await tester.pumpAndSettle();
+    // The timestamps toggle is a command in the sheet (slice-P10.1).
+    await _runSheetCommand(tester, 'timestamps');
 
     expect(controller.transcriptTimestampsVisible, isTrue);
-    expect(find.byKey(const Key('message-meta-user-display')), findsOneWidget);
+    expect(
+      tester
+          .widgetList<KitMessage>(find.byType(KitMessage))
+          .singleWhere(
+            (message) =>
+                message.bubbleKey == const ValueKey('user-prompt-user-display'),
+          )
+          .time,
+      DateTime.fromMillisecondsSinceEpoch(created),
+    );
     expect(
       find.byKey(const Key('message-meta-assistant-display')),
       findsOneWidget,
     );
-    await _dismissSheetIfOpen(tester);
-
-    await tester.tap(find.byTooltip('Conversation menu'));
+    await tester.pump(KitUndo.window);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Display and context'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('session-view-thinking')));
-    await tester.pumpAndSettle();
-    await _dismissSheetIfOpen(tester);
+    await _runSheetCommand(tester, 'thinking');
 
     expect(controller.transcriptReasoningExpanded, isFalse);
     expect(find.text(reasoning), findsNothing);
+    await tester.pump(KitUndo.window);
+    await tester.pumpAndSettle();
   });
 
   testWidgets('the transcript-wide reasoning toggle replaces per-part choices '
@@ -2746,6 +2925,15 @@ void main() {
             messageID: 'assistant-one',
             type: 'text',
             text: 'First answer.',
+          ),
+        ], created: created),
+        // Two turns: within one, a finished turn folds its earlier thoughts.
+        _message('user-two', 'user', [
+          Part(
+            id: 'user-two-text',
+            messageID: 'user-two',
+            type: 'text',
+            text: 'And again',
           ),
         ], created: created),
         _message('assistant-two', 'assistant', [
@@ -2780,13 +2968,9 @@ void main() {
     );
 
     Future<void> flipGlobal() async {
-      await tester.tap(find.byTooltip('Conversation menu'));
+      await _runSheetCommand(tester, 'thinking');
+      await tester.pump(KitUndo.window);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Display and context'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('session-view-thinking')));
-      await tester.pumpAndSettle();
-      await _dismissSheetIfOpen(tester);
     }
 
     // The transcript-wide default wins while it is being set...
@@ -2825,20 +3009,16 @@ void main() {
       ];
 
     await _pumpChat(tester, api);
-    await _useComposerTool(tester, 'commands');
     await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const Key('command-launcher-search')),
-      'diff',
-    );
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('command-mobile-diff')));
+    // Changes live in the conversation menu's Go to (slice-P10.2).
+    await tester.tap(find.byTooltip('Conversation menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('session-menu-changes')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('review-workspace')), findsOneWidget);
-    expect(find.text('chat.dart'), findsOneWidget);
-    expect(find.text('+7'), findsOneWidget);
-    expect(find.text('-2'), findsOneWidget);
+    expect(find.text('\u2066chat.dart\u2069'), findsOneWidget);
+    expect(find.text('+7 −2'), findsOneWidget);
   });
 
   testWidgets('command launcher maps context to the native usage surface', (
@@ -2863,18 +3043,26 @@ void main() {
 
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
-    await _useComposerTool(tester, 'commands');
+    // Details (the conversation's context page) is the menu's Go to.
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const Key('command-launcher-search')),
-      'context',
-    );
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('command-mobile-context')));
+    await tester.tap(find.byKey(const ValueKey('session-menu-details')));
     await tester.pumpAndSettle();
 
     expect(find.byType(SessionContextScreen), findsOneWidget);
-    expect(find.text('1,000 tokens · limit unavailable'), findsOneWidget);
+    expect(
+      find.text('1,000 tokens · limit unavailable'),
+      findsOneWidget,
+      reason: tester
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byType(SessionContextScreen),
+              matching: find.byType(Text),
+            ),
+          )
+          .map((w) => w.data ?? w.textSpan?.toPlainText())
+          .join(' | '),
+    );
   });
 
   testWidgets('debug command opens native app diagnostics', (tester) async {
@@ -2890,7 +3078,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDiagnosticsScreen), findsOneWidget);
-    expect(find.text('Private until you send it'), findsOneWidget);
+    expect(find.text('Report a problem'), findsOneWidget);
+    expect(
+      find.text(
+        'Say what went wrong. You see the whole report before anything leaves this phone.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('health command opens native project health', (tester) async {
@@ -2989,85 +3183,73 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppearanceSettingsScreen), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('appearance-settings-entry')));
+    // Light or dark is chosen inline and applies at once (the separate
+    // light-or-dark sheet was removed by slice-P3.1).
+    final light = find.byKey(const ValueKey('appearance-mode-light'));
+    await tester.ensureVisible(light);
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('appearance-picker')), findsOneWidget);
-    await tester.ensureVisible(find.byKey(const Key('appearance-light')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('appearance-light')));
-    await tester.pumpAndSettle();
-    // Browsing previews; nothing changes until Apply.
-    expect(controller.appearance.value, isNot(AppAppearance.light));
-    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Apply'));
-    await tester.tap(find.widgetWithText(FilledButton, 'Apply'));
+    await tester.tap(light);
     await tester.pumpAndSettle();
 
     expect(controller.appearance.value, AppAppearance.light);
-    expect(find.byKey(const Key('appearance-picker')), findsNothing);
   });
 
-  testWidgets('session todo view shows server status and priority', (
+  testWidgets('the menu\'s Tasks lands on the plan in the transcript, open', (
     tester,
   ) async {
     final api = _FakeOpenCodeApi()
-      ..todoItems = [
-        Todo(
-          content: 'Verify production release',
-          status: 'in_progress',
-          priority: 'high',
-        ),
+      ..messagesHandler = (_) async => [
+        _message('assistant-plan', 'assistant', [
+          Part(
+            id: 'tool-plan',
+            messageID: 'assistant-plan',
+            type: 'tool',
+            toolName: 'todowrite',
+            toolState: ToolState.fromJson({
+              'status': 'completed',
+              'input': {
+                'todos': [
+                  {
+                    'content': 'Verify production release',
+                    'status': 'pending',
+                    'priority': 'high',
+                  },
+                ],
+              },
+              'output': '',
+            }),
+          ),
+          Part(
+            id: 'text-plan',
+            messageID: 'assistant-plan',
+            type: 'text',
+            text: 'Planned the release check.',
+          ),
+        ]),
       ];
 
     await _pumpChat(tester, api);
-    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Todos'));
-    await tester.pumpAndSettle();
+    // The plan's step shows closed until asked for.
+    expect(find.text('Verify production release'), findsNothing);
 
+    // The plan is a command in the sheet now (slice-P10.1).
+    await _runSheetCommand(tester, 'plan');
+
+    // No sheet: the transcript's own checklist, opened in place.
+    expect(find.byKey(const Key('timeline-sheet')), findsNothing);
     expect(find.text('Verify production release'), findsOneWidget);
-    expect(find.text('in progress · high priority'), findsOneWidget);
+    expect(find.text('Pending'), findsWidgets);
   });
 
-  testWidgets('todos sheet failure offers retry instead of raw exception', (
+  testWidgets('no plan in the transcript, no Tasks entry in the menu', (
     tester,
   ) async {
-    final api = _FakeOpenCodeApi()
-      ..todosError = ApiException(
-        'Load todos failed (HTTP 500): session store unavailable',
-      );
-
-    await _pumpChat(tester, api);
+    await _pumpChat(tester, _FakeOpenCodeApi());
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Todos'));
-    await tester.pumpAndSettle();
 
-    expect(
-      find.text('Load todos failed (HTTP 500): session store unavailable'),
-      findsOneWidget,
-    );
-    expect(find.text('Try again'), findsOneWidget);
-
-    api
-      ..todosError = null
-      ..todoItems = [Todo(content: 'Recovered todo', status: 'pending')];
-    await tester.tap(find.text('Try again'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Recovered todo'), findsOneWidget);
-    expect(find.text('Try again'), findsNothing);
-  });
-
-  testWidgets('todos sheet explains an empty todo list', (tester) async {
-    final api = _FakeOpenCodeApi();
-
-    await _pumpChat(tester, api);
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Todos'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('No todos in this conversation'), findsOneWidget);
+    expect(find.text('Tasks'), findsNothing);
   });
 
   testWidgets('launcher combines mobile actions with server commands', (
@@ -3113,7 +3295,7 @@ void main() {
     await tester.tap(find.byKey(const Key('command-server-review')));
     await tester.pumpAndSettle();
     final composer = tester.widget<TextField>(
-      find.byKey(const Key('chat-composer-field')),
+      _textField(find.byKey(const Key('chat-composer-field'))),
     );
     expect(composer.controller?.text, '/review ');
   });
@@ -3143,6 +3325,8 @@ void main() {
     expect(find.text('review.md'), findsOneWidget);
     await tester.tap(find.text('review.md'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('kit-viewer-more')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('project-file-attach')), findsOneWidget);
     expect(find.byKey(const Key('project-file-download')), findsOneWidget);
 
@@ -3155,16 +3339,11 @@ void main() {
       findsOneWidget,
     );
 
-    Navigator.of(
-      tester.element(find.byKey(const Key('project-file-attach'))),
-    ).pop();
-    await tester.pumpAndSettle();
+    // Attaching closes the viewer and returns to the file tree.
+    expect(find.byKey(const ValueKey('files-viewer')), findsNothing);
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    expect(
-      find.bySemanticsLabel('Remove attachment review.md'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Remove review.md'), findsOneWidget);
   });
 
   testWidgets('move, warp, and org commands preserve their server semantics', (
@@ -3188,7 +3367,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -3262,7 +3445,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -3301,6 +3488,9 @@ void main() {
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
         child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+
           home: ChatScreen(
             sessionID: 'session-1',
             initialAttachments: [
@@ -3316,7 +3506,9 @@ void main() {
     );
     await tester.pumpAndSettle();
     final composerFinder = find.byKey(const Key('chat-composer-field'));
-    final composer = tester.widget<TextField>(composerFinder).controller!;
+    final composer = tester
+        .widget<TextField>(_textField(composerFinder))
+        .controller!;
     composer.value = const TextEditingValue(
       text: 'Original prompt draft',
       selection: TextSelection(baseOffset: 2, extentOffset: 10),
@@ -3336,7 +3528,9 @@ void main() {
 
     expect(find.byKey(const Key('prompt-editor-screen')), findsOneWidget);
     final editor = tester
-        .widget<TextField>(find.byKey(const Key('prompt-editor-field')))
+        .widget<TextField>(
+          _textField(find.byKey(const Key('prompt-editor-field'))),
+        )
         .controller!;
     expect(editor.text, 'Original prompt draft');
     expect(
@@ -3344,7 +3538,7 @@ void main() {
       const TextSelection(baseOffset: 2, extentOffset: 10),
     );
     editor.selection = const TextSelection.collapsed(offset: 4);
-    await tester.tap(find.byTooltip('Close prompt editor'));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
     expect(find.text('Discard prompt changes?'), findsNothing);
     expect(
@@ -3355,45 +3549,49 @@ void main() {
     await tester.tap(find.byKey(const Key('prompt-editor-button')));
     await tester.pumpAndSettle();
     final discardEditor = tester
-        .widget<TextField>(find.byKey(const Key('prompt-editor-field')))
+        .widget<TextField>(
+          _textField(find.byKey(const Key('prompt-editor-field'))),
+        )
         .controller!;
     discardEditor.value = const TextEditingValue(
       text: 'Discarded edit',
       selection: TextSelection.collapsed(offset: 5),
     );
-    await tester.tap(find.byTooltip('Remove attachment notes.txt'));
+    await tester.tap(find.bySemanticsLabel('Remove notes.txt'));
     await tester.pump();
-    await tester.tap(find.byTooltip('Close prompt editor'));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
     expect(find.text('Discard prompt changes?'), findsOneWidget);
     await tester.tap(find.text('Keep editing'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('prompt-editor-screen')), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Close prompt editor'));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Discard'));
+    await tester.tap(find.text('Discard changes'));
     await tester.pumpAndSettle();
     expect(composer.text, 'Original prompt draft');
-    expect(find.byTooltip('Remove attachment notes.txt'), findsOneWidget);
+    expect(find.bySemanticsLabel('Remove notes.txt'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('prompt-editor-button')));
     await tester.pumpAndSettle();
     final savedEditor = tester
-        .widget<TextField>(find.byKey(const Key('prompt-editor-field')))
+        .widget<TextField>(
+          _textField(find.byKey(const Key('prompt-editor-field'))),
+        )
         .controller!;
     savedEditor.value = const TextEditingValue(
       text: 'Final edited prompt',
       selection: TextSelection.collapsed(offset: 7),
     );
-    await tester.tap(find.byTooltip('Remove attachment notes.txt'));
+    await tester.tap(find.bySemanticsLabel('Remove notes.txt'));
     await tester.pump();
     await tester.tap(find.byKey(const Key('prompt-editor-done')));
     await tester.pumpAndSettle();
 
     expect(composer.text, 'Final edited prompt');
     expect(composer.selection, const TextSelection.collapsed(offset: 7));
-    expect(find.byTooltip('Remove attachment notes.txt'), findsNothing);
+    expect(find.bySemanticsLabel('Remove notes.txt'), findsNothing);
     expect(api.promptCalls, 0);
   });
 
@@ -3420,9 +3618,11 @@ void main() {
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     // The sheet scrolls at 320dp with 2x text; the chip stays reachable.
-    await tester.ensureVisible(find.text('Timeline'));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('session-menu-timeline')),
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Timeline'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const Key('timeline-search')),
@@ -3434,33 +3634,51 @@ void main() {
     await tester.tap(find.byKey(const Key('timeline-row-user-0')));
     await tester.pumpAndSettle();
 
-    // Search deliberately displays both a source excerpt and the unchanged
-    // message body. Verify the actual body and active excerpt independently.
+    // A match in a prompt's own words is highlighted in place: no excerpt
+    // repeating the prompt above it (review board: find bar).
     expect(
       find.descendant(
-        of: find.byType(MarkdownText),
+        of: find.byType(KitMarkdown),
         matching: find.text('oldest anchor prompt'),
       ),
       findsOneWidget,
     );
     expect(
       find.byKey(const ValueKey('transcript-match-user-0/0/0')),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
-      find.byKey(const ValueKey('transcript-match-user-0/0/0')).hitTestable(),
+      find.byKey(const ValueKey('user-prompt-user-0')).hitTestable(),
       findsOneWidget,
     );
-    // The key stays stable while highlighted (no remount), and the highlight
-    // itself is expressed through the animated decoration.
-    final highlightFinder = find.byKey(const Key('message-highlight-user-0'));
-    expect(highlightFinder, findsOneWidget);
-    final highlighted = tester.widget<AnimatedContainer>(highlightFinder);
-    expect(highlighted.duration, Duration.zero);
-    expect(
-      (highlighted.decoration as BoxDecoration?)?.color,
-      isNot(Colors.transparent),
+    // The found turn carries the find band (painted around it, so nothing
+    // moves), with no fade under reduced motion; its neighbour has none.
+    Finder turnOf(String id) => find.ancestor(
+      of: find.byKey(ValueKey('user-prompt-$id')),
+      matching: find.byType(KitTurn),
     );
+    bool banded(String id) => tester
+        .widgetList<CustomPaint>(
+          find.descendant(of: turnOf(id), matching: find.byType(CustomPaint)),
+        )
+        .any((paint) => paint.painter != null);
+    expect(turnOf('user-0'), findsOneWidget);
+    expect(banded('user-0'), isTrue);
+    final band = tester.widget<TweenAnimationBuilder<double>>(
+      find
+          .descendant(
+            of: turnOf('user-0'),
+            matching: find.byType(TweenAnimationBuilder<double>),
+          )
+          .first,
+    );
+    expect(band.duration, Duration.zero);
+    if (find
+        .byKey(const ValueKey('user-prompt-user-1'))
+        .evaluate()
+        .isNotEmpty) {
+      expect(banded('user-1'), isFalse);
+    }
   });
 
   testWidgets('fork from prompt restores text and file in the new composer', (
@@ -3489,7 +3707,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Timeline'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('timeline-fork-user-restore')));
     await tester.pumpAndSettle();
@@ -3497,10 +3715,10 @@ void main() {
     expect(repository.forkCalls, 1);
     expect(repository.forkMessageID, 'user-restore');
     final composer = tester.widget<TextField>(
-      find.byKey(const Key('chat-composer-field')),
+      _textField(find.byKey(const Key('chat-composer-field'))),
     );
     expect(composer.controller?.text, 'Review this design');
-    expect(find.byTooltip('Remove attachment design.png'), findsOneWidget);
+    expect(find.bySemanticsLabel('Remove design.png'), findsOneWidget);
   });
 
   testWidgets('session repository actions wait for the wake-time replacement', (
@@ -3534,7 +3752,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Timeline'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('timeline-fork-user-after-wake')));
     await tester.pump();
@@ -3576,27 +3794,54 @@ void main() {
 
     await _pumpChat(tester, api, repository: repository);
     await tester.pumpAndSettle();
-    await _useComposerTool(tester, 'commands');
-    await tester.pumpAndSettle();
+    // "/fork" forks the whole conversation and lands in the copy, like the
+    // menu's Fork (slice-P10.2: fork lands in one place).
     await tester.enterText(
-      find.byKey(const Key('command-launcher-search')),
-      'fork',
+      find.byKey(const Key('chat-composer-field')),
+      '/fork',
     );
     await tester.pump();
-    await tester.tap(find.byKey(const Key('command-mobile-fork')));
+    await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pumpAndSettle();
-
-    expect(find.text('Fork from prompt'), findsOneWidget);
+    expect(repository.forkCalls, 1);
+    expect(repository.forkMessageID, isNull);
     expect(
-      find.byKey(const Key('timeline-row-assistant-fork-command')),
-      findsNothing,
+      tester.widget<ChatScreen>(find.byType(ChatScreen)).sessionID,
+      'forked-session',
     );
-    await tester.tap(find.byKey(const Key('timeline-row-user-fork-command')));
+    expect(find.text('Fork from prompt'), findsNothing);
+  });
+
+  testWidgets('a prompt picked in the timeline forks from that point', (
+    tester,
+  ) async {
+    final api = _FakeOpenCodeApi()
+      ..messagesHandler = (_) async => [
+        _message('user-fork-command', 'user', [
+          Part(
+            id: 'fork-command-text',
+            messageID: 'user-fork-command',
+            type: 'text',
+            text: 'Try another implementation',
+          ),
+        ]),
+      ];
+    final repository = _FakeProductRepository(const []);
+    await _pumpChat(tester, api, repository: repository);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Conversation menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
+    await tester.pumpAndSettle();
+    final fork = find.byKey(const ValueKey('timeline-fork-user-fork-command'));
+    await tester.ensureVisible(fork);
+    await tester.pumpAndSettle();
+    await tester.tap(fork);
     await tester.pumpAndSettle();
 
     expect(repository.forkMessageID, 'user-fork-command');
     final composer = tester.widget<TextField>(
-      find.byKey(const Key('chat-composer-field')),
+      _textField(find.byKey(const Key('chat-composer-field'))),
     );
     expect(composer.controller?.text, 'Try another implementation');
   });
@@ -3622,25 +3867,28 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: MediaQuery(
-          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
-          child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const ChatScreen(sessionID: 'session-1'),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    // The sheet scrolls at 320dp with 2x text; every group stays reachable.
-    await tester.ensureVisible(find.text('Display and context'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Display and context'));
-    await tester.pumpAndSettle();
-    final timestamps = find.byKey(const Key('session-view-timestamps'));
-    await tester.ensureVisible(timestamps);
-    await tester.pumpAndSettle();
-    await tester.tap(timestamps);
+    // Typed, the command runs as the sheet's row would.
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      '/timestamps',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pumpAndSettle();
     expect(controller.transcriptTimestampsVisible, isTrue);
     expect(tester.takeException(), isNull);
@@ -3648,9 +3896,11 @@ void main() {
 
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Timeline'));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('session-menu-timeline')),
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Timeline'));
+    await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('timeline-search')), findsOneWidget);
@@ -3692,11 +3942,11 @@ void main() {
       await tester.pumpAndSettle();
 
       final composer = tester.widget<TextField>(
-        find.byKey(const Key('chat-composer-field')),
+        _textField(find.byKey(const Key('chat-composer-field'))),
       );
       expect(composer.controller?.text, '@docs');
-      expect(find.bySemanticsLabel('Reference @docs'), findsOneWidget);
-      expect(find.byTooltip('Remove reference @docs'), findsOneWidget);
+      expect(find.bySemanticsLabel('Folder, @docs'), findsOneWidget);
+      expect(find.bySemanticsLabel('Remove @docs'), findsOneWidget);
       expect(find.bySemanticsLabel('Preview attachment docs'), findsNothing);
 
       await tester.tap(find.byTooltip('Send'));
@@ -3795,7 +4045,7 @@ void main() {
       final controller = await _pumpChat(tester, api);
       await tester.pumpAndSettle();
       final horizontal = find.descendant(
-        of: find.byType(CodeBlock),
+        of: find.byType(KitCodeBlock),
         matching: find.byWidgetPredicate(
           (w) =>
               w is SingleChildScrollView &&
@@ -3805,13 +4055,19 @@ void main() {
       expect(horizontal, findsOneWidget);
       await tester.drag(horizontal, const Offset(-650, 0));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('jump-to-latest')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('jump-to-latest')).hitTestable(),
+        findsNothing,
+      );
       await tester.drag(
         find.byType(ScrollablePositionedList),
         const Offset(0, 900),
       );
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('jump-to-latest')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('jump-to-latest')).hitTestable(),
+        findsOneWidget,
+      );
       controller.handleEventForTesting(
         _event('message.updated', {
           'info': {
@@ -3910,6 +4166,9 @@ void main() {
         ProviderScope(
           overrides: [connProvider.overrideWithValue(controller)],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+
             theme: AppTheme.dark(),
             home: const ChatScreen(sessionID: 'session-1'),
           ),
@@ -3921,7 +4180,7 @@ void main() {
 
       await tester.tap(find.byTooltip('Conversation menu'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Timeline'));
+      await tester.tap(find.byKey(const ValueKey('session-menu-timeline')));
       await tester.pumpAndSettle();
 
       // The sheet no longer opts out of the theme drag handle.
@@ -3929,10 +4188,11 @@ void main() {
         tester.widget<BottomSheet>(find.byType(BottomSheet)).showDragHandle,
         isNot(false),
       );
-      final timelineList = tester.widget<ListView>(
+      // The kit sheet frame's one scroll carries the rows.
+      final timelineList = tester.widget<CustomScrollView>(
         find.descendant(
-          of: find.byType(BottomSheet),
-          matching: find.byType(ListView),
+          of: find.byKey(const ValueKey('timeline-sheet')),
+          matching: find.byType(CustomScrollView),
         ),
       );
       expect(
@@ -3950,8 +4210,8 @@ void main() {
         ),
       );
       expect(editable.focusNode.hasFocus, isTrue);
-      // First drag expands the draggable sheet to its max; the second one
-      // scrolls the result list itself, which releases the keyboard focus.
+      // Dragging the rows scrolls the sheet's body, which releases the
+      // keyboard focus.
       await tester.drag(
         find.byKey(const ValueKey('timeline-row-user-7')),
         const Offset(0, -300),
@@ -3966,7 +4226,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(editable.focusNode.hasFocus, isFalse);
 
-      await tester.tap(find.byTooltip('Close timeline'));
+      await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
 
       await _useComposerTool(tester, 'commands');
@@ -3975,21 +4235,34 @@ void main() {
         tester.widget<BottomSheet>(find.byType(BottomSheet)).showDragHandle,
         isNot(false),
       );
-      final launcherList = tester.widget<ListView>(
-        find.byKey(const Key('command-launcher-list')),
+      // Focus the launcher's search, then drag its list: the keyboard
+      // focus releases here too.
+      await tester.tap(find.byKey(const Key('command-launcher-search')));
+      await tester.pump();
+      final launcherSearch = tester.widget<EditableText>(
+        find.descendant(
+          of: find.byKey(const Key('command-launcher-search')),
+          matching: find.byType(EditableText),
+        ),
       );
-      expect(
-        launcherList.keyboardDismissBehavior,
-        ScrollViewKeyboardDismissBehavior.onDrag,
+      expect(launcherSearch.focusNode.hasFocus, isTrue);
+      // The list is taller than the sheet: drag from its visible top.
+      await tester.dragFrom(
+        tester.getTopLeft(find.byKey(const Key('command-launcher-list'))) +
+            const Offset(24, 24),
+        const Offset(0, -120),
       );
+      await tester.pumpAndSettle();
+      expect(launcherSearch.focusNode.hasFocus, isFalse);
     },
   );
 
   testWidgets('composer tools delegates only to visible server subagents', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(320, 640));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final controller = _StaticCatalogController(ProfileStore(prefs: prefs))
@@ -4013,9 +4286,16 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MediaQuery(
-          data: MediaQueryData(textScaler: TextScaler.linear(2)),
-          child: MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const ChatScreen(sessionID: 'session-1'),
         ),
       ),
     );
@@ -4023,20 +4303,48 @@ void main() {
 
     await _useComposerTool(tester, 'commands');
     await tester.pumpAndSettle();
-    expect(find.text('Composer tools'), findsOneWidget);
+    expect(find.byKey(const Key('composer-tools-sheet')), findsNothing);
+    expect(find.byKey(const Key('command-launcher-sheet')), findsOneWidget);
+    expect(find.text('Commands and agents'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    // At 200% text the sheet header scrolls with the body. Reveal the
+    // delegate tab before choosing it on this narrow phone viewport.
+    final sheetScroll = find
+        .descendant(
+          of: find.byKey(const Key('command-launcher-sheet')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('composer-tools-agents-tab')),
+      100,
+      scrollable: sheetScroll,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('composer-tools-agents-tab')));
     await tester.pumpAndSettle();
 
-    expect(find.text('@explore'), findsOneWidget);
-    expect(find.text('@build'), findsNothing);
-    expect(find.text('@internal'), findsNothing);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('composer-agent-explore')),
+      100,
+      scrollable: sheetScroll,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('@${KitBidi.auto('explore')}'), findsOneWidget);
+    expect(
+      find.byKey(const Key('composer-agent-build'), skipOffstage: false),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const Key('composer-agent-internal'), skipOffstage: false),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
     await tester.tap(find.byKey(const Key('composer-agent-explore')));
     await tester.pumpAndSettle();
 
     final composer = tester.widget<TextField>(
-      find.byKey(const Key('chat-composer-field')),
+      _textField(find.byKey(const Key('chat-composer-field'))),
     );
     expect(composer.controller?.text, '@explore ');
     expect(tester.takeException(), isNull);
@@ -4137,7 +4445,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
-        child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ChatScreen(sessionID: 'session-1'),
+        ),
       ),
     );
     await tester.pump();
@@ -4178,6 +4490,9 @@ void main() {
         ProviderScope(
           overrides: [connProvider.overrideWithValue(controller)],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+
             home: ChatScreen(
               sessionID: 'session-1',
               initialAttachments: [
@@ -4381,7 +4696,12 @@ void main() {
         tester.widget<TextField>(find.byType(TextField)).controller?.text,
         'try once',
       );
-      expect(find.text('OpenCode is unreachable. Try again.'), findsOneWidget);
+      expect(
+        find.text(
+          "That didn't work. Details show what happened. Try again, or report the problem.",
+        ),
+        findsOneWidget,
+      );
     },
   );
 
@@ -4403,7 +4723,7 @@ void main() {
       }),
     );
     await _pumpEvent(tester);
-    expect(find.byKey(const ValueKey('composer-activity')), findsOneWidget);
+    expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
 
     controller.handleEventForTesting(
       _event('session.error', {
@@ -4415,13 +4735,12 @@ void main() {
       }),
     );
     await _pumpEvent(tester);
+    // The edge status leaves with a short exit animation.
+    await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('composer-activity')), findsNothing);
+    expect(find.byKey(const Key('chat-stop-button')), findsNothing);
     expect(find.byKey(const ValueKey('prompt-error-banner')), findsOneWidget);
-    expect(
-      find.text('Sign in to the selected model provider.'),
-      findsOneWidget,
-    );
+    expect(find.text('The agent stopped because of an error.'), findsOneWidget);
   });
 
   testWidgets('an error a reply carries is not repeated in a banner', (
@@ -4475,10 +4794,12 @@ void main() {
     expect(find.textContaining('ECONNRESET'), findsNothing);
     expect(find.textContaining('fetch()'), findsNothing);
     // The server's exact words are one tap away.
+    // The status line unfolds first (design standard §10).
+    await tester.pump(KitMotion.standard);
     await tester.tap(find.byKey(const ValueKey('prompt-error-details')));
     await tester.pumpAndSettle();
     expect(find.textContaining('ECONNRESET'), findsOneWidget);
-    await tester.tap(find.text('Close'));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
 
     // The reply carries the same problem (worded slightly differently by the
@@ -4500,6 +4821,9 @@ void main() {
       }),
     );
     await _pumpEvent(tester);
+    // The status line folds away (design standard §10), leaving the reply.
+    await tester.pump(KitMotion.standard);
+    await tester.pump(KitMotion.standard);
     expect(find.text('The connection to the model dropped.'), findsOneWidget);
 
     // The agent carries on: the error becomes a quiet line of the turn and
@@ -4552,20 +4876,23 @@ void main() {
     );
     await _pumpEvent(tester);
     expect(find.byKey(const ValueKey('prompt-error-banner')), findsOneWidget);
-    expect(
-      find.text(
-        'Model not found: openai/gpt-5.6. Did you mean: gpt-5.6, gpt-5.6-pro?',
-      ),
-      findsOneWidget,
-    );
+    // Words on the line; the server's text only under Details.
+    expect(find.text("The server doesn't have this model."), findsOneWidget);
+    expect(find.textContaining('Did you mean'), findsNothing);
     expect(find.textContaining('at <anonymous>'), findsNothing);
     expect(
       find.byKey(const ValueKey('prompt-error-choose-model')),
       findsOneWidget,
     );
+    // Choose model is the line's action; Details is under its More menu.
+    // The status line unfolds first (design standard §10).
+    await tester.pump(KitMotion.standard);
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('prompt-error-details')));
     await tester.pumpAndSettle();
     expect(find.textContaining('at <anonymous>'), findsOneWidget);
+    expect(find.textContaining('Did you mean'), findsOneWidget);
   });
 
   testWidgets('renders attachment-only and mixed user prompts accessibly', (
@@ -4590,27 +4917,20 @@ void main() {
     await _pumpChat(tester, api);
 
     expect(find.text('report.pdf'), findsOneWidget);
-    expect(find.text('PDF · prompt attachment'), findsOneWidget);
+    expect(find.bySemanticsLabel('Preview report.pdf'), findsOneWidget);
     expect(find.text('Review this image'), findsOneWidget);
     expect(find.text('diagram.png'), findsOneWidget);
-    expect(find.text('PNG · prompt attachment'), findsOneWidget);
-    expect(
-      find.bySemanticsLabel('Preview attachment report.pdf'),
-      findsOneWidget,
-    );
-    expect(
-      find.bySemanticsLabel('Preview attachment diagram.png'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Preview diagram.png'), findsOneWidget);
 
-    final diagram = find.text('diagram.png');
+    final diagram = find.bySemanticsLabel('Preview diagram.png');
     await tester.ensureVisible(diagram);
     await tester.pumpAndSettle();
     await tester.tap(diagram);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('file-preview-sheet')), findsOneWidget);
-    expect(find.byKey(const Key('file-preview-image')), findsOneWidget);
-    expect(find.text('Pinch to zoom'), findsOneWidget);
+    expect(find.byKey(const ValueKey('kit-viewer-image')), findsOneWidget);
+    expect(find.byType(KitZoom), findsOneWidget);
+    expect(find.byTooltip('Zoom in'), findsOneWidget);
   });
 
   testWidgets('retry preserves mixed and attachment-only file parts', (
@@ -4641,12 +4961,7 @@ void main() {
     final controller = await _pumpChat(tester, api);
     controller.selectedVariant = 'fast';
 
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Conversation actions'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Retry last prompt'));
-    await tester.pumpAndSettle();
+    await _runSheetCommand(tester, 'retry');
 
     expect(api.prompts.single.text, 'Review this');
     expect(api.prompts.single.variant, 'fast');
@@ -4664,12 +4979,7 @@ void main() {
       }),
     );
     await _pumpEvent(tester);
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Conversation actions'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Retry last prompt'));
-    await tester.pumpAndSettle();
+    await _runSheetCommand(tester, 'retry');
 
     expect(api.prompts.last.text, isEmpty);
     expect(api.prompts.last.attachments.single.toJson(), {
@@ -4724,6 +5034,9 @@ void main() {
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+
           home: ChatScreen(
             sessionID: 'session-1',
             initialAttachments: List.generate(
@@ -4757,6 +5070,9 @@ void main() {
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
         child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+
           home: ChatScreen(
             sessionID: 'session-1',
             initialAttachments: [
@@ -4772,21 +5088,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final remove = find.byTooltip('Remove attachment notes.txt');
+    final remove = find.bySemanticsLabel('Remove notes.txt');
     expect(remove, findsOneWidget);
     final size = tester.getSize(remove);
     expect(size.width, greaterThanOrEqualTo(48));
     expect(size.height, greaterThanOrEqualTo(48));
-    expect(
-      find.bySemanticsLabel('Remove attachment notes.txt'),
-      findsOneWidget,
-    );
+    expect(find.bySemanticsLabel('Remove notes.txt'), findsOneWidget);
 
-    final preview = find.bySemanticsLabel('Preview attachment notes.txt');
+    final preview = find.bySemanticsLabel('Preview notes.txt');
     expect(
       tester.getSemantics(preview),
       matchesSemantics(
-        label: 'Preview attachment notes.txt',
+        label: 'Preview notes.txt',
         isButton: true,
         hasTapAction: true,
       ),
@@ -4794,9 +5107,9 @@ void main() {
     await tester.tap(preview);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('file-preview-sheet')), findsOneWidget);
-    expect(find.byKey(const Key('file-preview-text')), findsOneWidget);
+    expect(find.byType(KitCodeBlock), findsWidgets);
     expect(find.text('notes'), findsOneWidget);
-    await tester.tap(find.byTooltip('Close preview'));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
 
     await tester.tap(remove);
@@ -4805,48 +5118,54 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('empty transcript suggestions fill the composer', (tester) async {
+  testWidgets('empty transcript starters fill the composer', (tester) async {
     final api = _FakeOpenCodeApi();
-    // No directory is selected, so the project- and git-dependent chips give
-    // way to one that works in the server's default directory.
+    // No directory is selected, so the project- and git-dependent starters
+    // give way to ones that work in the server's default folder.
     await _pumpChat(tester, api);
+    await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Start coding'), findsOneWidget);
-    expect(find.byKey(const ValueKey('empty-transcript-tip')), findsOneWidget);
+    expect(find.text(KitBidi.auto('Server folder')), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat-start-tip')), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('empty-suggestion-What changed recently?')),
+      find.byKey(const ValueKey('chat-starter-What changed recently?')),
       findsNothing,
     );
 
     await tester.tap(
-      find.byKey(
-        const ValueKey("empty-suggestion-List what's in this directory"),
-      ),
+      find.byKey(const ValueKey("chat-starter-List what's in this folder")),
     );
     await tester.pump();
 
     expect(
       tester.widget<TextField>(find.byType(TextField)).controller?.text,
-      "List what's in this directory",
+      "List what's in this folder",
     );
     expect(api.promptCalls, 0);
   });
 
-  testWidgets('empty transcript chips are seeded from the active project', (
+  testWidgets('empty transcript starters are seeded from the active project', (
     tester,
   ) async {
-    final api = _FakeOpenCodeApi();
+    final api = _FakeOpenCodeApi()
+      ..projectFiles = [
+        FileNode(name: 'pubspec.yaml', path: 'pubspec.yaml', isDir: false),
+      ];
     final controller = await _controller(api);
     controller.directory = '/work/oc_app';
     await _pumpChat(tester, api, controller: controller);
+    await tester.pump(const Duration(milliseconds: 300));
 
+    expect(find.text(KitBidi.auto('oc_app')), findsOneWidget);
+    expect(find.text('1 item'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('empty-suggestion-Explain the oc_app project')),
+      find.byKey(const ValueKey('chat-starter-Explain this project')),
       findsOneWidget,
     );
+    // No Git history is known here, so nothing asks what changed.
     expect(
-      find.byKey(const ValueKey('empty-suggestion-What changed recently?')),
-      findsOneWidget,
+      find.byKey(const ValueKey('chat-starter-What changed recently?')),
+      findsNothing,
     );
   });
 
@@ -4877,16 +5196,18 @@ void main() {
       ];
     await _pumpChat(tester, api);
 
+    // The prompt bubble's own menu (KitMessage.prompt).
     await tester.longPress(find.text('Fix the login bug'));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('message-action-copy')), findsOneWidget);
-    expect(find.byKey(const ValueKey('message-action-fork')), findsOneWidget);
+    expect(find.byKey(const ValueKey('message-menu-copy')), findsOneWidget);
+    expect(find.byKey(const ValueKey('message-menu-fork')), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('message-action-copy')));
+    await tester.tap(find.byKey(const ValueKey('message-menu-copy')));
     await tester.pumpAndSettle();
     expect(copiedText, 'Fix the login bug');
-    expect(find.text('Message text copied'), findsOneWidget);
+    // The kit's copy feedback (a tick and an announcement), not a snackbar.
+    expect(find.byType(SnackBar), findsNothing);
   });
 
   testWidgets('deleting a message confirms, calls the server, and prunes it', (
@@ -4905,12 +5226,12 @@ void main() {
 
     await tester.longPress(find.text('first prompt'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('message-action-delete')));
+    await tester.tap(find.byKey(const ValueKey('message-menu-delete')));
     await tester.pumpAndSettle();
 
     expect(find.text('Delete this message?'), findsOneWidget);
     expect(find.textContaining('File changes it made'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete message'));
+    await tester.tap(find.text('Delete message'));
     await tester.pumpAndSettle();
 
     expect(repository.deleted, [('session-1', 'user-1')]);
@@ -4932,9 +5253,9 @@ void main() {
 
     await tester.longPress(find.text('only prompt'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('message-action-delete')));
+    await tester.tap(find.byKey(const ValueKey('message-menu-delete')));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete message'));
+    await tester.tap(find.text('Delete message'));
     await tester.pumpAndSettle();
 
     expect(repository.deleted, isEmpty);
@@ -4983,57 +5304,55 @@ void main() {
           agents: [],
         );
         await _pumpChat(tester, api, controller: controller);
-        expect(
-          find.byKey(const ValueKey('composer-context-meter')),
-          percent >= 70 ? findsOneWidget : findsNothing,
-        );
-        expect(
-          find.text('$percent%'),
-          percent >= 70 ? findsOneWidget : findsNothing,
-        );
         await tester.pumpAndSettle();
+        // The kit composer discloses high usage on the model chip; the
+        // separate meter was retired in chat-3.
+        final contextPercent = find.byKey(
+          const Key('composer-context-percent'),
+        );
+        expect(contextPercent, percent >= 70 ? findsOneWidget : findsNothing);
         if (percent >= 70) {
+          expect(find.text('· $percent %'), findsOneWidget);
           expect(
-            find.bySemanticsLabel('Context window $percent percent used'),
+            find.bySemanticsLabel(RegExp('Context.*$percent')),
             findsOneWidget,
-          );
-          final fill = tester.getSize(
-            find.byKey(const ValueKey('composer-context-meter-fill')),
-          );
-          final track = tester.getSize(
-            find.byKey(const ValueKey('composer-context-meter')),
-          );
-          expect(fill.height, track.height);
-          expect(
-            fill.width / track.width,
-            moreOrLessEquals(percent / 100, epsilon: .01),
           );
         }
         // Routine usage is still reachable, with the exact value, through
         // the same Context usage destination used for warnings.
+        // The conversation menu's Details (slice-P10.2).
         await tester.tap(find.byKey(const ValueKey('session-actions-button')));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Display and context'));
-        await tester.tap(find.text('Display and context'));
-        await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Context usage'));
-        expect(find.text('Context usage').hitTestable(), findsOneWidget);
-        await tester.tap(find.text('Context usage'));
+        final details = find.byKey(const ValueKey('session-menu-details'));
+        expect(details.hitTestable(), findsOneWidget);
+        await tester.tap(details);
         await tester.pumpAndSettle();
         expect(find.byType(SessionContextScreen), findsOneWidget);
-        expect(find.text('$percent%'), findsOneWidget);
+        expect(
+          find.text(
+            percent < 50 ? '$percent% used · plenty left' : '$percent% used',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('$percent,000 of 100,000 tokens'), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(
+            'Model, $percent percent, $percent,000 of 100,000 tokens',
+          ),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
       },
     );
   }
 
-  testWidgets('composer hides the context meter without a known limit', (
+  testWidgets('composer hides the context percentage without a known limit', (
     tester,
   ) async {
     final api = _FakeOpenCodeApi();
     await _pumpChat(tester, api);
 
-    expect(find.byKey(const ValueKey('composer-context-meter')), findsNothing);
+    expect(find.byKey(const Key('composer-context-percent')), findsNothing);
   });
 
   testWidgets('Ctrl+Enter sends the drafted prompt', (tester) async {
@@ -5062,6 +5381,9 @@ void main() {
       ProviderScope(
         overrides: [connProvider.overrideWithValue(controller)],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
               context,
@@ -5077,30 +5399,16 @@ void main() {
 
     await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    // The sheet scrolls at 320dp with 2x text; the groups stay reachable.
-    await tester.ensureVisible(find.text('Display and context'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Display and context'));
-    await tester.pumpAndSettle();
-    expect(find.text('Timeline'), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('session-view-timestamps')),
-      findsOneWidget,
-    );
-    expect(tester.takeException(), isNull);
-    await tester.tapAt(const Offset(10, 10));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byTooltip('Conversation menu'));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Conversation actions'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Conversation actions'));
-    await tester.pumpAndSettle();
-    expect(find.text('Retry last prompt'), findsOneWidget);
-    await tester.ensureVisible(find.text('Refresh messages'));
-    await tester.pumpAndSettle();
-    expect(find.text('Refresh messages'), findsOneWidget);
+    // The menu scrolls at 320dp with 2x text; every entry stays reachable.
+    for (final key in [
+      'session-menu-find',
+      'session-menu-details',
+      'session-menu-rename',
+    ]) {
+      await tester.ensureVisible(find.byKey(ValueKey(key)));
+      await tester.pumpAndSettle();
+      expect(find.byKey(ValueKey(key)).hitTestable(), findsOneWidget);
+    }
     expect(tester.takeException(), isNull);
   });
 }

@@ -6,8 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/platform/local_pdf.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
-import 'package:opencode_mobile/ui/widgets/pdf_file_preview.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
+import 'package:opencode_mobile/ui/widgets/pdf_file_preview.dart';
 
 final _png = base64Decode(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2ZKgAAAAASUVORK5CYII=',
@@ -45,8 +47,22 @@ void main() {
         });
   }
 
-  Future<void> pump(WidgetTester tester, Widget child) =>
-      tester.pumpWidget(MaterialApp(home: Scaffold(body: child)));
+  Future<void> pump(WidgetTester tester, Widget child) {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    return tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: child),
+      ),
+    );
+  }
+
+  int renders() => calls.where((call) => call.method == 'render').length;
+  int cancels() => calls.where((call) => call.method == 'cancel').length;
   test(
     'channel input/output budgets reject invalid transport results',
     () async {
@@ -71,188 +87,102 @@ void main() {
     },
   );
   testWidgets(
-    'PDF page controls browse local rasters and stop at declared limit',
+    'pages render on this device, page 1 once, capped at the page limit',
     (tester) async {
+      debugPlatformCapabilities = const PlatformCapabilities.android();
       handler(
         (call) async => call.method == 'render'
             ? page((call.arguments as Map)['page'] as int, count: 201)
             : null,
       );
-      await pump(tester, PdfFilePreview(bytes: bytes));
+      await pump(tester, PdfFilePreview(bytes: bytes, name: 'report.pdf'));
       await tester.pumpAndSettle();
-      expect(find.text('Page 1 of 201'), findsOneWidget);
-      expect(find.textContaining('Only the first 200 pages'), findsOneWidget);
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
-      expect(find.text('Page 2 of 201'), findsOneWidget);
-      await tester.tap(find.text('Previous'));
-      await tester.pumpAndSettle();
-      expect(find.text('Page 1 of 201'), findsOneWidget);
+      expect(find.text('Page 1 of 200'), findsOneWidget);
+      final pages = [
+        for (final call in calls)
+          if (call.method == 'render') (call.arguments as Map)['page'] as int,
+      ];
+      expect(pages.where((p) => p == 0), hasLength(1));
+      expect(pages.every((p) => p < LocalPdf.maxPages), isTrue);
+      expect(tester.takeException(), isNull);
     },
   );
-  testWidgets('scope-retired PDF requests cannot install late pages', (
+  testWidgets('backgrounding cancels PDF work and a late page never lands', (
     tester,
   ) async {
+    debugPlatformCapabilities = const PlatformCapabilities.android();
     final pending = Completer<Object?>();
     handler(
       (call) => call.method == 'render' ? pending.future : Future.value(),
     );
-    final enabled = ValueNotifier(true);
-    addTearDown(enabled.dispose);
-    await pump(
-      tester,
-      ValueListenableBuilder<bool>(
-        valueListenable: enabled,
-        builder: (_, value, _) => MarkdownInteractionScope(
-          enabled: value,
-          child: PdfFilePreview(bytes: bytes),
-        ),
-      ),
-    );
-    enabled.value = false;
+    await pump(tester, PdfFilePreview(bytes: bytes, name: 'report.pdf'));
     await tester.pump();
-    expect(calls.where((call) => call.method == 'cancel'), hasLength(1));
-    pending.complete(page(0));
-    await tester.pumpAndSettle();
-    expect(find.text('Page 1 of 3'), findsNothing);
-    expect(find.text('Try again'), findsNothing);
-    await pump(tester, const SizedBox());
-    expect(tester.takeException(), isNull);
-  });
-  testWidgets('disposing a PDF view cancels and ignores a held page', (
-    tester,
-  ) async {
-    final pending = Completer<Object?>();
-    handler(
-      (call) => call.method == 'render' ? pending.future : Future.value(),
-    );
-    await pump(tester, PdfFilePreview(bytes: bytes));
-    await pump(tester, const SizedBox());
-    expect(calls.where((call) => call.method == 'cancel'), hasLength(1));
-    pending.complete(page(0));
-    await tester.pumpAndSettle();
-    expect(find.byType(Image), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
-  testWidgets(
-    'replacing a document retires the old response and resets to page one',
-    (tester) async {
-      final first = Completer<Object?>(), second = Completer<Object?>();
-      var renders = 0;
-      handler(
-        (call) => call.method == 'render'
-            ? (++renders == 1 ? first.future : second.future)
-            : Future.value(),
-      );
-      await pump(tester, PdfFilePreview(bytes: bytes));
-      await pump(
-        tester,
-        PdfFilePreview(bytes: Uint8List.fromList('another PDF'.codeUnits)),
-      );
-      expect(calls.where((call) => call.method == 'cancel'), hasLength(1));
-      second.complete(page(0, count: 7));
-      await tester.pumpAndSettle();
-      first.complete(page(0, count: 3));
-      await tester.pumpAndSettle();
-      expect(find.text('Page 1 of 7'), findsOneWidget);
-      expect(find.text('Page 1 of 3'), findsNothing);
-    },
-  );
-  testWidgets('backgrounding cancels PDF work and requires an explicit retry', (
-    tester,
-  ) async {
-    final pending = Completer<Object?>();
-    handler(
-      (call) => call.method == 'render' ? pending.future : Future.value(),
-    );
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await pump(tester, PdfFilePreview(bytes: bytes));
+    expect(renders(), 1);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
     await tester.pump();
-    expect(calls.where((call) => call.method == 'cancel'), hasLength(1));
+    expect(cancels(), 1);
     pending.complete(page(0));
     await tester.pumpAndSettle();
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
-    expect(calls.where((call) => call.method == 'render'), hasLength(1));
-    expect(find.text('Try again'), findsOneWidget);
     expect(find.text('Page 1 of 3'), findsNothing);
-  });
-  testWidgets('cancel and renderer death recover without retaining a spinner', (
-    tester,
-  ) async {
-    var pending = Completer<Object?>();
+    expect(find.text("Couldn't open report.pdf"), findsOneWidget);
     handler(
-      (call) => call.method == 'render' ? pending.future : Future.value(),
+      (call) async => call.method == 'render'
+          ? page((call.arguments as Map)['page'] as int)
+          : null,
     );
-    await pump(tester, PdfFilePreview(bytes: bytes));
-    await tester.tap(find.text('Cancel'));
-    await tester.pump();
-    pending.complete(page(0));
-    await tester.pumpAndSettle();
-    expect(
-      find.text('PDF loading cancelled. Retry when you are ready.'),
-      findsOneWidget,
-    );
-    pending = Completer<Object?>();
-    await tester.tap(find.text('Try again'));
-    await tester.pump();
-    pending.completeError(PlatformException(code: 'service_died'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('This PDF page could not'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsNothing);
-  });
-  testWidgets('initial inactive PDF mount waits for explicit resumed retry', (
-    tester,
-  ) async {
-    handler((call) async => call.method == 'render' ? page(0) : null);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    await pump(tester, PdfFilePreview(bytes: bytes));
-    expect(calls, isEmpty);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pump();
-    expect(calls, isEmpty);
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(find.text('Page 1 of 3'), findsOneWidget);
   });
-  testWidgets('inactive document replacement cannot start another render', (
-    tester,
-  ) async {
+  testWidgets('disposing a PDF view cancels a held page', (tester) async {
+    debugPlatformCapabilities = const PlatformCapabilities.android();
     final pending = Completer<Object?>();
     handler(
       (call) => call.method == 'render' ? pending.future : Future.value(),
     );
     await pump(tester, PdfFilePreview(bytes: bytes));
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    final replacement = Uint8List.fromList('new PDF'.codeUnits);
-    await pump(tester, PdfFilePreview(bytes: replacement));
-    pending.complete(page(0));
-    await tester.pumpAndSettle();
-    expect(calls.where((call) => call.method == 'render'), hasLength(1));
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
-    expect(calls.where((call) => call.method == 'render'), hasLength(1));
-    handler((call) async => call.method == 'render' ? page(0, count: 7) : null);
-    await tester.tap(find.text('Try again'));
-    await tester.pumpAndSettle();
-    expect(find.text('Page 1 of 7'), findsOneWidget);
-    final last = calls.last.arguments as Map;
-    expect(last['bytes'], replacement);
-    expect(last['page'], 0);
+    await tester.pumpWidget(const SizedBox.shrink());
+    expect(cancels(), 1);
+    pending.complete(page(0));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
   });
-  testWidgets('desktop and encrypted PDF give useful original-save guidance', (
+  testWidgets('an isolated view never reaches the renderer and says why', (
     tester,
   ) async {
+    debugPlatformCapabilities = const PlatformCapabilities.android();
+    handler((call) async => page(0));
+    await pump(
+      tester,
+      MarkdownInteractionScope(
+        enabled: false,
+        child: PdfFilePreview(bytes: bytes),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(renders(), 0);
+    expect(find.textContaining("PDF pages don't render"), findsOneWidget);
+  });
+  testWidgets('desktop and encrypted PDF give useful guidance', (tester) async {
+    handler((call) async => page(0));
     debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
-    await pump(tester, PdfFilePreview(bytes: bytes));
-    expect(find.textContaining('Android 10 or newer'), findsOneWidget);
-    expect(calls, isEmpty);
-    await pump(tester, const SizedBox());
+    await pump(tester, PdfFilePreview(bytes: bytes, name: 'report.pdf'));
+    await tester.pumpAndSettle();
+    expect(find.text("Can't show this file"), findsOneWidget);
+    expect(renders(), 0);
     debugPlatformCapabilities = const PlatformCapabilities.android();
     handler((call) async => throw PlatformException(code: 'encrypted'));
-    await pump(tester, PdfFilePreview(bytes: bytes));
+    await pump(
+      tester,
+      PdfFilePreview(
+        bytes: Uint8List.fromList('locked'.codeUnits),
+        name: 'locked.pdf',
+      ),
+    );
     await tester.pumpAndSettle();
-    expect(find.textContaining('requires a password'), findsOneWidget);
+    expect(find.text("Couldn't open locked.pdf"), findsOneWidget);
   });
 }

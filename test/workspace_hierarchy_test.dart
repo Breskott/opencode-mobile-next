@@ -12,7 +12,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/widgets/entrance.dart';
+import 'package:opencode_mobile/ui/kit/motion/kit_reveal.dart' show KitEntrance;
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -178,6 +178,16 @@ Finder _row(String id) => find.byKey(ValueKey('session-dismiss-$id'));
 
 double _top(WidgetTester tester, Finder finder) => tester.getTopLeft(finder).dy;
 
+/// New conversation's chooser is open: pick Solo.
+Future<void> _chooseSolo(WidgetTester tester) async {
+  expect(find.byKey(const ValueKey('new-conversation-sheet')), findsOneWidget);
+  final solo = find.byKey(const ValueKey('new-conversation-solo'));
+  await tester.ensureVisible(solo);
+  await tester.pump();
+  await tester.tap(solo);
+  await _pumpFrames(tester);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -205,15 +215,20 @@ void main() {
           ),
         );
         await _pumpFrames(tester);
+        // One named search row after the list (R2, R4).
         expect(
-          find.byTooltip(
-            'Search conversation titles across every project on this server',
+          find.byKey(
+            const ValueKey('search-all-sessions'),
+            skipOffstage: false,
           ),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);
         await tester.tap(find.widgetWithText(FilledButton, 'New conversation'));
         await _pumpFrames(tester);
+        // More than one way to start here (slice-P4.5, a2605a09): the
+        // chooser asks, and Solo starts the conversation.
+        await _chooseSolo(tester);
         expect(find.text('Created conversation'), findsOneWidget);
       },
     );
@@ -243,7 +258,7 @@ void main() {
       expect(
         find.ancestor(
           of: find.text('recent-0'),
-          matching: find.byType(EntranceReveal),
+          matching: find.byType(KitEntrance),
         ),
         findsNothing,
       );
@@ -280,6 +295,10 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.tap(action);
       await _pumpFrames(tester);
+      // The one action asks how to start where there is more than one way
+      // (slice-P4.5, a2605a09); nothing is created until Solo is picked.
+      expect(controller.createCalls, 0);
+      await _chooseSolo(tester);
       expect(controller.createCalls, 1);
       expect(find.text('New session opened'), findsOneWidget);
     },
@@ -315,7 +334,8 @@ void main() {
       await _pumpFrames(tester);
       final title = find.text('Fix checkout layout');
       expect(tester.widget<Text>(title).maxLines, 2);
-      expect(tester.getTopLeft(title).dx, 60);
+      // 16 rail + 30 icon tile + 12 gap (VL §4).
+      expect(tester.getTopLeft(title).dx, 58);
       expect(tester.getSize(title).height, greaterThan(40));
       expect(tester.takeException(), isNull);
       await tester.tap(title);
@@ -341,10 +361,13 @@ void main() {
         find.descendant(of: context, matching: find.text('OpenCode Mobile')),
         findsNothing,
       );
-      expect(find.text('/work/selected-b'), findsNothing);
+      expect(find.textContaining('/work/selected-b'), findsNothing);
       await tester.tap(context);
       await _pumpFrames(tester);
-      expect(find.text('/work/selected-b'), findsOneWidget);
+      // The path is under the project sheet's Details, last and collapsed.
+      await tester.tap(find.text('Details'));
+      await _pumpFrames(tester);
+      expect(find.textContaining('/work/selected-b'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
       controller.dispose();
     },
@@ -363,12 +386,16 @@ void main() {
       expect(find.text(path), findsNothing);
       await tester.tap(project);
       await _pumpFrames(tester);
-      expect(find.byType(SelectableText), findsOneWidget);
-      expect(
-        tester.widget<SelectableText>(find.byType(SelectableText)).data,
-        path,
-      );
       expect(find.text('Switch project'), findsOneWidget);
+      // The whole path, once, under Details (KIT-33), copyable.
+      final inSheet = find.descendant(
+        of: find.byKey(const ValueKey('workspace-context-sheet')),
+        matching: find.textContaining(path),
+      );
+      expect(inSheet, findsNothing);
+      await tester.tap(find.text('Details'));
+      await _pumpFrames(tester);
+      expect(inSheet, findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -378,10 +405,9 @@ void main() {
       for (final dark in [false, true]) {
         final label =
             '${width.toInt()}px, ${textScale}x text, ${dark ? 'dark' : 'light'}';
-        testWidgets('$label: blocked sessions sit once under Needs you, above '
-            'Running, Pinned and Recent, and nothing overflows', (
-          tester,
-        ) async {
+        testWidgets('$label: one Conversations list, blocked sessions once '
+            'at the top above running, pinned and recent, and nothing '
+            'overflows', (tester) async {
           // Tall enough that every section is laid out; width is what the
           // caption row and the menu have to fit.
           tester.view.physicalSize = Size(width, 2400 * textScale);
@@ -403,11 +429,20 @@ void main() {
           await _pumpFrames(tester);
           expect(tester.takeException(), isNull);
 
-          // One "Needs you" section holding both blocked rows, each once.
+          // One list, no header and no state sections (owner decision
+          // 2026-09-27). Both blocked rows are in it, each once.
+          expect(
+            find.byKey(const ValueKey('workspace-conversations')),
+            findsNothing,
+          );
+          expect(find.text('Conversations'), findsNothing);
           expect(
             find.byKey(const ValueKey('workspace-needs-you')),
-            findsOneWidget,
+            findsNothing,
           );
+          expect(find.byKey(const ValueKey('workspace-running')), findsNothing);
+          expect(find.text('Pinned'), findsNothing);
+          expect(find.text('Recent conversations'), findsNothing);
           expect(_row('pinned-blocked'), findsOneWidget);
           expect(_row('busy-blocked'), findsOneWidget);
           expect(
@@ -415,59 +450,53 @@ void main() {
             findsOneWidget,
           );
 
-          // The blocker is named on the row, in the attention tone.
+          // The row leads with the one "Needs you" word (KitNeedsYou, in
+          // the attention tone), then names the blocker (STATE-9).
           final permission = find.textContaining('Permission needed');
           expect(permission, findsOneWidget);
           final theme = Theme.of(tester.element(permission));
           final span = tester.widget<Text>(permission).textSpan! as TextSpan;
-          expect((span.children!.first as TextSpan).text, 'Permission needed');
+          expect((span.children!.first as TextSpan).text, 'Needs you · ');
           expect(
             (span.children!.first as TextSpan).style?.color,
             AppTheme.statusColor(theme, AppStatusTone.attention),
           );
+          expect((span.children![1] as TextSpan).text, 'Permission needed');
           expect(find.textContaining('Answer needed'), findsOneWidget);
 
-          // Section order top to bottom.
-          // UX plan 5.7: needs me, running, pinned, recent.
-          final needsYou = _top(tester, find.text('Needs you'));
-          final running = _top(
+          // Row order top to bottom (UX plan 5.7): needs me, running,
+          // pinned, recent. Blocked rows lead whatever their pin or busy
+          // state.
+          final header = _top(
             tester,
-            find.byKey(const ValueKey('workspace-running')),
+            find.byKey(const ValueKey('current-project-entry')),
           );
-          final pinned = _top(tester, find.text('Pinned'));
-          final recent = _top(tester, find.text('Recent conversations'));
+          final running = _top(tester, _row('busy-working'));
+          final pinned = _top(tester, _row('pinned-idle'));
+          final recent = _top(tester, _row('recent-idle'));
           expect(find.text('Active conversations'), findsNothing);
-          expect(
-            find.descendant(
-              of: find.byKey(const ValueKey('workspace-running')),
-              matching: find.text('Running'),
-            ),
-            findsOneWidget,
-          );
-          expect(needsYou, lessThan(running));
-          expect(running, lessThan(pinned));
-          expect(pinned, lessThan(recent));
-          // Blocked rows are above the first ordinary row, whatever their
-          // pin or busy state.
+          expect(_top(tester, _row('busy-blocked')), greaterThan(header));
+          expect(_top(tester, _row('pinned-blocked')), greaterThan(header));
           expect(_top(tester, _row('busy-blocked')), lessThan(running));
           expect(_top(tester, _row('pinned-blocked')), lessThan(running));
-          expect(_top(tester, _row('busy-working')), greaterThan(running));
-          expect(_top(tester, _row('busy-working')), lessThan(pinned));
-          expect(_top(tester, _row('pinned-idle')), greaterThan(pinned));
-          expect(_top(tester, _row('pinned-idle')), lessThan(recent));
-          expect(_top(tester, _row('recent-idle')), greaterThan(recent));
+          expect(running, lessThan(pinned));
+          expect(pinned, lessThan(recent));
 
-          // The caption's actions still fit and open a labelled menu.
+          // One named search after the list; no caption menu (reload is
+          // pull to refresh, background updates live in Settings; R4).
           expect(
             find.byKey(const ValueKey('search-all-sessions')),
             findsOneWidget,
           );
-          await tester.tap(
+          expect(find.text('Search all conversations'), findsOneWidget);
+          expect(
             find.byKey(const ValueKey('workspace-section-menu')),
+            findsNothing,
           );
-          await _pumpFrames(tester);
-          expect(tester.takeException(), isNull);
-          expect(find.text('Refresh recent conversations'), findsOneWidget);
+          expect(
+            _top(tester, find.byKey(const ValueKey('search-all-sessions'))),
+            greaterThan(recent),
+          );
           // Terminal is a Project tool now, not a Work menu entry.
           expect(
             find.byKey(const ValueKey('workspace-terminal')),
@@ -517,14 +546,18 @@ void main() {
     await _pumpFrames(tester);
     expect(find.textContaining('Answer needed'), findsNothing);
     expect(find.textContaining('Form response needed'), findsOneWidget);
-    expect(find.byKey(const ValueKey('workspace-needs-you')), findsOneWidget);
+    // Still at the top of the one list, above the running row.
+    expect(
+      _top(tester, _row('busy-blocked')),
+      lessThan(_top(tester, _row('busy-working'))),
+    );
     // Still one row, still busy underneath: it never fell into Active.
     expect(_row('busy-blocked'), findsOneWidget);
     expect(find.textContaining('Working'), findsOneWidget); // busy-working
   });
 
-  testWidgets('answering the request returns a pinned session to Pinned in '
-      'pin order and a busy one to Running', (tester) async {
+  testWidgets('answering the request returns a pinned session among the pins '
+      'in pin order and a busy one among the running rows', (tester) async {
     tester.view.physicalSize = const Size(390, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -534,7 +567,7 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await _pumpFrames(tester);
-    expect(find.byKey(const ValueKey('workspace-needs-you')), findsNothing);
+    expect(find.textContaining('Needs you'), findsNothing);
     final pinnedBefore = _top(tester, _row('pinned-blocked'));
     expect(pinnedBefore, lessThan(_top(tester, _row('pinned-idle'))));
 
@@ -565,22 +598,22 @@ void main() {
       ),
     );
     await _pumpFrames(tester);
-    expect(find.byKey(const ValueKey('workspace-needs-you')), findsOneWidget);
-    final runningSection = find.byKey(const ValueKey('workspace-running'));
-    expect(runningSection, findsOneWidget); // busy-working
+    // Both now say "Needs you" and sit above the running row.
+    expect(find.textContaining('Needs you'), findsNWidgets(2));
+    final runningRow = _row('busy-working');
     expect(
       _top(tester, _row('pinned-blocked')),
-      lessThan(_top(tester, runningSection)),
+      lessThan(_top(tester, runningRow)),
     );
     expect(
       _top(tester, _row('busy-blocked')),
-      lessThan(_top(tester, runningSection)),
+      lessThan(_top(tester, runningRow)),
     );
-    // The pin is still a pin: its menu offers Unpin, not Pin.
-    await tester.tap(
+    // The pin is still a pin: its menu (long-press, KIT-28) offers Unpin.
+    await tester.longPress(
       find.descendant(
         of: _row('pinned-blocked'),
-        matching: find.byType(PopupMenuButton<String>),
+        matching: find.text('pinned-blocked'),
       ),
     );
     await _pumpFrames(tester);
@@ -600,25 +633,30 @@ void main() {
       );
     }
     await _pumpFrames(tester);
-    expect(find.byKey(const ValueKey('workspace-needs-you')), findsNothing);
+    expect(find.textContaining('Needs you'), findsNothing);
     expect(_row('pinned-blocked'), findsOneWidget);
     expect(_row('busy-blocked'), findsOneWidget);
-    // Back under Pinned, first by recency among pins, as before.
-    final pinnedLabel = _top(tester, find.text('Pinned'));
-    final runningLabel = _top(tester, runningSection);
-    expect(runningLabel, lessThan(pinnedLabel));
-    expect(_top(tester, _row('pinned-blocked')), greaterThan(pinnedLabel));
+    // Back among the pins, first by recency among pins, as before; the
+    // busy one back among the running rows, above every pin.
+    expect(
+      _top(tester, _row('pinned-blocked')),
+      greaterThan(_top(tester, runningRow)),
+    );
     expect(
       _top(tester, _row('pinned-blocked')),
       lessThan(_top(tester, _row('pinned-idle'))),
     );
-    expect(_top(tester, _row('busy-blocked')), greaterThan(runningLabel));
-    expect(_top(tester, _row('busy-blocked')), lessThan(pinnedLabel));
+    expect(
+      _top(tester, _row('busy-blocked')),
+      lessThan(_top(tester, _row('pinned-blocked'))),
+    );
     expect(find.textContaining('Working'), findsNWidgets(2));
   });
 
-  testWidgets('a pinned conversation that is running sits once under Running '
-      'and returns to Pinned when the run ends', (tester) async {
+  testWidgets('a pinned conversation that is running sits once among the '
+      'running rows and returns among the pins when the run ends', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -629,21 +667,16 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await _pumpFrames(tester);
-    final running = find.byKey(const ValueKey('workspace-running'));
     expect(_row('pinned-idle'), findsOneWidget);
+    // Running rows first, then the pins: the idle pin (newer) now sits
+    // below the running pin (older).
     expect(
       _top(tester, _row('pinned-idle')),
-      greaterThan(_top(tester, running)),
+      lessThan(_top(tester, _row('pinned-blocked'))),
     );
-    expect(
-      _top(tester, _row('pinned-idle')),
-      lessThan(_top(tester, find.text('Pinned'))),
-    );
-    // The section counts what it holds: three running, one pinned.
-    expect(
-      find.descendant(of: running, matching: find.text('3')),
-      findsOneWidget,
-    );
+    // No section header, so no count.
+    expect(find.byKey(const ValueKey('workspace-running')), findsNothing);
+    expect(find.text('3'), findsNothing);
     expect(controller.isSessionPinned('pinned-idle'), isTrue);
 
     controller.busySessions.remove('pinned-idle');
@@ -652,7 +685,83 @@ void main() {
     expect(_row('pinned-idle'), findsOneWidget);
     expect(
       _top(tester, _row('pinned-idle')),
-      greaterThan(_top(tester, find.text('Pinned'))),
+      greaterThan(_top(tester, _row('pinned-blocked'))),
+    );
+    expect(
+      _top(tester, _row('pinned-idle')),
+      greaterThan(_top(tester, _row('busy-working'))),
+    );
+    expect(
+      _top(tester, _row('pinned-idle')),
+      lessThan(_top(tester, _row('recent-idle'))),
+    );
+  });
+
+  testWidgets('one list: a needs-you row sorts above a running row above a '
+      'finished row, and the needs-you row says "Needs you" in words', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    // Newest first by time is the opposite of the urgency order, so only
+    // the urgency order can put them the right way round.
+    controller.sessionsById = {
+      'finished': _session('finished', 90),
+      'running': _session('running', 60),
+      'waiting': _session('waiting', 30),
+    };
+    controller.busySessions
+      ..clear()
+      ..add('running');
+    controller.permissions['perm-waiting'] = _permission('waiting');
+
+    await tester.pumpWidget(_app(controller));
+    await _pumpFrames(tester);
+    expect(tester.takeException(), isNull);
+
+    // No caption above the one list (R4): the project header leads it.
+    expect(find.byKey(const ValueKey('workspace-conversations')), findsNothing);
+    final header = find.byKey(const ValueKey('current-project-entry'));
+    expect(header, findsOneWidget);
+    expect(find.byKey(const ValueKey('workspace-needs-you')), findsNothing);
+    expect(find.byKey(const ValueKey('workspace-running')), findsNothing);
+    final waiting = _top(tester, _row('waiting'));
+    final running = _top(tester, _row('running'));
+    final finished = _top(tester, _row('finished'));
+    expect(_top(tester, header), lessThan(waiting));
+    expect(waiting, lessThan(running));
+    expect(running, lessThan(finished));
+
+    // Never colour only: the needs-you row names its state in words, and
+    // the running row says it is working.
+    expect(
+      find.descendant(
+        of: _row('waiting'),
+        matching: find.textContaining('Needs you'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('session-attention-icon-waiting')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: _row('running'),
+        matching: find.textContaining('Working'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: _row('finished'),
+        matching: find.textContaining('Needs you'),
+      ),
+      findsNothing,
     );
   });
 
@@ -703,7 +812,9 @@ void main() {
     );
   });
 
-  testWidgets('Archived closes the list, after Recent', (tester) async {
+  testWidgets('archived ones are a filter of the one search, not a row', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -719,17 +830,22 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await _pumpFrames(tester);
-    final archived = find.text('Archived conversations');
-    expect(archived, findsOneWidget);
+    // All conversations holds the Archived filter, so Work has one search
+    // entry and no archived row repeating it (R3, R4).
+    expect(find.text('Archived conversations'), findsNothing);
+    expect(find.byKey(const ValueKey('workspace-archived')), findsNothing);
     expect(_row('old'), findsNothing);
+    final search = find.byKey(const ValueKey('search-all-sessions'));
+    expect(search, findsOneWidget);
     expect(
-      _top(tester, archived),
+      _top(tester, search),
       greaterThan(_top(tester, _row('recent-idle'))),
     );
   });
 
-  testWidgets('the section menu reloads sessions and omits Terminal when the '
-      'server has none', (tester) async {
+  testWidgets('no caption menu: reload is pull to refresh, no Terminal', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -739,16 +855,10 @@ void main() {
 
     await tester.pumpWidget(_app(controller));
     await _pumpFrames(tester);
-    // Menu entries exist only while the menu is open, so absence has to be
-    // checked with it open.
-    await tester.tap(find.byKey(const ValueKey('workspace-section-menu')));
-    await _pumpFrames(tester);
-    expect(find.text('Refresh recent conversations'), findsOneWidget);
+    expect(find.byKey(const ValueKey('workspace-section-menu')), findsNothing);
+    expect(find.text('Refresh recent conversations'), findsNothing);
     expect(find.byKey(const ValueKey('workspace-terminal')), findsNothing);
     expect(find.text('Terminal'), findsNothing);
-    await tester.tap(find.text('Refresh recent conversations'));
-    await _pumpFrames(tester);
-    expect(find.text('Refresh recent conversations'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

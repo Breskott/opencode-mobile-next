@@ -12,9 +12,12 @@ import 'package:opencode_mobile/state/codex_connection_probe.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/kit_field_finders.dart';
+import 'support/server_editor.dart';
 
 class _RecordingProfileStore extends ProfileStore {
   _RecordingProfileStore({required super.prefs});
@@ -119,6 +122,22 @@ class _ProbeSocket implements CodexSocket {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  final previousSocketProbe = socketAgentProbe;
+  // Save & connect checks the connection first; here the check answers, so
+  // what these tests watch is the save and the connect after it.
+  setUp(
+    () => socketAgentProbe =
+        ({
+          required backend,
+          required baseUrl,
+          required secret,
+          required directory,
+        }) async => const CodexConnectionProbeResult(
+          ok: true,
+          message: 'Codex connection verified.',
+        ),
+  );
+  tearDown(() => socketAgentProbe = previousSocketProbe);
 
   testWidgets('Codex add flow uses dedicated fields and saves its scope', (
     tester,
@@ -211,38 +230,32 @@ void main() {
 
     expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('codex-project-directory-field')),
-          )
-          .controller
-          ?.text,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('codex-project-directory-field')),
+      ).controller?.text,
       '/work/project',
     );
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('codex-connection-token-field')),
-          )
-          .controller
-          ?.text,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('codex-connection-token-field')),
+      ).controller?.text,
       'token-value',
     );
     expect(find.byKey(const ValueKey('server-save-failure')), findsOneWidget);
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('codex-project-directory-field')),
-          )
-          .enabled,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('codex-project-directory-field')),
+      ).enabled,
       isTrue,
     );
     expect(
-      tester
-          .widget<TextField>(
-            find.byKey(const ValueKey('codex-connection-token-field')),
-          )
-          .enabled,
+      editableOf(
+        tester,
+        find.byKey(const ValueKey('codex-connection-token-field')),
+      ).enabled,
       isTrue,
     );
   });
@@ -263,6 +276,7 @@ void main() {
 
       await tester.pumpWidget(_app(store, controller));
       await openFirstRunConnect(tester);
+      await openServerManualAddress(tester);
       await tester.enterText(
         find.byKey(const ValueKey('server-url-field')),
         'https://box.example:4097',
@@ -280,7 +294,8 @@ void main() {
         find.byKey(const ValueKey('server-password-field')),
         'replacement-token',
       );
-      await tester.pump();
+      // The stale verdict folds away (design standard §10), then is gone.
+      await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('server-save-failure')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('test-server-connection')));
       await tester.pumpAndSettle();
@@ -296,12 +311,13 @@ void main() {
         findsOneWidget,
       );
       expect(
-        tester
-            .widget<TextField>(
-              find.byKey(const ValueKey('server-password-field')),
-            )
-            .controller
-            ?.text,
+        editableOf(
+          tester,
+          find.descendant(
+            of: find.byKey(const ValueKey('server-password-field')),
+            matching: find.byType(TextField),
+          ),
+        ).controller?.text,
         'replacement-token',
       );
     },
@@ -328,7 +344,14 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
 
-    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.longPress(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('saved-server-rows')),
+            matching: find.byType(KitRow),
+          )
+          .first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
@@ -362,7 +385,7 @@ void main() {
       await tester.pumpWidget(_app(store, controller));
       await tester.tap(find.text('Add server'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Codex (experimental)'));
+      await tester.tap(find.byKey(const ValueKey('server-backend-codex')));
       await tester.pump();
       await tester.enterText(
         find.byKey(const ValueKey('codex-server-name-field')),
@@ -389,28 +412,24 @@ void main() {
       expect(submitted.codexDirectory, '/work/project');
       expect(submitted.codexToken, 'token-value');
       expect(
-        tester
-            .widget<TextField>(
-              find.byKey(const ValueKey('codex-project-directory-field')),
-            )
-            .enabled,
+        editableOf(
+          tester,
+          find.byKey(const ValueKey('codex-project-directory-field')),
+        ).enabled,
         isFalse,
       );
       expect(
-        tester
-            .widget<TextField>(
-              find.byKey(const ValueKey('codex-connection-token-field')),
-            )
-            .enabled,
+        editableOf(
+          tester,
+          find.byKey(const ValueKey('codex-connection-token-field')),
+        ).enabled,
         isFalse,
       );
+      // The backend is Add server's first step (P3.9, 3d251f37): it is not
+      // on the connect step, and Back to it does nothing mid-save.
       expect(
-        tester
-            .widget<ChoiceChip>(
-              find.widgetWithText(ChoiceChip, 'OpenCode 1 or 2'),
-            )
-            .onSelected,
-        isNull,
+        find.byKey(const ValueKey('server-backend-opencode')),
+        findsNothing,
       );
 
       // A test attempt against disabled controls must leave both the submitted
@@ -420,33 +439,32 @@ void main() {
         warnIfMissed: false,
       );
       expect(
-        tester
-            .widget<TextField>(
-              find.byKey(const ValueKey('codex-project-directory-field')),
-            )
-            .focusNode!
-            .hasFocus,
+        editableOf(
+          tester,
+          find.byKey(const ValueKey('codex-project-directory-field')),
+        ).focusNode!.hasFocus,
         isFalse,
       );
       await tester.tap(
-        find.widgetWithText(ChoiceChip, 'OpenCode 1 or 2'),
+        find.byKey(const ValueKey('server-editor-back')),
         warnIfMissed: false,
       );
       await tester.pump();
+      expect(find.byKey(const ValueKey('server-kind-step')), findsNothing);
       expect(submitted.backend, ServerBackend.codex);
       expect(submitted.codexDirectory, '/work/project');
       expect(
-        tester
-            .widget<TextField>(
-              find.byKey(const ValueKey('codex-project-directory-field')),
-            )
-            .controller
-            ?.text,
+        editableOf(
+          tester,
+          find.byKey(const ValueKey('codex-project-directory-field')),
+        ).controller?.text,
         '/work/project',
       );
 
       gate.complete();
       await tester.pumpAndSettle();
+      // Add server ends on its ready step, left through "Open" (P3.9).
+      await openReadyServer(tester);
       expect(find.text('home-route'), findsOneWidget);
       expect(store.saved.single.codexDirectory, '/work/project');
     },

@@ -402,13 +402,13 @@
         {
           "id": "session-relations-menu-handoff",
           "type": "menu-item",
-          "label": "Copy handoff",
+          "label": "Continue {title} on computer",
           "key": null,
           "line": 474,
-          "action": "open-dialog",
-          "target": "session-handoff-dialog",
-          "targetWidget": "showSessionHandoff",
-          "effect": "Calls showSessionHandoff(context, controller, sessionID, projectID) for that session (wired at lines 274/317).",
+          "action": "open-sheet",
+          "target": "continue-on-computer-sheet",
+          "targetWidget": "showContinueOnComputerSheet",
+          "effect": "showSessionHandoff re-reads the session and opens the continue-on-computer sheet (the handoff dialog merged into it, slice-P3.11a).",
           "gates": [],
           "destructive": false
         },
@@ -425,63 +425,6 @@
           "gates": [
             "widget.controller.canPinSessions"
           ],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "session-handoff-dialog",
-      "title": "Copy handoff reference? | Continue on computer",
-      "kind": "dialog",
-      "file": "lib/ui/widgets/session_handoff.dart",
-      "widget": "showSessionHandoff",
-      "presentedBy": [
-        "showSessionHandoff"
-      ],
-      "line": 85,
-      "purpose": "Previews the resume command (or a metadata reference when the repository cannot create one) and copies it to the clipboard on confirm.",
-      "reachedFrom": [
-        {
-          "page": "session-relations",
-          "element": "session-relations-menu-handoff"
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "_open(result, handoff: true)",
-          "file": "lib/ui/screens/global_sessions_screen.dart",
-          "line": 410
-        }
-      ],
-      "gates": [
-        "sessionID and projectID match ^[A-Za-z0-9_-]+$ (else product error)",
-        "command variant when repository is SessionCommandHandoffGateway"
-      ],
-      "elements": [
-        {
-          "id": "session-handoff-dialog-cancel",
-          "type": "button",
-          "label": "Cancel",
-          "key": null,
-          "line": 117,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop(context, false).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "session-handoff-dialog-copy",
-          "type": "button",
-          "label": "Copy reference | Copy command",
-          "key": null,
-          "line": 121,
-          "action": "copy",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Pops true; showSessionHandoff revalidates session/location/command and Clipboard.setData(command ?? reference) (line 157), then shows a snackbar.",
-          "gates": [],
           "destructive": false
         }
       ]
@@ -599,8 +542,8 @@
       "file": "lib/ui/screens/session_import_screen.dart",
       "widget": "SessionImportScreen",
       "presentedBy": [],
-      "line": 37,
-      "purpose": "Picks an exported session JSON file, reviews it, chooses a destination directory/workspace and imports it to the connected server.",
+      "line": 58,
+      "purpose": "Picks an exported conversation JSON file, reviews its title and message count (ids under Details), shows the destination as one row and imports it to the connected server with one pinned primary.",
       "reachedFrom": [
         {
           "page": "?",
@@ -686,8 +629,8 @@
       "file": "lib/ui/screens/session_import_screen.dart",
       "widget": "_chooseDestination",
       "presentedBy": [],
-      "line": 248,
-      "purpose": "Lists project directories, worktrees and managed workspaces as import destinations.",
+      "line": 233,
+      "purpose": "Lists project folders, worktrees and managed workspaces as import destinations, the current one marked; hidden when there is only one place.",
       "reachedFrom": [
         {
           "page": "session-import",
@@ -854,169 +797,6 @@
           "effect": "Pops true; _leave() then pops the note screen, dropping the draft.",
           "gates": [],
           "destructive": true
-        }
-      ]
-    },
-    {
-      "id": "context-capsule",
-      "title": "Context capsule",
-      "kind": "screen",
-      "file": "lib/ui/screens/context_capsule_screen.dart",
-      "widget": "ContextCapsuleScreen",
-      "presentedBy": [],
-      "line": 10,
-      "purpose": "Builds a bundle of labelled text excerpts and images that is applied to the chat prompt draft.",
-      "reachedFrom": [
-        {
-          "page": "?",
-          "element": null,
-          "widget": "_ChatScreenState._addContextCapsule",
-          "file": "lib/ui/screens/chat_screen.dart",
-          "line": 2968
-        }
-      ],
-      "gates": [
-        "!(_conn.isIsolated || _sending || _promptShelfBusy || _voiceConversation) (chat_screen.dart:2921)",
-        "controls hidden when _invalid (scope changed)"
-      ],
-      "elements": [
-        {
-          "id": "context-capsule-add-excerpt",
-          "type": "button",
-          "label": "Note | Error | Code",
-          "key": null,
-          "line": 201,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_add(label): appends an excerpt card pre-labelled with the chosen kind (max 8); three buttons from one loop.",
-          "gates": [
-            "!_invalid",
-            "disabled when _busy || _excerpts.length >= 8"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "context-capsule-excerpt-label",
-          "type": "text-field",
-          "label": "Label",
-          "key": null,
-          "line": 218,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Edits the excerpt label (max 80 chars).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "context-capsule-excerpt-text",
-          "type": "text-field",
-          "label": "Excerpt",
-          "key": null,
-          "line": 228,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Edits the excerpt body (max 16000 chars); onChanged rebuilds to enable Apply.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "context-capsule-excerpt-paste",
-          "type": "button",
-          "label": "Paste",
-          "key": null,
-          "line": 246,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_paste(excerpt): reads Clipboard.getData (line 97) and inserts at the selection, enforcing the 16000 limit.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "context-capsule-excerpt-remove",
-          "type": "button",
-          "label": "Remove",
-          "key": null,
-          "line": 251,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Removes the excerpt from _excerpts and disposes its controllers.",
-          "gates": [],
-          "destructive": true
-        },
-        {
-          "id": "context-capsule-add-image",
-          "type": "button",
-          "label": "Add screenshot or image",
-          "key": null,
-          "line": 268,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_pick(): calls widget.pickImage (chat's _chooseAttachment) and adds an image/* attachment.",
-          "gates": [
-            "widget.pickImage != null (chat _supportsPromptAttachments)"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "context-capsule-image-tile",
-          "type": "list-tile",
-          "label": "<image filename> / Tap to preview",
-          "key": null,
-          "line": 283,
-          "action": "open-sheet",
-          "target": "file-preview-sheet",
-          "targetWidget": "showFilePreviewSheet",
-          "effect": "showFilePreviewSheet(context, FilePreviewData.fromDataUrl(...)).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "context-capsule-image-remove",
-          "type": "button",
-          "label": "Remove",
-          "key": null,
-          "line": 295,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Removes the image from _images.",
-          "gates": [],
-          "destructive": true
-        },
-        {
-          "id": "context-capsule-apply",
-          "type": "button",
-          "label": "Apply to draft",
-          "key": null,
-          "line": 319,
-          "action": "submit",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_apply(): composes the capsule text and Navigator.pop(ContextCapsule(text, images)) (line 160); chat merges it into the draft.",
-          "gates": [
-            "!_busy && hasContent",
-            "!_invalid"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "context-capsule-cancel",
-          "type": "button",
-          "label": "Cancel",
-          "key": null,
-          "line": 325,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.pop() without a result.",
-          "gates": [],
-          "destructive": false
         }
       ]
     },
@@ -1247,91 +1027,9 @@
           "destructive": false
         }
       ]
-    },
-    {
-      "id": "info-label-sheet",
-      "title": "<glossary term> (MCP, Worktree, Provider, Context, Agent, Reasoning, Permission, Variant)",
-      "kind": "sheet",
-      "file": "lib/ui/widgets/info_label.dart",
-      "widget": "InfoLabel.show",
-      "presentedBy": [
-        "InfoLabel.show"
-      ],
-      "line": 150,
-      "purpose": "Short plain-language explanation of a glossary term.",
-      "reachedFrom": [
-        {
-          "page": "embedded-info-label",
-          "element": "embedded-info-label-term"
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "InfoLabel.show call (Glossary.mcp)",
-          "file": "lib/ui/screens/mcp_setup_screen.dart",
-          "line": 274
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "info-label-sheet-got-it",
-          "type": "button",
-          "label": "Got it",
-          "key": null,
-          "line": 174,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Navigator.of(context).pop().",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "embedded-info-label",
-      "title": "[Info label: term with info glyph]",
-      "kind": "overlay",
-      "file": "lib/ui/widgets/info_label.dart",
-      "widget": "InfoLabel",
-      "presentedBy": [],
-      "line": 110,
-      "embeddedIn": [
-        "lib/ui/screens/worktrees_screen.dart:623 (Glossary.worktree)",
-        "lib/ui/screens/library/integrations_screen.dart:896 (Glossary.mcp)",
-        "lib/ui/screens/chat/message_view.dart:2233 (Glossary.reasoning)"
-      ],
-      "purpose": "Inline term + info icon; tapping opens the explanation sheet.",
-      "reachedFrom": [],
-      "gates": [],
-      "elements": [
-        {
-          "id": "embedded-info-label-term",
-          "type": "link",
-          "label": "<term> [info icon] (semantics: '{term}. Tap for an explanation.')",
-          "key": null,
-          "file": "lib/ui/widgets/info_label.dart",
-          "line": 208,
-          "action": "open-sheet",
-          "target": "info-label-sheet",
-          "targetWidget": "InfoLabel.show",
-          "effect": "InkWell.onTap (and Semantics.onTap line 205) calls InfoLabel.show(context, term, explanation).",
-          "gates": [],
-          "destructive": false
-        }
-      ]
     }
   ],
   "notPages": [
-    {
-      "file": "lib/ui/widgets/technical_direction.dart",
-      "reason": "Directionality(ltr) wrapper only; no surface and no interactive element"
-    },
-    {
-      "file": "lib/ui/widgets/agent_color.dart",
-      "reason": "colour helper functions and AgentColorScope InheritedWidget; no interactive element"
-    },
     {
       "file": "lib/ui/widgets/provider_logo.dart",
       "reason": "ProviderLogo / ProviderMonogram / BrandTile pure rendering; no tap handlers or tooltips"
@@ -1342,10 +1040,9 @@
     }
   ],
   "notes": [
-    "Chat openers are private methods of _ChatScreenState (lib/ui/screens/chat_screen.dart): _showContext:5690, _showSubagents:5703, _exportTranscript:5467, _openSessionMenu case 'note':5563, _addContextCapsule:2920, _continueOnComputer:5628, _continueOnPhone:5664; the menu elements that call them belong to the chat agent.",
+    "Chat openers are private methods of _ChatScreenState (lib/ui/screens/chat_screen.dart): _showContext:5690, _showSubagents:5703, _exportTranscript:5467, _openSessionMenu case 'note':5563, _continueOnComputer:5628, _continueOnPhone:5664; the menu elements that call them belong to the chat agent.",
     "continue-on-computer-sheet: the copy button is inside AgentCommandBlock (lib/ui/widgets/agent_blocks.dart, not assigned to me); recorded as one element with file pointing there, line is the embed site session_handoff_sheets.dart:70.",
     "session-relations tiles pop the screen with the selected Session; actual navigation happens in the opener (chat _openRelatedSession chat_screen.dart:5714, global_sessions_screen.dart:419 onward).",
-    "embedded-info-label embeddedIn lists host files/lines rather than class names; host widget classes not resolved (worktrees_screen.dart:623, library/integrations_screen.dart:896, chat/message_view.dart:2233). chat_screen.dart:53 and library_screen.dart:23 import info_label.dart but do not use InfoLabel.",
     "Glossary entries provider/context/agent/permission/variant have no InfoLabel usage in lib/ (only mcp, worktree, reasoning are used).",
     "session_handoff.dart also defines SessionNavigationScope (non-UI guard). showSessionHandoff error paths use showProductError (no page).",
     "session_relations_screen.dart:498 _relativeTime uses hard-coded English strings ('Now', 'm ago') rather than relative_time.dart."

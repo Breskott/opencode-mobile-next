@@ -5,7 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/sse.dart';
-import 'package:opencode_mobile/domain/server_gateway.dart' show PromptDelivery;
+import 'package:opencode_mobile/domain/server_gateway.dart'
+    show CatalogModel, CatalogSnapshot, PromptDelivery;
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/review_handoff.dart';
@@ -16,12 +17,35 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Covers the chat UI built on the widened server data: the retry banner,
 /// typed assistant error cards, the length footer, and session-row chips.
+/// A controller whose catalog stays what the test set (no server read).
+class _CatalogController extends ConnectionController {
+  _CatalogController(super.store);
+
+  @override
+  Future<void> refreshCatalog() async {}
+}
+
+CatalogModel _model(String providerID, String id, String name) => CatalogModel(
+  id: id,
+  providerID: providerID,
+  name: name,
+  enabled: true,
+  status: 'active',
+  contextLimit: 200000,
+  outputLimit: 32000,
+  reasoning: false,
+  attachments: false,
+  tools: true,
+  variants: const [],
+);
+
 class _Api extends OpenCodeApi with CompleteMessageHistory {
   _Api() : super(baseUrl: 'http://localhost');
 
   List<MessageWithParts> messagesResult = const [];
   int abortCalls = 0;
   final List<String> prompts = [];
+  final List<ModelRef?> promptModels = [];
 
   @override
   Future<List<Session>> sessions() async => const [];
@@ -65,6 +89,7 @@ class _Api extends OpenCodeApi with CompleteMessageHistory {
     PromptDelivery? delivery,
   }) async {
     prompts.add(text);
+    promptModels.add(model);
   }
 }
 
@@ -97,18 +122,34 @@ MessageWithParts _user(String id) => MessageWithParts(
   parts: [Part(id: '$id-text', messageID: id, type: 'text', text: 'Hi')],
 );
 
-Future<ConnectionController> _controller(_Api api) async {
+Future<ConnectionController> _controller(
+  _Api api, {
+  List<CatalogModel>? models,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
-  final controller = ConnectionController(ProfileStore(prefs: prefs))
-    ..api = api
-    ..status = StreamStatus.connected;
+  final store = ProfileStore(prefs: prefs);
+  final controller =
+      (models == null ? ConnectionController(store) : _CatalogController(store))
+        ..api = api
+        ..status = StreamStatus.connected;
+  if (models != null) {
+    controller.catalog = CatalogSnapshot(
+      providers: const [],
+      models: models,
+      agents: const [],
+    );
+  }
   addTearDown(controller.dispose);
   return controller;
 }
 
-Future<ConnectionController> _pumpChat(WidgetTester tester, _Api api) async {
-  final controller = await _controller(api);
+Future<ConnectionController> _pumpChat(
+  WidgetTester tester,
+  _Api api, {
+  List<CatalogModel>? models,
+}) async {
+  final controller = await _controller(api, models: models);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(controller)],
@@ -214,7 +255,8 @@ void main() {
     testWidgets('appears with a live countdown and Stop, then clears', (
       tester,
     ) async {
-      final api = _Api();
+      // Stop sits on the running turn's live line, so the turn has a prompt.
+      final api = _Api()..messagesResult = [_user('u1')];
       final controller = await _pumpChat(tester, api);
       expect(find.byKey(const ValueKey('retry-banner')), findsNothing);
 
@@ -256,6 +298,163 @@ void main() {
     });
   });
 
+  group('a prompt that got no answer', () {
+    const modelMissing =
+        'ProviderModelNotFoundError: Model not found: openai/gpt-5.6-sol. '
+        'Did you mean: gpt-5.6-sol, gpt-5.6-sol-pro?\n'
+        '    at <anonymous> (/\$bunfs/root/chunk.js:439:95275)';
+
+    testWidgets('the server\'s suggested model is one tap: switch and resend', (
+      tester,
+    ) async {
+      final api = _Api()
+        ..messagesResult = [
+          _user('u1'),
+          _assistant(
+            'a1',
+            errorText: modelMissing,
+            errorKind: MessageErrorKind.unknown,
+          ),
+        ];
+      final controller = await _pumpChat(
+        tester,
+        api,
+        models: [_model('openai', 'gpt-5.6-sol-pro', 'GPT-5.6 Sol Pro')],
+      );
+      await tester.pumpAndSettle();
+      // The prompt itself says it got no answer, right above the error.
+      expect(find.byKey(const ValueKey('prompt-not-answered-u1')), findsOne);
+      expect(find.text('Not answered'), findsOneWidget);
+      final use = find.byKey(const Key('error-action-use-suggestion'));
+      expect(use, findsOneWidget);
+      expect(find.text('Use GPT-5.6 Sol Pro and resend'), findsOneWidget);
+      await tester.tap(use);
+      await tester.pumpAndSettle();
+      expect(api.prompts, ['Hi']);
+      expect(api.promptModels.single?.providerID, 'openai');
+      expect(api.promptModels.single?.modelID, 'gpt-5.6-sol-pro');
+      expect(
+        controller.modelForSession('session-1')?.modelID,
+        'gpt-5.6-sol-pro',
+      );
+    });
+
+    testWidgets('a prompt the server refused before any step: the status '
+        'line offers the suggested model and resends', (tester) async {
+      final api = _Api()..messagesResult = [_user('u1')];
+      final controller = await _pumpChat(
+        tester,
+        api,
+        models: [_model('openai', 'gpt-5.6-sol-pro', 'GPT-5.6 Sol Pro')],
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Not answered'), findsNothing);
+      controller.handleEventForTesting(
+        EventEnvelope(
+          type: 'session.error',
+          properties: {
+            'sessionID': 'session-1',
+            'error': {
+              'name': 'ProviderModelNotFoundError',
+              'data': {'message': modelMissing},
+            },
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Not answered'), findsOneWidget);
+      final use = find.byKey(const ValueKey('prompt-error-use-suggestion'));
+      expect(use, findsOneWidget);
+      await tester.tap(use);
+      await tester.pumpAndSettle();
+      expect(api.prompts, ['Hi']);
+      expect(api.promptModels.single?.modelID, 'gpt-5.6-sol-pro');
+    });
+
+    testWidgets('without a model the server has, Choose model stays', (
+      tester,
+    ) async {
+      final api = _Api()
+        ..messagesResult = [
+          _user('u1'),
+          _assistant(
+            'a1',
+            errorText: modelMissing,
+            errorKind: MessageErrorKind.unknown,
+          ),
+        ];
+      await _pumpChat(tester, api, models: const []);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('error-action-use-suggestion')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const Key('error-action-choose-model')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'any other failure offers Send again, which resends the prompt',
+      (tester) async {
+        final api = _Api()
+          ..messagesResult = [
+            _user('u1'),
+            _assistant(
+              'a1',
+              errorText: 'The provider is overloaded. Please retry.',
+              errorKind: MessageErrorKind.unknown,
+            ),
+          ];
+        await _pumpChat(tester, api);
+        await tester.pumpAndSettle();
+        expect(find.text('Not answered'), findsOneWidget);
+        await tester.tap(find.byKey(const Key('error-action-resend')));
+        await tester.pumpAndSettle();
+        expect(api.prompts, ['Hi']);
+      },
+    );
+
+    testWidgets('a turn that ended with nothing and no error says so and '
+        'offers Send again', (tester) async {
+      final api = _Api()..messagesResult = [_user('u1'), _assistant('a1')];
+      await _pumpChat(tester, api);
+      await tester.pumpAndSettle();
+      expect(find.text('No reply came back'), findsOneWidget);
+      // One way to say it: not also "Not answered".
+      expect(find.text('Not answered'), findsNothing);
+      await tester.tap(find.byKey(const Key('no-reply-send-again')));
+      await tester.pumpAndSettle();
+      expect(api.prompts, ['Hi']);
+    });
+
+    testWidgets('an answered turn, and an older failure, offer no resend', (
+      tester,
+    ) async {
+      final api = _Api()
+        ..messagesResult = [
+          _user('u1'),
+          _assistant(
+            'a1',
+            errorText: 'Something odd',
+            errorKind: MessageErrorKind.unknown,
+          ),
+          _user('u2'),
+          _assistant(
+            'a2',
+            parts: [
+              Part(id: 'a2-t', messageID: 'a2', type: 'text', text: 'Done.'),
+            ],
+          ),
+        ];
+      await _pumpChat(tester, api);
+      await tester.pumpAndSettle();
+      expect(find.text('Not answered'), findsNothing);
+      expect(find.byKey(const Key('error-action-resend')), findsNothing);
+    });
+  });
+
   group('assistant error cards', () {
     testWidgets('context overflow offers Compact session', (tester) async {
       final api = _Api()
@@ -273,7 +472,12 @@ void main() {
         find.byKey(const Key('error-card-context-overflow')),
         findsOneWidget,
       );
-      expect(find.text('Context window exceeded'), findsOneWidget);
+      // Words, not the server's text (that is under Error details).
+      expect(
+        find.text('This conversation is too long for the model.'),
+        findsOneWidget,
+      );
+      expect(find.text('Context window exceeded'), findsNothing);
       await tester.tap(find.byKey(const Key('error-action-compact')));
       await tester.pump();
       // No model is selected in this harness, so the existing compaction
@@ -337,11 +541,11 @@ void main() {
         ];
       await _pumpChat(tester, api);
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('message-stopped')), findsOneWidget);
-      expect(find.text('Stopped'), findsOneWidget);
-      expect(find.text('aborted'), findsNothing);
-      final message = find.byKey(const ValueKey('message-highlight-a1'));
+      final message = find.byKey(const Key('message-stopped'));
       expect(message, findsOneWidget);
+      // The turn's end line says it in words; the raw reason stays out.
+      expect(find.text('You stopped this reply.'), findsOneWidget);
+      expect(find.text('aborted'), findsNothing);
       expect(
         find.descendant(of: message, matching: find.byType(TextButton)),
         findsNothing,
@@ -367,18 +571,15 @@ void main() {
         find.byKey(const Key('error-card-model-not-found')),
         findsOneWidget,
       );
-      expect(
-        find.text(
-          'Model not found: openai/gpt-5.6-sol. Did you mean: gpt-5.6-sol, '
-          'gpt-5.6-sol-pro?',
-        ),
-        findsOneWidget,
-      );
+      // One line in words; the server's text only under Details.
+      expect(find.text("The server doesn't have this model."), findsOneWidget);
+      expect(find.textContaining('Did you mean'), findsNothing);
       expect(find.textContaining('at <anonymous>'), findsNothing);
       await tester.tap(find.byKey(const Key('error-action-details')));
       await tester.pumpAndSettle();
       expect(find.textContaining('at <anonymous>'), findsOneWidget);
-      await tester.tap(find.text('Close'));
+      expect(find.textContaining('Did you mean'), findsOneWidget);
+      await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
       expect(
         find.byKey(const Key('error-action-choose-model')),
@@ -412,7 +613,13 @@ void main() {
           ];
         await _pumpChat(tester, api);
         await tester.pumpAndSettle();
-        expect(find.text('Something odd'), findsOneWidget);
+        // An error the app does not know reads in plain words; the
+        // server's text is under Error details.
+        expect(
+          find.text('The agent stopped because of an error.'),
+          findsOneWidget,
+        );
+        expect(find.text('Something odd'), findsNothing);
         expect(find.byKey(const Key('message-length-footer')), findsOneWidget);
         expect(
           find.text('Answer was cut off by the length limit'),

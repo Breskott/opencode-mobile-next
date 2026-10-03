@@ -1,0 +1,22 @@
+00:00 +1 -1: test/kit/kit_manifest_test.dart: G4: every kit part and opener meets the manifest (allowlist only shrinks) [E]
+    - states · KitDetailsFold: declares empty but needs disabled (nullable callback onExpansionChanged)
+    - gallery · KitDetailsFold: test/goldens/kit/kit_details_fold_golden_test.dart lacks kitGallerySizes, an …_ar_… golden in Locale('ar')
+    - docRow · KitDetailsFold: no [KitDetailsFold] row in the kit.dart table
+    - docRow · showKitTechnicalDetails: no [showKitTechnicalDetails] row in the kit.dart table
+    - keyboard · KitDetailsFold: not in test/kit/kit_keyboard_test.dart
+00:02 +2 -2: test/kit_motion_test.dart: manifest every kit.dart part has reduced-motion samples (G8x) [E]
+              'KitDetailsFold (lib/ui/kit/kit_details_fold.dart)',
+              'showKitTechnicalDetails (lib/ui/kit/kit_details_fold.dart)'
+00:03 +6 -3: test/kit_motion_test.dart: KitActionBlock (MOT-7) working settles at once under system [E]
+00:03 +7 -4: test/kit_motion_test.dart: KitActionBlock (MOT-7) working settles at once under effectsOff [E]
+00:04 +17 -5: test/kit_motion_test.dart: KitButton (MOT-7) primary working settles at once under system [E]
+00:04 +17 -6: test/kit_motion_test.dart: KitButton (MOT-7) secondary working settles at once under system [E]
+00:04 +21 -7: test/kit_motion_test.dart: KitButton (MOT-7) primary working settles at once under effectsOff [E]
+00:04 +21 -8: test/kit_motion_test.dart: KitButton (MOT-7) secondary working settles at once under effectsOff [E]
+00:04 +28 -9: test/kit_motion_test.dart: KitConfirmSheet (MOT-7) working settles at once under system [E]
+00:04 +30 -10: test/kit_motion_test.dart: KitConfirmSheet (MOT-7) working settles at once under effectsOff [E]
+00:05 +67 -11: test/kit_motion_test.dart: KitProgressView (MOT-7) waiting settles at once under system [E]
+00:05 +69 -12: test/kit_motion_test.dart: KitProgressView (MOT-7) waiting settles at once under effectsOff [E]
+00:06 +107 -13: test/kit_motion_test.dart: KitStateView (MOT-7) working settles at once under system [E]
+00:06 +109 -14: test/kit_motion_test.dart: KitStateView (MOT-7) working settles at once under effectsOff [E]
+00:08 +167 -14: Some tests failed.

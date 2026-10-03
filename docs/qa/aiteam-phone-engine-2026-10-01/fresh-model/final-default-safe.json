@@ -1,0 +1,11 @@
+{
+  "configModel": null,
+  "connected": [
+    "zai-coding-plan",
+    "opencode"
+  ],
+  "defaults": {
+    "zai-coding-plan": "glm-5.3-highspeed",
+    "opencode": "big-pickle"
+  }
+}

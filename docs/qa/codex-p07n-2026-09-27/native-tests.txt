@@ -1,0 +1,13 @@
+PASS fresh
+PASS migration
+PASS empty-destination
+PASS retry-after-rename
+PASS retain-reinstall-delete
+PASS reset-rootfs
+PASS collision
+PASS symlink-ancestors
+PASS symlink-contents
+PASS measurement
+PASS inspection-failure
+PASS deletion-failure
+PASS invalid-size

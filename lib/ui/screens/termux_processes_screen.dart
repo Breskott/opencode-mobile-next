@@ -1,9 +1,35 @@
-/// Settings › Termux server › Running now (TEAM-305): every process the
-/// app's Termux user owns, grouped by what owns it, with CPU and memory,
-/// refreshed on pull and every 10 seconds while open. Orphans carry the
-/// reason they were flagged and a one-tap Stop; stopping a whole group is
-/// two-step; the OpenCode server and sshd are protected and send the user
-/// to the server controls instead.
+/// This phone › Running on this phone (TEAM-305, P5.3): every process the
+/// app's Termux user owns, by what runs, refreshed on pull and every 10
+/// seconds while open.
+///
+/// ONE list ordered by urgency (owner rule 2026-09-27), never split into
+/// sections: processes left behind first (a warning mark and "Helper ·
+/// Parent gone · Busy · 43 MB · running 1 h 1 min"), then by what runs in
+/// the page's order (OpenCode server, AI Team, Claude Code, dev services,
+/// terminals, helpers), each row naming its kind first in words beside the
+/// kind's mark. "Busy" or "Idle" is measured between two readings (the
+/// first comes a few seconds after the page opens), never `ps`'s lifetime
+/// CPU average, which moves under Details. Memory is in MB; a missing
+/// reading is left out, never shown as zero.
+///
+/// Above the list, the budget: "18 of 32 background processes", with what
+/// the 32 is (Android's limit for all apps together, advisory: the owner
+/// may have lifted it and other apps count too).
+///
+/// The OpenCode server and sshd are protected and say so in words; they
+/// send the user to This phone. Stopping one process lives in its row's
+/// menu and its details sheet ("Stop Gradle daemon"); a kind with two or
+/// more processes also offers one stop for all of them in each of its
+/// rows' menus ("Stop all 3 dev services"), asked once with every name;
+/// the bulk stop for what was left behind is the last row. Each stop sends
+/// exactly the processes the question named, checked again by Termux.
+///
+/// Built from kit parts only (KIT-1): a [KitScreen] page, [KitSkeletonRows]
+/// while the first list is read, [KitStateView] for a list that could not
+/// be read or is empty, one [KitRowGroup] of [KitRow]s, [KitNotice] for
+/// what a stop did, a [showKitSheet] for a process's details with its
+/// technical values in one [KitDetailsFold], and [showKitConfirm] for every
+/// stop.
 library;
 
 import 'dart:async';
@@ -14,25 +40,62 @@ import '../../l10n/app_localizations.dart';
 import '../../termux/bridge.dart';
 import '../../termux/processes.dart';
 import '../app_theme.dart';
-import '../desktop/desktop_interaction.dart';
-import '../widgets/confirm_sheet.dart';
-import '../widgets/safety_confirms.dart';
-import '../widgets/product_states.dart';
-import 'termux_setup_screen.dart';
+import '../kit/kit.dart';
+import '../widgets/product_states.dart' show productErrorDetails;
+import '../../state/phone_host.dart' show PhoneHostKind;
+import 'this_phone_screen.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-String termuxProcessGroupLabel(
-  AppLocalizations l10n,
-  TermuxProcessGroup group,
-) => switch (group) {
-  TermuxProcessGroup.opencodeServer => l10n.termuxProcsGroupOpenCode,
-  TermuxProcessGroup.aiTeam => l10n.termuxProcsGroupAiTeam,
-  TermuxProcessGroup.buildDaemons => l10n.termuxProcsGroupBuild,
-  TermuxProcessGroup.orphans => l10n.termuxProcsGroupOrphans,
-  TermuxProcessGroup.other => l10n.termuxProcsGroupOther,
+/// What runs, in the words that lead a row's line.
+String phoneProcessKindLabel(AppLocalizations l10n, TermuxProcess process) {
+  if (process.isHostApp) return l10n.termuxProcsKindHostApp;
+  return switch (process.kind) {
+    PhoneProcessKind.openCodeServer => l10n.termuxProcsKindOpenCode,
+    PhoneProcessKind.aiTeam => l10n.termuxProcsKindAiTeam,
+    PhoneProcessKind.claudeCode => l10n.termuxProcsKindClaudeCode,
+    PhoneProcessKind.devServices => l10n.termuxProcsKindDevService,
+    PhoneProcessKind.terminals => l10n.termuxProcsKindTerminal,
+    PhoneProcessKind.helpers => l10n.termuxProcsKindHelper,
+  };
+}
+
+/// The kind's mark: always beside its name in words.
+IconData phoneProcessKindIcon(PhoneProcessKind kind) => switch (kind) {
+  PhoneProcessKind.openCodeServer => AppIconography.server,
+  PhoneProcessKind.aiTeam => AppIconography.kanban,
+  PhoneProcessKind.claudeCode => AppIconography.code,
+  PhoneProcessKind.devServices => AppIconography.tools,
+  PhoneProcessKind.terminals => AppIconography.terminal,
+  PhoneProcessKind.helpers => AppIconography.processor,
 };
+
+/// A kind in the plural, inside "Stop all 3 dev services".
+String phoneProcessKindPlural(AppLocalizations l10n, PhoneProcessKind kind) =>
+    switch (kind) {
+      PhoneProcessKind.aiTeam => l10n.termuxProcsKindsAiTeam,
+      PhoneProcessKind.claudeCode => l10n.termuxProcsKindsClaudeCode,
+      PhoneProcessKind.devServices => l10n.termuxProcsKindsDevServices,
+      PhoneProcessKind.terminals => l10n.termuxProcsKindsTerminals,
+      PhoneProcessKind.helpers ||
+      PhoneProcessKind.openCodeServer => l10n.termuxProcsKindsHelpers,
+    };
+
+/// What a process is, in the person's words (map infoMissing on
+/// termux-processes-details-sheet: "what it is, why it is safe to stop").
+String termuxProcessAbout(AppLocalizations l10n, TermuxProcess process) {
+  if (process.isHostApp) return l10n.termuxProcsAboutHostApp;
+  if (process.isOrphan) return l10n.termuxProcsAboutOrphan;
+  return switch (process.kind) {
+    PhoneProcessKind.openCodeServer => l10n.termuxProcsAboutOpenCode,
+    PhoneProcessKind.aiTeam => l10n.termuxProcsAboutAiTeam,
+    PhoneProcessKind.claudeCode => l10n.termuxProcsAboutClaudeCode,
+    PhoneProcessKind.devServices => l10n.termuxProcsAboutBuild,
+    PhoneProcessKind.terminals => l10n.termuxProcsAboutTerminal,
+    PhoneProcessKind.helpers => l10n.termuxProcsAboutOther,
+  };
+}
 
 /// "42 s", "12 min", "3 h 5 min".
 String formatTermuxDuration(AppLocalizations l10n, int seconds) {
@@ -45,35 +108,95 @@ String formatTermuxDuration(AppLocalizations l10n, int seconds) {
 String formatTermuxCpuPct(double pct) =>
     pct >= 10 ? pct.round().toString() : pct.toStringAsFixed(1);
 
+/// The budget line: "18 of 32 background processes".
+String phoneProcessBudget(AppLocalizations l10n, TermuxProcessReport report) =>
+    l10n.termuxProcsBudget(
+      report.backgroundCount,
+      TermuxProcessReport.androidBackgroundLimit,
+    );
+
+/// "Busy · 43 MB · running 1 h 1 min": what a process is doing, without
+/// its kind (the row leads with that, the details sheet titles it).
+String phoneProcessFacts(
+  AppLocalizations l10n,
+  TermuxProcess process,
+  PhoneProcessActivity activity,
+) {
+  final memory = process.memoryMb;
+  return [
+    switch (activity) {
+      PhoneProcessActivity.busy => l10n.termuxProcsBusy,
+      PhoneProcessActivity.idle => l10n.termuxProcsIdle,
+      PhoneProcessActivity.unknown => null,
+    },
+    if (memory != null) l10n.termuxProcsMemoryMb(memory),
+    if (process.elapsedSeconds > 0)
+      l10n.termuxProcsRunningFor(
+        formatTermuxDuration(l10n, process.elapsedSeconds),
+      ),
+  ].nonNulls.join(' · ');
+}
+
 class TermuxProcessesScreen extends StatefulWidget {
   const TermuxProcessesScreen({
     super.key,
     this.refreshInterval = const Duration(seconds: 10),
+    this.sampleDelay = const Duration(seconds: 4),
     this.onOpenServerControls,
   });
 
   final Duration refreshInterval;
 
+  /// When the second reading comes after the page opens: Busy and Idle
+  /// need two.
+  final Duration sampleDelay;
+
   /// Where a protected row (sshd, `opencode serve`) sends the user; the
-  /// default opens the Termux server screen.
+  /// default opens This phone for Termux.
   final VoidCallback? onOpenServerControls;
 
   @override
   State<TermuxProcessesScreen> createState() => _TermuxProcessesScreenState();
 }
 
+/// What the last stop did: said in place, on the list (§4.8).
+class _StopOutcome {
+  const _StopOutcome(this.line, {required this.complete});
+
+  final String line;
+
+  /// False when something would not stop (map statesMissing: "a stop that
+  /// did not take").
+  final bool complete;
+}
+
+/// A failure in plain words, its technical text only under Details.
+class _Failure {
+  const _Failure(this.message, this.details);
+
+  final String message;
+  final String? details;
+}
+
 class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
   TermuxProcessReport? _report;
-  String? _error;
+
+  /// The reading before [_report]: Busy and Idle compare the two.
+  TermuxProcessReport? _previous;
+  _Failure? _failure;
   bool _loading = true;
   bool _busy = false;
-  String? _resultLine;
+  _StopOutcome? _outcome;
   Timer? _timer;
+  Timer? _sample;
 
   @override
   void initState() {
     super.initState();
     unawaited(_refresh());
+    _sample = Timer(widget.sampleDelay, () {
+      if (mounted && !_busy) unawaited(_refresh());
+    });
     _timer = Timer.periodic(widget.refreshInterval, (_) {
       if (mounted && !_busy) unawaited(_refresh());
     });
@@ -82,62 +205,133 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _sample?.cancel();
     super.dispose();
   }
+
+  /// The technical text behind a failure, redacted, for Details only.
+  static String? _technical(Object error) => productErrorDetails(error);
 
   Future<void> _refresh() async {
     try {
       final report = await TermuxProcesses.scan();
       if (!mounted) return;
       setState(() {
+        _previous = _report;
         _report = report;
-        _error = null;
+        _failure = null;
         _loading = false;
       });
-    } on TermuxBridgeException catch (error) {
+    } on Object catch (error) {
+      if (error is! TermuxBridgeException && error is! FormatException) {
+        rethrow;
+      }
       if (!mounted) return;
+      final l10n = _copy(context);
       setState(() {
-        _error = error.message;
-        _loading = false;
-      });
-    } on FormatException {
-      if (!mounted) return;
-      setState(() {
-        _error = _copy(context).termuxProcsFailed;
+        _failure = _Failure(
+          _report == null
+              ? l10n.termuxProcsLoadFailedBody
+              : l10n.termuxProcsRefreshFailed,
+          _technical(error),
+        );
         _loading = false;
       });
     }
   }
 
-  Future<void> _stopProcess(TermuxProcess process) async {
-    final confirmed = await confirmStopProcess(
+  /// "Stop java?" (termux-processes-stop-one-sheet). Raised from the
+  /// details sheet it replaces that sheet's content in place (§4.7).
+  Future<bool> _confirmStop(BuildContext context, TermuxProcess process) {
+    final l10n = _copy(context);
+    return showKitConfirm(
       context,
-      processName: process.name,
-      orphan: process.isOrphan,
+      title: l10n.termuxProcsStopOneTitle(process.name),
+      body: process.isOrphan
+          ? l10n.safetyStopOrphanBody
+          : l10n.termuxProcsStopOneBody,
+      confirmLabel: l10n.termuxProcsStopSemantics(process.name),
+      icon: AppIcons.stop,
+      kind: KitConfirmKind.stop,
+      // No undo, and it says so (map actionsMissing).
+      consequenceItems: [KitConsequence(l10n.termuxProcsNoRestart)],
+      sheetKey: const Key('termux-procs-confirm'),
+      confirmKey: const Key('termux-procs-confirm-stop'),
     );
+  }
+
+  Future<void> _stopProcess(TermuxProcess process) async {
+    final confirmed = await _confirmStop(context, process);
     if (!confirmed || !mounted) return;
     await _runStop(() => TermuxProcesses.stopPid(process.pid));
   }
 
-  Future<void> _stopGroup(TermuxProcessGroup group) async {
+  /// The stoppable processes of [kind], as the list shows them now.
+  List<TermuxProcess> _ofKind(PhoneProcessKind kind) => [
+    for (final process in _report?.processes ?? const <TermuxProcess>[])
+      if (process.stoppable && process.kind == kind) process,
+  ];
+
+  /// "Stop all 3 dev services?": one question for a kind, naming every
+  /// process it stops; only those are sent (a process that starts after
+  /// the question is not added to it).
+  Future<void> _stopKind(PhoneProcessKind kind) async {
     final l10n = _copy(context);
-    final count =
-        _report?.inGroup(group).where((p) => !p.protected).length ?? 0;
-    final confirmed = await showConfirmSheet(
+    final targets = _ofKind(kind);
+    if (targets.isEmpty) return;
+    final things = phoneProcessKindPlural(l10n, kind);
+    final confirmed = await showKitConfirm(
       context,
-      title: l10n.termuxProcsStopGroupTitle(
-        termuxProcessGroupLabel(l10n, group),
-      ),
-      message: l10n.termuxProcsStopGroupBody(count),
-      confirmLabel: l10n.termuxProcsStopConfirm(count),
-      cancelLabel: l10n.termuxProcsKeep,
+      title: l10n.termuxProcsStopKindTitle(targets.length, things),
+      body: l10n.termuxProcsStopKindBody(targets.map((p) => p.name).join(', ')),
+      confirmLabel: l10n.termuxProcsStopKind(targets.length, things),
       icon: AppIcons.stop,
-      destructive: true,
+      kind: KitConfirmKind.stop,
+      consequenceItems: switch (kind) {
+        PhoneProcessKind.aiTeam => [
+          KitConsequence(l10n.termuxProcsStopGroupTeamLost),
+          KitConsequence(l10n.termuxProcsStopGroupTeamRestart),
+        ],
+        PhoneProcessKind.devServices => [
+          KitConsequence(l10n.termuxProcsStopDevRestart),
+        ],
+        _ => [KitConsequence(l10n.termuxProcsNoRestart)],
+      },
       sheetKey: const Key('termux-procs-confirm'),
       confirmKey: const Key('termux-procs-confirm-stop'),
     );
     if (!confirmed || !mounted) return;
-    await _runStop(() => TermuxProcesses.stopGroup(group));
+    await _runStop(
+      () => TermuxProcesses.stopPids([for (final p in targets) p.pid]),
+    );
+  }
+
+  /// "Stop the 2 orphaned helpers?": the one bulk stop for what was left
+  /// behind, offered only while such processes exist; the button names
+  /// what it stops, and only the ones it named are sent.
+  Future<void> _stopOrphans() async {
+    final l10n = _copy(context);
+    final targets = [
+      for (final process in _report?.processes ?? const <TermuxProcess>[])
+        if (process.isOrphan && process.stoppable) process,
+    ];
+    if (targets.isEmpty) return;
+    final count = targets.length;
+    final confirmed = await showKitConfirm(
+      context,
+      title: l10n.termuxProcsStopOrphansTitle(count),
+      body: l10n.termuxProcsStopKindBody(targets.map((p) => p.name).join(', ')),
+      confirmLabel: l10n.termuxProcsStopOrphans(count),
+      icon: AppIcons.stop,
+      kind: KitConfirmKind.stop,
+      consequenceItems: [KitConsequence(l10n.termuxProcsNoRestart)],
+      sheetKey: const Key('termux-procs-confirm'),
+      confirmKey: const Key('termux-procs-confirm-stop'),
+    );
+    if (!confirmed || !mounted) return;
+    await _runStop(
+      () => TermuxProcesses.stopPids([for (final p in targets) p.pid]),
+    );
   }
 
   Future<void> _runStop(
@@ -146,8 +340,8 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
     final l10n = _copy(context);
     setState(() {
       _busy = true;
-      _resultLine = null;
-      _error = null;
+      _outcome = null;
+      _failure = null;
     });
     try {
       final result = await action();
@@ -162,11 +356,24 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
         if (result.refused.isNotEmpty)
           l10n.termuxProcsRefused(result.refused.length),
       ];
-      setState(() => _resultLine = parts.join(' · '));
-    } on TermuxBridgeException catch (error) {
-      if (mounted) setState(() => _error = error.message);
-    } on FormatException {
-      if (mounted) setState(() => _error = l10n.termuxProcsFailed);
+      setState(
+        () => _outcome = _StopOutcome(
+          parts.join(' · '),
+          complete: result.remaining.isEmpty,
+        ),
+      );
+    } on Object catch (error) {
+      if (error is! TermuxBridgeException && error is! FormatException) {
+        rethrow;
+      }
+      if (mounted) {
+        setState(
+          () => _failure = _Failure(
+            l10n.termuxProcsStopFailed,
+            _technical(error),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -178,272 +385,354 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
       open();
       return;
     }
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const TermuxSetupScreen()));
+    unawaited(openThisPhone(context, kind: PhoneHostKind.termux));
   }
 
+  PhoneProcessActivity _activity(TermuxProcess process) =>
+      TermuxProcessReport.activityOf(process, _previous);
+
+  /// termux-processes-details-sheet: what the process is in words, what it
+  /// is doing, and its command, folder, IDs and processor figures folded
+  /// under Details, each copyable; Copy command and a full-width "Stop
+  /// java" below.
   Future<void> _showDetails(TermuxProcess process) async {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) => SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          child: Column(
-            key: const Key('termux-procs-details'),
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(process.name, style: theme.textTheme.titleLarge),
-              const SizedBox(height: 4),
-              Text(
-                l10n.termuxProcsPid(process.pid, process.ppid),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.mutedOf(theme),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                l10n.termuxProcsCommand,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: AppTheme.mutedOf(theme),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SelectableText(
-                process.cmd,
-                textDirection: TextDirection.ltr,
-                style: TextStyle(fontFamily: AppTheme.monoFamily, fontSize: 12),
-              ),
-              if (process.cwd.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  l10n.termuxProcsFolder,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: AppTheme.mutedOf(theme),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SelectableText(
-                  process.cwd,
-                  textDirection: TextDirection.ltr,
-                  style: TextStyle(
-                    fontFamily: AppTheme.monoFamily,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              if (process.protected)
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(sheetContext);
-                    _openServerControls();
-                  },
-                  icon: const Icon(AppIconography.settings),
-                  label: Text(l10n.termuxProcsProtected),
-                )
-              else
-                FilledButton.icon(
-                  key: const Key('termux-procs-details-stop'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: theme.colorScheme.error,
-                    foregroundColor: theme.colorScheme.onError,
-                  ),
-                  onPressed: () {
-                    Navigator.pop(sheetContext);
-                    unawaited(_stopProcess(process));
-                  },
-                  icon: const Icon(AppIcons.stop),
-                  label: Text(l10n.termuxProcsStop),
-                ),
-            ],
-          ),
+    BuildContext? inside;
+    await showKitSheet<void>(
+      context,
+      title: process.name,
+      subtitle: phoneProcessKindLabel(l10n, process),
+      icon: _iconFor(process),
+      secondary: process.protected
+          ? KitAction(
+              label: l10n.termuxProcsOpenControls,
+              icon: AppIconography.settings,
+              onPressed: () {
+                final sheet = inside;
+                if (sheet != null) KitSheet.close<void>(sheet);
+                _openServerControls();
+              },
+            )
+          : !process.stoppable
+          ? null
+          : KitAction(
+              key: const Key('termux-procs-details-stop'),
+              label: l10n.termuxProcsStopSemantics(process.name),
+              icon: AppIcons.stop,
+              destructive: true,
+              onPressed: _busy
+                  ? null
+                  : () async {
+                      final sheet = inside;
+                      if (sheet == null) return;
+                      final confirmed = await _confirmStop(sheet, process);
+                      if (!confirmed || !mounted) return;
+                      if (sheet.mounted) KitSheet.close<void>(sheet);
+                      await _runStop(
+                        () => TermuxProcesses.stopPid(process.pid),
+                      );
+                    },
+              disabledReason: _busy ? l10n.termuxProcsStopping : null,
+            ),
+      tertiary: [
+        KitAction.copy(
+          key: const Key('termux-procs-details-copy'),
+          label: l10n.termuxProcsCopyCommand,
+          text: () => process.cmd,
         ),
-      ),
+      ],
+      body: (sheetContext) {
+        inside = sheetContext;
+        return _ProcessDetails(process: process, activity: _activity(process));
+      },
     );
   }
+
+  /// A row's mark: left behind and protected say so first (both in words
+  /// too); otherwise the kind's own mark, named first in the line.
+  static IconData _iconFor(TermuxProcess process) => process.isOrphan
+      ? AppIconography.warning
+      : process.protected
+      ? AppIconography.locked
+      : phoneProcessKindIcon(process.kind);
 
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     final report = _report;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.termuxProcsTitle),
-        actions: [
-          IconButton(
-            key: const Key('termux-procs-refresh'),
-            tooltip: l10n.termuxProcsRefresh,
-            onPressed: _busy ? null : _refresh,
-            icon: const Icon(AppIconography.retry),
+    final failure = _failure;
+    final Widget body;
+    if (report == null && _loading) {
+      body = ListView(
+        key: const ValueKey('termux-procs-loading'),
+        padding: KitScreen.padding(context),
+        children: const [KitSkeletonRows()],
+      );
+    } else if (report == null) {
+      // Termux not answering or the bridge failed (map statesMissing): the
+      // plain words, the bridge's own text only under Details.
+      body = KitStateView.error(
+        key: const ValueKey('termux-procs-load-error'),
+        title: l10n.termuxProcsLoadFailedTitle,
+        body: failure?.message ?? l10n.termuxProcsLoadFailedBody,
+        details: failure?.details,
+        bodyKey: const Key('termux-procs-error'),
+        retry: KitAction(label: l10n.commonRetry, onPressed: _refresh),
+      );
+    } else {
+      body = KitRefresh(
+        onRefresh: _refresh,
+        child: ListView(
+          key: const ValueKey('termux-procs-list'),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsetsDirectional.only(
+            top: KitTokens.of(context).space2,
+            bottom: KitScreen.endPadding(context),
           ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _refresh,
-              child: DesktopScrollbarArea(
-                builder: (controller) => ListView(
-                  controller: controller,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-                  children: [
-                    if (report != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.termuxProcsRowSubtitle(
-                                report.count,
-                                formatTermuxCpuPct(report.totalCpuPct),
-                              ),
-                              key: const Key('termux-procs-summary'),
-                              style: theme.textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              l10n.termuxProcsAutoRefresh,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppTheme.mutedOf(theme),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (_error != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
-                        child: Text(
-                          _error!,
-                          key: const Key('termux-procs-error'),
-                          style: TextStyle(color: theme.colorScheme.error),
-                        ),
-                      ),
-                    if (_resultLine != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
-                        child: Semantics(
-                          liveRegion: true,
-                          child: Text(
-                            _resultLine!,
-                            key: const Key('termux-procs-result'),
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.successOf(theme),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (report != null && report.count == 0)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 16, 4, 4),
-                        child: Text(
-                          l10n.termuxProcsEmpty,
-                          key: const Key('termux-procs-empty'),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.mutedOf(theme),
-                          ),
-                        ),
-                      ),
-                    if (report != null)
-                      for (final group in report.groups)
-                        ..._buildGroup(
-                          l10n,
-                          theme,
-                          group,
-                          report.inGroup(group),
-                        ),
-                  ],
-                ),
-              ),
-            ),
+          children: [_list(context, l10n, report)],
+        ),
+      );
+    }
+    // The list refreshes itself every 10 seconds (and on pull), and says
+    // so: no Refresh button repeats it.
+    return KitScreen(
+      topBar: KitTopBar(title: l10n.termuxProcsTitle),
+      width: KitScreenWidth.reading,
+      loading: _busy,
+      loadingLabel: l10n.termuxProcsStopping,
+      body: body,
     );
   }
 
-  List<Widget> _buildGroup(
-    AppLocalizations l10n,
-    ThemeData theme,
-    TermuxProcessGroup group,
-    List<TermuxProcess> members,
-  ) {
-    final stoppable = members.where((p) => !p.protected).length;
-    return [
-      SectionLabel(
-        '${termuxProcessGroupLabel(l10n, group)} · ${members.length}',
-        key: Key('termux-procs-group-${group.wireName}'),
-        padding: const EdgeInsets.fromLTRB(4, 20, 4, 4),
-        trailing: group.stoppable && stoppable > 0
-            ? TextButton.icon(
-                key: Key('termux-procs-stop-group-${group.wireName}'),
-                onPressed: _busy ? null : () => _stopGroup(group),
-                style: TextButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
-                ),
-                icon: const Icon(AppIcons.stop, size: 18),
-                label: Text(l10n.termuxProcsStopGroup),
-              )
-            : null,
-      ),
-      if (group == TermuxProcessGroup.opencodeServer)
-        _hint(theme, l10n.termuxProcsGroupOpenCodeHint),
-      if (group == TermuxProcessGroup.orphans)
-        _hint(theme, l10n.termuxProcsOrphansHint),
-      for (final process in members)
-        _ProcessRow(
-          process: process,
-          enabled: !_busy,
-          onOpen: () => _showDetails(process),
-          onStop: () => _stopProcess(process),
-          onProtected: _openServerControls,
-        ),
-    ];
+  /// Left behind first, then by what runs in the page's order; within
+  /// that, busy before idle, then the most memory.
+  List<TermuxProcess> _ordered(TermuxProcessReport report) {
+    final activity = {for (final p in report.processes) p.pid: _activity(p)};
+    int rank(TermuxProcess p) => p.isOrphan ? 0 : 1;
+    int busy(TermuxProcess p) =>
+        activity[p.pid] == PhoneProcessActivity.busy ? 0 : 1;
+    return [...report.processes]..sort((a, b) {
+      for (final order in [
+        rank(a).compareTo(rank(b)),
+        a.kind.index.compareTo(b.kind.index),
+        busy(a).compareTo(busy(b)),
+        (b.memoryMb ?? 0).compareTo(a.memoryMb ?? 0),
+      ]) {
+        if (order != 0) return order;
+      }
+      return a.pid.compareTo(b.pid);
+    });
   }
 
-  Widget _hint(ThemeData theme, String text) => Padding(
-    padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
-    child: Text(
-      text,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: AppTheme.mutedOf(theme),
-        height: 1.4,
-      ),
-    ),
-  );
+  Widget _list(
+    BuildContext context,
+    AppLocalizations l10n,
+    TermuxProcessReport report,
+  ) {
+    final tokens = KitTokens.of(context);
+    final rails = EdgeInsetsDirectional.only(
+      start: tokens.gutter,
+      end: tokens.gutter,
+      bottom: tokens.sectionGap,
+    );
+    final failure = _failure;
+    final outcome = _outcome;
+    final ordered = _ordered(report);
+    final orphans = ordered.where((p) => p.isOrphan && p.stoppable).length;
+    const limit = TermuxProcessReport.androidBackgroundLimit;
+    final over = report.backgroundCount > limit;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (report.count > 0)
+          Padding(
+            padding: rails,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                KitText(
+                  phoneProcessBudget(l10n, report),
+                  key: const Key('termux-procs-summary'),
+                  role: KitTextRole.headline,
+                  tabular: true,
+                ),
+                SizedBox(height: tokens.space1),
+                // Past the limit is said in words (never colour alone).
+                KitText(
+                  over
+                      ? l10n.termuxProcsBudgetOver(limit)
+                      : l10n.termuxProcsBudgetNote(limit),
+                  key: const Key('termux-procs-budget-note'),
+                  role: KitTextRole.caption,
+                ),
+                SizedBox(height: tokens.space1),
+                KitText(l10n.termuxProcsAutoRefresh, role: KitTextRole.caption),
+              ],
+            ),
+          ),
+        if (failure != null)
+          Padding(
+            padding: rails,
+            child: KitNotice.error(
+              message: failure.message,
+              details: failure.details,
+              messageKey: const Key('termux-procs-error'),
+              retry: KitAction(label: l10n.commonRetry, onPressed: _refresh),
+            ),
+          ),
+        if (outcome != null)
+          Padding(
+            padding: rails,
+            child: KitNotice(
+              key: const ValueKey('termux-procs-outcome'),
+              tone: outcome.complete ? AppStatusTone.ok : AppStatusTone.failure,
+              icon: outcome.complete
+                  ? AppIconography.check
+                  : AppIconography.error,
+              title: outcome.complete ? null : l10n.termuxProcsNotStoppedTitle,
+              message: outcome.line,
+              messageKey: const Key('termux-procs-result'),
+            ),
+          ),
+        if (report.count == 0)
+          Padding(
+            padding: rails,
+            child: KitStateView(
+              key: const Key('termux-procs-empty'),
+              icon: AppIconography.processor,
+              title: l10n.termuxProcsEmpty,
+              body: l10n.termuxProcsEmptyBody,
+              size: KitStateSize.inline,
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        if (ordered.isNotEmpty)
+          Padding(
+            padding: EdgeInsetsDirectional.only(bottom: tokens.sectionGap),
+            child: KitRowGroup(
+              key: const Key('termux-procs-list-group'),
+              children: [
+                for (final process in ordered) _row(context, l10n, process),
+                // The one bulk stop, only while something was left behind,
+                // last behind the group's destructive hairline (§4.2).
+                if (orphans > 0)
+                  KitRow(
+                    key: const Key('termux-procs-stop-orphans'),
+                    leading: KitRow.icon(context, AppIcons.stop),
+                    title: l10n.termuxProcsStopOrphans(orphans),
+                    destructive: true,
+                    enabled: !_busy,
+                    disabledReason: _busy ? l10n.termuxProcsStopping : null,
+                    onTap: _stopOrphans,
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// What a process is, then why it was flagged when it was left behind.
+  static List<String> _what(AppLocalizations l10n, TermuxProcess process) => [
+    phoneProcessKindLabel(l10n, process),
+    ?switch (process.orphanReason) {
+      TermuxOrphanReason.parentGone => l10n.termuxProcsKindParentGone,
+      TermuxOrphanReason.cpuNoOwner => l10n.termuxProcsKindNoOwner,
+      null => null,
+    },
+  ];
+
+  Widget _row(
+    BuildContext context,
+    AppLocalizations l10n,
+    TermuxProcess process,
+  ) {
+    final facts = phoneProcessFacts(l10n, process, _activity(process));
+    final line = [
+      ..._what(l10n, process),
+      if (facts.isNotEmpty) facts,
+    ].join(' · ');
+    final kindCount = process.stoppable ? _ofKind(process.kind).length : 0;
+    return KitRow(
+      key: Key('termux-proc-${process.pid}'),
+      leading: KitRow.icon(context, _iconFor(process)),
+      title: process.name,
+      supporting: TextSpan(text: line),
+      supportingKey: Key('termux-proc-line-${process.pid}'),
+      supportingMaxLines: 2,
+      // The protected server says so in words, and where to control it.
+      below: process.protected
+          ? KitText(
+              l10n.termuxProcsProtected,
+              key: Key('termux-proc-protected-${process.pid}'),
+              role: KitTextRole.secondary,
+            )
+          : null,
+      trailing: const KitChevron(),
+      onTap: process.protected
+          ? _openServerControls
+          : () => _showDetails(process),
+      // One menu per process (map proposal): the same acts as the row, its
+      // sheet and its stop button, and its kind's one stop when there are
+      // several of that kind.
+      menu: [
+        if (process.protected)
+          KitMenuItem(
+            label: l10n.termuxProcsOpenControls,
+            icon: AppIconography.settings,
+            onSelected: _openServerControls,
+          )
+        else
+          KitMenuItem(
+            label: l10n.kitDetails,
+            icon: AppIconography.info,
+            onSelected: () => _showDetails(process),
+          ),
+        KitMenuItem.copy(
+          label: l10n.termuxProcsCopyCommand,
+          text: () => process.cmd,
+        ),
+        if (process.stoppable)
+          KitMenuItem(
+            key: Key('termux-proc-stop-${process.pid}'),
+            label: l10n.termuxProcsStopSemantics(process.name),
+            icon: AppIcons.stop,
+            destructive: true,
+            enabled: !_busy,
+            disabledReason: _busy ? l10n.termuxProcsStopping : null,
+            onSelected: () => _stopProcess(process),
+          ),
+        if (kindCount > 1)
+          KitMenuItem(
+            key: Key('termux-proc-stop-kind-${process.pid}'),
+            label: l10n.termuxProcsStopKind(
+              kindCount,
+              phoneProcessKindPlural(l10n, process.kind),
+            ),
+            icon: AppIcons.stop,
+            destructive: true,
+            enabled: !_busy,
+            disabledReason: _busy ? l10n.termuxProcsStopping : null,
+            onSelected: () => _stopKind(process.kind),
+          ),
+      ],
+    );
+  }
 }
 
-class _ProcessRow extends StatelessWidget {
-  const _ProcessRow({
-    required this.process,
-    required this.enabled,
-    required this.onOpen,
-    required this.onStop,
-    required this.onProtected,
-  });
+/// The details sheet's body: the words first, what it is doing, then every
+/// technical value once, copyable, left to right, under one Details fold
+/// (§4.3).
+class _ProcessDetails extends StatelessWidget {
+  const _ProcessDetails({required this.process, required this.activity});
 
   final TermuxProcess process;
-  final bool enabled;
-  final VoidCallback onOpen;
-  final VoidCallback onStop;
-  final VoidCallback onProtected;
+  final PhoneProcessActivity activity;
 
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final attention = AppTheme.statusColor(theme, AppStatusTone.attention);
-    final stats = l10n.termuxProcsStats(
-      formatTermuxCpuPct(process.cpuPct),
-      l10n.termuxProcsMemoryMb(process.rssKb ~/ 1024),
-      formatTermuxDuration(l10n, process.elapsedSeconds),
-    );
+    final tokens = KitTokens.of(context);
     final reason = switch (process.orphanReason) {
       TermuxOrphanReason.parentGone => l10n.termuxProcsOrphanParentGone(
         formatTermuxDuration(l10n, process.elapsedSeconds),
@@ -453,60 +742,52 @@ class _ProcessRow extends StatelessWidget {
       ),
       null => null,
     };
-    return ListTile(
-      key: Key('termux-proc-${process.pid}'),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      minLeadingWidth: 32,
-      horizontalTitleGap: 12,
-      leading: SizedBox.square(
-        dimension: 32,
-        child: Icon(
-          process.protected
-              ? AppIconography.locked
-              : process.isOrphan
-              ? AppIconography.warning
-              : AppIconography.processor,
-          size: 24,
-          color: process.isOrphan ? attention : AppTheme.mutedOf(theme),
+    final facts = phoneProcessFacts(l10n, process, activity);
+    return Column(
+      key: const Key('termux-procs-details'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        KitText(
+          termuxProcessAbout(l10n, process),
+          key: const Key('termux-procs-details-about'),
         ),
-      ),
-      title: Text(process.name),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(stats, style: theme.textTheme.bodySmall),
-          if (reason != null)
-            Text(
-              reason,
-              key: Key('termux-proc-reason-${process.pid}'),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: attention,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          if (process.protected)
-            Text(
-              l10n.termuxProcsProtected,
-              key: Key('termux-proc-protected-${process.pid}'),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
-            ),
+        if (reason != null) ...[
+          SizedBox(height: tokens.space2),
+          KitText(reason, role: KitTextRole.secondary),
         ],
-      ),
-      trailing: process.protected
-          ? const Icon(AppIconography.chevronRight, size: 20)
-          : process.isOrphan
-          ? IconButton(
-              key: Key('termux-proc-stop-${process.pid}'),
-              tooltip: l10n.termuxProcsStopSemantics(process.name),
-              onPressed: enabled ? onStop : null,
-              color: theme.colorScheme.error,
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              icon: const Icon(AppIcons.stop),
-            )
-          : const Icon(AppIconography.chevronRight, size: 20),
-      onTap: process.protected ? onProtected : onOpen,
+        if (facts.isNotEmpty) ...[
+          SizedBox(height: tokens.space2),
+          KitText(
+            facts,
+            key: const Key('termux-procs-details-facts'),
+            role: KitTextRole.secondary,
+            tabular: true,
+          ),
+        ],
+        SizedBox(height: tokens.space4),
+        KitDetailsFold(
+          values: [
+            KitTechnicalValue(
+              l10n.termuxProcsCommand,
+              process.cmd,
+              key: const Key('termux-procs-details-command'),
+            ),
+            if (process.cwd.isNotEmpty)
+              KitTechnicalValue(l10n.termuxProcsFolder, process.cwd),
+            KitTechnicalValue(l10n.termuxProcsProcessId, '${process.pid}'),
+            KitTechnicalValue(l10n.termuxProcsParentId, '${process.ppid}'),
+            KitTechnicalValue(
+              l10n.termuxProcsAverageCpu,
+              '${formatTermuxCpuPct(process.cpuPct)}%',
+            ),
+            KitTechnicalValue(
+              l10n.termuxProcsCpuTime,
+              formatTermuxDuration(l10n, process.cpuSeconds),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

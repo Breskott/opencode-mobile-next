@@ -2,15 +2,16 @@
 // to a project and starting or resuming a session stays visually clear at
 // 320dp with 2x and 2.5x text: the header gives the project name the full
 // row with secondary actions in its project sheet; session rows keep
-// status and time by wrapping instead of cutting; the docked New session
-// action never clips, stacking the isolated-task action above it when the
-// label cannot share the row; and the scroll end clears the dock by its real
-// height. The normal 390dp/1x layout keeps its row header and side-by-side
-// dock.
+// status and time by wrapping instead of cutting; the docked New
+// conversation never clips and is the dock's only control (its chooser,
+// slice-P4.5, holds Solo, Team and the separate copy); and the scroll end
+// clears the dock by its real height. The normal 390dp/1x layout keeps its
+// row header.
 //
 // flutter_test paints with a 1em-per-glyph test font, so assertions here are
-// about structure and geometry, not glyph widths; tool/capture/
-// stable_workspace_test.dart loads the real fonts and checks painted text.
+// about structure and geometry, not glyph widths, except the last group,
+// which loads the real fonts for the 390dp/1x side-by-side dock;
+// tool/capture/stable_workspace_test.dart checks painted text.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
@@ -20,9 +21,13 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
+import 'package:opencode_mobile/ui/screens/session_context_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../tool/capture/fixtures.dart' show loadCaptureFonts;
 
 const _directory = '/home/dev/shopfront';
 
@@ -39,6 +44,14 @@ class _Api extends OpenCodeApi {
 
   @override
   Future<Map<String, String>> sessionStatuses() async => const {};
+
+  /// No replies loaded: Conversation context shows its facts without usage.
+  @override
+  Future<ServerPage<MessageWithParts>> messagePage(
+    String id, {
+    String? cursor,
+    int limit = 100,
+  }) async => const ServerPage(items: []);
 
   @override
   Future<List<PermissionRequest>> pendingPermissions() async => const [];
@@ -212,7 +225,7 @@ void main() {
         expect(_name, findsOneWidget);
         expect(tester.getTopLeft(_name).dx, 16);
         expect(tester.getSize(_name).width, 256);
-        expect(tester.widget<Text>(_name).maxLines, 3);
+        expect(tester.widget<KitText>(_name).maxLines, 3);
         expect(find.text(_directory), findsNothing);
         expect(_manage, findsNothing);
         expect(_switch, findsNothing);
@@ -227,24 +240,16 @@ void main() {
         expect(facts, findsOneWidget);
         expect(tester.widget<Text>(facts).maxLines, 3);
 
-        // The primary action has the whole dock width with the isolated
-        // action as a labelled button above it; neither is an ellipsis.
+        // The primary action has the whole dock width and is the dock's
+        // only control (R2): the task in a separate copy is a choice of
+        // its chooser, which names the project.
         expect(_primary, findsOneWidget);
         expect(tester.getTopLeft(_primary).dx, 16);
         expect(tester.getSize(_primary).width, 288);
         expect(tester.getSize(_primary).height, greaterThanOrEqualTo(48));
-        expect(_isolated, findsOneWidget);
-        expect(tester.widget<TextButton>(_isolated).onPressed, isNotNull);
-        expect(
-          find.descendant(of: _isolated, matching: find.text('Isolated task')),
-          findsOneWidget,
-        );
-        expect(tester.getSize(_isolated).height, greaterThanOrEqualTo(48));
-        expect(
-          tester.getBottomLeft(_isolated).dy,
-          lessThanOrEqualTo(tester.getTopLeft(_primary).dy),
-        );
-        expect(tester.getBottomLeft(_pill).dy, 900 - 6);
+        expect(_isolated, findsNothing);
+        // The kit pins the block 8 dp above the shell's bottom inset.
+        expect(tester.getBottomLeft(_pill).dy, 900 - 8);
 
         // The end of the list clears the dock by the dock's real height.
         await tester.drag(
@@ -259,8 +264,13 @@ void main() {
           lessThanOrEqualTo(tester.getTopLeft(_pill).dy),
         );
 
-        // And the primary action still starts a session.
+        // And the primary action still starts a session: its chooser
+        // fits the phone at this text size, and Solo starts it.
         await tester.tap(_primary);
+        await _pumpFrames(tester);
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(const ValueKey('new-conversation-sheet')), findsOne);
+        await tester.tap(find.byKey(const ValueKey('new-conversation-solo')));
         await _pumpFrames(tester);
         expect(controller.createCalls, 1);
         expect(find.text('Created conversation'), findsOneWidget);
@@ -284,21 +294,24 @@ void main() {
     expect(_manage, findsNothing);
     expect(_primary, findsOneWidget);
     expect(tester.getSize(_primary).width, 288);
-    expect(_isolated, findsOneWidget);
+    expect(_isolated, findsNothing);
   });
 
-  // The test font paints every glyph 1em wide. At 2.5x the rungs are 60, 50
-  // and 40dp per glyph; a 339dp phone gives the name a 275dp row, so four
-  // letters fit the large title, a five-letter segment ("shop-") only the
-  // middle rung, and nine letters no rung at all, each with a 25dp margin.
-  for (final (name, fontSize) in [
-    ('shop', 24.0),
-    ('shop-front', 20.0),
-    ('shopfront', 16.0),
+  // The test font paints every glyph 1em wide. The name's rungs are the
+  // kit's type roles (23b2efb5: largeTitle 32, title 24, headline 17), so
+  // at 2.5x they are 80, 60 and 42.5dp per glyph; a 339dp phone gives the
+  // name a 275dp row. Three letters fit the large title, four only the
+  // title, a five-letter segment ("shop-") only the headline, and nine
+  // letters no rung at all, which keeps the smallest.
+  for (final (name, role) in [
+    ('app', KitTextRole.largeTitle),
+    ('shop', KitTextRole.title),
+    ('shop-front', KitTextRole.headline),
+    ('shopfront', KitTextRole.headline),
   ]) {
     testWidgets(
       '339dp 2.5x: "$name" keeps the largest title size whose longest '
-      'segment fits the row ($fontSize)',
+      'segment fits the row (${role.name})',
       (tester) async {
         _phone(tester, 339);
         final controller = await _controller(projectName: name);
@@ -306,10 +319,11 @@ void main() {
         await tester.pumpWidget(_app(controller, textScale: 2.5));
         await _pumpFrames(tester);
         expect(tester.takeException(), isNull);
-        final text = tester.widget<Text>(_name);
-        expect(text.data, name);
-        expect(text.style?.fontSize, fontSize);
+        final text = tester.widget<KitText>(_name);
+        expect(text.text, name);
+        expect(text.role, role);
         // The scale itself is untouched: the painted text is 2.5x the base.
+        final fontSize = KitText.styleOf(tester.element(_name), role).fontSize!;
         expect(
           MediaQuery.textScalerOf(tester.element(_name)).scale(fontSize),
           fontSize * 2.5,
@@ -348,43 +362,6 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('390dp 1x keeps the row header, a two-line facts line and the '
-      'side-by-side dock', (tester) async {
-    _phone(tester, 390);
-    final controller = await _controller();
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(_app(controller));
-    await _pumpFrames(tester);
-    expect(tester.takeException(), isNull);
-
-    // Normal text uses the same single project entry as enlarged text.
-    expect(_header, findsOneWidget);
-    expect(_name, findsOneWidget);
-    expect(_switch, findsNothing);
-    expect(_manage, findsNothing);
-    expect(
-      find.descendant(of: _header, matching: find.text('shopfront')),
-      findsOneWidget,
-    );
-
-    final facts = find.descendant(
-      of: _row('busy'),
-      matching: find.textContaining('Working'),
-    );
-    expect(tester.widget<Text>(facts).maxLines, 2);
-
-    // Primary beside the isolated icon, the icon at the end of the dock.
-    expect(_primary, findsOneWidget);
-    expect(_isolated, findsOneWidget);
-    expect(tester.widget<IconButton>(_isolated).onPressed, isNotNull);
-    expect(find.text('Isolated task'), findsNothing);
-    expect(
-      tester.getTopRight(_primary).dx,
-      lessThan(tester.getTopLeft(_isolated).dx),
-    );
-    expect(tester.getTopRight(_isolated).dx, 390 - 16);
-    expect(tester.getSize(_primary).height, greaterThanOrEqualTo(48));
-  });
   testWidgets('session details disclose usage without cluttering the list', (
     tester,
   ) async {
@@ -399,15 +376,22 @@ void main() {
       find.textContaining('https://example.test/shared/checkout'),
       findsNothing,
     );
-    await tester.tap(
-      find.descendant(
-        of: _row('busy'),
-        matching: find.byType(PopupMenuButton<String>),
-      ),
-    );
+    // Rows carry no overflow button; long-press opens the row menu (KIT-28,
+    // 23b2efb5), whose Go to › Details opens Conversation context, where
+    // the old details sheet's facts now live (P3.11a 00cafa13, P10.2
+    // 34353c2f).
+    await tester.longPress(_row('busy'));
     await _pumpFrames(tester);
-    expect(find.text('Rename'), findsOneWidget);
-    await tester.tap(find.text('Details'));
+    expect(find.byKey(const ValueKey('session-menu-rename')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('session-menu-details')));
+    await _pumpFrames(tester);
+    expect(find.byType(SessionContextScreen), findsOneWidget);
+    // The facts sit under Details, folded: open it.
+    final details = find.byKey(const ValueKey('session-context-details'));
+    await tester.ensureVisible(details);
+    await tester.tap(
+      find.descendant(of: details, matching: find.text('Details')).first,
+    );
     await _pumpFrames(tester);
     expect(find.textContaining(r'$0.42'), findsOneWidget);
     expect(find.textContaining('+120'), findsOneWidget);
@@ -419,5 +403,69 @@ void main() {
     expect(find.text(_directory), findsOneWidget);
     expect(controller.createCalls, 0);
     expect(tester.takeException(), isNull);
+  });
+
+  // Whether "New conversation" shares the row with the isolated icon is a
+  // question of glyph widths: with the 1em test font the button role's
+  // 16 px label (LOOK-12) is 256 dp and can never fit a compact row, so this
+  // case paints with the real Geist, as a phone does. Last in the file: the
+  // fonts stay loaded for the rest of the isolate.
+  group('with the real fonts', () {
+    setUpAll(loadCaptureFonts);
+
+    testWidgets('390dp 1x keeps the row header, a two-line facts line and the '
+        'side-by-side dock', (tester) async {
+      _phone(tester, 390);
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await _pumpFrames(tester);
+      expect(tester.takeException(), isNull);
+
+      // Normal text uses the same single project entry as enlarged text.
+      expect(_header, findsOneWidget);
+      expect(_name, findsOneWidget);
+      expect(_switch, findsNothing);
+      expect(_manage, findsNothing);
+      expect(
+        find.descendant(of: _header, matching: find.text('shopfront')),
+        findsOneWidget,
+      );
+
+      final facts = find.descendant(
+        of: _row('busy'),
+        matching: find.textContaining('Working'),
+      );
+      expect(tester.widget<Text>(facts).maxLines, 2);
+
+      // The dock holds New conversation alone, across the gutter (R2).
+      expect(_primary, findsOneWidget);
+      expect(_isolated, findsNothing);
+      expect(find.text('Isolated task'), findsNothing);
+      expect(tester.getTopRight(_primary).dx, 390 - 16);
+      expect(tester.getSize(_primary).height, greaterThanOrEqualTo(48));
+
+      // The task in a separate copy is no longer on the project's sheet:
+      // it is a choice of New conversation, naming the project and what it
+      // does (slice-P4.5).
+      await tester.tap(_header);
+      await _pumpFrames(tester);
+      expect(_isolated, findsNothing);
+      await tester.tapAt(const Offset(8, 8));
+      await _pumpFrames(tester);
+      await tester.tap(_primary);
+      await _pumpFrames(tester);
+      expect(
+        find.byKey(const ValueKey('new-conversation-copy')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Separate copy of '), findsOneWidget);
+      expect(
+        find.textContaining(
+          'Works on a separate copy so your main folder stays untouched.',
+        ),
+        findsOneWidget,
+      );
+    });
   });
 }

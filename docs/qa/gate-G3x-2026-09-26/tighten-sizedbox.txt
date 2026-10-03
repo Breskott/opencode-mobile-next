@@ -1,0 +1,18 @@
+$ # ratchet-tighten G21 SizedBox(width|height: <n>): one temporary write that set each existing label to its current count (reverted before commit)
+$ git diff -U0 test/design_standard_baseline.json
+diff --git a/test/design_standard_baseline.json b/test/design_standard_baseline.json
+index c21af6f1..d378eb20 100644
+--- a/test/design_standard_baseline.json
++++ b/test/design_standard_baseline.json
+@@ -133 +133 @@
+-      "G21 SizedBox(width|height: <n>)": 24,
++      "G21 SizedBox(width|height: <n>)": 25,
+@@ -161 +161 @@
+-      "G21 SizedBox(width|height: <n>)": 3,
++      "G21 SizedBox(width|height: <n>)": 5,
+@@ -183 +183 @@
+-      "G21 SizedBox(width|height: <n>)": 6,
++      "G21 SizedBox(width|height: <n>)": 7,
+@@ -340 +340 @@
+-      "G21 SizedBox(width|height: <n>)": 7,
++      "G21 SizedBox(width|height: <n>)": 8,

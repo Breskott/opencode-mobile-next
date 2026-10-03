@@ -1,82 +1,265 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-import '../../l10n/app_localizations.dart';
-
-import 'package:flutter/services.dart';
-
-import '../../api/product_repository.dart';
 import '../../diagnostics/app_diagnostics.dart';
+import '../../diagnostics/report_problem.dart';
+import '../../diagnostics/report_problem_startup.dart';
+import '../../feedback/problem_report.dart';
+import '../../l10n/app_localizations.dart';
+import '../../platform/share_intent.dart';
 import '../../state/connection.dart';
-import '../widgets/confirm_sheet.dart';
-import '../widgets/product_states.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
+import '../widgets/external_link.dart';
+import 'perf_trace_section.dart';
 
+/// Opens Report a problem, prefilled with [error] when a failure brought the
+/// person here. Every "Report a problem" in the app ends here (P8.2).
+Future<void> openReportProblem(BuildContext context, {KitReport? error}) =>
+    pushKitPage<void>(context, (_) => AppDiagnosticsScreen(error: error));
+
+/// What the preview sheet's person chose; Copy happens inside the sheet.
+enum _Send { github, share }
+
+/// Report a problem (map: app-diagnostics, owner verdict "a first grade
+/// page that users willingly use to raise bugs"): the person says what went
+/// wrong, the error that brought them here is attached, recent redacted
+/// diagnostics are included by choice, and Review report opens
+/// report-problem-preview-sheet with exactly the text that is sent. From
+/// there it goes out as a prefilled GitHub issue (through
+/// [openExternalLink]; nothing is filed until the person submits the form),
+/// is copied, or is shared. It replaced both old paths: the GitHub form with
+/// only the version, and the server-log send.
+///
+/// One list under the form, newest first: the errors kept on this phone
+/// (persisted across restarts by [ReportProblem] when it opened, else this
+/// run's), with Clear on its header (app-diagnostics-clear-sheet), then the
+/// Performance timings ([PerfTraceSection]) folded under Details.
+///
+/// Built from kit parts only. [controller] is optional: a page opened from
+/// any error ([openReportProblem]) uses the app-wide diagnostics.
 class AppDiagnosticsScreen extends StatefulWidget {
-  const AppDiagnosticsScreen({super.key, required this.controller});
+  const AppDiagnosticsScreen({
+    super.key,
+    this.controller,
+    this.diagnostics,
+    this.store,
+    this.error,
+    this.version,
+    this.linkLauncher,
+    this.share,
+  });
 
-  final ConnectionController controller;
+  final ConnectionController? controller;
+
+  /// The in-memory errors; defaults to the controller's, then the app's.
+  final AppDiagnosticsController? diagnostics;
+
+  /// The persisted report; defaults to the one opened at start-up.
+  final ReportProblem? store;
+
+  /// The failure that opened the page, already redacted by the kit.
+  final KitReport? error;
+
+  /// Tests: the app version instead of the platform's.
+  final Future<String> Function()? version;
+
+  /// Tests: handed to [openExternalLink].
+  final Future<bool> Function(Uri uri)? linkLauncher;
+
+  /// Tests: the share sheet; defaults to [ShareOut.text] on Android.
+  final Future<bool> Function(String text, String subject)? share;
 
   @override
   State<AppDiagnosticsScreen> createState() => _AppDiagnosticsScreenState();
 }
 
 class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
-  bool _sending = false;
+  final _description = TextEditingController();
 
-  AppDiagnosticsController get _diagnostics => widget.controller.diagnostics;
+  /// What the person typed survives leaving the page (DATA-2); it is
+  /// forgotten once the report went to GitHub or the share sheet. A report
+  /// is about the app, and the page also opens with no server (a failure's
+  /// details), so it is one app-wide draft, the same from every entry
+  /// point, rather than one per server that a server-less entry could
+  /// never sweep (KitDraft.appWide, G10).
+  late final _draft = KitDraft(
+    target: 'report-problem',
+    profileId: KitDraft.appWide,
+    controller: _description,
+  );
+  bool _includeDiagnostics = true;
+  bool _describeFirst = false;
+  bool _clearFailed = false;
+  late final Future<String> _version =
+      (widget.version ?? problemReportAppVersion)();
 
-  Future<void> _copy() async {
-    await Clipboard.setData(ClipboardData(text: _diagnostics.reportText()));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_screenCopy(context).e7SettingsDetailUi0)),
-    );
+  AppDiagnosticsController? get _diagnostics =>
+      widget.diagnostics ??
+      widget.controller?.diagnostics ??
+      ReportProblemStartup.diagnostics;
+
+  ReportProblem? get _store =>
+      widget.store ?? ReportProblemStartup.current?.report;
+
+  Future<bool> Function(String, String)? get _share =>
+      widget.share ?? (ShareOut.supported ? _shareOut : null);
+
+  static Future<bool> _shareOut(String text, String subject) =>
+      ShareOut.text(text, subject: subject);
+
+  List<ProblemReportEvent> get _events =>
+      problemReportEvents(store: _store, diagnostics: _diagnostics);
+
+  /// The attached failed job's log, as the report's KitLogPanel shows it
+  /// (P8.4); null when no job log is attached or the job kept none.
+  late final ValueNotifier<List<KitLogLine>>? _jobLog =
+      switch (widget.error?.log) {
+        final log? when log.trim().isNotEmpty => ValueNotifier([
+          for (final line in log.trimRight().split('\n')) KitLogLine(line),
+        ]),
+        _ => null,
+      };
+
+  @override
+  void dispose() {
+    _description.dispose();
+    _jobLog?.dispose();
+    super.dispose();
   }
 
-  Future<void> _send() async {
+  Future<ProblemReport> _build() async => ProblemReport.build(
+    description: _description.text,
+    version: await _version,
+    platform: bugReportPlatformLabel(),
+    error: widget.error,
+    events: _includeDiagnostics ? _events : const [],
+  );
+
+  Future<void> _review() async {
     final copy = _screenCopy(context);
-    if (_sending || _diagnostics.isEmpty) return;
-    setState(() => _sending = true);
-    try {
-      final repository = await widget.controller.prepareActionRepository();
-      if (repository == null) {
-        throw ProductException(copy.e7SettingsUi19);
-      }
-      final count = _diagnostics.count;
-      await repository.writeClientLog(
-        message: 'OpenCode Mobile diagnostics ($count handled errors)',
-        extra: _diagnostics.reportJson(),
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(copy.e7SettingsDetailUi2)));
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            copy.e7SettingsDiagnosticSendError(
-              _diagnostics.sanitize(error.toString(), limit: 300),
+    if (_description.text.trim().isEmpty && widget.error == null) {
+      setState(() => _describeFirst = true);
+      return;
+    }
+    final report = await _build();
+    if (!mounted) return;
+    final link = report.link();
+    final share = _share;
+    final choice = await showKitSheet<_Send>(
+      context,
+      title: copy.reportProblemReview,
+      subtitle: copy.reportProblemPreviewSubtitle,
+      icon: AppIconography.bug,
+      height: KitSheetHeight.full,
+      sheetKey: const ValueKey('report-problem-preview-sheet'),
+      body: (sheetContext) {
+        final tokens = KitTokens.of(sheetContext);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            KitNotice(
+              icon: AppIconography.info,
+              message: copy.reportProblemPublicNotice,
+              liveRegion: false,
             ),
+            if (link.clipboard != ProblemReportClipboard.none) ...[
+              SizedBox(height: tokens.space2),
+              KitNotice(
+                key: const ValueKey('report-problem-link-copies'),
+                icon: AppIconography.copy,
+                message: link.clipboard == ProblemReportClipboard.whole
+                    ? copy.reportProblemLinkCopiesWhole
+                    : copy.reportProblemLinkCopiesDiagnostics,
+                liveRegion: false,
+              ),
+            ],
+            SizedBox(height: tokens.space3),
+            KitText.mono(
+              report.text,
+              key: const ValueKey('report-problem-preview-text'),
+              selectable: true,
+            ),
+          ],
+        );
+      },
+      primary: KitAction(
+        key: const ValueKey('report-problem-open-github'),
+        label: copy.reportProblemOpenGitHub,
+        icon: AppIconography.externalLink,
+        onPressed: () => Navigator.of(context).pop(_Send.github),
+      ),
+      secondary: KitAction.copy(
+        key: const ValueKey('report-problem-copy'),
+        label: copy.reportProblemCopy,
+        text: () => report.text,
+      ),
+      tertiary: [
+        if (share != null)
+          KitAction(
+            key: const ValueKey('report-problem-share'),
+            label: copy.reportProblemShare,
+            onPressed: () => Navigator.of(context).pop(_Send.share),
           ),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _sending = false);
+      ],
+    );
+    if (!mounted || choice == null) return;
+    switch (choice) {
+      case _Send.github:
+        final paste = link.clipboardText;
+        if (paste != null) {
+          await KitCopy.copy(
+            context,
+            paste,
+            announcement: link.clipboard == ProblemReportClipboard.whole
+                ? copy.reportProblemCopied
+                : copy.reportProblemDiagnosticsCopied,
+          );
+          if (!mounted) return;
+        }
+        final outcome = await openExternalLink(
+          context,
+          link.uri.toString(),
+          launcher: widget.linkLauncher,
+        );
+        if (outcome == ExternalLinkOutcome.opened) await _draft.clear();
+      case _Send.share:
+        final opened = await share!(report.text, report.title);
+        if (opened) await _draft.clear();
+        if (!opened && mounted) {
+          await KitCopy.copy(
+            context,
+            report.text,
+            announcement: copy.reportProblemShareFallback,
+          );
+        }
     }
   }
 
-  Future<void> _clear() async {
-    final confirmed = await showConfirmSheet(
+  Future<void> _clear(int count) async {
+    final copy = _screenCopy(context);
+    final confirmed = await showKitConfirm(
       context,
-      title: _screenCopy(context).e7SettingsDetailUi3,
-      message: _screenCopy(context).e7SettingsDetailUi4,
-      confirmLabel: _screenCopy(context).e7SettingsDetailUi5,
+      title: copy.appDiagnosticsClearTitle(count),
+      body: copy.appDiagnosticsClearBody(count),
+      confirmLabel: copy.appDiagnosticsClearConfirm(count),
       icon: AppIconography.delete,
-      destructive: true,
+      kind: KitConfirmKind.destructive,
+      confirmKey: const ValueKey('clear-app-diagnostics-confirm'),
     );
-    if (confirmed) _diagnostics.clear();
+    if (!confirmed || !mounted) return;
+    var failed = false;
+    // The capture adapter clears the saved report with the in-memory list;
+    // an explicit store is cleared here too (idempotent).
+    try {
+      _diagnostics?.clear();
+      _store?.clear();
+    } on StateError {
+      failed = true;
+    }
+    failed = failed || (_store?.storageFailed ?? false);
+    setState(() => _clearFailed = failed);
   }
 
   String _time(DateTime value) {
@@ -88,183 +271,202 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(_screenCopy(context).e7SettingsUi88)),
-      body: SafeArea(
-        child: ListenableBuilder(
-          listenable: _diagnostics,
-          builder: (context, _) {
-            final entries = _diagnostics.entries.reversed.toList();
-            return CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          _screenCopy(context).e7SettingsDetailUi7,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _screenCopy(context).e7SettingsDetailUi8,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                        const SizedBox(height: 14),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            FilledButton.icon(
-                              key: const ValueKey('send-app-diagnostics'),
-                              // §7 row 24: the control stays, visibly dead,
-                              // with the explainer directly beneath it.
-                              onPressed:
-                                  entries.isEmpty ||
-                                      _sending ||
-                                      !widget
-                                          .controller
-                                          .capabilities
-                                          .clientDiagnostics
-                                  ? null
-                                  : _send,
-                              icon: _sending
-                                  ? const SizedBox.square(
-                                      dimension: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Icon(AppIconography.send),
-                              label: Text(
-                                _sending
-                                    ? _screenCopy(context).queuedSending
-                                    : _screenCopy(context).e7SettingsDetailUi10,
-                              ),
-                            ),
-                            OutlinedButton.icon(
-                              key: const ValueKey('copy-app-diagnostics'),
-                              onPressed: entries.isEmpty ? null : _copy,
-                              icon: const Icon(AppIcons.copy),
-                              label: Text(_screenCopy(context).fileCopy),
-                            ),
-                            TextButton.icon(
-                              key: const ValueKey('clear-app-diagnostics'),
-                              onPressed: entries.isEmpty ? null : _clear,
-                              icon: const Icon(AppIconography.delete),
-                              label: Text(
-                                _screenCopy(context).e7SettingsDetailUi5,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (!widget.controller.capabilities.clientDiagnostics)
-                          Padding(
-                            key: const ValueKey('gated-client-diagnostics'),
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Text(
-                              _screenCopy(context).e7SettingsDetailUi12,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
+    final copy = _screenCopy(context);
+    final tokens = KitTokens.of(context);
+    final sources = <Listenable>[?_diagnostics, ?_store];
+    return KitScreen(
+      topBar: KitTopBar(title: copy.e7LibraryReportABug),
+      width: KitScreenWidth.reading,
+      body: ListenableBuilder(
+        listenable: Listenable.merge(sources),
+        builder: (context, _) {
+          final events = _events;
+          final errors = events.where((event) => event.isError).toList();
+          final error = widget.error;
+          return ListView(
+            key: const ValueKey('app-diagnostics'),
+            padding: EdgeInsetsDirectional.only(
+              top: tokens.space2,
+              bottom: KitScreen.endPadding(context),
+            ),
+            children: [
+              Padding(
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: tokens.gutter,
                 ),
-                if (entries.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(AppIconography.privacy, size: 38),
-                            SizedBox(height: 14),
-                            Text(_screenCopy(context).e7SettingsDetailUi13),
-                            SizedBox(height: 6),
-                            Text(
-                              _screenCopy(context).e7SettingsDetailUi14,
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    KitText(
+                      copy.reportProblemIntro,
+                      role: KitTextRole.secondary,
+                    ),
+                    if (error != null) ...[
+                      SizedBox(height: tokens.space3),
+                      KitNotice(
+                        key: const ValueKey('report-problem-attached'),
+                        tone: AppStatusTone.failure,
+                        icon: AppIconography.error,
+                        message: copy.reportProblemAttached(error.title),
+                        liveRegion: false,
                       ),
+                      // A failed job carries its log: shown as it goes in
+                      // the report, or said to be missing (P8.4).
+                      if (_jobLog case final log?) ...[
+                        SizedBox(height: tokens.space2),
+                        KitLogPanel(
+                          panelKey: const ValueKey('report-problem-job-log'),
+                          lines: log,
+                          title: copy.reportProblemJobLog,
+                          ended: const KitLogEnd(failed: true),
+                        ),
+                      ] else if (error.log != null) ...[
+                        SizedBox(height: tokens.space2),
+                        KitText(
+                          copy.reportProblemJobLogNone,
+                          key: const ValueKey('report-problem-job-log-none'),
+                          role: KitTextRole.secondary,
+                        ),
+                      ],
+                    ],
+                    SizedBox(height: tokens.space3),
+                    KitField(
+                      fieldKey: const ValueKey('report-problem-description'),
+                      label: copy.reportProblemDescribeLabel,
+                      hint: copy.reportProblemDescribeHint,
+                      kind: KitFieldKind.multiline,
+                      draft: _draft,
+                      error: _describeFirst
+                          ? copy.reportProblemDescribeFirst
+                          : null,
+                      onChanged: (_) {
+                        if (_describeFirst) {
+                          setState(() => _describeFirst = false);
+                        }
+                      },
                     ),
-                  )
-                else ...[
-                  SliverToBoxAdapter(
-                    child: SectionLabel(
-                      _screenCopy(
-                        context,
-                      ).e7SettingsDiagnosticTotal(entries.length),
+                  ],
+                ),
+              ),
+              if (events.isNotEmpty) ...[
+                SizedBox(height: tokens.space2),
+                KitRowGroup(
+                  children: [
+                    KitSwitchRow(
+                      switchKey: const ValueKey('report-problem-include'),
+                      title: copy.reportProblemIncludeDiagnostics,
+                      supporting: copy.reportProblemIncludeDiagnosticsBody(
+                        events.length,
+                      ),
+                      value: _includeDiagnostics,
+                      onChanged: (value) =>
+                          setState(() => _includeDiagnostics = value),
                     ),
+                  ],
+                ),
+              ],
+              SizedBox(height: tokens.space4),
+              Padding(
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: tokens.gutter,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    KitButton.primary(
+                      key: const ValueKey('report-problem-review'),
+                      onPressed: () => unawaited(_review()),
+                      icon: AppIconography.bug,
+                      label: copy.reportProblemReview,
+                    ),
+                    SizedBox(height: tokens.space1),
+                    KitText(
+                      copy.reportProblemReviewHint,
+                      role: KitTextRole.secondary,
+                    ),
+                    if (_clearFailed) ...[
+                      SizedBox(height: tokens.space2),
+                      KitNotice(
+                        key: const ValueKey('report-problem-clear-failed'),
+                        tone: AppStatusTone.failure,
+                        icon: AppIconography.error,
+                        message: copy.reportProblemClearFailed,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (errors.isNotEmpty) ...[
+                SizedBox(height: tokens.sectionGap),
+                KitRowGroup(
+                  label: copy.reportProblemErrorsLabel(errors.length),
+                  // Clear acts on exactly these errors, so it sits on this
+                  // list's header and names its count.
+                  labelTrailing: KitIconButton(
+                    key: const ValueKey('clear-app-diagnostics'),
+                    icon: AppIconography.delete,
+                    size: 20,
+                    tooltip: copy.appDiagnosticsClearConfirm(errors.length),
+                    onPressed: () => unawaited(_clear(errors.length)),
                   ),
-                  SliverList.separated(
-                    itemCount: entries.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final entry = entries[index];
-                      return ExpansionTile(
-                        key: ValueKey('diagnostic-entry-${entry.id}'),
-                        leading: const Icon(AppIconography.error),
-                        title: Text(
-                          entry.message,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                  children: [
+                    for (final (index, entry) in errors.indexed)
+                      KitExpandRow(
+                        key: ValueKey('diagnostic-entry-${entry.id ?? index}'),
+                        leading: KitRow.icon(context, AppIconography.error),
+                        title: entry.message.split('\n').first,
+                        supporting: TextSpan(
+                          text: [
+                            KitBidi.ltr(entry.source),
+                            _time(entry.time),
+                            if (entry.occurrences > 1)
+                              copy.e7SettingsDiagnosticOccurrences(
+                                entry.occurrences,
+                              ),
+                          ].join(' · '),
                         ),
-                        subtitle: Text(
-                          '\u2066${entry.source} · ${_time(entry.timestamp)}\u2069'
-                          '${entry.occurrences > 1 ? ' · ${_screenCopy(context).e7SettingsDiagnosticOccurrences(entry.occurrences)}' : ''}',
-                        ),
-                        childrenPadding: const EdgeInsets.fromLTRB(
-                          16,
-                          0,
-                          16,
-                          16,
-                        ),
-                        expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+                        supportingMaxLines: 2,
                         children: [
-                          SelectionArea(
-                            child: Text(
-                              textDirection: TextDirection.ltr,
+                          Padding(
+                            padding: EdgeInsetsDirectional.only(
+                              start: tokens.gutter,
+                              end: tokens.gutter,
+                              bottom: tokens.space3,
+                            ),
+                            child: KitText.mono(
                               [
                                 entry.message,
                                 if (entry.stack.isNotEmpty) entry.stack,
                               ].join('\n\n'),
-                              style: const TextStyle(
-                                fontFamily: AppTheme.monoFamily,
-                                fontSize: AppTheme.codeFontSize,
-                              ),
+                              selectable: true,
                             ),
                           ),
                         ],
-                      );
-                    },
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                ],
+                      ),
+                  ],
+                ),
               ],
-            );
-          },
-        ),
+              SizedBox(height: tokens.sectionGap),
+              // Timings are for whoever reads the report, not the person
+              // filling it in: folded, last, still part of the report.
+              const KitDetailsFold(child: PerfTraceSection()),
+            ],
+          );
+        },
       ),
     );
   }
 }
+
+/// The count on Settings' Report a problem row: errors kept on this phone
+/// (the saved report when it opened, else this run's).
+int reportProblemErrorCount({
+  ReportProblem? store,
+  AppDiagnosticsController? diagnostics,
+}) => problemReportEvents(
+  store: store ?? ReportProblemStartup.current?.report,
+  diagnostics: diagnostics ?? ReportProblemStartup.diagnostics,
+).where((event) => event.isError).length;
 
 AppLocalizations _screenCopy(BuildContext context) =>
     Localizations.of<AppLocalizations>(context, AppLocalizations) ??

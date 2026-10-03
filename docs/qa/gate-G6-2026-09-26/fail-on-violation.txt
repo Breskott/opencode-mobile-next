@@ -1,0 +1,988 @@
+$ git apply docs/qa/gate-G6-2026-09-26/fail-on-violation.patch
+$ /home/eslam/.shorebird/bin/cache/flutter/91f8bd75076e9c740aa13cf67eb9ec1a093f68f5/bin/flutter test -j 1 test/text_scale_overflow_test.dart --plain-name G6
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 1.1.0 (2.0.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 2.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dbus 0.7.15 (0.8.0 available)
+  dio 5.11.0 (5.11.1 available)
+  dio_web_adapter 2.2.1 (2.2.2 available)
+  dynamic_color 1.9.0 (2.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  file_picker 12.2.0 (13.1.0 available)
+  file_picker_darwin 1.1.0 (2.1.2 available)
+  file_picker_linux 1.1.0 (2.0.1 available)
+  file_picker_platform_interface 3.3.0 (4.0.0 available)
+  file_picker_web 3.1.0 (4.0.0 available)
+  flutter_secure_storage 11.0.0 (11.2.0 available)
+  flutter_secure_storage_darwin 0.4.0 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.2 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.3 (2.1.1 available)
+  image_picker_android 0.8.13+22 (0.8.13+23 available)
+  image_picker_ios 0.8.13+7 (0.8.13+8 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mime 2.0.0 (2.1.0 available)
+  mobile_scanner 7.4.0 (7.4.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  record_android 2.1.2 (2.2.0 available)
+  record_linux 2.1.1 (2.1.2 available)
+  record_web 2.1.2 (2.1.3 available)
+  record_windows 2.2.3 (2.3.0 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  sherpa_onnx 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_arm64 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_armeabi 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86_64 1.13.7 (1.13.8 available)
+  sherpa_onnx_ios 1.13.7 (1.13.8 available)
+  sherpa_onnx_linux 1.13.7 (1.13.8 available)
+  sherpa_onnx_macos 1.13.7 (1.13.8 available)
+  sherpa_onnx_web 1.13.7 (1.13.8 available)
+  sherpa_onnx_windows 1.13.7 (1.13.8 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart
+00:00 +0: G6 kit overflow matrix (setUpAll)
+00:00 +0: G6 kit overflow matrix every exported kit part has a scene, and every scene a part
+00:00 +0 -1: G6 kit overflow matrix every exported kit part has a scene, and every scene a part [E]
+  Expected: empty
+    Actual: ['KitGlass']
+  Kit parts with no scene in test/kit/kit_overflow_scenes.dart (add one per declared state at the end of kitOverflowScenes)
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/text_scale_overflow_test.dart 864:7            main.<fn>.<fn>
+  
+00:00 +0 -1: G6 kit overflow matrix the manifest fails loudly on what it cannot read
+00:00 +1 -1: G6 kit overflow matrix the KIT-24 check passes a stack and fails a track, narrow rows or no part
+00:00 +2 -1: G6 kit overflow matrix the overflow baseline exists and stays under the ceiling
+00:00 +2 -2: G6 kit overflow matrix the overflow baseline exists and stays under the ceiling [E]
+  Expected: empty
+    Actual: [
+              'KitRow/default 320x640 text 1.0 ltr: A RenderFlex overflowed by 20 pixels on the right.',
+              'KitSheet/default 800x1280 text 2.0 ltr: A RenderFlex overflowed by 40 pixels on the right. (baselined: A RenderFlex overflowed by 15 pixels on the right.)'
+            ]
+  test/text_scale_overflow_baseline.json may only shrink: these entries are not in the ceiling (_overflowCeiling in test/text_scale_overflow_test.dart), or are larger or different there. Fix the overflow instead
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/text_scale_overflow_test.dart 990:7            main.<fn>.<fn>
+  
+00:00 +2 -2: G6 kit overflow matrix LoadingList/loading fits every overflow size, text scale and direction
+00:01 +3 -2: G6 kit overflow matrix ProductEmptyState/empty fits every overflow size, text scale and direction
+00:02 +4 -2: G6 kit overflow matrix ProductErrorState/error fits every overflow size, text scale and direction
+00:02 +5 -2: G6 kit overflow matrix ProductInlineEmpty/empty fits every overflow size, text scale and direction
+00:03 +6 -2: G6 kit overflow matrix SectionLabel/default fits every overflow size, text scale and direction
+00:03 +7 -2: G6 kit overflow matrix KitActionStack/default fits every overflow size, text scale and direction
+00:04 +8 -2: G6 kit overflow matrix KitAskLine/default fits every overflow size, text scale and direction
+00:05 +9 -2: G6 kit overflow matrix KitButton/default fits every overflow size, text scale and direction
+00:05 +10 -2: G6 kit overflow matrix KitButton/working fits every overflow size, text scale and direction
+00:06 +11 -2: G6 kit overflow matrix KitButton/disabled fits every overflow size, text scale and direction
+00:06 +12 -2: G6 kit overflow matrix KitActionBlock/default fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 1.0 ltr: A RenderFlex overflowed by 316 pixels on the right.',
+            '320x640 text 1.0 rtl: A RenderFlex overflowed by 191 pixels on the right.',
+            '320x640 text 1.3 ltr: A RenderFlex overflowed by 444 pixels on the right.',
+            '320x640 text 1.3 rtl: A RenderFlex overflowed by 281 pixels on the right.',
+            '320x640 text 2.0 ltr: A RenderFlex overflowed by 744 pixels on the right.',
+            '320x640 text 2.0 rtl: A RenderFlex overflowed by 494 pixels on the right.',
+            '360x740 text 1.0 ltr: A RenderFlex overflowed by 276 pixels on the right.',
+            '360x740 text 1.0 rtl: A RenderFlex overflowed by 151 pixels on the right.',
+            '360x740 text 1.3 ltr: A RenderFlex overflowed by 404 pixels on the right.',
+            '360x740 text 1.3 rtl: A RenderFlex overflowed by 241 pixels on the right.',
+            '360x740 text 2.0 ltr: A RenderFlex overflowed by 704 pixels on the right.',
+            '360x740 text 2.0 rtl: A RenderFlex overflowed by 454 pixels on the right.',
+            '412x915 text 1.0 ltr: A RenderFlex overflowed by 224 pixels on the right.',
+            '412x915 text 1.0 rtl: A RenderFlex overflowed by 99 pixels on the right.',
+            '412x915 text 1.3 ltr: A RenderFlex overflowed by 352 pixels on the right.',
+            '412x915 text 1.3 rtl: A RenderFlex overflowed by 189 pixels on the right.',
+            '412x915 text 2.0 ltr: A RenderFlex overflowed by 652 pixels on the right.',
+            '412x915 text 2.0 rtl: A RenderFlex overflowed by 402 pixels on the right.',
+            '600x960 text 1.0 ltr: A RenderFlex overflowed by 36 pixels on the right.',
+            '600x960 text 1.3 ltr: A RenderFlex overflowed by 164 pixels on the right.',
+            '600x960 text 1.3 rtl: A RenderFlex overflowed by 1.5 pixels on the right.',
+            '600x960 text 2.0 ltr: A RenderFlex overflowed by 464 pixels on the right.',
+            '600x960 text 2.0 rtl: A RenderFlex overflowed by 214 pixels on the right.'
+          ]
+KitActionBlock/default overflowed or threw in 23 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 1.0 ltr: A RenderFlex overflowed by 316 pixels on the right.
+320x640 text 1.0 rtl: A RenderFlex overflowed by 191 pixels on the right.
+320x640 text 1.3 ltr: A RenderFlex overflowed by 444 pixels on the right.
+320x640 text 1.3 rtl: A RenderFlex overflowed by 281 pixels on the right.
+320x640 text 2.0 ltr: A RenderFlex overflowed by 744 pixels on the right.
+320x640 text 2.0 rtl: A RenderFlex overflowed by 494 pixels on the right.
+360x740 text 1.0 ltr: A RenderFlex overflowed by 276 pixels on the right.
+360x740 text 1.0 rtl: A RenderFlex overflowed by 151 pixels on the right.
+360x740 text 1.3 ltr: A RenderFlex overflowed by 404 pixels on the right.
+360x740 text 1.3 rtl: A RenderFlex overflowed by 241 pixels on the right.
+360x740 text 2.0 ltr: A RenderFlex overflowed by 704 pixels on the right.
+360x740 text 2.0 rtl: A RenderFlex overflowed by 454 pixels on the right.
+412x915 text 1.0 ltr: A RenderFlex overflowed by 224 pixels on the right.
+412x915 text 1.0 rtl: A RenderFlex overflowed by 99 pixels on the right.
+412x915 text 1.3 ltr: A RenderFlex overflowed by 352 pixels on the right.
+412x915 text 1.3 rtl: A RenderFlex overflowed by 189 pixels on the right.
+412x915 text 2.0 ltr: A RenderFlex overflowed by 652 pixels on the right.
+412x915 text 2.0 rtl: A RenderFlex overflowed by 402 pixels on the right.
+600x960 text 1.0 ltr: A RenderFlex overflowed by 36 pixels on the right.
+600x960 text 1.3 ltr: A RenderFlex overflowed by 164 pixels on the right.
+600x960 text 1.3 rtl: A RenderFlex overflowed by 1.5 pixels on the right.
+600x960 text 2.0 ltr: A RenderFlex overflowed by 464 pixels on the right.
+600x960 text 2.0 rtl: A RenderFlex overflowed by 214 pixels on the right.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart:1010:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart line 1010
+The test description was:
+  KitActionBlock/default fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:07 +12 -3: G6 kit overflow matrix KitActionBlock/default fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitActionBlock/default fits every overflow size, text scale and direction
+  
+00:07 +12 -3: G6 kit overflow matrix KitActionBlock/disabled fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 1.0 ltr: A RenderFlex overflowed by 42 pixels on the right.',
+            '320x640 text 1.3 ltr: A RenderFlex overflowed by 112 pixels on the right.',
+            '320x640 text 1.3 rtl: A RenderFlex overflowed by 15 pixels on the right.',
+            '320x640 text 2.0 ltr: A RenderFlex overflowed by 275 pixels on the right.',
+            '320x640 text 2.0 rtl: A RenderFlex overflowed by 127 pixels on the right.',
+            '360x740 text 1.0 ltr: A RenderFlex overflowed by 1.7 pixels on the right.',
+            '360x740 text 1.3 ltr: A RenderFlex overflowed by 72 pixels on the right.',
+            '360x740 text 2.0 ltr: A RenderFlex overflowed by 235 pixels on the right.',
+            '360x740 text 2.0 rtl: A RenderFlex overflowed by 87 pixels on the right.',
+            '412x915 text 1.3 ltr: A RenderFlex overflowed by 20 pixels on the right.',
+            '412x915 text 2.0 ltr: A RenderFlex overflowed by 183 pixels on the right.',
+            '412x915 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.'
+          ]
+KitActionBlock/disabled overflowed or threw in 12 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 1.0 ltr: A RenderFlex overflowed by 42 pixels on the right.
+320x640 text 1.3 ltr: A RenderFlex overflowed by 112 pixels on the right.
+320x640 text 1.3 rtl: A RenderFlex overflowed by 15 pixels on the right.
+320x640 text 2.0 ltr: A RenderFlex overflowed by 275 pixels on the right.
+320x640 text 2.0 rtl: A RenderFlex overflowed by 127 pixels on the right.
+360x740 text 1.0 ltr: A RenderFlex overflowed by 1.7 pixels on the right.
+360x740 text 1.3 ltr: A RenderFlex overflowed by 72 pixels on the right.
+360x740 text 2.0 ltr: A RenderFlex overflowed by 235 pixels on the right.
+360x740 text 2.0 rtl: A RenderFlex overflowed by 87 pixels on the right.
+412x915 text 1.3 ltr: A RenderFlex overflowed by 20 pixels on the right.
+412x915 text 2.0 ltr: A RenderFlex overflowed by 183 pixels on the right.
+412x915 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart:1010:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart line 1010
+The test description was:
+  KitActionBlock/disabled fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:07 +12 -4: G6 kit overflow matrix KitActionBlock/disabled fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitActionBlock/disabled fits every overflow size, text scale and direction
+  
+00:07 +12 -4: G6 kit overflow matrix KitInset/default fits every overflow size, text scale and direction
+00:08 +13 -4: G6 kit overflow matrix KitIconButton/default fits every overflow size, text scale and direction
+00:08 +14 -4: G6 kit overflow matrix KitIllustration/default fits every overflow size, text scale and direction
+00:08 +15 -4: G6 kit overflow matrix KitPanel/default fits every overflow size, text scale and direction
+00:09 +16 -4: G6 kit overflow matrix KitNotice/default fits every overflow size, text scale and direction
+00:09 +17 -4: G6 kit overflow matrix KitLoadingBar/loading fits every overflow size, text scale and direction
+00:10 +18 -4: G6 kit overflow matrix KitSkeletonRows/loading fits every overflow size, text scale and direction
+00:10 +19 -4: G6 kit overflow matrix KitProgressView/working fits every overflow size, text scale and direction
+00:11 +20 -4: G6 kit overflow matrix KitRequestCard/default fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 1.0 ltr: A RenderFlex overflowed by 150 pixels on the right.',
+            '320x640 text 1.0 rtl: A RenderFlex overflowed by 60 pixels on the right.',
+            '320x640 text 1.3 ltr: A RenderFlex overflowed by 230 pixels on the right.',
+            '320x640 text 1.3 rtl: A RenderFlex overflowed by 113 pixels on the right.',
+            '320x640 text 2.0 ltr: A RenderFlex overflowed by 418 pixels on the right.',
+            '320x640 text 2.0 rtl: A RenderFlex overflowed by 238 pixels on the right.',
+            '360x740 text 1.0 ltr: A RenderFlex overflowed by 110 pixels on the right.',
+            '360x740 text 1.0 rtl: A RenderFlex overflowed by 20 pixels on the right.',
+            '360x740 text 1.3 ltr: A RenderFlex overflowed by 190 pixels on the right.',
+            '360x740 text 1.3 rtl: A RenderFlex overflowed by 73 pixels on the right.',
+            '360x740 text 2.0 ltr: A RenderFlex overflowed by 378 pixels on the right.',
+            '360x740 text 2.0 rtl: A RenderFlex overflowed by 198 pixels on the right.',
+            '412x915 text 1.0 ltr: A RenderFlex overflowed by 58 pixels on the right.',
+            '412x915 text 1.3 ltr: A RenderFlex overflowed by 138 pixels on the right.',
+            '412x915 text 1.3 rtl: A RenderFlex overflowed by 21 pixels on the right.',
+            '412x915 text 2.0 ltr: A RenderFlex overflowed by 326 pixels on the right.',
+            '412x915 text 2.0 rtl: A RenderFlex overflowed by 146 pixels on the right.',
+            '600x960 text 2.0 ltr: A RenderFlex overflowed by 138 pixels on the right.'
+          ]
+KitRequestCard/default overflowed or threw in 18 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 1.0 ltr: A RenderFlex overflowed by 150 pixels on the right.
+320x640 text 1.0 rtl: A RenderFlex overflowed by 60 pixels on the right.
+320x640 text 1.3 ltr: A RenderFlex overflowed by 230 pixels on the right.
+320x640 text 1.3 rtl: A RenderFlex overflowed by 113 pixels on the right.
+320x640 text 2.0 ltr: A RenderFlex overflowed by 418 pixels on the right.
+320x640 text 2.0 rtl: A RenderFlex overflowed by 238 pixels on the right.
+360x740 text 1.0 ltr: A RenderFlex overflowed by 110 pixels on the right.
+360x740 text 1.0 rtl: A RenderFlex overflowed by 20 pixels on the right.
+360x740 text 1.3 ltr: A RenderFlex overflowed by 190 pixels on the right.
+360x740 text 1.3 rtl: A RenderFlex overflowed by 73 pixels on the right.
+360x740 text 2.0 ltr: A RenderFlex overflowed by 378 pixels on the right.
+360x740 text 2.0 rtl: A RenderFlex overflowed by 198 pixels on the right.
+412x915 text 1.0 ltr: A RenderFlex overflowed by 58 pixels on the right.
+412x915 text 1.3 ltr: A RenderFlex overflowed by 138 pixels on the right.
+412x915 text 1.3 rtl: A RenderFlex overflowed by 21 pixels on the right.
+412x915 text 2.0 ltr: A RenderFlex overflowed by 326 pixels on the right.
+412x915 text 2.0 rtl: A RenderFlex overflowed by 146 pixels on the right.
+600x960 text 2.0 ltr: A RenderFlex overflowed by 138 pixels on the right.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart:1010:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart line 1010
+The test description was:
+  KitRequestCard/default fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:11 +20 -5: G6 kit overflow matrix KitRequestCard/default fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitRequestCard/default fits every overflow size, text scale and direction
+  
+00:11 +20 -5: G6 kit overflow matrix KitRequestCard/disabled fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 2.0 ltr: A RenderFlex overflowed by 65 pixels on the right.',
+            '320x640 text 2.0 rtl: A RenderFlex overflowed by 22 pixels on the right.',
+            '360x740 text 2.0 ltr: A RenderFlex overflowed by 25 pixels on the right.'
+          ]
+KitRequestCard/disabled overflowed or threw in 3 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 2.0 ltr: A RenderFlex overflowed by 65 pixels on the right.
+320x640 text 2.0 rtl: A RenderFlex overflowed by 22 pixels on the right.
+360x740 text 2.0 ltr: A RenderFlex overflowed by 25 pixels on the right.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart:1010:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart line 1010
+The test description was:
+  KitRequestCard/disabled fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:12 +20 -6: G6 kit overflow matrix KitRequestCard/disabled fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitRequestCard/disabled fits every overflow size, text scale and direction
+  
+00:12 +20 -6: G6 kit overflow matrix KitRow/default fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 1.0 ltr: fixed (baselined: A RenderFlex overflowed by 20 pixels on the
+right.)'
+          ]
+KitRow/default improved. Tighten test/text_scale_overflow_baseline.json in the same change
+(G6_OVERFLOW_WRITE=1 writes it), so a later regression at these combinations fails:
+320x640 text 1.0 ltr: fixed (baselined: A RenderFlex overflowed by 20 pixels on the right.)
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart:1018:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart line 1018
+The test description was:
+  KitRow/default fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:12 +20 -7: G6 kit overflow matrix KitRow/default fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitRow/default fits every overflow size, text scale and direction
+  
+00:12 +20 -7: G6 kit overflow matrix KitRow/disabled fits every overflow size, text scale and direction
+00:13 +21 -7: G6 kit overflow matrix KitRowIcon/default fits every overflow size, text scale and direction
+00:13 +22 -7: G6 kit overflow matrix KitRowMenu/default fits every overflow size, text scale and direction
+00:14 +23 -7: G6 kit overflow matrix KitRowMenu/disabled fits every overflow size, text scale and direction
+00:14 +24 -7: G6 kit overflow matrix KitSwitchRow/default fits every overflow size, text scale and direction
+00:15 +25 -7: G6 kit overflow matrix KitSwitchRow/disabled fits every overflow size, text scale and direction
+00:15 +26 -7: G6 kit overflow matrix KitExpandRow/default fits every overflow size, text scale and direction
+00:16 +27 -7: G6 kit overflow matrix KitExpandRow/expanded fits every overflow size, text scale and direction
+00:16 +28 -7: G6 kit overflow matrix KitScreen/default fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 1.0 ltr: A RenderFlex overflowed by 64 pixels on the right.',
+            '320x640 text 1.3 ltr: A RenderFlex overflowed by 145 pixels on the right.',
+            '320x640 text 1.3 rtl: A RenderFlex overflowed by 56 pixels on the right.',
+            '320x640 text 2.0 ltr: A RenderFlex overflowed by 336 pixels on the right.',
+            '320x640 text 2.0 rtl: A RenderFlex overflowed by 198 pixels on the right.',
+            '360x740 text 1.0 ltr: A RenderFlex overflowed by 24 pixels on the right.',
+            '360x740 text 1.3 ltr: A RenderFlex overflowed by 105 pixels on the right.',
+            '360x740 text 1.3 rtl: A RenderFlex overflowed by 16 pixels on the right.',
+            '360x740 text 2.0 ltr: A RenderFlex overflowed by 296 pixels on the right.',
+            '360x740 text 2.0 rtl: A RenderFlex overflowed by 158 pixels on the right.',
+            '412x915 text 1.3 ltr: A RenderFlex overflowed by 53 pixels on the right.',
+            '412x915 text 2.0 ltr: A RenderFlex overflowed by 244 pixels on the right.',
+            '412x915 text 2.0 rtl: A RenderFlex overflowed by 106 pixels on the right.',
+            '600x960 text 2.0 ltr: A RenderFlex overflowed by 56 pixels on the right.'
+          ]
+KitScreen/default overflowed or threw in 14 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 1.0 ltr: A RenderFlex overflowed by 64 pixels on the right.
+320x640 text 1.3 ltr: A RenderFlex overflowed by 145 pixels on the right.
+320x640 text 1.3 rtl: A RenderFlex overflowed by 56 pixels on the right.
+320x640 text 2.0 ltr: A RenderFlex overflowed by 336 pixels on the right.
+320x640 text 2.0 rtl: A RenderFlex overflowed by 198 pixels on the right.
+360x740 text 1.0 ltr: A RenderFlex overflowed by 24 pixels on the right.
+360x740 text 1.3 ltr: A RenderFlex overflowed by 105 pixels on the right.
+360x740 text 1.3 rtl: A RenderFlex overflowed by 16 pixels on the right.
+360x740 text 2.0 ltr: A RenderFlex overflowed by 296 pixels on the right.
+360x740 text 2.0 rtl: A RenderFlex overflowed by 158 pixels on the right.
+412x915 text 1.3 ltr: A RenderFlex overflowed by 53 pixels on the right.
+412x915 text 2.0 ltr: A RenderFlex overflowed by 244 pixels on the right.
+412x915 text 2.0 rtl: A RenderFlex overflowed by 106 pixels on the right.
+600x960 text 2.0 ltr: A RenderFlex overflowed by 56 pixels on the right.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart:1010:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart line 1010
+The test description was:
+  KitScreen/default fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:17 +28 -8: G6 kit overflow matrix KitScreen/default fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitScreen/default fits every overflow size, text scale and direction
+  
+00:17 +28 -8: G6 kit overflow matrix KitScreen/loading fits every overflow size, text scale and direction
+00:18 +29 -8: G6 kit overflow matrix KitSecretField/default fits every overflow size, text scale and direction
+00:18 +30 -8: G6 kit overflow matrix KitSecretField/disabled fits every overflow size, text scale and direction
+00:19 +31 -8: G6 kit overflow matrix KitSheet/default fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 1.0 ltr: A RenderFlex overflowed by 84 pixels on the right.',
+            '320x640 text 1.0 rtl: A RenderFlex overflowed by 53 pixels on the right.',
+            '320x640 text 1.3 ltr: A RenderFlex overflowed by 159 pixels on the right.',
+            '320x640 text 1.3 rtl: A RenderFlex overflowed by 120 pixels on the right.',
+            '320x640 text 2.0 ltr: A RenderFlex overflowed by 335 pixels on the right.',
+            '320x640 text 2.0 rtl: A RenderFlex overflowed by 275 pixels on the right.',
+            '360x740 text 1.0 ltr: A RenderFlex overflowed by 44 pixels on the right.',
+            '360x740 text 1.0 rtl: A RenderFlex overflowed by 13 pixels on the right.',
+            '360x740 text 1.3 ltr: A RenderFlex overflowed by 119 pixels on the right.',
+            '360x740 text 1.3 rtl: A RenderFlex overflowed by 80 pixels on the right.',
+            '360x740 text 2.0 ltr: A RenderFlex overflowed by 295 pixels on the right.',
+            '360x740 text 2.0 rtl: A RenderFlex overflowed by 235 pixels on the right.',
+            '412x915 text 1.3 ltr: A RenderFlex overflowed by 67 pixels on the right.',
+            '412x915 text 1.3 rtl: A RenderFlex overflowed by 28 pixels on the right.',
+            '412x915 text 2.0 ltr: A RenderFlex overflowed by 243 pixels on the right.',
+            '412x915 text 2.0 rtl: A RenderFlex overflowed by 183 pixels on the right.',
+            '600x960 text 2.0 ltr: A RenderFlex overflowed by 55 pixels on the right.',
+            '840x1180 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.',
+            '840x1180 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.',
+            '1280x800 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.',
+            '1280x800 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.',
+            '1600x1000 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.',
+            '1600x1000 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.'
+          ]
+KitSheet/default overflowed or threw in 23 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 1.0 ltr: A RenderFlex overflowed by 84 pixels on the right.
+320x640 text 1.0 rtl: A RenderFlex overflowed by 53 pixels on the right.
+320x640 text 1.3 ltr: A RenderFlex overflowed by 159 pixels on the right.
+320x640 text 1.3 rtl: A RenderFlex overflowed by 120 pixels on the right.
+320x640 text 2.0 ltr: A RenderFlex overflowed by 335 pixels on the right.
+320x640 text 2.0 rtl: A RenderFlex overflowed by 275 pixels on the right.
+360x740 text 1.0 ltr: A RenderFlex overflowed by 44 pixels on the right.
+360x740 text 1.0 rtl: A RenderFlex overflowed by 13 pixels on the right.
+360x740 text 1.3 ltr: A RenderFlex overflowed by 119 pixels on the right.
+360x740 text 1.3 rtl: A RenderFlex overflowed by 80 pixels on the right.
+360x740 text 2.0 ltr: A RenderFlex overflowed by 295 pixels on the right.
+360x740 text 2.0 rtl: A RenderFlex overflowed by 235 pixels on the right.
+412x915 text 1.3 ltr: A RenderFlex overflowed by 67 pixels on the right.
+412x915 text 1.3 rtl: A RenderFlex overflowed by 28 pixels on the right.
+412x915 text 2.0 ltr: A RenderFlex overflowed by 243 pixels on the right.
+412x915 text 2.0 rtl: A RenderFlex overflowed by 183 pixels on the right.
+600x960 text 2.0 ltr: A RenderFlex overflowed by 55 pixels on the right.
+840x1180 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.
+840x1180 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.
+1280x800 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.
+1280x800 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.
+1600x1000 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.
+1600x1000 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart:1010:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart line 1010
+The test description was:
+  KitSheet/default fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:20 +31 -9: G6 kit overflow matrix KitSheet/default fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitSheet/default fits every overflow size, text scale and direction
+  
+00:20 +31 -9: G6 kit overflow matrix KitSheet/full fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 1.0 ltr: A RenderFlex overflowed by 84 pixels on the right.',
+            '320x640 text 1.0 rtl: A RenderFlex overflowed by 53 pixels on the right.',
+            '320x640 text 1.3 ltr: A RenderFlex overflowed by 159 pixels on the right.',
+            '320x640 text 1.3 rtl: A RenderFlex overflowed by 120 pixels on the right.',
+            '320x640 text 2.0 ltr: A RenderFlex overflowed by 335 pixels on the right.',
+            '320x640 text 2.0 rtl: A RenderFlex overflowed by 275 pixels on the right.',
+            '360x740 text 1.0 ltr: A RenderFlex overflowed by 44 pixels on the right.',
+            '360x740 text 1.0 rtl: A RenderFlex overflowed by 13 pixels on the right.',
+            '360x740 text 1.3 ltr: A RenderFlex overflowed by 119 pixels on the right.',
+            '360x740 text 1.3 rtl: A RenderFlex overflowed by 80 pixels on the right.',
+            '360x740 text 2.0 ltr: A RenderFlex overflowed by 295 pixels on the right.',
+            '360x740 text 2.0 rtl: A RenderFlex overflowed by 235 pixels on the right.',
+            '412x915 text 1.3 ltr: A RenderFlex overflowed by 67 pixels on the right.',
+            '412x915 text 1.3 rtl: A RenderFlex overflowed by 28 pixels on the right.',
+            '412x915 text 2.0 ltr: A RenderFlex overflowed by 243 pixels on the right.',
+            '412x915 text 2.0 rtl: A RenderFlex overflowed by 183 pixels on the right.',
+            '600x960 text 2.0 ltr: A RenderFlex overflowed by 55 pixels on the right.',
+            '840x1180 text 1.0 ltr: A RenderFlex overflowed by 3.6 pixels on the right.',
+            '840x1180 text 1.3 ltr: A RenderFlex overflowed by 79 pixels on the right.',
+            '840x1180 text 1.3 rtl: A RenderFlex overflowed by 40 pixels on the right.',
+            '840x1180 text 2.0 ltr: A RenderFlex overflowed by 255 pixels on the right.',
+            '840x1180 text 2.0 rtl: A RenderFlex overflowed by 195 pixels on the right.',
+            '1280x800 text 2.0 ltr: A RenderFlex overflowed by 175 pixels on the right.',
+            '1280x800 text 2.0 rtl: A RenderFlex overflowed by 115 pixels on the right.',
+            ...
+          ]
+KitSheet/full overflowed or threw in 26 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 1.0 ltr: A RenderFlex overflowed by 84 pixels on the right.
+320x640 text 1.0 rtl: A RenderFlex overflowed by 53 pixels on the right.
+320x640 text 1.3 ltr: A RenderFlex overflowed by 159 pixels on the right.
+320x640 text 1.3 rtl: A RenderFlex overflowed by 120 pixels on the right.
+320x640 text 2.0 ltr: A RenderFlex overflowed by 335 pixels on the right.
+320x640 text 2.0 rtl: A RenderFlex overflowed by 275 pixels on the right.
+360x740 text 1.0 ltr: A RenderFlex overflowed by 44 pixels on the right.
+360x740 text 1.0 rtl: A RenderFlex overflowed by 13 pixels on the right.
+360x740 text 1.3 ltr: A RenderFlex overflowed by 119 pixels on the right.
+360x740 text 1.3 rtl: A RenderFlex overflowed by 80 pixels on the right.
+360x740 text 2.0 ltr: A RenderFlex overflowed by 295 pixels on the right.
+360x740 text 2.0 rtl: A RenderFlex overflowed by 235 pixels on the right.
+412x915 text 1.3 ltr: A RenderFlex overflowed by 67 pixels on the right.
+412x915 text 1.3 rtl: A RenderFlex overflowed by 28 pixels on the right.
+412x915 text 2.0 ltr: A RenderFlex overflowed by 243 pixels on the right.
+412x915 text 2.0 rtl: A RenderFlex overflowed by 183 pixels on the right.
+600x960 text 2.0 ltr: A RenderFlex overflowed by 55 pixels on the right.
+840x1180 text 1.0 ltr: A RenderFlex overflowed by 3.6 pixels on the right.
+840x1180 text 1.3 ltr: A RenderFlex overflowed by 79 pixels on the right.
+840x1180 text 1.3 rtl: A RenderFlex overflowed by 40 pixels on the right.
+840x1180 text 2.0 ltr: A RenderFlex overflowed by 255 pixels on the right.
+840x1180 text 2.0 rtl: A RenderFlex overflowed by 195 pixels on the right.
+1280x800 text 2.0 ltr: A RenderFlex overflowed by 175 pixels on the right.
+1280x800 text 2.0 rtl: A RenderFlex overflowed by 115 pixels on the right.
+1600x1000 text 2.0 ltr: A RenderFlex overflowed by 175 pixels on the right.
+1600x1000 text 2.0 rtl: A RenderFlex overflowed by 115 pixels on the right.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart:1010:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart line 1010
+The test description was:
+  KitSheet/full fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:21 +31 -10: G6 kit overflow matrix KitSheet/full fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitSheet/full fits every overflow size, text scale and direction
+  
+00:21 +31 -10: G6 kit overflow matrix KitSheet/loading fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 1.0 ltr: A RenderFlex overflowed by 84 pixels on the right.',
+            '320x640 text 1.0 rtl: A RenderFlex overflowed by 53 pixels on the right.',
+            '320x640 text 1.3 ltr: A RenderFlex overflowed by 159 pixels on the right.',
+            '320x640 text 1.3 rtl: A RenderFlex overflowed by 120 pixels on the right.',
+            '320x640 text 2.0 ltr: A RenderFlex overflowed by 335 pixels on the right.',
+            '320x640 text 2.0 rtl: A RenderFlex overflowed by 275 pixels on the right.',
+            '360x740 text 1.0 ltr: A RenderFlex overflowed by 44 pixels on the right.',
+            '360x740 text 1.0 rtl: A RenderFlex overflowed by 13 pixels on the right.',
+            '360x740 text 1.3 ltr: A RenderFlex overflowed by 119 pixels on the right.',
+            '360x740 text 1.3 rtl: A RenderFlex overflowed by 80 pixels on the right.',
+            '360x740 text 2.0 ltr: A RenderFlex overflowed by 295 pixels on the right.',
+            '360x740 text 2.0 rtl: A RenderFlex overflowed by 235 pixels on the right.',
+            '412x915 text 1.3 ltr: A RenderFlex overflowed by 67 pixels on the right.',
+            '412x915 text 1.3 rtl: A RenderFlex overflowed by 28 pixels on the right.',
+            '412x915 text 2.0 ltr: A RenderFlex overflowed by 243 pixels on the right.',
+            '412x915 text 2.0 rtl: A RenderFlex overflowed by 183 pixels on the right.',
+            '600x960 text 2.0 ltr: A RenderFlex overflowed by 55 pixels on the right.',
+            '840x1180 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.',
+            '840x1180 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.',
+            '1280x800 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.',
+            '1280x800 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.',
+            '1600x1000 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.',
+            '1600x1000 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.'
+          ]
+KitSheet/loading overflowed or threw in 23 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 1.0 ltr: A RenderFlex overflowed by 84 pixels on the right.
+320x640 text 1.0 rtl: A RenderFlex overflowed by 53 pixels on the right.
+320x640 text 1.3 ltr: A RenderFlex overflowed by 159 pixels on the right.
+320x640 text 1.3 rtl: A RenderFlex overflowed by 120 pixels on the right.
+320x640 text 2.0 ltr: A RenderFlex overflowed by 335 pixels on the right.
+320x640 text 2.0 rtl: A RenderFlex overflowed by 275 pixels on the right.
+360x740 text 1.0 ltr: A RenderFlex overflowed by 44 pixels on the right.
+360x740 text 1.0 rtl: A RenderFlex overflowed by 13 pixels on the right.
+360x740 text 1.3 ltr: A RenderFlex overflowed by 119 pixels on the right.
+360x740 text 1.3 rtl: A RenderFlex overflowed by 80 pixels on the right.
+360x740 text 2.0 ltr: A RenderFlex overflowed by 295 pixels on the right.
+360x740 text 2.0 rtl: A RenderFlex overflowed by 235 pixels on the right.
+412x915 text 1.3 ltr: A RenderFlex overflowed by 67 pixels on the right.
+412x915 text 1.3 rtl: A RenderFlex overflowed by 28 pixels on the right.
+412x915 text 2.0 ltr: A RenderFlex overflowed by 243 pixels on the right.
+412x915 text 2.0 rtl: A RenderFlex overflowed by 183 pixels on the right.
+600x960 text 2.0 ltr: A RenderFlex overflowed by 55 pixels on the right.
+840x1180 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.
+840x1180 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.
+1280x800 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.
+1280x800 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.
+1600x1000 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.
+1600x1000 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart:1010:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart line 1010
+The test description was:
+  KitSheet/loading fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:22 +31 -11: G6 kit overflow matrix KitSheet/loading fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitSheet/loading fits every overflow size, text scale and direction
+  
+00:22 +31 -11: G6 kit overflow matrix KitSheet/disabled fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 1.0 ltr: A RenderFlex overflowed by 84 pixels on the right.',
+            '320x640 text 1.0 rtl: A RenderFlex overflowed by 53 pixels on the right.',
+            '320x640 text 1.3 ltr: A RenderFlex overflowed by 159 pixels on the right.',
+            '320x640 text 1.3 rtl: A RenderFlex overflowed by 120 pixels on the right.',
+            '320x640 text 2.0 ltr: A RenderFlex overflowed by 335 pixels on the right.',
+            '320x640 text 2.0 rtl: A RenderFlex overflowed by 275 pixels on the right.',
+            '360x740 text 1.0 ltr: A RenderFlex overflowed by 44 pixels on the right.',
+            '360x740 text 1.0 rtl: A RenderFlex overflowed by 13 pixels on the right.',
+            '360x740 text 1.3 ltr: A RenderFlex overflowed by 119 pixels on the right.',
+            '360x740 text 1.3 rtl: A RenderFlex overflowed by 80 pixels on the right.',
+            '360x740 text 2.0 ltr: A RenderFlex overflowed by 295 pixels on the right.',
+            '360x740 text 2.0 rtl: A RenderFlex overflowed by 235 pixels on the right.',
+            '412x915 text 1.3 ltr: A RenderFlex overflowed by 67 pixels on the right.',
+            '412x915 text 1.3 rtl: A RenderFlex overflowed by 28 pixels on the right.',
+            '412x915 text 2.0 ltr: A RenderFlex overflowed by 243 pixels on the right.',
+            '412x915 text 2.0 rtl: A RenderFlex overflowed by 183 pixels on the right.',
+            '600x960 text 2.0 ltr: A RenderFlex overflowed by 55 pixels on the right.',
+            '840x1180 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.',
+            '840x1180 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.',
+            '1280x800 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.',
+            '1280x800 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.',
+            '1600x1000 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.',
+            '1600x1000 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.'
+          ]
+KitSheet/disabled overflowed or threw in 23 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 1.0 ltr: A RenderFlex overflowed by 84 pixels on the right.
+320x640 text 1.0 rtl: A RenderFlex overflowed by 53 pixels on the right.
+320x640 text 1.3 ltr: A RenderFlex overflowed by 159 pixels on the right.
+320x640 text 1.3 rtl: A RenderFlex overflowed by 120 pixels on the right.
+320x640 text 2.0 ltr: A RenderFlex overflowed by 335 pixels on the right.
+320x640 text 2.0 rtl: A RenderFlex overflowed by 275 pixels on the right.
+360x740 text 1.0 ltr: A RenderFlex overflowed by 44 pixels on the right.
+360x740 text 1.0 rtl: A RenderFlex overflowed by 13 pixels on the right.
+360x740 text 1.3 ltr: A RenderFlex overflowed by 119 pixels on the right.
+360x740 text 1.3 rtl: A RenderFlex overflowed by 80 pixels on the right.
+360x740 text 2.0 ltr: A RenderFlex overflowed by 295 pixels on the right.
+360x740 text 2.0 rtl: A RenderFlex overflowed by 235 pixels on the right.
+412x915 text 1.3 ltr: A RenderFlex overflowed by 67 pixels on the right.
+412x915 text 1.3 rtl: A RenderFlex overflowed by 28 pixels on the right.
+412x915 text 2.0 ltr: A RenderFlex overflowed by 243 pixels on the right.
+412x915 text 2.0 rtl: A RenderFlex overflowed by 183 pixels on the right.
+600x960 text 2.0 ltr: A RenderFlex overflowed by 55 pixels on the right.
+840x1180 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.
+840x1180 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.
+1280x800 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.
+1280x800 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.
+1600x1000 text 2.0 ltr: A RenderFlex overflowed by 95 pixels on the right.
+1600x1000 text 2.0 rtl: A RenderFlex overflowed by 35 pixels on the right.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart:1010:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart line 1010
+The test description was:
+  KitSheet/disabled fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:23 +31 -12: G6 kit overflow matrix KitSheet/disabled fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitSheet/disabled fits every overflow size, text scale and direction
+  
+00:23 +31 -12: G6 kit overflow matrix KitSheet/inline fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 1.3 ltr: A RenderFlex overflowed by 13 pixels on the right.',
+            '320x640 text 1.3 rtl: A RenderFlex overflowed by 35 pixels on the right.',
+            '320x640 text 2.0 ltr: A RenderFlex overflowed by 119 pixels on the right.',
+            '320x640 text 2.0 rtl: A RenderFlex overflowed by 153 pixels on the right.',
+            '360x740 text 2.0 ltr: A RenderFlex overflowed by 79 pixels on the right.',
+            '360x740 text 2.0 rtl: A RenderFlex overflowed by 113 pixels on the right.',
+            '412x915 text 2.0 ltr: A RenderFlex overflowed by 27 pixels on the right.',
+            '412x915 text 2.0 rtl: A RenderFlex overflowed by 61 pixels on the right.'
+          ]
+KitSheet/inline overflowed or threw in 8 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 1.3 ltr: A RenderFlex overflowed by 13 pixels on the right.
+320x640 text 1.3 rtl: A RenderFlex overflowed by 35 pixels on the right.
+320x640 text 2.0 ltr: A RenderFlex overflowed by 119 pixels on the right.
+320x640 text 2.0 rtl: A RenderFlex overflowed by 153 pixels on the right.
+360x740 text 2.0 ltr: A RenderFlex overflowed by 79 pixels on the right.
+360x740 text 2.0 rtl: A RenderFlex overflowed by 113 pixels on the right.
+412x915 text 2.0 ltr: A RenderFlex overflowed by 27 pixels on the right.
+412x915 text 2.0 rtl: A RenderFlex overflowed by 61 pixels on the right.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart:1010:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart line 1010
+The test description was:
+  KitSheet/inline fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:23 +31 -13: G6 kit overflow matrix KitSheet/inline fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitSheet/inline fits every overflow size, text scale and direction
+  
+00:23 +31 -13: G6 kit overflow matrix KitConfirmSheet/neutral fits every overflow size, text scale and direction
+00:24 +32 -13: G6 kit overflow matrix KitConfirmSheet/destructive fits every overflow size, text scale and direction
+00:25 +33 -13: G6 kit overflow matrix KitConfirmSheet/stop fits every overflow size, text scale and direction
+00:25 +34 -13: G6 kit overflow matrix KitConfirmSheet/working fits every overflow size, text scale and direction
+00:26 +35 -13: G6 kit overflow matrix KitConfirmSheet/error fits every overflow size, text scale and direction
+00:26 +36 -13: G6 kit overflow matrix KitSkeletonTranscript/loading fits every overflow size, text scale and direction
+00:27 +37 -13: G6 kit overflow matrix KitStateView/error fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 1.0 ltr: A RenderFlex overflowed by 180 pixels on the right.',
+            '320x640 text 1.0 rtl: A RenderFlex overflowed by 139 pixels on the right.',
+            '320x640 text 1.3 ltr: A RenderFlex overflowed by 282 pixels on the right.',
+            '320x640 text 1.3 rtl: A RenderFlex overflowed by 229 pixels on the right.',
+            '320x640 text 2.0 ltr: A RenderFlex overflowed by 520 pixels on the right.',
+            '320x640 text 2.0 rtl: A RenderFlex overflowed by 439 pixels on the right.',
+            '360x740 text 1.0 ltr: A RenderFlex overflowed by 140 pixels on the right.',
+            '360x740 text 1.0 rtl: A RenderFlex overflowed by 99 pixels on the right.',
+            '360x740 text 1.3 ltr: A RenderFlex overflowed by 242 pixels on the right.',
+            '360x740 text 1.3 rtl: A RenderFlex overflowed by 189 pixels on the right.',
+            '360x740 text 2.0 ltr: A RenderFlex overflowed by 480 pixels on the right.',
+            '360x740 text 2.0 rtl: A RenderFlex overflowed by 399 pixels on the right.',
+            '412x915 text 1.0 ltr: A RenderFlex overflowed by 88 pixels on the right.',
+            '412x915 text 1.0 rtl: A RenderFlex overflowed by 47 pixels on the right.',
+            '412x915 text 1.3 ltr: A RenderFlex overflowed by 190 pixels on the right.',
+            '412x915 text 1.3 rtl: A RenderFlex overflowed by 137 pixels on the right.',
+            '412x915 text 2.0 ltr: A RenderFlex overflowed by 428 pixels on the right.',
+            '412x915 text 2.0 rtl: A RenderFlex overflowed by 347 pixels on the right.',
+            '600x960 text 1.0 ltr: A RenderFlex overflowed by 28 pixels on the right.',
+            '600x960 text 1.3 ltr: A RenderFlex overflowed by 130 pixels on the right.',
+            '600x960 text 1.3 rtl: A RenderFlex overflowed by 77 pixels on the right.',
+            '600x960 text 2.0 ltr: A RenderFlex overflowed by 368 pixels on the right.',
+            '600x960 text 2.0 rtl: A RenderFlex overflowed by 287 pixels on the right.',
+            '800x1280 text 1.0 ltr: A RenderFlex overflowed by 28 pixels on the right.',
+            ...
+          ]
+KitStateView/error overflowed or threw in 48 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 1.0 ltr: A RenderFlex overflowed by 180 pixels on the right.
+320x640 text 1.0 rtl: A RenderFlex overflowed by 139 pixels on the right.
+320x640 text 1.3 ltr: A RenderFlex overflowed by 282 pixels on the right.
+320x640 text 1.3 rtl: A RenderFlex overflowed by 229 pixels on the right.
+320x640 text 2.0 ltr: A RenderFlex overflowed by 520 pixels on the right.
+320x640 text 2.0 rtl: A RenderFlex overflowed by 439 pixels on the right.
+360x740 text 1.0 ltr: A RenderFlex overflowed by 140 pixels on the right.
+360x740 text 1.0 rtl: A RenderFlex overflowed by 99 pixels on the right.
+360x740 text 1.3 ltr: A RenderFlex overflowed by 242 pixels on the right.
+360x740 text 1.3 rtl: A RenderFlex overflowed by 189 pixels on the right.
+360x740 text 2.0 ltr: A RenderFlex overflowed by 480 pixels on the right.
+360x740 text 2.0 rtl: A RenderFlex overflowed by 399 pixels on the right.
+412x915 text 1.0 ltr: A RenderFlex overflowed by 88 pixels on the right.
+412x915 text 1.0 rtl: A RenderFlex overflowed by 47 pixels on the right.
+412x915 text 1.3 ltr: A RenderFlex overflowed by 190 pixels on the right.
+412x915 text 1.3 rtl: A RenderFlex overflowed by 137 pixels on the right.
+412x915 text 2.0 ltr: A RenderFlex overflowed by 428 pixels on the right.
+412x915 text 2.0 rtl: A RenderFlex overflowed by 347 pixels on the right.
+600x960 text 1.0 ltr: A RenderFlex overflowed by 28 pixels on the right.
+600x960 text 1.3 ltr: A RenderFlex overflowed by 130 pixels on the right.
+600x960 text 1.3 rtl: A RenderFlex overflowed by 77 pixels on the right.
+600x960 text 2.0 ltr: A RenderFlex overflowed by 368 pixels on the right.
+600x960 text 2.0 rtl: A RenderFlex overflowed by 287 pixels on the right.
+800x1280 text 1.0 ltr: A RenderFlex overflowed by 28 pixels on the right.
+800x1280 text 1.3 ltr: A RenderFlex overflowed by 130 pixels on the right.
+800x1280 text 1.3 rtl: A RenderFlex overflowed by 77 pixels on the right.
+800x1280 text 2.0 ltr: A RenderFlex overflowed by 368 pixels on the right.
+800x1280 text 2.0 rtl: A RenderFlex overflowed by 287 pixels on the right.
+840x1180 text 1.0 ltr: A RenderFlex overflowed by 28 pixels on the right.
+840x1180 text 1.3 ltr: A RenderFlex overflowed by 130 pixels on the right.
+840x1180 text 1.3 rtl: A RenderFlex overflowed by 77 pixels on the right.
+840x1180 text 2.0 ltr: A RenderFlex overflowed by 368 pixels on the right.
+840x1180 text 2.0 rtl: A RenderFlex overflowed by 287 pixels on the right.
+1280x800 text 1.0 ltr: A RenderFlex overflowed by 28 pixels on the right.
+1280x800 text 1.3 ltr: A RenderFlex overflowed by 130 pixels on the right.
+1280x800 text 1.3 rtl: A RenderFlex overflowed by 77 pixels on the right.
+1280x800 text 2.0 ltr: A RenderFlex overflowed by 368 pixels on the right.
+1280x800 text 2.0 rtl: A RenderFlex overflowed by 287 pixels on the right.
+1600x1000 text 1.0 ltr: A RenderFlex overflowed by 28 pixels on the right.
+1600x1000 text 1.3 ltr: A RenderFlex overflowed by 130 pixels on the right.
+1600x1000 text 1.3 rtl: A RenderFlex overflowed by 77 pixels on the right.
+1600x1000 text 2.0 ltr: A RenderFlex overflowed by 368 pixels on the right.
+1600x1000 text 2.0 rtl: A RenderFlex overflowed by 287 pixels on the right.
+915x412 text 1.0 ltr: A RenderFlex overflowed by 28 pixels on the right.
+915x412 text 1.3 ltr: A RenderFlex overflowed by 130 pixels on the right.
+915x412 text 1.3 rtl: A RenderFlex overflowed by 77 pixels on the right.
+915x412 text 2.0 ltr: A RenderFlex overflowed by 368 pixels on the right.
+915x412 text 2.0 rtl: A RenderFlex overflowed by 287 pixels on the right.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart:1010:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart line 1010
+The test description was:
+  KitStateView/error fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:27 +37 -14: G6 kit overflow matrix KitStateView/error fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitStateView/error fits every overflow size, text scale and direction
+  
+00:27 +37 -14: G6 kit overflow matrix KitStateView/working fits every overflow size, text scale and direction
+00:28 +38 -14: G6 kit overflow matrix KitStateView/empty fits every overflow size, text scale and direction
+00:28 +39 -14: G6 kit overflow matrix KitStateView/illustrated fits every overflow size, text scale and direction
+00:29 +40 -14: G6 kit overflow matrix KitStatusLine/default fits every overflow size, text scale and direction
+00:30 +41 -14: G6 kit overflow matrix KitStatusLine/together fits every overflow size, text scale and direction
+00:30 +42 -14: G6 kit overflow matrix KitStatusMark/default fits every overflow size, text scale and direction
+00:30 +43 -14: G6 kit overflow matrix KitTaskMark/default fits every overflow size, text scale and direction
+00:31 +44 -14: G6 kit overflow matrix KitAnimatedRows/default fits every overflow size, text scale and direction
+00:31 +45 -14: G6 kit overflow matrix KitRefresh/default fits every overflow size, text scale and direction
+00:32 +46 -14: G6 kit overflow matrix KitReveal/default fits every overflow size, text scale and direction
+00:32 +47 -14: G6 kit overflow matrix KitTabSwitcher/default fits every overflow size, text scale and direction
+00:33 +48 -14: G6 kit overflow matrix KitPanel/violation fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 1.0 ltr: A RenderFlex overflowed by 120 pixels on the right.',
+            '320x640 text 1.3 ltr: A RenderFlex overflowed by 228 pixels on the right.',
+            '320x640 text 1.3 rtl: A RenderFlex overflowed by 45 pixels on the right.',
+            '320x640 text 2.0 ltr: A RenderFlex overflowed by 482 pixels on the right.',
+            '320x640 text 2.0 rtl: A RenderFlex overflowed by 208 pixels on the right.',
+            '360x740 text 1.0 ltr: A RenderFlex overflowed by 80 pixels on the right.',
+            '360x740 text 1.3 ltr: A RenderFlex overflowed by 188 pixels on the right.',
+            '360x740 text 1.3 rtl: A RenderFlex overflowed by 5.2 pixels on the right.',
+            '360x740 text 2.0 ltr: A RenderFlex overflowed by 442 pixels on the right.',
+            '360x740 text 2.0 rtl: A RenderFlex overflowed by 168 pixels on the right.',
+            '412x915 text 1.0 ltr: A RenderFlex overflowed by 28 pixels on the right.',
+            '412x915 text 1.3 ltr: A RenderFlex overflowed by 136 pixels on the right.',
+            '412x915 text 2.0 ltr: A RenderFlex overflowed by 390 pixels on the right.',
+            '412x915 text 2.0 rtl: A RenderFlex overflowed by 116 pixels on the right.',
+            '600x960 text 2.0 ltr: A RenderFlex overflowed by 202 pixels on the right.',
+            '800x1280 text 2.0 ltr: A RenderFlex overflowed by 2.3 pixels on the right.'
+          ]
+KitPanel/violation overflowed or threw in 16 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 1.0 ltr: A RenderFlex overflowed by 120 pixels on the right.
+320x640 text 1.3 ltr: A RenderFlex overflowed by 228 pixels on the right.
+320x640 text 1.3 rtl: A RenderFlex overflowed by 45 pixels on the right.
+320x640 text 2.0 ltr: A RenderFlex overflowed by 482 pixels on the right.
+320x640 text 2.0 rtl: A RenderFlex overflowed by 208 pixels on the right.
+360x740 text 1.0 ltr: A RenderFlex overflowed by 80 pixels on the right.
+360x740 text 1.3 ltr: A RenderFlex overflowed by 188 pixels on the right.
+360x740 text 1.3 rtl: A RenderFlex overflowed by 5.2 pixels on the right.
+360x740 text 2.0 ltr: A RenderFlex overflowed by 442 pixels on the right.
+360x740 text 2.0 rtl: A RenderFlex overflowed by 168 pixels on the right.
+412x915 text 1.0 ltr: A RenderFlex overflowed by 28 pixels on the right.
+412x915 text 1.3 ltr: A RenderFlex overflowed by 136 pixels on the right.
+412x915 text 2.0 ltr: A RenderFlex overflowed by 390 pixels on the right.
+412x915 text 2.0 rtl: A RenderFlex overflowed by 116 pixels on the right.
+600x960 text 2.0 ltr: A RenderFlex overflowed by 202 pixels on the right.
+800x1280 text 2.0 ltr: A RenderFlex overflowed by 2.3 pixels on the right.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart:1010:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart line 1010
+The test description was:
+  KitPanel/violation fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:33 +48 -15: G6 kit overflow matrix KitPanel/violation fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitPanel/violation fits every overflow size, text scale and direction
+  
+00:33 +48 -15: G6 kit overflow matrix KitEffectsScope/default fits every overflow size, text scale and direction
+00:33 +49 -15: G6 kit overflow matrix (tearDownAll)
+Shell: --- G6 overflow baseline tightened (commit as test/text_scale_overflow_baseline.json) ---
+Shell: {
+Shell:   "KitActionBlock/default": {
+Shell:     "800x1280 text 2.0 ltr": "A RenderFlex overflowed by 264 pixels on the right.",
+Shell:     "800x1280 text 2.0 rtl": "A RenderFlex overflowed by 14 pixels on the right.",
+Shell:     "840x1180 text 2.0 ltr": "A RenderFlex overflowed by 224 pixels on the right.",
+Shell:     "915x412 text 2.0 ltr": "A RenderFlex overflowed by 149 pixels on the right."
+Shell:   },
+Shell:   "KitSheet/default": {
+Shell:     "800x1280 text 2.0 ltr": "A RenderFlex overflowed by 15 pixels on the right.",
+Shell:     "915x412 text 2.0 ltr": "A RenderFlex overflowed by 15 pixels on the right."
+Shell:   },
+Shell:   "KitSheet/disabled": {
+Shell:     "800x1280 text 2.0 ltr": "A RenderFlex overflowed by 15 pixels on the right.",
+Shell:     "915x412 text 2.0 ltr": "A RenderFlex overflowed by 15 pixels on the right."
+Shell:   },
+Shell:   "KitSheet/full": {
+Shell:     "800x1280 text 2.0 ltr": "A RenderFlex overflowed by 15 pixels on the right.",
+Shell:     "915x412 text 2.0 ltr": "A RenderFlex overflowed by 15 pixels on the right."
+Shell:   },
+Shell:   "KitSheet/loading": {
+Shell:     "800x1280 text 2.0 ltr": "A RenderFlex overflowed by 15 pixels on the right.",
+Shell:     "915x412 text 2.0 ltr": "A RenderFlex overflowed by 15 pixels on the right."
+Shell:   }
+Shell: }
+Shell: --- end baseline ---
+00:33 +49 -15: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart: G6 kit overflow matrix KitActionBlock/default fits every overflow size, text scale and direction
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart: G6 kit overflow matrix KitActionBlock/disabled fits every overflow size, text scale and direction
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart: G6 kit overflow matrix KitPanel/violation fits every overflow size, text scale and direction
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-5/test/text_scale_overflow_test.dart: G6 kit overflow matrix KitRequestCard/default fits every overflow size, text scale and direction
+  ... and 11 more
+exit 1

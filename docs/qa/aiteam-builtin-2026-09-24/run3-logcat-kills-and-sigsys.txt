@@ -1,0 +1,2 @@
+# procwatch.py kills emulator-5556 at 23:19:34 (logcat since the fresh install at 21:36)
+0 matching lines

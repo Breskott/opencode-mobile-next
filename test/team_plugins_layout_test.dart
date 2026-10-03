@@ -1,6 +1,5 @@
-// TEAM-106 layout: Settings › Plugins (discovery card + row), the AI Team
-// sheet, the manual-add form with a verdict, the host guide sheet and the
-// server editor's AI Team section at 320dp × 2.5x, LTR and RTL, with no
+// TEAM-106 layout: the AI Team page (on and off), the manual-add form with a
+// verdict, the host guide sheet and the server editor's AI Team section at 320dp × 2.5x, LTR and RTL, with no
 // overflow. Set TEAM_PLUGINS_CAPTURE=true to write PNGs under
 // docs/qa/ai-team/.
 
@@ -19,11 +18,12 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
-import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/team_page.dart';
 import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 import '../tool/capture/fixtures.dart'
     show loadCaptureFonts, captureTheme, capturePng, writePng;
@@ -144,9 +144,22 @@ void main() {
     }
   }
 
+  /// A lazily built list only builds what is near the viewport: scroll
+  /// until [finder] exists, then bring it fully into view.
+  Future<void> reveal(WidgetTester tester, Finder finder) async {
+    if (finder.evaluate().isEmpty) {
+      await tester.scrollUntilVisible(
+        finder,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+    }
+    await tester.ensureVisible(finder);
+  }
+
   /// At 2.5x most targets start below the fold: scroll them in, then tap.
   Future<void> tapVisible(WidgetTester tester, Finder finder) async {
-    await tester.ensureVisible(finder);
+    await reveal(tester, finder);
     await tester.pumpAndSettle();
     expect(finder.hitTestable(), findsOneWidget);
     await tester.tap(finder);
@@ -154,7 +167,7 @@ void main() {
   }
 
   for (final rtl in [false, true]) {
-    for (final page in ['discovery', 'sheet', 'form', 'guide', 'editor']) {
+    for (final page in ['team', 'form', 'guide', 'editor']) {
       testWidgets('plugins $page at 320dp 2.5x ${rtl ? 'RTL' : 'LTR'}', (
         tester,
       ) async {
@@ -166,7 +179,7 @@ void main() {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
         final secure = _MemorySecureStorage();
-        final on = page == 'sheet';
+        final on = page == 'team';
         final profile = ServerProfile(
           id: _profileId,
           name: 'Development PC',
@@ -228,10 +241,7 @@ void main() {
                   ),
                   home: page == 'editor'
                       ? const ServersScreen()
-                      : PluginsSettingsScreen(
-                          controller: controller,
-                          probe: _foundProbe,
-                        ),
+                      : TeamPage(connection: controller, probe: _foundProbe),
                 ),
               ),
             ),
@@ -239,95 +249,75 @@ void main() {
           await settle(tester);
           expect(tester.takeException(), isNull);
           switch (page) {
-            case 'discovery':
-              expect(
-                find.byKey(const ValueKey('team-discovery-card')),
-                findsOneWidget,
-              );
-              final row = find.byKey(const ValueKey('plugins-ai-team-row'));
-              await tester.ensureVisible(row);
-              await tester.pumpAndSettle();
-              expect(row.hitTestable(), findsOneWidget);
-            case 'sheet':
+            case 'team':
+              // The one AI Team page; its switches are in the top bar's
+              // menu, reachable at large text.
               expect(controller.orchestration?.phase, OrchestrationPhase.ready);
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('plugins-ai-team-row')),
+              expect(find.byKey(const ValueKey('team-home')), findsOneWidget);
+              // One action stays in view on a phone; Team settings waits
+              // in the overflow, named in the page's language.
+              await tester.tap(find.byKey(const ValueKey('team-home-more')));
+              await tester.pumpAndSettle();
+              await tester.tap(
+                find.text(
+                  lookupAppLocalizations(locale).teamSettingsOpenTooltip,
+                ),
               );
-              expect(
-                find.byKey(const ValueKey('team-plugin-sheet')),
-                findsOneWidget,
-              );
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('team-sheet-technical')),
-              );
-              final off = find.byKey(const ValueKey('team-sheet-turn-off'));
+              await tester.pumpAndSettle();
+              final off = find.byKey(const ValueKey('team-home-turn-off'));
               await tester.ensureVisible(off);
               await tester.pumpAndSettle();
               expect(off.hitTestable(), findsOneWidget);
-              // Ids and addresses stay LTR in RTL.
-              for (final text in tester.widgetList<SelectableText>(
-                find.byType(SelectableText),
-              )) {
-                expect(text.textDirection, TextDirection.ltr);
-              }
             case 'form':
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('plugins-ai-team-row')),
-              );
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('team-sheet-add-manually')),
-              );
+              // The team page, off (its drawing moves, so frames are
+              // pumped rather than settled): Enter its address.
+              final address = find.byKey(const ValueKey('team-intro-address'));
+              expect(address.hitTestable(), findsOneWidget);
+              await tester.tap(address);
+              await settle(tester);
               final url = find.byKey(const ValueKey('team-host-url'));
-              expect(
-                tester.widget<TextField>(url).textDirection,
-                TextDirection.ltr,
-              );
-              // TEAM-206: the kind chips wrap at large text and every one
-              // is reachable; a tap on WSL selects it.
-              for (final kind in teamHostKindChoices) {
-                final chip = find.byKey(
-                  ValueKey('team-host-kind-${kind.name}'),
-                );
-                await tester.ensureVisible(chip);
-                await tester.pumpAndSettle();
-                expect(chip.hitTestable(), findsOneWidget);
-                expect(
-                  find.text(teamHostKindLabel(l10n, kind)),
-                  findsOneWidget,
-                );
-              }
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('team-host-kind-wsl')),
-              );
+              // The address is a KitField of the url kind: left to right.
               expect(
                 tester
-                    .widget<ChoiceChip>(
-                      find.byKey(const ValueKey('team-host-kind-wsl')),
+                    .widget<TextField>(
+                      find.descendant(
+                        of: url,
+                        matching: find.byType(TextField),
+                      ),
                     )
-                    .selected,
-                isTrue,
+                    .textDirection,
+                TextDirection.ltr,
               );
+              // shared-team-1 (map team-host-sheet, fix): no "kind of
+              // computer" question any more; the team name field is
+              // reachable at large text.
+              expect(
+                find.byKey(
+                  ValueKey('team-host-kind-${teamHostKindChoices.first.name}'),
+                ),
+                findsNothing,
+              );
+              final team = find.byKey(const ValueKey('team-host-city'));
+              await tester.ensureVisible(team);
+              await settle(tester);
+              expect(team.hitTestable(), findsOneWidget);
               await tester.enterText(url, 'http://public.example:8372');
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('team-host-submit')),
+              // R12: Test and turn on is pinned by the sheet, so it is in
+              // reach at 2.5x while the fields scroll.
+              final submit = find.descendant(
+                of: find.byKey(const ValueKey('kit-sheet-actions')),
+                matching: find.byKey(const ValueKey('team-host-submit')),
               );
+              expect(submit.hitTestable(), findsOneWidget);
+              await tester.tap(submit);
+              await settle(tester);
               final verdict = find.byKey(const ValueKey('team-host-verdict'));
               await tester.ensureVisible(verdict);
-              await tester.pumpAndSettle();
+              await settle(tester);
               expect(find.text(l10n.teamUiTailnetRequired), findsOneWidget);
             case 'guide':
               unawaited(
-                showTeamHostGuideSheet(
-                  tester.element(
-                    find.byKey(const ValueKey('plugins-ai-team-row')),
-                  ),
-                ),
+                showTeamHostGuideSheet(tester.element(find.byType(TeamPage))),
               );
               await tester.pumpAndSettle();
               expect(
@@ -337,6 +327,7 @@ void main() {
               expect(find.text(l10n.teamUiHostGuideStep4), findsOneWidget);
             case 'editor':
               await openFirstRunConnect(tester);
+              await openServerMoreOptions(tester);
               final section = find.byKey(
                 const ValueKey('server-editor-team-section'),
               );

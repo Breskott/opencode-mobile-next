@@ -1,0 +1,102 @@
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 1.1.0 (2.0.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 2.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dbus 0.7.15 (0.8.0 available)
+  dio 5.11.0 (5.11.1 available)
+  dio_web_adapter 2.2.1 (2.2.2 available)
+  dynamic_color 1.9.0 (2.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  file_picker 12.2.0 (13.1.0 available)
+  file_picker_darwin 1.1.0 (2.1.2 available)
+  file_picker_linux 1.1.0 (2.0.1 available)
+  file_picker_platform_interface 3.3.0 (4.0.0 available)
+  file_picker_web 3.1.0 (4.0.0 available)
+  flutter_secure_storage 11.0.0 (11.2.0 available)
+  flutter_secure_storage_darwin 0.4.0 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.2 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.3 (2.1.1 available)
+  image_picker_android 0.8.13+22 (0.8.13+23 available)
+  image_picker_ios 0.8.13+7 (0.8.13+8 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mime 2.0.0 (2.1.0 available)
+  mobile_scanner 7.4.0 (7.4.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  record_android 2.1.2 (2.2.0 available)
+  record_linux 2.1.1 (2.1.2 available)
+  record_web 2.1.2 (2.1.3 available)
+  record_windows 2.2.3 (2.3.0 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  sherpa_onnx 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_arm64 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_armeabi 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86_64 1.13.7 (1.13.8 available)
+  sherpa_onnx_ios 1.13.7 (1.13.8 available)
+  sherpa_onnx_linux 1.13.7 (1.13.8 available)
+  sherpa_onnx_macos 1.13.7 (1.13.8 available)
+  sherpa_onnx_web 1.13.7 (1.13.8 available)
+  sherpa_onnx_windows 1.13.7 (1.13.8 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-1/test/kit_ratchet_test.dart
+00:00 +0: G1: modal and toast entry points live in the kit
+00:00 +1: G15: no width literals outside the kit
+00:00 +2: G16: every UI component comes from the kit
+Shell: G16: 6 baseline entries dropped — commit the smaller numbers with KIT_RATCHET_WRITE=1 KIT_RATCHET_GATES=G16:
+Shell:   lib/ui/screens/chat/team_conversation_view.dart "PopupMenuButton" 1 -> 0
+Shell:   lib/ui/screens/chat/team_conversation_view.dart "PopupMenuItem" 1 -> 0
+Shell:   lib/ui/screens/chat/team_conversation_view.dart "Text" 11 -> 10
+Shell:   lib/ui/widgets/local_agent_onboarding.dart "FilledButton" 7 -> 6
+Shell:   lib/ui/widgets/local_agent_onboarding.dart "OutlinedButton" 3 -> 2
+Shell:   lib/ui/widgets/local_agent_onboarding.dart "Text" 39 -> 36
+00:00 +3: G2: copy, haptics, links and motion go through the kit
+00:00 +4: G7: layout is directional and bidi marks come from KitBidi
+Shell: G7: 1 baseline entries dropped — commit the smaller numbers with KIT_RATCHET_WRITE=1 KIT_RATCHET_GATES=G7:
+Shell:   lib/ui/screens/review_workspace.dart "Alignment.centerRight" 1 -> 0
+00:00 +5: G15 inside the kit: only kit_layout.dart owns widths
+00:00 +6: G17 colour: every colour comes from a ThemeRoles role
+00:00 +7: G21 look and motion: numbers and effects come from the kit
+00:00 +8: G48 drafts: multiline input in a kit sheet keeps a draft
+00:00 +9: allowlists never grow (KIT-5)
+00:00 +10: allowlist keys are exact paths or folders under lib/
+00:00 +11: every G2/G7/G15x/G17/G21/G48 row is named once and has a reason
+00:00 +12: every allowlist entry gives a real reason
+00:00 +13: the Flutter widget catalogue exists and is non-trivial
+00:00 +14: counters on fixture strings (proves the regexes, not just files) G1 matches showDialog<T>( but not showKitDialog( or a comment
+00:00 +15: counters on fixture strings (proves the regexes, not just files) SnackBar( does not count showSnackBar( or KitSnackBar(
+00:00 +16: counters on fixture strings (proves the regexes, not just files) G16 counts real widget constructions, not static members or app classes
+00:00 +17: counters on fixture strings (proves the regexes, not just files) G15 counts a width compared to a literal, not BoxConstraints(maxWidth: n)
+00:00 +18: G2/G7/G15x/G17/G21/G48 rows on fixture strings G2 counts uses of an old API, not its declaration
+00:00 +19: G2/G7/G15x/G17/G21/G48 rows on fixture strings G2 counts motion literals and seams, not KitMotion names
+00:00 +20: G2/G7/G15x/G17/G21/G48 rows on fixture strings SEC-1: launchUrl in the kit is absolute with no allowlist
+00:00 +21: G2/G7/G15x/G17/G21/G48 rows on fixture strings G7 counts left/right layout, not the directional forms
+00:00 +22: G2/G7/G15x/G17/G21/G48 rows on fixture strings G7 is absolute in the kit, forced-LTR parts may align left
+00:00 +23: G2/G7/G15x/G17/G21/G48 rows on fixture strings G15x counts breakpoints and layout widths, not guards or gaps
+00:00 +24: G2/G7/G15x/G17/G21/G48 rows on fixture strings G17 counts literal colours and theme reads, not transparent
+00:00 +25: G2/G7/G15x/G17/G21/G48 rows on fixture strings G21 counts look literals the way the rulebook writes them
+00:00 +26: G2/G7/G15x/G17/G21/G48 rows on fixture strings G21 LOOK-21 in the kit: every stroke width comes from KitTokens
+00:00 +27: G2/G7/G15x/G17/G21/G48 rows on fixture strings G21 metal/chrome reads identifiers and file names
+00:00 +28: G2/G7/G15x/G17/G21/G48 rows on fixture strings G48 flags a sheet with a multiline field and no draft
+00:00 +29: G2/G7/G15x/G17/G21/G48 rows on fixture strings G17 and G21 also scan Flutter UI code outside lib/ui/
+00:00 +30: G2/G7/G15x/G17/G21/G48 rows on fixture strings theme files, allowlist keys and scopes resolve as documented
+00:00 +31: G2/G7/G15x/G17/G21/G48 rows on fixture strings KIT-5: an allowlist key the committed set lacks fails
+00:00 +32: All tests passed!
