@@ -357,7 +357,8 @@ jobs:
           git fetch --force --tags origin
           baseline="$(git describe --tags --match 'v*' --abbrev=0 HEAD^)"
           echo "APK_BASELINE_TAG=$baseline" >> "$GITHUB_ENV"
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$baseline" > "$RUNNER_TEMP/apk-baseline.json"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$baseline" > "$RUNNER_TEMP/apk-baseline.json" 2>/dev/null \
+            || gh api "repos/Eslamasabry/opencode-mobile-next/releases/tags/$baseline" > "$RUNNER_TEMP/apk-baseline.json"
 
       - name: Compile test-signed release APK
         run: flutter build apk --release
