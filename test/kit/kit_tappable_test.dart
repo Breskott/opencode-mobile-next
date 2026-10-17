@@ -626,14 +626,14 @@ void main() {
       );
     });
 
-    testWidgets('surface1: hover surface3 in light, pressed surface3', (
+    testWidgets('surface1: hover surface2 and pressed surface3 in light too', (
       tester,
     ) async {
       await probe(
         tester,
         light: true,
         surface: KitSurfaceLevel.surface1,
-        expectHover: KitSurfaceLevel.surface3,
+        expectHover: KitSurfaceLevel.surface2,
         expectPressed: KitSurfaceLevel.surface3,
       );
     });

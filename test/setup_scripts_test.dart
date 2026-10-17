@@ -253,9 +253,14 @@ esac
 ''')
         ..setLastModifiedSync(DateTime.now());
       Process.runSync('chmod', ['+x', '${bin.path}/apt-get']);
-      File(
-        '${bin.path}/dpkg',
-      ).writeAsStringSync('#!/bin/sh\necho "dpkg \$*" >> "\$APT_LOG"\n');
+      File('${bin.path}/dpkg').writeAsStringSync(r'''#!/bin/sh
+echo "dpkg $*" >> "$APT_LOG"
+case "$1" in
+  -s)
+    echo "Package: $2"
+    echo 'Status: install ok installed' ;;
+esac
+''');
       Process.runSync('chmod', ['+x', '${bin.path}/dpkg']);
       env = {
         'PATH': '${bin.path}:${Platform.environment['PATH']}',
@@ -291,9 +296,11 @@ esac
       expect(first.stdout, contains('Setting up git'));
       final log = File(env['APT_LOG']!).readAsLinesSync();
       expect(log.first, 'dpkg --configure -a');
-      expect(log[1], contains('update'));
-      expect(log[2], contains('-o APT::Status-Fd=3 install -y'));
-      expect(log[2], endsWith('git curl'));
+      expect(log[1], 'dpkg --audit');
+      expect(log[2], contains('update'));
+      expect(log[3], contains('-o APT::Status-Fd=3 install -y'));
+      expect(log[3], endsWith('git curl'));
+      expect(log.sublist(4), ['dpkg -s git', 'dpkg -s curl']);
 
       // Fresh lists: no second update.
       final second = await sh('oc_apt_install git', env: env);
@@ -357,7 +364,7 @@ esac
       final bin = Directory('${dir.path}/bin')..createSync();
       File(
         '${bin.path}/opencode',
-      ).writeAsStringSync('#!/bin/sh\necho 1.18.32\n');
+      ).writeAsStringSync('#!/bin/sh\necho 1.19.0\n');
       File(
         '${bin.path}/opencode2',
       ).writeAsStringSync('#!/bin/sh\necho "opencode2 v2.0.9"\n');
@@ -381,9 +388,14 @@ esac
         );
       }
 
-      final pinned = await check({});
+      expect(
+        (await check({})).exitCode,
+        isNot(0),
+        reason: 'a fresh setup requires pinned OC2, not installed OC1',
+      );
+      final pinned = await check({'runtime': 'opencode1'});
       expect(pinned.exitCode, 0);
-      expect((pinned.stdout as String).trim(), '1.18.32');
+      expect((pinned.stdout as String).trim(), '1.19.0');
       expect((await check({'version': '1.18.30'})).exitCode, isNot(0));
       // OpenCode 2 is there but not at the pinned 2.0.10: an update is due.
       expect((await check({'runtime': 'opencode2'})).exitCode, isNot(0));
@@ -404,7 +416,7 @@ esac
     for (final params in [
       const <String, Map<String, String>>{},
       const {
-        'opencode': {'runtime': 'opencode2'},
+        'opencode': {'runtime': 'opencode1'},
       },
     ]) {
       for (final component in setupComponents(l10n, params: params)) {

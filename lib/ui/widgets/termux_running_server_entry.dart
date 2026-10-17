@@ -410,9 +410,13 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
       stopLabel: l10n.phoneServerStop,
       onStart: actions == null ? null : () => unawaited(_start(l10n)),
       onConnect: () => unawaited(_connect()),
+      tapOpensPage: widget.onOpenSaved != null,
+      connectLabel: l10n.settingsV3ConnectTo(l10n.phoneServerTermuxTitle),
       onRestart: actions == null ? null : () => unawaited(_restart(l10n)),
       onStop: actions == null ? null : () => unawaited(_stop(l10n)),
-      onOpen: widget.onManage,
+      onOpen: profile != null && widget.onOpenSaved != null
+          ? () => widget.onOpenSaved!(profile)
+          : widget.onManage,
     );
   }
 
@@ -440,6 +444,7 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
     final words = _words(l10n, server, problem);
     return LocalServerRow(
       dividerAbove: widget.dividerAbove,
+      tapOpensPage: widget.onOpenSaved != null,
       keyPrefix: 'termux-running-server',
       title: l10n.phoneServerTermuxTitle,
       status: words.line,
@@ -584,6 +589,7 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
     String state,
   ) => LocalServerRow(
     dividerAbove: widget.dividerAbove,
+    tapOpensPage: widget.onOpenSaved != null,
     keyPrefix: 'termux-running-server',
     title: l10n.phoneServerTermuxTitle,
     status: state,
@@ -636,9 +642,23 @@ ServerProfile? savedManagedPhoneProfile(Iterable<ServerProfile> profiles) {
 /// phone", or Claude Code on this phone) rather than as a saved server of
 /// its own: the Servers list and the server switcher never list it twice.
 /// Those rows always draw themselves when a saved sign-in exists.
-bool shownAsPhoneRow(ServerProfile profile) =>
-    platformCapabilities.supportsTermux &&
-    (isManagedPhoneProfile(profile) || isLocalAgentProfile(profile));
+///
+/// Only one saved server per Claude Code endpoint is folded in: given
+/// [among] (all saved servers) and [preferID] (the connected one), any other
+/// profile at the same endpoint stays a normal row, so it can be opened or
+/// forgotten.
+bool shownAsPhoneRow(
+  ServerProfile profile, {
+  Iterable<ServerProfile>? among,
+  String? preferID,
+}) {
+  if (!platformCapabilities.supportsTermux) return false;
+  if (isManagedPhoneProfile(profile)) return true;
+  if (!isLocalAgentProfile(profile)) return false;
+  if (among == null) return true;
+  return savedLocalAgentProfile(among.toList(), preferID: preferID)?.id ==
+      profile.id;
+}
 
 /// Whether [profile] is a server this phone runs itself: the in-app
 /// server, the Termux server this app manages, or Claude Code on this

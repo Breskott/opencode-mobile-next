@@ -1,4 +1,4 @@
-import 'dart:ffi' show Abi;
+import '../abi_shim.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
@@ -8,6 +8,7 @@ import '../../voice/model_manifest.dart';
 import '../../state/download_size.dart';
 import '../builtin_linux.dart';
 import 'aiteam_scripts.dart';
+import 'component_updates.dart';
 import 'setup_contract.dart';
 import 'voice_component.dart';
 
@@ -19,7 +20,7 @@ import 'voice_component.dart';
 /// are.
 ///
 /// [params] are per component id; `opencode` reads `runtime`
-/// (`opencode1`, the default, or `opencode2`) and `version` (the pinned one
+/// (`opencode2`, the new-install default, or `opencode1`) and `version` (the pinned one
 /// unless a caller asks for another on purpose).
 ///
 /// The estimates start from the emulator (setup.json keeps each component's
@@ -39,7 +40,9 @@ List<SetupComponent> setupComponents(
   SetupHostKind host = SetupHostKind.builtin,
 }) {
   final openCode = params[SetupComponentIds.openCode] ?? const {};
-  final runtime = TermuxRuntime.parse(openCode['runtime']);
+  final runtime = openCode['runtime'] == null
+      ? TermuxRuntime.defaultForNewInstall
+      : TermuxRuntime.parse(openCode['runtime']);
   final version = openCode['version'];
   return [
     SetupComponent(
@@ -235,14 +238,14 @@ typedef OpenCodeAsset = ({String url, String sha256, String member});
 /// failed on the owner's ARM64 phone (build 2062, npm 11.19 `allowScripts`).
 ///
 /// - OpenCode 1: the release archives of
-///   https://github.com/anomalyco/opencode/releases/tag/v1.18.32, the same
+///   https://github.com/anomalyco/opencode/releases/tag/v1.19.0, the same
 ///   pins as scripts/host/ubuntu-opencode.sh (GitHub's asset digests, read
 ///   and matched against the files 2026-09-28). x64 is the baseline build,
 ///   which also runs on CPUs without AVX2.
-/// - OpenCode 2 (`@opencode/cli` 2.0.10) has no GitHub release. Its official
+/// - OpenCode 2 (`@opencode/cli` 2.0.29) has no GitHub release. Its official
 ///   per-platform npm packages hold only the program and a package.json,
 ///   with no install script; their tarballs' SHA-512 matched the registry's
-///   published `integrity` on 2026-09-28, and these are those files'
+///   published `integrity` on 2026-10-14, and these are those files'
 ///   SHA-256s.
 ///
 /// Moving to a newer OpenCode means new pins here, next to
@@ -250,30 +253,30 @@ typedef OpenCodeAsset = ({String url, String sha256, String member});
 abstract final class OpenCodePins {
   static const v1Arm64 = (
     url:
-        'https://github.com/anomalyco/opencode/releases/download/v1.18.32/'
+        'https://github.com/anomalyco/opencode/releases/download/v1.19.0/'
         'opencode-linux-arm64.tar.gz',
-    sha256: '568461b7d4d8c19865c97e9a1102e613049c6039d01fe772154de873c1865840',
+    sha256: 'e9841d43d3e1a8f36ed2691592d3b8b4fb097e606c8b559a277a1b845840e26b',
     member: 'opencode',
   );
   static const v1X64 = (
     url:
-        'https://github.com/anomalyco/opencode/releases/download/v1.18.32/'
+        'https://github.com/anomalyco/opencode/releases/download/v1.19.0/'
         'opencode-linux-x64-baseline.tar.gz',
-    sha256: '763af386ef88a8cab18df00fcf055690e5a55e31a7088beabe02307142a6adce',
+    sha256: '6334d70db3990721ea454357e9cf2573c8685524ad7769af9d52cbffb7008438',
     member: 'opencode',
   );
   static const v2Arm64 = (
     url:
         'https://registry.npmjs.org/@opencode/cli-linux-arm64/-/'
-        'cli-linux-arm64-2.0.10.tgz',
-    sha256: 'cf5416676240455dc5a98500237af296cb1a00efbd2cca302ad22c92ea080ebc',
+        'cli-linux-arm64-2.0.29.tgz',
+    sha256: '0af39e75dbdfacc20f8f531ef35fb4dcc0b44c08084203518614272f232283ae',
     member: 'package/bin/opencode',
   );
   static const v2X64 = (
     url:
         'https://registry.npmjs.org/@opencode/cli-linux-x64-baseline/-/'
-        'cli-linux-x64-baseline-2.0.10.tgz',
-    sha256: '700c4d0fcc209e42f61c10f9773331d1d1f7eff35670971ee316b38641a1a76c',
+        'cli-linux-x64-baseline-2.0.29.tgz',
+    sha256: '152c42ff57b15728f39e1d7b68a9c13b0635fe1c5e6dcccdc8b710955e4cef0b',
     member: 'package/bin/opencode',
   );
 
@@ -466,8 +469,11 @@ oc_version "\$(node --version | sed 's/^v//')"
   }) {
     final selected = _version(runtime, version);
     final command = OpenCodePins.command(runtime);
-    final program = '$root${OpenCodePins.dir(runtime)}/bin/$command';
-    return 'set -e\n'
+    final directory = '$root${OpenCodePins.dir(runtime)}';
+    final program = '$directory/bin/$command';
+    return '$componentUpdatePrelude\nset -e\n'
+        'oc_update_recover \'$directory\'\n'
+        'oc_update_recover \'$root/usr/local/bin/$command\'\n'
         'oc_bin=\$(command -v $command)\n'
         '[ "\$(readlink -f "\$oc_bin")" = \'$program\' ]\n'
         'installed=\$("\$oc_bin" --version | tail -n 1)\n'
@@ -485,7 +491,8 @@ oc_version "\$(node --version | sed 's/^v//')"
   /// 2. unpacks only the program, next to the current install;
   /// 3. proves it: `--version` from the program itself, then a short
   ///    `serve` in a throwaway home until its health address answers;
-  /// 4. only then swaps it in, links `/usr/local/bin/<command>` to it and
+  /// 4. only then journals activation and links `/usr/local/bin/<command>` to
+  ///    it, keeping the previous good generation for interrupted updates, and
   ///    deletes what npm installed before (a running server keeps its file
   ///    until the start step restarts it).
   ///
@@ -535,6 +542,10 @@ case "\$(uname -m)" in
 esac
 oc_dir='$dir'
 oc_new="\$oc_dir.new"
+oc_link='$root/usr/local/bin/$command'
+oc_link_new="\$oc_link.new"
+oc_update_recover "\$oc_dir" || exit 1
+oc_update_recover "\$oc_link" || exit 1
 oc_file="$root/var/cache/oc-setup/opencode-$selected-\$oc_sha.archive"
 oc_stage 'Downloading OpenCode $selected'
 # Checked against the pinned SHA-256 before anything is unpacked; a file
@@ -567,7 +578,10 @@ if [ "\$oc_got" != '$selected' ]; then
 fi
 oc_stage 'Checking that OpenCode starts'
 oc_probe=\$(mktemp -d "\${TMPDIR:-/tmp}/oc-probe.XXXXXX")
-oc_port=\$((30000 + \$\$ % 10000))
+# A busy port is not a broken OpenCode: try up to three ports.
+oc_started=
+for oc_try in 1 2 3; do
+oc_port=\$((30000 + (\$\$ + oc_try * 7919 + \$(od -An -N2 -tu2 /dev/urandom | tr -d ' ')) % 20000))
 oc_pw=\$(od -An -N12 -tx1 /dev/urandom | tr -d ' \\n')
 (
   cd "\$oc_probe"
@@ -601,6 +615,9 @@ oc_i=0
 while [ "\$oc_i" -lt 5 ] && oc_alive; do sleep "\${OC_PROBE_POLL:-1}"; oc_i=\$((oc_i + 1)); done
 kill -9 "\$oc_pid" 2>/dev/null || true
 wait "\$oc_pid" 2>/dev/null || true
+[ -z "\$oc_started" ] || break
+grep -qiE 'address already in use|EADDRINUSE' "\$oc_probe/log" 2>/dev/null || break
+done
 if [ -z "\$oc_started" ]; then
   echo "[oc] What OpenCode said:"
   tail -n 20 "\$oc_probe/log" | sed 's/^/  /'
@@ -608,10 +625,29 @@ if [ -z "\$oc_started" ]; then
   oc_fail "${OpenCodeInstallFailure.noStart}"
 fi
 rm -rf "\$oc_probe"
-rm -rf "\$oc_dir"
-mv "\$oc_new" "\$oc_dir"
 mkdir -p "$root/usr/local/bin"
-ln -sfn "\$oc_dir/bin/$command" "$root/usr/local/bin/$command"
+rm -f "\$oc_link_new"
+ln -s "\$oc_dir/bin/$command" "\$oc_link_new"
+oc_activation_failed() {
+  oc_restore_failed=0
+  oc_update_recover "\$oc_dir" || oc_restore_failed=1
+  oc_update_recover "\$oc_link" || oc_restore_failed=1
+  if [ "\$oc_restore_failed" != 0 ]; then
+    oc_fail '[oc] A component update could not be restored. Run setup again.'
+  fi
+  oc_fail '[oc] OpenCode could not finish updating. Run setup again.'
+}
+oc_update_activate "\$oc_dir" "\$oc_new" || oc_activation_failed
+oc_update_activate "\$oc_link" "\$oc_link_new" || oc_activation_failed
+if ! oc_active_version=\$("\$oc_link" --version 2>/dev/null); then
+  oc_activation_failed
+fi
+oc_active_version=\$(printf '%s\\n' "\$oc_active_version" | tail -n 1)
+oc_active_version=\${oc_active_version##* v}
+[ "\$oc_active_version" = '$selected' ] || oc_activation_failed
+# Commit code before its command link; never delete the retained good backup.
+oc_update_commit "\$oc_dir" || oc_activation_failed
+oc_update_commit "\$oc_link" || oc_activation_failed
 # What npm installed before, wrapper and all.
 rm -rf $leftovers
 rm -f "\$oc_file"

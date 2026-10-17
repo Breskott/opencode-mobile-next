@@ -1,6 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../domain/app_exit_history.dart';
+import '../domain/diagnostics_error.dart';
+import 'native_crash.dart';
+
 /// Why the app's previous process ended, in the words the app speaks about
 /// it (`oc/lifecycle`, both halves: this file and AppLifecycle.kt).
 enum AppExitKind {
@@ -156,7 +160,11 @@ AppExitKind classifyAppExit(AppExitRecord record) {
 /// What the app learns at start about the process before this one.
 @immutable
 class AppLaunchReport {
-  const AppLaunchReport({this.exit, this.previousServices = const []});
+  const AppLaunchReport({
+    this.exit,
+    this.previousServices = const [],
+    this.lastCrash,
+  });
 
   static const empty = AppLaunchReport();
 
@@ -165,6 +173,7 @@ class AppLaunchReport {
     final services = raw['previousServices'];
     return AppLaunchReport(
       exit: AppExitRecord.fromMap(raw['exit']),
+      lastCrash: NativeCrashRecord.fromMap(raw['lastCrash']),
       previousServices: [
         if (services is List)
           for (final name in services)
@@ -176,6 +185,10 @@ class AppLaunchReport {
   /// The newest exit not reported before; null on the first start after
   /// install, before Android 11, or when there was none.
   final AppExitRecord? exit;
+
+  /// Last captured JVM exception, also available when Android's historical
+  /// exit record is missing. Contains only bounded, safe native metadata.
+  final NativeCrashRecord? lastCrash;
 
   /// The built-in Ubuntu's services that ran when that process ended
   /// (`server`, `aiteam`). A stop the person asked for clears them, so
@@ -227,6 +240,81 @@ class AppLifecycleBridge {
   static const channelName = 'oc/lifecycle';
 
   final MethodChannel _channel;
+
+  /// Recent main-process exits, independent of startup recovery consumption.
+  Future<AppExitHistory> exitHistory({int limit = 10}) async {
+    if (limit < 1 || limit > 50) {
+      return AppExitHistory(
+        supported: false,
+        error: DiagnosticsError.invalidLimit,
+      );
+    }
+    AppExitHistory unavailable() =>
+        AppExitHistory(supported: true, error: DiagnosticsError.unavailable);
+    try {
+      final raw = await _channel.invokeMethod<Object?>('exitHistory', {
+        'limit': limit,
+      });
+      if (raw is! Map || raw['supported'] is! bool) return unavailable();
+      if (raw['error'] != null) {
+        return AppExitHistory(
+          supported: raw['supported'] == true,
+          error: raw['error'] == 'invalidLimit'
+              ? DiagnosticsError.invalidLimit
+              : DiagnosticsError.unavailable,
+        );
+      }
+      if (raw['supported'] == false) {
+        return const AppExitHistory.unsupported();
+      }
+      final values = raw['entries'];
+      if (values is! List || values.length > 50) return unavailable();
+      final entries = <AppExitEntry>[];
+      for (final value in values) {
+        if (value is! Map ||
+            value['reason'] is! int ||
+            value['importance'] is! int ||
+            value['timestamp'] is! int) {
+          return unavailable();
+        }
+        final millis = value['timestamp'] as int;
+        if (millis <= 0 || millis > 8640000000000000) return unavailable();
+        final subReason = value['subReason'];
+        if (subReason != null && subReason is! int) return unavailable();
+        // Deliberately do not read description, category, trace or other text
+        // from the channel. Classification uses the same numeric recovery API.
+        final record = AppExitRecord(
+          reason: value['reason'] as int,
+          importance: value['importance'] as int,
+          subReason: subReason as int? ?? -1,
+          timestamp: DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true),
+        );
+        entries.add(
+          AppExitEntry(
+            reason: record.reason,
+            importance: record.importance,
+            at: record.timestamp,
+            category: switch (classifyAppExit(record)) {
+              AppExitKind.normal => AppExitCategory.normal,
+              AppExitKind.update => AppExitCategory.update,
+              AppExitKind.forceStop => AppExitCategory.forceStop,
+              AppExitKind.lowMemory => AppExitCategory.lowMemory,
+              AppExitKind.crash => AppExitCategory.crash,
+              AppExitKind.killed => AppExitCategory.killed,
+            },
+          ),
+        );
+      }
+      entries.sort((a, b) => b.at.compareTo(a.at));
+      return AppExitHistory(supported: true, entries: entries.take(limit));
+    } on MissingPluginException {
+      return const AppExitHistory.unsupported();
+    } on PlatformException {
+      return unavailable();
+    } on FormatException {
+      return unavailable();
+    }
+  }
 
   Future<AppLaunchReport> launchReport() async {
     try {

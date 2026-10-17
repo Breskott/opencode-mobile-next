@@ -48,7 +48,9 @@ extension _ChatNudges on _ChatScreenState {
       },
       // The Approvals sheet is offered on every connected server (see
       // _openSessionMenu); it has nothing to add once it is already on.
-      approvalsAvailable: !_conn.autoApprovalFor(widget.sessionID).automatic,
+      approvalsAvailable:
+          _approvalModeOffered(_conn) &&
+          !_conn.autoApprovalFor(widget.sessionID).automatic,
       runChangedFiles: runChangedFiles(_messages) || (summary?.files ?? 0) > 0,
       reviewAvailable: _conn.capabilities.sessionDiff,
       contextUsage: _contextWindowUsage(),
@@ -141,6 +143,9 @@ extension _ChatNudges on _ChatScreenState {
   }
 
   Widget _nudgeSlot(BuildContext context) {
+    // One card at a time: while the notification question is on screen the
+    // model notice waits (it stays claimed and shows once that is answered).
+    if (_notifyOfferStatus(context) != null) return const SizedBox.shrink();
     // The model the app picked is said first, once; a tip waits for it.
     if (_modelDefaultNotice(context) case final notice?) return notice;
     final active = _nudgeWatcher == null
@@ -214,4 +219,16 @@ extension _ChatNudges on _ChatScreenState {
       ),
     );
   }
+}
+
+mixin _ChatNudgeFields {
+  // One-time nudges (UX plan 5.8): the rules live in the watcher, the screen
+  // only reports facts and renders the slot. See chat/nudge_slot.dart.
+  ConversationNudgeWatcher? _nudgeWatcher;
+  bool _nudgeObserveQueued = false;
+
+  /// P6.6a: the model the app picked by itself, said once per server
+  /// where it is used (the composer); null once dismissed or not to say.
+  String? _modelDefaultSaid;
+  bool _modelDefaultClaimed = false;
 }

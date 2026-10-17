@@ -70,6 +70,15 @@ String gateSheetDraftTarget(String gateId) => 'team-gate.$gateId';
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
+/// What happens if nobody answers [kind]: the one line the quiet card leaves
+/// to its Details, so the sheet says it first.
+String teamGateIfIgnored(AppLocalizations l10n, GateKind kind) =>
+    switch (kind) {
+      GateKind.runFailed => l10n.teamGateCardIfIgnoredFailed,
+      GateKind.reviewReady => l10n.teamGateCardIfIgnoredReview,
+      _ => l10n.teamGateCardIfIgnored,
+    };
+
 OrchestrationGate? _gateIn(OrchestrationSnapshot snapshot, String gateId) {
   for (final candidate in snapshot.gates) {
     if (candidate.id == gateId) return candidate;
@@ -434,8 +443,14 @@ class _BodyState extends State<_Body> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // The ask is the sheet's title (the card's header): no second
-        // heading here.
-        for (final (index, part) in body.indexed) ...[if (index > 0) gap, part],
+        // heading here. The card's reassurance, kept for here, comes first.
+        KitText(
+          teamGateIfIgnored(l10n, gate.kind),
+          key: const ValueKey('team-gate-if-ignored'),
+          role: KitTextRole.secondary,
+          tone: KitTextTone.secondary,
+        ),
+        for (final part in body) ...[gap, part],
         if (record != null) ...[
           gap,
           KitReceipt(
@@ -790,9 +805,12 @@ class _BodyState extends State<_Body> {
         onPressed: busy
             ? null
             : () async {
+                final task = _stoppedTask(controller.snapshot, gate)?.trim();
                 final ok = await _confirm(
                   title: l10n.teamUiGateAnswerConfirmCancelRunTitle,
-                  body: l10n.teamUiGateAnswerConfirmCancelRunBody,
+                  body: task == null || task.isEmpty
+                      ? l10n.teamUiGateAnswerConfirmCancelRunBody
+                      : l10n.teamUiGateAnswerConfirmCancelNamedBody(task),
                   label: l10n.teamUiGateAnswerRunCancel,
                   kind: KitConfirmKind.stop,
                 );

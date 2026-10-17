@@ -201,8 +201,8 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
       case 'interrupted':
         return [
           ?_gated(
-            TeamExecutionNeed.lanes,
-            l.teamProjectTaskResume,
+            TeamExecutionNeed.resume,
+            l.teamProjectInterruptedResume,
             () => _run(p, TeamProjectAction.resumeTask),
           ),
         ];
@@ -296,10 +296,16 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
   }
 
   Future<void> _stop(TeamProject p) async {
+    final name = p.tasks
+        .where((t) => t.id == widget.taskId)
+        .map((t) => t.title.trim())
+        .firstOrNull;
     final yes = await showKitConfirm(
       context,
       title: l.teamProjectTaskStopConfirmTitle,
-      body: l.teamProjectTaskStopBody,
+      body: name == null || name.isEmpty
+          ? l.teamProjectTaskStopBody
+          : l.teamProjectTaskStopNamedBody(name),
       confirmLabel: l.teamProjectTaskStop,
       kind: KitConfirmKind.stop,
     );
@@ -723,6 +729,9 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                         title: request.title,
                         status: _age(request.createdAt),
                         state: KitTeamState.needsYou,
+                        summary: request.kind == 'interrupted'
+                            ? l.teamProjectInterruptedResumeNote
+                            : null,
                         actions: _requestActions(p, t, request),
                       ),
                     if (events.isNotEmpty)
@@ -896,7 +905,9 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
                             l.teamProjectTaskPause,
                             () => _run(p, TeamProjectAction.pauseTask),
                           ),
-                        if (t.status == 'paused' || t.status == 'interrupted')
+                        if ((t.status == 'paused' ||
+                                t.status == 'interrupted') &&
+                            !requests.any((r) => r.kind == 'interrupted'))
                           ?_gated(
                             t.status == 'interrupted'
                                 ? TeamExecutionNeed.resume
@@ -953,19 +964,7 @@ class _TeamProjectConversationState extends State<TeamProjectConversation> {
               busy: running,
               sending: c.busy,
               canSendWhileBusy: true,
-              rail:
-                  !unavailable &&
-                      (running || requests.isNotEmpty || planning || canPromote)
-                  ? KitTurnLive(
-                      activity: requests.isNotEmpty || planning || canPromote
-                          ? KitTurnActivity.waitingForYou
-                          : KitTurnActivity.working,
-                      since: DateTime.tryParse(
-                        planning || canPromote ? p.updatedAt : t.changedAt,
-                      ),
-                      onStop: c.busy ? null : () => _stop(p),
-                    )
-                  : null,
+              onStop: running && !c.busy ? () => _stop(p) : null,
             ),
           ],
         ),

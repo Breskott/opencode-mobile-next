@@ -19,11 +19,14 @@ class FakeLinux extends BuiltinLinux {
 
   bool installed;
   bool serverRunning = false;
+  BuiltinLinuxException? statusError;
 
   /// id → (passes, version) for the combined check run.
   Map<String, (bool, String?)> checks = {};
   final runs = <String>[];
   Completer<void>? holdChecks;
+  BuiltinLinuxException? checkError;
+  BuiltinLinuxException? startError;
 
   Map<String, Object?>? job;
   final started = <Map<String, Object?>>[];
@@ -36,11 +39,14 @@ class FakeLinux extends BuiltinLinux {
   final statusFaults = <String>[];
 
   @override
-  Future<BuiltinLinuxStatus> status() async => BuiltinLinuxStatus(
-    installed: installed,
-    phase: installed ? BuiltinLinuxPhase.ready : BuiltinLinuxPhase.idle,
-    serverRunning: serverRunning,
-  );
+  Future<BuiltinLinuxStatus> status() async {
+    if (statusError case final error?) throw error;
+    return BuiltinLinuxStatus(
+      installed: installed,
+      phase: installed ? BuiltinLinuxPhase.ready : BuiltinLinuxPhase.idle,
+      serverRunning: serverRunning,
+    );
+  }
 
   @override
   Future<BuiltinLinuxRunResult> run(
@@ -48,6 +54,8 @@ class FakeLinux extends BuiltinLinux {
     Duration timeout = const Duration(minutes: 2),
   }) async {
     runs.add(script);
+    final failure = checkError;
+    if (failure != null) throw failure;
     await holdChecks?.future;
     final out = StringBuffer();
     for (final match in RegExp(
@@ -72,6 +80,8 @@ class FakeLinux extends BuiltinLinux {
     required Map<String, Map<String, String>> params,
     required Map<String, String> texts,
   }) async {
+    final failure = startError;
+    if (failure != null) throw failure;
     started.add({
       'jobId': jobId,
       'components': components,
@@ -110,6 +120,12 @@ class FakeLinux extends BuiltinLinux {
           throw StateError('the channel failed');
         case 'hang':
           return Completer<String?>().future;
+        case 'native':
+          throw const BuiltinLinuxException('The saved setup is unavailable.');
+        case 'malformed':
+          return '{unreadable setup';
+        case 'timeout':
+          throw TimeoutException('The saved setup did not answer.');
       }
     }
     return job == null ? null : jsonEncode(job);
@@ -156,6 +172,17 @@ class FakeLinux extends BuiltinLinux {
   }
 }
 
+class _OwnershipAgentCheckLinux extends FakeLinux {
+  @override
+  Future<BuiltinLinuxRunResult> runAgentSetupCheck(
+    String script, {
+    Duration timeout = const Duration(minutes: 2),
+  }) async => throw const BuiltinLinuxException(
+    'Open app settings and force stop the app.',
+    code: 'runtime_ownership_unknown',
+  );
+}
+
 AppLocalizations get en => lookupAppLocalizations(const Locale('en'));
 
 Map<String, Object?> spec(FakeLinux linux, String id) =>
@@ -187,6 +214,244 @@ void main() {
   });
 
   tearDown(() => engine.dispose());
+
+  test(
+    'startSetup receives retained download plus known extracted payload peak',
+    () async {
+      engine.dispose();
+      engine = ChannelSetupEngine(
+        linux: linux,
+        strings: () => en,
+        components: (_, _) => const [
+          SetupComponent(
+            id: 'fixture',
+            title: 'Fixture',
+            shortTitle: 'Fixture',
+            checkScript: 'false',
+            installScript: ':',
+            downloadBytes: 120000000,
+            installedBytes: 350000000,
+          ),
+        ],
+        pollInterval: const Duration(milliseconds: 5),
+      );
+      await engine.run({'fixture'});
+      expect(linux.started, hasLength(1));
+      expect(spec(linux, 'fixture')['data'], {
+        'requiredFreeBytes': '${120000000 + 350000000 + 64 * 1024 * 1024}',
+      });
+    },
+  );
+
+  group('native ownership recovery', () {
+    const failure = BuiltinLinuxException(
+      'Open app settings and force stop the app.',
+      code: 'runtime_ownership_unknown',
+      details: 'synthetic native details must not reach progress',
+    );
+
+    for (final stage in ['check', 'start']) {
+      test(
+        '$stage preserves the recovery code without native details',
+        () async {
+          if (stage == 'check') {
+            linux.checkError = failure;
+          } else {
+            linux.startError = failure;
+          }
+          await engine.run({'aiteam'});
+          expect(linux.started, isEmpty);
+          expect(engine.progress.value.state, SetupState.failed);
+          expect(engine.progress.value.error, 'runtime_ownership_unknown');
+          expect(engine.progress.value.logTail, isEmpty);
+        },
+      );
+    }
+
+    test(
+      'unknown ownership during an agent check cannot trigger install',
+      () async {
+        engine.dispose();
+        linux = _OwnershipAgentCheckLinux();
+        engine = ChannelSetupEngine(
+          linux: linux,
+          strings: () => en,
+          components: (_, _) => const [
+            SetupComponent(
+              id: 'agent',
+              title: 'Agent',
+              shortTitle: 'Agent',
+              checkScript: 'true',
+              installScript: 'true',
+              agentUser: true,
+            ),
+          ],
+        );
+        await engine.run({'agent'});
+        expect(linux.started, isEmpty);
+        expect(engine.progress.value.state, SetupState.failed);
+        expect(engine.progress.value.error, 'runtime_ownership_unknown');
+      },
+    );
+
+    test(
+      'legacy native ownership cause becomes the stable recovery code',
+      () async {
+        linux.checkError = const BuiltinLinuxException(
+          'A component update could not be restored.',
+          code: 'builtin_linux',
+          details: 'IllegalStateException: ownershipUnknown',
+        );
+        await engine.run({'aiteam'});
+        expect(engine.progress.value.error, 'runtime_ownership_unknown');
+        expect(linux.started, isEmpty);
+      },
+    );
+
+    for (final throwsFailure in [false, true]) {
+      test('start step ${throwsFailure ? 'throw' : 'result'} persists recovery '
+          'for the row and job', () async {
+        engine.finisher = (_) async {
+          if (throwsFailure) throw failure;
+          return 'runtime_ownership_unknown';
+        };
+        await engine.run(const {});
+        linux.advance('start', {});
+        await pumpUntil(() => engine.progress.value.state == SetupState.failed);
+        expect(linux.steps.single['error'], 'runtime_ownership_unknown');
+        expect(linux.steps.single['ok'], isFalse);
+        expect(engine.progress.value.error, 'runtime_ownership_unknown');
+        expect(
+          engine.progress.value.components.last.error,
+          'runtime_ownership_unknown',
+        );
+        await engine.restore();
+        expect(engine.progress.value.error, 'runtime_ownership_unknown');
+      });
+    }
+
+    test(
+      'restored job-level recovery code survives without a failed row',
+      () async {
+        linux.job = {
+          'jobId': 'ownership-before-step',
+          'state': 'failed',
+          'order': ['opencode'],
+          'components': {
+            'opencode': {'state': 'pending'},
+          },
+          'error': 'runtime_ownership_unknown',
+        };
+        await engine.restore();
+        expect(engine.progress.value.state, SetupState.failed);
+        expect(engine.progress.value.error, 'runtime_ownership_unknown');
+      },
+    );
+  });
+
+  group('saved runtime admission', () {
+    test('confirmed absent Ubuntu with no saved job defaults to OC2', () async {
+      linux.installed = false;
+      await engine.run(const {});
+      expect(
+        spec(linux, 'start')['data'],
+        containsPair('runtime', 'opencode2'),
+      );
+      expect(
+        spec(linux, 'opencode')['script'],
+        contains(OpenCodePins.v2Arm64.sha256),
+      );
+    });
+
+    test(
+      'pre-job installed Ubuntu preserves OC1 without explicit selection',
+      () async {
+        await engine.run(const {});
+        expect(
+          spec(linux, 'start')['data'],
+          containsPair('runtime', 'opencode1'),
+        );
+        expect(
+          spec(linux, 'opencode')['script'],
+          contains(OpenCodePins.v1Arm64.sha256),
+        );
+      },
+    );
+
+    test('explicit OC2 selection wins on pre-job installed Ubuntu', () async {
+      await engine.run(
+        const {},
+        params: const {
+          'opencode': {'runtime': 'opencode2'},
+        },
+      );
+      expect(
+        spec(linux, 'start')['data'],
+        containsPair('runtime', 'opencode2'),
+      );
+    });
+
+    test(
+      'unreadable Ubuntu presence does not become a fresh installation',
+      () async {
+        linux.statusError = const BuiltinLinuxException(
+          'Cannot read host status',
+        );
+        await engine.run(const {});
+        expect(linux.started, isEmpty);
+        expect(linux.runs, isEmpty);
+        expect(engine.progress.value.state, SetupState.failed);
+        expect(engine.progress.value.canContinue, isTrue);
+        linux.statusError = null;
+        await engine.run(const {});
+        expect(
+          spec(linux, 'start')['data'],
+          containsPair('runtime', 'opencode1'),
+        );
+      },
+    );
+
+    for (final fault in ['native', 'malformed', 'timeout']) {
+      test(
+        '$fault status cannot turn an existing OC1 job into a fresh install',
+        () async {
+          linux.job = {
+            'jobId': 'legacy',
+            'state': 'interrupted',
+            'order': ['opencode'],
+            'components': {
+              'opencode': {'state': 'pending'},
+            },
+          };
+          linux.statusFaults.add(fault);
+          await engine.run(const {});
+          expect(engine.progress.value.state, SetupState.failed);
+          expect(engine.progress.value.canContinue, isTrue);
+          expect(
+            engine.progress.value.error,
+            contains('The saved setup could not be read.'),
+          );
+          expect(
+            engine.progress.value.error,
+            isNot(contains('unreadable setup')),
+          );
+          expect(linux.started, isEmpty);
+          expect(linux.runs, isEmpty);
+          // Once the original job can be read, retry preserves its legacy
+          // runtime even though the fresh-install default is now OC2.
+          await engine.run(const {});
+          expect(
+            spec(linux, 'start')['data'],
+            containsPair('runtime', 'opencode1'),
+          );
+          expect(
+            spec(linux, 'opencode')['script'],
+            contains(OpenCodePins.v1Arm64.sha256),
+          );
+        },
+      );
+    }
+  });
 
   group('resume rule', () {
     test('components whose checks pass are skipped with their version, '
@@ -225,6 +490,7 @@ void main() {
       );
       expect(spec(linux, 'start')['step'], isTrue);
       expect(spec(linux, 'start')['data'], {
+        'requiredFreeBytes': '300000000',
         'runtime': 'opencode1',
         'openCodeChanged': 'true',
       });
@@ -319,7 +585,10 @@ void main() {
     test('a first setup says so in its params, and the flag survives a '
         'restart and a Continue', () async {
       await engine.run(const {}, params: SetupJobParams.firstSetup);
-      expect(linux.started.single['params'], SetupJobParams.firstSetup);
+      expect(linux.started.single['params'], {
+        ...SetupJobParams.firstSetup,
+        'opencode': {'runtime': 'opencode1'},
+      });
       expect(engine.progress.value.firstSetup, isTrue);
 
       // The app is killed: a fresh engine reads only setup.json.
@@ -335,7 +604,10 @@ void main() {
 
       // Continue from screen B passes no params and keeps the flag.
       await restarted.run(const {});
-      expect(linux.started.last['params'], SetupJobParams.firstSetup);
+      expect(linux.started.last['params'], {
+        ...SetupJobParams.firstSetup,
+        'opencode': {'runtime': 'opencode1'},
+      });
       expect(restarted.progress.value.firstSetup, isTrue);
     });
 
@@ -418,6 +690,7 @@ void main() {
         contains(OpenCodePins.v1Arm64.sha256),
       );
       expect(spec(linux, 'start')['data'], {
+        'requiredFreeBytes': '300000000',
         'runtime': 'opencode1',
         'openCodeChanged': 'true',
       });
@@ -429,7 +702,63 @@ void main() {
       );
     });
 
-    test('a finished job does not lend its params to the next run', () async {
+    for (final previousState in ['done', 'failed']) {
+      test('Add tools keeps OC2 despite a $previousState OC1 job and resumes '
+          'with the same runtime', () async {
+        linux.job = {
+          'jobId': 'previous-oc1',
+          'state': previousState,
+          'order': ['opencode'],
+          'components': {
+            'opencode': {'state': previousState},
+          },
+          'params': {
+            'opencode': {'runtime': 'opencode1'},
+          },
+        };
+        linux.checks = {
+          'essentials': (true, '2.43.0'),
+          'node': (true, '24.21.0'),
+          'opencode': (true, '2.0.29'),
+        };
+        final params = {
+          ...SetupJobParams.adding({'python', 'aiteam'}),
+          'opencode': {'runtime': 'opencode2'},
+        };
+        await engine.run({'python', 'aiteam'}, params: params);
+        expect(linux.started.single['params'], params);
+        expect(linux.runs.single, contains('command -v opencode2'));
+        expect(spec(linux, 'opencode')['skipped'], isTrue);
+        expect(spec(linux, 'opencode')['version'], '2.0.29');
+        expect(
+          spec(linux, 'start')['data'],
+          containsPair('runtime', 'opencode2'),
+        );
+        expect(
+          spec(linux, 'start')['data'],
+          containsPair('openCodeChanged', 'false'),
+        );
+
+        // If interrupted and OpenCode needs repair, Continue must still use
+        // the OC2 archive and restart OC2, never the engine's OC1 default.
+        linux.job!['state'] = 'interrupted';
+        linux.checks.remove('opencode');
+        await engine.resume();
+        expect(linux.started.last['params'], params);
+        final components = (linux.started.last['components']! as List)
+            .cast<Map<String, Object?>>();
+        final openCode = components.singleWhere((c) => c['id'] == 'opencode');
+        final start = components.singleWhere((c) => c['id'] == 'start');
+        expect(openCode['script'], contains(OpenCodePins.v2Arm64.sha256));
+        expect(
+          openCode['script'],
+          isNot(contains(OpenCodePins.v1Arm64.sha256)),
+        );
+        expect(start['data'], containsPair('runtime', 'opencode2'));
+      });
+    }
+
+    test('a finished job preserves its runtime in the next run', () async {
       linux.job = {
         'jobId': 'old',
         'state': 'done',
@@ -442,8 +771,36 @@ void main() {
         },
       };
       await engine.run(const {});
-      expect(linux.started.single['params'], isEmpty);
+      expect(linux.started.single['params'], {
+        'opencode': {'runtime': 'opencode2'},
+      });
     });
+
+    for (final state in ['done', 'interrupted']) {
+      test('a $state legacy job without runtime stays on OC1', () async {
+        linux.job = {
+          'jobId': 'legacy',
+          'state': state,
+          'order': ['opencode', 'start'],
+          'components': {
+            'opencode': {'state': 'done'},
+            'start': {'state': state},
+          },
+        };
+        await engine.run(const {});
+        expect(
+          spec(linux, 'opencode')['script'],
+          contains(OpenCodePins.v1Arm64.sha256),
+        );
+        expect(
+          spec(linux, 'start')['data'],
+          containsPair('runtime', 'opencode1'),
+        );
+        expect(linux.started.single['params'], {
+          'opencode': {'runtime': 'opencode1'},
+        });
+      });
+    }
 
     test('a job already running is watched, not started again', () async {
       linux.job = {
@@ -836,6 +1193,52 @@ void main() {
   });
 
   group('errors in plain words', () {
+    test('pre-output failure Details redact credentials', () {
+      final progress = progressFromRecord(
+        const SetupJobRecord(
+          jobId: 'private-failure',
+          state: 'failed',
+          error: 'install failed password=synthetic-private-value',
+          components: [],
+        ),
+        const [],
+        en,
+        now: DateTime.now(),
+      );
+      expect(progress.logTail, contains('install failed'));
+      expect(progress.logTail, isNot(contains('synthetic-private-value')));
+    });
+
+    test(
+      'package repair failure keeps its reason in Details without output',
+      () {
+        const reason =
+            '[oc] Some packages are still unfinished. '
+            'Retry setup to repair the interrupted installation.';
+        const record = SetupJobRecord(
+          jobId: 'python-repair',
+          state: 'failed',
+          current: 'python',
+          error: reason,
+          components: [
+            SetupJobComponent(id: 'python', state: 'failed', error: reason),
+          ],
+        );
+        final progress = progressFromRecord(
+          record,
+          setupComponents(en),
+          en,
+          now: DateTime.now(),
+        );
+        expect(
+          progress.components.single.error,
+          en.phoneSetupErrorPackageRepair,
+        );
+        expect(progress.error, en.phoneSetupErrorPackageRepair);
+        expect(progress.logTail, reason);
+      },
+    );
+
     SetupJobComponent failed(String error) =>
         SetupJobComponent(id: 'node', state: 'failed', error: error);
 
@@ -1008,6 +1411,19 @@ void main() {
       final check = PerfTrace.spans.singleWhere((s) => s.name == 'setup.check');
       expect(check.attrs['components'], '6');
     });
+  });
+
+  testWidgets('a cancelled restore leaves no read timeout pending', (
+    tester,
+  ) async {
+    linux.statusFaults.add('hang');
+    final scope = SetupReadScope();
+    final restoring = engine.restore(scope: scope);
+    await tester.pump();
+    scope.cancel();
+    await restoring;
+    // The 10 s read timeout is gone with the screen: the test binding fails
+    // on any timer still pending when the test ends.
   });
 }
 

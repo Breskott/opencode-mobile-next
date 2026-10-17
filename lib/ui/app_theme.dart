@@ -500,14 +500,22 @@ abstract final class AppTheme {
               ? Colors.transparent
               : r.hairline,
         ),
-        trackColor: WidgetStateProperty.resolveWith(
-          (states) =>
-              states.contains(WidgetState.selected) ? r.accent : r.surface3,
-        ),
-        thumbColor: WidgetStateProperty.resolveWith(
-          (states) =>
-              states.contains(WidgetState.selected) ? r.onAccent : r.text2,
-        ),
+        // A switch that cannot act rests dimmed, on or off: the saved value
+        // stays readable but it no longer looks like a live control.
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          final on = states.contains(WidgetState.selected);
+          if (states.contains(WidgetState.disabled)) {
+            return on ? r.text3.withValues(alpha: .35) : r.surface3;
+          }
+          return on ? r.accent : r.surface3;
+        }),
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          final on = states.contains(WidgetState.selected);
+          if (states.contains(WidgetState.disabled)) {
+            return on ? r.text2 : r.text3;
+          }
+          return on ? r.onAccent : r.text2;
+        }),
       ),
       listTileTheme: ListTileThemeData(
         iconColor: r.text2,

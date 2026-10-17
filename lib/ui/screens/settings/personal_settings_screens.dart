@@ -1,10 +1,10 @@
 part of '../settings_screen.dart';
 
 /// The parts of Appearance a search result can mean.
-enum AppearanceSection { mode, language, effects, theme }
+enum AppearanceSection { mode, effects, theme }
 
 /// Appearance category (`appearance-settings`): light or dark in one tap,
-/// the language, the effects the person controls (glass, animations,
+/// the effects the person controls (animations,
 /// celebrations, vibration; design standard §10) and the theme packs as
 /// swatches. Kit only (screen-settings-1): KitRowGroup panels of KitRow,
 /// KitSegmented, KitPickerRow and KitSwitchRow, and a KitSwatchGrid.
@@ -54,25 +54,14 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
     }
   }
 
-  static String _localeLabel(AppLocalizations l10n, String code) =>
-      switch (code) {
-        'ar' => l10n.e7LocaleUiArabic,
-        'en' => l10n.e7LocaleUiEnglish,
-        _ => l10n.e7LocaleUiSystem,
-      };
-
   Widget _display(BuildContext context) {
     final controller = widget.controller;
     final copy = _settingsCopy(context);
     final tokens = KitTokens.of(context);
     return ListenableBuilder(
-      listenable: Listenable.merge([
-        controller.appearance,
-        controller.appLocale,
-      ]),
+      listenable: controller.appearance,
       builder: (context, _) {
         final appearance = controller.appearance.value;
-        final locale = controller.appLocale.value?.languageCode ?? '';
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -125,25 +114,37 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
                     ),
                   ),
                 ),
-                KeyedSubtree(
-                  key: _sectionKeys[AppearanceSection.language],
-                  child: KitPickerRow<String>(
-                    rowKey: const ValueKey('appearance-language'),
-                    leading: KitRow.icon(context, AppIconography.globe),
-                    title: copy.e7LocaleUiLanguage,
-                    valueLabel: _localeLabel(copy, locale),
-                    choices: [
-                      for (final code in const ['', 'en', 'ar'])
-                        KitChoice(
-                          value: code,
-                          title: _localeLabel(copy, code),
-                          key: ValueKey('appearance-language-$code'),
-                        ),
-                    ],
-                    selected: locale,
-                    onSelected: (code) => _saveDisplay(
-                      () => controller.setAppLocale(
-                        code.isEmpty ? null : Locale(code),
+                // The app's own text size, on top of the phone's (the
+                // change eases in at the app root).
+                ValueListenableBuilder<KitTextSize>(
+                  valueListenable: controller.textSize,
+                  builder: (context, size, _) => KitRow(
+                    key: const ValueKey('text-size-row'),
+                    leading: KitRow.icon(context, AppIconography.textSize),
+                    title: copy.textSizeTitle,
+                    below: Padding(
+                      padding: EdgeInsetsDirectional.only(
+                        top: tokens.space2,
+                        bottom: tokens.space1,
+                      ),
+                      child: KitSegmented<KitTextSize>(
+                        semanticsLabel: copy.textSizeTitle,
+                        selected: size,
+                        segments: [
+                          for (final (value, label) in [
+                            (KitTextSize.smallest, copy.textSizeSmallest),
+                            (KitTextSize.small, copy.textSizeSmall),
+                            (KitTextSize.normal, copy.textSizeDefault),
+                            (KitTextSize.large, copy.textSizeLarge),
+                          ])
+                            KitSegment(
+                              key: ValueKey('text-size-${value.name}'),
+                              value: value,
+                              label: label,
+                            ),
+                        ],
+                        onChanged: (value) =>
+                            _saveDisplay(() => controller.setTextSize(value)),
                       ),
                     ),
                   ),
@@ -272,8 +273,8 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
 }
 
 /// Settings › Appearance › Motion (design standard §10): how much the app
-/// moves and whether finished moments celebrate, as one choice. Glass and
-/// vibration are fixed parts of the design. A choice shows at once and
+/// moves and whether finished moments celebrate, as one choice. Vibration is
+/// a fixed part of the design. A choice shows at once and
 /// is saved; a refused save puts it back and says so. The system's
 /// accessibility settings always win, and the rows say when they do.
 class _EffectsSection extends StatefulWidget {
@@ -296,6 +297,48 @@ class _EffectsSectionState extends State<_EffectsSection> {
       if (mounted) setState(() => _failed = true);
     }
   }
+
+  /// One glowing-border choice: a row with its options as a segmented bar.
+  Widget _glowChoice<T extends Enum>(
+    KitTokens tokens, {
+    required String id,
+    required IconData icon,
+    required String title,
+    String keyPrefix = 'effects-glow',
+    required T selected,
+    required List<(T, String)> options,
+    required ValueChanged<T> onChanged,
+  }) {
+    return KitRow(
+      key: ValueKey('$keyPrefix-$id'),
+      leading: KitRow.icon(context, icon),
+      title: title,
+      below: Padding(
+        padding: EdgeInsetsDirectional.only(
+          top: tokens.space2,
+          bottom: tokens.space1,
+        ),
+        child: KitSegmented<T>(
+          semanticsLabel: title,
+          selected: selected,
+          segments: [
+            for (final (value, label) in options)
+              KitSegment(
+                key: ValueKey('$keyPrefix-$id-${value.name}'),
+                value: value,
+                label: label,
+              ),
+          ],
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  void _openLooks() => pushKitPage<void>(
+    context,
+    (_) => LiveStylePickerScreen(controller: widget.controller),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -332,37 +375,19 @@ class _EffectsSectionState extends State<_EffectsSection> {
                           )
                         : null,
                   ),
-                  ValueListenableBuilder<bool>(
-                    valueListenable: KitGlassSafety.turnedOffAfterCrashes,
-                    builder: (context, off, _) => KitReveal(
-                      child: off
-                          ? Padding(
-                              padding: EdgeInsetsDirectional.only(
-                                start: tokens.gutter,
-                                end: tokens.gutter,
-                                bottom: tokens.space3,
-                              ),
-                              child: KitNotice(
-                                key: const ValueKey('effects-glass-crash'),
-                                message: copy.effectsGlassCrashOff,
-                                actions: [
-                                  KitAction(
-                                    key: const ValueKey(
-                                      'effects-glass-crash-on',
-                                    ),
-                                    label: copy.effectsGlassCrashOn,
-                                    onPressed: KitGlassShader.turnLiquidBackOn,
-                                  ),
-                                ],
-                              ),
-                            )
-                          : null,
-                    ),
-                  ),
                   KitRowGroup(
                     label: copy.effectsSection,
                     children: [
-                      _EffectsPreview(effects: effects),
+                      Padding(
+                        padding: EdgeInsets.all(tokens.panelInset),
+                        child: KitLiveLookPreview(
+                          key: const ValueKey('effects-look-preview'),
+                          style: kitLiveStyleById(effects.liveStyle),
+                          intensity: effects.liveIntensity,
+                          enabled: effects.liveBackground,
+                          onTap: _openLooks,
+                        ),
+                      ),
                       KitArrival(
                         id: 'effects-motion',
                         child: KitRow(
@@ -437,6 +462,115 @@ class _EffectsSectionState extends State<_EffectsSection> {
                           ),
                         ),
                       ),
+                      KitArrival(
+                        id: 'effects-live-background',
+                        child: KitSwitchRow(
+                          key: const ValueKey('effects-live-background'),
+                          switchKey: const ValueKey(
+                            'effects-live-background-switch',
+                          ),
+                          leading: KitRow.icon(context, AppIconography.sparkle),
+                          title: copy.effectsLiveBackground,
+                          supporting: copy.effectsLiveBackgroundHint,
+                          value: effects.liveBackground,
+                          onChanged: (on) =>
+                              _choose(effects.copyWith(liveBackground: on)),
+                        ),
+                      ),
+                      if (effects.liveBackground)
+                        KitArrival(
+                          id: 'effects-live-style',
+                          child: KitRow(
+                            key: const ValueKey('effects-live-style'),
+                            leading: KitRow.icon(
+                              context,
+                              AppIconography.sparkle,
+                            ),
+                            title: copy.liveStylePickerTitle,
+                            supporting: TextSpan(
+                              text: kitLiveStyleById(
+                                effects.liveStyle,
+                              ).label(copy),
+                            ),
+                            onTap: _openLooks,
+                          ),
+                        ),
+                      if (effects.liveBackground)
+                        _glowChoice<KitLiveIntensity>(
+                          tokens,
+                          id: 'intensity',
+                          keyPrefix: 'effects-live',
+                          icon: AppIconography.sparkle,
+                          title: copy.liveIntensityTitle,
+                          selected: effects.liveIntensity,
+                          options: [
+                            (KitLiveIntensity.subtle, copy.liveIntensitySubtle),
+                            (KitLiveIntensity.normal, copy.liveIntensityNormal),
+                            (KitLiveIntensity.bold, copy.liveIntensityBold),
+                          ],
+                          onChanged: (v) =>
+                              _choose(effects.copyWith(liveIntensity: v)),
+                        ),
+                      KitArrival(
+                        id: 'effects-glow',
+                        child: KitSwitchRow(
+                          key: const ValueKey('effects-glow'),
+                          switchKey: const ValueKey('effects-glow-switch'),
+                          leading: KitRow.icon(context, AppIconography.sparkle),
+                          title: copy.effectsActivityGlow,
+                          supporting: copy.effectsActivityGlowHint,
+                          value: effects.activityGlow,
+                          onChanged: (on) =>
+                              _choose(effects.copyWith(activityGlow: on)),
+                        ),
+                      ),
+                      // The three options show only while
+                      // the border is on.
+                      if (effects.activityGlow) ...[
+                        _glowChoice<KitGlowStyle>(
+                          tokens,
+                          id: 'style',
+                          icon: AppIconography.sparkle,
+                          title: copy.effectsGlowStyle,
+                          selected: effects.glowStyle,
+                          options: [
+                            (
+                              KitGlowStyle.classic,
+                              copy.effectsGlowStyleClassic,
+                            ),
+                            (KitGlowStyle.softRing, copy.effectsGlowStyleSoft),
+                          ],
+                          onChanged: (v) =>
+                              _choose(effects.copyWith(glowStyle: v)),
+                        ),
+                        _glowChoice<KitGlowColours>(
+                          tokens,
+                          id: 'colours',
+                          icon: AppIconography.contrast,
+                          title: copy.effectsGlowColours,
+                          selected: effects.glowColours,
+                          options: [
+                            (KitGlowColours.one, copy.effectsGlowColoursOne),
+                            (KitGlowColours.two, copy.effectsGlowColoursTwo),
+                          ],
+                          onChanged: (v) =>
+                              _choose(effects.copyWith(glowColours: v)),
+                        ),
+                        _glowChoice<KitGlowSpeed>(
+                          tokens,
+                          id: 'speed',
+                          icon: AppIconography.speed,
+                          title: copy.effectsGlowSpeed,
+                          selected: effects.glowSpeed,
+                          options: [
+                            (KitGlowSpeed.slow, copy.effectsGlowSpeedSlow),
+                            (KitGlowSpeed.normal, copy.effectsGlowSpeedNormal),
+                            (KitGlowSpeed.fast, copy.effectsGlowSpeedFast),
+                          ],
+                          onChanged: (v) =>
+                              _choose(effects.copyWith(glowSpeed: v)),
+                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -445,60 +579,6 @@ class _EffectsSectionState extends State<_EffectsSection> {
           ),
         );
       },
-    );
-  }
-}
-
-/// A small live sample of the effects: the brand's portal drawing itself in
-/// (again on each Animations change; finished at once under Off) beside a
-/// miniature of the app's floating tab bar, the one place glass lives
-/// (LOOK-27), built by the kit. Decorative: the rows say everything in
-/// words. No loop, so the page rests.
-class _EffectsPreview extends StatelessWidget {
-  const _EffectsPreview({required this.effects});
-
-  final KitEffects effects;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    final copy = _settingsCopy(context);
-    return ExcludeSemantics(
-      child: IgnorePointer(
-        child: Padding(
-          padding: EdgeInsets.all(tokens.panelInset),
-          child: Row(
-            children: [
-              KitIllustration(
-                key: ValueKey('effects-preview-${effects.motion.name}'),
-                scene: const KitPortalScene(),
-                width: KitTokens.illustrationInline,
-              ),
-              SizedBox(width: tokens.space3),
-              Expanded(
-                child: KeyedSubtree(
-                  key: const ValueKey('effects-preview-glass'),
-                  child: KitNavBar(
-                    destinations: [
-                      KitNavDestination(
-                        label: copy.effectsPreviewWork,
-                        icon: AppIconography.workspace,
-                        selectedIcon: AppIconography.workspaceSelected,
-                      ),
-                      KitNavDestination(
-                        label: copy.effectsPreviewSettings,
-                        icon: AppIconography.settings,
-                      ),
-                    ],
-                    selected: 0,
-                    onSelected: (_) {},
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -518,7 +598,6 @@ class PrivacySettingsScreen extends StatefulWidget {
 
 class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   bool _busy = false;
-  bool _readPreferenceFailed = false;
 
   /// What the last delete did, said on the page (KIT-34: no snackbar for a
   /// delete that cannot be undone).
@@ -570,49 +649,54 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
     return succeeded;
   }
 
+  /// Read-state sharing is each server's own consent, kept on this phone: it
+  /// is switched on that server's page, not here (G4). This row says where
+  /// and how many servers share, and opens the one server or the list.
   Widget _readState(BuildContext context) => ListenableBuilder(
-    listenable: _controller,
+    listenable: Listenable.merge([
+      _controller,
+      _controller.store.appPreferences.readStateConsent,
+    ]),
     builder: (context, _) {
-      if (!_controller.supportsSessionReadState) {
-        return const SizedBox.shrink();
-      }
+      final servers = settingsServers(_controller);
+      if (servers.isEmpty) return const SizedBox.shrink();
       final l10n =
           Localizations.of<AppLocalizations>(context, AppLocalizations) ??
           lookupAppLocalizations(const Locale('en'));
       final tokens = KitTokens.of(context);
-      final saving = _controller.savingReadPrivacy;
+      final consent = _controller.store.appPreferences.readStateConsent;
+      final sharing = servers.where((p) => consent.enabled(p.id)).length;
+      final value = servers.length == 1
+          ? (sharing == 1 ? l10n.settingsV3On : l10n.settingsV3Off)
+          : l10n.settingsV3SharingCount(sharing, servers.length);
       return Padding(
         padding: EdgeInsetsDirectional.only(bottom: tokens.sectionGap),
         child: KitRowGroup(
           label: l10n.privacySharedSection,
           children: [
-            KitSwitchRow(
+            KitRow(
               key: const ValueKey('share-session-views'),
               leading: KitRow.icon(context, AppIconography.visible),
               title: l10n.shareSessionViewsTitle,
-              supporting: _controller.shareSessionViews
-                  ? l10n.shareSessionViewsOn
-                  : l10n.shareSessionViewsOff,
-              value: _controller.shareSessionViews,
-              disabledReason: saving ? l10n.privacySaving : null,
-              onChanged: saving
-                  ? null
-                  : (value) async {
-                      setState(() => _readPreferenceFailed = false);
-                      try {
-                        await _controller.setShareSessionViews(value);
-                      } catch (_) {
-                        if (mounted) {
-                          setState(() => _readPreferenceFailed = true);
-                        }
-                      }
-                    },
-              below: _readPreferenceFailed
-                  ? KitNotice(
-                      tone: AppStatusTone.failure,
-                      message: l10n.shareSessionViewsSaveError,
+              trailing: KitRowValue(value),
+              onTap: () => servers.length == 1
+                  ? unawaited(
+                      openServerPage(
+                        context,
+                        _controller,
+                        servers.single.id,
+                        arrive: 'server-row-share-read',
+                      ),
                     )
-                  : null,
+                  : unawaited(
+                      pushKitPage<void>(
+                        context,
+                        (_) => ByServerScreen(
+                          controller: _controller,
+                          kind: ByServerKind.readState,
+                        ),
+                      ),
+                    ),
             ),
           ],
         ),

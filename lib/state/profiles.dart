@@ -8,698 +8,41 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../ui/kit/kit_redact.dart';
+import 'factsbook/factsbook_store.dart' show FactsBookStore;
+import '../domain/phone_agent_host.dart';
+import '../builtin/agents/agent_host_cleanup.dart';
+import '../builtin/builtin_linux.dart';
 
 import '../api/models.dart' show ModelRef;
 import '../api/server_probe.dart' show ServerFlavor;
 import '../domain/loopback_host.dart';
+import '../domain/byo_host.dart';
+import '../host/byo_host_signer.dart';
 import '../domain/orchestration_gateway.dart' show OrchestrationHostMode;
 import '../orchestration/adapters/gascity/gascity_probe.dart'
     show isTailnetHost;
 import '../platform/platform_capabilities.dart';
 // A plain value type (no widgets): the person's effect choices.
-import 'effects.dart' show KitEffects, KitMotionLevel;
+import 'effects.dart' show KitEffects, KitTextSize;
+import 'app_preferences.dart';
+import '../domain/settings_scope.dart';
 import 'model_library.dart';
 import 'interaction_defaults.dart';
+import 'context_usage_memory.dart';
+import 'phrase_chips.dart';
 import 'setup_audit_store.dart';
 import 'session_link_bindings.dart';
+import 'agent_handoff_links.dart';
+import 'pending_command_journal.dart';
 
 export '../api/server_probe.dart' show ServerFlavor;
-export '../domain/loopback_host.dart' show isLoopbackHost;
+export '../domain/loopback_host.dart' show isLoopbackHost, isPrivateNetworkHost;
 export '../domain/orchestration_gateway.dart' show OrchestrationHostMode;
 
-/// A model (and variant) chosen for one session from inside its chat.
-class SessionModelChoice {
-  final ModelRef model;
-  final String variant;
-  const SessionModelChoice({required this.model, this.variant = ''});
-}
-
-/// One opencode server the user can connect to.
-/// Which server a profile talks to. `codex` and `paseo` are agent sockets: a
-/// WebSocket endpoint, one secret, and one project folder, stored in the
-/// shared `codexToken` / `codexDirectory` fields.
-enum ServerBackend { openCode, codex, paseo }
-
-/// Which orchestration host the AI Team plugin talks to for a profile.
-enum OrchestrationProvider {
-  /// A Gas City supervisor reached over HTTP(S).
-  gascity,
-
-  /// The recorded fixture in `tool/qa/gascity_fixture` (tests and demos).
-  fixture,
-
-  /// Native phone-resident durable project engine.
-  phoneEngine;
-
-  /// Maps a stored name; unknown names fall back to [gascity] so an old
-  /// profile never loses its host.
-  static OrchestrationProvider fromName(Object? name) =>
-      name == phoneEngine.name
-      ? phoneEngine
-      : name == fixture.name
-      ? fixture
-      : gascity;
-}
-
-/// The kind of machine an AI Team host runs on, chosen by the person when
-/// they add the host and used only for the performance disclaimer
-/// (03-onboarding §4, TEAM-206). Finer than [OrchestrationHostMode]: every
-/// kind maps to one mode ([mode]), and a mode without a chosen kind takes
-/// [forMode]'s default so a config stored before this field existed still
-/// shows a disclaimer.
-enum OrchestrationHostKind {
-  /// A desktop computer that stays awake.
-  pc,
-
-  /// A laptop: sleep and lid-close pause the team.
-  laptop,
-
-  /// Windows via WSL2: sleeps like a laptop and stops with its last terminal.
-  wsl,
-
-  /// This phone (Termux); set from the host mode, never chosen in the form.
-  phone;
-
-  /// The host mode this kind belongs to.
-  OrchestrationHostMode get mode => switch (this) {
-    pc || laptop || wsl => OrchestrationHostMode.computer,
-    phone => OrchestrationHostMode.phone,
-  };
-
-  /// The default kind for a mode: a computer is a [pc] until told otherwise.
-  static OrchestrationHostKind forMode(OrchestrationHostMode mode) =>
-      switch (mode) {
-        OrchestrationHostMode.computer => pc,
-        OrchestrationHostMode.phone => phone,
-      };
-
-  /// Maps a stored name; null for an unknown or missing one so the caller
-  /// can fall back to [forMode].
-  static OrchestrationHostKind? fromName(Object? name) {
-    for (final kind in values) {
-      if (kind.name == name) return kind;
-    }
-    return null;
-  }
-}
-
-/// The AI Team plugin's per-profile settings (04-plugin-architecture §1).
-/// A profile whose [ServerProfile.orchestration] is null has the plugin
-/// off: no controller, no store keys, no widgets in the tree.
-///
-/// Immutable; [toJson] / [fromJson] round-trip every field and tolerate a
-/// stored shape from an older build (missing fields take their defaults).
-class OrchestrationConfig {
-  const OrchestrationConfig({
-    required this.provider,
-    required this.url,
-    this.city = '',
-    this.hostMode = OrchestrationHostMode.computer,
-    OrchestrationHostKind? hostKind,
-    this.front = false,
-    this.enabledAt,
-  }) : hostKind =
-           hostKind ??
-           (hostMode == OrchestrationHostMode.phone
-               ? OrchestrationHostKind.phone
-               : OrchestrationHostKind.pc);
-
-  final OrchestrationProvider provider;
-
-  /// Base URL of the host (`https://…`, `http://` to loopback or tailnet
-  /// only); for [OrchestrationProvider.fixture], the fixture directory.
-  final String url;
-
-  /// Gas City city name; empty means whatever the host reports.
-  final String city;
-
-  /// Where the host runs relative to the OpenCode server.
-  final OrchestrationHostMode hostMode;
-
-  /// The kind of machine behind [hostMode], for the disclaimer line only.
-  /// Always agrees with [hostMode]: absent or contradicting input takes
-  /// [OrchestrationHostKind.forMode].
-  final OrchestrationHostKind hostKind;
-
-  /// True once the host front is in use (Sprint B); the read adapter alone
-  /// never writes.
-  final bool front;
-
-  /// When the person turned the plugin on for this profile.
-  final DateTime? enabledAt;
-
-  OrchestrationConfig copyWith({
-    OrchestrationProvider? provider,
-    String? url,
-    String? city,
-    OrchestrationHostMode? hostMode,
-    OrchestrationHostKind? hostKind,
-    bool? front,
-    DateTime? enabledAt,
-  }) {
-    final mode = hostMode ?? this.hostMode;
-    return OrchestrationConfig(
-      provider: provider ?? this.provider,
-      url: url ?? this.url,
-      city: city ?? this.city,
-      hostMode: mode,
-      hostKind: _kindFor(mode, hostKind ?? this.hostKind),
-      front: front ?? this.front,
-      enabledAt: enabledAt ?? this.enabledAt,
-    );
-  }
-
-  /// [kind] when it belongs to [mode], else the mode's default; a kind
-  /// never contradicts the mode it is stored with.
-  static OrchestrationHostKind _kindFor(
-    OrchestrationHostMode mode,
-    OrchestrationHostKind? kind,
-  ) => kind != null && kind.mode == mode
-      ? kind
-      : OrchestrationHostKind.forMode(mode);
-
-  Map<String, dynamic> toJson() => {
-    'provider': provider.name,
-    'url': url,
-    'city': city,
-    'hostMode': hostMode.name,
-    'hostKind': hostKind.name,
-    'front': front,
-    if (enabledAt != null) 'enabledAt': enabledAt!.toUtc().toIso8601String(),
-  };
-
-  /// Decodes a stored config; null for null, non-map or url-less input so
-  /// a corrupt entry reads as "plugin off" rather than crashing the load.
-  static OrchestrationConfig? fromJson(Object? json) {
-    if (json is! Map) return null;
-    final url = json['url'];
-    if (url is! String || url.isEmpty) return null;
-    final enabledAt = json['enabledAt'];
-    final hostMode = json['hostMode'] == OrchestrationHostMode.phone.name
-        ? OrchestrationHostMode.phone
-        : OrchestrationHostMode.computer;
-    return OrchestrationConfig(
-      provider: OrchestrationProvider.fromName(json['provider']),
-      url: url,
-      city: (json['city'] ?? '').toString(),
-      hostMode: hostMode,
-      // Stored before TEAM-206, or an unknown name: the mode's default.
-      hostKind: _kindFor(
-        hostMode,
-        OrchestrationHostKind.fromName(json['hostKind']),
-      ),
-      front: json['front'] == true,
-      enabledAt: enabledAt is String ? DateTime.tryParse(enabledAt) : null,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      other is OrchestrationConfig &&
-      other.provider == provider &&
-      other.url == url &&
-      other.city == city &&
-      other.hostMode == hostMode &&
-      other.hostKind == hostKind &&
-      other.front == front &&
-      other.enabledAt == enabledAt;
-
-  @override
-  int get hashCode =>
-      Object.hash(provider, url, city, hostMode, hostKind, front, enabledAt);
-
-  @override
-  String toString() =>
-      'OrchestrationConfig(${provider.name} $url ${city.isEmpty ? '' : city}'
-      ' ${hostMode.name}/${hostKind.name}${front ? ' front' : ''})';
-}
-
-class ServerProfile {
-  final String id;
-  String name;
-  String baseUrl;
-  ServerBackend backend;
-  String username;
-  String password; // kept in secure storage, mirrored here at runtime
-  /// Runtime-only signal that the saved password could not be decrypted.
-  bool requiresPasswordReentry;
-
-  /// Runtime-only Codex connection secret. It is kept in secure storage under
-  /// its own key and is intentionally excluded from profile JSON.
-  String codexToken;
-
-  /// Phone engine bearer auth, runtime-only and never included in JSON.
-  String teamEngineAuth;
-
-  /// Codex project directory stored as profile metadata, never as a secret.
-  String codexDirectory;
-
-  /// Runtime-only signal that the saved Codex token could not be restored.
-  bool requiresCodexTokenReentry;
-
-  /// Protocol generation detected at Test/connect time. Additive: profiles
-  /// saved before flavor detection default to [ServerFlavor.v1]. Cached so a
-  /// reconnect skips re-detection; a failed connect re-probes and corrects it.
-  ServerFlavor flavor;
-
-  /// Server version reported by the last successful probe/connect, cached
-  /// alongside [flavor] for the servers list.
-  String? serverVersion;
-
-  /// AI Team plugin settings; null means the plugin is off for this server.
-  OrchestrationConfig? orchestration;
-
-  ServerProfile({
-    required this.id,
-    required this.name,
-    required this.baseUrl,
-    this.backend = ServerBackend.openCode,
-    this.username = '',
-    this.password = '',
-    this.requiresPasswordReentry = false,
-    this.codexToken = '',
-    this.teamEngineAuth = '',
-    this.codexDirectory = '',
-    this.requiresCodexTokenReentry = false,
-    this.flavor = ServerFlavor.v1,
-    this.serverVersion,
-    this.orchestration,
-  });
-
-  /// Codex app-server and the Paseo daemon share the socket-style profile:
-  /// endpoint, secret ([codexToken]) and project folder ([codexDirectory]).
-  bool get usesAgentSocket => backend != ServerBackend.openCode;
-
-  /// A Codex token is mandatory; a Paseo daemon on a private network may run
-  /// without a password.
-  bool get agentSocketSecretRequired => backend == ServerBackend.codex;
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'baseUrl': baseUrl,
-    'backend': backend.name,
-    'username': username,
-    if (usesAgentSocket) 'codexDirectory': codexDirectory,
-    'flavor': flavor.name,
-    if (serverVersion != null) 'serverVersion': serverVersion,
-    if (orchestration != null) 'orchestration': orchestration!.toJson(),
-  };
-
-  static ServerProfile fromJson(Map<String, dynamic> j) => ServerProfile(
-    id: j['id'] as String,
-    name: plainServerName((j['name'] ?? '').toString()),
-    baseUrl: (j['baseUrl'] ?? '').toString(),
-    backend: switch (j['backend']) {
-      'codex' => ServerBackend.codex,
-      'paseo' => ServerBackend.paseo,
-      _ => ServerBackend.openCode,
-    },
-    username: (j['username'] ?? '').toString(),
-    codexDirectory: (j['codexDirectory'] ?? '').toString(),
-    flavor: j['flavor'] == ServerFlavor.v2.name
-        ? ServerFlavor.v2
-        : ServerFlavor.v1,
-    serverVersion: j['serverVersion']?.toString(),
-    orchestration: OrchestrationConfig.fromJson(j['orchestration']),
-  );
-}
-
-/// A server's name as people should read it: a bare IP address (what the
-/// name defaulted to before) becomes "Computer at 192.168.1.5"; a host name
-/// or a name the person typed is kept as is.
-String plainServerName(String name) {
-  final value = name.trim();
-  // This device by any of its names is "This phone", never "Computer at
-  // 127.0.0.1": a loopback address is not somewhere else.
-  if (isLoopbackHost(value.replaceAll(RegExp(r'[\[\]]'), ''))) {
-    return 'This phone';
-  }
-  final ipv4 = RegExp(r'^\d{1,3}(?:\.\d{1,3}){3}$').hasMatch(value);
-  final ipv6 =
-      value.contains(':') && RegExp(r'^[0-9a-fA-F:.\[\]]+$').hasMatch(value);
-  if (ipv4 || ipv6) {
-    return 'Computer at ${value.replaceAll(RegExp(r'[\[\]]'), '')}';
-  }
-  return name;
-}
-
-// `isLoopbackHost` lives in `lib/domain/loopback_host.dart` (Flutter-free)
-// and is re-exported above for the callers that import it from here.
-
-/// Splits a bare `host[:port]` into the host to judge and the authority to
-/// put in a URL, or null when it is not a plausible single address.
-///
-/// IPv6 needs both halves: `[::1]:4096` carries its port outside the
-/// brackets, while a bare `::1` has to gain brackets before it can appear in
-/// a URL at all — `http://::1` does not parse.
-({String host, String authority})? _bareAuthority(String raw) {
-  if (raw.startsWith('[')) {
-    final close = raw.indexOf(']');
-    if (close < 2) return null;
-    final rest = raw.substring(close + 1);
-    if (rest.isNotEmpty && !RegExp(r'^:\d{1,5}$').hasMatch(rest)) return null;
-    return (host: raw.substring(1, close), authority: raw);
-  }
-  final colons = ':'.allMatches(raw).length;
-  if (colons >= 2) {
-    // An unbracketed IPv6 literal: its last group cannot be told apart from
-    // a port, so the whole value is the address and the brackets are ours.
-    return (host: raw, authority: '[$raw]');
-  }
-  final host = colons == 1 ? raw.substring(0, raw.indexOf(':')) : raw;
-  if (host.isEmpty) return null;
-  return (host: host, authority: raw);
-}
-
-/// Validates the transport boundary used by both profile editing and connect.
-/// Android only permits cleartext traffic to the Termux loopback names in
-/// [isLoopbackHost]. Expands a pasted bare address into a full server URL so
-/// setup does not require knowing URL syntax. `host[:port]` and bare IPs
-/// (v4 and v6) gain a scheme: loopback becomes `http://` (the only place
-/// HTTP is allowed) and everything else becomes `https://`. Values that
-/// already carry a scheme, and values that are not a plausible single
-/// address, come back unchanged for the validator to explain.
-String normalizeServerProfileUrl(String value) {
-  final raw = value.trim();
-  if (raw.isEmpty || raw.contains('://')) return raw;
-  final bare = RegExp(r'^\[?[A-Za-z0-9._\-:]+\]?(:\d{1,5})?$');
-  if (!bare.hasMatch(raw)) return raw;
-  final parsed = _bareAuthority(raw);
-  if (parsed == null) return raw;
-  final scheme = isLoopbackHost(parsed.host) ? 'http' : 'https';
-  return '$scheme://${parsed.authority}';
-}
-
-String? validateServerProfileUrl(
-  String value, {
-  String username = '',
-  String password = '',
-}) {
-  final raw = value.trim();
-  if (raw.isEmpty) return 'Enter a server URL.';
-  if (!raw.contains('://')) {
-    return 'Include https://. Use http:// only for localhost, 127.0.0.1, '
-        'or [::1].';
-  }
-  final uri = Uri.tryParse(raw);
-  if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
-    return 'Enter a complete server URL, such as https://server.example:4096.';
-  }
-  if (uri.scheme != 'https' && uri.scheme != 'http') {
-    // Both builds allow http only on loopback; only one of them reaches that
-    // loopback through Termux, so only one says so.
-    return platformCapabilities.supportsTermux
-        ? 'Server URLs must use https://, or http:// for local Termux.'
-        : 'Server URLs must use https://, or http:// for a local server.';
-  }
-  if (uri.userInfo.isNotEmpty) {
-    return 'Do not put credentials in the URL. Use the fields below.';
-  }
-  if (uri.query.isNotEmpty || uri.fragment.isNotEmpty) {
-    return 'Remove query parameters and fragments from the server URL.';
-  }
-  if (uri.path.isNotEmpty && uri.path != '/') {
-    return 'Remove the path from the server URL. Enter only its origin.';
-  }
-  if (uri.scheme == 'http' && !isLoopbackHost(uri.host)) {
-    if (username.trim().isNotEmpty || password.isNotEmpty) {
-      return 'HTTPS is required outside this device. Basic credentials must never be sent over HTTP.';
-    }
-    return 'HTTP is allowed only for localhost, 127.0.0.1, or [::1]. Use '
-        'HTTPS for LAN and remote servers.';
-  }
-  return null;
-}
-
-/// Normalizes a bare Codex WebSocket authority without changing already
-/// explicit URLs. Loopback is intentionally the only cleartext origin.
-String normalizeCodexServerUrl(String value) {
-  final raw = value.trim();
-  if (raw.isEmpty || raw.contains('://')) return raw;
-  final bare = RegExp(r'^\[?[A-Za-z0-9._\-:]+\]?(:\d{1,5})?$');
-  if (!bare.hasMatch(raw)) return raw;
-  final parsed = _bareAuthority(raw);
-  if (parsed == null) return raw;
-  final scheme = isLoopbackHost(parsed.host) ? 'ws' : 'wss';
-  return '$scheme://${parsed.authority}';
-}
-
-/// Validates a Codex origin and returns fixed, non-sensitive copy on failure.
-String? validateCodexServerUrl(String value) {
-  final raw = value.trim();
-  if (raw.isEmpty) return 'Enter a Codex server URL.';
-  final uri = Uri.tryParse(raw);
-  if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
-    return 'Enter a complete Codex server URL.';
-  }
-  if (uri.scheme != 'wss' && uri.scheme != 'ws') {
-    return 'Codex server URLs must use wss://, or ws:// for a local server.';
-  }
-  if (uri.userInfo.isNotEmpty) {
-    return 'Do not put credentials in the Codex URL.';
-  }
-  if (uri.query.isNotEmpty || uri.fragment.isNotEmpty) {
-    return 'Remove query parameters and fragments from the Codex URL.';
-  }
-  if (uri.path.isNotEmpty && uri.path != '/') {
-    return 'Remove the path from the Codex server URL.';
-  }
-  if (uri.scheme == 'ws' && !isLoopbackHost(uri.host)) {
-    return 'Plain WebSocket is allowed only for a local Codex server.';
-  }
-  return null;
-}
-
-/// Validates the Codex project directory without interpreting or logging it.
-bool _containsControlCharacter(String value) => value.runes.any(
-  (character) => character <= 0x1f || (character >= 0x7f && character <= 0x9f),
-);
-
-String? validateCodexProjectDirectory(String value) {
-  if (value.isEmpty ||
-      value.length > 4096 ||
-      _containsControlCharacter(value) ||
-      (!value.startsWith('/') && !RegExp(r'^[A-Za-z]:[\\/]').hasMatch(value))) {
-    return 'Enter an absolute Codex project directory.';
-  }
-  return null;
-}
-
-/// Validates a Codex connection token without returning the token in errors.
-String? validateCodexConnectionToken(String value) {
-  if (value.isEmpty ||
-      value.length > 16384 ||
-      _containsControlCharacter(value) ||
-      RegExp(r'\s').hasMatch(value)) {
-    return 'Enter a valid Codex connection token.';
-  }
-  return null;
-}
-
-/// Normalizes a bare Paseo daemon authority. Cleartext is the default only
-/// where [validatePaseoServerUrl] allows it.
-String normalizePaseoServerUrl(String value) {
-  final raw = value.trim();
-  if (raw.isEmpty || raw.contains('://')) return raw;
-  final host = Uri.tryParse('ws://$raw')?.host ?? '';
-  return isLoopbackHost(host) || isTailnetHost(host)
-      ? 'ws://$raw'
-      : 'wss://$raw';
-}
-
-/// A Paseo daemon is reached at wss://, or at ws:// on this device or a
-/// Tailscale address. The daemon's public relay is never used.
-String? validatePaseoServerUrl(String value) {
-  final raw = value.trim();
-  if (raw.isEmpty) return 'Enter the Paseo daemon address.';
-  final uri = Uri.tryParse(raw);
-  if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
-    return 'Enter a complete address, such as ws://100.64.0.1:6767.';
-  }
-  if (uri.scheme != 'wss' && uri.scheme != 'ws') {
-    return 'Paseo addresses must use ws:// or wss://.';
-  }
-  if (uri.userInfo.isNotEmpty) {
-    return 'Do not put credentials in the address. Use the password field.';
-  }
-  if (uri.query.isNotEmpty || uri.fragment.isNotEmpty) {
-    return 'Remove query parameters and fragments from the address.';
-  }
-  if (uri.path.isNotEmpty && uri.path != '/' && uri.path != '/ws') {
-    return 'Remove the path from the address.';
-  }
-  if (uri.scheme == 'ws' &&
-      !isLoopbackHost(uri.host) &&
-      !isTailnetHost(uri.host)) {
-    return 'Plain ws:// is allowed only on this device or a Tailscale '
-        'address. Use wss:// elsewhere.';
-  }
-  return null;
-}
-
-/// An empty password is valid: a daemon on a private network may run without
-/// one. The value travels in a WebSocket subprotocol, so no spaces or commas.
-String? validatePaseoPassword(String value) {
-  if (value.isEmpty) return null;
-  if (value.length > 4096 ||
-      _containsControlCharacter(value) ||
-      RegExp(r'[\s,]').hasMatch(value)) {
-    return 'The password cannot contain spaces or commas.';
-  }
-  return null;
-}
-
-enum AppAppearance { system, light, dark }
-
-/// Selectable color identity; palettes live in lib/ui/theme_packs.dart.
-/// Stored by name, so new packs can be added anywhere; `dynamic` stays last
-/// because the theme list shows them in this order.
-enum ThemePackId {
-  opencode,
-  catppuccin,
-  gruvbox,
-  solarized,
-  dracula,
-  nord,
-  tokyoNight,
-  oneDark,
-  monokai,
-  rosePine,
-  everforest,
-  kanagawa,
-  ayu,
-  nightOwl,
-  github,
-  palenight,
-  synthwave,
-  cobalt,
-  midnight,
-  paper,
-  forest,
-  ocean,
-  sunset,
-  sakura,
-  lavender,
-  mint,
-  coffee,
-  slate,
-  amber,
-  highContrast,
-  dynamic,
-}
-
-/// What a profile deletion actually erased, so the UI can say so and tests
-/// can assert it rather than inferring from side effects.
-class DeleteProfileResult {
-  /// Preference keys scoped to the profile (model, agent, variant, location,
-  /// provider-runtime migration flags) that were removed.
-  final Set<String> removedPreferenceKeys;
-
-  /// Offline-queue entries — prompts and their embedded attachments — dropped.
-  final int removedQueuedPrompts;
-
-  /// Unsent composer drafts dropped.
-  final int removedDrafts;
-
-  /// Whether the home-screen widget's session snapshot was cleared.
-  final bool clearedWidgetSnapshot;
-
-  /// Whether the launcher's pinned-session shortcuts were withdrawn.
-  final bool clearedPinnedShortcuts;
-
-  /// Whether the Quick Settings tile's cached count was dropped.
-  final bool clearedAttentionTile;
-
-  /// Whether the server profile itself and its Keystore password are gone.
-  ///
-  /// False means the deletion stopped before touching them: the local data
-  /// this profile owns could not be erased, so the server stays saved rather
-  /// than leaving orphaned prompts and drafts behind a removed row.
-  final bool removedProfile;
-
-  /// Plain-language descriptions of what could not be deleted, in the order
-  /// the deletion tried. Empty means the promise the UI makes — "this
-  /// server's data leaves the device" — was actually kept.
-  final List<String> failures;
-
-  const DeleteProfileResult({
-    this.removedPreferenceKeys = const {},
-    this.removedQueuedPrompts = 0,
-    this.removedDrafts = 0,
-    this.clearedWidgetSnapshot = false,
-    this.clearedPinnedShortcuts = false,
-    this.clearedAttentionTile = false,
-    this.removedProfile = true,
-    this.failures = const [],
-  });
-
-  /// Whether every piece of local data this app knows about is gone.
-  bool get complete => failures.isEmpty && removedProfile;
-
-  /// One sentence naming what survived, for a message the user can act on.
-  /// Null when the deletion was complete.
-  String? get partialDeletionMessage {
-    if (complete) return null;
-    final kept = failures.isEmpty
-        ? 'some of its local data'
-        : failures.join(', ');
-    return removedProfile
-        ? 'The server was removed, but $kept could not be deleted from this '
-              'device. Free up storage and remove it again.'
-        : 'The server was kept: $kept could not be deleted from this device, '
-              'and removing the server would have left that data behind. '
-              'Free up storage and try again.';
-  }
-}
-
-class ProfileLocation {
-  final String? directory;
-  final String? workspace;
-
-  const ProfileLocation({this.directory, this.workspace});
-}
-
-/// The platform keyring refused to hold a secret.
-///
-/// On Linux flutter_secure_storage needs a Secret Service (GNOME Keyring,
-/// KWallet) inside a desktop session; without one every write throws a
-/// [PlatformException]. That is a local storage problem, not a server one,
-/// so it carries its own product sentence instead of collapsing into
-/// "OpenCode is unreachable".
-class SecureStorageUnavailable implements Exception {
-  final String message;
-  final Object? cause;
-
-  const SecureStorageUnavailable(this.message, {this.cause});
-
-  factory SecureStorageUnavailable.forPlatform(
-    TargetPlatform platform, {
-    Object? cause,
-  }) => SecureStorageUnavailable(messageFor(platform), cause: cause);
-
-  static const linuxMessage =
-      'Could not store the password: no keyring is available. Install GNOME '
-      'Keyring or KWallet, or run the app inside a desktop session, then try '
-      'again.';
-  static const genericMessage =
-      'Could not store the password securely on this device.';
-
-  static String messageFor(TargetPlatform platform) =>
-      platform == TargetPlatform.linux ? linuxMessage : genericMessage;
-
-  @override
-  String toString() => message;
-}
-
-/// A scoped sign-in reset was not fully confirmed. Some sign-ins may already
-/// have been removed; retrying completes the same operation safely.
-class SavedSignInResetException implements Exception {
-  const SavedSignInResetException();
-
-  @override
-  String toString() => 'Could not reset saved sign-ins. Try again.';
-}
+part 'profiles/models.dart';
+part 'profiles/validation.dart';
+part 'profiles/preferences_types.dart';
+part 'profiles/phone_agent_owner.dart';
 
 class _ProfileStoreChanges extends ChangeNotifier {
   void changed() => notifyListeners();
@@ -710,9 +53,20 @@ class _ProfileStoreChanges extends ChangeNotifier {
 class ProfileStore {
   static const _profilesKey = 'oc.profiles';
   static const _activeKey = 'oc.activeProfile';
+
+  /// The origin the person confirmed for plain HTTP to a private network
+  /// address, per profile: `oc.cleartextOk.<profileId>`. Named by the
+  /// `oc.<what>.<profileId>` rule so the deletion sweep removes it.
+  static const cleartextConfirmedKeyPrefix = 'oc.cleartextOk.';
   static const _passwordKey = 'pw.';
+  static const byoHostSecretsKeyPrefix = 'oc.byoHostSecrets.';
   static const _codexTokenKey = 'oc.codexToken.';
   static const teamEngineAuthKey = 'oc.teamEngineAuth.';
+
+  /// Secure-storage slot (`oc.quotaToken.<profileId>`) for the read token of
+  /// the usage collector the app runs in In-app Ubuntu. Deleted with the
+  /// profile.
+  static const quotaTokenKeyPrefix = 'oc.quotaToken.';
   static const _modelKey = 'oc.model.'; // + profileId -> "providerID|modelID"
   static const _modelExplicitKey = 'oc.modelExplicit.'; // + profileId
   static const _agentKey = 'oc.agent.'; // + profileId
@@ -729,25 +83,39 @@ class ProfileStore {
   /// How many projects a server remembers. Enough to move between the ones
   /// in play this week; not a history.
   static const maxRecentLocations = 8;
-  static const _transcriptReasoningKey = 'oc.transcript.reasoningExpanded';
-  static const _transcriptTimestampsKey = 'oc.transcript.timestampsVisible';
-  static const _appearanceKey = 'oc.appearance';
-  static const _themePackKey = 'oc.themePack';
-  // App-wide (no profile id segment, so the deletion sweep never matches).
-  static const _effectsMotionKey = 'oc.effectsMotion';
-  static const _effectsCelebrationsKey = 'oc.effectsCelebrations';
   static const _providerRuntimeRefreshVersion = 'v1';
 
   final SharedPreferences prefs;
+
+  AppPreferencesStore get appPreferences =>
+      AppPreferencesStore.forPreferences(prefs);
   final FlutterSecureStorage secure;
+  final ByoHostSigner? byoHostSigner;
+  final Future<void> Function(String)? agentHostCleanup;
 
-  ProfileStore({required this.prefs, FlutterSecureStorage? secure})
-    : secure = secure ?? const FlutterSecureStorage();
+  ProfileStore({
+    required this.prefs,
+    FlutterSecureStorage? secure,
+    ByoHostSigner? byoHostSigner,
+    Future<void> Function(String)? agentHostCleanup,
+  }) : secure = secure ?? const FlutterSecureStorage(),
+       agentHostCleanup =
+           agentHostCleanup ??
+           (ChannelAgentHostCleanup.supported
+               ? ChannelAgentHostCleanup().call
+               : null),
+       byoHostSigner =
+           byoHostSigner ??
+           (AndroidByoHostSigner.supported ? AndroidByoHostSigner() : null);
 
-  List<ServerProfile> _cache = [];
+  static final _profileCaches = Expando<List<ServerProfile>>();
+  List<ServerProfile> get _cache => _profileCaches[prefs] ??= [];
+  set _cache(List<ServerProfile> value) => _profileCaches[prefs] = value;
   List<ServerProfile> get profiles => List.unmodifiable(_cache);
 
-  final _changes = _ProfileStoreChanges();
+  static final _changeOwners = Expando<_ProfileStoreChanges>();
+  _ProfileStoreChanges get _changes =>
+      _changeOwners[prefs] ??= _ProfileStoreChanges();
 
   /// Fires after a profile is saved. Profiles are also changed in place
   /// (phone setup renames the in-app one to "This phone" while the app is
@@ -779,7 +147,10 @@ class ProfileStore {
     bool ownsKey(String key) =>
         key.startsWith(_passwordKey) ||
         key.startsWith(_codexTokenKey) ||
-        key.startsWith(teamEngineAuthKey);
+        key.startsWith(teamEngineAuthKey) ||
+        key.startsWith(quotaTokenKeyPrefix) ||
+        key.startsWith(phoneAgentHostSecretPrefix) ||
+        key.startsWith(byoHostSecretsKeyPrefix);
     try {
       final secrets = await secure.readAll();
       final owned = <String>[
@@ -793,6 +164,14 @@ class ProfileStore {
       // refusal leaves all durable sign-ins available for another attempt.
       if (!await prefs.remove(_activeKey)) {
         throw const SavedSignInResetException();
+      }
+      await byoHostSigner?.deleteAllIdentities();
+      for (final key in owned.where(
+        (key) => key.startsWith(phoneAgentHostSecretPrefix),
+      )) {
+        await agentHostCleanup?.call(
+          key.substring(phoneAgentHostSecretPrefix.length),
+        );
       }
       for (final key in owned) {
         await secure.delete(key: key);
@@ -843,11 +222,53 @@ class ProfileStore {
     }
   }
 
+  /// What the retired liquid glass crash guard left on the device: its
+  /// strike counters. Nothing reads them any more.
+  static const retiredGlassPreferenceKeys = [
+    'oc.glassLiquidActive',
+    'oc.glassLiquidStrikes',
+    'oc.glassLiquidOffUntil',
+  ];
+
+  /// Drops [retiredGlassPreferenceKeys]. Runs on every load; a key the
+  /// store refuses to drop stays for the next load.
+  Future<void> _retireGlassPreferences() async {
+    for (final key in retiredGlassPreferenceKeys) {
+      if (!prefs.containsKey(key)) continue;
+      try {
+        await prefs.remove(key);
+      } catch (_) {}
+    }
+  }
+
+  /// Explicit one-shot launcher action: restore only its saved profile. Unlike
+  /// app bootstrap this performs no migrations, preference writes or hosting.
+  Future<ServerProfile?> loadForWidgetAction(String profileId) async {
+    await prefs.reload();
+    final raw = prefs.getString(_profilesKey);
+    if (raw == null) return null;
+    final values = jsonDecode(raw);
+    if (values is! List) return null;
+    final metadata = values
+        .whereType<Map>()
+        .where((p) => p['id'] == profileId)
+        .firstOrNull;
+    if (metadata == null) return null;
+    final profile = ServerProfile.fromJson(Map<String, dynamic>.from(metadata));
+    profile.cleartextConfirmedOrigin = prefs.getString(
+      '$cleartextConfirmedKeyPrefix$profileId',
+    );
+    await _restoreSecret(profile);
+    return profile;
+  }
+
   Future<List<ServerProfile>> load() async {
     await _retireQuotaBudgets();
+    await _retireGlassPreferences();
     final raw = prefs.getString(_profilesKey);
     if (raw == null) {
       _cache = [];
+      await appPreferences.readStateConsent.migrateExistingProfiles(const []);
       return _cache;
     }
     try {
@@ -859,6 +280,14 @@ class ProfileStore {
     } catch (_) {
       _cache = [];
     }
+    await appPreferences.readStateConsent.migrateExistingProfiles(
+      _cache.map((profile) => profile.id),
+    );
+    for (final p in _cache) {
+      p.cleartextConfirmedOrigin = prefs.getString(
+        '$cleartextConfirmedKeyPrefix${p.id}',
+      );
+    }
     // Independent Keystore reads can overlap. Bound the fan-out so many
     // saved servers do not flood the platform channel. Await every secret
     // (and its redaction registration) before bootstrap may expose the shell.
@@ -866,6 +295,7 @@ class ProfileStore {
     for (var start = 0; start < _cache.length; start += batchSize) {
       await Future.wait(_cache.skip(start).take(batchSize).map(_restoreSecret));
     }
+    await _migratePhoneAgentOwners();
     return _cache;
   }
 
@@ -923,6 +353,22 @@ class ProfileStore {
   }
 
   Future<void> upsert(ServerProfile profile) async {
+    final oldIds = <String>[];
+    try {
+      final raw = prefs.getString(_profilesKey);
+      final saved = raw == null ? null : jsonDecode(raw);
+      if (saved is List) {
+        for (final value in saved) {
+          if (value is Map && value['id'] is String) {
+            oldIds.add(value['id'] as String);
+          }
+        }
+      }
+    } catch (_) {}
+    await appPreferences.readStateConsent.migrateExistingProfiles(oldIds);
+    if (profile.transientTransport) {
+      throw const ByoHostFailure(ByoHostFailureCode.storage);
+    }
     // Register before persistence: a failing keyring may echo its input.
     KitRedact.registerKnownSecret(profile.password);
     KitRedact.registerKnownSecret(profile.codexToken);
@@ -937,6 +383,12 @@ class ProfileStore {
     }
     if (!await prefs.setString(_profilesKey, _encode(next))) {
       throw StateError('Could not save the server profile');
+    }
+    // The same id added again after a finished removal (the built-in
+    // server's fixed id): a new server, readable again. The removed visit
+    // stays retired; only this new one may read.
+    if (i < 0 && appPreferences.readStateConsent.isClosed(profile.id)) {
+      appPreferences.readStateConsent.reopenProfile(profile.id);
     }
     var teamEngineAuth = profile.teamEngineAuth;
     try {
@@ -979,10 +431,12 @@ class ProfileStore {
       }
       rethrow;
     }
+    await _syncCleartextConfirmation(profile);
     profile.requiresPasswordReentry = false;
     profile.requiresCodexTokenReentry = false;
     profile.teamEngineAuth = teamEngineAuth;
     _cache = next;
+    await _migratePhoneAgentOwners();
     _changes.changed();
   }
 
@@ -993,6 +447,32 @@ class ProfileStore {
       if (profile.id == profileId) profile.teamEngineAuth = '';
     }
     _changes.changed();
+  }
+
+  /// Records (or clears) the cleartext confirmation that goes with a saved
+  /// profile. A confirmation only stands for the exact origin it was given
+  /// for; a profile moved to another address, or to HTTPS, loses it. A
+  /// profile that carries none keeps what is stored, so an editor that
+  /// rebuilds the profile cannot erase a confirmation by accident.
+  Future<void> _syncCleartextConfirmation(ServerProfile profile) async {
+    final key = '$cleartextConfirmedKeyPrefix${profile.id}';
+    final origin = cleartextOriginOf(profile.baseUrl);
+    final needs =
+        !profile.usesAgentSocket &&
+        serverUrlNeedsCleartextConfirmation(profile.baseUrl);
+    final wanted = profile.cleartextConfirmedOrigin ?? prefs.getString(key);
+    if (!needs || wanted != origin) {
+      if (prefs.containsKey(key) && !await prefs.remove(key)) {
+        throw StateError('Could not save the server profile');
+      }
+      profile.cleartextConfirmedOrigin = null;
+      return;
+    }
+    if (prefs.getString(key) != wanted &&
+        !await prefs.setString(key, wanted!)) {
+      throw StateError('Could not save the server profile');
+    }
+    profile.cleartextConfirmedOrigin = wanted;
   }
 
   /// flutter_secure_storage reports a missing or locked keyring as a
@@ -1056,6 +536,13 @@ class ProfileStore {
     Set<String> excluding = const {},
   }) async {
     if (profileId.isEmpty) return const {};
+    await appPreferences.readStateConsent.closeProfile(profileId);
+    await _sessionAgentWrites[prefs]?[profileId];
+    _sessionAgentValues[prefs]?.remove(profileId);
+    await _selectionWrites[prefs];
+    _selectionValues[prefs]?.removeWhere(
+      (key, _) => key.endsWith('.$profileId'),
+    );
     // This method already runs inside the controller's deletion transaction.
     // Drain before key discovery so a late platform write cannot resurrect data.
     final defaultsDrain = InteractionDefaultsStore.closeProfile(
@@ -1063,12 +550,21 @@ class ProfileStore {
       profileId,
     );
     final auditDrain = SetupAuditStore.closeProfile(prefs, profileId);
+    final commandsDrain = PendingCommandJournal.closeProfile(prefs, profileId);
     await Future.wait([
+      commandsDrain,
       defaultsDrain,
       auditDrain,
       SessionLinkBindings.closeProfile(prefs, profileId),
+      ContextUsageMemory.closeProfile(prefs, profileId),
+      PhraseChipStore.closeProfile(prefs, profileId),
     ]);
     final failed = <String>{};
+    try {
+      await AgentHandoffLinks.removeProfile(prefs, profileId);
+    } catch (_) {
+      failed.add(AgentHandoffLinks.keyFor(profileId));
+    }
     for (final key in profileScopedPreferenceKeys(profileId)) {
       if (excluding.contains(key)) continue;
       try {
@@ -1095,10 +591,23 @@ class ProfileStore {
   /// the home-screen widget snapshot live in shared blobs; the full cascade
   /// is [ConnectionController.deleteProfileAndLocalData].
   Future<void> remove(String id) async {
+    await appPreferences.readStateConsent.closeProfile(id);
+    // Cross-profile navigation references must be gone while profile removal
+    // can still be aborted. The controller normally did this in its sweep.
+    try {
+      await AgentHandoffLinks.removeProfile(prefs, id);
+    } catch (_) {
+      await AgentHandoffLinks.cancelDeletion(prefs, id);
+      rethrow;
+    }
+    final agentOwner = phoneAgentOwnerId(id);
+    final retainAgents = phoneAgentOwnerRetainedAfterRemoving(id);
+    final retainedAgentKeys = retainedPhoneAgentPreferenceKeys(id);
     final previousRaw = prefs.getString(_profilesKey);
     final previousActive = prefs.getString(_activeKey);
     final next = _cache.where((profile) => profile.id != id).toList();
     if (!await prefs.setString(_profilesKey, _encode(next))) {
+      await AgentHandoffLinks.cancelDeletion(prefs, id);
       throw StateError('Could not remove the server profile');
     }
     ServerProfile? removedProfile;
@@ -1113,10 +622,51 @@ class ProfileStore {
         : '$_passwordKey$id';
     try {
       if (previousActive == id) await setActiveId(null);
+      // Secure slots are not covered by the scoped preference sweep. Delete
+      // BYO identity first; refusal keeps its metadata available for retry.
+      // Only a server adopted over SSH has that slot; other servers keep the
+      // deletion order they always had. A storage failure keeps its own type
+      // (the outer catch maps keyring failures) instead of being renamed.
+      final byoKey = '$byoHostSecretsKeyPrefix$id';
+      // The phone's SSH identity lives in Android's keystore; deleting it is
+      // safe when there is none, and also clears orphan aliases. Its own
+      // failure is a BYO host failure.
+      try {
+        if (byoHostSafeId(id)) await byoHostSigner?.deleteIdentity(id);
+      } catch (_) {
+        throw const ByoHostFailure(ByoHostFailureCode.storage);
+      }
+      if (await secure.read(key: byoKey) != null) {
+        await secure.delete(key: byoKey);
+        if (await secure.read(key: byoKey) != null) {
+          throw const ByoHostFailure(ByoHostFailureCode.storage);
+        }
+      }
+      final agentKey = '$phoneAgentHostSecretPrefix$agentOwner';
+      final agentSecret = await secure.read(key: agentKey);
+      if (!retainAgents &&
+          (agentSecret != null ||
+              prefs.containsKey('$phoneAgentInstallPrefix$agentOwner') ||
+              prefs.containsKey('$phoneAgentGatePrefix$agentOwner'))) {
+        await agentHostCleanup?.call(agentOwner);
+      }
+      if (!retainAgents && agentSecret != null) {
+        await secure.delete(key: agentKey);
+        if (await secure.read(key: agentKey) != null) {
+          throw const AgentHostException(AgentHostFailure.storage);
+        }
+      }
       await secure.delete(key: secretKey);
       await secure.delete(key: '$teamEngineAuthKey$id');
+      // FactsBook's token, owner key and unsent notes are secure slots too;
+      // its pairing record is a scoped preference swept below.
+      for (final key in FactsBookStore.secureKeys(id)) {
+        await secure.delete(key: key);
+      }
+      await secure.delete(key: '$quotaTokenKeyPrefix$id');
     } catch (error) {
       await _restoreProfiles(previousRaw);
+      await AgentHandoffLinks.cancelDeletion(prefs, id);
       if (previousActive == id &&
           !await prefs.setString(_activeKey, previousActive!)) {
         throw StateError('Could not restore the active server profile');
@@ -1130,7 +680,15 @@ class ProfileStore {
       rethrow;
     }
     _cache = next;
-    await removeScopedPreferences(id);
+    _changes.changed();
+    await removeScopedPreferences(id, excluding: retainedAgentKeys);
+    if (!retainAgents && agentOwner != id) {
+      for (final key in _phoneAgentPreferenceKeys(agentOwner)) {
+        if (!await prefs.remove(key)) {
+          throw const AgentHostException(AgentHostFailure.storage);
+        }
+      }
+    }
   }
 
   String? get activeId => prefs.getString(_activeKey);
@@ -1381,15 +939,104 @@ class ProfileStore {
     if (!saved) throw StateError('Could not save model shortcuts');
   }
 
+  static final _selectionValues = Expando<Map<String, Object?>>();
+  static final _selectionWrites = Expando<Future<void>>();
+
+  /// Acknowledged local selection metadata for the read-only Settings facade.
+  Object? confirmedSelectionPreference(String key) {
+    if (![
+      _modelKey,
+      _agentKey,
+      _variantKey,
+      _modelExplicitKey,
+    ].any(key.startsWith)) {
+      throw const SettingsFailure(SettingsFailureReason.invalidValue);
+    }
+    return _selectionValue(key);
+  }
+
+  Object? _selectionValue(String key) =>
+      (_selectionValues[prefs] ??= {}).putIfAbsent(key, () => prefs.get(key));
+
+  Future<void> _writeSelection(Map<String, Object?> values) {
+    // Snapshot before the plugin can mutate its optimistic cache.
+    for (final key in values.keys) {
+      _selectionValue(key);
+    }
+    final ids = values.keys
+        .map((key) => key.substring(key.indexOf('.', 3) + 1))
+        .toSet();
+    bool closed() => ids.any(appPreferences.readStateConsent.isClosed);
+    if (closed()) {
+      return Future.error(
+        const SettingsFailure(SettingsFailureReason.staleTarget),
+      );
+    }
+    final result = (_selectionWrites[prefs] ?? Future<void>.value()).then((
+      _,
+    ) async {
+      if (closed()) {
+        throw const SettingsFailure(SettingsFailureReason.staleTarget);
+      }
+      final before = {for (final key in values.keys) key: _selectionValue(key)};
+      final attempted = <String>[];
+      Future<void> put(String key, Object? value) async {
+        final accepted = value == null
+            ? await prefs.remove(key)
+            : value is bool
+            ? await prefs.setBool(key, value)
+            : await prefs.setString(key, value as String);
+        if (!accepted) {
+          throw const SettingsFailure(SettingsFailureReason.storageFailed);
+        }
+      }
+
+      try {
+        for (final entry in values.entries) {
+          attempted.add(entry.key);
+          await put(entry.key, entry.value);
+        }
+        if (closed()) {
+          throw const SettingsFailure(SettingsFailureReason.staleTarget);
+        }
+        (_selectionValues[prefs] ??= {}).addAll(values);
+        _changes.changed();
+      } catch (error) {
+        for (final key in attempted.reversed) {
+          try {
+            await put(key, before[key]);
+          } catch (_) {}
+        }
+        try {
+          await prefs.reload();
+          for (final key in values.keys) {
+            (_selectionValues[prefs] ??= {})[key] = prefs.get(key);
+          }
+          _changes.changed();
+        } catch (_) {}
+        if (error is SettingsFailure &&
+            error.reason == SettingsFailureReason.staleTarget) {
+          rethrow;
+        }
+        throw const SettingsFailure(SettingsFailureReason.storageFailed);
+      }
+    });
+    _selectionWrites[prefs] = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return result;
+  }
+
   (String?, String?) modelFor(String profileId) {
-    final v = prefs.getString('$_modelKey$profileId');
+    final v = _selectionValue('$_modelKey$profileId') as String?;
     if (v == null || !v.contains('|')) return (null, null);
     final parts = v.split('|');
     return (parts[0], parts[1]);
   }
 
   bool modelWasExplicitlySelected(String profileId) =>
-      prefs.getBool('$_modelExplicitKey$profileId') ?? false;
+      _selectionValue('$_modelExplicitKey$profileId') as bool? ?? false;
 
   Future<void> setModel(
     String profileId,
@@ -1397,25 +1044,27 @@ class ProfileStore {
     String modelID, {
     bool explicit = false,
   }) async {
-    await prefs.setString('$_modelKey$profileId', '$providerID|$modelID');
-    await prefs.setBool('$_modelExplicitKey$profileId', explicit);
+    await _writeSelection({
+      '$_modelKey$profileId': '$providerID|$modelID',
+      '$_modelExplicitKey$profileId': explicit,
+    });
   }
 
   Future<void> clearModel(String profileId) async {
-    await prefs.remove('$_modelKey$profileId');
-    await prefs.remove('$_modelExplicitKey$profileId');
-    await prefs.remove('$_variantKey$profileId');
+    await _writeSelection({
+      '$_modelKey$profileId': null,
+      '$_modelExplicitKey$profileId': null,
+      '$_variantKey$profileId': null,
+    });
   }
 
   String variantFor(String profileId) =>
-      prefs.getString('$_variantKey$profileId') ?? '';
+      _selectionValue('$_variantKey$profileId') as String? ?? '';
 
   Future<void> setVariant(String profileId, String variant) async {
-    if (variant.isEmpty) {
-      await prefs.remove('$_variantKey$profileId');
-    } else {
-      await prefs.setString('$_variantKey$profileId', variant);
-    }
+    await _writeSelection({
+      '$_variantKey$profileId': variant.isEmpty ? null : variant,
+    });
   }
 
   /// Per-session model choices for [profileId]; malformed entries are
@@ -1468,123 +1117,117 @@ class ProfileStore {
     await prefs.setString('$_sessionModelsKey$profileId', jsonEncode(encoded));
   }
 
+  static final _sessionAgentWrites = Expando<Map<String, Future<void>>>();
+  static final _sessionAgentValues =
+      Expando<Map<String, Map<String, String>>>();
+
+  Map<String, String> sessionAgentsFor(String profileId) {
+    final values = _sessionAgentValues[prefs] ??= {};
+    return Map.of(
+      values.putIfAbsent(profileId, () => _readSessionAgents(profileId)),
+    );
+  }
+
+  Map<String, String> _readSessionAgents(String profileId) {
+    try {
+      final raw = prefs.getString('oc.sessionAgents.$profileId');
+      final decoded = raw == null ? null : jsonDecode(raw);
+      if (decoded is! Map) return {};
+      return {
+        for (final entry
+            in decoded.entries.toList().reversed.take(200).toList().reversed)
+          if (entry.key is String && entry.value is String)
+            entry.key as String: entry.value as String,
+      };
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> _changeSessionAgents(
+    String profileId,
+    Map<String, String> Function(Map<String, String>) update,
+  ) {
+    final queue = _sessionAgentWrites[prefs] ??= {};
+    final result = (queue[profileId] ?? Future<void>.value()).then((_) async {
+      if (appPreferences.readStateConsent.isClosed(profileId)) {
+        throw const SettingsFailure(SettingsFailureReason.staleTarget);
+      }
+      final choices = update(sessionAgentsFor(profileId));
+      final entries = choices.entries.toList();
+      final kept = entries.skip(
+        entries.length > 200 ? entries.length - 200 : 0,
+      );
+      final encoded = {for (final e in kept) e.key: e.value};
+      try {
+        final key = 'oc.sessionAgents.$profileId';
+        final saved = encoded.isEmpty
+            ? await prefs.remove(key)
+            : await prefs.setString(key, jsonEncode(encoded));
+        if (!saved) {
+          throw const SettingsFailure(SettingsFailureReason.storageFailed);
+        }
+        if (appPreferences.readStateConsent.isClosed(profileId)) {
+          throw const SettingsFailure(SettingsFailureReason.staleTarget);
+        }
+        (_sessionAgentValues[prefs] ??= {})[profileId] = encoded;
+      } catch (error) {
+        try {
+          await prefs.reload();
+        } catch (_) {}
+        if (error is SettingsFailure &&
+            error.reason == SettingsFailureReason.staleTarget) {
+          rethrow;
+        }
+        throw const SettingsFailure(SettingsFailureReason.storageFailed);
+      }
+    });
+    queue[profileId] = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return result;
+  }
+
+  Future<void> setSessionAgents(String profileId, Map<String, String> choices) {
+    final snapshot = Map<String, String>.of(choices);
+    return _changeSessionAgents(profileId, (_) => snapshot);
+  }
+
+  Future<void> setSessionAgent(
+    String profileId,
+    String sessionId,
+    String? agent,
+  ) => _changeSessionAgents(profileId, (choices) {
+    choices.remove(sessionId);
+    if (agent != null) choices[sessionId] = agent;
+    return choices;
+  });
+
   String agentFor(String profileId) =>
-      prefs.getString('$_agentKey$profileId') ?? '';
+      _selectionValue('$_agentKey$profileId') as String? ?? '';
 
   Future<void> setAgent(String profileId, String agent) =>
-      prefs.setString('$_agentKey$profileId', agent);
+      _writeSelection({'$_agentKey$profileId': agent});
 
-  // ----- app-wide transcript display -----
-
+  // One shared owner publishes acknowledged device preferences to every controller.
   bool get transcriptReasoningExpanded =>
-      prefs.getBool(_transcriptReasoningKey) ?? false;
-
+      appPreferences.value.reasoningExpanded;
   bool get transcriptTimestampsVisible =>
-      prefs.getBool(_transcriptTimestampsKey) ?? false;
-
-  Future<void> setTranscriptReasoningExpanded(bool expanded) async {
-    if (!await prefs.setBool(_transcriptReasoningKey, expanded)) {
-      throw StateError('Could not save the reasoning display preference');
-    }
-  }
-
-  Future<void> setTranscriptTimestampsVisible(bool visible) async {
-    if (!await prefs.setBool(_transcriptTimestampsKey, visible)) {
-      throw StateError('Could not save the timestamp display preference');
-    }
-  }
-
-  AppAppearance get appearance => switch (prefs.getString(_appearanceKey)) {
-    'system' => AppAppearance.system,
-    'light' => AppAppearance.light,
-    _ => AppAppearance.dark,
-  };
-
-  ThemePackId get themePack {
-    final raw = prefs.getString(_themePackKey);
-    for (final pack in ThemePackId.values) {
-      if (pack.name == raw) return pack;
-    }
-    return ThemePackId.opencode;
-  }
-
-  Future<void> setThemePack(ThemePackId pack) => _saveDisplayPreference(
-    _themePackKey,
-    pack.name,
-    'Could not save the theme preference',
-  );
-
-  Future<void> setAppearance(AppAppearance appearance) =>
-      _saveDisplayPreference(
-        _appearanceKey,
-        appearance.name,
-        'Could not save the appearance preference',
-      );
-
-  /// Settings › Appearance › Motion: one choice. Full plays animations and
-  /// celebrations, Calm is reduced with no celebrations, Off is none. Glass
-  /// and vibration are fixed parts of the design ([KitEffects.defaults]).
-  /// Older installs stored animations and celebrations separately; those
-  /// keys are read here and folded into the one choice (Full with
-  /// celebrations switched off reads as Calm). Unknown values read as Full.
-  KitEffects get effects {
-    final stored = prefs.getString(_effectsMotionKey);
-    var level = KitMotionLevel.values.firstWhere(
-      (level) => level.name == stored,
-      orElse: () => KitMotionLevel.full,
-    );
-    bool? celebrations;
-    try {
-      celebrations = prefs.getBool(_effectsCelebrationsKey);
-    } catch (_) {
-      celebrations = null;
-    }
-    if (level == KitMotionLevel.full && celebrations == false) {
-      level = KitMotionLevel.calm;
-    }
-    return KitEffects(
-      motion: level,
-      celebrations: level == KitMotionLevel.full,
-    );
-  }
-
-  Future<void> setEffects(KitEffects effects) async {
-    const error = 'Could not save the effects preference';
-    final before = this.effects;
-    if (effects.motion != before.motion) {
-      await _saveDisplayPreference(
-        _effectsMotionKey,
-        effects.motion.name,
-        error,
-      );
-    }
-    // The old separate celebrations key would otherwise turn a saved Full
-    // into Calm on the next start.
-    if (effects.motion == KitMotionLevel.full &&
-        prefs.containsKey(_effectsCelebrationsKey)) {
-      try {
-        await prefs.remove(_effectsCelebrationsKey);
-      } catch (_) {}
-    }
-  }
-
-  Future<void> _saveDisplayPreference(
-    String key,
-    String value,
-    String error,
-  ) async {
-    try {
-      if (!await prefs.setString(key, value)) throw StateError(error);
-    } catch (_) {
-      // SharedPreferences writes its cache before the platform acknowledges.
-      // Reload so a refused preview save cannot become the next controller's
-      // apparent saved appearance, while preserving the original failure.
-      try {
-        await prefs.reload();
-      } catch (_) {
-        // The live controller still keeps the last acknowledged selection.
-      }
-      rethrow;
-    }
-  }
+      appPreferences.value.timestampsVisible;
+  Future<void> setTranscriptReasoningExpanded(bool value) =>
+      appPreferences.setReasoningExpanded(value);
+  Future<void> setTranscriptTimestampsVisible(bool value) =>
+      appPreferences.setTimestampsVisible(value);
+  AppAppearance get appearance => appPreferences.value.appearance;
+  ThemePackId get themePack => appPreferences.value.themePack;
+  KitEffects get effects => appPreferences.value.effects;
+  KitTextSize get textSize => appPreferences.value.textSize;
+  Future<void> setTextSize(KitTextSize value) =>
+      appPreferences.setTextSize(value);
+  Future<void> setAppearance(AppAppearance value) =>
+      appPreferences.setAppearance(value);
+  Future<void> setThemePack(ThemePackId value) =>
+      appPreferences.setThemePack(value);
+  Future<void> setEffects(KitEffects value) => appPreferences.setEffects(value);
 }

@@ -1,0 +1,1052 @@
+{
+  "area": "memory",
+  "pages": [
+    {
+      "id": "factsbook-about-you",
+      "title": "About you",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/about_you_screen.dart",
+      "widget": "FactsBookAboutYouScreen",
+      "presentedBy": [],
+      "line": 23,
+      "purpose": "FactsBook's full place behind the developer flag: search, the tabs Map, List, Watching and Needs you, the overflow menu (Reminders, Memory care, Areas, Status) and Add something. Reads the FactsBook gateway only.",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-about-search",
+          "type": "text-field",
+          "label": "Search what FactsBook knows",
+          "key": "factsbook-search-field",
+          "file": "lib/ui/screens/factsbook/about_you_screen.dart",
+          "line": 126,
+          "action": "navigate",
+          "target": "factsbook-search",
+          "targetWidget": null,
+          "effect": "Submitting opens the search results.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-about-thing-row",
+          "type": "list-tile",
+          "label": "<thing> · <kind> · <source and date>",
+          "key": "factsbook-thing-<id>",
+          "file": "lib/ui/screens/factsbook/about_you_screen.dart",
+          "line": 334,
+          "action": "navigate",
+          "target": "factsbook-thing",
+          "targetWidget": null,
+          "effect": "Opens the thing page.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-about-reminders",
+          "type": "menu-item",
+          "label": "Reminders",
+          "key": null,
+          "file": "lib/ui/screens/factsbook/about_you_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-reminders",
+          "targetWidget": null,
+          "effect": "Opens Reminders.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-about-care",
+          "type": "menu-item",
+          "label": "Memory care",
+          "key": null,
+          "file": "lib/ui/screens/factsbook/about_you_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-memory-care",
+          "targetWidget": null,
+          "effect": "Opens Memory care.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-about-areas",
+          "type": "menu-item",
+          "label": "Areas and sharing",
+          "key": null,
+          "file": "lib/ui/screens/factsbook/about_you_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-areas",
+          "targetWidget": null,
+          "effect": "Opens Areas and sharing.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-about-status",
+          "type": "menu-item",
+          "label": "Status",
+          "key": null,
+          "file": "lib/ui/screens/factsbook/about_you_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-status",
+          "targetWidget": null,
+          "effect": "Opens Status.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-about-add",
+          "type": "button",
+          "label": "Add something",
+          "key": "factsbook-about-add",
+          "file": "lib/ui/screens/factsbook/about_you_screen.dart",
+          "line": 170,
+          "action": "navigate",
+          "target": "factsbook-capture",
+          "targetWidget": null,
+          "effect": "Opens Add something.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-about-settings",
+          "type": "menu-item",
+          "label": "FactsBook settings",
+          "key": null,
+          "file": "lib/ui/screens/factsbook/about_you_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-settings",
+          "targetWidget": null,
+          "effect": "Opens FactsBook settings.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-about-triggers",
+          "type": "menu-item",
+          "label": "Triggers",
+          "key": null,
+          "file": "lib/ui/screens/factsbook/about_you_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-triggers",
+          "targetWidget": null,
+          "effect": "Opens Triggers where the node supports them.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "factsbook-search",
+      "title": "Search results",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/search_screen.dart",
+      "widget": "FactsBookSearchScreen",
+      "presentedBy": [],
+      "line": 17,
+      "purpose": "Text-match search over FactsBook; every hit shows its source and date.",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-search-hit",
+          "type": "card",
+          "label": "<thing> · <text> · <source and date>",
+          "key": "factsbook-hit-<id>",
+          "file": "lib/ui/screens/factsbook/search_screen.dart",
+          "line": 135,
+          "action": "navigate",
+          "target": "factsbook-thing",
+          "targetWidget": null,
+          "effect": "Opens the thing the hit belongs to.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "factsbook-thing",
+      "title": "Thing page",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/thing_screen.dart",
+      "widget": "FactsBookThingScreen",
+      "presentedBy": [],
+      "line": 17,
+      "purpose": "One thing with all its facts, each with provenance, source and date; a note says where waiting guesses are decided.",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": []
+    },
+    {
+      "id": "factsbook-capture",
+      "title": "Add something",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/capture_screen.dart",
+      "widget": "FactsBookCaptureScreen",
+      "presentedBy": [],
+      "line": 22,
+      "purpose": "Write or paste a note; save it, or save it with a reminder after checking the date, time, zone and language. A save that cannot reach the node is kept on the phone (the outbox) and lands in Not saved yet.",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-capture-save",
+          "type": "button",
+          "label": "Save",
+          "key": "factsbook-capture-save",
+          "file": "lib/ui/screens/factsbook/capture_screen.dart",
+          "line": 223,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Saves the note, or keeps it on the phone or at the node.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-capture-remind",
+          "type": "button",
+          "label": "Remind me about it",
+          "key": "factsbook-capture-remind",
+          "file": "lib/ui/screens/factsbook/capture_screen.dart",
+          "line": 232,
+          "action": "open-sheet",
+          "target": "factsbook-reminder-check",
+          "targetWidget": null,
+          "effect": "Opens the reminder check.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-capture-see-kept",
+          "type": "button",
+          "label": "See Not saved yet",
+          "key": "factsbook-capture-see-kept",
+          "file": "lib/ui/screens/factsbook/capture_screen.dart",
+          "line": 201,
+          "action": "navigate",
+          "target": "factsbook-not-saved",
+          "targetWidget": null,
+          "effect": "Opens Not saved yet.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "factsbook-reminder-check",
+      "title": "Check this reminder",
+      "kind": "sheet",
+      "file": "lib/ui/screens/factsbook/reminder_check_sheet.dart",
+      "widget": "_ReminderBody",
+      "presentedBy": [],
+      "line": 154,
+      "purpose": "The reminder as it will be read: date, time, time zone and language of dates, all editable; Save asks the node to read exactly these and shows any adjustment first (D27).",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-reminder-save",
+          "type": "button",
+          "label": "Save reminder",
+          "key": "factsbook-reminder-save",
+          "file": "lib/ui/screens/factsbook/reminder_check_sheet.dart",
+          "line": 44,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Has the node read the values, then saves the reminder.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-reminder-change",
+          "type": "button",
+          "label": "Change what I wrote",
+          "key": "factsbook-reminder-change",
+          "file": "lib/ui/screens/factsbook/reminder_check_sheet.dart",
+          "line": 69,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Closes the sheet; nothing is saved.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "factsbook-not-saved",
+      "title": "Not saved yet",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/not_saved_screen.dart",
+      "widget": "FactsBookNotSavedScreen",
+      "presentedBy": [],
+      "line": 20,
+      "purpose": "Captures that could not be saved, held by the node or by this phone, until discarded; Try now or Retry, Copy or Export, Discard; a 30-day question.",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-notsaved-retry",
+          "type": "button",
+          "label": "Try now | Retry",
+          "key": "factsbook-retry-<id>",
+          "file": "lib/ui/screens/factsbook/not_saved_screen.dart",
+          "line": 252,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Tries to save the item again.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-notsaved-copy",
+          "type": "button",
+          "label": "Copy text | Export",
+          "key": "factsbook-copy-<id>",
+          "file": "lib/ui/screens/factsbook/not_saved_screen.dart",
+          "line": 261,
+          "action": "copy",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Copies the item's text (a phone note only).",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-notsaved-discard",
+          "type": "button",
+          "label": "Discard",
+          "key": "factsbook-discard-<id>",
+          "file": "lib/ui/screens/factsbook/not_saved_screen.dart",
+          "line": 77,
+          "action": "open-dialog",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Asks, then removes the item.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "factsbook-notsaved-export",
+          "type": "button",
+          "label": "Export",
+          "key": "factsbook-export-<id>",
+          "file": "lib/ui/screens/factsbook/not_saved_screen.dart",
+          "line": 1,
+          "action": "open-sheet",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Shows the node's encrypted export of a held note, to copy.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "factsbook-memory-care",
+      "title": "Memory care",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/memory_care_screen.dart",
+      "widget": "FactsBookMemoryCareScreen",
+      "presentedBy": [],
+      "line": 19,
+      "purpose": "Proposals waiting for the person, each with Approve, Edit, Reject and Skip, signed by this phone's owner key; a changed proposal fails as stale (D23).",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-care-approve",
+          "type": "button",
+          "label": "Approve",
+          "key": "factsbook-care-approve-<id>",
+          "file": "lib/ui/screens/factsbook/memory_care_screen.dart",
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Approves exactly the proposal shown.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-care-edit",
+          "type": "button",
+          "label": "Edit",
+          "key": "factsbook-care-edit-<id>",
+          "file": "lib/ui/screens/factsbook/memory_care_screen.dart",
+          "line": 79,
+          "action": "open-sheet",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Edit the text, then approve it.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-care-reject",
+          "type": "button",
+          "label": "Reject",
+          "key": "factsbook-care-reject-<id>",
+          "file": "lib/ui/screens/factsbook/memory_care_screen.dart",
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Rejects it; it is not proposed again.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "factsbook-care-skip",
+          "type": "button",
+          "label": "Skip",
+          "key": "factsbook-care-skip-<id>",
+          "file": "lib/ui/screens/factsbook/memory_care_screen.dart",
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Leaves it for later.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-care-setup",
+          "type": "button",
+          "label": "Set up approval",
+          "key": "",
+          "file": "lib/ui/screens/factsbook/memory_care_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-connect",
+          "targetWidget": null,
+          "effect": "Opens setup for approval.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-care-why",
+          "type": "button",
+          "label": "Why this fired",
+          "key": "factsbook-care-why-<id>",
+          "file": "lib/ui/screens/factsbook/memory_care_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-event",
+          "targetWidget": null,
+          "effect": "Opens Why this fired for the card made by a rule.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "factsbook-reminders",
+      "title": "Reminders",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/reminders_screen.dart",
+      "widget": "FactsBookRemindersScreen",
+      "presentedBy": [],
+      "line": 19,
+      "purpose": "The reminders list: Active, Paused and Done, pause or resume each, edit a one-time reminder through the reminder check.",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-reminders-add",
+          "type": "list-tile",
+          "label": "Add a reminder",
+          "key": "factsbook-reminders-add",
+          "file": "lib/ui/screens/factsbook/reminders_screen.dart",
+          "line": 1,
+          "action": "open-sheet",
+          "target": "factsbook-reminder-check",
+          "targetWidget": null,
+          "effect": "Opens the reminder check with a title field.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-reminders-edit",
+          "type": "list-tile",
+          "label": "<reminder> · <when>",
+          "key": "factsbook-reminder-<id>",
+          "file": "lib/ui/screens/factsbook/reminders_screen.dart",
+          "line": 220,
+          "action": "open-sheet",
+          "target": "factsbook-reminder-check",
+          "targetWidget": null,
+          "effect": "Opens the reminder check for this reminder.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-reminders-pause",
+          "type": "icon-button",
+          "label": "Pause | Resume",
+          "key": "factsbook-reminder-pause-<id>",
+          "file": "lib/ui/screens/factsbook/reminders_screen.dart",
+          "line": 233,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pauses or resumes the reminder.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "factsbook-areas",
+      "title": "Areas and sharing",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/areas_screen.dart",
+      "widget": "FactsBookAreasScreen",
+      "presentedBy": [],
+      "line": 19,
+      "purpose": "The built-in areas and whether other apps and agents may read each; a locked-folder area asks first. No call exists to make a new area.",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-areas-share",
+          "type": "toggle",
+          "label": "Other apps and agents can read it",
+          "key": "factsbook-area-share-<slug>",
+          "file": "lib/ui/screens/factsbook/areas_screen.dart",
+          "line": 169,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Changes who else may read the area, signed by the owner key.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "factsbook-status",
+      "title": "Status",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/status_screen.dart",
+      "widget": "FactsBookStatusScreen",
+      "presentedBy": [],
+      "line": 20,
+      "purpose": "One row per module with its canonical state as a word; no claim of a backup without one; disconnect names its effect.",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-status-approve",
+          "type": "list-tile",
+          "label": "Approve changes from this phone",
+          "key": "factsbook-status-approve",
+          "file": "lib/ui/screens/factsbook/status_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-connect",
+          "targetWidget": null,
+          "effect": "Opens setup for approval.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-status-disconnect",
+          "type": "list-tile",
+          "label": "Disconnect this node",
+          "key": "factsbook-status-disconnect",
+          "file": "lib/ui/screens/factsbook/status_screen.dart",
+          "line": 172,
+          "action": "open-dialog",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Asks, then forgets the pairing, token and approval key on this phone.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "factsbook-connect",
+      "title": "Set up FactsBook",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/connect_screen.dart",
+      "widget": "FactsBookConnectScreen",
+      "presentedBy": [],
+      "line": 20,
+      "purpose": "Pair with a node: its private-network address and the one-time code become a token in secure storage; optionally this phone's approval key and owner device id.",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-connect-button",
+          "type": "button",
+          "label": "Connect",
+          "key": "factsbook-connect-button",
+          "file": "lib/ui/screens/factsbook/connect_screen.dart",
+          "line": 171,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pairs, stores the token, and returns.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "factsbook-settings",
+      "title": "FactsBook settings",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/settings_screen.dart",
+      "widget": "FactsBookSettingsScreen",
+      "presentedBy": [],
+      "line": 19,
+      "purpose": "What the node lets a client see and change: the daily brief cap (signed with the owner key), the brief time and quiet hours, the locked folder's open time, the home zone and spending limit (shown), and a way into area sharing.",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-settings-cap",
+          "type": "dropdown",
+          "label": "Items a day",
+          "key": "factsbook-settings-cap",
+          "file": "lib/ui/screens/factsbook/settings_screen.dart",
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Changes the daily brief cap after device authentication.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-settings-areas",
+          "type": "list-tile",
+          "label": "Areas and sharing",
+          "key": "factsbook-settings-areas",
+          "file": "lib/ui/screens/factsbook/settings_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-areas",
+          "targetWidget": null,
+          "effect": "Opens Areas and sharing.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-settings-triggers",
+          "type": "list-tile",
+          "label": "Triggers",
+          "key": "factsbook-settings-triggers",
+          "file": "lib/ui/screens/factsbook/settings_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-triggers",
+          "targetWidget": null,
+          "effect": "Opens Triggers where the node supports them.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "factsbook-triggers",
+      "title": "Triggers",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/triggers_screen.dart",
+      "widget": "FactsBookTriggersScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Rules that watch for one kind of message and only suggest, grouped by source with this week's counts and a pause on each; the messages they looked at; offers waiting; the way to a new rule. Shown only where the node lists the local trigger capability (spec 44).",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-triggers-rule",
+          "type": "list-tile",
+          "label": "<rule> · looks for <kind> · this week",
+          "key": "factsbook-rule-<id>",
+          "file": "lib/ui/screens/factsbook/triggers_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-rule-editor",
+          "targetWidget": null,
+          "effect": "Opens the rule editor.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-triggers-pause",
+          "type": "icon-button",
+          "label": "Pause <rule> / Resume <rule>",
+          "key": "factsbook-rule-pause-<id>",
+          "file": "lib/ui/screens/factsbook/triggers_screen.dart",
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pauses or resumes the rule, signed with the owner key.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-triggers-event",
+          "type": "list-tile",
+          "label": "<source> · <time> · what happened",
+          "key": "factsbook-event-<id>",
+          "file": "lib/ui/screens/factsbook/triggers_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-event",
+          "targetWidget": null,
+          "effect": "Opens Why this fired.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-triggers-new",
+          "type": "button",
+          "label": "New rule",
+          "key": "factsbook-triggers-new",
+          "file": "lib/ui/screens/factsbook/triggers_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": "factsbook-rule-editor",
+          "targetWidget": null,
+          "effect": "Opens the rule editor for a new rule.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-triggers-notifications",
+          "type": "list-tile",
+          "label": "Notification access",
+          "key": "factsbook-triggers-notifications",
+          "file": "lib/ui/screens/factsbook/triggers_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Opens Notification access (not available yet).",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "factsbook-rule-editor",
+      "title": "Rule editor",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/rule_editor_screen.dart",
+      "widget": "FactsBookRuleEditorScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "A rule in plain words: where the message comes from, what it says something like, then what to suggest; a test on a sample that saves nothing; save, pause (the on switch) and delete, signed with the owner key.",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-rule-save",
+          "type": "button",
+          "label": "Save rule",
+          "key": "factsbook-rule-save",
+          "file": "lib/ui/screens/factsbook/rule_editor_screen.dart",
+          "line": 1,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Saves the rule at the revision seen; a changed rule is reloaded, never overwritten.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-rule-test",
+          "type": "button",
+          "label": "Test",
+          "key": "factsbook-rule-test",
+          "file": "lib/ui/screens/factsbook/rule_editor_screen.dart",
+          "line": 1,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Asks the node what the saved rule would do with the sample. Nothing is saved.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-rule-delete",
+          "type": "button",
+          "label": "Delete rule",
+          "key": "factsbook-rule-delete",
+          "file": "lib/ui/screens/factsbook/rule_editor_screen.dart",
+          "line": 1,
+          "action": "open-dialog",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Asks first, then deletes the rule.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "factsbook-rule-enabled",
+          "type": "toggle",
+          "label": "This rule is on",
+          "key": "factsbook-rule-enabled",
+          "file": "lib/ui/screens/factsbook/rule_editor_screen.dart",
+          "line": 1,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Turns the rule on or off; takes effect on save.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "factsbook-event",
+      "title": "Why this fired",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/event_detail_screen.dart",
+      "widget": "FactsBookEventScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Where a message came from, the rule that matched, what it found, what it ignored and what it proposed. Metadata only: the original text is never shown, and the sender and app are labelled as claims.",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": []
+    },
+    {
+      "id": "factsbook-phone-node",
+      "title": "Memory on this phone",
+      "kind": "screen",
+      "file": "lib/ui/screens/factsbook/phone_node_screen.dart",
+      "widget": "FactsBookPhoneNodeScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "FactsBook running inside the built-in Linux on this phone: install, start and connect by itself, stop, restart, remove with its data after a confirm that names what is lost. States in plain words; reasons under Details.",
+      "reachedFrom": [],
+      "gates": [
+        "factsbook-flag"
+      ],
+      "elements": [
+        {
+          "id": "factsbook-node-run",
+          "type": "button",
+          "label": "Run memory on this phone",
+          "key": "factsbook-node-run",
+          "file": "lib/ui/screens/factsbook/phone_node_screen.dart",
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Installs the node into the built-in Linux, creates its vault, starts it on the loopback address and connects this app.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-node-stop",
+          "type": "button",
+          "label": "Stop memory",
+          "key": "factsbook-node-stop",
+          "file": "lib/ui/screens/factsbook/phone_node_screen.dart",
+          "line": 1,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Stops the node; its data stays.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "factsbook-node-remove",
+          "type": "button",
+          "label": "Remove memory from this phone",
+          "key": "factsbook-node-remove",
+          "file": "lib/ui/screens/factsbook/phone_node_screen.dart",
+          "line": 1,
+          "action": "open-dialog",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Confirms what is lost, then stops the node and deletes its data.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "factsbook-node-setup",
+          "type": "button",
+          "label": "Set up this phone",
+          "key": "factsbook-node-setup",
+          "file": "lib/ui/screens/factsbook/phone_node_screen.dart",
+          "line": 1,
+          "action": "navigate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Opens phone setup.",
+          "gates": [
+            "factsbook-flag"
+          ],
+          "destructive": false
+        }
+      ]
+    }
+  ],
+  "notPages": [
+    {
+      "file": "lib/ui/screens/factsbook/memory_section.dart",
+      "reason": "Not a page: the Inbox's Memory section, drawn inside Chats home while the developer flag is on (rows open About you, Add something, Memory care, Not saved yet, a thing, and Set up FactsBook before pairing)."
+    },
+    {
+      "file": "lib/ui/screens/factsbook/factsbook_routes.dart",
+      "reason": "No surface: the push helpers of the FactsBook pages."
+    },
+    {
+      "file": "lib/ui/screens/factsbook/factsbook_text.dart",
+      "reason": "No surface: the app's words for FactsBook values."
+    },
+    {
+      "file": "lib/ui/screens/factsbook/offer_card.dart",
+      "reason": "Not a page: the 'Talk about this with your agent?' card drawn in Needs you and Triggers."
+    },
+    {
+      "file": "lib/ui/screens/factsbook/trigger_text.dart",
+      "reason": "No surface: the app's words for trigger values."
+    }
+  ],
+  "notes": [
+    "FactsBook (D33) is behind a hidden developer flag (OC_FACTSBOOK, oc.dev.factsbook, or About > Developer); all of these pages exist only while it is on."
+  ]
+}

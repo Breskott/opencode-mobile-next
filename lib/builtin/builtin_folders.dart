@@ -12,11 +12,21 @@ class FolderEntry {
     required this.name,
     required this.path,
     this.isGit = false,
+    this.inside,
+    this.more = 0,
   });
 
   final String name;
   final String path;
   final bool isGit;
+
+  /// A few of the names inside (visible ones), when the lister looked: the
+  /// browser's one-line hint of what is in the folder. Empty means the
+  /// folder is empty; null means nobody looked.
+  final List<String>? inside;
+
+  /// How many more names there are beyond [inside].
+  final int more;
 }
 
 /// Why a folder could not be listed.
@@ -135,6 +145,35 @@ class BuiltinRootfsFolders {
     if (value == null || value == '/') return null;
     final cut = value.lastIndexOf('/');
     return cut <= 0 ? '/' : value.substring(0, cut);
+  }
+
+  /// The folder on the phone that holds Ubuntu's [path] (for reading it with
+  /// dart:io), or null when it is missing, not a real folder, or Ubuntu's
+  /// files are not there. Never follows a link.
+  Future<String?> hostDirectory(String path) async {
+    final ubuntuPath = normalize(path);
+    if (ubuntuPath == null) return null;
+    try {
+      final projects = await _locateProjects();
+      final external = projects == null
+          ? null
+          : await _hostPath(projects.path, '/');
+      const projectsPath = BuiltinLinux.projectsDir;
+      if (external != null &&
+          (ubuntuPath == projectsPath ||
+              ubuntuPath.startsWith('$projectsPath/'))) {
+        return await _hostPath(
+          external,
+          ubuntuPath.substring(projectsPath.length),
+        );
+      }
+      final rootfs = await _locate();
+      return rootfs == null ? null : await _hostPath(rootfs.path, ubuntuPath);
+    } on FolderListException {
+      return null;
+    } on FileSystemException {
+      return null;
+    }
   }
 
   /// The folders directly inside [path] (hidden ones left out), sorted by

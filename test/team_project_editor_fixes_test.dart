@@ -133,12 +133,16 @@ void main() {
     expect(find.textContaining('about 120 MB of memory per lane'), findsOne);
     await _tap(tester, 'Build box');
     expect(
-      find.text('Not measured on Build box yet. Your conversation stays first.'),
+      find.text(
+        'Not measured on Build box yet. Your conversation stays first.',
+      ),
       findsOne,
     );
     await _tap(tester, 'Phone');
     expect(
-      find.text('Not measured on this phone yet. Your conversation stays first.'),
+      find.text(
+        'Not measured on this phone yet. Your conversation stays first.',
+      ),
       findsOne,
     );
     await tester.pumpWidget(const SizedBox.shrink());
@@ -152,8 +156,8 @@ void main() {
         servers: [TeamServer(id: 'pc', name: 'Home PC')],
       ),
     );
-    await _tap(tester, 'Single lane');
     await _tap(tester, 'Set limits');
+    await _type(tester, 'total', '');
     await _type(tester, 'daily', '5');
     expect(find.textContaining('Leave a total'), findsNothing);
     expect(
@@ -178,7 +182,7 @@ void main() {
     expect(reason, isNull);
     expect(find.byKey(const ValueKey('kit-action-reason')), findsNothing);
     expect(
-      find.text('Choose Single lane or Parallel agents.', skipOffstage: false),
+      find.text('Add a goal and at least one repo.', skipOffstage: false),
       findsOneWidget,
     );
     await tester.pumpWidget(const SizedBox.shrink());

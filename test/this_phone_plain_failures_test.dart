@@ -7,6 +7,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/builtin/builtin_linux.dart';
+import 'package:opencode_mobile/l10n/app_localizations_en.dart';
 import 'package:opencode_mobile/state/phone_host.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
@@ -15,6 +17,22 @@ import 'package:opencode_mobile/ui/screens/this_phone_screen.dart';
 
 import 'revamp/screen_phone_1_fixtures.dart';
 import 'support/termux_channel_fixture.dart';
+
+class _OwnershipUnknownLinux extends PhoneLinux {
+  @override
+  Future<void> startServer(
+    String script, {
+    int port = 4097,
+    BuiltinServerRestoreRecipe? restoreRecipe,
+  }) async {
+    starts++;
+    throw const BuiltinLinuxException(
+      'The app cannot safely identify previous work.',
+      code: 'runtime_ownership_unknown',
+      details: 'IllegalStateException: ownershipUnknown',
+    );
+  }
+}
 
 final _termuxProfile = ServerProfile(
   id: 'termux',
@@ -77,6 +95,51 @@ void main() {
     await unmountPhone(tester);
   }
 
+  testWidgets('ownership failure offers settings instead of another start', (
+    tester,
+  ) async {
+    final linux = _OwnershipUnknownLinux();
+    final profile = ServerProfile(
+      id: 'builtin',
+      name: 'This phone',
+      baseUrl: BuiltinLinux.serverUrl,
+      flavor: ServerFlavor.v2,
+      password: 'synthetic-test-secret',
+    );
+    var settings = 0;
+    const channel = MethodChannel('oc/termux');
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      if (call.method == 'openAppSettings') settings++;
+      return true;
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+    await pumpPhone(
+      tester,
+      home: const ThisPhoneScreen(kind: PhoneHostKind.inApp),
+      profiles: [profile],
+      linux: linux,
+    );
+    await _settle(tester);
+    await tester.tap(find.byKey(const ValueKey('this-phone-start')));
+    await _settle(tester);
+    expect(
+      find.text(AppLocalizationsEn().inAppServerOwnershipRecoveryBody),
+      findsOneWidget,
+    );
+    expect(find.textContaining('ownershipUnknown'), findsNothing);
+    expect(find.byKey(const ValueKey('this-phone-start')), findsNothing);
+    expect(find.byKey(const ValueKey('this-phone-reinstall')), findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('this-phone-recover-ownership')),
+    );
+    await _settle(tester);
+    expect(settings, 1);
+    expect(linux.starts, 1);
+    await done(tester);
+  });
+
   group('the manager\'s failure, classified', () {
     test('a crash or a server that never answered is a start', () {
       expect(
@@ -128,7 +191,7 @@ void main() {
     expect(find.byKey(const ValueKey('this-phone-state')), findsNothing);
     expect(
       _text(tester, 'this-phone-failure'),
-      "OpenCode 1 didn't start. Start it again; Details below says what went "
+      "Older OpenCode didn't start. Start it again; Details below says what went "
       'wrong.',
     );
     expect(find.text('Start again'), findsOneWidget);
@@ -160,7 +223,7 @@ void main() {
     );
     expect(
       _text(tester, 'this-phone-failure'),
-      "Installing OpenCode 1 didn't finish. Install it again; your "
+      "Installing Older OpenCode didn't finish. Install it again; your "
       'conversations are kept.',
     );
     expect(
@@ -215,7 +278,7 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('this-phone-update')));
     await _settle(tester);
-    expect(find.text('Update OpenCode 1?'), findsOneWidget);
+    expect(find.text('Update Older OpenCode?'), findsOneWidget);
     expect(find.textContaining('managed'), findsNothing);
     expect(find.textContaining('generation'), findsNothing);
     expect(find.textContaining('Your conversations are kept.'), findsOneWidget);

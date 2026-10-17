@@ -6,6 +6,8 @@ import '../builtin/builtin_linux.dart';
 import '../builtin/builtin_server.dart';
 import '../builtin/deliberate_stop.dart';
 import '../builtin/setup/setup_contract.dart';
+import '../builtin/setup/termux_setup_host.dart';
+import '../domain/opencode_history_copy.dart';
 import '../l10n/app_localizations.dart';
 import '../termux/bridge.dart';
 import '../termux/termux_reach.dart';
@@ -41,6 +43,9 @@ enum PhoneHostState {
 enum PhoneHostProblem {
   /// The server did not start, or stopped by itself (a crash).
   start,
+
+  /// The app cannot safely identify its old processes; reopen it through Android.
+  componentRecovery,
 
   /// The server did not stop.
   stop,
@@ -129,6 +134,11 @@ abstract class PhoneHost extends ChangeNotifier {
 
   Future<void> refresh();
 
+  /// Read-only admission; callers recheck on tap before promising a move.
+  /// Hosts without the check leave the offer unavailable.
+  Future<OpenCodeHistorySwitchAdmission> checkHistorySwitch() async =>
+      OpenCodeHistorySwitchAdmission.unavailable;
+
   /// Starts the server and waits until it answers.
   Future<void> start(AppLocalizations l10n);
 
@@ -202,9 +212,11 @@ class InAppPhoneHost extends PhoneHost {
   @override
   TermuxRuntime get runtime {
     final profile = this.profile;
-    return profile == null
+    if (profile != null) return BuiltinLinux.runtimeFor(profile.flavor);
+    // A pre-selection installation is legacy; only a fresh host adopts OC2.
+    return _status?.installed == true
         ? TermuxRuntime.openCode1
-        : BuiltinLinux.runtimeFor(profile.flavor);
+        : TermuxRuntime.defaultForNewInstall;
   }
 
   @override
@@ -220,10 +232,17 @@ class InAppPhoneHost extends PhoneHost {
   }
 
   @override
-  String? get failure => _failure;
+  String? get failure =>
+      _failure ?? starter.failureFor(profile)?.technicalDetails;
 
   @override
-  PhoneHostProblem? get problem => _failure == null ? null : _problem;
+  PhoneHostProblem? get problem =>
+      starter.failureFor(profile)?.problem ==
+          BuiltinStartProblem.componentRecovery
+      ? PhoneHostProblem.componentRecovery
+      : _failure == null
+      ? null
+      : _problem;
 
   @override
   PhoneHostState get state {
@@ -236,8 +255,12 @@ class InAppPhoneHost extends PhoneHost {
     if (status == null) return PhoneHostState.checking;
     if (!status.installed || profile == null) return PhoneHostState.notSetUp;
     if (status.serverRunning) return PhoneHostState.running;
-    return _failure != null ? PhoneHostState.needsYou : PhoneHostState.stopped;
+    return problem != null ? PhoneHostState.needsYou : PhoneHostState.stopped;
   }
+
+  @override
+  Future<OpenCodeHistorySwitchAdmission> checkHistorySwitch() =>
+      _checkHistorySwitch(linux);
 
   @override
   Future<void> refresh() async {
@@ -256,6 +279,9 @@ class InAppPhoneHost extends PhoneHost {
     }
     final interval = pollInterval;
     if (interval != null && !_disposed) {
+      // Two refreshes can overlap (a start finishing while a poll is in
+      // flight); the later one replaces the earlier one's timer.
+      _poll?.cancel();
       _poll = Timer(interval, () {
         if (!_disposed) unawaited(refresh());
       });
@@ -272,7 +298,9 @@ class InAppPhoneHost extends PhoneHost {
     if (_disposed) return;
     if (failed != null) {
       _failure = l10n.builtinServerStartFailed(failed.reason(l10n));
-      _problem = PhoneHostProblem.start;
+      _problem = failed.problem == BuiltinStartProblem.componentRecovery
+          ? PhoneHostProblem.componentRecovery
+          : PhoneHostProblem.start;
     }
     await refresh();
   }
@@ -354,13 +382,12 @@ class TermuxPhoneHost extends PhoneHost {
     }
     final installation = _installation;
     if (installation != null &&
-        (installation.runtimeSelected ||
-            installation.openCodeVersion != null)) {
+        (installation.runtimeSelected || installation.ubuntuInstalled)) {
       return installation.runtime;
     }
     final saved = profile;
     return saved == null
-        ? TermuxRuntime.openCode1
+        ? TermuxRuntime.defaultForNewInstall
         : ManagedRuntimeFlavor.runtimeOf(saved);
   }
 
@@ -451,6 +478,10 @@ class TermuxPhoneHost extends PhoneHost {
     if (status != null && status.isFailed) return PhoneHostState.needsYou;
     return _failure != null ? PhoneHostState.needsYou : PhoneHostState.stopped;
   }
+
+  @override
+  Future<OpenCodeHistorySwitchAdmission> checkHistorySwitch() =>
+      _checkHistorySwitch(TermuxSetupHost());
 
   @override
   Future<void> refresh() async {
@@ -581,5 +612,24 @@ class TermuxPhoneHost extends PhoneHost {
       return error.message;
     }
     return _log;
+  }
+}
+
+Future<OpenCodeHistorySwitchAdmission> _checkHistorySwitch(
+  BuiltinLinux linux,
+) async {
+  try {
+    // Capture only the read-only guard's output on either host. Subshell keeps
+    // its refusal exit from escaping before the transport captures stderr.
+    final result = await linux.run(
+      '(\n$openCode1HistorySwitchCheckScript\n) 2>&1',
+      timeout: const Duration(seconds: 20),
+    );
+    return OpenCodeHistorySwitchAdmission.fromResult(
+      result.exitCode,
+      result.output,
+    );
+  } catch (_) {
+    return OpenCodeHistorySwitchAdmission.unavailable;
   }
 }

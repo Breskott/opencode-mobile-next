@@ -1,11 +1,9 @@
 part of '../chat_screen.dart';
 
-/// The agent's plan has one home: the transcript, where each `todowrite`
-/// call is a Tasks step whose opened body is the checklist (a mark, the
-/// task's words and its state per row). There is no second copy of it in a
-/// sheet. The command sheet's Tasks (/plan) lands on that checklist: it
-/// scrolls to the reply holding the latest plan and opens its work line and
-/// its Tasks step in place.
+/// The agent's plan has one home: the tasks chip in the line above the field
+/// and the Tasks sheet it opens. Each `todowrite` call in the transcript is
+/// only a one-line "Updated tasks" step, so the list is never drawn twice.
+/// The command sheet's Tasks (/plan) opens the same sheet.
 extension _ChatPlan on _ChatScreenState {
   static const _planTools = {'todowrite', 'todo'};
 
@@ -23,30 +21,58 @@ extension _ChatPlan on _ChatScreenState {
     return null;
   }
 
-  /// Scrolls to the latest plan and opens it: the work line it is folded
-  /// under (the same grouping the transcript draws) and its Tasks step.
-  void _openPlan() {
+  /// The agent's latest task list, parsed; null when it has none (or none
+  /// that counts: every task cancelled).
+  MobileTaskView? get _latestTasks {
     final plan = _latestPlan;
-    if (plan == null) return;
-    final parts = plan.message.parts
-        .where((part) => part.isRenderable || _isFoldedIntoWork(part))
-        .toList();
-    final runs = _groupAssistantParts(parts);
-    for (final stretch in _MessageView._stretches(runs)) {
-      final holdsPlan = stretch.any(
-        (run) => run.parts.any(
-          (part) => part.id == plan.part.id && part.callID == plan.part.callID,
-        ),
-      );
-      if (!holdsPlan) continue;
-      if (stretch.length > 1 || stretch.single.grouped) {
-        final first = stretch.first.parts.first;
-        _transcriptExpansion['work:${first.id ?? first.callID ?? first.messageID}'] =
-            true;
-      }
-      break;
-    }
-    _transcriptExpansion['tool:${plan.part.id ?? plan.part.callID}'] = true;
-    _jumpToMessage(plan.message.info.id);
+    if (plan == null) return null;
+    final state = plan.part.toolState;
+    final view = MobileTaskView.fromTodos(
+      state.metadata?['todos'] ?? state.input['todos'],
+    );
+    return view == null || view.trackedCount == 0 ? null : view;
+  }
+
+  /// The tasks chip in the line above the field, while the list has
+  /// unfinished tasks (it comes and goes by itself, see [KitTaskChip]).
+  Widget? _taskChip() {
+    final view = _latestTasks;
+    if (view == null) return null;
+    final working = view.tasks
+        .where((task) => task.status == MobileTaskStatus.inProgress)
+        .firstOrNull;
+    return KitTaskChip(
+      key: const ValueKey('task-chip-slot'),
+      done: view.completedCount,
+      total: view.trackedCount,
+      current: working?.text,
+      onPressed: _openPlan,
+    );
+  }
+
+  /// Opens the whole list in the Tasks sheet.
+  void _openPlan() {
+    final view = _latestTasks;
+    if (view == null) return;
+    unawaited(
+      showKitTaskSheet(
+        context,
+        done: view.completedCount,
+        total: view.trackedCount,
+        running:
+            _conn.busySessions.contains(widget.sessionID) ||
+            _sending ||
+            _localTurnSince != null,
+        items: [
+          for (final task in view.tasks)
+            KitTaskItem(task.text, switch (task.status) {
+              MobileTaskStatus.pending => KitTaskItemState.todo,
+              MobileTaskStatus.inProgress => KitTaskItemState.inProgress,
+              MobileTaskStatus.completed => KitTaskItemState.done,
+              MobileTaskStatus.cancelled => KitTaskItemState.cancelled,
+            }),
+        ],
+      ),
+    );
   }
 }

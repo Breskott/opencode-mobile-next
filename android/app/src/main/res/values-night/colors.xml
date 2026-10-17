@@ -4,4 +4,5 @@
     <color name="widgetText">#E3E8E4</color>
     <color name="widgetHint">#7F8A83</color>
     <color name="widgetAccent">#83CDAA</color>
+    <color name="widgetTrack">#26302A</color>
 </resources>

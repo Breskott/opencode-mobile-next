@@ -40,6 +40,10 @@ class _DelayedPreferences implements SharedPreferences {
   @override
   Set<String> getKeys() => data.keys.toSet();
   @override
+  Object? get(String key) => data[key];
+  @override
+  bool? getBool(String key) => null;
+  @override
   Future<bool> remove(String key) async {
     data.remove(key);
     return true;
@@ -143,6 +147,9 @@ Future<void> _chooseCodeAction(WidgetTester tester, String label) async {
 
 Future<void> _chooseFileFilter(WidgetTester tester, String key) async {
   await tester.tap(find.byKey(const ValueKey('file-surface-selector')));
+  await tester.pumpAndSettle();
+  // At the largest text size the longer menu scrolls: bring the item in.
+  await tester.ensureVisible(find.byKey(ValueKey(key)));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(ValueKey(key)));
   await tester.pumpAndSettle();

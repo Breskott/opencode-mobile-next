@@ -1,0 +1,106 @@
+[oc] Details: dpkg --audit
+The following packages are in a mess due to serious problems during
+installation.  They must be reinstalled for them (and any packages
+that depend on them) to function properly:
+ libonig5:amd64       (no description available)
+
+The following packages are missing the list control file in the
+database, they need to be reinstalled:
+ libonig5:amd64       (no description available)
+
+The following packages are missing the md5sums control file in the
+database, they need to be reinstalled:
+ libonig5:amd64       (no description available)
+::oc stage Repairing interrupted package installation
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following packages will be upgraded:
+  libonig5
+/bin/sh: 1: /usr/sbin/dpkg-preconfigure: not found
+1 upgraded, 0 newly installed, 0 to remove and 6 not upgraded.
+1 not fully installed or removed.
+Need to get 0 B/172 kB of archives.
+After this operation, 644 kB of additional disk space will be used.
+::oc percent 0
+(Reading database ...
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 8212 files and directories currently installed.)
+Preparing to unpack .../libonig5_6.9.9-1build1_amd64.deb ...
+::oc percent 20
+Unpacking libonig5:amd64 (6.9.9-1build1) over (6.9.9-1build1) ...
+::oc percent 40
+Setting up libonig5:amd64 (6.9.9-1build1) ...
+::oc percent 60
+::oc percent 80
+Processing triggers for libc-bin (2.39-0ubuntu8.8) ...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following package was automatically installed and is no longer required:
+  libonig5
+Use 'apt autoremove' to remove it.
+The following additional packages will be installed:
+  libpython3-stdlib libpython3.12-minimal libpython3.12-stdlib libreadline8t64
+  libsqlite3-0 media-types netbase python3-minimal python3-pip-whl
+  python3-pkg-resources python3-setuptools python3-setuptools-whl
+  python3-wheel python3.12 python3.12-minimal python3.12-venv readline-common
+  tzdata
+Suggested packages:
+  python3-doc python3-tk python-setuptools-doc python3.12-doc binutils
+  binfmt-support readline-doc
+Recommended packages:
+  build-essential python3-dev
+The following NEW packages will be installed:
+  libpython3-stdlib libpython3.12-minimal libpython3.12-stdlib libreadline8t64
+  libsqlite3-0 media-types netbase python3 python3-minimal python3-pip
+  python3-pip-whl python3-pkg-resources python3-setuptools
+  python3-setuptools-whl python3-venv python3-wheel python3.12
+  python3.12-minimal python3.12-venv readline-common tzdata
+::oc stage Downloading packages
+::oc percent 0
+0 upgraded, 21 newly installed, 0 to remove and 6 not upgraded.
+Need to get 11.6 MB of archives.
+After this operation, 40.6 MB of additional disk space will be used.
+Get:1 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libpython3.12-minimal amd64 3.12.3-1ubuntu0.17 [839 kB]
+::oc percent 1
+::oc percent 6
+Get:2 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 python3.12-minimal amd64 3.12.3-1ubuntu0.17 [2335 kB]
+Get:3 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 python3-minimal amd64 3.12.3-0ubuntu2.1 [27.4 kB]
+::oc percent 23
+Get:4 http://archive.ubuntu.com/ubuntu noble/main amd64 media-types all 10.1.0 [27.5 kB]
+::oc percent 25
+Get:5 http://archive.ubuntu.com/ubuntu noble/main amd64 netbase all 6.4 [13.1 kB]
+::oc percent 26
+Get:6 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 tzdata all 2026e-0ubuntu0.24.04.1 [282 kB]
+::oc percent 27
+Get:7 http://archive.ubuntu.com/ubuntu noble/main amd64 readline-common all 8.2-4build1 [56.5 kB]
+::oc percent 30
+Get:8 http://archive.ubuntu.com/ubuntu noble/main amd64 libreadline8t64 amd64 8.2-4build1 [153 kB]
+::oc percent 31
+Get:9 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libsqlite3-0 amd64 3.45.1-1ubuntu2.8 [702 kB]
+::oc percent 33
+Get:10 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libpython3.12-stdlib amd64 3.12.3-1ubuntu0.17 [2071 kB]
+::oc percent 39
+Get:11 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 python3.12 amd64 3.12.3-1ubuntu0.17 [651 kB]
+::oc percent 54
+::oc percent 55

@@ -329,9 +329,9 @@
           "key": null,
           "line": 951,
           "action": "navigate",
-          "target": "external-agents",
-          "targetWidget": "ExternalAgentsScreen",
-          "effect": "_externalAgents(): builds an ExternalAgentStore(prefs, secure) and pushes ExternalAgentsScreen(store); disposes the store when the route returns.",
+          "target": "capabilities",
+          "targetWidget": "CapabilitiesScreen",
+          "effect": "_externalAgents(): openExternalAgents(context, connProvider) pushes Tools on its External agents tab.",
           "gates": [
             "inside More setup options expansion",
             "disabled while _busy"
@@ -1824,12 +1824,12 @@
     {
       "id": "external-agents",
       "title": "External agents",
-      "kind": "screen",
+      "kind": "tab",
       "file": "lib/ui/screens/external_agents_screen.dart",
       "widget": "ExternalAgentsScreen",
       "presentedBy": [],
       "line": 72,
-      "purpose": "Lists saved A2A external agent identities and lets the user add, open or finish deleting one.",
+      "purpose": "The External agents tab of Settings › Tools (FG6): lists saved A2A external agent identities and lets the user add, open or finish deleting one. Standalone only in tests; the app opens it through openExternalAgents (Tools on this tab).",
       "reachedFrom": [
         {
           "page": "servers",
@@ -2462,13 +2462,6 @@
           "page": "system",
           "element": null,
           "trigger": "notification tap for a monitored request -> openMonitoredRequest (lib/main.dart:1018)"
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "OtherServersPanel / attention feed rows (openMonitoredRequest)",
-          "file": "lib/ui/widgets/other_servers_panel.dart",
-          "line": 98
         }
       ],
       "gates": [
@@ -2512,22 +2505,7 @@
       "presentedBy": [],
       "line": 134,
       "purpose": "Embedded inbox rows: pending requests and due check-ins from other monitored saved servers.",
-      "reachedFrom": [
-        {
-          "page": "?",
-          "element": null,
-          "widget": "ActivityScreen (ProfileMonitorInbox(compact: true))",
-          "file": "lib/ui/screens/activity_screen.dart",
-          "line": 595
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "ActivityScreen (ProfileMonitorInbox(compact: true))",
-          "file": "lib/ui/screens/activity_screen.dart",
-          "line": 648
-        }
-      ],
+      "reachedFrom": [],
       "gates": [
         "!controller.isIsolated"
       ],
@@ -2551,290 +2529,6 @@
       ],
       "embeddedIn": [
         "ActivityScreen"
-      ]
-    },
-    {
-      "id": "provider-quota",
-      "title": "Remaining",
-      "kind": "tab",
-      "file": "lib/ui/screens/provider_quota_screen.dart",
-      "widget": "ProviderQuotaScreen",
-      "presentedBy": [],
-      "line": 15,
-      "purpose": "Reads remaining provider quota (Codex, Claude, MiniMax, GLM) through a user-installed collector on the connected server, with consent, per-window personal alert thresholds and enrollment into background quota monitoring. Ends with the quota-monitoring section: every monitored source with its reading, threshold, Refresh and Disable.",
-      "reachedFrom": [
-        {
-          "page": "usage-hub",
-          "element": "usage-hub-tab-remaining"
-        }
-      ],
-      "gates": [
-        "controller.profile != null"
-      ],
-      "elements": [
-        {
-          "id": "provider-quota-refresh",
-          "type": "icon-button",
-          "label": "Refresh remaining usage",
-          "key": null,
-          "line": 223,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_overview.refresh() (ProviderQuotaOverview).",
-          "gates": [
-            "_overview.consented",
-            "enabled when _overview.canRead && !_overview.loading"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-provider-chips",
-          "type": "chip",
-          "label": "Codex | Claude | MiniMax | GLM",
-          "key": null,
-          "line": 250,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_overview.selectProvider(provider) and resets the local trust checkbox.",
-          "gates": [
-            "!_overview.detached"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-consent",
-          "type": "toggle",
-          "label": "I installed and trust this collector on this server.",
-          "key": null,
-          "line": 302,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Checkbox sets local _trusted.",
-          "gates": [
-            "_overview.providerSupported && !_overview.consented",
-            "disabled when _overview.setupNeeded"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-read",
-          "type": "button",
-          "label": "Read remaining usage",
-          "key": null,
-          "line": 312,
-          "action": "toggle-setting",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_overview.allowAndRefresh(): records consent for this collector and reads the quota.",
-          "gates": [
-            "!_overview.consented",
-            "enabled when _trusted && !_overview.setupNeeded"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-retry",
-          "type": "button",
-          "label": "Refresh remaining usage",
-          "key": null,
-          "line": 330,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_overview.refresh().",
-          "gates": [
-            "_overview.consented && _overview.failure != null",
-            "enabled when canRefresh"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-enable-monitoring",
-          "type": "list-tile",
-          "label": "Alert me about {provider} on {server}",
-          "key": null,
-          "line": 342,
-          "action": "toggle-setting",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_enroll(): quotaMonitor.enroll(profileID, snapshot, threshold: 90, shared notification rules) in place; the row gives way to the source's threshold row and named Stop (the enrol dialog merged into the page, slice-P3.11a).",
-          "gates": [
-            "_overview.consented && snapshot != null && snapshot.canShowWindows",
-            "disabled when _overview.snapshotIsStale"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-threshold",
-          "type": "dropdown",
-          "label": "Personal alert threshold — Off | {percent}% used",
-          "key": "quota-threshold-<window id>",
-          "line": 613,
-          "action": "toggle-setting",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_BudgetControls: budgets.save(snapshot, window, QuotaBudget|null) then budgets.observe(snapshot). One per quota window.",
-          "gates": [
-            "budgets.usable(snapshot, window)",
-            "enabled when !stale && !budgets.saving"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-threshold-attention",
-          "type": "toggle",
-          "label": "Show threshold attention",
-          "key": null,
-          "line": 645,
-          "action": "toggle-setting",
-          "target": null,
-          "targetWidget": null,
-          "effect": "budgets.save(snapshot, window, QuotaBudget(rule.percent, attention: value)).",
-          "gates": [
-            "rule != null",
-            "enabled when !stale && !budgets.saving"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-clear-thresholds",
-          "type": "button",
-          "label": "Clear saved provider thresholds",
-          "key": null,
-          "line": 368,
-          "action": "open-dialog",
-          "target": "provider-quota-clear-dialog",
-          "targetWidget": "showDialog",
-          "effect": "Opens the clear-all confirmation dialog.",
-          "gates": [
-            "_overview.consented",
-            "disabled while _overview.budgets.saving"
-          ],
-          "destructive": true
-        },
-        {
-          "id": "provider-quota-forget-consent",
-          "type": "button",
-          "label": "Stop using this collector",
-          "key": null,
-          "line": 399,
-          "action": "toggle-setting",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Resets _trusted and calls _overview.disable() (forgets the collector consent).",
-          "gates": [
-            "_overview.consented"
-          ],
-          "destructive": true
-        },
-        {
-          "id": "provider-quota-monitor-notification-settings",
-          "type": "link",
-          "label": "Notification settings",
-          "key": "quota-monitor-notification-settings",
-          "file": "lib/ui/widgets/quota_monitor_section.dart",
-          "line": 60,
-          "action": "navigate",
-          "target": "notifications-settings",
-          "targetWidget": "NotificationsSettingsScreen",
-          "effect": "Pushes NotificationsSettingsScreen(controller): device alerts, quiet hours and Wi-Fi only are shared and set there.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-monitor-threshold",
-          "type": "dropdown",
-          "label": "{percent}% used (50 / 75 / 90 / 100 / current)",
-          "key": "quota-threshold-<profile id>-<provider>",
-          "file": "lib/ui/widgets/quota_monitor_section.dart",
-          "line": 197,
-          "action": "toggle-setting",
-          "target": null,
-          "targetWidget": null,
-          "effect": "quotaMonitor.setPolicy(threshold: value), leaving the source record's other fields untouched.",
-          "gates": [
-            "one block per monitored source (quotaMonitor.sources)"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-monitor-refresh-source",
-          "type": "button",
-          "label": "Refresh remaining usage",
-          "key": null,
-          "file": "lib/ui/widgets/quota_monitor_section.dart",
-          "line": 220,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "quotaMonitor.refreshSource(target).",
-          "gates": [
-            "!monitor.refreshing && monitor.runningAllowed"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-monitor-disable",
-          "type": "button",
-          "label": "Disable quota monitoring",
-          "key": null,
-          "file": "lib/ui/widgets/quota_monitor_section.dart",
-          "line": 227,
-          "action": "toggle-setting",
-          "target": null,
-          "targetWidget": null,
-          "effect": "quotaMonitor.disable(profileID, provider): removes the source from monitoring.",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "provider-quota-clear-dialog",
-      "title": "Clear saved provider thresholds",
-      "kind": "dialog",
-      "file": "lib/ui/screens/provider_quota_screen.dart",
-      "widget": "_ProviderQuotaScreenState.build",
-      "presentedBy": [],
-      "line": 372,
-      "purpose": "Confirms clearing every saved personal quota threshold.",
-      "reachedFrom": [
-        {
-          "page": "provider-quota",
-          "element": "provider-quota-clear-thresholds"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "provider-quota-clear-dialog-cancel",
-          "type": "button",
-          "label": "Cancel",
-          "key": null,
-          "line": 380,
-          "action": "dismiss",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Pops with false.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "provider-quota-clear-dialog-confirm",
-          "type": "button",
-          "label": "Clear saved provider thresholds",
-          "key": null,
-          "line": 385,
-          "action": "mutate",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Pops with true; _overview.budgets.clearAll().",
-          "gates": [],
-          "destructive": true
-        }
       ]
     },
     {
@@ -3236,12 +2930,52 @@
   ],
   "notPages": [
     {
+      "file": "lib/ui/screens/servers/profile_editor.dart",
+      "reason": "Part file of lib/ui/screens/servers_screen.dart (same screen, same library): its elements are listed under that screen's ledger entries; no separate surface."
+    },
+    {
+      "file": "lib/ui/screens/servers/profile_editor_fields.dart",
+      "reason": "Part file of lib/ui/screens/servers_screen.dart (same screen, same library): its elements are listed under that screen's ledger entries; no separate surface."
+    },
+    {
+      "file": "lib/ui/screens/servers/profile_editor_pairing.dart",
+      "reason": "Part file of lib/ui/screens/servers_screen.dart (same screen, same library): its elements are listed under that screen's ledger entries; no separate surface."
+    },
+    {
+      "file": "lib/ui/screens/servers/profile_editor_probe.dart",
+      "reason": "Part file of lib/ui/screens/servers_screen.dart (same screen, same library): its elements are listed under that screen's ledger entries; no separate surface."
+    },
+    {
+      "file": "lib/ui/screens/servers/profile_editor_steps.dart",
+      "reason": "Part file of lib/ui/screens/servers_screen.dart (same screen, same library): its elements are listed under that screen's ledger entries; no separate surface."
+    },
+    {
+      "file": "lib/ui/screens/servers/profile_editor_widgets.dart",
+      "reason": "Part file of lib/ui/screens/servers_screen.dart (same screen, same library): its elements are listed under that screen's ledger entries; no separate surface."
+    },
+    {
+      "file": "lib/ui/screens/servers/server_rows.dart",
+      "reason": "Part file of lib/ui/screens/servers_screen.dart (same screen, same library): its elements are listed under that screen's ledger entries; no separate surface."
+    },
+    {
+      "file": "lib/ui/screens/servers/servers_actions.dart",
+      "reason": "Part file of lib/ui/screens/servers_screen.dart (same screen, same library): its elements are listed under that screen's ledger entries; no separate surface."
+    },
+    {
+      "file": "lib/ui/screens/servers/servers_state.dart",
+      "reason": "Part file of lib/ui/screens/servers_screen.dart (same screen, same library): its elements are listed under that screen's ledger entries; no separate surface."
+    },
+    {
       "file": "lib/ui/widgets/connect_methods.dart",
       "reason": "pure helper functions (connectMethodNeedsServerBrowser, orderConnectMethods, connectMethodHint) used by lib/ui/screens/library/integrations_screen.dart; no widget, no surface, no interactive element"
     },
     {
       "file": "lib/ui/widgets/request_routes.dart",
       "reason": "non-visual RequestRoutes route-ownership helper (removes routes opened for a pending request once it is resolved); used by permission_sheet.dart, activity_screen.dart, form_flow.dart, return_brief_panel.dart; no interactive element"
+    },
+    {
+      "file": "lib/ui/screens/settings/server_host_update.dart",
+      "reason": "No page of its own: the \"Update agents on <computer>\" row and its confirmation on the server settings page."
     }
   ],
   "notes": [

@@ -9,6 +9,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/draft_attachments.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/state/factsbook/factsbook_store.dart';
 import 'package:opencode_mobile/state/prompt_shelf.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
@@ -179,10 +180,15 @@ Future<void> settleConstructorMonitors(ConnectionController controller) {
 /// Every secret a deletion of profile `a` sweeps: its password and the AI
 /// Team plugin's per-profile secrets (TEAM-105; the plugin joins the
 /// existing profile-deletion sweep whether or not it was ever on) and the
-/// phone team engine's token.
+/// phone team engine's token, the FactsBook link's secrets and the usage
+/// collector's token.
 final _profileASecrets = [
   'pw.a',
   '${ProfileStore.teamEngineAuthKey}a',
+  FactsBookStore.tokenKey('a'),
+  FactsBookStore.ownerKey('a'),
+  FactsBookStore.outboxKey('a'),
+  '${ProfileStore.quotaTokenKeyPrefix}a',
   ...OrchestrationStore.secretKeys('a'),
 ];
 
@@ -514,6 +520,9 @@ void main() {
     'invalid initial scope rejects every shelf action without file I/O',
     () async {
       final controller = await boot();
+      // Starting up writes the read-state consent keys; the shelf does not.
+      disk.writes.clear();
+      disk.removals.clear();
       for (final operation in [
         () => controller.preparePromptStash(locationRevision: 1),
         () => controller.restorePromptStashAttachments(

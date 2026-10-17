@@ -1,0 +1,79 @@
+{
+  "device": "emulator-5554",
+  "apk": 2318,
+  "projectId": "project-0de98887-54a1-44b0-9086-0b7664f8e7e9",
+  "projectWireStatus": "running",
+  "taskId": "task-1",
+  "job": {
+    "id": "job-6bba332e-4a78-4e36-b549-1cf2fe1dca48",
+    "stage": "interrupted",
+    "reason": "structuredOutputInvalid",
+    "resumeStage": "checking",
+    "sessionIds": {
+      "checker": "ses_ec30c6f89ffeZzJmkalVtFOtmZ",
+      "worker": "ses_ec30d5e2fffeOVgOKLRgwLWT1N"
+    },
+    "promptDispatch": {
+      "checker": "dispatched",
+      "worker": "dispatched"
+    },
+    "taskCommit": "b6b59f37deb34f72135241d2bd1460b703261b17",
+    "expectedDevCommit": "c6111974a3a5b62ba7c308eeee6e9666f90054a3"
+  },
+  "checker": {
+    "sessionId": "ses_ec30c6f89ffeZzJmkalVtFOtmZ",
+    "model": {
+      "id": "glm-5.3-flash",
+      "providerID": "zai-coding-plan",
+      "variant": "default"
+    },
+    "agent": "build",
+    "permissions": [
+      {
+        "action": "*",
+        "resource": "*",
+        "effect": "deny"
+      },
+      {
+        "action": "read",
+        "resource": "*",
+        "effect": "allow"
+      },
+      {
+        "action": "glob",
+        "resource": "*",
+        "effect": "allow"
+      },
+      {
+        "action": "grep",
+        "resource": "*",
+        "effect": "allow"
+      }
+    ],
+    "outcome": "succeeded",
+    "finish": "stop",
+    "errorPresent": false,
+    "active": false,
+    "pendingPermissions": 0,
+    "pendingForms": 0,
+    "answerShape": "Plain inspection prose, blank line, one unfenced trailing JSON object",
+    "verdict": {
+      "criterionResults": [
+        {
+          "criterion": "A file named NOTES.md exists at the repository root",
+          "status": "met"
+        },
+        {
+          "criterion": "NOTES.md contains exactly one line with the text 'hid'",
+          "status": "met"
+        },
+        {
+          "criterion": "No other files are created or modified",
+          "status": "met"
+        }
+      ],
+      "findings": []
+    }
+  },
+  "diagnosticActions": "Read-only; no resume, prompt, approval or merge requested"
+}

@@ -1,0 +1,118 @@
+{
+  "device": "emulator-5554",
+  "apk": 2317,
+  "failed": [
+    {
+      "sessionId": "ses_ec377cad2ffeZDvN8f2A256YoP",
+      "model": {
+        "id": "cat-jam-free",
+        "providerID": "opencode",
+        "variant": "default"
+      },
+      "agent": "build",
+      "permissions": [
+        {
+          "action": "*",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "read",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "glob",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "grep",
+          "resource": "*",
+          "effect": "allow"
+        }
+      ],
+      "outcome": "failed",
+      "finish": "error",
+      "errorType": "provider.auth",
+      "httpStatus": 403
+    },
+    {
+      "sessionId": "ses_ec3798821ffeB547NniFr7Rn7A",
+      "model": {
+        "id": "cat-jam-free",
+        "providerID": "opencode",
+        "variant": "default"
+      },
+      "agent": "build",
+      "permissions": [
+        {
+          "action": "*",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "read",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "glob",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "grep",
+          "resource": "*",
+          "effect": "allow"
+        }
+      ],
+      "outcome": "failed",
+      "finish": "error",
+      "errorType": "provider.auth",
+      "httpStatus": 403
+    }
+  ],
+  "configuredPlannerModel": "zai-coding-plan/glm-5.3-flash",
+  "after": {
+    "sessionId": "ses_ec37244e9ffeuYqPoyNSgTr45y",
+    "model": {
+      "id": "glm-5.3-flash",
+      "providerID": "zai-coding-plan",
+      "variant": "default"
+    },
+    "agent": "build",
+    "permissions": [
+      {
+        "action": "*",
+        "resource": "*",
+        "effect": "deny"
+      },
+      {
+        "action": "read",
+        "resource": "*",
+        "effect": "allow"
+      },
+      {
+        "action": "glob",
+        "resource": "*",
+        "effect": "allow"
+      },
+      {
+        "action": "grep",
+        "resource": "*",
+        "effect": "allow"
+      }
+    ],
+    "outcome": "succeeded",
+    "planningState": {
+      "jobId": "job-07b95423-f1d2-4104-9e75-fffecb7a7d6c",
+      "reason": "",
+      "stage": "completed",
+      "updatedAt": "2026-10-14T22:35:01.719Z"
+    },
+    "phaseCount": 1,
+    "taskCount": 1,
+    "planApproved": false
+  }
+}

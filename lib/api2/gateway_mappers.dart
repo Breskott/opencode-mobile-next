@@ -14,30 +14,46 @@ import 'transport.dart';
 
 // ---------------- Capabilities ----------------
 
-/// The exact feature truth for an OpenCode 2 (beta-18600) server, per
+/// The exact feature truth for an OpenCode 2 server (stable 2.0.29 probed live 2026-10-14; beta-18600 before that), per
 /// `docs/opencode2-port-matrix.md` §2:
 ///
 /// - `mcpRuntimeAdds` supports location-scoped MCP additions until restart.
 ///   `mcpRuntimeRemovals` removes servers from that runtime location only.
 ///   `mcpConfigWrites` is false: the route does not persist configuration.
+///   Tool-registry reload is asynchronous with no callable readiness barrier;
+///   chat cannot confirm Loaded tools. Its OAuth bridge is also unavailable.
 /// - `integrationCredentials` manages stored credentials by their safe IDs.
+/// - `gitInit` (`POST /vcs/init`), `worktreeCreate` (`POST /worktree`
+///   `{projectID, name}`) and `shellSettings` (`GET /config/shell`,
+///   `PATCH /experimental/config {shell}`) are live on 2.0.29. Every folder
+///   gets a project and `GET /vcs*` exist, so version control is reported
+///   truthfully from `/vcs`; `projectsAreGitRepositories` stays false because
+///   a project can still be a plain folder.
 /// - `globalEventStream` is true because the single `/api/event` stream
 ///   carries every location (events are tagged with `location`), so a global
 ///   channel can be served by an unfiltered subscription.
 /// - Everything else in the list has no v2 endpoint (workspace inventory /
 ///   warp / steal / console orgs, MCP OAuth, share/archive/todos/message
 ///   delete, symbols/text search, LSP/formatter status, tool inventory,
-///   shell settings, remote upgrade, diagnostics send, git init, provider
-///   runtime refresh, `/config/providers` fallback, destructive worktree
+///   remote upgrade, diagnostics send, provider runtime refresh, `/config/providers` fallback, destructive worktree
 ///   reset, legacy question requests — replaced by forms, wired in a later
 ///   slice).
 const ServerCapabilities api2ServerCapabilities = ServerCapabilities(
+  promptSteering: true,
+  // Stable 2.0.29 permission contract; the native engine independently probes
+  // the running version, operations and effective policy before execution.
+  phoneTeamExecution: true,
+  projectsAreGitRepositories: false,
+  commandReceipts: true,
   developmentServices: true,
   managedWorkspaces: false,
   workspaceWarp: false,
   sessionSteal: false,
   consoleOrganizations: false,
   mcpOAuth: false,
+  mcpChatConnect: true,
+  mcpChatOAuth: false,
+  mcpChatToolRefresh: false,
   mcpConfigWrites: false,
   mcpRuntimeAdds: true,
   mcpRuntimeRemovals: true,
@@ -55,17 +71,17 @@ const ServerCapabilities api2ServerCapabilities = ServerCapabilities(
   formatterStatus: false,
   toolInventory: false,
   experimentalCapabilities: false,
-  shellSettings: false,
+  shellSettings: true,
   remoteUpgrade: false,
   clientDiagnostics: false,
-  gitInit: false,
+  gitInit: true,
   providerRuntimeRefresh: false,
   configuredProviderFallback: false,
   globalEventStream: true,
   worktreeReset: false,
-  // The v2 create body ({strategy, directory} required) is unproven against
-  // the adapter's {name}-only request; see ServerCapabilities.worktreeCreate.
-  worktreeCreate: false,
+  // Stable takes {projectID, name} and answers {directory}; the old
+  // {strategy, directory} body is gone. Needs a project with a commit.
+  worktreeCreate: true,
   legacyQuestionRequests: false,
   forms: true,
   inbox: true,
@@ -127,6 +143,7 @@ Session mapApi2Session(Api2Session session) => Session(
       ? null
       : '${session.model!.providerID}/${session.model!.id}',
   compactingSince: null, // v2 signals compaction via events, not session time.
+  lastRunFailed: session.outcome == Api2SessionOutcome.failed,
 );
 
 // ---------------- Messages ----------------

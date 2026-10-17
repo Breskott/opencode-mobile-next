@@ -1,0 +1,207 @@
+{
+  "area": "o-usage-and-settings",
+  "pages": [
+    {
+      "id": "server-page",
+      "title": "Server",
+      "kind": "screen",
+      "file": "lib/ui/screens/settings/server_page.dart",
+      "widget": "ServerPageScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "One saved server's own page: Connection, In this app and On this server, each saying who a change affects; a server that is not connected offers one Connect row.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "usage-plans",
+      "title": "Plans",
+      "kind": "screen",
+      "file": "lib/ui/screens/usage/usage_plans_page.dart",
+      "widget": "UsagePlansPage",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "The Plans page of Usage: every subscription the app can read, one block per plan with its windows and what is left.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "usage-subscription",
+      "title": "Plan",
+      "kind": "screen",
+      "file": "lib/ui/screens/usage/usage_subscription_screen.dart",
+      "widget": "UsageSubscriptionScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "One subscription: its numbers, where it is read from and its alert level.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "usage-add",
+      "title": "Add a subscription",
+      "kind": "screen",
+      "file": "lib/ui/screens/usage/usage_add_screen.dart",
+      "widget": "UsageAddScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Where should a provider be signed in: the person picks the connection that reads its usage.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "usage-add-picker",
+      "title": "Add a subscription",
+      "kind": "screen",
+      "file": "lib/ui/screens/usage/usage_add_picker_screen.dart",
+      "widget": "UsageAddPickerScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "The providers never used, each with its logo; a pick hands the provider to the add flow.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "usage-alerts",
+      "title": "Usage alerts",
+      "kind": "screen",
+      "file": "lib/ui/screens/usage/usage_alerts_screen.dart",
+      "widget": "UsageAlertsScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Alert levels for the plans, and the default for all of them.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "usage-read-from",
+      "title": "Read from",
+      "kind": "screen",
+      "file": "lib/ui/screens/usage/usage_read_from_screen.dart",
+      "widget": "UsageReadFromScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Which connection a plan is read from, and what the read does on a computer.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "usage-widget",
+      "title": "Home screen widget",
+      "kind": "screen",
+      "file": "lib/ui/screens/usage_widget_screen.dart",
+      "widget": "UsageWidgetScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Which plans the Usage home-screen widget shows and which limits.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "agents-hub",
+      "title": "Agents",
+      "kind": "screen",
+      "file": "lib/ui/screens/settings/agents_permissions_screens.dart",
+      "widget": "AgentsHubScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "The one home for everything that is an agent: the AI Team, agents on this phone and external agents.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "permissions-automation",
+      "title": "Permissions and automation",
+      "kind": "screen",
+      "file": "lib/ui/screens/settings/agents_permissions_screens.dart",
+      "widget": "PermissionsAutomationScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Approvals and automation rules in one place.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "by-server",
+      "title": "By server",
+      "kind": "screen",
+      "file": "lib/ui/screens/settings/hub_servers.dart",
+      "widget": "ByServerScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "Settings that belong to a server, listed per server once more than one is saved.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "widget-configure",
+      "title": "Style a home-screen widget",
+      "kind": "overlay",
+      "file": "lib/ui/screens/widgets/widget_configure_screen.dart",
+      "widget": "WidgetConfigureScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "The small window a home-screen widget opens when it is placed or reconfigured: ground, accent, a drawing of the result, and Save.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "widget-steer",
+      "title": "Message from a widget",
+      "kind": "overlay",
+      "file": "lib/ui/screens/widgets/widget_steer_screen.dart",
+      "widget": "WidgetSteerScreen",
+      "presentedBy": [],
+      "line": 1,
+      "purpose": "The floating box a widget's composer or microphone opens: type or dictate a message and send it into the running reply, after it, or as a new conversation.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": []
+    }
+  ],
+  "notPages": [
+    {
+      "file": "lib/ui/screens/library/integrations_autowait.dart",
+      "reason": "Not a page: the wait on an automatic sign-in, part of the Integrations screen."
+    },
+    {
+      "file": "lib/ui/screens/chat/chat_mentions.dart",
+      "reason": "Not a page: the chat's @-mention search state and helpers, drawn in the composer."
+    },
+    {
+      "file": "lib/ui/screens/chat/phrase_chips.dart",
+      "reason": "Not a page: the row of the person's own phrases above the message box (KitPhraseChips)."
+    },
+    {
+      "file": "lib/ui/screens/settings/phrase_chips_row.dart",
+      "reason": "Not a page: one settings row (the phrase suggestions switch) inside Conversations settings."
+    },
+    {
+      "file": "lib/ui/screens/usage/usage_actions.dart",
+      "reason": "No surface: launches a connection's sign-in for the add flow."
+    },
+    {
+      "file": "lib/ui/screens/usage/usage_plan_card.dart",
+      "reason": "Not a page: one plan block of the Plans page."
+    },
+    {
+      "file": "lib/ui/screens/usage/usage_text.dart",
+      "reason": "No surface: the app's words for subscriptions, connections and times."
+    }
+  ],
+  "notes": [
+    "Added with the Usage subscriptions model and the server page; elements are not yet listed."
+  ]
+}

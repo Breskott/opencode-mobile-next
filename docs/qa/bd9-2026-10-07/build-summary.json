@@ -1,0 +1,21 @@
+{
+  "flutter_revision": "91f8bd75076e9c740aa13cf67eb9ec1a093f68f5",
+  "build_number": 2201,
+  "app_target": "integration_test/bd9_device_smoke_test.dart",
+  "device_proof": "FAIL_flutter_assertion_seven_native_checks_PASS",
+  "apk_bytes": 100370673,
+  "apk_sha256": "73339d4dea41a7f1e578a42478875bae542e975c8c52832a448d7c180778fe09",
+  "test_apk_sha256": "59ed07ec7b50af3410a6633b215a7fbf961670acd006c371a16571a4fa40284b",
+  "native_runner_sha256": "889f81f46456ce8d2cea30b491d77244c155c2eeb9b09235a3a4e46ab6218368",
+  "dart_smoke_sha256": "3dc383aaad10cc4f47c6cfb641a156f0af5f1574f34c29ce830c7251aa08da56",
+  "signer_sha256": "1DE5BF08146F269BCD9EB5C2FFC94469CE4617D37806285955F978A62494D60C",
+  "detekt_new_findings": 4,
+  "detekt_new_finding_file": "PhoneAgentHost.kt (merged other lane)",
+  "detekt_baseline_findings": 532,
+  "candidate_base_commit": "29e737f600f84a53c52d5ef79da5719ca7e7fb49",
+  "normal_product_restore": "FAIL_dev_plugin_registrant; blocked_by_renewed_coordinator_hold",
+  "java_vendor": "Eclipse Temurin",
+  "java_runtime": "17.0.20.1+1",
+  "java_archive_sha256": "3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e",
+  "next_code_only_fixes": "release build planner removes no-pub; fixed Flutter failure phases await device qualification"
+}

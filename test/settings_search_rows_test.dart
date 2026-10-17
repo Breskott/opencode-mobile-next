@@ -119,6 +119,8 @@ void main() {
         ('battery', 'inside-keep-running-battery'),
         ('animations', 'inside-appearance-motion'),
         ('confetti', 'inside-appearance-motion'),
+        ('glow', 'inside-appearance-glow'),
+        ('border', 'inside-appearance-glow'),
       ]) {
         expect(_ids(controller, query).first, id, reason: query);
       }
@@ -169,7 +171,7 @@ void main() {
       expect(_ids(controller, 'حرارة').first, 'inside-keep-running-thermal');
       expect(
         _ids(controller, ar.settingsHubGroupNotifications),
-        contains('settings-category-background'),
+        contains('settings-category-notifications'),
       );
       expect(
         _ids(controller, 'animations', l10n: ar).first,

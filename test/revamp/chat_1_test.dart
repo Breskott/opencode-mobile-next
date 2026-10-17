@@ -16,6 +16,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+import 'package:opencode_mobile/ui/widgets/tool_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../support/complete_message_history.dart';
@@ -150,17 +151,13 @@ void main() {
     );
     await _frames(tester);
 
-    final work = find.byKey(const Key('work-group'));
-    expect(
-      find.descendant(of: work, matching: find.text('Waiting for you')),
-      findsOneWidget,
-    );
+    // The request card says what is asked; the running step is not repeated
+    // above it, and nothing claims that tools are running meanwhile.
+    expect(find.byKey(const Key('permission-card-allow')), findsOneWidget);
     expect(find.text('Running tools'), findsNothing);
-    // No spinner while the agent waits for the person (AUTO-15).
-    expect(
-      find.descendant(of: work, matching: find.byType(KitStatusMark)),
-      findsNothing,
-    );
+    expect(find.text('Waiting for you'), findsNothing);
+    expect(find.byType(ToolCard), findsOneWidget, reason: 'only the read');
+    expect(find.textContaining('flutter test'), findsOneWidget);
   });
 
   testWidgets('P8.3: a chat error opens its server words, and they copy', (

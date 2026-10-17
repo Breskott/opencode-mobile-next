@@ -53,8 +53,8 @@ Future<void> _accountMenu(WidgetTester tester, String id, String item) async {
 
 void main() {
   mockLibrary3SecureStorage();
-  setUpAll(() => ProviderLogo.imageProviderOverride = (_) => null);
-  tearDownAll(() => ProviderLogo.imageProviderOverride = null);
+  setUpAll(() => ProviderLogo.logoLoaderOverride = (_) => null);
+  tearDownAll(() => ProviderLogo.logoLoaderOverride = null);
 
   group('server sign-in', () {
     // The separate "Start sign-in on the server?" confirm merged into the

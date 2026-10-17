@@ -9,6 +9,7 @@ import '../api2/transport.dart' show Api2Error, Api2NetworkError;
 import '../builtin/builtin_folders.dart'
     show FolderListException, FolderListProblem;
 import '../builtin/builtin_linux.dart' show BuiltinLinuxException;
+import '../paseo/transport.dart' show PaseoFailure;
 import '../state/local_server_controls.dart' show LocalServerControlFailure;
 import '../state/profiles.dart' show SecureStorageUnavailable;
 import '../termux/bridge.dart' show TermuxBridgeException;
@@ -74,6 +75,10 @@ enum ProductFailureCategory {
   signIn,
   notFound,
   conflict,
+
+  /// The computer running the agent did not answer or did not do it
+  /// (Paseo daemon): not a clash, not an OpenCode server fault.
+  computer,
   busy,
   server,
   rejected,
@@ -256,6 +261,16 @@ ProductFailureCategory _classify(Object error) {
     }
     final code = error.statusCode;
     if (code != null && code >= 400) return _forStatus(code);
+    if (const {
+      'Paseounavailable',
+      'Paseodisconnected',
+      'PaseoinvalidResponse',
+      'PaseohostRefused',
+      'PaseoinvalidEndpoint',
+      'PaseoincompatibleProtocol',
+    }.contains(error.errorTag)) {
+      return ProductFailureCategory.computer;
+    }
     return _forText(error.message) ?? ProductFailureCategory.unexpected;
   }
   if (error is Api2NetworkError) {
@@ -331,6 +346,7 @@ String? _technicalDetails(Object? error) {
     case ApiException(:final message, :final statusCode, :final errorTag):
       raw = [
         message,
+        if (error is PaseoFailure) ?error.reason,
         if (statusCode != null && !message.contains('$statusCode'))
           'HTTP $statusCode',
         ?errorTag,

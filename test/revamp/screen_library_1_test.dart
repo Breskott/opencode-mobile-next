@@ -142,8 +142,8 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(secure, null);
   });
-  setUpAll(() => ProviderLogo.imageProviderOverride = (_) => null);
-  tearDownAll(() => ProviderLogo.imageProviderOverride = null);
+  setUpAll(() => ProviderLogo.logoLoaderOverride = (_) => null);
+  tearDownAll(() => ProviderLogo.logoLoaderOverride = null);
 
   testWidgets('a key is sent from the one dialog and never shown again', (
     tester,

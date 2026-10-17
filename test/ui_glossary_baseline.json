@@ -1,28 +1,26 @@
 {
   "G11 confirm": {
-    "lib/ui/screens/activity_screen.dart": {
-      "label workspaceDismissNotice: fewer than two words": 1
-    },
-    "lib/ui/screens/chat_screen.dart": {
+    "lib/ui/screens/chat/chat_drafts.dart": {
       "title draftAttachmentRecoveryTitle: Arabic does not end with \"؟\"": 1,
       "title draftAttachmentRecoveryTitle: English does not end with \"?\"": 1
+    },
+    "lib/ui/screens/chat/question_sheet.dart": {
+      "label workspaceDismissNotice: fewer than two words": 1
     },
     "lib/ui/screens/local_terminal_screen.dart": {
       "label localTerminalStop: fewer than two words": 1
     },
-    "lib/ui/screens/servers_screen.dart": {
-      "label capsuleRemove: fewer than two words": 1,
+    "lib/ui/screens/servers/profile_editor_pairing.dart": {
       "label e7SetupDiscard: fewer than two words": 1
+    },
+    "lib/ui/screens/servers/servers_actions.dart": {
+      "label capsuleRemove: fewer than two words": 1
     },
     "lib/ui/screens/team/gate_sheet.dart": {
       "label teamUiGateAnswerApprove: fewer than two words": 1
     },
-    "lib/ui/screens/workspace_screen.dart": {
-      "label promptStashDelete: a bare OK/Yes/Continue/Confirm/Delete": 1
-    },
     "lib/ui/widgets/safety_confirms.dart": {
       "label e7SettingsUi8: fewer than two words": 1,
-      "label termuxProcsStop: fewer than two words": 1,
       "label termuxRestartConfirm: fewer than two words": 2
     },
     "lib/ui/widgets/work_status_line.dart": {
@@ -31,8 +29,7 @@
   },
   "G11 technical": {
     "a2aCardVersion": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
+      "ar version \"{version}\"": 1
     },
     "a2aSupportedConnection": {
       "ar version \"A2A 1.0\"": 1,
@@ -51,20 +48,16 @@
       "en version \"0.153.4\"": 1
     },
     "builtinServerOpenCodeHint": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
+      "ar version \"{version}\"": 1
     },
     "builtinServerOpenCodeInstalled": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
+      "ar version \"{version}\"": 1
     },
     "builtinServerRunning": {
-      "ar address \"127.0.0.1\"": 1,
-      "en address \"127.0.0.1\"": 1
+      "ar address \"127.0.0.1\"": 1
     },
     "builtinServerUbuntuHint": {
-      "ar version \"Base 24.04\"": 1,
-      "en version \"Base 24.04\"": 1
+      "ar version \"Base 24.04\"": 1
     },
     "chatAttachmentOfficeHeader": {
       "en engine word \"formulas\"": 1
@@ -83,8 +76,7 @@
       "en engine word \"pty\"": 1
     },
     "e7SettingsCurrentServer": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
+      "ar version \"{version}\"": 1
     },
     "e7SettingsHealthVersion": {
       "ar version \"{version}\"": 1,
@@ -95,8 +87,7 @@
       "en version \"{version}\"": 1
     },
     "e7SettingsInstalledCurrent": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
+      "ar version \"{version}\"": 1
     },
     "e7SettingsInstalledVersion": {
       "ar version \"{version}\"": 1,
@@ -123,24 +114,10 @@
       "en port \":4096\"": 1
     },
     "e7SetupFoundInstalled": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
-    },
-    "e7SetupIncludeScheme": {
-      "ar address \"127.0.0.1\"": 1,
-      "ar address \"localhost\"": 1,
-      "en address \"127.0.0.1\"": 1,
-      "en address \"localhost\"": 1
+      "ar version \"{version}\"": 1
     },
     "e7SetupInstalledVersion": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
-    },
-    "e7SetupLocalHttp": {
-      "ar address \"127.0.0.1\"": 1,
-      "ar address \"localhost\"": 1,
-      "en address \"127.0.0.1\"": 1,
-      "en address \"localhost\"": 1
+      "ar version \"{version}\"": 1
     },
     "e7SetupPairingPhoneHint": {
       "ar address \"127.0.0.1\"": 1,
@@ -156,29 +133,19 @@
     },
     "e7SetupReplaceDetail": {
       "ar version \"{installedVersion}\"": 1,
-      "ar version \"{targetVersion}\"": 1,
-      "en version \"{installedVersion}\"": 1,
-      "en version \"{targetVersion}\"": 1
+      "ar version \"{targetVersion}\"": 1
     },
     "e7SetupRuntimeInstallDetail": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
-    },
-    "e7SetupServerVersion": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
+      "ar version \"{version}\"": 1
     },
     "e7SetupStartInstalledDetail": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
+      "ar version \"{version}\"": 1
     },
     "e7SetupVersion": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
+      "ar version \"{version}\"": 1
     },
     "e7SetupVersionAddress": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
+      "ar version \"{version}\"": 1
     },
     "e7SharedAlwaysSetOPENCODESERVERPASSWORDWhenBinding": {
       "ar address \"localhost\"": 1,
@@ -201,8 +168,7 @@
       "en address \"127.0.0.1\"": 1
     },
     "managedHealthVersion": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
+      "ar version \"{version}\"": 1
     },
     "paseoAddressHint": {
       "ar address \"100.64.0.1\"": 1,
@@ -219,67 +185,22 @@
       "en address \"localhost\"": 1
     },
     "setupInstallVersionStart": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
+      "ar version \"{version}\"": 1
     },
     "setupReplaceDescription": {
       "ar version \"{installedVersion}\"": 1,
-      "ar version \"{targetVersion}\"": 1,
-      "en version \"{installedVersion}\"": 1,
-      "en version \"{targetVersion}\"": 1
+      "ar version \"{targetVersion}\"": 1
     },
     "setupRuntimeInstallDetail": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
-    },
-    "setupRuntimeUpdateDetail": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
-    },
-    "teamUiAddAddressHint": {
-      "en port \":8373\"": 1
-    },
-    "teamUiAddCityLabel": {
-      "en engine word \"City\"": 1
-    },
-    "teamUiCycleActionNudgeRefinery": {
-      "ar engine word \"refinery\"": 1,
-      "en engine word \"refinery\"": 1
+      "ar version \"{version}\"": 1
     },
     "teamUiGateTermBead": {
-      "ar engine word \"bead\"": 1,
-      "en engine word \"bead\"": 1
-    },
-    "teamUiHostGuideDocs": {
-      "ar path \"docs/ai-team-host.md\"": 1,
-      "en path \"docs/ai-team-host.md\"": 1
-    },
-    "teamUiHostGuideStep2": {
-      "ar engine word \"rig\"": 1,
-      "en engine word \"city\"": 1,
-      "en engine word \"rig\"": 1
-    },
-    "teamUiHostGuideStep3": {
-      "ar address \"127.0.0.1\"": 1,
-      "ar engine word \"city\"": 1,
-      "ar port \":8372\"": 1,
-      "en address \"127.0.0.1\"": 1,
-      "en engine word \"city\"": 1,
-      "en port \":8372\"": 1
-    },
-    "teamUiHostGuideStep4": {
-      "ar port \":8372\"": 1,
-      "en engine word \"city\"": 1,
-      "en port \":8372\"": 1,
-      "en port \"port 8372\"": 1
+      "ar engine word \"bead\"": 1
     },
     "teamUiLabelCity": {
       "en engine word \"City\"": 1
     },
     "teamUiPhoneFailedCity": {
-      "en engine word \"city\"": 1
-    },
-    "teamUiPhoneRemoveBody": {
       "en engine word \"city\"": 1
     },
     "teamUiPhoneStatusInstalled": {
@@ -290,8 +211,7 @@
       "en engine word \"rig\"": 1
     },
     "teamUiRowFound": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
+      "ar version \"{version}\"": 1
     },
     "teamUiRunLabelFormula": {
       "en engine word \"Formula\"": 1
@@ -305,13 +225,6 @@
       "en engine word \"formula\"": 1
     },
     "teamUiStartRunPlannerMayor": {
-      "ar engine word \"Mayor\"": 1,
-      "en engine word \"Mayor\"": 1
-    },
-    "teamUiStartRunPlannerMissingBody": {
-      "en engine word \"Mayor\"": 1
-    },
-    "teamUiStartRunPlannerOffTitle": {
       "ar engine word \"Mayor\"": 1,
       "en engine word \"Mayor\"": 1
     },
@@ -336,12 +249,10 @@
       "en engine word \"bead\"": 1
     },
     "teamUiWorkTerm": {
-      "ar engine word \"bead\"": 1,
-      "en engine word \"bead\"": 1
+      "ar engine word \"bead\"": 1
     },
     "termuxPhoneRuntimeVersion": {
-      "ar version \"{version}\"": 1,
-      "en version \"{version}\"": 1
+      "ar version \"{version}\"": 1
     }
   },
   "G28": {
@@ -353,9 +264,6 @@
     },
     "agentAccountHostAuth": {
       "noun label host": 1
-    },
-    "agentAccountHostNote": {
-      "noun sentence host": 1
     },
     "agentAccountLimitsUnavailable": {
       "noun sentence host": 1
@@ -375,9 +283,6 @@
     "agentAccountNoAuth": {
       "noun sentence host": 1
     },
-    "agentAccountSignInNote": {
-      "noun sentence host": 1
-    },
     "agentAccountTitle": {
       "product name Codex": 1
     },
@@ -393,32 +298,14 @@
     "approvalsUiRecordTitle": {
       "title over four words": 1
     },
-    "attentionDisclosure": {
-      "noun sentence activity": 1
-    },
     "attentionTitle": {
       "noun label attention": 1
     },
     "backgroundWorkTitle": {
       "title over four words": 1
     },
-    "builtinServerEntryTitle": {
-      "title over four words": 1
-    },
-    "builtinServerOpenCodeAction": {
-      "product name OpenCode": 1
-    },
-    "builtinServerStepOpenCode": {
-      "product name OpenCode": 1
-    },
-    "builtinServerTitle": {
-      "product name OpenCode": 1
-    },
     "chatUiAskOpenCode": {
       "product name OpenCode": 1
-    },
-    "chatUiFILE": {
-      "uppercase": 1
     },
     "chatUiOpenCodeNeedsInput": {
       "product name OpenCode": 1
@@ -432,12 +319,6 @@
     "chatUiWriteYourOpenCodePrompt": {
       "product name OpenCode": 1
     },
-    "codexExperimentalLabel": {
-      "product name Codex": 1
-    },
-    "connectionCloseEditor": {
-      "verb Sign out/Close on a server": 1
-    },
     "connectionDisplayNameHint": {
       "noun sentence host": 1
     },
@@ -447,59 +328,20 @@
     "draftAttachmentRecoveryTitle": {
       "noun label attention": 1
     },
-    "draftLeaveTitle": {
-      "title over four words": 1
-    },
     "e7ConnectionFailure8": {
       "product name Codex": 1
     },
     "e7ConnectionFailure9": {
       "product name Codex": 1
     },
-    "e7LibraryDestinationHost": {
-      "noun label host": 1
-    },
-    "e7LibraryOpenCodeInstructions": {
-      "product name OpenCode": 1
-    },
-    "e7LibrarySERVERS": {
-      "uppercase": 1
-    },
     "e7LibraryTheServerReturnedAnUnsafeAuthorizationLink": {
       "noun sentence host": 1
-    },
-    "e7LocaleUiStartFailed": {
-      "product name OpenCode": 1
-    },
-    "e7LocaleUiStarting": {
-      "product name OpenCode": 1
-    },
-    "e7ProjectAttentionProfileSource": {
-      "noun sentence attention": 1
     },
     "e7ProjectMonitorUnsupported": {
       "noun sentence attention": 1
     },
-    "e7SettingsCurrentServer": {
-      "noun sentence host": 1
-    },
-    "e7SettingsDetailUi2": {
-      "product name OpenCode": 1
-    },
-    "e7SettingsDetailUi20": {
-      "product name OpenCode": 1
-    },
-    "e7SettingsDetailUi21": {
-      "product name OpenCode": 1
-    },
-    "e7SettingsDisconnectBody": {
-      "body over two sentences": 1
-    },
     "e7SettingsQueueDeleteBody": {
       "body over two sentences": 1
-    },
-    "e7SettingsRestartBody": {
-      "noun sentence host": 1
     },
     "e7SettingsUi41": {
       "product name OpenCode": 1
@@ -510,21 +352,11 @@
     "e7SettingsUi50": {
       "product name OpenCode": 1
     },
-    "e7SettingsUi55": {
-      "noun sentence host": 1
-    },
     "e7SettingsUi9": {
       "product name OpenCode": 1
     },
     "e7SettingsUpdateVersion": {
       "product name OpenCode": 1
-    },
-    "e7SettingsUpgradeBody": {
-      "body over two sentences": 1,
-      "noun sentence host": 1
-    },
-    "e7SetupAuthentication": {
-      "uppercase": 1
     },
     "e7SetupCheckRestart": {
       "noun sentence local server": 1
@@ -550,12 +382,6 @@
     "e7SetupInstallingOpenCode": {
       "product name OpenCode": 1
     },
-    "e7SetupLastOutput": {
-      "uppercase": 1
-    },
-    "e7SetupLiveOutput": {
-      "uppercase": 1
-    },
     "e7SetupLocalStopped": {
       "noun sentence local server": 1
     },
@@ -574,12 +400,6 @@
     "e7SetupProbeV2": {
       "product name OpenCode": 1
     },
-    "e7SetupRefused": {
-      "noun sentence host": 1
-    },
-    "e7SetupReplaceDetail": {
-      "noun sentence local server": 1
-    },
     "e7SetupRestartActiveChanged": {
       "noun sentence local server": 1
     },
@@ -597,9 +417,6 @@
     },
     "e7SetupSavingLocal": {
       "noun label local server": 1
-    },
-    "e7SetupStartInstalledDetail": {
-      "noun sentence local server": 1
     },
     "e7SetupStartLocalServer": {
       "noun label local server": 1
@@ -625,23 +442,14 @@
     "e7SetupUnreadableData": {
       "noun sentence location": 1
     },
-    "e7SetupUnsupportedSetup": {
-      "noun sentence on-device setup": 1
-    },
     "e7SetupUpdateHost": {
       "noun sentence host": 1
     },
     "e7SetupUpdateHostDetail": {
       "noun sentence host": 1
     },
-    "e7SetupUpdateOpenCode": {
-      "product name OpenCode": 1
-    },
     "e7SetupUrlScheme": {
       "noun sentence local server": 1
-    },
-    "e7SharedHost": {
-      "noun label host": 1
     },
     "e7SharedLatestAssistantRequestIncludingCacheActivity": {
       "noun sentence activity": 1
@@ -655,14 +463,8 @@
     "e7VoiceUiNeedsAttention": {
       "noun label attention": 1
     },
-    "e7WorkspaceAttentionCount": {
-      "noun label attention": 1
-    },
     "e7WorkspaceNeedsInput": {
       "product name OpenCode": 1
-    },
-    "e7WorkspaceWorkspace": {
-      "noun label workspace": 1
     },
     "exportCancel": {
       "verb Cancel running work": 1
@@ -722,9 +524,6 @@
     "launchUiActivityNoServer": {
       "noun sentence attention": 1
     },
-    "localAgentCardSubtitle": {
-      "product name Paseo": 1
-    },
     "localAgentInstalledTitle": {
       "title over four words": 1
     },
@@ -752,18 +551,6 @@
     "localTerminalSourceServer": {
       "product name OpenCode": 1
     },
-    "managedHealthNeedsSetup": {
-      "noun label attention": 1
-    },
-    "managedHealthVersion": {
-      "product name OpenCode": 1
-    },
-    "managedRecoveryStoppedWithCleanupError": {
-      "noun sentence local server": 1
-    },
-    "managedRecoveryTitle": {
-      "title over four words": 1
-    },
     "mcpDefaultLocation": {
       "product name OpenCode": 1
     },
@@ -776,23 +563,11 @@
     "monitorNotifications": {
       "noun sentence attention": 1
     },
-    "monitorPendingSummary": {
-      "noun sentence attention": 1
-    },
-    "monitorUnknownServers": {
-      "noun label attention": 1
-    },
     "notifyBlockedTitle": {
       "title over four words": 1
     },
     "oc2DiscoveryEditorTitle": {
       "product name OpenCode": 1
-    },
-    "oc2DiscoveryTypes": {
-      "product name OpenCode": 1
-    },
-    "onboardingTermuxNote": {
-      "noun label termux setup": 1
     },
     "openCodeConnectionLabel": {
       "product name OpenCode": 1
@@ -830,44 +605,14 @@
     "phoneSetupStartTitle": {
       "product name OpenCode": 1
     },
-    "quotaBudgetClearDescription": {
-      "noun sentence attention": 1
-    },
-    "quotaBudgetOptIn": {
-      "noun label attention": 1
-    },
     "returnBriefContinue": {
       "bare Continue": 1
-    },
-    "revertStageTitle": {
-      "title over four words": 1
     },
     "safetyStopLocalServerTitle": {
       "noun sentence local server": 1
     },
-    "setupOtherVersions": {
-      "product name OpenCode": 1
-    },
-    "setupReplaceDescription": {
-      "noun sentence local server": 1
-    },
-    "setupRuntimeTitle": {
-      "title over four words": 1
-    },
-    "setupRuntimeUpdateDetail": {
-      "noun sentence local server": 1
-    },
-    "setupStartInstalled": {
-      "product name OpenCode": 1
-    },
     "setupStoppedByRestart": {
       "noun sentence local server": 1
-    },
-    "setupSwitchAttention": {
-      "noun label attention": 1
-    },
-    "setupUncheckedTitle": {
-      "title over four words": 1
     },
     "teamAgentScreenControlsElsewhere": {
       "noun sentence host": 1
@@ -925,15 +670,6 @@
     "teamOpenConversationHint": {
       "noun sentence chat": 1
     },
-    "teamOpenTaskConversationHint": {
-      "noun sentence chat": 1
-    },
-    "teamUiAgentActivityEmpty": {
-      "noun label activity": 1
-    },
-    "teamUiAgentActivityEmptyHint": {
-      "noun sentence session": 1
-    },
     "teamUiAgentMissingTitle": {
       "title over four words": 1
     },
@@ -942,9 +678,6 @@
     },
     "teamUiAgentOutputEnded": {
       "noun sentence session": 1
-    },
-    "teamUiAgentSectionActivity": {
-      "noun label activity": 1
     },
     "teamUiControlRestartConfirmBody": {
       "noun sentence session": 1
@@ -961,9 +694,6 @@
     "teamUiPhoneContinue": {
       "bare Continue": 1
     },
-    "teamUiPhoneRemoveBody": {
-      "body over two sentences": 1
-    },
     "teamUiPhoneRemoveTitle": {
       "title over four words": 1
     },
@@ -973,23 +703,10 @@
     "teamUiPhoneSuccessTitle": {
       "title over four words": 1
     },
-    "teamUiPluginsHubSubtitle": {
-      "product name Gas City": 1
-    },
     "teamUiRowTitle": {
       "product name Gas City": 1
     },
     "teamUiRunMissingTitle": {
-      "title over four words": 1
-    },
-    "teamUiStartRunPlannerMissingTitle": {
-      "title over four words": 1
-    },
-    "teamUiStartRunPlannerOffBody": {
-      "noun sentence profile": 1
-    },
-    "teamUiStartRunPlannerOffTitle": {
-      "title capital \"Mayor\"": 1,
       "title over four words": 1
     },
     "teamUiStartRunTitle": {
@@ -1013,39 +730,10 @@
     "teamUiTurnOffTitle": {
       "title over four words": 1
     },
-    "termuxGuidePasteTitle": {
-      "title capital \"Paste\"": 1,
-      "title over four words": 1
-    },
-    "termuxPhoneAttentionTitle": {
-      "noun label attention": 1,
-      "product name OpenCode": 1
-    },
-    "termuxPhoneStoppedTitle": {
-      "product name OpenCode": 1
-    },
-    "termuxPhoneTitle": {
-      "product name OpenCode": 1
-    },
     "termuxProcsKindOpenCode": {
       "product name OpenCode": 1
     },
-    "termuxProcsStopGroupTitle": {
-      "title over four words": 1
-    },
-    "termuxRestartNotPerformed": {
-      "noun sentence local server": 1
-    },
-    "termuxRestartServer": {
-      "noun label local server": 1
-    },
-    "termuxRestartSucceeded": {
-      "noun sentence local server": 1
-    },
     "termuxRestartTitle": {
-      "noun sentence local server": 1
-    },
-    "termuxRestarting": {
       "noun sentence local server": 1
     },
     "termuxStorageCatOpenCode": {
@@ -1053,9 +741,6 @@
     },
     "termuxStorageCleanConfirmBody": {
       "body over two sentences": 1
-    },
-    "termuxStorageIntro": {
-      "noun sentence local server": 1
     },
     "usageDescription": {
       "noun sentence activity": 1

@@ -37,7 +37,7 @@ class KitAskLine extends StatelessWidget {
   bool _stacks(BuildContext context, double width) {
     final tokens = KitTokens.of(context);
     final buttonStyle = KitText.styleOf(context, KitTextRole.button);
-    final questionStyle = KitText.styleOf(context, KitTextRole.secondary);
+    final questionStyle = KitText.styleOf(context, KitTextRole.body);
     final scaler = MediaQuery.textScalerOf(context);
     double measure(String text, TextStyle style) {
       final painter = TextPainter(
@@ -67,7 +67,7 @@ class KitAskLine extends StatelessWidget {
     final painter = TextPainter(
       text: TextSpan(
         text: question,
-        style: KitText.styleOf(context, KitTextRole.secondary),
+        style: KitText.styleOf(context, KitTextRole.body),
       ),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
@@ -97,7 +97,7 @@ class KitAskLine extends StatelessWidget {
           // the screen from what it sits on; [semanticsLabel] says it all.
           final text = KitText(
             question,
-            role: KitTextRole.secondary,
+            role: KitTextRole.body,
             tone: KitTextTone.primary,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

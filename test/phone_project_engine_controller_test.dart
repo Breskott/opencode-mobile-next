@@ -275,6 +275,58 @@ void main() {
     },
   );
 
+  test('OC2 secure password is prepared before native engine launch', () async {
+    final profile = store.profiles.firstWhere((p) => p.id == 'phone');
+    profile.flavor = ServerFlavor.v2;
+    profile.password = 'fixture-oc2-server-password';
+    await store.upsert(profile);
+    final restored = ProfileStore(prefs: prefs);
+    await restored.load();
+    final restoredProfile = restored.profiles.firstWhere(
+      (p) => p.id == 'phone',
+    );
+    expect(restoredProfile.password, profile.password);
+    expect(restoredProfile.toJson().values, isNot(contains(profile.password)));
+
+    const channel = MethodChannel('test.phone_engine_oc2_auth');
+    final calls = <String>[];
+    final c = PhoneProjectEngineController(
+      store: restored,
+      bridge: BuiltinPhoneProjectEngineBridge(BuiltinLinux(channel: channel)),
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call.method);
+          if (call.method == 'stopPhoneEngine') return {'running': false};
+          if (call.method == 'run') {
+            expect(
+              (call.arguments as Map)['script'],
+              BuiltinLinux.writePasswordScript(restoredProfile.password),
+            );
+            return {'exitCode': 0, 'output': ''};
+          }
+          if (call.method == 'startPhoneEngine') {
+            expect(
+              call.arguments.toString(),
+              isNot(contains(profile.password)),
+            );
+            throw PlatformException(code: 'boundary_unsupported');
+          }
+          throw StateError('Unexpected native operation');
+        });
+    try {
+      await expectLater(
+        c.start('phone'),
+        throwsA(fake.safeError('boundary_unsupported')),
+      );
+      expect(calls, ['stopPhoneEngine', 'run', 'startPhoneEngine']);
+    } finally {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+      await c.close();
+    }
+  });
+
   test(
     'start preserves typed bridge failure and safely maps unknown failure',
     () async {
@@ -308,6 +360,64 @@ void main() {
       expect(client.isClosed, isTrue);
       expect(bridge.calls.where((call) => call == 'start:phone').length, 1);
       await c.close();
+    },
+  );
+
+  test(
+    'setup rollback stops native engine and closes clients without deleting data',
+    () async {
+      final bridge = NativeBridge();
+      final c = controller(bridge, []);
+      addTearDown(c.close);
+      await c.start('phone');
+      final profile = store.profiles.firstWhere((p) => p.id == 'phone');
+      final savedConfig = profile.orchestration;
+      final savedAuth = profile.teamEngineAuth;
+      final client = c.gateway(profile);
+      bridge.calls.clear();
+      await c.stop('phone');
+      expect(bridge.calls, ['stop:phone']);
+      expect(client.isClosed, isTrue);
+      expect(profile.orchestration, same(savedConfig));
+      expect(profile.teamEngineAuth, savedAuth);
+      await c.start('phone');
+      expect(bridge.calls.where((call) => call == 'start:phone'), hasLength(1));
+    },
+  );
+
+  test(
+    'rollback queues behind an unfinished start and then releases its engine',
+    () async {
+      final gate = Completer<void>();
+      final bridge = NativeBridge(attachGate: gate);
+      final c = controller(bridge, []);
+      addTearDown(c.close);
+      final starting = c.start('phone');
+      await Future<void>.delayed(Duration.zero);
+      expect(bridge.calls.last, 'credentials:phone');
+      final stopping = c.stop('phone');
+      await Future<void>.delayed(Duration.zero);
+      expect(bridge.calls.where((call) => call == 'stop:phone'), hasLength(1));
+      gate.complete();
+      await starting;
+      await stopping;
+      expect(bridge.calls.last, 'stop:phone');
+      expect(bridge.calls.where((call) => call == 'stop:phone'), hasLength(2));
+    },
+  );
+
+  test(
+    'rollback surfaces a safe error if native ownership cannot be released',
+    () async {
+      final bridge = NativeBridge();
+      final c = controller(bridge, []);
+      addTearDown(c.close);
+      await c.start('phone');
+      bridge.failStop = true;
+      await expectLater(
+        c.stop('phone'),
+        throwsA(fake.safeError('engineStopFailed')),
+      );
     },
   );
 
@@ -448,10 +558,12 @@ void main() {
       isNot(contains('engine-private-token')),
     );
     await store.clearTeamEngineAuth('phone');
-    expect(edited.teamEngineAuth, isEmpty);
+    // The store keeps its own copy of the saved profile.
+    final cleared = store.profiles.firstWhere((p) => p.id == 'phone');
+    expect(cleared.teamEngineAuth, isEmpty);
     expect(secrets.containsKey('oc.teamEngineAuth.phone'), isFalse);
-    await store.upsert(edited);
-    expect(edited.teamEngineAuth, isEmpty);
+    await store.upsert(cleared);
+    expect(cleared.teamEngineAuth, isEmpty);
     await engine.close();
   });
   test('closed probe and caller clients leave controller ownership', () async {

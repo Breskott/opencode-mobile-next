@@ -31,11 +31,8 @@ import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
 import 'package:opencode_mobile/ui/screens/capabilities_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
-import 'package:opencode_mobile/ui/screens/activity_screen.dart';
-import 'package:opencode_mobile/ui/search/search_index.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tools_screen.dart';
-import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A transport that speaks v1 and reports the v1 superset, like today's
@@ -281,9 +278,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(references);
       await tester.pumpAndSettle();
+      // MCP · Commands · Tools · Skills · References · External agents.
       expect(
         tester.widget<KitTabSwitcher>(find.byType(KitTabSwitcher)).index,
-        3,
+        4,
       );
       expect(tester.takeException(), isNull);
     });
@@ -388,65 +386,6 @@ void main() {
     });
   });
 
-  group('hidden: menu actions inside a surviving screen (§7 rows 10-12)', () {
-    setUp(() => _useTallSurface());
-
-    Future<void> openSessionMenu(WidgetTester tester) async {
-      // KIT-28 moved row actions to the long-press menu.
-      final row = find.byKey(const ValueKey('session-row-session-1'));
-      expect(row, findsOneWidget);
-      await tester.longPress(row);
-      await tester.pumpAndSettle();
-    }
-
-    testWidgets('v1 lists share and archive beside rename and delete', (
-      tester,
-    ) async {
-      final repository = _Repository();
-      final controller = await _controller(v2: false, repository: repository);
-      addTearDown(controller.dispose);
-      controller.sessionsById['session-1'] = Session(
-        id: 'session-1',
-        title: 'A session',
-        directory: '/work/app',
-      );
-
-      await tester.pumpWidget(
-        _app(Scaffold(body: WorkspaceScreen(controller: controller))),
-      );
-      await tester.pumpAndSettle();
-      await openSessionMenu(tester);
-
-      expect(find.text('Rename conversation'), findsOneWidget);
-      expect(find.text('Share conversation'), findsOneWidget);
-      expect(find.text('Archive'), findsOneWidget);
-      expect(find.text('Delete'), findsOneWidget);
-    });
-
-    testWidgets('v2 drops share and archive, keeping the rest', (tester) async {
-      final repository = _Repository();
-      final controller = await _controller(v2: true, repository: repository);
-      addTearDown(controller.dispose);
-      controller.sessionsById['session-1'] = Session(
-        id: 'session-1',
-        title: 'A session',
-        directory: '/work/app',
-      );
-
-      await tester.pumpWidget(
-        _app(Scaffold(body: WorkspaceScreen(controller: controller))),
-      );
-      await tester.pumpAndSettle();
-      await openSessionMenu(tester);
-
-      expect(find.text('Share conversation'), findsNothing);
-      expect(find.text('Archive'), findsNothing);
-      // Menus list possible actions only — no disabled rows, no explainers.
-      expect(find.text('Rename conversation'), findsOneWidget);
-      expect(find.text('Delete'), findsOneWidget);
-    });
-  });
-
   group('hidden: health sections + disabled git init (§7 rows 17-19)', () {
     testWidgets('v1 shows both status sections and the live action', (
       tester,
@@ -468,7 +407,7 @@ void main() {
       expect(find.byKey(const ValueKey('gated-git-init')), findsNothing);
     });
 
-    testWidgets('v2 hides both sections and explains git init in place', (
+    testWidgets('v2 hides both sections and keeps git init live (2.0.29)', (
       tester,
     ) async {
       final repository = _HealthRepository();
@@ -488,18 +427,13 @@ void main() {
       // A hidden section spends no request.
       expect(repository.languageServiceCalls, 0);
       expect(repository.formatterCalls, 0);
-      // Version control survives, so the screen still earns its place.
       expect(find.byKey(const ValueKey('git-not-initialized')), findsOneWidget);
-
-      // Health screens explain rather than vanish.
+      // OpenCode 2.0.29 serves POST /vcs/init, so the action is live.
       expect(
         find.byKey(const ValueKey('initialize-git-repository')),
-        findsNothing,
+        findsOneWidget,
       );
-      final row = find.byKey(const ValueKey('gated-git-init'));
-      expect(row, findsOneWidget);
-      expect(tester.widget<KitRow>(row).enabled, isFalse);
-      expect(find.text('Run `git init` from a terminal'), findsOneWidget);
+      expect(find.byKey(const ValueKey('gated-git-init')), findsNothing);
     });
   });
 
@@ -518,7 +452,7 @@ void main() {
       expect(find.byKey(const ValueKey('gated-shell-settings')), findsNothing);
     });
 
-    testWidgets('v2 hides the shell row; Help says it is not available', (
+    testWidgets('v2 keeps the shell row (2.0.29 serves shell settings)', (
       tester,
     ) async {
       final controller = await _controller(v2: true);
@@ -527,71 +461,11 @@ void main() {
       await tester.pumpWidget(_app(SettingsScreen(controller: controller)));
       await tester.pump();
 
-      // §7 row 22 used to keep this row visible-but-disabled, because a
-      // vanished settings row reads as a bug. UX plan rule 7 (hide, don't
-      // disable) now applies to it like every other row, and the explanation
-      // moved to one place that covers all hidden rows: Settings → Help →
-      // "Available on this server", which lists the shell under "Not
-      // available on this server".
       expect(
         find.byKey(const ValueKey('default-shell-settings-entry')),
-        findsNothing,
+        findsOneWidget,
       );
       expect(find.byKey(const ValueKey('gated-shell-settings')), findsNothing);
-      expect(find.text('Default shell'), findsNothing);
-      // Not a dead search result either.
-      final shellHits = [
-        for (final entry in searchEntries(
-          lookupAppLocalizations(const Locale('en')),
-          SearchScope(controller: controller),
-          'shell',
-        ))
-          entry.id,
-      ];
-      expect(shellHits, isNot(contains('default-shell-settings-entry')));
-      // "shell" is one of the words that find the explanation instead.
-      expect(shellHits, contains('settings-server-capabilities'));
-      // It is a Help row of the hub.
-      final help = find.byKey(const ValueKey('settings-server-capabilities'));
-      expect(help, findsOneWidget);
-
-      // The hub is longer than the test window: bring the row into view.
-      await tester.ensureVisible(help);
-      await tester.pumpAndSettle();
-      await tester.tap(help);
-      await tester.pumpAndSettle();
-      // R16 puts missing features first in one list, each with its own state.
-      final unavailable = find.byKey(
-        const ValueKey('capability-unavailable-shell'),
-      );
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('capability-unavailable-shell')),
-        200,
-        scrollable: find
-            .descendant(
-              of: find.byKey(const ValueKey('server-capabilities')),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      expect(
-        find.descendant(of: unavailable, matching: find.text('Default shell')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: unavailable,
-          matching: find.textContaining(
-            'Not on this server',
-            findRichText: true,
-          ),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const ValueKey('capability-available-shell')),
-        findsNothing,
-      );
     });
 
     testWidgets('v2 points server updates at the host machine (§7 row 23)', (
@@ -644,16 +518,13 @@ void main() {
   });
 
   group('hidden: v2-only features on a v1 server (§7 rule 5)', () {
-    testWidgets('a v2 connection lists a pending form', (tester) async {
+    testWidgets('a v2 connection keeps a pending form', (tester) async {
       final controller = await _controller(v2: true);
       addTearDown(controller.dispose);
       controller.handleEventForTesting(_formCreated());
-
-      await tester.pumpWidget(_app(ActivityScreen(controller: controller)));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Connect to Sentry'), findsOneWidget);
-      expect(find.text('Nothing needs attention'), findsNothing);
+      expect(controller.forms, isNotEmpty);
+      // Connecting schedules one debounced inventory refresh; let it run.
+      await tester.pump(const Duration(seconds: 3));
     });
 
     testWidgets('the same form stays hidden on a v1 connection', (
@@ -664,14 +535,8 @@ void main() {
       controller.handleEventForTesting(_formCreated());
       expect(controller.forms, isEmpty);
       expect(controller.unifiedAttentionCount, 0);
-
-      await tester.pumpWidget(_app(ActivityScreen(controller: controller)));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Connect to Sentry'), findsNothing);
-      // Silently hidden: no explainer for a feature the user has never seen.
-      expect(find.textContaining('OpenCode 2'), findsNothing);
-      expect(find.text('All clear here'), findsOneWidget);
+      // Connecting schedules one debounced inventory refresh; let it run.
+      await tester.pump(const Duration(seconds: 3));
     });
   });
 }

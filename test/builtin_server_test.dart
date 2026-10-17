@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
@@ -15,6 +16,8 @@ class _FakeLinux extends BuiltinLinux {
   int statusReads = 0;
   final scripts = <String>[];
   final started = <String>[];
+  final restorationRecipes = <BuiltinServerRestoreRecipe?>[];
+  BuiltinLinuxException? startError;
   BuiltinLinuxRunResult Function(String script)? runAnswer;
 
   @override
@@ -38,8 +41,14 @@ class _FakeLinux extends BuiltinLinux {
   }
 
   @override
-  Future<void> startServer(String script, {int port = 4097}) async {
+  Future<void> startServer(
+    String script, {
+    int port = 4097,
+    BuiltinServerRestoreRecipe? restoreRecipe,
+  }) async {
     started.add(script);
+    restorationRecipes.add(restoreRecipe);
+    if (startError case final error?) throw error;
     serverRunning = !serverDies;
   }
 }
@@ -93,6 +102,11 @@ void main() {
       expect(failure, isNull);
       expect(linux.scripts.single, BuiltinLinux.writePasswordScript('secret'));
       expect(linux.started.single, contains('opencode2 serve'));
+      expect(linux.restorationRecipes.single?.toMap(), {
+        'version': 1,
+        'profileId': 'builtin',
+        'runtime': 'openCode2',
+      });
       expect(
         linux.started.single,
         BuiltinLinux.serverScript(runtime: TermuxRuntime.openCode2),
@@ -134,6 +148,61 @@ void main() {
         pollInterval: Duration.zero,
       );
       expect(failure?.reason(AppLocalizationsEn()), 'the server stopped');
+    });
+
+    test('unknown ownership requires app recovery and keeps details', () async {
+      linux.startError = const BuiltinLinuxException(
+        'The phone operation could not finish. Try again.',
+        code: 'builtin_linux',
+        details: 'IllegalStateException: ownershipUnknown at BuiltinLinux.x:1',
+      );
+      final failure = await startBuiltinServer(
+        linux: linux,
+        profile: _inApp(),
+        pollInterval: Duration.zero,
+      );
+      final l10n = AppLocalizationsEn();
+      expect(failure?.problem, BuiltinStartProblem.componentRecovery);
+      expect(failure?.retryable, isFalse);
+      expect(failure?.explanation(l10n), l10n.inAppServerOwnershipRecoveryBody);
+      expect(
+        l10n.builtinServerStartFailed(failure!.reason(l10n)),
+        'OpenCode did not answer: The phone server could not start '
+        '(start: builtin_linux; IllegalStateException: ownershipUnknown at '
+        'BuiltinLinux.x:1). Open the log to see why.',
+      );
+    });
+
+    test(
+      'stable ownership code requires recovery without native details',
+      () async {
+        linux.startError = const BuiltinLinuxException(
+          'The app cannot safely identify previous work.',
+          code: 'runtime_ownership_unknown',
+        );
+        final failure = await startBuiltinServer(
+          linux: linux,
+          profile: _inApp(flavor: ServerFlavor.v2),
+          pollInterval: Duration.zero,
+        );
+        expect(failure?.problem, BuiltinStartProblem.componentRecovery);
+        expect(failure?.retryable, isFalse);
+        expect(linux.started, hasLength(1));
+      },
+    );
+
+    test('a refused start without details reads as one sentence', () async {
+      linux.startError = const BuiltinLinuxException('no', code: 'x');
+      final failure = await startBuiltinServer(
+        linux: linux,
+        profile: _inApp(),
+        pollInterval: Duration.zero,
+      );
+      final l10n = AppLocalizationsEn();
+      expect(
+        l10n.builtinServerStartFailed(failure!.reason(l10n)),
+        isNot(contains('..')),
+      );
     });
   });
 
@@ -186,6 +255,28 @@ void main() {
       expect(await starter.autoStartIfStopped(_inApp()), isFalse);
       expect(linux.started, isEmpty);
       expect(starter.recognises(_inApp()), isFalse);
+    });
+
+    test('names the server it brings up while starting and for a short '
+        'handover after a confirmed start', () async {
+      final target = _inApp(flavor: ServerFlavor.v2);
+      var now = DateTime(2026, 10, 8, 12);
+      await withClock(Clock(() => now), () async {
+        expect(starter.bringingUp, isNull);
+        final start = starter.start(target);
+        expect(starter.startingProfile, same(target));
+        expect(starter.bringingUp, same(target));
+        expect(await start, isNull);
+        expect(starter.startingProfile, isNull);
+        // Answered; the app connects to it within moments.
+        expect(starter.bringingUp, same(target));
+        now = now.add(BuiltinServerStarter.handover);
+        expect(starter.bringingUp, isNull);
+        // An automatic start (the app reopening) is no handover.
+        linux.serverRunning = false;
+        expect(await starter.autoStartIfStopped(_inApp()), isTrue);
+        expect(starter.bringingUp, isNull);
+      });
     });
   });
 

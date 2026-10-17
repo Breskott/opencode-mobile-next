@@ -3,15 +3,15 @@
 //
 //   flutter test tool/capture/capture_test.dart
 //
-// Screenshots land in video/public/shots/. The demo frames are written only
+// Screenshots land in tool/demo-video/public/shots/. The demo frames are written only
 // when CAPTURE_FRAMES_DIR names a directory:
 //
 //   CAPTURE_FRAMES_DIR=/tmp/frames flutter test tool/capture/capture_test.dart
 //   python3 tool/capture/feed_jpeg.py /tmp/frames \
 //     | ffmpeg -f image2pipe -c:v mjpeg -framerate 30 -i pipe:0 \
 //         -c:v libvpx -b:v 3M -pix_fmt yuv420p -vf scale=585:1266 \
-//         video/public/demo.webm
-//   python3 tool/capture/make_gif.py /tmp/frames video/public/demo.gif 390 2
+//         tool/demo-video/public/demo.webm
+//   python3 tool/capture/make_gif.py /tmp/frames tool/demo-video/public/demo.gif 390 2
 //
 // Lives under tool/ on purpose so `flutter test` on test/ never runs it.
 // It is still a test binary, so the test-only seams it drives (mock
@@ -38,7 +38,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fixtures.dart';
 
-const shotsDir = 'video/public/shots';
+const shotsDir = 'tool/demo-video/public/shots';
 
 Future<SharedPreferences> _prefs() async {
   SharedPreferences.setMockInitialValues({});
@@ -83,11 +83,11 @@ void main() {
 
   setUpAll(() async {
     await loadCaptureFonts();
-    ProviderLogo.imageProviderOverride = (_) => null;
+    ProviderLogo.logoLoaderOverride = (_) => null;
     chatScreenFor = _chatWithReview;
     Directory(shotsDir).createSync(recursive: true);
   });
-  tearDownAll(() => ProviderLogo.imageProviderOverride = null);
+  tearDownAll(() => ProviderLogo.logoLoaderOverride = null);
 
   testWidgets(
     '01 welcome',

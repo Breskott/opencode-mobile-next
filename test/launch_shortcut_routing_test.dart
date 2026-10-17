@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 
 import 'support/complete_message_history.dart';
 import 'support/fake_setup_engine.dart';
@@ -20,6 +21,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_progress_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
+import 'package:opencode_mobile/ui/screens/usage_widget_screen.dart';
 import 'package:opencode_mobile/update/shorebird_update_notice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -303,6 +305,47 @@ void main() {
     expect(identical(controller.repository, repository), isTrue);
     expect(controller.version, '1.18.23');
     expect(_noticeShown(), isFalse);
+  });
+
+  testWidgets('the Usage widget empty state opens the Usage widget settings', (
+    tester,
+  ) async {
+    final controller = await _controller(connected: true);
+    addTearDown(controller.dispose);
+    final shortcut = _shortcut();
+
+    await tester.pumpWidget(_app(controller, shortcut));
+    await tester.pumpAndSettle();
+    expect(find.byType(UsageWidgetScreen), findsNothing);
+
+    shortcut.pending.value = LaunchAction.usageSettings;
+    await tester.pumpAndSettle();
+
+    expect(find.byType(UsageWidgetScreen), findsOneWidget);
+    expect(shortcut.pending.value, isNull);
+  });
+
+  testWidgets('widget recovery opens background setting without a connection', (
+    tester,
+  ) async {
+    final controller = await _controller(connected: false, hasProfile: false);
+    addTearDown(controller.dispose);
+    final shortcut = _shortcut();
+    await tester.pumpWidget(_app(controller, shortcut));
+    await tester.pumpAndSettle();
+    expect(controller.keepLiveInBackground, isFalse);
+
+    shortcut.pending.value = LaunchAction.backgroundSettings;
+    await tester.pumpAndSettle();
+
+    final screen = tester.widget<NotificationsSettingsScreen>(
+      find.byType(NotificationsSettingsScreen),
+    );
+    expect(screen.page, NotificationsPage.background);
+    expect(screen.initialSection, 'background');
+    expect(shortcut.pending.value, isNull);
+    expect(controller.keepLiveInBackground, isFalse);
+    expect(find.byType(ChatScreen), findsNothing);
   });
 
   testWidgets('new task while connected creates exactly one empty session', (

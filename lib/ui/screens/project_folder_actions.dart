@@ -7,6 +7,12 @@ import '../../domain/server_gateway.dart' show WorkspaceProject;
 import '../../domain/team_directories.dart';
 import '../../domain/workspace_paths.dart';
 import '../../l10n/app_localizations.dart';
+import '../../platform/phone_project_scan.dart';
+import '../../platform/phone_storage_folders.dart';
+import '../../platform/storage_access.dart';
+import '../../state/shared_project_roots.dart';
+import '../../state/shared_storage_gate.dart' show SharedStorageBlock;
+import '../../domain/shared_storage_path.dart';
 import '../../state/connection.dart';
 import '../../state/interaction_defaults.dart';
 import '../../termux/bridge.dart';
@@ -14,8 +20,11 @@ import '../../termux/termux_folders.dart';
 import '../app_iconography.dart';
 import '../kit/kit.dart';
 import '../widgets/folder_browser.dart';
-import '../widgets/product_states.dart' show productErrorText;
+import '../widgets/remote_folder_picker.dart';
+import '../widgets/product_states.dart'
+    show productErrorDetails, productErrorText;
 import '../widgets/termux_running_server_entry.dart' show isManagedPhoneProfile;
+import 'shared_storage_access_flow.dart';
 
 /// The ways a workspace gets a project folder: create one on a server this
 /// app runs (Termux, or OpenCode inside the app), pick one of its projects,
@@ -133,6 +142,164 @@ class ProjectFolderActions {
   @visibleForTesting
   static FolderLister? folderListerOverride;
 
+  /// Widget tests list the phone's storage without its files.
+  @visibleForTesting
+  static FolderLister? phoneListerOverride;
+
+  /// Widget tests find the phone's projects without its files.
+  @visibleForTesting
+  static PhoneProjectScan Function(Duration timeLimit)? phoneScanOverride;
+
+  /// The phone's storage as a second place in the folder browser: listed
+  /// from this app (needs All files access, asked first in plain words),
+  /// with the shared-storage folders opened before.
+  static PhoneStoragePlace _phonePlace(
+    ConnectionController controller, {
+    required PhoneProjectScan Function(Duration limit) projectSpaceScan,
+  }) => PhoneStoragePlace(
+    list: phoneListerOverride ?? PhoneStorageFolders().list,
+    // The host's project space first (the restored projects live there),
+    // then the phone's storage: both are on this phone.
+    scan: (limit) => PhoneProjectScan.sequence([
+      projectSpaceScan,
+      phoneScanOverride ??
+          (left) => PhoneProjectScanner().start(timeLimit: left),
+    ], limit),
+    ensureAccess: (context) async {
+      if (await StorageAccessBridge.status() != StorageAccess.notGranted) {
+        return true;
+      }
+      if (!context.mounted) return false;
+      final outcome = await SharedStorageAccessFlow.resolve(
+        context,
+        SharedStorageBlock.appAccess,
+      );
+      return outcome == SharedStorageOutcome.proceed;
+    },
+  );
+
+  /// The folders opened before, most recent first: the connection's recent
+  /// locations that can be opened, then shared-storage projects opened on
+  /// this phone. The start page shows the first few.
+  static Future<List<String>> _recentFolders(
+    ConnectionController controller,
+  ) async {
+    final out = <String>[];
+    for (final location in controller.recentLocations) {
+      final raw = location.directory;
+      final directory = raw == null
+          ? null
+          : PhoneStorageFolders.normalize(raw) ?? raw;
+      if (directory != null &&
+          workspaceDirectoryProblem(directory) == null &&
+          !isProtectedWorkspaceDirectory(directory) &&
+          !out.contains(directory)) {
+        out.add(directory);
+      }
+    }
+    for (final path in await _openedSharedFolders(controller)) {
+      if (!out.contains(path)) out.add(path);
+    }
+    return out.take(6).toList();
+  }
+
+  static Future<List<PhoneProject>> _listProjectSpace(
+    FolderLister list,
+  ) async => projectsOfListing(await list(managedProjectsDirectory));
+
+  static Future<List<String>> _openedSharedFolders(
+    ConnectionController controller,
+  ) async {
+    final profile = controller.profile;
+    final seen = <String>{};
+    final out = <String>[];
+    void add(String? path) {
+      final root = sharedProjectRoot(path);
+      if (root != null && seen.add(root)) out.add(root);
+    }
+
+    for (final location in controller.recentLocations) {
+      add(location.directory);
+    }
+    if (profile != null) {
+      for (final root in await SharedProjectRoots.all(profile.id)) {
+        add(root);
+      }
+    }
+    return out;
+  }
+
+  /// Widget tests hand in the project space's folders.
+  @visibleForTesting
+  static Future<List<PhoneProject>?> Function()? projectSpaceOverride;
+
+  /// The folders of a listing as projects: every folder straight in the
+  /// project space is one; a repository says so; the kind comes from the
+  /// names the listing gave, when it gave any.
+  static List<PhoneProject> projectsOfListing(List<FolderEntry> entries) => [
+    for (final entry in entries)
+      if (!entry.name.startsWith('.'))
+        () {
+          final found = PhoneProjectScanner.classify([
+            ...?entry.inside,
+            if (entry.isGit) '.git',
+          ]);
+          return PhoneProject(
+            name: entry.name,
+            path: entry.path,
+            kind: found?.kind ?? PhoneProjectKind.git,
+            hasGit: entry.isGit,
+          );
+        }(),
+  ];
+
+  /// The folders of the host's project space, or null when the host has none
+  /// to read (a remote server, or Termux that cannot run the app's
+  /// commands). In the app's own Ubuntu they are read from its files with
+  /// their kinds; through Termux from the server listing (no kinds).
+  static Future<List<PhoneProject>?> projectSpaceFolders(
+    ConnectionController controller,
+  ) async {
+    final override = projectSpaceOverride;
+    if (override != null) return override();
+    try {
+      final lister = folderListerOverride;
+      if (lister != null) {
+        return projectsOfListing(await lister(managedProjectsDirectory));
+      }
+      final linux = _linux;
+      if (await isInAppServer(controller.profile, linux)) {
+        final host = await BuiltinRootfsFolders().hostDirectory(
+          managedProjectsDirectory,
+        );
+        if (host == null) return const [];
+        return await PhoneProjectScanner(
+          root: host,
+          reportAs: managedProjectsDirectory,
+          maxDepth: 1,
+          childrenAreProjects: true,
+        ).start().projects.toList();
+      }
+      if (await _termuxBrowsable(controller)) {
+        return projectsOfListing(
+          await TermuxFolders().list(managedProjectsDirectory),
+        );
+      }
+    } catch (_) {
+      // A listing that fails leaves the section out.
+    }
+    return null;
+  }
+
+  /// Opens [path] (a folder already known to be there) as the project, the
+  /// way "Open `<folder>`" does. Returns the path, or null when it did not
+  /// open.
+  static Future<String?> openKnownFolder(
+    BuildContext context,
+    ConnectionController controller,
+    String path,
+  ) => _open(context, controller, path);
+
   /// A server on this phone (OpenCode inside the app, or the one this app
   /// runs in Termux): browse its folders from the projects folder and open
   /// one, name a new project in the folder shown, or enter a path. Any other
@@ -148,13 +315,7 @@ class ProjectFolderActions {
     if (await isInAppServer(controller.profile, linux)) {
       if (!context.mounted) return null;
       final folders = BuiltinProjectFolders(linux);
-      final choice = await showKitFramedSheet<FolderBrowserChoice>(
-        context,
-        builder: (_) => FolderBrowserSheet(
-          list: folderListerOverride ?? BuiltinFolders(linux).list,
-          knownProjects: () => _knownProjects(controller),
-        ),
-      );
+      final choice = await _builtinChoice(context, controller, linux);
       if (choice == null || !context.mounted) return null;
       return switch (choice) {
         FolderBrowserOpen(:final path) => _open(context, controller, path),
@@ -181,6 +342,13 @@ class ProjectFolderActions {
         builder: (_) => FolderBrowserSheet(
           list: folderListerOverride ?? termux.list,
           knownProjects: () => _knownProjects(controller),
+          phone: _phonePlace(
+            controller,
+            projectSpaceScan: (limit) => PhoneProjectScan.fromFuture(
+              _listProjectSpace(folderListerOverride ?? termux.list),
+            ),
+          ),
+          recent: () => _recentFolders(controller),
         ),
       );
       if (choice == null || !context.mounted) return null;
@@ -201,7 +369,110 @@ class ProjectFolderActions {
       };
     }
     if (!context.mounted) return null;
-    return _openByPath(context, controller, null);
+    return _openRemote(context, controller);
+  }
+
+  /// The browser sheet for the folders of the app's own Ubuntu; what it was
+  /// closed with, or null when it was dismissed.
+  static Future<FolderBrowserChoice?> _builtinChoice(
+    BuildContext context,
+    ConnectionController controller,
+    BuiltinLinux linux,
+  ) async {
+    // The project space is searched from the app's own files.
+    final host = folderListerOverride != null
+        ? null
+        : await BuiltinRootfsFolders().hostDirectory(managedProjectsDirectory);
+    if (!context.mounted) return null;
+    return showKitFramedSheet<FolderBrowserChoice>(
+      context,
+      builder: (_) => FolderBrowserSheet(
+        list: folderListerOverride ?? BuiltinFolders(linux).list,
+        knownProjects: () => _knownProjects(controller),
+        phone: _phonePlace(
+          controller,
+          projectSpaceScan: (limit) => host == null
+              ? PhoneProjectScan.fromFuture(
+                  _listProjectSpace(
+                    folderListerOverride ?? BuiltinFolders(linux).list,
+                  ),
+                )
+              : PhoneProjectScanner(
+                  root: host,
+                  reportAs: managedProjectsDirectory,
+                  childrenAreProjects: true,
+                ).start(timeLimit: limit),
+        ),
+        recent: () => _recentFolders(controller),
+      ),
+    );
+  }
+
+  /// Picks a project folder of the app's own Ubuntu for something other than
+  /// a chat (the AI Team's repo) without opening it as the chat's project:
+  /// the same browser, an existing folder is returned as it is and a new
+  /// one is made first. Null when dismissed, when "Enter a path" was chosen
+  /// (the caller types it), or when this server is not on this phone.
+  static Future<String?> pickFolder(
+    BuildContext context,
+    ConnectionController controller,
+  ) async {
+    final linux = _linux;
+    if (!await isInAppServer(controller.profile, linux)) return null;
+    if (!context.mounted) return null;
+    final choice = await _builtinChoice(context, controller, linux);
+    if (choice == null || !context.mounted) return null;
+    switch (choice) {
+      case FolderBrowserOpen(:final path):
+        return path;
+      case FolderBrowserEnterPath():
+        return null;
+      case FolderBrowserCreate(:final path):
+        final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+        try {
+          return (await BuiltinProjectFolders(linux).create(path)).path;
+        } on BuiltinLinuxException catch (error) {
+          if (context.mounted) {
+            await _alert(
+              context,
+              l10n.projectFolderCreateFailedTitle,
+              l10n.projectFolderCreateFailed(
+                productErrorText(error, l10n: l10n),
+              ),
+            );
+          }
+          return null;
+        }
+    }
+  }
+
+  /// A server that is not on this phone cannot be browsed (OpenCode lists
+  /// only inside a project), so: the folders opened on it before and its
+  /// projects as rows, and a path field that starts from the folder used
+  /// last. A typed path is confirmed on the server before it opens.
+  static Future<String?> _openRemote(
+    BuildContext context,
+    ConnectionController controller,
+  ) async {
+    final recent = [
+      for (final location in controller.recentLocations)
+        if (location.directory != null &&
+            workspaceDirectoryProblem(location.directory!) == null)
+          location.directory!,
+    ];
+    final path = await showKitFramedSheet<String>(
+      context,
+      builder: (_) => RemoteFolderSheet(
+        recent: recent,
+        projects: () async {
+          final known = await _knownProjects(controller);
+          return known.toList()..sort();
+        },
+        probe: controller.probeProjectFolder,
+      ),
+    );
+    if (path == null || !context.mounted) return null;
+    return _open(context, controller, path);
   }
 
   /// The server in use is the one this app runs in Termux, and Termux can
@@ -235,6 +506,13 @@ class ProjectFolderActions {
     String path,
   ) async {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final access = await _sharedStorage(context, controller, path);
+    if (access == SharedStorageOutcome.useAppSpace) {
+      return context.mounted ? openFolder(context, controller) : null;
+    }
+    if (access == SharedStorageOutcome.declined || !context.mounted) {
+      return null;
+    }
     final ({String path, bool created}) made;
     try {
       made = await termux.create(path);
@@ -346,6 +624,15 @@ class ProjectFolderActions {
     String path,
   ) async {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    // A folder in shared storage needs the access first: making it without
+    // would fail, or look empty afterwards.
+    final access = await _sharedStorage(context, controller, path);
+    if (access == SharedStorageOutcome.useAppSpace) {
+      return context.mounted ? openFolder(context, controller) : null;
+    }
+    if (access == SharedStorageOutcome.declined || !context.mounted) {
+      return null;
+    }
     final ({String path, bool created}) made;
     try {
       made = await folders.create(path);
@@ -369,16 +656,52 @@ class ProjectFolderActions {
     String path,
   ) async {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final access = await _sharedStorage(context, controller, path);
+    if (access == SharedStorageOutcome.useAppSpace) {
+      return context.mounted ? openFolder(context, controller) : null;
+    }
+    if (access == SharedStorageOutcome.declined || !context.mounted) {
+      return null;
+    }
     await controller.selectLocation(directory: path);
     final problem = controller.locationError;
     if (problem != null) {
       if (context.mounted) {
-        await _alert(context, l10n.projectFolderOpenFailedTitle, problem);
+        // Plain words in the body; what the server said, only under Details.
+        final failure = controller.locationFailure;
+        final details = failure == null ? null : productErrorDetails(failure);
+        await showKitAlert(
+          context,
+          title: l10n.projectFolderOpenFailedTitle,
+          body: failure == null
+              ? problem
+              : productErrorText(failure, l10n: l10n),
+          details: [
+            if (details != null)
+              KitTechnicalValue(l10n.productErrorDetailsLabel, details),
+          ],
+          icon: AppIconography.error,
+        );
       }
       return null;
     }
     return path;
   }
+
+  /// A folder in the phone's shared storage is opened only once the host that
+  /// reads it can see its files: asks first, in plain words, and never opens
+  /// a folder that would list as empty. Other folders pass untouched.
+  static Future<SharedStorageOutcome> _sharedStorage(
+    BuildContext context,
+    ConnectionController controller,
+    String path,
+  ) => SharedStorageAccessFlow.ensure(
+    context,
+    controller.profile,
+    path,
+    offerAppSpace: canCreate(controller),
+    workRunning: controller.busySessions.isNotEmpty,
+  );
 
   /// A failure with nowhere else to be said: the flow has left its
   /// dialog, so a blocking alert names what did not happen and why.

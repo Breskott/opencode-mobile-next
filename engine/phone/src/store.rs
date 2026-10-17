@@ -1792,8 +1792,19 @@ fn apply_command(
                                 d.values()
                                     .any(|state| !matches!(state.as_str(), Some("dispatched")))
                             });
+                        // OC2 reports this only after a matching terminal failed
+                        // turn proves provider authentication was refused. A
+                        // model error beside uncertain dispatch is not proof.
+                        let terminal_model_failure = reason == "modelNotConfigured"
+                            && dispatch["planner"] == "dispatched"
+                            && prior["sessionIds"]["planner"]
+                                .as_str()
+                                .is_some_and(|id| !id.is_empty());
                         if reason != "sessionFailed"
-                            && (ambiguous || (!never_started && !completed_invalid_proposal))
+                            && (ambiguous
+                                || (!never_started
+                                    && !completed_invalid_proposal
+                                    && !terminal_model_failure))
                         {
                             return Err(StoreError("planningNeedsReconciliation"));
                         }

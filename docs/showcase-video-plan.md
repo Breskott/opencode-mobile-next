@@ -100,7 +100,7 @@ except REC-12. Each shot: start recording, wait 1s, perform, wait 1s, stop.
 
 ## 4. Remotion project plan
 
-Location: `video/` at repo root (gitignored `node_modules`, `out/`).
+Location: `tool/demo-video/` at repo root (gitignored `node_modules`, `out/`).
 
 **Packages** (pin current stable at install time): `remotion@^4`,
 `@remotion/cli@^4`, `@remotion/google-fonts` (JetBrains Mono + Inter),
@@ -147,10 +147,10 @@ frame, fix, re-render, re-inspect, then run the design-rules checklist.
 ## 5. Execution checklist for the parent
 
 1. Restart emulator + local `opencode serve` + adb reverse (10 min).
-2. Record REC-1…REC-12 + STILL-1 per §3, pull to `video/public/shots/`,
+2. Record REC-1…REC-12 + STILL-1 per §3, pull to `tool/demo-video/public/shots/`,
    trim heads/tails with ffmpeg (60–90 min; REC-3 needs one real model turn,
    REC-6 needs the permission staging — do it last, fallback documented).
-3. Scaffold `video/` per §4, install packages, copy theme, generate SFX
+3. Scaffold `tool/demo-video/` per §4, install packages, copy theme, generate SFX
    (20 min).
 4. Build scenes S01–S15 against the storyboard, landscape first (2–4 h).
 5. Render landscape draft, extract the 11 check frames, inspect, fix, loop

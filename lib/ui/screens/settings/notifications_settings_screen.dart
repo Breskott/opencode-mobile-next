@@ -11,8 +11,18 @@ part of '../settings_screen.dart';
 /// is absent. Kit only (screen-settings-1): each section is a [KitRowGroup]
 /// of [KitSwitchRow]s and [KitRow]s whose one plain line says what the
 /// setting does; how monitoring works is folded into Details at the end.
+/// Which part of the old "Notifications and background" page a screen shows:
+/// the Settings hub has Notifications and Background as two rows (Settings
+/// Standard W1), and Permissions and automation moved to Chat. [all] is every
+/// section on one page, kept for the entry points that predate the split.
+enum NotificationsPage { all, notifications, background }
+
 class NotificationsSettingsScreen extends StatefulWidget {
   final ConnectionController controller;
+
+  /// The part of the page to show; the title is the label of the row that
+  /// opened it (N2).
+  final NotificationsPage page;
 
   /// A section slug (`what`, `quiet`, `servers`, `background`,
   /// `keep-running`, `automation`) a search result means: the screen opens
@@ -23,7 +33,13 @@ class NotificationsSettingsScreen extends StatefulWidget {
     super.key,
     required this.controller,
     this.initialSection,
+    this.page = NotificationsPage.all,
+    this.onlyProfileId,
   });
+
+  /// Opened from one server's page: only that server's choices, with a link
+  /// to the general page.
+  final String? onlyProfileId;
 
   @override
   State<NotificationsSettingsScreen> createState() =>
@@ -127,6 +143,16 @@ class _NotificationsSettingsScreenState
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Opens the same place search does for usage alerts: Usage, Alerts.
+  Future<void> _openQuotaInUsage() async {
+    final copy = _settingsCopy(context);
+    final entry = allSearchEntries(
+      copy,
+    ).where((entry) => entry.id == 'inside-usage-alerts').firstOrNull;
+    if (entry == null) return;
+    await entry.open(context, SearchScope.of(context, widget.controller));
   }
 
   Future<void> _shared(SharedNotifyRules Function(SharedNotifyRules) change) =>
@@ -253,17 +279,17 @@ class _NotificationsSettingsScreenState
           onSelected: (minutes) =>
               _shared((rules) => rules.copyWith(checkInAfterMinutes: minutes)),
         ),
+      // Usage alerts are set on the Usage › Alerts page, beside the levels they follow;
+      // this row only leads there (one place for the choice).
       if (notifications)
-        KitSwitchRow(
+        KitRow(
           key: const ValueKey('notify-quota-alerts'),
           leading: KitRow.icon(context, AppIconography.usage),
           title: copy.notifyQuotaAlerts,
-          supporting: copy.notifyQuotaAlertsDetail,
-          value: rules.quotaAlerts,
-          onChanged: blocked
-              ? null
-              : (value) =>
-                    _shared((rules) => rules.copyWith(quotaAlerts: value)),
+          supporting: TextSpan(text: copy.notifyQuotaAlertsDetail),
+          supportingMaxLines: 2,
+          trailing: const KitChevron(),
+          onTap: () => unawaited(_openQuotaInUsage()),
         ),
       // Real proof, not just a read of the permission flag (P0.6): posts an
       // actual alert through the same channel a coding request would use.
@@ -469,13 +495,40 @@ class _NotificationsSettingsScreenState
     final tokens = KitTokens.of(context);
     final rules = controller.sharedNotifyRules;
     // Quiet hours is one switch that names itself: no header repeats it.
+    final page = widget.page;
+    final showNotifications = page != NotificationsPage.background;
+    final showBackground = page != NotificationsPage.notifications;
+    final only = widget.onlyProfileId == null
+        ? null
+        : controller.store.profiles
+              .where((p) => p.id == widget.onlyProfileId)
+              .firstOrNull;
     final sections = <(String, String?, List<Widget>)>[
-      ('what', copy.notifySectionWhat, _whatNotifies(rules)),
-      ('quiet', null, _quietHours(rules)),
-      ('servers', copy.notifySectionServers, _savedServers(rules)),
-      ('background', copy.notifySectionBackground, _background()),
+      if (only != null)
+        (
+          'server',
+          serverDisplayName(
+            only,
+            lookupAppLocalizations(Localizations.localeOf(context)),
+            among: controller.store.profiles,
+          ),
+          _monitoredServerRows(
+            only,
+            onSave: (next) =>
+                _save(() => controller.profileMonitor.setRules(only.id, next)),
+          ),
+        )
+      else if (showNotifications) ...[
+        ('what', copy.notifySectionWhat, _whatNotifies(rules)),
+        ('quiet', null, _quietHours(rules)),
+        ('servers', copy.notifySectionServers, _savedServers(rules)),
+      ],
+      if (showBackground && only == null)
+        ('background', copy.notifySectionBackground, _background()),
     ].where((section) => section.$3.isNotEmpty).toList();
     final hasServers =
+        showNotifications &&
+        only == null &&
         !controller.isIsolated &&
         controller.store.profiles.any(
           (profile) => controller.isProfileReadable(profile.id),
@@ -520,7 +573,13 @@ class _NotificationsSettingsScreenState
         ),
     ];
     return KitScreen(
-      topBar: KitTopBar(title: copy.settingsHubGroupNotifications),
+      topBar: KitTopBar(
+        title: switch (page) {
+          NotificationsPage.all => copy.settingsHubGroupNotifications,
+          NotificationsPage.notifications => copy.settingsV3Notifications,
+          NotificationsPage.background => copy.settingsV3Background,
+        },
+      ),
       width: KitScreenWidth.reading,
       loading: _saving,
       loadingLabel: copy.notifySaving,
@@ -556,8 +615,31 @@ class _NotificationsSettingsScreenState
                   ),
                 ),
               ],
+              // One server's view of the page: the way to the choices that
+              // apply to every server.
+              if (only != null) ...[
+                SizedBox(height: tokens.sectionGap),
+                KitRowGroup(
+                  children: [
+                    KitRow(
+                      key: const ValueKey('notifications-all-servers-link'),
+                      title: copy.settingsV3NotificationsAllServers,
+                      trailing: const KitChevron(),
+                      onTap: () => pushKitPage<void>(
+                        context,
+                        (_) => NotificationsSettingsScreen(
+                          controller: controller,
+                          page: NotificationsPage.notifications,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               // What to allow on this phone so Android keeps the app running.
-              if (platformCapabilities.supportsBackgroundService &&
+              if (showBackground &&
+                  only == null &&
+                  platformCapabilities.supportsBackgroundService &&
                   _hasProviders) ...[
                 SizedBox(height: tokens.sectionGap),
                 KeyedSubtree(
@@ -565,15 +647,19 @@ class _NotificationsSettingsScreenState
                   child: const KeepRunningSection(),
                 ),
               ],
-              // What the app and the agent do without asking first.
-              SizedBox(height: tokens.sectionGap),
-              KeyedSubtree(
-                key: _sectionKey('automation'),
-                child: AutomationSettingsSection(
-                  controller: controller,
-                  onShowSection: _showSection,
+              // What the app and the agent do without asking first: on the
+              // old single page only; Chat › Permissions and automation
+              // holds it now.
+              if (page == NotificationsPage.all) ...[
+                SizedBox(height: tokens.sectionGap),
+                KeyedSubtree(
+                  key: _sectionKey('automation'),
+                  child: AutomationSettingsSection(
+                    controller: controller,
+                    onShowSection: _showSection,
+                  ),
                 ),
-              ),
+              ],
               // How monitoring works: read once, never first (KIT-33).
               if (hasServers) ...[
                 SizedBox(height: tokens.sectionGap),

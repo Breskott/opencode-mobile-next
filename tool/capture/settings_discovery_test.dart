@@ -77,7 +77,7 @@ void main() {
                       controller: controller,
                       initialGroup: page == 'settings'
                           ? null
-                          : SettingsGroup.server,
+                          : SettingsGroup.connections,
                     ),
               boundaryKey: boundary,
               controller: controller,

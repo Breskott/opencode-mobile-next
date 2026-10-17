@@ -34,6 +34,8 @@ class _Phone extends ChangeNotifier implements PhoneTeamSetupPorts {
   @override
   Future<void> closeTerminals() async {}
   @override
+  Future<void> stopEngine() async {}
+  @override
   Future<PhoneEngineHealth> startEngine() => throw UnimplementedError();
   @override
   Future<PhoneEngineHealth> probeEngine() => throw UnimplementedError();
@@ -53,7 +55,14 @@ Future<void> _settle(WidgetTester t) async {
   }
 }
 
-Future<ConnectionController> _connect() async {
+/// Leaves the page and ends the connection's polling of the dead in-app
+/// server (a 10 s timer a finished test must not leave behind).
+Future<void> _end(WidgetTester t, ConnectionController connection) async {
+  await t.pumpWidget(const SizedBox.shrink());
+  connection.dispose();
+}
+
+Future<ConnectionController> _connect({bool phone = true}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final store = ProfileStore(prefs: prefs);
@@ -67,7 +76,7 @@ Future<ConnectionController> _connect() async {
   final profile = ServerProfile(
     id: 'phone',
     name: 'This phone',
-    baseUrl: 'http://127.0.0.1:4097',
+    baseUrl: phone ? 'http://127.0.0.1:4097' : 'https://example.org',
     orchestration: config,
   );
   await store.upsert(profile);
@@ -135,6 +144,7 @@ void main() {
     await tester.tap(_key('team-home-more'));
     await _settle(tester);
     expect(_key('team-home-migration'), findsOneWidget);
+    await _end(tester, connection);
   });
 
   testWidgets('switch opens the phone setup flow', (tester) async {
@@ -149,7 +159,7 @@ void main() {
     await tester.tap(_key('team-migration-switch'));
     await _settle(tester);
     expect(_key('phone-team-steps'), findsOneWidget);
-    await tester.pumpWidget(const SizedBox.shrink());
+    await _end(tester, connection);
   });
 
   testWidgets('no in-app server to switch on: the old team shows as before', (
@@ -160,10 +170,11 @@ void main() {
     addTearDown(tester.view.reset);
     mock();
     PhoneTeamSetup.debugPorts = (_) => _Phone(server: false);
-    final connection = await _connect();
+    final connection = await _connect(phone: false);
     await tester.pumpWidget(app(connection));
     await _settle(tester);
     expect(find.text(_en.teamMigrationTitle), findsNothing);
     expect(find.byType(TeamHomeScreen), findsOneWidget);
+    await _end(tester, connection);
   });
 }

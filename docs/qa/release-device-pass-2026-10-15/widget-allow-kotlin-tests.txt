@@ -1,0 +1,593 @@
+Command: cd android && ./gradlew :app:testReleaseUnitTest --no-daemon
+Prerequisite: pinned Flutter build apk --release --config-only (passed)
+Machine build lock held for each command.
+JUnit XML totals: {'tests': 456, 'failures': 0, 'errors': 0, 'skipped': 0}
+Suites: 29
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.5.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build
+> Task :gradle:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle:compileKotlin UP-TO-DATE
+> Task :gradle:compileJava NO-SOURCE
+> Task :gradle:compileGroovy NO-SOURCE
+> Task :gradle:pluginDescriptors UP-TO-DATE
+> Task :gradle:processResources UP-TO-DATE
+> Task :gradle:classes UP-TO-DATE
+> Task :gradle:jar UP-TO-DATE
+
+> Configure project :app
+WARNING: The option setting 'android.newDsl=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+Add android.sync.suppressAgpWarnings=UNSUPPORTED_PROJECT_OPTION_USE to the gradle.properties file to suppress this warning.
+WARNING: API 'applicationVariants' is obsolete and has been replaced with 'AndroidComponentsExtension'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+The legacy variant API is disabled by default in AGP 9.0, but can be re-enabled by adding
+    android.newDsl=false
+to this project's gradle.properties file.
+For more information, see http://developer.android.com/build/r/new-dsl.
+
+To determine what is calling applicationVariants, use -Pandroid.debug.obsoleteApi=true on the command line to display more information.
+Add android.sync.suppressAgpWarnings=DEPRECATED_DSL to the gradle.properties file to suppress this warning.
+WARNING: Your app uses the following plugins that apply Kotlin Gradle Plugin (KGP): desktop_drop, flutter_timezone
+Future versions of Flutter will fail to build if your app uses plugins that apply KGP.
+
+Please check the changelogs of these plugins and upgrade to a version that supports Built-in Kotlin.
+If no such version exists, report the issue to the plugin. If necessary, here is a guide on filing
+an issue against a plugin: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers#report-incompatible-kotlin-gradle-plugin-usage-to-plugin-authors
+
+If you are a plugin author, please migrate your plugin to Built-in Kotlin using this guide: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-plugin-authors
+
+> Task :android_file_picker:preBuild UP-TO-DATE
+> Task :android_file_picker:preReleaseBuild UP-TO-DATE
+> Task :android_file_picker:generateReleaseResources
+> Task :android_file_picker:packageReleaseResources
+> Task :android_file_picker:processReleaseNavigationResources
+> Task :app:validateCompileSdkVersion
+> Task :android_file_picker:javaPreCompileRelease
+> Task :app:preBuild
+> Task :app:preReleaseBuild
+> Task :app:generateReleaseBuildConfig
+> Task :app:cleanMergeReleaseAssets UP-TO-DATE
+> Task :android_file_picker:parseReleaseLocalResources
+
+> Task :app:compileFlutterBuildRelease
+"es": 8131 untranslated message(s).
+"ja": 8131 untranslated message(s).
+"pt": 8131 untranslated message(s).
+"ru": 8131 untranslated message(s).
+"zh": 8131 untranslated message(s).
+To see a detailed report, use the untranslated-messages-file
+option in the l10n.yaml file:
+untranslated-messages-file: desiredFileName.txt
+<other option>: <other selection>
+
+
+This will generate a JSON format file containing all messages that
+need to be translated.
+
+> Task :android_file_picker:generateReleaseAssets UP-TO-DATE
+> Task :android_file_picker:mergeReleaseAssets
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :desktop_drop:generateReleaseAssets UP-TO-DATE
+> Task :desktop_drop:preBuild UP-TO-DATE
+> Task :desktop_drop:preReleaseBuild UP-TO-DATE
+> Task :desktop_drop:mergeReleaseAssets
+> Task :dynamic_color:generateReleaseAssets UP-TO-DATE
+> Task :dynamic_color:preBuild UP-TO-DATE
+> Task :dynamic_color:preReleaseBuild UP-TO-DATE
+> Task :dynamic_color:mergeReleaseAssets
+> Task :flutter_plugin_android_lifecycle:generateReleaseAssets UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:preBuild UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:preReleaseBuild UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:mergeReleaseAssets
+> Task :flutter_secure_storage:generateReleaseAssets UP-TO-DATE
+> Task :flutter_secure_storage:preBuild UP-TO-DATE
+> Task :flutter_secure_storage:preReleaseBuild UP-TO-DATE
+> Task :flutter_secure_storage:mergeReleaseAssets
+> Task :android_file_picker:generateReleaseRFile
+> Task :flutter_timezone:generateReleaseAssets UP-TO-DATE
+> Task :flutter_timezone:preBuild UP-TO-DATE
+> Task :flutter_timezone:preReleaseBuild UP-TO-DATE
+> Task :flutter_timezone:mergeReleaseAssets
+> Task :image_picker_android:generateReleaseAssets UP-TO-DATE
+> Task :image_picker_android:preBuild UP-TO-DATE
+> Task :image_picker_android:preReleaseBuild UP-TO-DATE
+> Task :image_picker_android:mergeReleaseAssets
+> Task :jni:generateReleaseAssets UP-TO-DATE
+> Task :jni:preBuild UP-TO-DATE
+> Task :jni:preReleaseBuild UP-TO-DATE
+> Task :jni:mergeReleaseAssets
+> Task :jni_flutter:generateReleaseAssets UP-TO-DATE
+> Task :jni_flutter:preBuild UP-TO-DATE
+> Task :jni_flutter:preReleaseBuild UP-TO-DATE
+> Task :jni_flutter:mergeReleaseAssets
+> Task :local_auth_android:generateReleaseAssets UP-TO-DATE
+> Task :local_auth_android:preBuild UP-TO-DATE
+> Task :local_auth_android:preReleaseBuild UP-TO-DATE
+> Task :local_auth_android:mergeReleaseAssets
+> Task :mobile_scanner:generateReleaseAssets UP-TO-DATE
+> Task :mobile_scanner:preBuild UP-TO-DATE
+> Task :mobile_scanner:preReleaseBuild UP-TO-DATE
+> Task :mobile_scanner:mergeReleaseAssets
+> Task :package_info_plus:generateReleaseAssets UP-TO-DATE
+> Task :package_info_plus:preBuild UP-TO-DATE
+> Task :package_info_plus:preReleaseBuild UP-TO-DATE
+> Task :package_info_plus:mergeReleaseAssets
+> Task :record_android:generateReleaseAssets UP-TO-DATE
+> Task :record_android:preBuild UP-TO-DATE
+> Task :record_android:preReleaseBuild UP-TO-DATE
+> Task :record_android:mergeReleaseAssets
+> Task :shared_preferences_android:generateReleaseAssets UP-TO-DATE
+> Task :shared_preferences_android:preBuild UP-TO-DATE
+> Task :shared_preferences_android:preReleaseBuild UP-TO-DATE
+> Task :shared_preferences_android:mergeReleaseAssets
+> Task :sherpa_onnx_android_arm64:generateReleaseAssets UP-TO-DATE
+> Task :sherpa_onnx_android_arm64:preBuild UP-TO-DATE
+> Task :sherpa_onnx_android_arm64:preReleaseBuild UP-TO-DATE
+> Task :sherpa_onnx_android_arm64:mergeReleaseAssets
+> Task :sherpa_onnx_android_armeabi:generateReleaseAssets UP-TO-DATE
+> Task :sherpa_onnx_android_armeabi:preBuild UP-TO-DATE
+> Task :sherpa_onnx_android_armeabi:preReleaseBuild UP-TO-DATE
+> Task :sherpa_onnx_android_armeabi:mergeReleaseAssets
+> Task :sherpa_onnx_android_x86:generateReleaseAssets UP-TO-DATE
+> Task :sherpa_onnx_android_x86:preBuild UP-TO-DATE
+> Task :sherpa_onnx_android_x86:preReleaseBuild UP-TO-DATE
+> Task :sherpa_onnx_android_x86:mergeReleaseAssets
+> Task :sherpa_onnx_android_x86_64:generateReleaseAssets UP-TO-DATE
+> Task :sherpa_onnx_android_x86_64:preBuild UP-TO-DATE
+> Task :sherpa_onnx_android_x86_64:preReleaseBuild UP-TO-DATE
+> Task :sherpa_onnx_android_x86_64:mergeReleaseAssets
+> Task :url_launcher_android:generateReleaseAssets UP-TO-DATE
+> Task :url_launcher_android:preBuild UP-TO-DATE
+> Task :url_launcher_android:preReleaseBuild UP-TO-DATE
+> Task :url_launcher_android:mergeReleaseAssets
+> Task :app:mergeReleaseAssets
+> Task :app:copyFlutterAssetsRelease
+> Task :app:generateReleaseResources
+> Task :app:packageReleaseResources
+> Task :desktop_drop:processReleaseNavigationResources
+> Task :dynamic_color:processReleaseNavigationResources
+> Task :flutter_plugin_android_lifecycle:processReleaseNavigationResources
+> Task :flutter_secure_storage:processReleaseNavigationResources
+> Task :flutter_timezone:processReleaseNavigationResources
+> Task :image_picker_android:processReleaseNavigationResources
+> Task :jni:processReleaseNavigationResources
+> Task :jni_flutter:processReleaseNavigationResources
+> Task :local_auth_android:processReleaseNavigationResources
+> Task :mobile_scanner:processReleaseNavigationResources
+> Task :package_info_plus:processReleaseNavigationResources
+> Task :record_android:processReleaseNavigationResources
+> Task :shared_preferences_android:processReleaseNavigationResources
+> Task :sherpa_onnx_android_arm64:processReleaseNavigationResources
+> Task :sherpa_onnx_android_armeabi:processReleaseNavigationResources
+> Task :sherpa_onnx_android_x86:processReleaseNavigationResources
+> Task :sherpa_onnx_android_x86_64:processReleaseNavigationResources
+> Task :url_launcher_android:processReleaseNavigationResources
+> Task :app:processReleaseNavigationResources
+> Task :desktop_drop:generateReleaseResources
+> Task :desktop_drop:packageReleaseResources
+> Task :desktop_drop:javaPreCompileRelease
+> Task :dynamic_color:generateReleaseResources
+> Task :desktop_drop:parseReleaseLocalResources
+> Task :dynamic_color:packageReleaseResources
+> Task :desktop_drop:generateReleaseRFile
+> Task :dynamic_color:parseReleaseLocalResources
+> Task :app:parseReleaseLocalResources
+> Task :dynamic_color:generateReleaseRFile
+> Task :dynamic_color:javaPreCompileRelease
+> Task :app:generateReleaseRFile
+> Task :flutter_plugin_android_lifecycle:generateReleaseResources
+> Task :flutter_plugin_android_lifecycle:packageReleaseResources
+> Task :flutter_plugin_android_lifecycle:javaPreCompileRelease
+> Task :flutter_plugin_android_lifecycle:parseReleaseLocalResources
+> Task :flutter_secure_storage:generateReleaseBuildConfig
+> Task :flutter_plugin_android_lifecycle:generateReleaseRFile
+> Task :flutter_secure_storage:generateReleaseResources
+> Task :flutter_plugin_android_lifecycle:compileReleaseKotlin NO-SOURCE
+> Task :flutter_plugin_android_lifecycle:compileReleaseJavaWithJavac
+> Task :flutter_secure_storage:packageReleaseResources
+> Task :flutter_secure_storage:javaPreCompileRelease
+> Task :flutter_timezone:generateReleaseResources
+> Task :flutter_secure_storage:parseReleaseLocalResources
+> Task :flutter_timezone:packageReleaseResources
+> Task :flutter_secure_storage:generateReleaseRFile
+> Task :flutter_plugin_android_lifecycle:bundleLibCompileToJarRelease
+> Task :flutter_secure_storage:compileReleaseKotlin NO-SOURCE
+> Task :flutter_timezone:parseReleaseLocalResources
+> Task :flutter_secure_storage:compileReleaseJavaWithJavac
+> Task :flutter_timezone:javaPreCompileRelease
+> Task :image_picker_android:generateReleaseResources
+> Task :flutter_secure_storage:bundleLibCompileToJarRelease
+> Task :flutter_timezone:generateReleaseRFile
+> Task :image_picker_android:packageReleaseResources
+> Task :image_picker_android:javaPreCompileRelease
+> Task :jni:generateReleaseResources
+> Task :image_picker_android:parseReleaseLocalResources
+> Task :jni:packageReleaseResources
+> Task :image_picker_android:generateReleaseRFile
+> Task :jni:parseReleaseLocalResources
+> Task :jni_flutter:generateReleaseResources
+> Task :jni:javaPreCompileRelease
+> Task :jni:generateReleaseRFile
+> Task :jni_flutter:packageReleaseResources
+> Task :jni:compileReleaseKotlin NO-SOURCE
+> Task :jni:compileReleaseJavaWithJavac
+> Task :jni:bundleLibCompileToJarRelease
+> Task :jni_flutter:javaPreCompileRelease
+> Task :jni_flutter:parseReleaseLocalResources
+> Task :local_auth_android:generateReleaseResources
+> Task :jni_flutter:generateReleaseRFile
+> Task :local_auth_android:packageReleaseResources
+> Task :jni_flutter:compileReleaseKotlin NO-SOURCE
+> Task :jni_flutter:compileReleaseJavaWithJavac
+> Task :jni_flutter:bundleLibCompileToJarRelease
+> Task :local_auth_android:javaPreCompileRelease
+> Task :mobile_scanner:generateReleaseResources
+> Task :mobile_scanner:packageReleaseResources
+> Task :mobile_scanner:javaPreCompileRelease
+> Task :package_info_plus:generateReleaseResources
+> Task :local_auth_android:parseReleaseLocalResources
+> Task :package_info_plus:packageReleaseResources
+> Task :mobile_scanner:parseReleaseLocalResources
+> Task :local_auth_android:generateReleaseRFile
+> Task :mobile_scanner:generateReleaseRFile
+> Task :package_info_plus:parseReleaseLocalResources
+> Task :package_info_plus:generateReleaseRFile
+
+> Task :android_file_picker:compileReleaseKotlin
+w: file:///home/eslam/.pub-cache/hosted/pub.dev/android_file_picker-1.1.0/android/src/main/kotlin/com/mr/flutter/plugin/filepicker/FilePickerDelegate.kt:79:89 Elvis operator (?:) always returns the left operand of non-nullable type 'Uri'.
+w: file:///home/eslam/.pub-cache/hosted/pub.dev/android_file_picker-1.1.0/android/src/main/kotlin/com/mr/flutter/plugin/filepicker/FilePickerPlugin.kt:151:49 Unnecessary safe call on a non-null receiver of type 'HashMap<*, *>'.
+w: file:///home/eslam/.pub-cache/hosted/pub.dev/android_file_picker-1.1.0/android/src/main/kotlin/com/mr/flutter/plugin/filepicker/FilePickerPlugin.kt:152:38 Unnecessary safe call on a non-null receiver of type 'HashMap<*, *>'.
+w: file:///home/eslam/.pub-cache/hosted/pub.dev/android_file_picker-1.1.0/android/src/main/kotlin/com/mr/flutter/plugin/filepicker/FilePickerPlugin.kt:153:60 Unnecessary safe call on a non-null receiver of type 'HashMap<*, *>'.
+w: file:///home/eslam/.pub-cache/hosted/pub.dev/android_file_picker-1.1.0/android/src/main/kotlin/com/mr/flutter/plugin/filepicker/FilePickerPlugin.kt:164:70 Unchecked cast of 'Any?' to 'ArrayList<String>?'.
+w: file:///home/eslam/.pub-cache/hosted/pub.dev/android_file_picker-1.1.0/android/src/main/kotlin/com/mr/flutter/plugin/filepicker/FileUtils.kt:623:45 'enum entry WEBP: Bitmap.CompressFormat' is deprecated. Deprecated in Java.
+w: file:///home/eslam/.pub-cache/hosted/pub.dev/android_file_picker-1.1.0/android/src/main/kotlin/com/mr/flutter/plugin/filepicker/FileUtils.kt:631:35 'enum entry WEBP: Bitmap.CompressFormat' is deprecated. Deprecated in Java.
+
+> Task :flutter_timezone:compileReleaseKotlin
+> Task :dynamic_color:compileReleaseKotlin
+> Task :flutter_timezone:compileReleaseJavaWithJavac NO-SOURCE
+> Task :dynamic_color:compileReleaseJavaWithJavac NO-SOURCE
+> Task :dynamic_color:bundleLibCompileToJarRelease
+> Task :flutter_timezone:bundleLibCompileToJarRelease
+> Task :package_info_plus:javaPreCompileRelease
+> Task :record_android:generateReleaseResources
+> Task :package_info_plus:compileReleaseKotlin
+> Task :record_android:packageReleaseResources
+> Task :package_info_plus:compileReleaseJavaWithJavac NO-SOURCE
+> Task :desktop_drop:compileReleaseKotlin
+> Task :package_info_plus:bundleLibCompileToJarRelease
+> Task :desktop_drop:compileReleaseJavaWithJavac NO-SOURCE
+> Task :record_android:parseReleaseLocalResources
+> Task :desktop_drop:bundleLibCompileToJarRelease
+> Task :record_android:javaPreCompileRelease
+> Task :shared_preferences_android:generateReleaseResources
+> Task :shared_preferences_android:packageReleaseResources
+> Task :shared_preferences_android:javaPreCompileRelease
+> Task :sherpa_onnx_android_arm64:generateReleaseResources
+> Task :shared_preferences_android:parseReleaseLocalResources
+> Task :record_android:generateReleaseRFile
+> Task :image_picker_android:compileReleaseKotlin
+> Task :local_auth_android:compileReleaseKotlin
+> Task :sherpa_onnx_android_arm64:packageReleaseResources
+> Task :android_file_picker:compileReleaseJavaWithJavac NO-SOURCE
+> Task :android_file_picker:bundleLibRuntimeToJarRelease
+> Task :android_file_picker:processReleaseJavaRes
+> Task :android_file_picker:bundleLibCompileToJarRelease
+> Task :image_picker_android:compileReleaseJavaWithJavac
+> Task :local_auth_android:compileReleaseJavaWithJavac NO-SOURCE
+> Task :image_picker_android:bundleLibCompileToJarRelease
+> Task :local_auth_android:bundleLibCompileToJarRelease
+> Task :shared_preferences_android:generateReleaseRFile
+> Task :sherpa_onnx_android_arm64:parseReleaseLocalResources
+> Task :sherpa_onnx_android_arm64:javaPreCompileRelease
+> Task :sherpa_onnx_android_arm64:generateReleaseRFile
+> Task :sherpa_onnx_android_armeabi:generateReleaseResources
+> Task :sherpa_onnx_android_arm64:compileReleaseKotlin NO-SOURCE
+> Task :sherpa_onnx_android_arm64:compileReleaseJavaWithJavac NO-SOURCE
+> Task :sherpa_onnx_android_arm64:bundleLibCompileToJarRelease
+> Task :sherpa_onnx_android_armeabi:packageReleaseResources
+> Task :sherpa_onnx_android_armeabi:javaPreCompileRelease
+> Task :sherpa_onnx_android_x86:generateReleaseResources
+> Task :sherpa_onnx_android_armeabi:parseReleaseLocalResources
+> Task :sherpa_onnx_android_x86:packageReleaseResources
+> Task :sherpa_onnx_android_armeabi:generateReleaseRFile
+> Task :sherpa_onnx_android_armeabi:compileReleaseKotlin NO-SOURCE
+> Task :sherpa_onnx_android_x86:parseReleaseLocalResources
+> Task :sherpa_onnx_android_armeabi:compileReleaseJavaWithJavac NO-SOURCE
+> Task :sherpa_onnx_android_armeabi:bundleLibCompileToJarRelease
+> Task :sherpa_onnx_android_x86:generateReleaseRFile
+> Task :sherpa_onnx_android_x86:javaPreCompileRelease
+> Task :sherpa_onnx_android_x86_64:generateReleaseResources
+> Task :sherpa_onnx_android_x86:compileReleaseKotlin NO-SOURCE
+> Task :sherpa_onnx_android_x86:compileReleaseJavaWithJavac NO-SOURCE
+> Task :sherpa_onnx_android_x86:bundleLibCompileToJarRelease
+> Task :sherpa_onnx_android_x86_64:packageReleaseResources
+> Task :sherpa_onnx_android_x86_64:javaPreCompileRelease
+> Task :url_launcher_android:generateReleaseBuildConfig
+> Task :sherpa_onnx_android_x86_64:parseReleaseLocalResources
+> Task :url_launcher_android:generateReleaseResources
+> Task :sherpa_onnx_android_x86_64:generateReleaseRFile
+> Task :url_launcher_android:packageReleaseResources
+> Task :sherpa_onnx_android_x86_64:compileReleaseKotlin NO-SOURCE
+> Task :sherpa_onnx_android_x86_64:compileReleaseJavaWithJavac NO-SOURCE
+> Task :sherpa_onnx_android_x86_64:bundleLibCompileToJarRelease
+> Task :url_launcher_android:parseReleaseLocalResources
+> Task :url_launcher_android:javaPreCompileRelease
+> Task :app:javaPreCompileRelease
+> Task :url_launcher_android:generateReleaseRFile
+> Task :android_file_picker:mapReleaseSourceSetPaths
+> Task :android_file_picker:compileReleaseLibraryResources
+> Task :mobile_scanner:compileReleaseKotlin
+> Task :android_file_picker:writeReleaseAarMetadata
+> Task :mobile_scanner:compileReleaseJavaWithJavac NO-SOURCE
+> Task :mobile_scanner:bundleLibCompileToJarRelease
+> Task :desktop_drop:writeReleaseAarMetadata
+> Task :dynamic_color:writeReleaseAarMetadata
+> Task :flutter_plugin_android_lifecycle:writeReleaseAarMetadata
+> Task :flutter_secure_storage:writeReleaseAarMetadata
+> Task :flutter_timezone:writeReleaseAarMetadata
+> Task :image_picker_android:writeReleaseAarMetadata
+> Task :jni:writeReleaseAarMetadata
+> Task :jni_flutter:writeReleaseAarMetadata
+> Task :local_auth_android:writeReleaseAarMetadata
+> Task :mobile_scanner:writeReleaseAarMetadata
+> Task :record_android:writeReleaseAarMetadata
+> Task :package_info_plus:writeReleaseAarMetadata
+> Task :shared_preferences_android:writeReleaseAarMetadata
+> Task :sherpa_onnx_android_arm64:writeReleaseAarMetadata
+> Task :sherpa_onnx_android_armeabi:writeReleaseAarMetadata
+> Task :sherpa_onnx_android_x86:writeReleaseAarMetadata
+> Task :sherpa_onnx_android_x86_64:writeReleaseAarMetadata
+> Task :url_launcher_android:writeReleaseAarMetadata
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:compileReleaseNavigationResources
+> Task :app:checkReleaseAarMetadata
+> Task :url_launcher_android:compileReleaseKotlin
+> Task :url_launcher_android:compileReleaseJavaWithJavac
+> Task :url_launcher_android:bundleLibCompileToJarRelease
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :android_file_picker:extractDeepLinksRelease
+> Task :app:extractDeepLinksRelease
+> Task :desktop_drop:extractDeepLinksRelease
+> Task :dynamic_color:extractDeepLinksRelease
+> Task :flutter_plugin_android_lifecycle:extractDeepLinksRelease
+> Task :flutter_secure_storage:extractDeepLinksRelease
+
+> Task :android_file_picker:processReleaseManifest
+package="com.mr.flutter.plugin.filepicker" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/android_file_picker-1.1.0/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.mr.flutter.plugin.filepicker" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/android_file_picker-1.1.0/android/src/main/AndroidManifest.xml.
+
+> Task :flutter_plugin_android_lifecycle:processReleaseManifest
+package="io.flutter.plugins.flutter_plugin_android_lifecycle" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.35/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="io.flutter.plugins.flutter_plugin_android_lifecycle" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.35/android/src/main/AndroidManifest.xml.
+
+> Task :flutter_secure_storage:processReleaseManifest
+> Task :desktop_drop:processReleaseManifest
+> Task :flutter_timezone:extractDeepLinksRelease
+
+> Task :dynamic_color:processReleaseManifest
+package="io.material.plugins.dynamic_color" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/dynamic_color-1.9.0/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="io.material.plugins.dynamic_color" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/dynamic_color-1.9.0/android/src/main/AndroidManifest.xml.
+
+> Task :flutter_timezone:processReleaseManifest
+package="net.wolverinebeach.flutter_timezone" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/flutter_timezone-5.1.0/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="net.wolverinebeach.flutter_timezone" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/flutter_timezone-5.1.0/android/src/main/AndroidManifest.xml.
+
+> Task :image_picker_android:extractDeepLinksRelease
+> Task :jni:extractDeepLinksRelease
+> Task :jni_flutter:extractDeepLinksRelease
+
+> Task :image_picker_android:processReleaseManifest
+package="io.flutter.plugins.imagepicker" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/image_picker_android-0.8.13+22/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="io.flutter.plugins.imagepicker" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/image_picker_android-0.8.13+22/android/src/main/AndroidManifest.xml.
+
+> Task :jni:processReleaseManifest
+package="com.github.dart_lang.jni" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/jni-1.0.3/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.github.dart_lang.jni" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/jni-1.0.3/android/src/main/AndroidManifest.xml.
+
+> Task :jni_flutter:processReleaseManifest
+package="com.github.dart_lang.jni_flutter" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/jni_flutter-1.0.2/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.github.dart_lang.jni_flutter" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/jni_flutter-1.0.2/android/src/main/AndroidManifest.xml.
+
+> Task :local_auth_android:extractDeepLinksRelease
+> Task :mobile_scanner:extractDeepLinksRelease
+
+> Task :local_auth_android:processReleaseManifest
+package="io.flutter.plugins.localauth" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/local_auth_android-2.2.0/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="io.flutter.plugins.localauth" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/local_auth_android-2.2.0/android/src/main/AndroidManifest.xml.
+
+> Task :package_info_plus:extractDeepLinksRelease
+> Task :record_android:extractDeepLinksRelease
+
+> Task :package_info_plus:processReleaseManifest
+package="dev.fluttercommunity.plus.packageinfo" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/package_info_plus-10.2.1/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="dev.fluttercommunity.plus.packageinfo" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/package_info_plus-10.2.1/android/src/main/AndroidManifest.xml.
+
+> Task :shared_preferences_android:extractDeepLinksRelease
+> Task :record_android:processReleaseManifest
+
+> Task :shared_preferences_android:processReleaseManifest
+package="io.flutter.plugins.sharedpreferences" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.27/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="io.flutter.plugins.sharedpreferences" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.27/android/src/main/AndroidManifest.xml.
+
+> Task :sherpa_onnx_android_arm64:extractDeepLinksRelease
+> Task :mobile_scanner:processReleaseManifest
+> Task :app:mergeReleaseResources
+> Task :sherpa_onnx_android_armeabi:extractDeepLinksRelease
+
+> Task :sherpa_onnx_android_arm64:processReleaseManifest
+package="com.k2fsa.sherpa.onnx.arm64" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/sherpa_onnx_android_arm64-1.13.7/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.k2fsa.sherpa.onnx.arm64" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/sherpa_onnx_android_arm64-1.13.7/android/src/main/AndroidManifest.xml.
+
+> Task :sherpa_onnx_android_armeabi:processReleaseManifest
+package="com.k2fsa.sherpa.onnx.armeabi" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/sherpa_onnx_android_armeabi-1.13.7/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.k2fsa.sherpa.onnx.armeabi" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/sherpa_onnx_android_armeabi-1.13.7/android/src/main/AndroidManifest.xml.
+
+> Task :sherpa_onnx_android_x86:extractDeepLinksRelease
+> Task :sherpa_onnx_android_x86_64:extractDeepLinksRelease
+
+> Task :sherpa_onnx_android_x86:processReleaseManifest
+package="com.k2fsa.sherpa.onnx.x86" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/sherpa_onnx_android_x86-1.13.7/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.k2fsa.sherpa.onnx.x86" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/sherpa_onnx_android_x86-1.13.7/android/src/main/AndroidManifest.xml.
+
+> Task :sherpa_onnx_android_x86_64:processReleaseManifest
+package="com.k2fsa.sherpa.onnx.x86_64" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/sherpa_onnx_android_x86_64-1.13.7/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.k2fsa.sherpa.onnx.x86_64" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/sherpa_onnx_android_x86_64-1.13.7/android/src/main/AndroidManifest.xml.
+
+> Task :url_launcher_android:extractDeepLinksRelease
+> Task :desktop_drop:mapReleaseSourceSetPaths
+
+> Task :url_launcher_android:processReleaseManifest
+package="io.flutter.plugins.urllauncher" found in source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.32/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="io.flutter.plugins.urllauncher" from the source AndroidManifest.xml: /home/eslam/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.32/android/src/main/AndroidManifest.xml.
+
+> Task :desktop_drop:compileReleaseLibraryResources
+
+> Task :shared_preferences_android:compileReleaseKotlin
+w: file:///home/eslam/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.27/android/src/main/kotlin/io/flutter/plugins/sharedpreferences/SharedPreferencesPlugin.kt:450:52 Unnecessary non-null assertion (!!) on a non-null receiver of type 'String'.
+
+> Task :app:processReleaseMainManifest
+> Task :shared_preferences_android:compileReleaseJavaWithJavac NO-SOURCE
+> Task :shared_preferences_android:bundleLibCompileToJarRelease
+> Task :app:outputReleaseAppLinkSettings
+> Task :app:processReleaseManifest
+> Task :dynamic_color:mapReleaseSourceSetPaths
+> Task :dynamic_color:compileReleaseLibraryResources
+> Task :flutter_plugin_android_lifecycle:mapReleaseSourceSetPaths
+> Task :flutter_plugin_android_lifecycle:compileReleaseLibraryResources
+> Task :flutter_secure_storage:mapReleaseSourceSetPaths
+> Task :flutter_secure_storage:compileReleaseLibraryResources
+> Task :flutter_timezone:mapReleaseSourceSetPaths
+> Task :flutter_timezone:compileReleaseLibraryResources
+> Task :image_picker_android:mapReleaseSourceSetPaths
+> Task :jni:mapReleaseSourceSetPaths
+> Task :image_picker_android:compileReleaseLibraryResources
+> Task :jni_flutter:mapReleaseSourceSetPaths
+> Task :jni:compileReleaseLibraryResources
+> Task :jni_flutter:compileReleaseLibraryResources
+> Task :local_auth_android:mapReleaseSourceSetPaths
+> Task :mobile_scanner:mapReleaseSourceSetPaths
+> Task :local_auth_android:compileReleaseLibraryResources
+> Task :mobile_scanner:compileReleaseLibraryResources
+> Task :package_info_plus:mapReleaseSourceSetPaths
+> Task :package_info_plus:compileReleaseLibraryResources
+> Task :record_android:mapReleaseSourceSetPaths
+> Task :record_android:compileReleaseLibraryResources
+> Task :shared_preferences_android:mapReleaseSourceSetPaths
+> Task :shared_preferences_android:compileReleaseLibraryResources
+> Task :sherpa_onnx_android_arm64:mapReleaseSourceSetPaths
+> Task :sherpa_onnx_android_arm64:compileReleaseLibraryResources
+> Task :sherpa_onnx_android_armeabi:mapReleaseSourceSetPaths
+> Task :sherpa_onnx_android_armeabi:compileReleaseLibraryResources
+> Task :sherpa_onnx_android_x86:mapReleaseSourceSetPaths
+> Task :app:processReleaseManifestForPackage
+> Task :sherpa_onnx_android_x86:compileReleaseLibraryResources
+> Task :sherpa_onnx_android_x86_64:mapReleaseSourceSetPaths
+> Task :sherpa_onnx_android_x86_64:compileReleaseLibraryResources
+> Task :url_launcher_android:mapReleaseSourceSetPaths
+> Task :app:preReleaseUnitTestBuild
+> Task :url_launcher_android:compileReleaseLibraryResources
+> Task :app:javaPreCompileReleaseUnitTest
+> Task :record_android:compileReleaseKotlin
+> Task :record_android:compileReleaseJavaWithJavac NO-SOURCE
+> Task :record_android:bundleLibCompileToJarRelease
+> Task :desktop_drop:bundleLibRuntimeToJarRelease
+> Task :desktop_drop:processReleaseJavaRes
+> Task :dynamic_color:bundleLibRuntimeToJarRelease
+> Task :dynamic_color:processReleaseJavaRes
+> Task :flutter_plugin_android_lifecycle:processReleaseJavaRes NO-SOURCE
+> Task :flutter_plugin_android_lifecycle:bundleLibRuntimeToJarRelease
+> Task :flutter_secure_storage:processReleaseJavaRes NO-SOURCE
+> Task :flutter_secure_storage:bundleLibRuntimeToJarRelease
+> Task :flutter_timezone:bundleLibRuntimeToJarRelease
+> Task :flutter_timezone:processReleaseJavaRes
+> Task :image_picker_android:bundleLibRuntimeToJarRelease
+> Task :image_picker_android:processReleaseJavaRes
+> Task :jni:processReleaseJavaRes NO-SOURCE
+> Task :jni:bundleLibRuntimeToJarRelease
+> Task :jni_flutter:bundleLibRuntimeToJarRelease
+> Task :jni_flutter:processReleaseJavaRes NO-SOURCE
+> Task :local_auth_android:bundleLibRuntimeToJarRelease
+> Task :local_auth_android:processReleaseJavaRes
+> Task :mobile_scanner:bundleLibRuntimeToJarRelease
+> Task :mobile_scanner:processReleaseJavaRes
+> Task :package_info_plus:bundleLibRuntimeToJarRelease
+> Task :package_info_plus:processReleaseJavaRes
+> Task :record_android:bundleLibRuntimeToJarRelease
+> Task :record_android:processReleaseJavaRes
+> Task :shared_preferences_android:processReleaseJavaRes
+> Task :sherpa_onnx_android_arm64:processReleaseJavaRes NO-SOURCE
+> Task :shared_preferences_android:bundleLibRuntimeToJarRelease
+> Task :sherpa_onnx_android_arm64:bundleLibRuntimeToJarRelease
+> Task :sherpa_onnx_android_armeabi:bundleLibRuntimeToJarRelease
+> Task :sherpa_onnx_android_armeabi:processReleaseJavaRes NO-SOURCE
+> Task :sherpa_onnx_android_x86:bundleLibRuntimeToJarRelease
+> Task :sherpa_onnx_android_x86:processReleaseJavaRes NO-SOURCE
+> Task :sherpa_onnx_android_x86_64:processReleaseJavaRes NO-SOURCE
+> Task :sherpa_onnx_android_x86_64:bundleLibRuntimeToJarRelease
+> Task :url_launcher_android:bundleLibRuntimeToJarRelease
+> Task :url_launcher_android:processReleaseJavaRes
+> Task :app:processReleaseResources
+
+> Task :app:compileReleaseKotlin
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/AppLifecycle.kt:119:23 Condition is always 'false'.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/BuiltinInstallerProducerQaService.kt:275:51 Unnecessary non-null assertion (!!) on a non-null receiver of type 'String'.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/BuiltinInstallerProducerQaService.kt:486:24 'fun get(p0: String!): Any?' is deprecated. Deprecated in Java.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/BuiltinLinux.kt:523:60 Unnecessary non-null assertion (!!) on a non-null receiver of type 'RuntimeProcessIdentity'.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/BuiltinLinux.kt:1704:65 Unnecessary non-null assertion (!!) on a non-null receiver of type 'BuiltinLinux.Service'.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/BuiltinLinux.kt:1714:69 Unnecessary non-null assertion (!!) on a non-null receiver of type 'BuiltinLinux.Service'.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/LocalTerminal.kt:53:28 This class is not recommended for use in Kotlin. Use 'kotlin.Any' instead.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/MainActivity.kt:590:88 No cast needed.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/NativeIdleReturnNotification.kt:27:35 Condition is always 'true'.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/NativeIdleTimer.kt:105:66 Expression is unused.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/NativeIdleTimer.kt:166:65 Expression is unused.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/NativeIdleTimer.kt:170:66 Expression is unused.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/NativeRecoveryBudget.kt:46:23 No cast needed.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/NativeWorkLeaseHost.kt:272:66 Expression is unused.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/PhoneAgentInventory.kt:25:25 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type 'File?'.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/SetupRunner.kt:78:24 This class is not recommended for use in Kotlin. Use 'kotlin.Any' instead.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/SetupRunner.kt:190:19 No cast needed.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/SetupRunner.kt:190:22 This class is not recommended for use in Kotlin. Use 'kotlin.Any' instead.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/SetupRunner.kt:203:19 No cast needed.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/SetupRunner.kt:203:22 This class is not recommended for use in Kotlin. Use 'kotlin.Any' instead.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/SetupRunner.kt:449:23 No cast needed.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/SetupRunner.kt:449:26 This class is not recommended for use in Kotlin. Use 'kotlin.Any' instead.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/SetupRunner.kt:510:19 No cast needed.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/SetupRunner.kt:510:22 This class is not recommended for use in Kotlin. Use 'kotlin.Any' instead.
+w: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/VoiceDownloadNotifications.kt:141:33 'constructor(p0: Context!): Notification.Builder' is deprecated. Deprecated in Java.
+
+> Task :app:compileReleaseJavaWithJavac
+> Task :app:processReleaseJavaRes
+> Task :app:bundleReleaseClassesToCompileJar
+> Task :app:bundleReleaseClassesToRuntimeJar
+> Task :app:compileReleaseUnitTestKotlin
+> Task :app:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processReleaseUnitTestJavaRes
+> Task :app:testReleaseUnitTest
+
+[Incubating] Problems report is available at: file:///home/eslam/Storage/Code/oc_app-codex-relwidget/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.5.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 3m 6s
+332 actionable tasks: 327 executed, 5 up-to-date

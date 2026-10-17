@@ -98,8 +98,16 @@ class FakeSetupEngine implements SetupEngine {
   Future<void> cancel() async => cancels++;
 
   @override
-  Future<void> restore() async => restores++;
+  Future<void> restore({SetupReadScope? scope}) async => restores++;
 
   @override
-  Future<Set<String>> installedOptional() async => optionalInstalled;
+  Future<Set<String>> installedOptional() async {
+    final snapshot = optionalInstalled;
+    final gate = optionalGate;
+    if (gate != null) await gate;
+    return snapshot;
+  }
+
+  /// When set, a read waits for it and returns what was installed when it began.
+  Future<void>? optionalGate;
 }

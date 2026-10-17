@@ -116,7 +116,10 @@ class ServerSwitcherSheet extends StatelessWidget {
     // The phone's own servers in Termux are the rows below, "Connected" when
     // in use: their saved sign-ins are never listed again (owner's phone,
     // 2026-09-25: "This device (Termux)" above "This phone", one server).
-    final currentIsPhoneRow = current != null && shownAsPhoneRow(current);
+    final connectedForRows = controller.api == null ? null : current?.id;
+    final currentIsPhoneRow =
+        current != null &&
+        shownAsPhoneRow(current, among: profiles, preferID: connectedForRows);
     ProfileAttentionSnapshot? snapshotOf(ServerProfile profile) =>
         monitor != null && controller.isProfileReadable(profile.id)
         ? monitor.snapshotFor(profile.id)
@@ -135,7 +138,11 @@ class ServerSwitcherSheet extends StatelessWidget {
       for (final profile in profiles)
         if (profile.id != current?.id &&
             !looksLikeInAppServer(profile) &&
-            !shownAsPhoneRow(profile))
+            !shownAsPhoneRow(
+              profile,
+              among: profiles,
+              preferID: connectedForRows,
+            ))
           profile,
     ];
     final order = {for (final (i, p) in others.indexed) p.id: i};

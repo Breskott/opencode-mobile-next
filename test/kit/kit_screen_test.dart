@@ -462,6 +462,31 @@ void main() {
       expect(find.byKey(const ValueKey('detail')), findsOneWidget);
     });
 
+    testWidgets('behind a sidebar that holds no list, panes follow the body', (
+      tester,
+    ) async {
+      Widget inNav() => KitNav(
+        destinations: const [
+          KitNavDestination(label: 'Work', icon: AppIconography.workspace),
+          KitNavDestination(label: 'Settings', icon: AppIconography.activity),
+        ],
+        selected: 0,
+        onSelected: (_) {},
+        child: two(detail: const SizedBox.expand(key: ValueKey('detail'))),
+      );
+      // 840 - 296 sidebar - 296 list leaves 248: one column, not a squeeze.
+      await _pump(tester, inNav(), size: const Size(840, 800));
+      expect(find.byKey(const ValueKey('list-pane')), findsNothing);
+      expect(find.byKey(const ValueKey('detail')), findsNothing);
+      // 1200 - 296 - 296 leaves 608: both panes, the detail wide enough.
+      await _pump(tester, inNav(), size: const Size(1200, 800));
+      expect(find.byKey(const ValueKey('list-pane')), findsOneWidget);
+      expect(
+        tester.getSize(find.byKey(const ValueKey('detail'))).width,
+        greaterThanOrEqualTo(KitLayout.paneDetailMinWidth),
+      );
+    });
+
     testWidgets('RTL: the list pane is on the right', (tester) async {
       await _pump(
         tester,

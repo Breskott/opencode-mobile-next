@@ -8,6 +8,28 @@ import java.io.FileWriter
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
+/** Fresh storage admission for setup and the private agent host. */
+object SetupDiskSpace {
+    const val MIN_INSTALL_BYTES = 300_000_000L
+    const val MIN_LAUNCH_BYTES = 128_000_000L
+    private const val LOW_SPACE =
+        "There is not enough free space on this phone. Free some storage and try again."
+
+    fun requiredInstallBytes(downloadBytes: Long): Long {
+        val nonnegative = downloadBytes.coerceAtLeast(0L)
+        val doubled = if (nonnegative > Long.MAX_VALUE / 2L) Long.MAX_VALUE else nonnegative * 2L
+        return maxOf(doubled, MIN_INSTALL_BYTES)
+    }
+
+    fun error(directory: File, requiredBytes: Long): String? {
+        var existing = directory
+        while (!existing.exists()) {
+            existing = existing.parentFile ?: return LOW_SPACE
+        }
+        return if (existing.usableSpace >= requiredBytes) null else LOW_SPACE
+    }
+}
+
 /**
  * Runs a phone setup job (docs/design/phone-setup-v2-2026-09-24.md, "Running a
  * setup job"): the components the app asked for, in order, on one background
@@ -36,6 +58,7 @@ class SetupRunner private constructor(private val context: Context) {
         val stage: String?,
         val labels: Map<String, String>,
         val data: Map<String, String>,
+        val agentUser: Boolean = false,
     )
 
     /** What the ongoing notification says; the app sends it localised. */
@@ -126,12 +149,10 @@ class SetupRunner private constructor(private val context: Context) {
                 cancelled = false
                 stepResult = null
                 tail.clear()
-                log?.close()
-                log = try {
-                    FileWriter(logFile, false)
-                } catch (_: Exception) {
-                    null
-                }
+                try { log?.close() } catch (_: Exception) { }
+                // Open the optional details log only once storage admission
+                // succeeds. The durable state writer creates the home first.
+                log = null
                 try {
                     writeNow()
                 } catch (error: SetupPersistenceException) {
@@ -140,8 +161,22 @@ class SetupRunner private constructor(private val context: Context) {
                 }
                 lastNotifiedText = progressText(state.overall())
                 lastNotified = System.currentTimeMillis()
-                SetupService.start(context, texts.channel, texts.title, lastNotifiedText)
-                worker = Thread({ runJob(specs) }, "oc-setup").apply { start() }
+                var workScope: SetupWorkScopes.Scope? = null
+                try {
+                    val prepared = linux.prepareSetupWork()
+                    workScope = prepared
+                    SetupService.start(context, texts.channel, texts.title, lastNotifiedText)
+                    worker = Thread({ linux.withSetupWork(prepared) { runJob(specs) } }, "oc-setup").apply { start() }
+                } catch (_: Throwable) {
+                    workScope?.let { linux.closeSetupWork(it) }
+                    state.state = "failed"
+                    state.error = "The phone setup could not start. Try again."
+                    try { writeNow() } catch (_: SetupPersistenceException) { persistenceFailed() }
+                    try { log?.close() } catch (_: Exception) { }
+                    log = null
+                    try { SetupService.stop(context) } catch (_: Throwable) { }
+                    throw IllegalStateException("The phone setup could not start. Try again.")
+                }
             }
         }
     }
@@ -155,7 +190,7 @@ class SetupRunner private constructor(private val context: Context) {
             (lock as Object).notifyAll()
         }
         // The script and everything it started (npm, curl, apt) end with it.
-        running?.let { BuiltinLinux.stopTree(it) }
+        running?.let { try { linux.stopInstaller(it) } catch (_: Exception) { } }
     }
 
     /** The app finished (or failed) a `step` component of [jobId]. */
@@ -172,15 +207,36 @@ class SetupRunner private constructor(private val context: Context) {
     // ---- the job thread ----------------------------------------------------
 
     private fun runJob(specs: List<Spec>) {
-        val writer = Thread({ flushLoop() }, "oc-setup-writer").apply {
-            isDaemon = true
-            start()
-        }
+        val writer = Thread({ flushLoop() }, "oc-setup-writer").apply { isDaemon = true }
         var failure: String? = null
+        var logOpened = false
         try {
+            writer.start()
             for (spec in specs) {
                 if (spec.skipped) continue
                 if (cancelled) break
+                val requiredBytes = spec.data["requiredFreeBytes"]?.toLongOrNull()
+                    ?.takeIf { it >= SetupDiskSpace.MIN_INSTALL_BYTES }
+                    ?: SetupDiskSpace.MIN_INSTALL_BYTES
+                val storageError = SetupDiskSpace.error(linux.home, requiredBytes)
+                if (storageError != null) {
+                    synchronized(lock) {
+                        job!!.current = spec.id
+                        job!!.component(spec.id).apply {
+                            state = "failed"
+                            error = storageError
+                            endedAt = System.currentTimeMillis()
+                        }
+                    }
+                    failure = storageError
+                    break
+                }
+                if (!logOpened) {
+                    synchronized(lock) {
+                        log = try { FileWriter(logFile, false) } catch (_: Exception) { null }
+                    }
+                    logOpened = true
+                }
                 val component = synchronized(lock) {
                     job!!.current = spec.id
                     job!!.component(spec.id).apply {
@@ -204,8 +260,10 @@ class SetupRunner private constructor(private val context: Context) {
                 } catch (error: SetupPersistenceException) {
                     throw error
                 } catch (e: Throwable) {
-                    Log.e(BuiltinLinux.TAG, "setup ${spec.id} failed", e)
-                    e.message ?: e.javaClass.simpleName
+                    // Agent process exceptions can include private home paths.
+                    Log.e(BuiltinLinux.TAG, "setup component failed")
+                    if (NativeRuntimeOwnership.isUnknownFailure(e)) NativeRuntimeOwnership.UNKNOWN_CODE
+                    else "The setup step could not finish. Try again."
                 }
                 synchronized(lock) {
                     component.endedAt = System.currentTimeMillis()
@@ -226,11 +284,20 @@ class SetupRunner private constructor(private val context: Context) {
             }
         } catch (_: SetupPersistenceException) {
             persistenceFailed()
+        } catch (_: Throwable) {
+            failure = "The setup step could not finish. Try again."
+            synchronized(lock) {
+                job?.components?.filter { it.state == "running" }?.forEach {
+                    it.state = "failed"
+                    it.error = failure
+                    it.endedAt = System.currentTimeMillis()
+                }
+            }
         } finally {
             // Stop admission and drain the periodic owner before the terminal
             // snapshot. interrupt alone cannot cancel file IO already in flight.
             writer.interrupt()
-            writer.join()
+            try { writer.join() } catch (_: InterruptedException) { Thread.currentThread().interrupt() }
         }
         synchronized(lock) {
             val state = job!!
@@ -251,15 +318,20 @@ class SetupRunner private constructor(private val context: Context) {
         }
         val ended = synchronized(lock) { job!!.state }
         val words = texts
-        if (words == null || ended == "cancelled") {
-            SetupService.stop(context)
-        } else {
-            SetupService.finish(
-                context,
-                words.channel,
-                if (ended == "done") words.done else words.stopped,
-                done = ended == "done",
-            )
+        try {
+            if (words == null || ended == "cancelled") {
+                SetupService.stop(context)
+            } else {
+                SetupService.finish(
+                    context,
+                    words.channel,
+                    if (ended == "done") words.done else words.stopped,
+                    done = ended == "done",
+                )
+            }
+        } catch (_: Throwable) {
+            // Durable terminal truth is already stored; notification denial
+            // must never escape the worker and crash the foreground app.
         }
         synchronized(lock) {
             try {
@@ -298,39 +370,76 @@ class SetupRunner private constructor(private val context: Context) {
     private fun runScript(spec: Spec, component: SetupComponentStatus): String? {
         if (!linux.installed) return "The Linux base is not installed"
         val script = spec.script ?: return "No script for ${spec.id}"
-        val started = linux.start(script, null)
-        synchronized(lock) {
-            if (cancelled) {
-                BuiltinLinux.stopTree(started, graceMs = 0)
-                return "cancelled"
-            }
+        val completion = SetupScriptCompletion()
+        val started = linux.startInstaller(
+            completion.wrap(script), NativeInstallerOwnership.targetsForComponent(spec.id),
+            InstallerOperation.INSTALL, agentUser = spec.agentUser)
+        return try { runInstallerScript(spec, component, started, completion) }
+        finally { linux.finishInstaller(started) }
+    }
+
+    private fun runInstallerScript(spec: Spec, component: SetupComponentStatus, started: Process,
+        completion: SetupScriptCompletion): String? {
+        val wasCancelled = synchronized(lock) {
             process = started
+            cancelled
         }
-        started.outputStream.close()
+        if (wasCancelled) {
+            linux.stopInstaller(started)
+            return "cancelled"
+        }
         var last: String? = null
         try {
+            started.outputStream.close()
             started.inputStream.bufferedReader().forEachLine { line ->
-                val event = SetupProtocol.parse(line)
+                if (completion.accept(line)) return@forEachLine
+                val parsed = SetupProtocol.parse(line)
+                val event = installerEvent(spec, parsed)
                 if (event == null) {
-                    logLine(line)
-                    if (line.isNotBlank()) last = line.trim()
+                    if (!spec.agentUser) {
+                        logLine(line)
+                        if (line.isNotBlank()) last = line.trim()
+                    }
                 } else {
                     if (event is SetupProtocol.Event.Stage) logLine("==> ${event.label}")
                     event(component, event)
                 }
             }
         } catch (error: SetupPersistenceException) {
-            BuiltinLinux.stopTree(started)
+            linux.stopInstaller(started)
             synchronized(lock) { process = null }
             throw error
         } catch (_: Exception) {
-            // The stream closes under us when the script is cancelled.
+            // A failed/closed pipe must not leak a running child.
+            try { linux.stopInstaller(started) } catch (_: Exception) { }
         }
-        val code = started.waitFor()
-        synchronized(lock) { process = null }
-        if (cancelled) return "cancelled"
-        return if (code == 0) null else (last ?: "exit $code").take(300)
+        val code = try { started.waitFor() } finally {
+            synchronized(lock) { process = null }
+        }
+        return if (cancelled) "cancelled"
+        else if (code == 0 && completion.exitCode != 0) "The setup step could not finish. Try again."
+        else installerFailure(spec, component, code, last)
     }
+
+    private fun installerFailure(spec: Spec, component: SetupComponentStatus, code: Int, last: String?): String? =
+        if (code == 0) null else if (spec.agentUser) {
+            if (spec.id == "agent-paseo") when (component.stage) {
+                "Checking Paseo checksum" -> "Paseo did not pass its checksum check. Run setup again."
+                "Checking Paseo launch command" -> "Paseo did not pass its launch command check. Run setup again."
+                "Checking Paseo version" -> "Paseo did not pass its version check. Run setup again."
+                else -> "The agent setup could not finish. Try again."
+            } else "The agent setup could not finish. Try again."
+        } else (last ?: "exit $code").take(300)
+
+    private fun installerEvent(spec: Spec, parsed: SetupProtocol.Event?): SetupProtocol.Event? =
+        if (!spec.agentUser) parsed else when (parsed) {
+            is SetupProtocol.Event.Stage -> SetupProtocol.Event.Stage(
+                if (spec.id == "agent-paseo" && parsed.label in PASEO_CHECK_STAGES)
+                    parsed.label else spec.stage ?: "Installing agent",
+            )
+            is SetupProtocol.Event.Version -> if (parsed.text == spec.version) parsed else null
+            else -> parsed
+        }
 
     /**
      * Waits for the app to report the step: ten minutes, or the step's own
@@ -387,6 +496,10 @@ class SetupRunner private constructor(private val context: Context) {
         } catch (_: InterruptedException) {
         } catch (_: SetupPersistenceException) {
             persistenceFailed()
+        } catch (_: Throwable) {
+            // A notification update is optional; unexpected writer failure
+            // leaves a durable failure rather than an uncaught JVM exception.
+            persistenceFailed()
         }
     }
 
@@ -403,7 +516,7 @@ class SetupRunner private constructor(private val context: Context) {
             (lock as Object).notifyAll()
             process
         }
-        running?.let { BuiltinLinux.stopTree(it) }
+        running?.let { try { linux.stopInstaller(it) } catch (_: Exception) { } }
     }
 
     private fun writeNow() {
@@ -436,7 +549,8 @@ class SetupRunner private constructor(private val context: Context) {
             lastNotifiedText = text
         }
         val words = texts ?: return
-        SetupService.update(context, words.channel, words.title, text)
+        try { SetupService.update(context, words.channel, words.title, text) }
+        catch (_: Throwable) { /* Progress notifications are best effort. */ }
     }
 
     private fun progressText(overall: Double): String {
@@ -466,6 +580,9 @@ class SetupRunner private constructor(private val context: Context) {
     }
 
     companion object {
+        private val PASEO_CHECK_STAGES = setOf(
+            "Checking Paseo checksum", "Checking Paseo launch command", "Checking Paseo version",
+        )
         private const val WRITE_INTERVAL_MS = 250L
         private const val NOTIFY_INTERVAL_MS = 1000L
 

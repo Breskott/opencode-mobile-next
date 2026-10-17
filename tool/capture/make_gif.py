@@ -1,6 +1,6 @@
 """Stitches capture frames into the README GIF.
 
-    python3 tool/capture/make_gif.py FRAMES_DIR video/public/demo.gif 390 2
+    python3 tool/capture/make_gif.py FRAMES_DIR tool/demo-video/public/demo.gif 390 2
 
 (390 px wide, every 2nd frame = 15 fps.) The sandbox ffmpeg has no gif
 encoder or palettegen, so Pillow does the job: one global palette built from

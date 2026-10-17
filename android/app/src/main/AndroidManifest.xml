@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
@@ -22,6 +23,14 @@
          requests should be readable in the app's own manifest rather than
          inherited invisibly from a plugin. -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <!-- Shared-storage projects (a folder under /sdcard). Asked for only when
+         the person opens or creates such a project, after a plain
+         explanation (StorageAccess.kt); never at start-up and never for the
+         app's own project space. API 30+ uses All files access; older
+         Androids use the classic storage permissions. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>
     <!-- Drive the on-device opencode server through Termux's RUN_COMMAND service -->
     <uses-permission android:name="com.termux.permission.RUN_COMMAND"/>
     <!-- Package visibility (Android 11+) so we can detect Termux and launch it -->
@@ -38,7 +47,7 @@
     </queries>
     <application
         android:label="${appLabel}"
-        android:name="${applicationName}"
+        android:name=".OcApplication"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
@@ -121,6 +130,24 @@
               android:resource="@style/NormalTheme"
               />
         </activity>
+        <!-- widgetOverlayMain (lib/widgets_overlay) and its three routes ship. -->
+        <meta-data android:name="io.github.eslamasabry.opencode_mobile.WIDGET_OVERLAY_READY"
+            android:value="true" />
+        <activity android:name=".WidgetConfigureActivity" android:exported="true"
+            android:excludeFromRecents="true" android:theme="@style/WidgetOverlayTheme">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".WidgetRouteActivity" android:exported="false"
+            android:excludeFromRecents="true" android:theme="@style/WidgetOverlayTheme" />
+        <activity android:name=".WidgetOverlayActivity" android:exported="false"
+            android:excludeFromRecents="true" android:theme="@style/WidgetOverlayTheme"
+            android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode">
+            <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/WidgetOverlayTheme" />
+        </activity>
+        <receiver android:name=".WidgetActionReceiver" android:exported="false" />
         <service
             android:name=".TermuxResultService"
             android:exported="false" />
@@ -143,9 +170,12 @@
         <service
             android:name=".BackgroundConnectionService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="dataSync|shortService" />
         <receiver
             android:name=".CodingActionReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".StatusActionReceiver"
             android:exported="false" />
         <receiver
             android:name=".LivePauseReceiver"
@@ -163,16 +193,39 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
+        <!-- Quick Settings tile: pause or resume background mode, the same
+             pause as the live notification's button. -->
+        <service
+            android:name=".PauseTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_monochrome"
+            android:label="@string/pause_tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
         <receiver
             android:name=".SessionsWidgetProvider"
             android:exported="true"
-            android:label="@string/widget_description">
+            android:label="@string/widget_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_sessions_info" />
+        </receiver>
+        <receiver
+            android:name=".UsageWidgetProvider"
+            android:exported="true"
+            android:label="@string/usage_widget_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_usage_info" />
         </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
@@ -184,6 +237,13 @@
             android:exported="false"
             android:isolatedProcess="true"
             android:process=":local_pdf" />
+        <receiver android:name=".BuiltinRestoreReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name=".BuiltinIdleReceiver" android:exported="false" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

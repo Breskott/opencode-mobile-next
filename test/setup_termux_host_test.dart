@@ -185,27 +185,13 @@ void main() {
       });
       final engine = ChannelSetupEngine.termux(finisher: (_) async => null);
       addTearDown(engine.dispose);
-      await expectLater(
-        engine.run({}),
-        throwsA(
-          isA<BuiltinLinuxException>().having(
-            (error) => error.code,
-            'code',
-            'permission_denied',
-          ),
-        ),
-      );
+      // A start that cannot read the saved job publishes a failure; it never
+      // starts a fresh job over it.
+      await engine.run({});
+      expect(engine.progress.value.state, SetupState.failed);
       inaccessible = false;
-      await expectLater(
-        engine.run({}),
-        throwsA(
-          isA<BuiltinLinuxException>().having(
-            (error) => error.code,
-            'code',
-            'setup_status_invalid',
-          ),
-        ),
-      );
+      await engine.run({});
+      expect(engine.progress.value.state, SetupState.failed);
       expect(calls, everyElement('setupStatus'));
     },
   );

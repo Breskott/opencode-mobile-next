@@ -24,7 +24,7 @@ This unit provides three parts:
     - `guide_screen.dart:249`.
   - `InteractiveViewer` 4: `file_preview.dart:396`, `pdf_file_preview.dart:200`, `svg_file_preview.dart:101` and `team/work_graph.dart:433` (canvas mode).
 - **Classes it makes redundant** (their files are outside this write set, so the owning units move the callers and the last one deletes the classes, KIT-43):
-  - `ProviderLogo` and `ProviderMonogram` (`lib/ui/widgets/provider_logo.dart`) → `KitAvatar(image: KitImageSource.provider(...), name:)`. The favicon URL stays app-authored in `api/provider_presentation.dart` and reaches the kit as an `ImageProvider`.
+  - `ProviderLogo` and `ProviderMonogram` (`lib/ui/widgets/provider_logo.dart`) → `KitAvatar(image: KitImageSource.vectorLogo(...), name:)`. The models.dev logo URL is built in `api/provider_logo_store.dart` from a validated slug; the kit only receives a loader that yields SVG text.
   - `BrandTile` → `KitSurface.tile` / `KitAvatar`.
 - **Not here:**
   - `QrImage` → `KitQr`.
@@ -46,6 +46,11 @@ sealed class KitImageSource {
   const factory KitImageSource.memory(Uint8List bytes) = _MemorySource;
   const factory KitImageSource.asset(String name) = _AssetSource;           // bundled raster only
   const factory KitImageSource.provider(ImageProvider provider) = _ProviderSource;
+  /// KitAvatar only. A monochrome vector logo: [id] names it (equal ids are the same logo), [load] yields
+  /// its SVG text or null for "no logo" (a failure and a throw are the same). Drawn in the circle inset 6 dp,
+  /// tinted text1 (never an identity colour, STATE-9), in light and dark. Initials show while loading and
+  /// whenever there is nothing to draw; there is no error badge. In a plain KitImage it is the failure state.
+  const factory KitImageSource.vectorLogo({required String id, required Future<String?> Function() load}) = _VectorLogoSource;
 }
 
 enum KitImageFit { contain, cover }
@@ -80,6 +85,7 @@ class KitAvatar extends StatelessWidget {
     IconData? icon,              // an AppIconography glyph instead of initials (a server, the phone)
     KitAvatarSize size = KitAvatarSize.tile,
     bool decorative = false,     // true when the row beside it already says [name]
+    bool optionalImage = false,  // true for a nice-to-have logo: a failure keeps the initials, no error badge
   });
 }
 

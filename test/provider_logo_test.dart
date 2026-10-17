@@ -1,23 +1,14 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:opencode_mobile/api/provider_presentation.dart';
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/widgets/provider_logo.dart';
 
-/// A valid 1x1 opaque PNG so a "known provider" logo can decode without the
-/// network.
-final Uint8List _onePixelPng = Uint8List.fromList(const [
-  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // signature
-  0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR
-  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00,
-  0x90, 0x77, 0x53, 0xDE,
-  0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41, 0x54, // IDAT
-  0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00, 0x00, 0x03, 0x01, 0x01, 0x00,
-  0x18, 0xDD, 0x8D, 0xB0,
-  0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82, //
-]);
+const String _svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+    '<path fill="currentColor" d="M2 2h20v20H2z"/></svg>';
 
 Widget _app(Widget child, {Brightness brightness = Brightness.light}) =>
     MaterialApp(
@@ -26,7 +17,7 @@ Widget _app(Widget child, {Brightness brightness = Brightness.light}) =>
     );
 
 void main() {
-  tearDown(() => ProviderLogo.imageProviderOverride = null);
+  tearDown(() => ProviderLogo.logoLoaderOverride = null);
 
   group('provider logo domains', () {
     test('known ids map to the provider website', () {
@@ -44,14 +35,6 @@ void main() {
       expect(providerLogoDomain('Weird Lab!'), 'weirdlab.com');
     });
 
-    test('logo URL addresses the favicon service directly', () {
-      final url = providerLogoUrl('groq');
-      expect(url.host, 't1.gstatic.com');
-      expect(url.path, '/faviconV2');
-      expect(url.queryParameters['url'], 'https://groq.com');
-      expect(url.queryParameters['size'], '128');
-    });
-
     test('monogram takes initials of the presented name', () {
       expect(providerMonogram('fireworks-ai'), 'FA');
       expect(providerMonogram('groq'), 'GR');
@@ -60,55 +43,51 @@ void main() {
     });
   });
 
-  testWidgets('known provider renders the fetched image', (tester) async {
+  testWidgets('known provider renders the tinted vector logo', (tester) async {
     final requested = <String>[];
-    ProviderLogo.imageProviderOverride = (url) {
-      requested.add(url);
-      return MemoryImage(_onePixelPng);
+    ProviderLogo.logoLoaderOverride = (id) {
+      requested.add(id);
+      return Future.value(_svg);
     };
 
     await tester.pumpWidget(_app(const ProviderLogo('anthropic')));
-    // Image decoding is real async work; let it finish outside FakeAsync.
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 200)),
-    );
-    await tester.pumpAndSettle();
+    // Initials while loading.
+    expect(find.text('A'), findsOneWidget);
+    await tester.pump();
+    await tester.pump();
 
-    expect(requested.single, contains('anthropic.com'));
-    final image = tester.widget<Image>(
-      find.descendant(
-        of: find.byType(ProviderLogo),
-        matching: find.byType(Image),
-      ),
+    expect(requested.single, 'anthropic');
+    final picture = tester.widget<SvgPicture>(find.byType(SvgPicture));
+    final context = tester.element(find.byType(SvgPicture));
+    expect(
+      picture.colorFilter,
+      ColorFilter.mode(KitTokens.of(context).roles.text1, BlendMode.srcIn),
     );
-    // KitAvatar (KitImage.md): the circle is always filled, decoded for its
-    // laid-out size, filtered at high quality.
-    expect(image.fit, BoxFit.cover);
-    expect(image.filterQuality, FilterQuality.high);
     // The default is the kit's tile size, so it lines up with row tiles.
     expect(tester.getSize(find.byType(ProviderLogo)), const Size(30, 30));
   });
 
-  testWidgets('a logo that cannot load falls back to the monogram', (
+  testWidgets('a logo that cannot load keeps the monogram, no badge', (
     tester,
   ) async {
-    ProviderLogo.imageProviderOverride = (_) => MemoryImage(Uint8List(0));
+    ProviderLogo.logoLoaderOverride = (_) => Future.value(null);
 
     await tester.pumpWidget(_app(const ProviderLogo('fireworks-ai')));
     await tester.pumpAndSettle();
 
     expect(find.text('FA'), findsOneWidget);
+    expect(find.byType(SvgPicture), findsNothing);
   });
 
   testWidgets('skipping the image renders the monogram deterministically', (
     tester,
   ) async {
-    ProviderLogo.imageProviderOverride = (_) => null;
+    ProviderLogo.logoLoaderOverride = (_) => null;
 
     await tester.pumpWidget(_app(const ProviderLogo('groq', size: 18)));
     await tester.pump();
 
-    expect(find.byType(Image), findsNothing);
+    expect(find.byType(SvgPicture), findsNothing);
     // KitAvatar's initials: the first grapheme of each of the presented
     // name's first two words ("Groq" -> "G").
     expect(find.text('G'), findsOneWidget);
@@ -119,9 +98,9 @@ void main() {
     tester,
   ) async {
     var requests = 0;
-    ProviderLogo.imageProviderOverride = (_) {
+    ProviderLogo.logoLoaderOverride = (_) {
       requests++;
-      return MemoryImage(_onePixelPng);
+      return Future.value(_svg);
     };
 
     await tester.pumpWidget(
@@ -130,7 +109,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(requests, 0);
-    expect(find.byType(Image), findsNothing);
+    expect(find.byType(SvgPicture), findsNothing);
     final glyph = find.byKey(const ValueKey('provider-logo-prompt-glyph'));
     expect(glyph, findsOneWidget);
     expect(
@@ -143,7 +122,7 @@ void main() {
   });
 
   testWidgets('logo is decorative and excluded from semantics', (tester) async {
-    ProviderLogo.imageProviderOverride = (_) => null;
+    ProviderLogo.logoLoaderOverride = (_) => null;
     final handle = tester.ensureSemantics();
 
     await tester.pumpWidget(_app(const ProviderLogo('groq')));

@@ -80,7 +80,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   tearDown(() {
-    KitGlassShader.debugReset();
     KitHaptics.enabled = true;
     KitMotion.loops = false;
     harvestedDynamicPack.value = null;
@@ -118,6 +117,30 @@ void main() {
         isFalse,
       );
       expect(store.prefs.getString('oc.effectsMotion'), 'calm');
+    });
+
+    test('Live background and its look survive a restart', () async {
+      final (controller, store) = await _controller();
+      expect(controller.effects.value.liveBackground, isTrue);
+      expect(controller.effects.value.liveStyle, 'aurora');
+      await controller.setEffects(
+        controller.effects.value.copyWith(
+          liveBackground: false,
+          liveStyle: 'topo',
+        ),
+      );
+      controller.dispose();
+      final restarted = ConnectionController(ProfileStore(prefs: store.prefs));
+      addTearDown(restarted.dispose);
+      expect(restarted.effects.value.liveBackground, isFalse);
+      expect(restarted.effects.value.liveStyle, 'topo');
+      // Per device, never per server.
+      expect(
+        store
+            .profileScopedPreferenceKeys('3f2a9c1e-7d4b-4e21-9a0f-5c6d7e8f9a0b')
+            .contains('oc.effectsLiveStyle'),
+        isFalse,
+      );
     });
 
     test('older installs map onto the one Motion choice', () async {
@@ -162,7 +185,6 @@ void main() {
         addTearDown(controller.dispose);
         expect(store.effects.motion, expected, reason: '$saved');
         expect(store.effects.celebrations, celebrates, reason: '$saved');
-        expect(store.effects.glass, isTrue, reason: '$saved');
         expect(store.effects.haptics, isTrue, reason: '$saved');
       }
     });
@@ -207,31 +229,6 @@ void main() {
       expect(find.text('Celebrations'), findsNothing);
       expect(find.text('Vibration'), findsNothing);
       expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('says once when glass was turned off after crashes, and '
-        'turning it back on clears that', (tester) async {
-      final (controller, _) = await _controller();
-      addTearDown(controller.dispose);
-      addTearDown(KitGlassSafety.debugReset);
-      await tester.pumpWidget(_page(controller));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Liquid glass was turned off'), findsNothing);
-
-      KitGlassSafety.turnedOffAfterCrashes.value = true;
-      await tester.pumpAndSettle();
-      await _show(tester, find.textContaining('Liquid glass was turned off'));
-      expect(
-        find.text(
-          'Liquid glass was turned off after the app closed unexpectedly twice.',
-        ),
-        findsOneWidget,
-      );
-
-      await tester.tap(find.text('Turn it back on'));
-      await tester.pumpAndSettle();
-      expect(KitGlassSafety.turnedOffAfterCrashes.value, isFalse);
-      expect(find.textContaining('Liquid glass was turned off'), findsNothing);
     });
 
     testWidgets('Motion: Calm and Off are chosen and saved', (tester) async {
@@ -332,6 +329,218 @@ void main() {
       await tester.pump();
       // Off: every drawing shows its finished frame, pages change at once.
       expect(KitMotion.reduced(underNavigator(tester)), isTrue);
+    });
+  });
+  group('Glowing border while replying', () {
+    test('is on by default: classic, one colour, normal speed', () async {
+      final (controller, store) = await _controller();
+      addTearDown(controller.dispose);
+      final effects = store.effects;
+      expect(effects.activityGlow, isTrue);
+      expect(effects.glowStyle, KitGlowStyle.classic);
+      expect(effects.glowColours, KitGlowColours.one);
+      expect(effects.glowSpeed, KitGlowSpeed.normal);
+      expect(KitEffects.defaults.activityGlow, isTrue);
+    });
+
+    test(
+      'migration: no stored choice reads on, a stored off stays off',
+      () async {
+        // An install from before the switch was on by default: the key was
+        // never written (setEffects only writes a changed value).
+        final (controller, store) = await _controller({
+          'oc.effectsMotion': 'full',
+        });
+        addTearDown(controller.dispose);
+        expect(store.effects.activityGlow, isTrue);
+        // Someone who turned it on, and someone who turned it off, keep that.
+        final (c2, s2) = await _controller({'oc.effectsActivityGlow': false});
+        addTearDown(c2.dispose);
+        expect(s2.effects.activityGlow, isFalse);
+        final (c3, s3) = await _controller({'oc.effectsActivityGlow': true});
+        addTearDown(c3.dispose);
+        expect(s3.effects.activityGlow, isTrue);
+        // Unknown stored options fall back to the defaults.
+        final (c4, s4) = await _controller({
+          'oc.effectsGlowStyle': 'sparkles',
+          'oc.effectsGlowColours': 'rainbow',
+          'oc.effectsGlowSpeed': 'warp',
+        });
+        addTearDown(c4.dispose);
+        expect(s4.effects.glowStyle, KitGlowStyle.classic);
+        expect(s4.effects.glowColours, KitGlowColours.one);
+        expect(s4.effects.glowSpeed, KitGlowSpeed.normal);
+      },
+    );
+
+    test('switch and options persist device-wide and restart', () async {
+      final (controller, store) = await _controller();
+      addTearDown(controller.dispose);
+      await controller.setEffects(
+        controller.effects.value.copyWith(activityGlow: false),
+      );
+      expect(store.prefs.getBool('oc.effectsActivityGlow'), isFalse);
+      expect(
+        store
+            .profileScopedPreferenceKeys('3f2a9c1e-7d4b-4e21-9a0f-5c6d7e8f9a0b')
+            .any((k) => k.startsWith('oc.effectsGlow')),
+        isFalse,
+      );
+      expect(ProfileStore(prefs: store.prefs).effects.activityGlow, isFalse);
+      await controller.setEffects(
+        controller.effects.value.copyWith(
+          activityGlow: true,
+          glowStyle: KitGlowStyle.softRing,
+          glowColours: KitGlowColours.two,
+          glowSpeed: KitGlowSpeed.fast,
+        ),
+      );
+      expect(store.prefs.getString('oc.effectsGlowStyle'), 'softRing');
+      expect(store.prefs.getString('oc.effectsGlowColours'), 'two');
+      expect(store.prefs.getString('oc.effectsGlowSpeed'), 'fast');
+      final next = ProfileStore(prefs: store.prefs).effects;
+      expect(next.activityGlow, isTrue);
+      expect(next.glowStyle, KitGlowStyle.softRing);
+      expect(next.glowColours, KitGlowColours.two);
+      expect(next.glowSpeed, KitGlowSpeed.fast);
+    });
+
+    testWidgets('the options show only while the switch is on', (tester) async {
+      final (controller, store) = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_page(controller));
+      await tester.pumpAndSettle();
+      final row = find.byKey(const ValueKey('effects-glow'));
+      await _show(tester, row);
+      expect(find.text('Glowing border while replying'), findsOneWidget);
+      final toggle = find.byKey(const ValueKey('effects-glow-switch'));
+      expect(tester.widget<Switch>(toggle).value, isTrue);
+      for (final id in ['style', 'colours', 'speed']) {
+        expect(find.byKey(ValueKey('effects-glow-$id')), findsOneWidget);
+      }
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(controller.effects.value.activityGlow, isFalse);
+      expect(store.prefs.getBool('oc.effectsActivityGlow'), isFalse);
+      for (final id in ['style', 'colours', 'speed']) {
+        expect(find.byKey(ValueKey('effects-glow-$id')), findsNothing);
+      }
+    });
+
+    testWidgets(
+      'Live background: switch, look row, picker, preview, Use this',
+      (tester) async {
+        tester.view.physicalSize = const Size(412, 2400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final (controller, store) = await _controller();
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(_page(controller));
+        await tester.pumpAndSettle();
+        await _show(
+          tester,
+          find.byKey(const ValueKey('effects-live-background')),
+        );
+        final toggle = find.byKey(
+          const ValueKey('effects-live-background-switch'),
+        );
+        expect(tester.widget<Switch>(toggle).value, isTrue);
+        // The look row opens the picker; a tile opens its preview; Use this
+        // saves it for this device.
+        await tester.tap(find.byKey(const ValueKey('effects-live-style')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('live-style-topo')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('live-style-use')));
+        await tester.pumpAndSettle();
+        expect(controller.effects.value.liveStyle, 'topo');
+        expect(store.prefs.getString('oc.effectsLiveStyle'), 'topo');
+        Navigator.of(tester.element(find.byType(KitScreen).first)).pop();
+        await tester.pumpAndSettle();
+        // Off hides the look row.
+        await _show(
+          tester,
+          find.byKey(const ValueKey('effects-live-background')),
+        );
+        await tester.tap(toggle);
+        await tester.pumpAndSettle();
+        expect(controller.effects.value.liveBackground, isFalse);
+        expect(find.byKey(const ValueKey('effects-live-style')), findsNothing);
+      },
+    );
+
+    testWidgets('a live sample of the chosen look heads the card', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final (controller, _) = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_page(controller));
+      await tester.pumpAndSettle();
+      final sample = find.byKey(const ValueKey('effects-look-preview'));
+      expect(sample, findsOneWidget);
+      // Short, and the Motion row follows it closely.
+      expect(tester.getSize(sample).height, lessThan(121));
+      expect(find.byType(KitIllustration), findsNothing);
+      final motion = find.byKey(const ValueKey('effects-motion'));
+      expect(
+        tester.getTopLeft(motion).dy - tester.getBottomLeft(sample).dy,
+        lessThan(40),
+      );
+      // It shows the chosen look and Intensity.
+      KitLiveLookPreview part() => tester.widget<KitLiveLookPreview>(sample);
+      expect(part().style.id, 'aurora');
+      await _show(
+        tester,
+        find.byKey(const ValueKey('effects-live-intensity-bold')),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('effects-live-intensity-bold')),
+      );
+      await tester.pumpAndSettle();
+      expect(part().intensity, KitLiveIntensity.bold);
+      // Tapping it opens the look picker.
+      await tester.ensureVisible(sample);
+      await tester.pumpAndSettle();
+      await tester.tap(sample);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('live-style-topo')), findsOneWidget);
+      Navigator.of(tester.element(find.byType(KitScreen).first)).pop();
+      await tester.pumpAndSettle();
+      // Switch off: the sample goes flat and says so.
+      await tester.tap(
+        find.byKey(const ValueKey('effects-live-background-switch')),
+      );
+      await tester.pumpAndSettle();
+      expect(part().enabled, isFalse);
+      expect(
+        find.descendant(of: sample, matching: find.text('Off')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('each option saves when chosen', (tester) async {
+      final (controller, store) = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_page(controller));
+      await tester.pumpAndSettle();
+      for (final (key, pref, value) in [
+        ('effects-glow-style-softRing', 'oc.effectsGlowStyle', 'softRing'),
+        ('effects-glow-colours-two', 'oc.effectsGlowColours', 'two'),
+        ('effects-glow-speed-fast', 'oc.effectsGlowSpeed', 'fast'),
+        ('effects-glow-speed-slow', 'oc.effectsGlowSpeed', 'slow'),
+      ]) {
+        final segment = find.byKey(ValueKey(key));
+        await _show(tester, segment);
+        await tester.tap(segment);
+        await tester.pumpAndSettle();
+        expect(store.prefs.getString(pref), value);
+      }
+      expect(controller.effects.value.glowStyle, KitGlowStyle.softRing);
+      expect(controller.effects.value.glowColours, KitGlowColours.two);
+      expect(controller.effects.value.glowSpeed, KitGlowSpeed.slow);
     });
   });
 }

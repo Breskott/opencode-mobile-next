@@ -29,7 +29,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// each with the reason. Everything else must be found by its title.
 const _excluded = <String, String>{
   // Not reachable by choice: the app shows them on its own.
-  'home-shell': 'the frame around the four tabs; each tab is found on its own',
+  'home-shell': 'the frame around the three tabs; each tab is found on its own',
+  'chats-new-chat': 'opened from the New conversation button on Conversations',
+  'agents-sign-in-terminal':
+      "an agent's own sign-in, opened from the agent sheet's Sign in step",
   'root-connecting': 'shown automatically while a saved server connects',
   'bootstrap-gate': 'startup failure screen; nothing is connected yet',
   'servers-welcome': 'first run only, before any server exists',
@@ -41,11 +44,10 @@ const _excluded = <String, String>{
       'shown on its own when an old team was left on after the update',
   // Need a conversation: the conversation menu and its command launcher are
   // their search (phase 4 adds them to this index through the registry).
-  'chat': 'a conversation; opened from Work, Inbox or All conversations',
+  'chat': 'a conversation; opened from Chats or All conversations',
   'active-context': 'needs an open conversation',
   'active-context-message': 'needs an open conversation and a message',
   'prompt-editor': 'needs an open conversation (composer)',
-  'run-result': 'needs an open conversation',
   'session-context': 'needs an open conversation',
   'session-export': 'needs an open conversation',
   'session-note': 'needs an open conversation',
@@ -54,8 +56,7 @@ const _excluded = <String, String>{
   'web-sources': 'adds a source to the open conversation',
   'staged-revert': 'needs a staged revert in an open conversation',
   // Need something picked first.
-  'projects': 'a picker that returns the chosen project to Work',
-  'workspace-folder-chooser': 'a state of the Work tab, not a place',
+  'projects': 'a picker that returns the chosen project to Files',
   'shell-output': 'the output of one command that was just run',
   'terminal-surface': 'one terminal process; opened from Terminal',
   'diff-view': 'one file of a review; opened from Changes',
@@ -85,6 +86,44 @@ const _excluded = <String, String>{
   'phone-setup-progress':
       'a step of phone setup; opened from On this phone '
       'or a setup notification',
+  // FactsBook is compiled behind the OC_FACTSBOOK developer flag and is not in
+  // the search index while the flag is off (decision D33); its screens are
+  // reached from the Memory row, not from search.
+  'factsbook-about-you':
+      'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-areas': 'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-capture':
+      'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-connect':
+      'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-event': 'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-memory-care':
+      'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-not-saved':
+      'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-phone-node':
+      'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-reminders':
+      'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-rule-editor':
+      'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-search': 'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-settings':
+      'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-status': 'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-thing': 'behind the FactsBook developer flag; opened from Memory',
+  'factsbook-triggers':
+      'behind the FactsBook developer flag; opened from Memory',
+  'server-page': "one saved server's own page; opened from Servers",
+  'by-server':
+      'settings listed per server; appears once more than one server '
+      'is saved',
+  'usage-add-picker': 'a step of adding a subscription; opened from Usage',
+  'usage-add': 'a step of adding a subscription; opened from Usage',
+  'usage-read-from': 'a step of adding a subscription',
+  'usage-subscription': 'one plan; opened from Plans',
+  'live-style-picker': 'opened from Appearance › Live background',
+  'live-style-preview': 'one look; opened from the look picker',
   'phone-setup-ready':
       'a step of phone setup; shown automatically when a '
       'first setup finishes',
@@ -350,9 +389,8 @@ void main() {
         expect(
           ids,
           containsAll([
-            'tab-work',
-            'tab-inbox',
-            'tab-project',
+            'tab-chats',
+            'tab-files',
             'project-files',
             'project-changes',
             'project-terminal',
@@ -383,7 +421,7 @@ void main() {
       addTearDown(controller.dispose);
       final found = searchEntries(_en, scope(controller), 'ai setup');
       expect(found.first.id, 'inside-server-ai-setup');
-      expect(found.first.parent, _en.settingsHubThisServer);
+      expect(found.first.parent, _en.settingsV3Servers);
       expect(
         _ids(searchEntries(_en, scope(controller), 'suggestions')),
         contains('inside-server-ai-setup'),
@@ -460,7 +498,7 @@ void main() {
             reason: tool.name,
           );
         }
-        expect(ids.contains('tab-project'), tools.isNotEmpty);
+        expect(ids.contains('tab-files'), tools.isNotEmpty);
         expect(
           ids.contains('all-conversations'),
           capabilities.globalSessionSearch,
@@ -484,8 +522,7 @@ void main() {
           containsAll([
             'settings-category-appearance',
             'inside-appearance-language',
-            'tab-work',
-            'tab-inbox',
+            'tab-chats',
           ]),
         );
       });
@@ -544,9 +581,8 @@ void main() {
       addTearDown(controller.dispose);
       final ids = _ids(searchIndex(_en, scope(controller, hasShell: false)));
       for (final id in [
-        'tab-work',
-        'tab-inbox',
-        'tab-project',
+        'tab-chats',
+        'tab-files',
         'tab-settings',
         'project-files',
         'project-search',
@@ -661,6 +697,25 @@ void main() {
       expect(_key('theme-pack-${'opencode'}'), findsWidgets);
     });
 
+    testWidgets('usage finds the cost row, not Show reasoning (Q4)', (
+      tester,
+    ) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      final ids = _ids(found(controller, 'usage'));
+      expect(ids, contains('settings-show-timestamps'));
+      expect(ids, isNot(contains('settings-show-reasoning')));
+      expect(
+        _ids(found(controller, 'reasoning')),
+        contains('settings-show-reasoning'),
+      );
+      // The old "Remaining" heading is not an entry title any more.
+      expect(
+        _ids(found(controller, _en.usageTabPlans)),
+        contains('inside-usage-remaining'),
+      );
+    });
+
     testWidgets('budget and always allowed are found', (tester) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
@@ -710,7 +765,7 @@ void main() {
       await tester.pumpWidget(_app(controller, shell: seen));
       await tester.pumpAndSettle();
 
-      await openResult(tester, controller, _en.shellTabInbox, 'tab-inbox');
+      await openResult(tester, controller, _en.shellTabFiles, 'tab-files');
       await tester.pump();
       expect(seen.single, isA<SelectDestinationIntent>());
       expect((seen.single as SelectDestinationIntent).index, 1);
@@ -733,8 +788,8 @@ void main() {
       addTearDown(controller.dispose);
       final scope = SearchScope(controller: controller, hasShell: false);
       expect(
-        _ids(searchEntries(_en, scope, _en.shellTabInbox)),
-        isNot(contains('tab-inbox')),
+        _ids(searchEntries(_en, scope, _en.shellTabChats)),
+        isNot(contains('tab-chats')),
       );
       expect(
         _ids(searchEntries(_en, scope, 'terminal')),

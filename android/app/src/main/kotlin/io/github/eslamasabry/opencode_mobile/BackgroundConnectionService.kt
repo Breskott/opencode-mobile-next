@@ -14,24 +14,51 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import io.flutter.plugin.common.MethodChannel
 
 class BackgroundConnectionService : Service() {
+    private var liveOwner = false
+    private val widgetActions = BackgroundWidgetActionController(this, { liveOwner }) {
+        widgetActionPending = it
+    }
+
     override fun onCreate() {
         super.onCreate()
-        active = true
-        createLiveNotificationChannel()
+        StatusNotification.ensureChannel(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val notification = buildLiveNotification(this, liveStatus)
+        if (intent?.action == ACTION_WIDGET_ACTION) {
+            widgetActions.start(intent, startId)
+            return START_NOT_STICKY
+        }
+        // One shared status row: the phone server service uses the same ID.
+        val notification = StatusNotification.begin(this, StatusNotification.OWNER_LIVE)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
-                NOTIFICATION_ID,
+                StatusNotification.ID,
                 notification,
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
             )
         } else {
-            startForeground(NOTIFICATION_ID, notification)
+            startForeground(StatusNotification.ID, notification)
+        }
+        // Accepted start requests/onCreate are not evidence of a foreground
+        // service. Clear the durable pause only after startForeground succeeds.
+        if (!runCatching { BackgroundPauseStore(this).confirmedStarted() }.getOrDefault(false)) {
+            releaseStatus()
+            stopSelf(startId)
+        } else {
+            liveOwner = true
+            active = true
+            // A deliberate opt-in may arrive while the tap is executing. Its live
+            // ownership survives completion of that independent transient action.
+            if (widgetActions.hasLease) {
+                getSystemService(NotificationManager::class.java).cancel(WIDGET_ACTION_NOTIFICATION_ID)
+            }
+            // Redraw only: an accepted Android service start is not server connectivity.
+            runCatching { SessionsWidgetProvider.refreshAll(this) }
+            LivePauseReceiver.setPausedByUser(this, false)
         }
         return START_NOT_STICKY
     }
@@ -39,8 +66,32 @@ class BackgroundConnectionService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        active = false
+        widgetActions.destroy()
+        runCatching { SessionsWidgetProvider.refreshAll(this) }
+        if (liveOwner) {
+            active = false
+            runCatching { WidgetV2Bridge.invalidateConnection(this) }
+        }
+        getSystemService(NotificationManager::class.java).cancel(WIDGET_ACTION_NOTIFICATION_ID)
+        // Idempotent: a service already released in onTimeout owns nothing.
+        // While the phone server still runs, the shared row stays for it.
+        if (liveOwner) StatusNotification.end(this, StatusNotification.OWNER_LIVE)
         super.onDestroy()
+    }
+
+    /**
+     * Gives up this service's share of the one status row. Only the last owner
+     * removes it; otherwise it is detached and stays for the service that
+     * still runs.
+     */
+    private fun releaseStatus() {
+        val last = StatusNotification.end(this, StatusNotification.OWNER_LIVE)
+        stopForeground(if (last) STOP_FOREGROUND_REMOVE else STOP_FOREGROUND_DETACH)
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        if (liveOwner) runCatching { BackgroundPauseStore(this).recordTaskRemoved() }
+        super.onTaskRemoved(rootIntent)
     }
 
     /**
@@ -55,38 +106,62 @@ class BackgroundConnectionService : Service() {
      * the session it claims is live.
      */
     override fun onTimeout(startId: Int, fgsType: Int) {
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        if (!liveOwner) {
+            widgetActions.finish(null)
+            stopSelf()
+            return
+        }
+        // commit before stopping: neither Flutter nor onDestroy is guaranteed
+        // to be alive afterward. An old enabled preference must not restart it.
+        runCatching { BackgroundPauseStore(this).timeout() }
+        active = false
+        runCatching { WidgetV2Bridge.invalidateConnection(this) }
+        releaseStatus()
+        // The row says why, instead of vanishing: Android's background limit.
+        StatusNotification.pausedByAndroid(this)
         notifyDartOfTimeout()
         stopSelf(startId)
     }
 
-    private fun notifyDartOfTimeout() = notifyDartStopped(REASON_SYSTEM_TIMEOUT)
-
-    private fun createLiveNotificationChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val manager = getSystemService(NotificationManager::class.java)
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "Live coding connection",
-            NotificationManager.IMPORTANCE_LOW
-        ).apply {
-            description = "Shown while OpenCode keeps a server session live in the background"
-            setShowBadge(false)
+    /** Android 14 shortService timeout. Never change the permanent preference. */
+    override fun onTimeout(startId: Int) {
+        if (!liveOwner) {
+            widgetActions.finish(null)
+            stopSelf()
         }
-        manager.createNotificationChannel(channel)
     }
 
+    private fun notifyDartOfTimeout() = notifyDartStopped(
+        REASON_SYSTEM_TIMEOUT,
+        runCatching { BackgroundPauseStore(this).status(false) }.getOrNull(),
+    )
+
     companion object {
-        private const val CHANNEL_ID = "opencode_live_connection"
-        private const val NOTIFICATION_ID = 4747
+        const val ACTION_WIDGET_ACTION = "io.github.eslamasabry.opencode_mobile.action.WIDGET_ACTION"
+        internal const val WIDGET_ACTION_NOTIFICATION_ID = 4748
+        @Volatile internal var widgetActionPending = false
+            private set
+
+        private const val WIDGET_DISPATCH_TIMEOUT_MS = 6500L
+
         private const val ACTION_CHANNEL_ID = "opencode_coding_action"
         private const val STATUS_CHANNEL_ID = "opencode_coding_status"
         private const val TEAM_PROGRESS_CHANNEL_ID = "opencode_team_progress"
         // An ongoing team-progress notification removes itself if the app
         // stops refreshing it (nothing here assumes unbounded lifetime).
         private const val TEAM_PROGRESS_TIMEOUT_MS = 20L * 60L * 1000L
+        private const val ACTION_QUIET_CHANNEL_ID = "opencode_coding_action_quiet"
         private const val CODING_ALERT_ID_BASE = 6000
-        private const val CODING_ALERT_GROUP = "opencode_coding_alerts"
+        private const val GROUP_NEEDS_YOU = "opencode_needs_you"
+        private const val GROUP_FINISHED = "opencode_finished"
+        private const val NEEDS_SUMMARY_ID = 5998
+        private const val FINISHED_SUMMARY_ID = 5999
+        private const val MAX_SUMMARY_LINES = 5
+        private const val MAX_ALERT_TITLE = 80
+        private const val MAX_ALERT_DETAIL = 140
+
+        // A finished reply clears itself after an hour.
+        private const val FINISHED_TIMEOUT_MS = 60L * 60L * 1000L
 
         /// Pushed to Dart when Android's foreground-service time limit stops
         /// this service, and when the user taps "Pause background" on the
@@ -104,49 +179,23 @@ class BackgroundConnectionService : Service() {
         var active: Boolean = false
             private set
 
-        /** What the ongoing notification currently says; survives restarts
-         *  of the service so a re-enabled connection shows the last truth
-         *  until Dart pushes a fresh one. */
-        @Volatile
-        var liveStatus: LiveStatus = LiveStatus()
-            private set
-
-        data class LiveStatus(
-            val runningCount: Int = 0,
-            val pendingCount: Int = 0,
-            val title: String? = null,
-            val detail: String? = null
-        )
-
         /**
-         * Rebuilds the ongoing notification from Dart's session truth. Returns
-         * whether a notification was actually refreshed; when the service is
-         * not running the status is only remembered for its next start.
+         * Dart's wording for the one status notification (the `status` map of
+         * `updateLiveStatus`). Returns whether a notification was refreshed;
+         * when no service is running the wording is only remembered for the
+         * next start. A malformed map is refused and changes nothing.
          */
-        fun updateLiveStatus(
-            context: Context,
-            runningCount: Int,
-            pendingCount: Int,
-            title: String?,
-            detail: String?
-        ): Boolean {
-            val status = LiveStatus(
-                runningCount = runningCount.coerceAtLeast(0),
-                pendingCount = pendingCount.coerceAtLeast(0),
-                title = title?.trim()?.takeIf { it.isNotEmpty() },
-                detail = detail?.trim()?.takeIf { it.isNotEmpty() }
-            )
-            if (status == liveStatus && active) return true
-            liveStatus = status
-            if (!active) return false
-            val manager = context.getSystemService(NotificationManager::class.java)
-            manager.notify(NOTIFICATION_ID, buildLiveNotification(context, status))
-            return true
+        fun updateLiveStatus(context: Context, status: Map<*, *>?): Boolean {
+            val content = StatusContent.fromMap(status) ?: return false
+            return StatusNotification.push(context, content)
         }
+
+        /** Locale changes refresh fixed copy even when the status is unchanged. */
+        fun refreshLocale(context: Context) = StatusNotification.refresh(context)
 
         /** Tells Dart the service stopped so the persisted preference and the
          *  settings switch follow the service rather than outliving it. */
-        fun notifyDartStopped(reason: String) {
+        fun notifyDartStopped(reason: String, pause: Map<String, Any?>? = null) {
             val channel = MainActivity.backgroundChannel ?: return
             // invokeMethod is main-thread only; onTimeout and broadcasts are
             // not guaranteed to arrive there.
@@ -156,86 +205,72 @@ class BackgroundConnectionService : Service() {
                     mapOf(
                         "enabled" to false,
                         "active" to false,
-                        "reason" to reason
+                        "reason" to reason,
+                        "backgroundPause" to pause,
                     )
                 )
             }
         }
 
-        private fun buildLiveNotification(context: Context, status: LiveStatus): Notification {
-            val openApp = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            }
-            val pendingIntent = PendingIntent.getActivity(
-                context,
-                0,
-                openApp,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            val pauseIntent = PendingIntent.getBroadcast(
-                context,
-                1,
-                Intent(context, LivePauseReceiver::class.java).apply {
-                    action = ACTION_PAUSE_LIVE
-                },
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            val running = status.runningCount
-            val pending = status.pendingCount
-            val title = status.title?.let { "OpenCode · $it" } ?: "OpenCode is connected"
-            val text = status.detail ?: when {
-                running > 0 && pending > 0 ->
-                    "${plural(running, "session")} running · ${plural(pending, "need")} you"
-                running > 0 -> "${plural(running, "session")} running"
-                pending > 0 -> "${plural(pending, "request")} ${if (pending == 1) "needs" else "need"} you"
-                else -> "Connected, nothing running"
-            }
-            val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                Notification.Builder(context, CHANNEL_ID)
-            } else {
-                @Suppress("DEPRECATION")
-                Notification.Builder(context)
-            }
-            builder
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(title)
-                .setContentText(text)
-                .setContentIntent(pendingIntent)
-                .setOngoing(true)
-                .setOnlyAlertOnce(true)
-                .setShowWhen(false)
-                .setCategory(Notification.CATEGORY_SERVICE)
-                // Session titles are the user's own words; keep them off the
-                // lock screen like every other coding alert.
-                .setVisibility(Notification.VISIBILITY_PRIVATE)
-                .addAction(
-                    Notification.Action.Builder(
-                        Icon.createWithResource(context, R.mipmap.ic_launcher),
-                        "Pause background",
-                        pauseIntent
-                    ).build()
-                )
-            if (running > 0) builder.setProgress(0, 0, true)
-            if (
-                Build.VERSION.SDK_INT >= 36 &&
-                Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1
-            ) {
-                // Android 16 live updates: promoted to the status bar chip and
-                // pinned atop the shade while something is actually running.
-                builder.setRequestPromotedOngoing(true)
-                val chip = when {
-                    running > 0 -> "$running running"
-                    pending > 0 -> "$pending need you"
-                    else -> null
+        /** Widget and notification actions share the live engine and its domain gateway.
+         * Never start/restart dataSync here: Android 15's budget is authoritative. */
+        internal fun dispatchWidgetAction(
+            payload: Map<String, Any?>,
+            complete: (Map<String, Any?>) -> Unit,
+        ) {
+            val handler = Handler(Looper.getMainLooper())
+            handler.post {
+                val channel = MainActivity.backgroundChannel
+                if (!active || channel == null) {
+                    complete(WidgetActionBridge.result(payload, "rejected", "unavailable"))
+                    return@post
                 }
-                builder.setShortCriticalText(chip)
+                var finished = false
+                val timeout = Runnable {
+                    if (!finished) {
+                        finished = true
+                        complete(WidgetActionBridge.result(payload, "uncertain", "uncertainDelivery"))
+                    }
+                }
+                fun finish(value: Map<String, Any?>) {
+                    if (finished) return
+                    finished = true
+                    handler.removeCallbacks(timeout)
+                    complete(value)
+                }
+                handler.postDelayed(timeout, WIDGET_DISPATCH_TIMEOUT_MS)
+                try {
+                    channel.invokeMethod("widgetAction", payload, object : MethodChannel.Result {
+                        override fun success(result: Any?) {
+                            val response = result as? Map<*, *>
+                            val status = response?.get("status") as? String
+                            val sameAction = response != null && response["id"] == payload["id"] &&
+                                response["action"] == payload["action"]
+                            if (!sameAction || status !in setOf("accepted", "rejected", "uncertain")) {
+                                finish(WidgetActionBridge.result(payload, "uncertain", "uncertainDelivery"))
+                                return
+                            }
+                            // Only bounded enum tokens cross back into persistent snapshots.
+                            val error = (response["error"] as? String)?.takeIf {
+                                it in setOf(
+                                    "invalidRequest", "staleRequest", "unavailable",
+                                    "unsupported", "busy", "uncertainDelivery",
+                                )
+                            }
+                            finish(WidgetActionBridge.result(payload, status!!, error))
+                        }
+                        override fun error(code: String, message: String?, details: Any?) {
+                            finish(WidgetActionBridge.result(payload, "uncertain", "uncertainDelivery"))
+                        }
+                        override fun notImplemented() {
+                            finish(WidgetActionBridge.result(payload, "rejected", "unavailable"))
+                        }
+                    })
+                } catch (_: RuntimeException) {
+                    finish(WidgetActionBridge.result(payload, "uncertain", "uncertainDelivery"))
+                }
             }
-            return builder.build()
         }
-
-        private fun plural(count: Int, noun: String): String =
-            if (noun == "need") count.toString()
-            else "$count $noun${if (count == 1) "" else "s"}"
 
         fun start(context: Context) {
             val intent = Intent(context, BackgroundConnectionService::class.java)
@@ -247,136 +282,225 @@ class BackgroundConnectionService : Service() {
         }
 
         fun stop(context: Context) {
+            active = false
             context.stopService(Intent(context, BackgroundConnectionService::class.java))
         }
 
-        @Suppress("DEPRECATION")
-        fun showCodingAlert(
-            context: Context,
-            kind: String,
-            sessionID: String,
-            key: String,
-            quickReply: Boolean = false,
-            requestID: String = "",
-            profileID: String = "",
-            allowActions: Boolean = true,
-            monitorToken: String = "",
-            subtext: String = "",
-            title: String = "",
-            text: String = ""
-        ): Boolean {
-            if (sessionID.isBlank() || key.isBlank()) return false
-            if (kind == "quota" && (sessionID != "quota" || profileID.isBlank() ||
-                !monitorToken.matches(Regex("^[a-f0-9]{64}$")))) return false
+        internal fun showCodingAlert(context: Context, request: CodingAlertRequest): Boolean {
+            if (!validCodingAlert(request)) return false
             val manager = context.getSystemService(NotificationManager::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N &&
-                !manager.areNotificationsEnabled()
-            ) {
-                return false
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && !manager.areNotificationsEnabled()) {
+                false
+            } else {
+                baseCodingAlertContent(context, request)?.let {
+                    postCodingAlert(context, manager, request, it)
+                } ?: false
             }
+        }
 
-            val content = when (kind) {
-                "quota" -> CodingAlertContent(
-                    channelID = STATUS_CHANNEL_ID,
-                    title = "Provider usage reached your threshold",
-                    text = "Open to check current usage.",
-                    category = Notification.CATEGORY_STATUS,
-                    priority = Notification.PRIORITY_DEFAULT
-                )
-                "permission" -> CodingAlertContent(
-                    channelID = ACTION_CHANNEL_ID,
-                    title = "OpenCode needs permission",
-                    text = "Tap to review the pending request.",
-                    category = Notification.CATEGORY_RECOMMENDATION,
-                    priority = Notification.PRIORITY_HIGH
-                )
-                "question" -> CodingAlertContent(
-                    channelID = ACTION_CHANNEL_ID,
-                    title = "OpenCode needs your input",
-                    text = "Tap to answer the pending question.",
-                    category = Notification.CATEGORY_RECOMMENDATION,
-                    priority = Notification.PRIORITY_HIGH
-                )
-                "complete" -> CodingAlertContent(
-                    channelID = STATUS_CHANNEL_ID,
-                    title = "OpenCode finished",
-                    text = "Tap to review the latest result.",
-                    category = Notification.CATEGORY_STATUS,
-                    priority = Notification.PRIORITY_DEFAULT
-                )
-                "error" -> CodingAlertContent(
-                    channelID = ACTION_CHANNEL_ID,
-                    title = "OpenCode session needs attention",
-                    text = "Tap to review the session error.",
-                    category = Notification.CATEGORY_ERROR,
-                    priority = Notification.PRIORITY_HIGH
-                )
-                // Check-in reminder: the app observed a session busy past the
-                // user's chosen duration. Fixed copy like every other kind;
-                // the session is named only inside the app.
-                "checkin" -> CodingAlertContent(
-                    channelID = STATUS_CHANNEL_ID,
-                    title = "OpenCode is still working",
-                    text = "Tap to check in on the session.",
-                    category = Notification.CATEGORY_STATUS,
-                    priority = Notification.PRIORITY_DEFAULT
-                )
-                // AI Team (TEAM-203): fixed copy per kind; the session id is
-                // a gate or run id that Dart routes to the exact sheet. No
-                // title, prompt or option ever travels; `subtext` is only
-                // the saved server's name.
-                "team_decision" -> CodingAlertContent(
-                    channelID = ACTION_CHANNEL_ID,
-                    title = "AI Team needs a decision",
-                    text = "Tap to answer it in the app.",
-                    category = Notification.CATEGORY_RECOMMENDATION,
-                    priority = Notification.PRIORITY_HIGH
-                )
-                "team_run_failed" -> CodingAlertContent(
-                    channelID = ACTION_CHANNEL_ID,
-                    title = "A run failed",
-                    text = "Tap to see what happened.",
-                    category = Notification.CATEGORY_ERROR,
-                    priority = Notification.PRIORITY_HIGH
-                )
-                "team_review" -> CodingAlertContent(
-                    channelID = STATUS_CHANNEL_ID,
-                    title = "A run is ready for review",
-                    text = "Tap to review it.",
-                    category = Notification.CATEGORY_STATUS,
-                    priority = Notification.PRIORITY_DEFAULT
-                )
-                "team_completed" -> CodingAlertContent(
-                    channelID = STATUS_CHANNEL_ID,
-                    title = "A run completed",
-                    text = "Tap to see the result.",
-                    category = Notification.CATEGORY_STATUS,
-                    priority = Notification.PRIORITY_DEFAULT
-                )
-                // AI Team progress: one ongoing, silent notification. The
-                // one place the app hands over its own line ("AI Team:
-                // <task> · step 3 of 5"); the lock screen shows fixed copy.
-                "team_progress" -> {
-                    if (text.isBlank()) return false
-                    CodingAlertContent(
-                        channelID = TEAM_PROGRESS_CHANNEL_ID,
-                        title = title.ifBlank { "AI Team" },
-                        text = text,
-                        category = Notification.CATEGORY_PROGRESS,
-                        priority = Notification.PRIORITY_LOW
+        private fun validCodingAlert(request: CodingAlertRequest): Boolean = with(request) {
+            val quota = kind == "quota" || kind == "quota_reset"
+            val validQuota = sessionID == "quota" && profileID.isNotBlank() &&
+                monitorToken.matches(Regex("^[a-f0-9]{64}$"))
+            sessionID.isNotBlank() && key.isNotBlank() && (!quota || validQuota)
+        }
+
+        private fun baseCodingAlertContent(context: Context, request: CodingAlertRequest): CodingAlertContent? =
+            with(request) {
+                val agent = agentName.takeIf { it.matches(Regex("^[A-Za-z0-9 .-]{1,32}$")) } ?: "OpenCode"
+                when (kind) {
+                    "quota" -> CodingAlertContent(
+                        channelID = STATUS_CHANNEL_ID,
+                        title = NativeStrings.get(context, R.string.native_alert_quota_title),
+                        text = NativeStrings.get(context, R.string.native_alert_quota_body),
+                        category = Notification.CATEGORY_STATUS,
+                        priority = Notification.PRIORITY_DEFAULT
                     )
+                    // A plan limit came back. Fixed copy; only a validated, short
+                    // provider name enters the title.
+                    "quota_reset" -> CodingAlertContent(
+                        channelID = STATUS_CHANNEL_ID,
+                        title = if (agentName.matches(Regex("^[A-Za-z0-9 .-]{1,32}$"))) {
+                            NativeStrings.get(context, R.string.native_alert_quota_reset_title, agentName)
+                        } else {
+                            NativeStrings.get(context, R.string.native_alert_quota_reset_generic_title)
+                        },
+                        text = NativeStrings.get(context, R.string.native_alert_quota_reset_body),
+                        category = Notification.CATEGORY_STATUS,
+                        priority = Notification.PRIORITY_DEFAULT
+                    )
+                    "permission" -> CodingAlertContent(
+                        channelID = ACTION_CHANNEL_ID,
+                        title = NativeStrings.get(context, R.string.native_alert_permission_title, agent),
+                        text = NativeStrings.get(context, R.string.native_alert_permission_body),
+                        category = Notification.CATEGORY_RECOMMENDATION,
+                        priority = Notification.PRIORITY_HIGH
+                    )
+                    "question" -> CodingAlertContent(
+                        channelID = ACTION_CHANNEL_ID,
+                        title = NativeStrings.get(context, R.string.native_alert_question_title, agent),
+                        text = NativeStrings.get(context, R.string.native_alert_question_body),
+                        category = Notification.CATEGORY_RECOMMENDATION,
+                        priority = Notification.PRIORITY_HIGH
+                    )
+                    "complete" -> CodingAlertContent(
+                        channelID = STATUS_CHANNEL_ID,
+                        title = NativeStrings.get(context, R.string.native_alert_complete_title, agent),
+                        text = NativeStrings.get(context, R.string.native_alert_complete_body),
+                        category = Notification.CATEGORY_STATUS,
+                        priority = Notification.PRIORITY_DEFAULT
+                    )
+                    "error" -> CodingAlertContent(
+                        channelID = ACTION_CHANNEL_ID,
+                        title = NativeStrings.get(context, R.string.native_alert_error_title, agent),
+                        text = NativeStrings.get(context, R.string.native_alert_error_body),
+                        category = Notification.CATEGORY_ERROR,
+                        priority = Notification.PRIORITY_HIGH
+                    )
+                    else -> teamCodingAlertContent(context, request)
                 }
-                else -> return false
             }
 
-            createCodingAlertChannels(manager)
+        private fun teamCodingAlertContent(context: Context, request: CodingAlertRequest): CodingAlertContent? =
+            with(request) {
+                val agent = agentName.takeIf { it.matches(Regex("^[A-Za-z0-9 .-]{1,32}$")) } ?: "OpenCode"
+                when (kind) {
+                    // Check-in reminder: the app observed a session busy past the
+                    // user's chosen duration. Fixed copy like every other kind;
+                    // the session is named only inside the app.
+                    "checkin" -> CodingAlertContent(
+                        channelID = STATUS_CHANNEL_ID,
+                        title = NativeStrings.get(context, R.string.native_alert_checkin_title, agent),
+                        text = NativeStrings.get(context, R.string.native_alert_checkin_body),
+                        category = Notification.CATEGORY_STATUS,
+                        priority = Notification.PRIORITY_DEFAULT
+                    )
+                    // AI Team (TEAM-203): fixed copy per kind; the session id is
+                    // a gate or run id that Dart routes to the exact sheet. No
+                    // title, prompt or option ever travels; `subtext` is only
+                    // the saved server's name.
+                    "team_decision" -> CodingAlertContent(
+                        channelID = ACTION_CHANNEL_ID,
+                        title = NativeStrings.get(context, R.string.native_team_decision_title),
+                        text = NativeStrings.get(context, R.string.native_team_decision_body),
+                        category = Notification.CATEGORY_RECOMMENDATION,
+                        priority = Notification.PRIORITY_HIGH
+                    )
+                    "team_run_failed" -> CodingAlertContent(
+                        channelID = ACTION_CHANNEL_ID,
+                        title = NativeStrings.get(context, R.string.native_team_failed_title),
+                        text = NativeStrings.get(context, R.string.native_team_failed_body),
+                        category = Notification.CATEGORY_ERROR,
+                        priority = Notification.PRIORITY_HIGH
+                    )
+                    "team_review" -> CodingAlertContent(
+                        channelID = STATUS_CHANNEL_ID,
+                        title = NativeStrings.get(context, R.string.native_team_review_title),
+                        text = NativeStrings.get(context, R.string.native_team_review_body),
+                        category = Notification.CATEGORY_STATUS,
+                        priority = Notification.PRIORITY_DEFAULT
+                    )
+                    "team_completed" -> CodingAlertContent(
+                        channelID = STATUS_CHANNEL_ID,
+                        title = NativeStrings.get(context, R.string.native_team_completed_title),
+                        text = NativeStrings.get(context, R.string.native_team_completed_body),
+                        category = Notification.CATEGORY_STATUS,
+                        priority = Notification.PRIORITY_DEFAULT
+                    )
+                    // AI Team progress: one ongoing, silent notification. The
+                    // one place the app hands over its own line ("AI Team:
+                    // <task> · step 3 of 5"); the lock screen shows fixed copy.
+                    "team_progress" -> {
+                        if (text.isBlank()) null else CodingAlertContent(
+                            channelID = TEAM_PROGRESS_CHANNEL_ID,
+                            title = title.ifBlank { NativeStrings.get(context, R.string.native_team_title) },
+                            text = text,
+                            category = Notification.CATEGORY_PROGRESS,
+                            priority = Notification.PRIORITY_LOW
+                        )
+                    }
+                    else -> null
+                }
+            }
+
+        private fun privateCodingAlertContent(
+            context: Context,
+            request: CodingAlertRequest,
+            baseContent: CodingAlertContent,
+        ): CodingAlertContent = with(request) {
+            val agent = agentName.takeIf { it.matches(Regex("^[A-Za-z0-9 .-]{1,32}$")) } ?: "OpenCode"
+            // The words the person chose (chat title, the first line of a
+            // reply) appear in the shade; the lock screen gets the public
+            // version below. Raw errors never travel: only a reason token.
+            val chat = chatTitle.trim().take(MAX_ALERT_TITLE)
+            val summaryLine = detail.trim().take(MAX_ALERT_DETAIL)
+            when (kind) {
+                "permission", "question" -> baseContent.copy(
+                    title = if (AlertTitles.usesCommandTitle(kind, shellCommand)) {
+                        NativeStrings.get(context, R.string.native_alert_permission_command_title)
+                    } else baseContent.title,
+                    text = summaryLine.ifEmpty { baseContent.text }
+                )
+                "complete" -> if (chat.isEmpty()) baseContent else baseContent.copy(
+                    title = NativeStrings.get(context, R.string.native_alert_complete_title, chat),
+                    text = summaryLine.ifEmpty { baseContent.text }
+                )
+                "error" -> baseContent.copy(
+                    title = NativeStrings.get(
+                        context, R.string.native_alert_stopped_title, chat.ifEmpty { agent }
+                    ),
+                    text = NativeStrings.get(context, alertReasonText(reason))
+                )
+                else -> baseContent
+            }
+        }
+
+        private fun postCodingAlert(
+            context: Context,
+            manager: NotificationManager,
+            request: CodingAlertRequest,
+            baseContent: CodingAlertContent,
+        ): Boolean = with(request) {
+            val content = privateCodingAlertContent(context, request, baseContent)
+            val publicContent = if (kind == "error") baseContent.copy(
+                title = NativeStrings.get(context, R.string.native_status_public_stopped), text = ""
+            ) else baseContent
+            // Quiet requests use a low-importance channel, without sound or heads-up.
+            val channelID = if (silent && content.channelID == ACTION_CHANNEL_ID) {
+                ACTION_QUIET_CHANNEL_ID
+            } else content.channelID
+            createCodingAlertChannels(context, manager)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-                manager.getNotificationChannel(content.channelID)?.importance ==
-                NotificationManager.IMPORTANCE_NONE
-            ) {
-                return false
+                manager.getNotificationChannel(channelID)?.importance == NotificationManager.IMPORTANCE_NONE
+            ) return@with false
+            val notificationID = codingAlertNotificationID(key)
+            val builder = codingAlertBuilder(context, request, content, channelID)
+            if (kind == "team_progress") {
+                configureTeamProgress(context, builder)
+            } else {
+                configureCodingAlertPrivacy(context, request, builder, publicContent, channelID)
             }
+            // The chat's name rides beside the app name, not in the title.
+            val chat = chatTitle.trim().take(MAX_ALERT_TITLE)
+            val sub = subtext.ifBlank { if (kind == "permission" || kind == "question") chat else "" }
+            if (sub.isNotBlank()) builder.setSubText(sub)
+            val buttons = AlertButtons.plan(kind, quickReply, options)
+            for (action in if (allowActions) codingAlertActions(
+                context, request, buttons, notificationID
+            ) else emptyList()) {
+                builder.addAction(action)
+            }
+            manager.notify(notificationID, builder.build())
+            alertGroup(kind)?.let { refreshGroupSummary(context, manager, it) }
+            true
+        }
 
+        private fun codingAlertBuilder(
+            context: Context,
+            request: CodingAlertRequest,
+            content: CodingAlertContent,
+            channelID: String,
+        ): Notification.Builder = with(request) {
             val notificationID = codingAlertNotificationID(key)
             val openApp = Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -392,60 +516,166 @@ class BackgroundConnectionService : Service() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                Notification.Builder(context, content.channelID)
+                Notification.Builder(context, channelID)
             } else {
                 @Suppress("DEPRECATION")
                 Notification.Builder(context).setPriority(content.priority)
             }
             builder
                 .setSmallIcon(R.mipmap.ic_launcher)
+                // Only a validated, short agent name enters the localized template.
                 .setContentTitle(content.title)
                 .setContentText(content.text)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(kind != "team_progress")
-                .setOnlyAlertOnce(kind != "quota")
+                .setOnlyAlertOnce(kind != "quota" && kind != "quota_reset")
                 .setCategory(content.category)
                 .setVisibility(Notification.VISIBILITY_PRIVATE)
-            if (kind == "team_progress") {
-                builder.setOngoing(true).setShowWhen(false)
-                // Timeout and a channel-bound public version need API 26;
-                // minSdk is 24, where the app's own clear is the only one.
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    builder
-                        .setTimeoutAfter(TEAM_PROGRESS_TIMEOUT_MS)
-                        .setPublicVersion(
-                            Notification.Builder(context, TEAM_PROGRESS_CHANNEL_ID)
-                                .setSmallIcon(R.mipmap.ic_launcher)
-                                .setContentTitle("AI Team")
-                                .setContentText("Working")
-                                .build()
-                        )
-                }
-            } else {
-                builder.setGroup(CODING_ALERT_GROUP)
-            }
-            if (subtext.isNotBlank()) builder.setSubText(subtext)
-            for (action in if (allowActions) codingAlertActions(
-                context, kind, sessionID, key, quickReply, requestID, notificationID, profileID
-            ) else emptyList()) {
-                builder.addAction(action)
-            }
-            manager.notify(notificationID, builder.build())
-            return true
         }
+
+        private fun configureTeamProgress(context: Context, builder: Notification.Builder) {
+            builder.setOngoing(true).setShowWhen(false)
+            // Timeout and a channel-bound public version need API 26;
+            // minSdk is 24, where the app's own clear is the only one.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                builder
+                    .setTimeoutAfter(TEAM_PROGRESS_TIMEOUT_MS)
+                    .setPublicVersion(
+                        Notification.Builder(context, TEAM_PROGRESS_CHANNEL_ID)
+                            .setSmallIcon(R.mipmap.ic_launcher)
+                            .setContentTitle(NativeStrings.get(context, R.string.native_team_title))
+                            .setContentText(NativeStrings.get(context, R.string.native_team_working))
+                            .build()
+                    )
+            }
+        }
+
+        private fun configureCodingAlertPrivacy(
+            context: Context,
+            request: CodingAlertRequest,
+            builder: Notification.Builder,
+            publicContent: CodingAlertContent,
+            channelID: String,
+        ) {
+            val kind = request.kind
+            alertGroup(kind)?.let { builder.setGroup(it) }
+            if (kind == "complete" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // A finished reply fades on its own; opening the chat clears
+                // it sooner (Dart dismisses it).
+                builder.setTimeoutAfter(FINISHED_TIMEOUT_MS)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && kind != "quota" && kind != "quota_reset") {
+                builder.setPublicVersion(
+                    Notification.Builder(context, channelID)
+                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setContentTitle(publicContent.title)
+                        .apply { if (publicContent.text.isNotEmpty()) setContentText(publicContent.text) }
+                        .build()
+                )
+            }
+        }
+
+        private fun alertGroup(kind: String): String? = when (kind) {
+            "permission", "question", "team_decision" -> GROUP_NEEDS_YOU
+            "complete" -> GROUP_FINISHED
+            else -> null
+        }
+
+        private fun alertReasonText(reason: String): Int = when (reason) {
+            "auth" -> R.string.native_alert_reason_auth
+            "context" -> R.string.native_alert_reason_context
+            "length" -> R.string.native_alert_reason_length
+            "filter" -> R.string.native_alert_reason_filter
+            "model" -> R.string.native_alert_reason_model
+            else -> R.string.native_alert_reason_other
+        }
+
+        /**
+         * One summary per group ("3 need you", "3 replies finished") while two
+         * or more of its alerts show; none for a single alert. The summary's
+         * lines come from the children's own titles, never from Dart.
+         */
+        private fun refreshGroupSummary(context: Context, manager: NotificationManager, group: String) {
+            try {
+                val summaryID = if (group == GROUP_NEEDS_YOU) NEEDS_SUMMARY_ID else FINISHED_SUMMARY_ID
+                val children = manager.activeNotifications.filter {
+                    it.packageName == context.packageName &&
+                        it.notification.group == group &&
+                        (it.notification.flags and Notification.FLAG_GROUP_SUMMARY) == 0
+                }
+                if (children.size < 2) {
+                    manager.cancel(summaryID)
+                    return
+                }
+                val needs = group == GROUP_NEEDS_YOU
+                val plural = if (needs) R.plurals.native_group_need_you else R.plurals.native_group_finished
+                val title = NativeStrings.quantity(context, plural, children.size, children.size)
+                val channelID = if (needs) ACTION_CHANNEL_ID else STATUS_CHANNEL_ID
+                val open = PendingIntent.getActivity(
+                    context,
+                    summaryID,
+                    Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    },
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    Notification.Builder(context, channelID)
+                } else {
+                    @Suppress("DEPRECATION")
+                    Notification.Builder(context)
+                }
+                builder
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle(title)
+                    .setContentIntent(open)
+                    .setAutoCancel(true)
+                    .setOnlyAlertOnce(true)
+                    .setGroup(group)
+                    .setGroupSummary(true)
+                    .setVisibility(Notification.VISIBILITY_PRIVATE)
+                    .setStyle(
+                        groupSummaryStyle(children, title, needs)
+                    )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    builder.setGroupAlertBehavior(Notification.GROUP_ALERT_CHILDREN)
+                    builder.setPublicVersion(
+                        Notification.Builder(context, channelID)
+                            .setSmallIcon(R.mipmap.ic_launcher)
+                            .setContentTitle("OpenCode · $title")
+                            .build()
+                    )
+                }
+                manager.notify(summaryID, builder.build())
+            } catch (_: Throwable) { /* A summary is cosmetic; the alerts stand alone. */ }
+        }
+
+        private fun groupSummaryStyle(
+            children: List<android.service.notification.StatusBarNotification>,
+            title: String,
+            needs: Boolean,
+        ): Notification.InboxStyle =
+            Notification.InboxStyle().also { inbox ->
+                inbox.setBigContentTitle(title)
+                children.take(MAX_SUMMARY_LINES).forEach { child ->
+                    val extras = child.notification.extras
+                    val line = listOfNotNull(
+                        extras.getCharSequence(Notification.EXTRA_TITLE)?.toString(),
+                        extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
+                            ?.takeIf { !needs }
+                    ).joinToString(" · ")
+                    if (line.isNotBlank()) inbox.addLine(line)
+                }
+            }
 
         // Fixed-copy notification actions; the intents carry only routing
         // identifiers, never request content.
         private fun codingAlertActions(
             context: Context,
-            kind: String,
-            sessionID: String,
-            key: String,
-            quickReply: Boolean,
-            requestID: String,
+            request: CodingAlertRequest,
+            buttons: List<AlertButton>,
             notificationID: Int,
-            profileID: String
-        ): List<Notification.Action> {
+        ): List<Notification.Action> = with(request) {
             fun actionIntent(decision: String): Intent =
                 Intent(context, CodingActionReceiver::class.java).apply {
                     action = "$ACTION_CODING_ALERT.$decision"
@@ -461,93 +691,92 @@ class BackgroundConnectionService : Service() {
                 }
 
             val icon = Icon.createWithResource(context, R.mipmap.ic_launcher)
-            return when {
-                kind == "permission" -> listOf(
-                    Notification.Action.Builder(
-                        icon,
-                        "Allow once",
-                        PendingIntent.getBroadcast(
-                            context,
-                            notificationID * 4 + 1,
-                            actionIntent("allow"),
-                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                        )
-                    ).apply {
-                        // A lock-screen tap can authorize code execution on the
-                        // server host. Android 12+ must authenticate the user.
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            setAuthenticationRequired(true)
-                        }
-                    }.build(),
-                    Notification.Action.Builder(
-                        icon,
-                        "Deny",
-                        PendingIntent.getBroadcast(
-                            context,
-                            notificationID * 4 + 2,
-                            actionIntent("deny"),
-                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                        )
-                    ).build()
+            buttons.mapIndexed { index, button ->
+                val label = codingAlertButtonLabel(context, button)
+                val intent = actionIntent(button.decision).apply {
+                    button.optionText?.let { putExtra(EXTRA_CODING_ALERT_OPTION_TEXT, it) }
+                }
+                val reply = button.label == AlertButton.Label.REPLY
+                val pending = PendingIntent.getBroadcast(
+                    context,
+                    notificationID * 4 + index + 1,
+                    intent,
+                    // RemoteInput requires a mutable PendingIntent.
+                    PendingIntent.FLAG_UPDATE_CURRENT or
+                        if (reply) PendingIntent.FLAG_MUTABLE else PendingIntent.FLAG_IMMUTABLE
                 )
-                kind == "question" && quickReply -> listOf(
-                    Notification.Action.Builder(
-                        icon,
-                        "Reply",
-                        PendingIntent.getBroadcast(
-                            context,
-                            notificationID * 4 + 3,
-                            actionIntent("reply"),
-                            // RemoteInput requires a mutable PendingIntent.
-                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-                        )
-                    )
-                        .addRemoteInput(
+                Notification.Action.Builder(icon, label, pending).apply {
+                    // A lock-screen tap can authorize code execution on the
+                    // server host. Android 12+ must authenticate the user.
+                    if (button.authRequired && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        setAuthenticationRequired(true)
+                    }
+                    if (reply) {
+                        addRemoteInput(
                             RemoteInput.Builder(REMOTE_INPUT_REPLY)
-                                .setLabel("Reply")
+                                .setLabel(NativeStrings.get(context, R.string.native_reply))
                                 .build()
                         )
-                        .build()
-                )
-                else -> emptyList()
+                    }
+                }.build()
             }
         }
+
+        private fun codingAlertButtonLabel(context: Context, button: AlertButton): String =
+            when (button.label) {
+                AlertButton.Label.ALLOW_ONCE -> NativeStrings.get(context, R.string.native_allow_once)
+                AlertButton.Label.DENY -> NativeStrings.get(context, R.string.native_deny)
+                AlertButton.Label.REPLY -> NativeStrings.get(context, R.string.native_reply)
+                AlertButton.Label.OPTION -> button.optionText.orEmpty()
+            }
 
         fun dismissCodingAlert(context: Context, key: String): Boolean {
             if (key.isBlank()) return false
             val manager = context.getSystemService(NotificationManager::class.java)
             manager.cancel(codingAlertNotificationID(key))
+            // The last alert of a group takes its summary with it.
+            refreshGroupSummary(context, manager, GROUP_NEEDS_YOU)
+            refreshGroupSummary(context, manager, GROUP_FINISHED)
             return true
         }
 
-        private fun createCodingAlertChannels(manager: NotificationManager) {
+        private fun createCodingAlertChannels(context: Context, manager: NotificationManager) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
             val action = NotificationChannel(
                 ACTION_CHANNEL_ID,
-                "Coding requests",
+                NativeStrings.get(context, R.string.native_coding_requests_channel),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Alerts when OpenCode needs permission or input"
+                description = NativeStrings.get(context, R.string.native_coding_requests_description)
                 lockscreenVisibility = Notification.VISIBILITY_PRIVATE
             }
             val status = NotificationChannel(
                 STATUS_CHANNEL_ID,
-                "Coding session updates",
+                NativeStrings.get(context, R.string.native_coding_status_channel),
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Alerts when a background OpenCode session finishes"
+                description = NativeStrings.get(context, R.string.native_coding_status_description)
                 lockscreenVisibility = Notification.VISIBILITY_PRIVATE
             }
             val teamProgress = NotificationChannel(
                 TEAM_PROGRESS_CHANNEL_ID,
-                "AI Team progress",
+                NativeStrings.get(context, R.string.native_team_progress_channel),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "A quiet line while the AI Team is working"
+                description = NativeStrings.get(context, R.string.native_team_progress_description)
                 lockscreenVisibility = Notification.VISIBILITY_PRIVATE
                 setShowBadge(false)
             }
-            manager.createNotificationChannels(listOf(action, status, teamProgress))
+            // Quiet hours: the same requests, with no sound and no heads-up.
+            val quiet = NotificationChannel(
+                ACTION_QUIET_CHANNEL_ID,
+                NativeStrings.get(context, R.string.native_coding_requests_quiet_channel),
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = NativeStrings.get(context, R.string.native_coding_requests_quiet_description)
+                lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+            }
+            manager.createNotificationChannels(listOf(action, status, teamProgress, quiet))
         }
 
         private fun codingAlertNotificationID(key: String): Int =
@@ -574,6 +803,8 @@ class BackgroundConnectionService : Service() {
             "io.github.eslamasabry.opencode_mobile.extra.CODING_ALERT_DECISION"
         const val EXTRA_CODING_ALERT_REQUEST_ID =
             "io.github.eslamasabry.opencode_mobile.CODING_ALERT_REQUEST_ID"
+        const val EXTRA_CODING_ALERT_OPTION_TEXT =
+            "io.github.eslamasabry.opencode_mobile.extra.CODING_ALERT_OPTION_TEXT"
         const val ACTION_CODING_ALERT =
             "io.github.eslamasabry.opencode_mobile.action.CODING_ALERT"
         const val REMOTE_INPUT_REPLY = "oc.codingAlertReply"

@@ -136,8 +136,11 @@ void main() {
   }
 
   /// Leaves the screen (the section and its ticker go).
+  /// Leaves the screen and ends the connection's polling of the dead
+  /// in-app server, a 10 s timer a finished test must not leave behind.
   Future<void> leave(WidgetTester tester) async {
     await tester.pumpWidget(const SizedBox());
+    connection.dispose();
   }
 
   KitMarkState markOf(WidgetTester tester, BuiltinTeamStage stage) => tester
@@ -154,6 +157,14 @@ void main() {
   void useTeam() {
     team = _FakeTeam();
     debugBuiltinTeam = team;
+  }
+
+  /// The profile store answers on the real clock; give it a moment.
+  Future<void> storeSettles(WidgetTester tester) async {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
   }
 
   Future<void> advance(WidgetTester tester, Duration by) async {
@@ -223,7 +234,7 @@ void main() {
       team.gates[stage]!.complete();
       await tester.pump();
     }
-    await tester.pump();
+    await storeSettles(tester);
     expect(BuiltinTeam.isBuiltinConfig(profile.orchestration), isTrue);
     expect(BuiltinTeamJob.shared.running, isFalse);
     expect(
@@ -383,7 +394,7 @@ void main() {
     await tester.tap(
       find.byKey(const ValueKey('builtin-team-turn-off-confirm')),
     );
-    await tester.pumpAndSettle();
+    await storeSettles(tester);
     expect(team.turnOffs, 1);
     expect(profile.orchestration, isNull);
     // Off: turning it on again is the way back.

@@ -1,0 +1,14 @@
+Reading package lists...
+Building dependency tree...
+Reading state information...
+python3 is already the newest version (3.12.3-0ubuntu2.1).
+python3-venv is already the newest version (3.12.3-0ubuntu2.1).
+python3-pip is already the newest version (24.0+dfsg-1ubuntu1.3).
+The following package was automatically installed and is no longer required:
+  libonig5
+Use 'apt autoremove' to remove it.
+0 upgraded, 0 newly installed, 0 to remove and 6 not upgraded.
+pip 24.0 from /usr/lib/python3/dist-packages/pip (python 3.12)
+Python 3.12.3
+libonig5:amd64 install ok installed 6.9.9-1build1
+FIXED_INSTALL_PASS

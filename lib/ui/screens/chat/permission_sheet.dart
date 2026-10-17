@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -7,11 +8,13 @@ import '../../../api/models.dart';
 import '../../../domain/server_gateway.dart' show PendingQuestion;
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
+import '../../../domain/tool_label.dart' show toolIdWords;
 import '../../app_iconography.dart';
 import '../../kit/kit.dart';
 import '../../permission_presentation.dart';
 import '../../widgets/product_states.dart' show productErrorText;
 import '../../widgets/request_routes.dart';
+import '../../widgets/tool_card.dart' show toolLabel;
 
 AppLocalizations _l10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -90,11 +93,15 @@ class PermissionAnswers extends ChangeNotifier {
   }
 }
 
-/// Sends [reply] for [permission] and records it in [PermissionAnswers]:
-/// sending while in flight, cleared once the server took it (the request
-/// then leaves the pending list and its card goes), refused with the
-/// server's words otherwise. A [note] draft is cleared only once the answer
-/// is confirmed (DATA-1).
+/// Answers [permission] with [reply]. The answer is held for the undo window
+/// ([DelayedAnswers]: the card shows it collapsed with Undo) and then sent;
+/// leaving the chat sends it at once. A second answer while one is held is
+/// ignored (Undo first).
+///
+/// The send records itself in [PermissionAnswers]: sending while in flight,
+/// cleared once the server took it (the request then leaves the pending list
+/// and its card goes), refused with the server's words otherwise. A [note]
+/// draft is cleared only once the answer is confirmed (DATA-1).
 Future<void> answerPermissionRequest(
   ConnectionController controller,
   PermissionRequest permission,
@@ -103,6 +110,48 @@ Future<void> answerPermissionRequest(
   KitDraft? note,
 }) async {
   final request = controller.permissionIdentity(permission);
+  if (!controller.isRequestPending(request)) return;
+  final delayed = controller.delayedAnswers;
+  if (delayed.isHeld(permission.id)) return;
+  delayed.hold(
+    permission.id,
+    label: _heldAnswerWords(reply),
+    send: () => _sendPermissionAnswer(
+      controller,
+      permission,
+      request,
+      reply,
+      message: message,
+      note: note,
+    ),
+  );
+}
+
+/// "Allowed", "Rejected" or "Always allowed" for a held answer; this has no
+/// context, so it follows the phone's language.
+String _heldAnswerWords(String reply) {
+  final code = PlatformDispatcher.instance.locale.languageCode;
+  final l10n =
+      AppLocalizations.supportedLocales.any(
+        (supported) => supported.languageCode == code,
+      )
+      ? lookupAppLocalizations(Locale(code))
+      : lookupAppLocalizations(const Locale('en'));
+  return switch (reply) {
+    'reject' => l10n.chatRequestAnswerRejected,
+    'always' => l10n.chatRequestAlwaysOn,
+    _ => l10n.chatRequestAnswerAllowed,
+  };
+}
+
+Future<void> _sendPermissionAnswer(
+  ConnectionController controller,
+  PermissionRequest permission,
+  PendingRequestIdentity request,
+  String reply, {
+  String? message,
+  KitDraft? note,
+}) async {
   if (!controller.isRequestPending(request)) return;
   final answers = PermissionAnswers.of(controller);
   final sent = PermissionAnswerState(
@@ -142,10 +191,44 @@ String _answerWords(AppLocalizations l10n, String reply) => switch (reply) {
   _ => l10n.kitRequestAllowOnce,
 };
 
+/// The card's "Always allow" (13B), or null where the server keeps no
+/// standing grants. [onConfirmed] runs only after the person confirmed
+/// "Always allow `<command or tool>` in this project?"; the confirm states
+/// what the grant covers and where to take it back.
+KitRequestAlwaysAllowStep? permissionAlwaysStep(
+  BuildContext context, {
+  required PermissionRequest permission,
+  required bool supported,
+  required VoidCallback onConfirmed,
+}) {
+  if (!supported) return null;
+  final l10n = _l10n(context);
+  final broader = permission.always.isNotEmpty
+      ? permission.always
+      : permission.patterns;
+  final what =
+      permission.commandPreview ??
+      permission.filePath ??
+      (permission.permission.isEmpty
+          ? l10n.chatUiAllMatchingRequests
+          : toolLabel(permission.permission, l10n: l10n));
+  return KitRequestAlwaysAllowStep(
+    what: what,
+    covers: broader.isEmpty ? null : broader.join(', '),
+    label: permission.permission == 'bash'
+        ? l10n.chatRequestAlwaysAllowCommands
+        : null,
+    onConfirmed: onConfirmed,
+    buttonKey: const Key('permission-card-always'),
+    confirmKey: const Key('permission-card-always-confirm'),
+  );
+}
+
 /// The one card for a permission request ([KitRequestCard.ask]): the ask in
 /// plain words, the command or file, and Allow once / Reject in place.
 /// [answered] turns it into the sending line with its receipt, or puts a
-/// refusal above the answers again.
+/// refusal above the answers again. [heldLabel] with [onUndo] shows the
+/// answer collapsed ("Allowed") with Undo while it is held, before it is sent.
 KitRequestCard permissionRequestCard(
   BuildContext context, {
   required PermissionRequest permission,
@@ -155,16 +238,30 @@ KitRequestCard permissionRequestCard(
   String? disabledReason,
   VoidCallback? onDetails,
   PermissionAnswerState? answered,
+  KitRequestAlwaysAllowStep? alwaysAllow,
   VoidCallback? onRetry,
+  String? heldLabel,
+  VoidCallback? onUndo,
   String? detail,
   String? ifIgnored,
+  int queued = 0,
   DateTime? since,
   Key? key,
   Key? detailsKey,
+  bool inList = false,
 }) {
   final l10n = _l10n(context);
-  final title = permissionRequestTitle(permission.permission, l10n: l10n);
-  final sending = answered != null && !answered.failed;
+  // The ask is one question; the statement ("Run a shell command") is what
+  // the rest of the app calls this kind of request, and a screen reader
+  // still hears it.
+  final statement = permissionRequestTitle(permission.permission, l10n: l10n);
+  final title = permissionRequestQuestion(
+    permission.permission,
+    l10n: l10n,
+    fallback: statement,
+  );
+  final held = heldLabel != null && onUndo != null;
+  final sending = !held && answered != null && !answered.failed;
   return KitRequestCard.ask(
     key: key,
     kind: KitRequestKind.permission,
@@ -172,14 +269,32 @@ KitRequestCard permissionRequestCard(
     who: who,
     reason: KitNeedsYouReason.decision,
     ifIgnored: ifIgnored ?? l10n.chatRequestIfIgnored,
-    announcement: l10n.chatUiPermissionNeeded(title),
+    queued: queued,
+    announcement: l10n.chatUiPermissionNeeded(statement),
     icon: permissionActionIcon(permission.permission),
-    detail: detail ?? permission.message,
+    // OpenCode's bash and task tools say in words what they are for.
+    detail:
+        detail ?? permission.message ?? _metaText(permission, 'description'),
     summary: permissionSummary(permission),
     since: since,
-    phase: sending ? KitRequestPhase.sending : KitRequestPhase.waiting,
-    answer: answered == null ? null : _answerWords(l10n, answered.reply),
-    receipt: answered == null
+    phase: held
+        ? KitRequestPhase.answered
+        : sending
+        ? KitRequestPhase.sending
+        : KitRequestPhase.waiting,
+    answer: held
+        ? heldLabel
+        : answered == null
+        ? null
+        : _answerWords(l10n, answered.reply),
+    receipt: held
+        ? KitReceipt(
+            state: KitReceiptState.confirmed,
+            label: heldLabel,
+            onUndo: onUndo,
+            undoKey: const Key('permission-card-undo'),
+          )
+        : answered == null
         ? null
         : answered.failed
         ? KitReceipt(state: KitReceiptState.refused, reason: answered.error)
@@ -194,10 +309,51 @@ KitRequestCard permissionRequestCard(
       disabledReason: disabledReason,
       allowKey: const Key('permission-card-allow'),
       rejectKey: const Key('permission-card-reject'),
+      alwaysAllow: alwaysAllow,
+      // Among other rows, the screen keeps its own one primary.
+      secondary: inList,
     ),
     onDetails: onDetails,
     detailsKey: detailsKey,
+    inList: inList,
   );
+}
+
+/// The labelled values an agent's request carries ("Query", "Max results").
+List<KitKeyValueRow> _facts(PermissionRequest permission) {
+  final raw = permission.metadata['facts'];
+  if (raw is! List) return const [];
+  return [
+    for (final fact in raw.whereType<Map>().take(KitKeyValue.maxRows))
+      if (fact['key'] is String && fact['value'] != null)
+        KitKeyValueRow(
+          label: KitText.sentenceCase(
+            toolIdWords(fact['key'] as String).ifEmpty(fact['key'] as String),
+          ),
+          value: '${fact['value']}',
+        ),
+  ];
+}
+
+extension on String {
+  String ifEmpty(String other) => isEmpty ? other : this;
+}
+
+String? _metaText(PermissionRequest permission, String key) {
+  final value = permission.metadata[key];
+  return value is String && value.trim().isNotEmpty ? value : null;
+}
+
+/// "from line 20, 80 lines" for a read of part of a file.
+String? _readRange(PermissionRequest permission, AppLocalizations l10n) {
+  if (permission.permission != 'read') return null;
+  final from = permission.metadata['offset'];
+  final count = permission.metadata['limit'];
+  final parts = [
+    if (from is num) l10n.chatRequestReadFrom(from.round().toString()),
+    if (count is num) l10n.chatRequestReadLines(count.round()),
+  ];
+  return parts.isEmpty ? null : parts.join(', ');
 }
 
 const _diffPermissions = {'edit', 'write', 'multiedit', 'patch'};
@@ -239,10 +395,24 @@ Future<KitRequestSheetOutcome> showPermissionDetails(
   final others = permission.patterns
       .where((pattern) => !shown.contains(pattern))
       .toList();
+  final facts = _facts(permission);
+  // Only a real shell command is drawn as one (with its `$`); a path, an
+  // address or a pattern list is a copyable line, and what the agent asks
+  // in labelled values is a set of rows.
   final fullText =
       command ??
       path ??
-      (others.isEmpty ? l10n.chatUiAllMatchingRequests : others.join('\n'));
+      (others.isNotEmpty && facts.isEmpty
+          ? others.join('\n')
+          : facts.isNotEmpty
+          ? null
+          : permission.message ?? l10n.chatUiAllMatchingRequests);
+  final wordsOnly =
+      command == null &&
+      path == null &&
+      others.isEmpty &&
+      facts.isEmpty &&
+      permission.message != null;
   final broader = permission.always.isNotEmpty
       ? permission.always
       : permission.patterns;
@@ -251,6 +421,12 @@ Future<KitRequestSheetOutcome> showPermissionDetails(
     card: card,
     routes: routes,
     fullText: fullText,
+    fullTextStyle: command != null
+        ? KitRequestText.command
+        : wordsOnly
+        ? KitRequestText.words
+        : KitRequestText.block,
+    facts: facts,
     change: diff == null
         ? null
         : KitDiffView(
@@ -266,7 +442,7 @@ Future<KitRequestSheetOutcome> showPermissionDetails(
               broader.isEmpty
                   ? l10n.chatUiAllMatchingRequests
                   : KitBidi.ltr(broader.join(', ')),
-              contextLabel ?? l10n.chatUiInThisChat,
+              contextLabel ?? l10n.chatRequestAlwaysInProject,
             ),
             onLabel: l10n.chatRequestAlwaysOn,
             until: const [KitUntil.off],
@@ -275,6 +451,14 @@ Future<KitRequestSheetOutcome> showPermissionDetails(
           ),
     message: message,
     details: [
+      if (_metaText(permission, 'cwd') case final cwd?)
+        KitTechnicalValue(l10n.chatRequestDetailRunsIn, cwd),
+      if (_metaText(permission, 'prompt') case final prompt?)
+        KitTechnicalValue(l10n.chatRequestDetailAsks, prompt),
+      if (_readRange(permission, l10n) case final range?)
+        KitTechnicalValue(l10n.chatRequestDetailRange, range),
+      if (_metaText(permission, 'subagent_type') case final helper?)
+        KitTechnicalValue(l10n.chatRequestDetailHelper, helper),
       if (permission.permission.isNotEmpty)
         KitTechnicalValue(l10n.chatRequestDetailTool, permission.permission),
       if (command != null && others.isNotEmpty)
@@ -355,7 +539,9 @@ Future<void> showPermissionSheet(
       card: card,
       routes: routes,
       contextLabel: contextLabel,
-      onAllowAlways: controller.capabilities.persistentPermissionGrants
+      onAllowAlways:
+          controller.capabilities.persistentPermissionGrants &&
+              permission.canAlwaysAllow
           ? (_) => answer('always')
           : null,
       message: note == null
@@ -382,10 +568,13 @@ Future<KitRequestSheetOutcome> showQuestionDetails(
   required ConnectionController controller,
   required PendingQuestion question,
   required KitRequestCard card,
+  PendingRequestIdentity? request,
 }) async {
   final routes = RequestRoutes(
     changes: controller,
-    isPending: () => controller.questions.containsKey(question.id),
+    isPending: () => request != null
+        ? controller.isRequestPending(request)
+        : controller.questions.containsKey(question.id),
   );
   try {
     return await showKitRequestSheet(
@@ -393,6 +582,9 @@ Future<KitRequestSheetOutcome> showQuestionDetails(
       card: card,
       routes: routes,
       fullText: question.prompts.firstOrNull?.question,
+      fullTextStyle: question.prompts.firstOrNull?.markdown == true
+          ? KitRequestText.markdown
+          : KitRequestText.words,
       sheetKey: const Key('question-sheet'),
     );
   } finally {

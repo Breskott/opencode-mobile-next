@@ -660,6 +660,29 @@ void main() {
       await teardown(tester, controller);
     });
 
+    testWidgets('in-app OC2 Add tools sends its runtime to the real job path', (
+      tester,
+    ) async {
+      // Do not replace debugTeamPhoneRunJob: exercise the same params that
+      // the production entry point gives the setup engine.
+      inAppEngine.afterRun = _teamJob(SetupState.running);
+      final (controller, _) = await pumpDoor(tester, profile: _inAppProfile());
+      await tester.tap(find.text('set up'));
+      await settle(tester);
+      await tapRevealed(
+        tester,
+        find.byKey(const ValueKey('phone-setup-customize-done')),
+      );
+      expect(inAppEngine.runs.single, contains(SetupComponentIds.aiTeam));
+      expect(inAppEngine.runParams.single, {
+        ...SetupJobParams.adding(inAppEngine.runs.single),
+        'opencode': {'runtime': 'opencode2'},
+      });
+      expect(termuxEngine.runs, isEmpty);
+      expect(runtime.calls, isEmpty);
+      await teardown(tester, controller);
+    });
+
     testWidgets('OpenCode inside the app: the in-app engine and team', (
       tester,
     ) async {

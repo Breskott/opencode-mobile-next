@@ -26,6 +26,10 @@ final Map<String, (_Say, _Say)> _known = {
     (l) => l.teamRefusalRepositoryEmpty,
     (l) => l.teamRefusalRepositoryEmptyNext,
   ),
+  'repoPathInvalid': (
+    (l) => l.teamRefusalRepoPathInvalid,
+    (l) => l.teamRefusalRepoPathInvalidNext,
+  ),
   'invalid_proot_object_link': (
     (l) => l.teamRefusalRepositoryLink,
     (l) => l.teamRefusalRepositoryLinkNext,
@@ -141,6 +145,10 @@ final Map<String, (_Say, _Say)> _known = {
   'invalidPlan': (
     (l) => l.teamRefusalPlanInvalid,
     (l) => l.teamRefusalPlanInvalidNext,
+  ),
+  'checkerAnswerUnreadable': (
+    (l) => l.teamRefusalCheckerUnreadable,
+    (l) => l.teamRefusalCheckerUnreadableNext,
   ),
   'structuredOutputInvalid': (
     (l) => l.teamRefusalPlanInvalid,

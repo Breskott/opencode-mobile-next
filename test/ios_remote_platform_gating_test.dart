@@ -502,8 +502,13 @@ void main() {
       // but says nothing about a background service iOS does not have.
       expect(find.text('Notifications & background'), findsNothing);
       expect(find.textContaining('Background:'), findsNothing);
+      // iOS has no background service, so there is no Background row at all.
+      expect(
+        find.byKey(const ValueKey('settings-category-background')),
+        findsNothing,
+      );
       final notifications = find.byKey(
-        const ValueKey('settings-category-background'),
+        const ValueKey('settings-category-notifications'),
       );
       expect(notifications, findsOneWidget);
       await tester.ensureVisible(notifications);

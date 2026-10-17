@@ -451,6 +451,22 @@ class PhoneProjectEngineController {
   });
   Future<PhoneEngineHealth> attach(String profileId) =>
       _serial(profileId, () => _attach(profileId));
+
+  /// Roll back a failed setup without deleting the person's team data.
+  /// Queue behind start so even a timed-out launch cannot outlive its cleanup.
+  Future<void> stop(String profileId) => _serial(profileId, () async {
+    await _admissionStops[profileId];
+    _admissionRequired.add(profileId);
+    await (_admissionStops[profileId] ??= _stopForAdmission(profileId)
+        .whenComplete(() {
+          _admissionStops.remove(profileId);
+        }));
+    final clients = _gateways.remove(profileId) ?? <PhoneEngineGateway>{};
+    for (final client in clients.toList()) {
+      await client.close();
+    }
+  });
+
   Future<PhoneEngineHealth> _attach(String profileId) async {
     final profile = _profile(profileId);
     late final ({String baseUrl, String bearerToken}) credentials;

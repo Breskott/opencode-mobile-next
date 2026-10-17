@@ -18,13 +18,16 @@ import 'kit_text.dart';
 import 'kit_tokens.dart';
 import 'motion/kit_reveal.dart';
 
+part 'kit_code_block_parts.dart';
+
 /// What a [KitCodeBlock] holds (docs/ux-system/kit-api/KitCodeBlock.md).
 enum KitCodeKind {
   /// Source code: syntax colour from [KitCodeBlock.language].
   code,
 
   /// A command the person runs elsewhere. A `$` prompt is drawn before each
-  /// line, outside the copied text. By default it scrolls sideways with an
+  /// command, outside the copied text; a line that continues one (a heredoc
+  /// body, a trailing `\`, an open `if`/`for` block) gets none. By default it scrolls sideways with an
   /// edge fade while it overflows; a host that passes `wrap: true` gets a
   /// soft wrap whose continuation lines hang under the text, past the `$`
   /// (R3). Either way the copied command is the source, never the display.
@@ -107,11 +110,46 @@ abstract final class KitCodeHighlight {
   static const _cacheLimit = 48;
   static final Map<String, List<Node>?> _cache = <String, List<Node>?>{};
 
+  /// The grammar name the `highlight` package registers for a language
+  /// hint, or null when the hint is unknown (nothing is guessed).
+  static String? grammarFor(String? language) =>
+      _languageAliases[language?.trim().toLowerCase()];
+
+  /// The grammar for the file at [path], from its extension (or, for
+  /// `Dockerfile` and `Makefile`, its name); null when unknown.
+  static String? grammarForPath(String path) {
+    final name = path.split(RegExp(r'[/\\]')).last.toLowerCase();
+    final dot = name.lastIndexOf('.');
+    final hint = dot > 0 && dot < name.length - 1
+        ? name.substring(dot + 1)
+        : name;
+    return grammarFor(hint);
+  }
+
+  /// [source] parsed with [grammar] (from [grammarFor]); null when the
+  /// grammar fails. Not cached: the caller owns the cache.
+  static List<Node>? parseNodes(String source, String grammar) {
+    try {
+      return highlight.parse(source, language: grammar).nodes;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Parsed [nodes] as styled spans painted in [roles]. [legible] may move
+  /// each syntax colour (the diff view keeps them readable on its tinted
+  /// rows).
+  static TextSpan fromNodes(
+    List<Node> nodes,
+    ThemeRoles roles, {
+    Color Function(Color color)? legible,
+  }) => TextSpan(children: _spansFor(nodes, roles, legible));
+
   /// [source] as styled spans for the [language] hint, painted in [roles].
   /// Falls back to one plain span when the language is unknown, the block
   /// is oversized, or the grammar fails.
   static TextSpan spans(String source, String? language, ThemeRoles roles) {
-    final grammar = _languageAliases[language?.trim().toLowerCase()];
+    final grammar = grammarFor(language);
     if (grammar == null || source.length > sizeLimit) {
       return TextSpan(text: source);
     }
@@ -120,24 +158,24 @@ abstract final class KitCodeHighlight {
     if (_cache.containsKey(key)) {
       nodes = _cache[key];
     } else {
-      try {
-        nodes = highlight.parse(source, language: grammar).nodes;
-      } catch (_) {
-        nodes = null;
-      }
+      nodes = parseNodes(source, grammar);
       if (_cache.length >= _cacheLimit) {
         _cache.remove(_cache.keys.first);
       }
       _cache[key] = nodes;
     }
     if (nodes == null) return TextSpan(text: source);
-    return TextSpan(children: _spansFor(nodes, roles));
+    return fromNodes(nodes, roles);
   }
 
-  static List<InlineSpan> _spansFor(List<Node> nodes, ThemeRoles roles) {
+  static List<InlineSpan> _spansFor(
+    List<Node> nodes,
+    ThemeRoles roles,
+    Color Function(Color color)? legible,
+  ) {
     final spans = <InlineSpan>[];
     for (final node in nodes) {
-      final style = _styleFor(node.className, roles);
+      final style = _styleFor(node.className, roles, legible);
       final children = node.children;
       if (children == null) {
         if (node.value?.isNotEmpty == true) {
@@ -145,12 +183,25 @@ abstract final class KitCodeHighlight {
         }
         continue;
       }
-      spans.add(TextSpan(children: _spansFor(children, roles), style: style));
+      spans.add(
+        TextSpan(children: _spansFor(children, roles, legible), style: style),
+      );
     }
     return spans;
   }
 
-  static TextStyle? _styleFor(String? className, ThemeRoles roles) =>
+  static TextStyle? _styleFor(
+    String? className,
+    ThemeRoles roles,
+    Color Function(Color color)? legible,
+  ) {
+    final style = _rawStyleFor(className, roles);
+    final color = style?.color;
+    if (legible == null || style == null || color == null) return style;
+    return style.copyWith(color: legible(color));
+  }
+
+  static TextStyle? _rawStyleFor(String? className, ThemeRoles roles) =>
       switch (className) {
         'keyword' || 'built_in' || 'literal' || 'type' || 'tag' => TextStyle(
           color: roles.codeKeyword,
@@ -286,6 +337,21 @@ List<String> _splitLines(String text) {
   return trimmed.split('\n');
 }
 
+/// The block's frame. Light: `detailsSurface` is the page's own ground (the
+/// code colours are built for it), so a block had no visible edge and its
+/// Copy and Wrap controls floated over bare page; a hairline in `text1` at
+/// 16 % draws the edge. Dark has its own surface and needs none.
+ShapeBorder _blockShape(BuildContext context, KitTokens tokens) {
+  final shape = tokens.shapeOf(KitShape.code);
+  if (tokens.roles.isDark || shape is! RoundedRectangleBorder) return shape;
+  return shape.copyWith(
+    side: BorderSide(
+      width: KitTokens.hairlineWidth(context),
+      color: tokens.roles.text1.withValues(alpha: .16),
+    ),
+  );
+}
+
 class _KitCodeBlockState extends State<KitCodeBlock> {
   bool? _wrap;
   bool _expanded = false;
@@ -408,10 +474,24 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: tokens.space2,
           children: [
-            KitText(
-              _copyFailedText(l10n),
-              role: KitTextRole.secondary,
-              tone: KitTextTone.danger,
+            // A failure is neutral text beside the error glyph, never red.
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  AppIconography.error,
+                  size: tokens.iconSize(context, tokens.smallIconSize),
+                  color: tokens.roles.text2,
+                ),
+                SizedBox(width: tokens.space1),
+                Flexible(
+                  child: KitText(
+                    _copyFailedText(l10n),
+                    role: KitTextRole.secondary,
+                    tone: KitTextTone.primary,
+                  ),
+                ),
+              ],
             ),
             KitButton.tertiary(
               key: const ValueKey('kit-code-copy-retry'),
@@ -476,7 +556,9 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(child: body),
-              SizedBox(width: tokens.space2),
+              // A real gap before the controls, so a long line's clipped end
+              // never meets the Copy and Wrap glyphs.
+              SizedBox(width: tokens.space3),
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -512,11 +594,23 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
                 tokens.space1,
                 tokens.space1,
               )
+            : header != null &&
+                  (plan.wrapToggle || (widget.copyable && !_labelledCopy))
+            // The header's 48 dp icon targets already carry their own room:
+            // a full space4 above them left a tall empty band over the
+            // status line. The top and end insets shrink to space1 like the
+            // first-line Copy case; the text keeps its space4 start.
+            ? EdgeInsetsDirectional.fromSTEB(
+                tokens.space4,
+                tokens.space1,
+                tokens.space1,
+                tokens.space4,
+              )
             : EdgeInsetsDirectional.all(tokens.space4);
         return DecoratedBox(
           decoration: ShapeDecoration(
             color: tokens.detailsSurface,
-            shape: tokens.shapeOf(KitShape.code),
+            shape: _blockShape(context, tokens),
           ),
           child: Padding(padding: padding, child: column),
         );
@@ -549,7 +643,7 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
     return DecoratedBox(
       decoration: ShapeDecoration(
         color: tokens.detailsSurface,
-        shape: tokens.shapeOf(KitShape.code),
+        shape: _blockShape(context, tokens),
       ),
       child: Padding(padding: EdgeInsets.all(tokens.space4), child: text),
     );
@@ -603,7 +697,7 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
                 tokens.space4 -
                 tokens.space1 -
                 tokens.minTarget -
-                tokens.space2
+                tokens.space3
           : maxWidth - tokens.space4 * 2;
       if (_hasGutter) {
         room -= _gutterWidth(context, monoStyle, lines.length) + tokens.space2;
@@ -815,6 +909,9 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
     final wrap = _effectiveWrap(context);
     final monoStyle = KitText.styleOf(context, KitTextRole.mono);
     final gutterWidth = _gutterWidth(context, monoStyle, total);
+    final starts = widget.kind == KitCodeKind.command
+        ? kitCommandLineStarts(lines)
+        : null;
 
     // No prompt or line-number gutter: every line joins one paragraph
     // (K2 §1.9's "one selectable text node per block"), matching
@@ -849,6 +946,7 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
               monoStyle: monoStyle,
               wrap: wrap,
               gutterWidth: gutterWidth,
+              commandStart: starts?[startIndex + i] ?? true,
             ),
         ],
       );
@@ -965,6 +1063,9 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
     final gutterWidth = _gutterWidth(context, monoStyle, lines.length);
     final wrap = _effectiveWrap(context);
     final extent = _itemExtent;
+    final starts = widget.kind == KitCodeKind.command
+        ? kitCommandLineStarts(lines)
+        : null;
 
     final list = ListView.builder(
       controller: _fillController,
@@ -979,6 +1080,7 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
         monoStyle: monoStyle,
         wrap: wrap,
         gutterWidth: gutterWidth,
+        commandStart: starts?[index] ?? true,
       ),
     );
 
@@ -1057,6 +1159,7 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
     required bool wrap,
     required double gutterWidth,
     int lineStart = 0,
+    bool commandStart = true,
   }) {
     final content = _lineSpan(line, lineStart, roles, monoStyle, wrap: wrap);
     final key = widget.fill ? ValueKey('kit-code-line-${index + 1}') : null;
@@ -1068,8 +1171,10 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
       overflow: wrap ? TextOverflow.clip : TextOverflow.visible,
     );
     if (!_hasGutter) return text;
+    // A line that continues the command above (a heredoc body, a trailing
+    // `\`) gets no prompt of its own.
     final gutterLabel = widget.kind == KitCodeKind.command
-        ? r'$'
+        ? (commandStart ? r'$' : '')
         : (index + 1).toString();
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1215,248 +1320,3 @@ class _KitCodeBlockState extends State<KitCodeBlock> {
 /// The characters a wrapping code line may break after, besides spaces
 /// (which already break): member access, argument and statement separators,
 /// opening brackets, assignment, logic and path separators.
-const _breakAfter = {'.', ',', ';', ':', '(', '[', '{', '=', '&', '|', '/'};
-
-/// What never starts a new wrapped line: a closing bracket or separator
-/// stays with what it closes.
-const _noBreakBefore = {'.', ',', ';', ':', ')', ']', '}'};
-
-/// [line] with a zero-width break chance after punctuation inside a long
-/// token, so a wrapping code line breaks at "intent." / "getStringExtra("
-/// instead of mid-identifier ("getStringExt" / "ra"), the way a code editor
-/// would. A run of the same mark ("::", "==", "&&", "//") stays whole,
-/// nothing breaks before a closing bracket or separator, and a short ending
-/// after a dot (a file extension, "test.dart") stays with its name. A token with no
-/// such mark still breaks where it must. Only the display changes:
-/// [KitCodeBlock]'s Copy uses the source, and selection strips the marks
-/// again (`_CopiesSource`).
-String kitCodeBreakable(String line) {
-  if (line.length < 2) return line;
-  StringBuffer? out;
-  for (var i = 0; i < line.length; i++) {
-    final char = line[i];
-    out?.write(char);
-    if (i == line.length - 1 || !_breakAfter.contains(char)) continue;
-    final next = line[i + 1];
-    if (next == char || next.trim().isEmpty || _noBreakBefore.contains(next)) {
-      continue;
-    }
-    // "checkout_test.dart": a short ending after a dot (a file extension)
-    // stays with its name.
-    if (char == '.' && _shortTail(line, i + 1)) continue;
-    out ??= StringBuffer(line.substring(0, i + 1));
-    out.write(_zeroWidthSpace);
-  }
-  return out?.toString() ?? line;
-}
-
-const _zeroWidthSpace = '\u200B';
-
-/// Whether the word starting at [from] is at most four letters or digits
-/// and then ends (a space, the line's end or a closing mark), like a file
-/// extension: "dart", "md", "json".
-bool _shortTail(String line, int from) {
-  var i = from;
-  while (i < line.length && _alnum.hasMatch(line[i])) {
-    i++;
-  }
-  final length = i - from;
-  if (length == 0 || length > 4) return false;
-  return i == line.length || !_continues.hasMatch(line[i]);
-}
-
-final _alnum = RegExp(r'[A-Za-z0-9]');
-
-/// What makes a short word after a dot part of a longer expression
-/// ("a.b.c", "x.map(", "list.first[").
-final _continues = RegExp(r'[A-Za-z0-9_(\[{.]');
-
-/// Selected code copies (and shares) as its source: the zero-width break
-/// chances [kitCodeBreakable] adds to a wrapping line are taken out again.
-class _CopiesSource extends StatefulWidget {
-  const _CopiesSource({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_CopiesSource> createState() => _CopiesSourceState();
-}
-
-class _CopiesSourceState extends State<_CopiesSource> {
-  final _delegate = _SourceSelectionDelegate();
-
-  @override
-  void dispose() {
-    _delegate.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) =>
-      SelectionContainer(delegate: _delegate, child: widget.child);
-}
-
-class _SourceSelectionDelegate extends StaticSelectionContainerDelegate {
-  @override
-  SelectedContent? getSelectedContent() {
-    final content = super.getSelectedContent();
-    if (content == null || !content.plainText.contains(_zeroWidthSpace)) {
-      return content;
-    }
-    return SelectedContent(
-      plainText: content.plainText.replaceAll(_zeroWidthSpace, ''),
-    );
-  }
-}
-
-/// The unwrapped body's sideways scroller: a visible scrollbar on a fine
-/// pointer and an edge fade while more content is off-screen at the end
-/// edge (K2 §1.9, `space6`).
-class _CodeScroller extends StatefulWidget {
-  const _CodeScroller({
-    super.key,
-    required this.child,
-    required this.fadeColor,
-    required this.fadeWidth,
-  });
-
-  final Widget child;
-  final Color fadeColor;
-  final double fadeWidth;
-
-  @override
-  State<_CodeScroller> createState() => _CodeScrollerState();
-}
-
-class _CodeScrollerState extends State<_CodeScroller> {
-  final ScrollController _controller = ScrollController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  bool get _showFade =>
-      _controller.hasClients &&
-      _controller.position.maxScrollExtent - _controller.offset > .5;
-
-  bool get _showStartFade => _controller.hasClients && _controller.offset > .5;
-
-  /// More lines than fit: the scrollbar stays visible on touch too, so a
-  /// clipped line always shows there is more to scroll to.
-  bool get _overflowing =>
-      _controller.hasClients && _controller.position.maxScrollExtent > .5;
-
-  Widget _edge(BuildContext context, {required bool end}) {
-    final direction = Directionality.of(context);
-    final from = AlignmentDirectional.centerStart.resolve(direction);
-    final to = AlignmentDirectional.centerEnd.resolve(direction);
-    return PositionedDirectional(
-      end: end ? 0 : null,
-      start: end ? null : 0,
-      top: 0,
-      bottom: 0,
-      child: IgnorePointer(
-        child: Container(
-          width: widget.fadeWidth,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: end ? from : to,
-              end: end ? to : from,
-              colors: [widget.fadeColor.withValues(alpha: 0), widget.fadeColor],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final finePointer = KitLayout.finePointer(context);
-    return NotificationListener<ScrollMetricsNotification>(
-      onNotification: (_) {
-        setState(() {});
-        return false;
-      },
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (_) {
-          setState(() {});
-          return false;
-        },
-        child: Stack(
-          children: [
-            Scrollbar(
-              controller: _controller,
-              thumbVisibility: finePointer || _overflowing,
-              notificationPredicate: (n) => true,
-              child: SingleChildScrollView(
-                controller: _controller,
-                scrollDirection: Axis.horizontal,
-                // While the scroll cue shows, its thumb lies along the
-                // bottom edge: leave that strip below the last line so the
-                // thumb never sits on readable text.
-                padding: (finePointer || _overflowing)
-                    ? EdgeInsets.only(bottom: KitTokens.of(context).space2)
-                    : EdgeInsets.zero,
-                child: widget.child,
-              ),
-            ),
-            if (_showStartFade) _edge(context, end: false),
-            if (_showFade) _edge(context, end: true),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Where a bounded block puts Copy and whether it offers Wrap (R3).
-@immutable
-class _CodePlan {
-  const _CodePlan({required this.inline, required this.wrapToggle});
-
-  /// Copy (and Wrap, when offered) sit at the end of the first line; there
-  /// is no header for them.
-  final bool inline;
-
-  /// A line is wider than the block, so the Wrap toggle is worth its place.
-  final bool wrapToggle;
-}
-
-/// The header's Wrap toggle (R3): an accent glyph while lines wrap, the
-/// plain glyph otherwise; never a filled circle. A toggle to assistive tech
-/// ("Wrap lines", toggled).
-class _WrapToggle extends StatelessWidget {
-  const _WrapToggle({
-    super.key,
-    required this.on,
-    required this.label,
-    required this.onPressed,
-  });
-
-  final bool on;
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final roles = KitTokens.of(context).roles;
-    return Semantics(
-      container: true,
-      toggled: on,
-      child: KitTappable(
-        onTap: onPressed,
-        label: label,
-        tooltip: label,
-        shape: KitShape.circle,
-        child: Icon(
-          AppIconography.wrapText,
-          size: 24,
-          color: on ? roles.accent : roles.text2,
-        ),
-      ),
-    );
-  }
-}

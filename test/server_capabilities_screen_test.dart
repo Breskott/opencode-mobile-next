@@ -220,52 +220,58 @@ void main() {
       ]),
     );
     // allV1 leaves the plugin inventory off: it is the one server-side gap.
-    expect(_listed(tester, 'unavailable'), {'plugins'});
+    expect(_listed(tester, 'unavailable'), {
+      'plugins',
+      'dev-services',
+      'web-search',
+      'send-while-working',
+    });
     expect(_listed(tester, 'device'), isEmpty);
     // Nothing is listed twice.
     expect(available.intersection(_listed(tester, 'unavailable')), isEmpty);
   });
 
-  testWidgets('OpenCode 2: the shell is under Not available on this server', (
-    tester,
-  ) async {
-    _tall(tester);
-    final controller = await _controller(api2ServerCapabilities);
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(_app(controller));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'OpenCode 2: the shell is available (2.0.29 serves shell settings)',
+    (tester) async {
+      _tall(tester);
+      final controller = await _controller(api2ServerCapabilities);
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
 
-    expect(api2ServerCapabilities.shellSettings, isFalse);
-    await _unfold(tester);
-    expect(_listed(tester, 'unavailable'), contains('shell'));
-    expect(_listed(tester, 'available'), isNot(contains('shell')));
-    expect(
-      find.descendant(
-        of: _key('capability-unavailable-shell'),
-        matching: find.text('Default shell'),
-      ),
-      findsOneWidget,
-    );
-    // Every feature is in exactly one list, decided by the capability set.
-    final facts = (
-      server: api2ServerCapabilities,
-      device: const PlatformCapabilities.android(),
-      usageStatistics: true,
-    );
-    for (final feature in serverFeatures) {
-      final present = feature.available(facts);
+      expect(api2ServerCapabilities.shellSettings, isTrue);
+      await _unfold(tester);
+      expect(_listed(tester, 'available'), contains('shell'));
+      expect(_listed(tester, 'unavailable'), isNot(contains('shell')));
       expect(
-        _listed(tester, 'available').contains(feature.id),
-        present,
-        reason: feature.id,
+        find.descendant(
+          of: _key('capability-available-shell'),
+          matching: find.text('Default shell'),
+        ),
+        findsOneWidget,
       );
-      expect(
-        _listed(tester, 'unavailable').contains(feature.id),
-        !present,
-        reason: feature.id,
+      // Every feature is in exactly one list, decided by the capability set.
+      final facts = (
+        server: api2ServerCapabilities,
+        device: const PlatformCapabilities.android(),
+        usageStatistics: true,
       );
-    }
-  });
+      for (final feature in serverFeatures) {
+        final present = feature.available(facts);
+        expect(
+          _listed(tester, 'available').contains(feature.id),
+          present,
+          reason: feature.id,
+        );
+        expect(
+          _listed(tester, 'unavailable').contains(feature.id),
+          !present,
+          reason: feature.id,
+        );
+      }
+    },
+  );
 
   for (final backend in {
     'Codex-like': codexServerCapabilities,
@@ -291,7 +297,10 @@ void main() {
         ('files', capabilities.fileBrowsing),
         ('terminal', capabilities.terminal),
         ('shell', capabilities.shellSettings),
-        ('worktrees', capabilities.projectManagement),
+        (
+          'worktrees',
+          capabilities.projectManagement || capabilities.worktreeCreate,
+        ),
         ('attachments', capabilities.promptAttachments),
         ('compact', capabilities.sessionCompact),
         ('share', capabilities.sessionShare),
@@ -308,8 +317,16 @@ void main() {
       }
       // These backends hide most of the Project tab; the explanation must
       // actually be there.
-      expect(capabilities.fileBrowsing, isFalse);
-      expect(unavailable, containsAll(['files', 'terminal', 'mcp', 'usage']));
+      expect(capabilities.fileBrowsing, backend.key == 'Paseo-like');
+      expect(
+        unavailable,
+        containsAll([
+          if (!capabilities.fileBrowsing) 'files',
+          if (!capabilities.terminal) 'terminal',
+          'mcp',
+          'usage',
+        ]),
+      );
       // The phone still does what the phone does.
       expect(available, contains('background-notifications'));
       expect(_listed(tester, 'device'), isEmpty);
@@ -325,7 +342,12 @@ void main() {
         platform: TargetPlatform.linux,
       );
       final controller = await _controller(
-        const ServerCapabilities(pluginInventory: true),
+        const ServerCapabilities(
+          pluginInventory: true,
+          developmentServices: true,
+          webSearch: true,
+          inbox: true,
+        ),
       );
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller));

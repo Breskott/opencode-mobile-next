@@ -1,6 +1,7 @@
 import 'dart:ui' show Locale;
 
 import '../../l10n/app_localizations.dart';
+import '../../state/move_to_opencode2.dart';
 import '../../state/profiles.dart';
 import '../../termux/bridge.dart' show TermuxRuntime;
 import '../builtin_linux.dart';
@@ -55,6 +56,15 @@ class BuiltinSetupFinisher {
             words.builtinServerProfileName(runtime),
       },
     );
+    // One saved server per runtime: the team turned on for the other one
+    // follows the switch.
+    await teamFollowsRuntime(
+      store,
+      profile,
+      sameHost: (p) =>
+          p.backend == ServerBackend.openCode &&
+          BuiltinLinux.managesServerUrl(p.baseUrl),
+    );
     var running = false;
     try {
       running = (await linux.status()).serverRunning;
@@ -67,6 +77,9 @@ class BuiltinSetupFinisher {
     // Running but not ours to trust (another runtime, or the app is not
     // connected to it): restarting costs seconds and removes the doubt.
     final failure = await starter.start(profile);
+    if (failure?.problem == BuiltinStartProblem.componentRecovery) {
+      return 'runtime_ownership_unknown';
+    }
     if (failure != null) return failure.reason(l10n);
     return connect(profile);
   }

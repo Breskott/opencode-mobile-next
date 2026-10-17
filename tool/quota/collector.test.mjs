@@ -478,6 +478,11 @@ test('explicit Codex and pinned OpenCode OAuth formats load only selected identi
   assert.deepEqual(parseAuthDocument(opencode, { format: 'opencode', nowMs: NOW }),
     { ...parsed, expiresAtMs: NOW + 900000 });
   assert.equal(JSON.stringify(parsed).includes('refresh'), false);
+  // The Codex auth plugin stores the same OAuth record under `codex`.
+  assert.deepEqual(parseAuthDocument({ codex: opencode.openai }, { format: 'opencode', nowMs: NOW }),
+    { ...parsed, expiresAtMs: NOW + 900000 });
+  assert.deepEqual(parseAuthDocument({ openai: { type: 'api', key: 'synthetic' }, codex: opencode.openai },
+    { format: 'opencode', nowMs: NOW }), { ...parsed, expiresAtMs: NOW + 900000 });
   const withoutJwt = codexFile();
   withoutJwt.tokens.access_token = 'synthetic-opaque-oauth-token';
   delete withoutJwt.tokens.id_token;

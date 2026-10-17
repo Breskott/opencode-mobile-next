@@ -18,6 +18,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/termux_running_server.dart';
 import 'package:opencode_mobile/termux/bridge.dart' show TermuxRuntime;
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_progress_screen.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_ready_screen.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
@@ -429,29 +430,32 @@ Future<void> pumpSetupScene(
   await tester.pumpWidget(
     RepaintBoundary(
       key: boundary,
-      child: ProviderScope(
-        overrides: [
-          bootstrapProvider.overrideWithValue(AppBootstrap(controller.store)),
-          connProvider.overrideWithValue(controller),
-          builtinLinuxProvider.overrideWithValue(linux),
-          builtinServerStarterProvider.overrideWith((ref) {
-            final starter = BuiltinServerStarter(
-              linux: linux,
-              pollInterval: Duration.zero,
-            );
-            ref.onDispose(starter.dispose);
-            return starter;
-          }),
-        ],
-        child: MaterialApp(
-          navigatorKey: navigatorKey,
-          debugShowCheckedModeBanner: false,
-          theme: captureTheme(light: light),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: scene.push
-              ? const Scaffold(body: SizedBox.shrink())
-              : scene.home(),
+      child: KitEffectsScope(
+        effects: const KitEffects(liveBackground: false),
+        child: ProviderScope(
+          overrides: [
+            bootstrapProvider.overrideWithValue(AppBootstrap(controller.store)),
+            connProvider.overrideWithValue(controller),
+            builtinLinuxProvider.overrideWithValue(linux),
+            builtinServerStarterProvider.overrideWith((ref) {
+              final starter = BuiltinServerStarter(
+                linux: linux,
+                pollInterval: Duration.zero,
+              );
+              ref.onDispose(starter.dispose);
+              return starter;
+            }),
+          ],
+          child: MaterialApp(
+            navigatorKey: navigatorKey,
+            debugShowCheckedModeBanner: false,
+            theme: captureTheme(light: light),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: scene.push
+                ? const Scaffold(body: SizedBox.shrink())
+                : scene.home(),
+          ),
         ),
       ),
     ),

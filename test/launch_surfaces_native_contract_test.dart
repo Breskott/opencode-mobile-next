@@ -13,6 +13,8 @@ void main() {
   const androidMain = 'android/app/src/main';
   const kotlin = '$androidMain/kotlin/io/github/eslamasabry/opencode_mobile';
   final activity = File('$kotlin/MainActivity.kt').readAsStringSync();
+  final channel = File('$kotlin/LaunchShortcutChannel.kt').readAsStringSync();
+  final launches = File('$kotlin/LaunchActivityBridge.kt').readAsStringSync();
   final shortcuts = File(
     '$kotlin/PinnedSessionShortcuts.kt',
   ).readAsStringSync();
@@ -28,9 +30,9 @@ void main() {
 
   group('pinned-session shortcuts', () {
     test('the channel exposes the session drain and the publisher', () {
-      expect(activity, contains('"consumeSessionLaunch"'));
-      expect(activity, contains('"setPinnedSessions"'));
-      expect(activity, contains('invokeMethod("launchedSession", launch)'));
+      expect(channel, contains('"consumeSessionLaunch"'));
+      expect(channel, contains('"setPinnedSessions"'));
+      expect(channel, contains('invokeMethod("launchedSession", launch)'));
       expect(
         activity,
         contains('EXTRA_LAUNCH_PROFILE = "oc.shortcut.profile"'),
@@ -42,18 +44,22 @@ void main() {
     });
 
     test('a tap carries the two IDs only and both extras are consumed', () {
-      final capture = activity.indexOf('private fun captureSessionLaunch');
+      final capture = channel.indexOf('fun captureSession(intent: Intent?)');
       expect(capture, greaterThanOrEqualTo(0));
-      final body = activity.substring(capture);
-      final removeSession = body.indexOf('removeExtra(EXTRA_LAUNCH_SESSION)');
-      final removeProfile = body.indexOf('removeExtra(EXTRA_LAUNCH_PROFILE)');
-      final park = body.indexOf('pendingSessionLaunch = mapOf(');
+      final body = channel.substring(capture);
+      final removeSession = body.indexOf(
+        'removeExtra(MainActivity.EXTRA_LAUNCH_SESSION)',
+      );
+      final removeProfile = body.indexOf(
+        'removeExtra(MainActivity.EXTRA_LAUNCH_PROFILE)',
+      );
+      final park = body.indexOf('pendingSession = mapOf(');
       expect(removeSession, greaterThanOrEqualTo(0));
       expect(removeProfile, greaterThanOrEqualTo(0));
       expect(park, greaterThan(removeSession));
       expect(park, greaterThan(removeProfile));
       expect(
-        body.substring(park, body.indexOf('return true', park)),
+        body.substring(park, body.indexOf('return accepted', park)),
         allOf(
           contains('"profileID" to profileID'),
           contains('"sessionID" to sessionID'),
@@ -62,28 +68,37 @@ void main() {
     });
 
     test('consumeSessionLaunch drains once', () {
-      final consume = activity.indexOf('"consumeSessionLaunch"');
+      final consume = channel.indexOf('"consumeSessionLaunch"');
       expect(consume, greaterThanOrEqualTo(0));
-      final drain = activity.indexOf('pendingSessionLaunch = null', consume);
-      final reply = activity.indexOf('result.success(launch)', consume);
+      final drain = channel.indexOf('pendingSession = null', consume);
+      final reply = channel.indexOf('result.success(launch)', consume);
       expect(drain, greaterThan(consume));
       expect(reply, greaterThan(drain));
     });
 
     test('a live tap is pushed only once Dart is listening', () {
-      final newIntent = activity.indexOf('override fun onNewIntent');
-      final body = activity.substring(newIntent);
-      final captured = body.indexOf('if (captureSessionLaunch(intent))');
-      final gate = body.indexOf(
-        'if (shortcutDartReady && channel != null && launch != null)',
-        captured,
+      expect(activity, contains('launches.configure(messenger, intent)'));
+      expect(activity, contains('launches.onNewIntent(intent)'));
+      expect(launches, contains('shortcuts.configure(messenger)'));
+      expect(launches, contains('shortcuts.onNewIntent(intent)'));
+      final newIntent = channel.indexOf('fun onNewIntent');
+      final captured = channel.indexOf(
+        'if (captureSession(intent)) dispatchSession()',
+        newIntent,
       );
-      final push = body.indexOf(
+      final dispatch = channel.indexOf('private fun dispatchSession()');
+      final gate = channel.indexOf(
+        'if (dartReady && currentChannel != null && launch != null)',
+        dispatch,
+      );
+      final push = channel.indexOf(
         'invokeMethod("launchedSession", launch)',
         gate,
       );
-      expect(captured, greaterThanOrEqualTo(0));
-      expect(gate, greaterThan(captured));
+      expect(newIntent, isNonNegative);
+      expect(captured, greaterThan(newIntent));
+      expect(dispatch, isNonNegative);
+      expect(gate, greaterThan(dispatch));
       expect(push, greaterThan(gate));
     });
 
@@ -180,7 +195,7 @@ void main() {
       expect(tile, contains('unlockAndRun'));
       final whitelist = RegExp(
         r'LAUNCH_ACTIONS\s*=\s*setOf\(([^)]*)\)',
-      ).firstMatch(activity)!.group(1)!;
+      ).firstMatch(channel)!.group(1)!;
       expect(whitelist, contains('"${LaunchAction.activity.wireValue}"'));
     });
 

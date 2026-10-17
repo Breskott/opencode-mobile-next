@@ -107,6 +107,7 @@ final _states = <String, List<Widget> Function()>{
       expanded: true,
       body: [
         KitDiffView(
+          inline: true,
           files: [
             KitDiffFile.fromTexts(
               'test/checkout/checkout_test.dart',
@@ -135,6 +136,17 @@ final _states = <String, List<Widget> Function()>{
       detail: 'Exit code 1 · 2 tests failed',
       status: KitToolStatus.failed,
       duration: Duration(seconds: 38),
+    ),
+  ],
+  'failed_retry': () => [
+    _read,
+    KitToolRow(
+      kind: KitToolKind.shell,
+      title: 'Ran flutter test',
+      detail: 'Exit code 1 · 2 tests failed',
+      status: KitToolStatus.failed,
+      duration: const Duration(seconds: 38),
+      onRetry: () {},
     ),
   ],
   'not_run': () => [

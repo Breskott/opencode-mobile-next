@@ -16,10 +16,16 @@ Those servers and providers are controlled by you or their respective operators,
 not by this app. Their retention and privacy practices apply to the data they
 receive.
 
-Use an HTTPS server or an encrypted tunnel. Plain HTTP is accepted only for
+Use an HTTPS server or an encrypted tunnel. Plain HTTP is accepted for
 loopback addresses used by a server running on the same device, and for
 private Tailscale addresses (100.64.0.0/10 and `*.ts.net`), where the
-tailnet already encrypts and authenticates the connection.
+tailnet already encrypts and authenticates the connection. It is also
+accepted for private network addresses (10.0.0.0/8, 172.16.0.0/12,
+192.168.0.0/16, 169.254.0.0/16, IPv6 `fc00::/7` and `fe80::/10`, and
+`*.local` names), but only after the app warns that your password and
+conversations then travel unencrypted on that network and you choose
+"Use it anyway". The choice is stored per server and removed with it. Public
+addresses and other host names stay HTTPS-only.
 
 ### Optional AI Team plugin
 
@@ -215,6 +221,16 @@ a two-letter monogram instead.
   privacy-safe coding alerts used by optional background mode.
 - **Battery optimization exemption:** optional request for long-running coding
   sessions.
+- **All files access (optional):** asked only when you open or create a
+  project in your phone's shared storage (for example a folder under
+  `/sdcard`), after a plain explanation. Android 11+ hides other apps' files
+  in shared storage unless it is on. It lets OpenCode inside the app read and
+  change files in the folders you open as projects, and nothing else is
+  collected or sent because of it. It is never requested at start-up or for
+  projects in the app's own project space, and you can turn it off at any
+  time in Android Settings, under All files access. On Android 10 and older
+  the classic storage permission is asked instead. If the server runs in
+  Termux, that is Termux's own storage permission, not this one.
 - **Termux command permission:** optional control of an on-device OpenCode
   server.
 

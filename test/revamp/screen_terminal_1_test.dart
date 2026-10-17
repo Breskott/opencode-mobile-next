@@ -390,7 +390,7 @@ void main() {
         find.byKey(const ValueKey('default-shell-settings-entry')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Default shell'), findsWidgets);
+      expect(find.text('Shell for commands'), findsWidgets);
       await tester.tap(
         find.byKey(const ValueKey('server-shell-/usr/bin/fish')),
       );

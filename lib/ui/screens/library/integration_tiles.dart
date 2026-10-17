@@ -161,15 +161,30 @@ class _McpServerRow extends StatelessWidget {
         ],
       ),
       supportingMaxLines: 3,
-      below: act == null
+      below: (act == null && (server.error?.trim().isEmpty ?? true))
           ? null
           : KitActionBlock(
               tertiary: [
-                KitAction(
-                  key: ValueKey('mcp-action-${server.name}'),
-                  label: act,
-                  onPressed: canAct ? onAct : null,
-                ),
+                if (act != null)
+                  KitAction(
+                    key: ValueKey('mcp-action-${server.name}'),
+                    label: act,
+                    onPressed: canAct ? onAct : null,
+                  ),
+                // What the server said, in a sheet: plain words lead on the
+                // row, the technical text waits here.
+                if (server.error?.trim().isNotEmpty ?? false)
+                  KitAction(
+                    key: ValueKey('mcp-error-${server.name}'),
+                    label: l10n.integrationsMcpDetails(server.name),
+                    onPressed: () => unawaited(
+                      showKitTechnicalDetails(
+                        context,
+                        title: l10n.integrationsMcpDetails(server.name),
+                        text: server.error!.trim(),
+                      ),
+                    ),
+                  ),
               ],
             ),
       menuLabel: l10n.integrationsMcpActions(server.name),
@@ -422,7 +437,9 @@ class _ProviderRow extends StatelessWidget {
           if (detail.isNotEmpty) TextSpan(text: detail),
         ],
       ),
-      supportingMaxLines: 2,
+      // Three lines: a provider with a key and two sign-in methods
+      // ("... ChatGPT Pro/Plus (headless)") is said whole, not cut.
+      supportingMaxLines: 3,
       trailing: busy
           ? const KitTaskMark(state: KitTaskState.working)
           : _canConnect || (notLoaded && _hasKeyMethod)
@@ -522,7 +539,6 @@ class _SignInRow extends StatelessWidget {
             last: next == null,
             tone: switch (mark) {
               KitTaskState.needsYou => KitTextTone.primary,
-              KitTaskState.failed => KitTextTone.danger,
               _ => KitTextTone.secondary,
             },
           ),
@@ -541,7 +557,15 @@ class _SignInRow extends StatelessWidget {
 }
 
 /// What the person chose in a sign-in's sheet or menu.
-enum _SignInChoice { finish, enterCode, cancel, forget }
+enum _SignInChoice {
+  finish,
+  enterCode,
+  cancel,
+  forget,
+  copyCode,
+  openBrowser,
+  restart,
+}
 
 /// One sign-in's sheet: the provider as the title, its state under it, one
 /// line on what to do, and its acts: one primary ("Finish signing in to
@@ -553,6 +577,7 @@ Future<_SignInChoice?> _showSignInSheet(
   required String word,
   required String message,
   List<String> notes = const [],
+  String? code,
   required List<(_SignInChoice, KitAction)> actions,
   _SignInChoice? primary,
 }) {
@@ -585,6 +610,14 @@ Future<_SignInChoice?> _showSignInSheet(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           KitText(message, tone: KitTextTone.secondary),
+          if (code != null) ...[
+            SizedBox(height: tokens.space3),
+            KitOneTimeCode(
+              code: code,
+              label: _libraryCopy(context).integrationsSignInCodeLabel,
+              copyLabel: _libraryCopy(context).integrationsCopyCode,
+            ),
+          ],
           for (final note in notes) ...[
             SizedBox(height: tokens.space2),
             KitText(note, role: KitTextRole.secondary),
@@ -839,4 +872,27 @@ String providerOAuthCompletionCode(String value) {
   final trimmed = value.trim();
   final fromUrl = Uri.tryParse(trimmed)?.queryParameters['code']?.trim();
   return fromUrl?.isNotEmpty == true ? fromUrl! : trimmed;
+}
+
+final RegExp _deviceCodeLine = RegExp(
+  r'(?:[Ee]nter\s+(?:the\s+|your\s+)?)?[Cc]ode\s*[:：]\s*'
+  r'([A-Z0-9]{3,}(?:-[A-Z0-9]{2,})*)(?![A-Za-z0-9-])',
+);
+
+/// The one-time device code in a sign-in's instructions ("Enter code:
+/// VPFI-KC2ZK"), or null when there is none. Only a shouted token after the
+/// word "code" counts, so prose such as "enter the code from the page" is
+/// never taken for one.
+String? providerDeviceCode(String instructions) {
+  final code = _deviceCodeLine.firstMatch(instructions)?.group(1);
+  return code != null && code.length >= 4 && code.length <= 24 ? code : null;
+}
+
+/// What is left of [instructions] once the code line is shown on its own:
+/// empty when the code was all it said.
+String providerInstructionsWithoutCode(String instructions) {
+  final rest = instructions
+      .replaceFirst(_deviceCodeLine, '')
+      .replaceAll(RegExp(r'^[\s.,;:-]+|[\s.,;:-]+$'), '');
+  return rest.trim();
 }

@@ -253,31 +253,34 @@ void main() {
     expect(conn.transcriptTimestampsVisible, before);
   });
 
-  testWidgets('a tool call a permission waits on says it waits for you', (
-    tester,
-  ) async {
-    final api = _Chat8Api()
-      ..transcript = [
-        chat3Prompt('user-1', 'Run the tests'),
-        _runningTool('c1'),
-      ];
-    final conn = await chat3Controller(api: api);
-    addTearDown(conn.dispose);
-    await pumpChat3(tester, conn);
+  testWidgets(
+    'the tool call a permission waits on is not repeated above its card',
+    (tester) async {
+      final api = _Chat8Api()
+        ..transcript = [
+          chat3Prompt('user-1', 'Run the tests'),
+          _runningTool('c1'),
+        ];
+      final conn = await chat3Controller(api: api);
+      addTearDown(conn.dispose);
+      await pumpChat3(tester, conn);
 
-    final card = find.byType(ToolCard);
-    expect(tester.widget<ToolCard>(card).waitingForYou, isFalse);
-    // A shell step can be run again, through the dialog.
-    expect(tester.widget<ToolCard>(card).onRerunCommand, isNotNull);
+      final card = find.byType(ToolCard);
+      expect(tester.widget<ToolCard>(card).waitingForYou, isFalse);
+      // A shell step can be run again, through the dialog.
+      expect(tester.widget<ToolCard>(card).onRerunCommand, isNotNull);
 
-    conn.handleEventForTesting(_asked('another-call'));
-    await tester.pump();
-    expect(tester.widget<ToolCard>(card).waitingForYou, isFalse);
+      conn.handleEventForTesting(_asked('another-call'));
+      await tester.pump();
+      expect(tester.widget<ToolCard>(card).waitingForYou, isFalse);
 
-    conn.handleEventForTesting(_asked('c1'));
-    await tester.pump();
-    expect(tester.widget<ToolCard>(card).waitingForYou, isTrue);
-  });
+      conn.handleEventForTesting(_asked('c1'));
+      await tester.pump();
+      // The request card names the step; the step itself is not repeated above
+      // it while it waits.
+      expect(card, findsNothing);
+    },
+  );
 
   testWidgets('Codex: the launcher says why Files, Review and settings are '
       'missing', (tester) async {

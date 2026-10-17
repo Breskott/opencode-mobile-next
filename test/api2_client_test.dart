@@ -98,11 +98,9 @@ void main() {
           expect(requests[0].uri.queryParameters['directory'], '/work/app');
           expect(requests[0].uri.queryParameters['limit'], '1');
           expect(requests[0].uri.queryParameters['parentID'], 'null');
-          expect(
-            requests[1].uri.queryParameters,
-            {'cursor': cursor},
-            reason: 'a cursor must be passed back alone',
-          );
+          expect(requests[1].uri.queryParameters, {
+            'cursor': cursor,
+          }, reason: 'a cursor must be passed back alone');
           client.setLocation(directory: '/work/app', workspace: 'ws_mobile');
           await client.sessions(unscoped: true, search: 'find me');
           expect(requests.last.uri.queryParameters, {'search': 'find me'});
@@ -391,7 +389,7 @@ void main() {
         await writeJson(request, {
           'data': {
             'ses_a': {'type': 'running'},
-            'ses_b': {'type': 'queued'},
+            'ses_b': {'type': 'running'},
           },
         });
       },
@@ -400,7 +398,7 @@ void main() {
         try {
           expect(await client.activeSessions(), {
             'ses_a': 'running',
-            'ses_b': 'queued',
+            'ses_b': 'running',
           });
         } finally {
           client.close();
@@ -408,6 +406,41 @@ void main() {
       },
     );
   });
+
+  for (final invalid in <Object?>[
+    null,
+    {'data': []},
+    {
+      'data': {'ses_bad': {}},
+    },
+    {
+      'data': {
+        'ses_bad': {'type': 'queued'},
+      },
+    },
+    {
+      'data': {
+        'ses bad': {'type': 'running'},
+      },
+    },
+  ]) {
+    test('active snapshot rejects malformed data $invalid', () async {
+      await withServer(handler: (request) => writeJson(request, invalid), (
+        server,
+        requests,
+      ) async {
+        final client = clientFor(server);
+        try {
+          await expectLater(
+            client.activeSessions(),
+            throwsA(isA<Api2RequestError>()),
+          );
+        } finally {
+          client.close();
+        }
+      });
+    });
+  }
 
   test('surfaces typed errors from tagged envelopes', () async {
     await withServer(

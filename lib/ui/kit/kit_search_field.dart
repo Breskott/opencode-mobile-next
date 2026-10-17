@@ -115,6 +115,7 @@ class _KitSearchFieldState extends State<KitSearchField> {
 
   /// A settled query waits for its count to be announced.
   bool _announcePending = false;
+  bool _hovered = false;
 
   TextEditingController get _controller =>
       widget.controller ?? (_ownController ??= TextEditingController());
@@ -430,20 +431,28 @@ class _KitSearchFieldState extends State<KitSearchField> {
       ],
     );
 
-    final frame = DecoratedBox(
-      decoration: BoxDecoration(
-        color: roles.surface1,
-        borderRadius: BorderRadius.circular(KitTokens.fieldRadius),
-        border: Border.all(
-          color: focused ? roles.accent : roles.hairline,
-          width: focused
-              ? KitTokens.focusRingWidth(context)
-              : KitTokens.hairlineWidth(context),
+    final frame = MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: roles.surface1,
+          borderRadius: BorderRadius.circular(KitTokens.fieldRadius),
+          border: Border.all(
+            color: focused
+                ? roles.accent
+                : _hovered && widget.enabled
+                ? roles.text3
+                : roles.hairline,
+            width: focused
+                ? KitTokens.focusRingWidth(context)
+                : KitTokens.hairlineWidth(context),
+          ),
         ),
-      ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: tokens.buttonHeight),
-        child: row,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: tokens.buttonHeight),
+          child: row,
+        ),
       ),
     );
 

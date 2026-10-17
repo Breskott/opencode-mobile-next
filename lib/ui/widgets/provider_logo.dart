@@ -1,18 +1,19 @@
 import 'package:flutter/widgets.dart';
 
+import '../../domain/provider_logo_store.dart';
 import '../../api/provider_presentation.dart';
 import '../app_theme.dart';
 import '../kit/kit_image.dart';
 
 /// A provider's identity mark: a [KitAvatar] (KitImage.md, "Replaces").
 ///
-/// The mark is the provider's website favicon, fetched at first use from
-/// Google's favicon service (see [providerLogoUrl]; the URL is app-authored
-/// and reaches the kit only as an [ImageProvider]) and cached by the image
-/// pipeline like any other network image. While it loads, and whenever it
-/// cannot load, the avatar shows the initials of the provider's presented
-/// name instead, so a row never has an empty leading slot. OpenCode's own
-/// providers show the terminal glyph rather than a fetched image.
+/// The mark is the provider's monochrome models.dev logo, tinted with the
+/// theme's primary text colour by the kit (`KitImageSource.vectorLogo`). It
+/// is fetched once and kept on disk by [ProviderLogoStore] (refreshed at
+/// most weekly); the URL is built there from a validated provider slug and
+/// never comes from a server. While it loads, when the provider has no logo,
+/// and when it cannot load, the avatar shows the initials of the provider's
+/// presented name. OpenCode's own providers show the terminal glyph.
 ///
 /// Decorative: the row that shows the logo already names the provider, so
 /// the mark is excluded from the semantics tree.
@@ -27,11 +28,10 @@ class ProviderLogo extends StatelessWidget {
   /// model picker's 18 and 24 dp marks).
   final double? size;
 
-  /// Test seam. When set, every logo asks this for its [ImageProvider]
-  /// instead of building a [NetworkImage]; returning null skips the image
-  /// entirely and renders the initials, so widget tests never touch the
-  /// network and render deterministically.
-  static ImageProvider? Function(String url)? imageProviderOverride;
+  /// Test seam. When set, every logo asks this for its SVG text instead of
+  /// the [ProviderLogoStore]; returning null (or a null future) renders the
+  /// initials, so widget tests never touch the network or the disk.
+  static Future<String?>? Function(String providerID)? logoLoaderOverride;
 
   /// Retired: [KitAvatar] decodes at its own laid-out size times the device
   /// pixel ratio (KitImage.md, "Decode size"). Kept for callers.
@@ -59,13 +59,18 @@ class ProviderLogo extends StatelessWidget {
         decorative: true,
       );
     } else {
-      final url = providerLogoUrl(providerID).toString();
-      final override = imageProviderOverride;
-      final image = override == null ? NetworkImage(url) : override(url);
+      final override = logoLoaderOverride;
       avatar = KitAvatar(
         name: name,
-        image: image == null ? null : KitImageSource.provider(image),
+        image: KitImageSource.vectorLogo(
+          id: providerID,
+          load: () => override == null
+              ? ProviderLogoStore.shared.svgFor(providerID)
+              : override(providerID) ?? Future<String?>.value(null),
+        ),
         decorative: true,
+        // The logo catalog lacks many providers; initials are enough.
+        optionalImage: true,
       );
     }
     final dimension = size;

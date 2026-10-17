@@ -161,29 +161,34 @@ void main() {
           connProvider.overrideWithValue(connection),
           builtinLinuxProvider.overrideWithValue(linux),
         ],
-        child: MaterialApp(
-          locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(textScale),
-              disableAnimations: reduceMotion,
+        // The live background drifts for good by design; these tests are
+        // about the screen's own animation settling.
+        child: KitEffectsScope(
+          effects: const KitEffects(liveBackground: false),
+          child: MaterialApp(
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(textScale),
+                disableAnimations: reduceMotion,
+              ),
+              child: child!,
             ),
-            child: child!,
+            routes: {'/home': (_) => const Scaffold(body: Text('App home'))},
+            onGenerateRoute: (settings) {
+              pushed.add(settings);
+              if (settings.name!.startsWith('/chat/')) {
+                return MaterialPageRoute<void>(
+                  settings: settings,
+                  builder: (_) => Scaffold(body: Text('Chat ${settings.name}')),
+                );
+              }
+              return null;
+            },
+            home: home ?? const PhoneSetupReadyScreen(),
           ),
-          routes: {'/home': (_) => const Scaffold(body: Text('App home'))},
-          onGenerateRoute: (settings) {
-            pushed.add(settings);
-            if (settings.name!.startsWith('/chat/')) {
-              return MaterialPageRoute<void>(
-                settings: settings,
-                builder: (_) => Scaffold(body: Text('Chat ${settings.name}')),
-              );
-            }
-            return null;
-          },
-          home: home ?? const PhoneSetupReadyScreen(),
         ),
       ),
     );
@@ -334,6 +339,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('in-app-projects')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('open-project-browse')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('in-app-project-old-project')));
     await tester.pumpAndSettle();
 
@@ -364,6 +371,8 @@ void main() {
     await mount(tester);
     // Reduced motion: the finished drawing at once, nothing to wait for.
     expect(tester.hasRunningAnimations, isFalse);
+    await tester.pumpWidget(const SizedBox());
+    connection.dispose();
   });
 
   testWidgets('the finish is celebrated: the longer entrance and one soft '

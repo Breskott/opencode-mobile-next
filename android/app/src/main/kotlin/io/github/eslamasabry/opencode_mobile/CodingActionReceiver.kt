@@ -26,7 +26,7 @@ class CodingActionReceiver : BroadcastReceiver() {
         val key = intent.getStringExtra(
             BackgroundConnectionService.EXTRA_CODING_ALERT_KEY
         ).orEmpty()
-        val decision = intent.getStringExtra(
+        var decision = intent.getStringExtra(
             BackgroundConnectionService.EXTRA_CODING_ALERT_DECISION
         ).orEmpty()
         val requestID = intent.getStringExtra(
@@ -35,9 +35,14 @@ class CodingActionReceiver : BroadcastReceiver() {
         val profileID = intent.getStringExtra(BackgroundConnectionService.EXTRA_CODING_ALERT_PROFILE_ID).orEmpty()
         if (kind.isBlank() || sessionID.isBlank() || decision.isBlank()) return
 
-        val reply = RemoteInput.getResultsFromIntent(intent)
+        var reply = RemoteInput.getResultsFromIntent(intent)
             ?.getCharSequence(BackgroundConnectionService.REMOTE_INPUT_REPLY)
             ?.toString()
+        // An option button answers with its own label, exactly like a typed reply.
+        if (decision.startsWith("option")) {
+            reply = intent.getStringExtra(BackgroundConnectionService.EXTRA_CODING_ALERT_OPTION_TEXT)
+            decision = "reply"
+        }
 
         val channel = MainActivity.backgroundChannel
         if (channel == null) {
@@ -93,12 +98,14 @@ class CodingActionReceiver : BroadcastReceiver() {
         if (key.isBlank()) return
         BackgroundConnectionService.showCodingAlert(
             context,
-            kind = kind,
-            sessionID = sessionID,
-            key = key,
-            quickReply = decision == "reply",
-            requestID = requestID,
-            profileID = profileID
+            CodingAlertRequest(
+                kind = kind,
+                sessionID = sessionID,
+                key = key,
+                quickReply = decision == "reply",
+                requestID = requestID,
+                profileID = profileID
+            )
         )
     }
 

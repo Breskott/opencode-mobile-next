@@ -15,3 +15,7 @@ lib/l10n/app_localizations*.dart merge=ours -diff
 docs/design/ui-ledger/ledger.json merge=ours
 docs/design/ui-ledger/pages.md merge=ours
 docs/design/ui-ledger/navigation.md merge=ours
+
+# GitHub's language bar: count the app, not the QA scripts, demo video or docs.
+tool/** linguist-detectable=false
+docs/** linguist-documentation

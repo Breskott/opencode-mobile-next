@@ -636,7 +636,8 @@ class _KitFieldState extends State<KitField> {
         : tokens.minTarget;
     final vertical = singleLine
         ? ((tokens.buttonHeight - tokens.minTarget) / 2).floorToDouble()
-        : ((tokens.buttonHeight - 24) / 2).floorToDouble();
+        : ((tokens.buttonHeight - fontSize * style.height!) / 2)
+              .floorToDouble();
     final plainWords =
         widget.kind == KitFieldKind.text ||
         widget.kind == KitFieldKind.multiline;

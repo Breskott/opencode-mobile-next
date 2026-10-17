@@ -13,7 +13,7 @@
 /// if it happens, instead of leaving a team that dies later.
 library;
 
-import 'dart:ffi' show Abi;
+import '../abi_shim.dart';
 
 /// One pinned download.
 class AiTeamDownload {

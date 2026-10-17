@@ -73,8 +73,11 @@ void main() {
         isNot(contains('sessionFailed')),
       );
       final model = teamReasonFor(_l, 'modelNotConfigured')!;
-      expect(model.message, 'The team needs a model.');
-      expect(model.next, 'Pick one in Team settings › Model.');
+      expect(
+        model.message,
+        "The model for this job didn't accept the request.",
+      );
+      expect(model.next, contains('Open the Planner model choice'));
       expect(teamReasonNeedsModel('modelNotConfigured'), isTrue);
     });
 
@@ -173,10 +176,7 @@ void main() {
     expect(find.text('Since you were away'), findsOneWidget);
     expect(find.textContaining('(sessionFailed)'), findsNothing);
     expect(find.text('Planning is stopped.'), findsNothing);
-    expect(
-      find.text("The planner stopped before it answered."),
-      findsWidgets,
-    );
+    expect(find.text("The planner stopped before it answered."), findsWidgets);
   });
 
   testWidgets('a failed plan offers a way forward, code only in Details', (
@@ -195,8 +195,11 @@ void main() {
       ),
     );
     expect(find.byKey(const ValueKey('team-plan-failed')), findsOneWidget);
-    expect(find.text('The team needs a model.'), findsOneWidget);
-    expect(find.text('Pick a model'), findsOneWidget);
+    expect(
+      find.text("The model for this job didn't accept the request."),
+      findsOneWidget,
+    );
+    expect(find.text('Choose the Planner model'), findsOneWidget);
     expect(find.text('Approve the spec again'), findsOneWidget);
     expect(find.text('modelNotConfigured'), findsNothing);
   });

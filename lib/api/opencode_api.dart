@@ -7,14 +7,17 @@ import 'package:opencode_sdk/opencode_sdk.dart' as sdk;
 import '../api2/models.dart' show Api2FormInfo, Api2FormState, Api2InboxItem;
 import '../domain/server_gateway.dart';
 import 'models.dart';
+import 'gen_ui_history.dart';
 import 'sse.dart';
 import '../diagnostics/perf_trace.dart';
 import '../ui/kit/kit_redact.dart';
 
 export 'models.dart' show ApiException;
+import '../domain/loopback_host.dart' show isCleartextRemoteBase;
 
 /// HTTP client for a single opencode server (`opencode serve`).
 class OpenCodeApi
+    with OpenCodeGenUiHistory
     implements
         ServerGateway,
         SessionRetryGateway,
@@ -34,6 +37,7 @@ class OpenCodeApi
   Future<void> Function(String sessionID)? beforeSessionDispatch;
   void Function(String sessionID)? sessionDispatchSettled;
 
+  @override
   Dio get dio => _dio;
   @override
   String? get directory => _directory;
@@ -88,6 +92,8 @@ class OpenCodeApi
           : baseUrl,
       connectTimeout: connectTimeout,
       receiveTimeout: requestTimeout,
+      followRedirects: !isCleartextRemoteBase(baseUrl),
+      maxRedirects: isCleartextRemoteBase(baseUrl) ? 0 : 5,
       responseType: ResponseType.json,
       validateStatus: (s) => s != null && s >= 200 && s < 300,
     );
@@ -590,8 +596,9 @@ class OpenCodeApi
     for (final link in (headers.value('link') ?? '').split(',')) {
       if (!RegExp(r'rel="?next"?').hasMatch(link)) continue;
       final match = RegExp(r'<([^>]+)>').firstMatch(link);
-      final next = Uri.tryParse(match?.group(1) ?? '')
-          ?.queryParameters['before'];
+      final next = Uri.tryParse(
+        match?.group(1) ?? '',
+      )?.queryParameters['before'];
       if (next != null && next.isNotEmpty) return next;
     }
     return null;
@@ -669,11 +676,13 @@ class OpenCodeApi
     List<PromptAttachment> attachments = const [],
     List<PromptAgentMention> agentMentions = const [],
     PromptDelivery? delivery,
+    void Function()? beforeSend,
   }) => PromptTrace.track(
     sessionID,
     () => _promptAsync(
       sessionID,
       messageID: messageID,
+      beforeSend: beforeSend,
       text: text,
       model: model,
       agent: agent,
@@ -686,6 +695,7 @@ class OpenCodeApi
   Future<void> _promptAsync(
     String sessionID, {
     String? messageID,
+    void Function()? beforeSend,
     required String text,
     ModelRef? model,
     String? agent,
@@ -695,6 +705,7 @@ class OpenCodeApi
   }) async {
     await beforeSessionDispatch?.call(sessionID);
     try {
+      beforeSend?.call();
       await sdkClient.getSessionApi().sessionPromptAsync(
         sessionID: sessionID,
         directory: _directory,

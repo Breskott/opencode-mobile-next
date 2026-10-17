@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/builtin/app_exit_recovery.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/builtin/team/builtin_team.dart';
+import 'package:opencode_mobile/background/thermal_pause_signal.dart';
 import 'package:opencode_mobile/builtin/thermal_guard.dart';
 import 'package:opencode_mobile/builtin/thermal_guard_teams.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -224,8 +225,6 @@ void main() {
       strings: () => lookupAppLocalizations(const Locale('en')),
     );
 
-    final en = lookupAppLocalizations(const Locale('en'));
-
     test(
       'SEVERE pauses the phone\'s team once, keeps it, tells once',
       () async {
@@ -234,7 +233,8 @@ void main() {
         expect(port.calls, ['pause phone']);
         expect(guard.hold, ThermalHold.paused);
         expect(guard.notice?.kind, ThermalNoticeKind.paused);
-        expect(bridge.notified, [en.thermalPausedNotice]);
+        expect(bridge.notified, isEmpty);
+        expect(thermalPauseActive.value, isTrue);
         final saved = jsonDecode(prefs.getString('oc.thermalPause.phone')!);
         expect(saved['sessions'], ['gc-7']);
         expect(saved['status'], 'severe');
@@ -247,7 +247,7 @@ void main() {
         );
         expect(port.calls, ['pause phone']);
         expect(guard.notice, isNull);
-        expect(bridge.notified, hasLength(1));
+        expect(bridge.notified, isEmpty);
         guard.dispose();
       },
     );
@@ -261,7 +261,8 @@ void main() {
         expect(port.calls, ['pause phone', 'stop phone']);
         expect(guard.hold, ThermalHold.stopped);
         expect(guard.notice?.kind, ThermalNoticeKind.stopped);
-        expect(bridge.notified, [en.thermalPausedNotice]);
+        expect(bridge.notified, isEmpty);
+        expect(thermalPauseActive.value, isTrue);
 
         // Cool for two minutes: the team comes back, service and sessions.
         now = _t0.add(const Duration(minutes: 1));
@@ -272,10 +273,8 @@ void main() {
         expect(port.calls.last, 'resume phone gc-7 +service');
         expect(guard.hold, ThermalHold.none);
         expect(guard.notice?.kind, ThermalNoticeKind.resumed);
-        expect(bridge.notified, [
-          en.thermalPausedNotice,
-          en.thermalResumedNotice,
-        ]);
+        expect(bridge.notified, isEmpty);
+        expect(thermalPauseActive.value, isFalse);
         expect(prefs.getString('oc.thermalPause.phone'), isNull);
         guard.dispose();
       },
@@ -598,7 +597,7 @@ void main() {
         expect(first.hold, ThermalHold.paused);
         expect(first.notice?.kind, ThermalNoticeKind.paused);
         expect(acts, [ThermalNoticeKind.paused]);
-        expect(bridge.notified, hasLength(1));
+        expect(bridge.notified, isEmpty);
         final persisted = jsonDecode(prefs.getString('oc.thermalPause.phone')!);
         expect(persisted['sessions'], contains('gc-2'));
 
@@ -618,7 +617,7 @@ void main() {
         expect(second.notice?.kind, ThermalNoticeKind.resumed);
         expect(prefs.containsKey('oc.thermalPause.phone'), isFalse);
         expect(acts, [ThermalNoticeKind.paused, ThermalNoticeKind.resumed]);
-        expect(bridge.notified, hasLength(2));
+        expect(bridge.notified, isEmpty);
       });
     }
 
@@ -829,19 +828,15 @@ void main() {
       expect((await bridge.current()).status, ThermalStatus.unknown);
       expect((await bridge.current()).status, ThermalStatus.unknown);
       expect(await bridge.current(), ThermalReading.unknown);
-      expect(
-        ThermalStatus.values.map((s) => s.name).skip(1),
-        [
-          'none',
-          'light',
-          'moderate',
-          'severe',
-          'critical',
-          'emergency',
-          'shutdown',
-        ],
-        reason: 'ThermalMonitor.statusName answers these words',
-      );
+      expect(ThermalStatus.values.map((s) => s.name).skip(1), [
+        'none',
+        'light',
+        'moderate',
+        'severe',
+        'critical',
+        'emergency',
+        'shutdown',
+      ], reason: 'ThermalMonitor.statusName answers these words');
     });
 
     test('events arrive as readings; a missing channel is safe', () async {

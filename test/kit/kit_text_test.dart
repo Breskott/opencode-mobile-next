@@ -188,7 +188,7 @@ void main() {
     expect(find.text('Needs you · 40 s ago'), findsOneWidget);
     final style = tester.widget<Text>(find.byType(Text)).style!;
     final roles = ThemeRoles.resolve(AppTheme.dark());
-    expect(style.fontSize, 12);
+    expect(style.fontSize, 13);
     expect(style.color, roles.attention);
   });
 
@@ -230,14 +230,14 @@ void main() {
 
   test('1. styleFor(role) equals LOOK-12 exactly for all ten roles', () {
     const table = <KitTextRole, (double, double, FontWeight)>{
-      KitTextRole.largeTitle: (32, 38, FontWeight(650)),
-      KitTextRole.title: (24, 30, FontWeight(650)),
-      KitTextRole.headline: (17, 22, FontWeight.w600),
+      KitTextRole.largeTitle: (28, 34, FontWeight(650)),
+      KitTextRole.title: (22, 28, FontWeight(650)),
+      KitTextRole.headline: (16, 22, FontWeight.w600),
       KitTextRole.body: (16, 24, FontWeight.w400),
       KitTextRole.rowTitle: (16, 22, FontWeight.w500),
-      KitTextRole.secondary: (14, 20, FontWeight.w400),
+      KitTextRole.secondary: (13, 18, FontWeight.w500),
       KitTextRole.label: (13, 18, FontWeight.w600),
-      KitTextRole.caption: (12, 16, FontWeight.w600),
+      KitTextRole.caption: (13, 18, FontWeight.w600),
       KitTextRole.button: (16, 20, FontWeight.w600),
       KitTextRole.mono: (13, 19, FontWeight.w400),
     };

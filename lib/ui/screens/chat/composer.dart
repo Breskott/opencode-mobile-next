@@ -20,11 +20,14 @@ enum _PromptTool {
   clearText,
   stash,
   saved,
+  projectFile,
 }
 
 class _ChatComposer extends StatelessWidget {
   const _ChatComposer({
     this.agentName,
+    this.cardWaiting = false,
+    this.blockedReason,
     required this.compact,
     this.isolated = false,
     this.maxInputHeight = double.infinity,
@@ -37,6 +40,9 @@ class _ChatComposer extends StatelessWidget {
     required this.onSelectAgent,
     required this.onOpenCommands,
     required this.onOpenAgents,
+    this.fileHits = const [],
+    this.onSelectFile,
+    this.onOpenProjectFiles,
     required this.onOpenEditor,
     this.onReusePrompt,
     this.onClearText,
@@ -47,23 +53,17 @@ class _ChatComposer extends StatelessWidget {
     this.shelfLoading = true,
     required this.attachments,
     required this.promptAttachmentsSupported,
+    this.promptImagesOnly = false,
     required this.webSourcesSupported,
     required this.busy,
-    this.live,
+    this.model,
+    this.onStop,
+    this.stopping = false,
     required this.sending,
     this.canSendWhileBusy = false,
-    this.canChooseDelivery = false,
-    // P6.6: "Send after this reply" is the default; steering is the choice.
-    this.delivery = PromptDelivery.queue,
-    this.onDeliveryChanged,
+    this.promptSteering = false,
+    this.midTurnPrompt,
     required this.voiceOpening,
-    required this.selectedAgent,
-    this.defaultAgent = '',
-    required this.selectedModel,
-    this.modelLabel,
-    this.selectionFallback,
-    this.selectedCatalogModel,
-    required this.selectedVariant,
     this.showAttachmentNote = true,
     required this.onAttach,
     required this.onPhotoLibrary,
@@ -75,16 +75,21 @@ class _ChatComposer extends StatelessWidget {
     this.conversationMode = false,
     this.voice,
     required this.onSend,
-    required this.onChooseModel,
     required this.onRemoveAttachment,
     this.references = const [],
     this.onRemoveReference,
-    this.contextUsage,
-    this.modelSwitch,
   });
 
   /// Who the prompt goes to ("Claude Code"); null means OpenCode.
   final String? agentName;
+
+  /// An agent card of this conversation waits: the hint says the answer can
+  /// also be typed.
+  final bool cardWaiting;
+
+  /// Why this conversation takes no message (a Claude sub-agent answers
+  /// only its main conversation); the field says it instead.
+  final String? blockedReason;
 
   /// A phone-sized window: fewer inline suggestions.
   final bool compact;
@@ -102,6 +107,12 @@ class _ChatComposer extends StatelessWidget {
   final ValueChanged<CatalogAgent> onSelectAgent;
   final VoidCallback onOpenCommands;
   final VoidCallback onOpenAgents;
+
+  /// Project files matching the `@word` at the caret, relative to the
+  /// project; null callbacks mean this server has no files to point at.
+  final List<String> fileHits;
+  final ValueChanged<String>? onSelectFile;
+  final VoidCallback? onOpenProjectFiles;
   final VoidCallback onOpenEditor;
   final VoidCallback? onReusePrompt;
   final VoidCallback? onClearText;
@@ -112,43 +123,37 @@ class _ChatComposer extends StatelessWidget {
   final bool shelfLoading;
   final List<PromptAttachment> attachments;
   final bool promptAttachmentsSupported;
+
+  /// Pictures only (an agent on this phone): photos and camera, no files.
+  final bool promptImagesOnly;
   final bool webSourcesSupported;
   final bool busy;
 
-  /// The running turn's status for the composer's top edge.
-  final KitTurnLive? live;
+  /// The model chip, only in a window too tight for the line above the
+  /// field (see [KitComposer.model]).
+  final Widget? model;
+
+  /// Stop: the composer's Send becomes Stop while a reply runs. Null while
+  /// the prompt is still on its way (nothing to stop yet).
+  final VoidCallback? onStop;
+  final bool stopping;
   final bool sending;
 
   /// Send stays live while a reply is written (OpenCode 1 runs it after the
-  /// reply; OpenCode 2 queues or steers it).
+  /// reply; elsewhere it steers the running turn).
   final bool canSendWhileBusy;
 
-  /// OpenCode 2's inbox: a send made during a reply can wait for it or add
-  /// to this turn. Without it the pill says "Sends after this reply".
-  final bool canChooseDelivery;
+  /// The server steers a send made during a reply (OpenCode 2, Codex): it
+  /// adds to this turn. Without it the pill says "Sends after this reply".
+  final bool promptSteering;
 
-  /// What Send does while a reply is being written.
-  final PromptDelivery delivery;
-  final ValueChanged<PromptDelivery>? onDeliveryChanged;
+  /// What the agent does with a send made during a reply when it never
+  /// holds it for after the reply (Paseo): "Add to this turn" or "Stop and
+  /// send", with no choice.
+  final MidTurnPrompt? midTurnPrompt;
 
   /// Kept for the host (KIT-43): the voice sheet shows its own progress.
   final bool voiceOpening;
-  final String selectedAgent;
-
-  /// The agent the server would pick unprompted. The chip names the agent
-  /// only when the selection differs from it.
-  final String defaultAgent;
-  final ModelRef? selectedModel;
-
-  /// Presented model name (catalog name or provider · model).
-  final String? modelLabel;
-
-  /// The words for "no pick": the server default by name, or "Loading…".
-  final String? selectionFallback;
-
-  /// Kept for the host (KIT-43); pricing lives in the model picker.
-  final CatalogModel? selectedCatalogModel;
-  final String selectedVariant;
 
   /// The "saved with your draft" note shows once per session.
   final bool showAttachmentNote;
@@ -168,20 +173,12 @@ class _ChatComposer extends StatelessWidget {
   /// conversation.
   final KitComposerVoice? voice;
   final VoidCallback onSend;
-  final VoidCallback onChooseModel;
   final ValueChanged<PromptAttachment> onRemoveAttachment;
 
   /// Staged Files/Changes/Review references: they upload nothing and become
   /// text in the prompt when it is sent.
   final List<ReviewReference> references;
   final ValueChanged<ReviewReference>? onRemoveReference;
-
-  /// Share of the model's context window in use, or null when unknown.
-  final double? contextUsage;
-
-  /// The host's model cycle button; its three shortcuts become the model
-  /// chip's menu (long-press, right-click, custom actions).
-  final Widget? modelSwitch;
 
   bool get _hasAttachments => attachments.isNotEmpty || references.isNotEmpty;
 
@@ -239,40 +236,47 @@ class _ChatComposer extends StatelessWidget {
           KitComposer(
             controller: controller,
             focusNode: focusNode,
-            hint: agentName == null
+            hint: cardWaiting
+                ? l10n.agentCardComposerHint
+                : agentName == null
                 ? l10n.chatUiAskOpenCode
                 : l10n.chatUiAskAgent(KitBidi.auto(agentName!)),
             onSend: _send,
-            // Stop lives on the composer's own top edge (the rail's tappable
-            // caption), so the mic and Send stay here while a reply runs:
-            // speaking or typing then waits to send after the reply.
+            model: model,
+            // Send becomes Stop while a reply runs (the only Stop); the mic
+            // stays beside it, so speaking or typing waits to send after
+            // the reply. What the reply is doing is written in the turn.
             busy: busy,
-            rail: live,
+            onStop: onStop,
+            stopping: stopping,
             sending: sending || (shelfBusy && shelfLoading),
             canSendWhileBusy: canSendWhileBusy,
-            // Without an inbox (OpenCode 1) a send made during a reply
-            // always runs after it, whatever the host remembers.
-            delivery: canChooseDelivery && delivery == PromptDelivery.steer
-                ? KitComposerDelivery.addToThisTurn
-                : KitComposerDelivery.afterThisReply,
-            onDeliveryChanged: canChooseDelivery && onDeliveryChanged != null
-                ? (value) => onDeliveryChanged!(
-                    value == KitComposerDelivery.addToThisTurn
-                        ? PromptDelivery.steer
-                        : PromptDelivery.queue,
-                  )
-                : null,
+            // One send, no choice: where steering is possible it adds to
+            // the running turn; an agent that restarts says so; only
+            // OpenCode 1 runs it after the reply.
+            delivery: switch (midTurnPrompt) {
+              MidTurnPrompt.joinsTurn => KitComposerDelivery.addToThisTurn,
+              MidTurnPrompt.restartsTurn => KitComposerDelivery.stopAndSend,
+              null =>
+                promptSteering
+                    ? KitComposerDelivery.addToThisTurn
+                    : KitComposerDelivery.afterThisReply,
+            },
             offline: offline,
-            readOnlyReason: !shelfBusy
-                ? null
-                : shelfLoading
-                ? l10n.composerBusyReason
-                : l10n.composerDraftBlockedReason,
+            offlineAgentName: agentName == null
+                ? 'OpenCode'
+                : KitBidi.auto(agentName!),
+            readOnlyReason:
+                blockedReason ??
+                (!shelfBusy
+                    ? null
+                    : shelfLoading
+                    ? l10n.composerBusyReason
+                    : l10n.composerDraftBlockedReason),
             note: _note(context),
             hasAttachments: _hasAttachments,
             attachments: _attachmentChips(context),
             suggestions: _suggestions(context),
-            model: isolated ? null : _modelChip(context, conn),
             onTools: isolated || conversationMode
                 ? null
                 : () => unawaited(_openTools(context)),
@@ -291,10 +295,10 @@ class _ChatComposer extends StatelessWidget {
             composerKey: const Key('chat-composer-surface'),
             fieldKey: const Key('chat-composer-field'),
             sendKey: const Key('chat-send-button'),
+            stopKey: const Key('chat-stop-button'),
             toolsKey: const Key('composer-tools-button'),
             voiceButtonKey: const Key('composer-voice-button'),
             editorKey: const Key('prompt-editor-button'),
-            deliveryKey: const Key('composer-delivery-control'),
           ),
         ],
       ),
@@ -316,69 +320,6 @@ class _ChatComposer extends StatelessWidget {
     ];
     return parts.isEmpty ? null : parts.join(' ');
   }
-
-  // --- model chip ------------------------------------------------------
-
-  KitComposerChips _modelChip(BuildContext context, ConnectionController conn) {
-    final model = selectedModel;
-    final picked = model != null && model.modelID.isNotEmpty;
-    final catalog = conn.catalog;
-    final noModels = catalog != null && catalog.models.isEmpty;
-    // P7.7: before the first send with nothing signed in, the chip says so.
-    // P7.5: while a reply is being written a model is answering, so the chip
-    // never asks to choose one.
-    final state = picked
-        ? KitModelChipState.chosen
-        : noModels && !busy
-        ? KitModelChipState.signInNeeded
-        : KitModelChipState.serverDefault;
-    final cycle = modelSwitch;
-    return KitComposerChips.model(
-      label: picked ? _contextLabel(context) : (selectionFallback ?? ''),
-      onPressed: onChooseModel,
-      state: state,
-      contextUsed: contextUsage?.clamp(0.0, 1.0),
-      menu: cycle is ModelCycleButton
-          ? modelCycleMenuItems(
-              _chatL10n(context),
-              onCycle: cycle.onCycle,
-              hasRecent: cycle.hasRecent,
-              hasFavorites: cycle.hasFavorites,
-            )
-          : const [],
-      chipKey: const Key('composer-model-context'),
-      contextKey: const Key('composer-context-percent'),
-    );
-  }
-
-  /// The presented model, the agent only when it is not the server's
-  /// default, the effort only when it is a real choice.
-  String _contextLabel(BuildContext context) {
-    final parts = <String>[];
-    if (selectedAgent.isNotEmpty && selectedAgent != defaultAgent) {
-      parts.add(selectedAgent);
-    }
-    final model = selectedModel;
-    if (model != null && model.modelID.isNotEmpty) {
-      final presented = modelLabel?.trim();
-      parts.add(
-        presented == null || presented.isEmpty
-            ? presentedModelLabel(model.providerID, model.modelID)
-            : presented,
-      );
-    }
-    final variant = selectedVariant.trim();
-    if (variant.isNotEmpty && !_isDefaultVariant(variant)) {
-      parts.add(presentedEffort(variant, _chatL10n(context)));
-    }
-    return parts.join(' · ');
-  }
-
-  static bool _isDefaultVariant(String variant) =>
-      switch (variant.toLowerCase()) {
-        'default' || 'medium' || 'normal' || 'standard' || 'auto' => true,
-        _ => false,
-      };
 
   // --- attachments -----------------------------------------------------
 
@@ -483,7 +424,13 @@ class _ChatComposer extends StatelessWidget {
               id: command,
               label: '/${command.slash}',
               kind: KitSuggestionKind.command,
-              description: command.description,
+              // A server command's words are its title; the app's are its
+              // description.
+              description: command.description.isNotEmpty
+                  ? command.description
+                  : command.title != '/${command.slash}'
+                  ? command.title
+                  : null,
               key: Key('inline-command-${command.slash}'),
             ),
         ],
@@ -505,11 +452,24 @@ class _ChatComposer extends StatelessWidget {
           final prefix = aPrefix.compareTo(bPrefix);
           return prefix != 0 ? prefix : a.id.compareTo(b.id);
         });
-    if (matches.isEmpty) return null;
+    final agentRows = matches.take(shown).toList();
+    // Agents first, then the files that fit in the rest of the strip.
+    final fileRows = normalized.isEmpty || onSelectFile == null
+        ? const <String>[]
+        : fileHits
+              .take(
+                math.max(
+                  0,
+                  (compact ? 4 : KitComposerChips.visibleCount) -
+                      agentRows.length,
+                ),
+              )
+              .toList();
+    if (agentRows.isEmpty && fileRows.isEmpty) return null;
     return KitComposerChips.suggestions(
       listKey: const Key('inline-agent-suggestions'),
       suggestions: [
-        for (final agent in matches.take(shown))
+        for (final agent in agentRows)
           KitSuggestion(
             id: agent,
             label: '@${agent.id}',
@@ -517,8 +477,20 @@ class _ChatComposer extends StatelessWidget {
             description: agent.description ?? l10n.chatUiDelegateThisPrompt,
             key: Key('inline-agent-${agent.id}'),
           ),
+        for (final path in fileRows)
+          KitSuggestion(
+            id: path,
+            label: path.split('/').last,
+            kind: KitSuggestionKind.file,
+            description: path.contains('/')
+                ? path.substring(0, path.lastIndexOf('/'))
+                : null,
+            key: Key('inline-file-$path'),
+          ),
       ],
-      onSelected: (s) => onSelectAgent(s.id as CatalogAgent),
+      onSelected: (s) => s.id is CatalogAgent
+          ? onSelectAgent(s.id as CatalogAgent)
+          : onSelectFile?.call(s.id as String),
       onShowAll: matches.length > shown ? onOpenAgents : null,
     );
   }
@@ -561,8 +533,10 @@ class _ChatComposer extends StatelessWidget {
       title: l10n.chatUiPromptTools,
       sheetKey: const Key('composer-tools-sheet'),
       body: (sheetContext) => _PromptToolsList(
+        projectFilesSupported: onOpenProjectFiles != null,
         attachBlocked: attachBlocked,
         attachmentsSupported: promptAttachmentsSupported,
+        imagesOnly: promptImagesOnly,
         webSourcesSupported: webSourcesSupported,
         voiceBlocked: voiceBlocked,
         conversationBlocked: conversationBlocked,
@@ -571,6 +545,7 @@ class _ChatComposer extends StatelessWidget {
         canClearText: canClearText,
         canStash: canStash,
         canOpenStash: onOpenStash != null,
+        agentName: agentName,
         onPick: (tool) => KitSheet.close(sheetContext, tool),
       ),
     );
@@ -599,247 +574,120 @@ class _ChatComposer extends StatelessWidget {
         onStashPrompt?.call();
       case _PromptTool.saved:
         onOpenStash?.call();
+      case _PromptTool.projectFile:
+        onOpenProjectFiles?.call();
     }
   }
 }
 
-/// Decoded image previews, once per attachment rather than per keystroke.
-final _thumbnailCache = Expando<Uint8List>('composer-thumbnail');
-final _thumbnailTried = Expando<bool>('composer-thumbnail-tried');
-
-Uint8List? _thumbnailBytes(PromptAttachment attachment) {
-  if (!attachment.mime.startsWith('image/') ||
-      !attachment.url.startsWith('data:')) {
-    return null;
-  }
-  if (_thumbnailTried[attachment] == true) return _thumbnailCache[attachment];
-  _thumbnailTried[attachment] = true;
-  try {
-    final bytes = Uri.parse(attachment.url).data?.contentAsBytes();
-    if (bytes != null) _thumbnailCache[attachment] = bytes;
-    return bytes;
-  } on FormatException {
-    return null;
-  }
-}
-
-/// The "+" sheet's rows, most used first (map prompt-tools-sheet): attach,
-/// photos, camera and voice; the door to commands; then the prompt shelf
-/// and the rarer tools folded under their own rows. A tool this server or
-/// this moment cannot run stays in its place and says why (STATE-8).
-class _PromptToolsList extends StatelessWidget {
-  const _PromptToolsList({
-    required this.attachBlocked,
-    required this.attachmentsSupported,
-    required this.webSourcesSupported,
-    required this.voiceBlocked,
-    required this.conversationBlocked,
-    required this.attachmentCount,
-    required this.canReusePrompt,
-    required this.canClearText,
-    required this.canStash,
-    required this.canOpenStash,
-    required this.onPick,
+/// The model chip: which model answers, how full its context is, and a quick
+/// way to switch. It ends the status line above the message field (owner
+/// decision 2 Oct 2026, 14A), so the field keeps its full width.
+class _ChatModelChip extends StatelessWidget {
+  const _ChatModelChip({
+    required this.conn,
+    required this.busy,
+    required this.selectedAgent,
+    this.defaultAgent = '',
+    this.agentIsMode = false,
+    required this.selectedModel,
+    this.modelLabel,
+    this.selectionFallback,
+    required this.selectedVariant,
+    required this.onChooseModel,
+    this.modelSwitch,
   });
 
-  final bool attachBlocked;
-  final bool attachmentsSupported;
-  final bool webSourcesSupported;
-  final bool voiceBlocked;
-  final bool conversationBlocked;
-  final int attachmentCount;
-  final bool canReusePrompt;
-  final bool canClearText;
-  final bool canStash;
-  final bool canOpenStash;
-  final ValueChanged<_PromptTool> onPick;
+  final ConnectionController conn;
+  final bool busy;
+  final String selectedAgent;
+
+  /// The agent the server would pick unprompted. The chip names the agent
+  /// only when the selection differs from it.
+  final String defaultAgent;
+
+  /// The "agent" is a permission mode (an agent on a daemon): the approval
+  /// chip already says it in words, so the model chip never repeats its id.
+  final bool agentIsMode;
+  final ModelRef? selectedModel;
+
+  /// Presented model name (catalog name or provider · model).
+  final String? modelLabel;
+
+  /// The words for "no pick": the server default by name, or "Loading…".
+  final String? selectionFallback;
+  final String selectedVariant;
+  final VoidCallback onChooseModel;
+
+  /// The host's model cycle button; its three shortcuts become the model
+  /// chip's menu (long-press, right-click, custom actions).
+  final Widget? modelSwitch;
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = _chatL10n(context);
-    final running = l10n.chatUiAvailableWhenTheCurrentRunFinishes;
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: conn,
+    builder: (context, _) => _chip(context),
+  );
 
-    Widget tool(
-      _PromptTool value, {
-      required String key,
-      required IconData icon,
-      required String title,
-      String? supporting,
-      String? blockedBy,
-    }) => KitRow(
-      key: Key('composer-tool-$key'),
-      leading: KitRowIcon(icon),
-      title: title,
-      supporting: supporting == null ? null : TextSpan(text: supporting),
-      supportingMaxLines: 2,
-      enabled: blockedBy == null,
-      disabledReason: blockedBy,
-      onTap: blockedBy == null ? () => onPick(value) : null,
-    );
-
-    final photos = platformCapabilities.supportsPromptPhotos;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        KitRowGroup(
-          children: [
-            if (attachmentsSupported)
-              tool(
-                _PromptTool.attach,
-                key: 'attach',
-                icon: AppIconography.attach,
-                title: l10n.chatUiAttachFile,
-                supporting: attachmentCount == 0
-                    ? l10n.chatUiAddAnImageOrFileToThe
-                    : l10n.chatUiAttachedCount(attachmentCount),
-                blockedBy: attachBlocked ? running : null,
-              )
-            else
-              KitRow.unavailable(
-                key: const Key('composer-tool-attach'),
-                leading: const KitRowIcon(AppIconography.attach),
-                title: l10n.chatUiAttachFile,
-                reason: l10n.composerToolsTextOnly,
-              ),
-            if (attachmentsSupported && photos) ...[
-              tool(
-                _PromptTool.gallery,
-                key: 'gallery',
-                icon: AppIconography.images,
-                title: l10n.photoLibraryAction,
-                supporting: l10n.photoLibraryDescription,
-                blockedBy: attachBlocked ? running : null,
-              ),
-              tool(
-                _PromptTool.camera,
-                key: 'camera',
-                icon: AppIconography.camera,
-                title: l10n.photoCameraAction,
-                blockedBy: attachBlocked ? running : null,
-              ),
-            ],
-            // Speech capture runs on Android only (`oc/voice`).
-            if (platformCapabilities.supportsVoice)
-              tool(
-                _PromptTool.voice,
-                key: 'voice',
-                icon: AppIconography.mic,
-                title: l10n.chatUiVoiceInput,
-                supporting: l10n.chatUiRecordsAndTranscribesOnThisDevice,
-                blockedBy: voiceBlocked ? running : null,
-              ),
-            tool(
-              _PromptTool.commands,
-              key: 'commands',
-              icon: AppIcons.run,
-              title: l10n.composerToolCommandsTitle,
-              supporting: l10n.chatUiSlashCommandsAndAgents,
-            ),
-          ],
-        ),
-        if (canReusePrompt || canOpenStash || canClearText)
-          KitExpandRow(
-            headerKey: const Key('composer-tools-prompts'),
-            leading: const KitRowIcon(AppIconography.bookmarks),
-            title: l10n.usagePrompts,
-            children: [
-              if (canReusePrompt)
-                tool(
-                  _PromptTool.history,
-                  key: 'history',
-                  icon: AppIconography.history,
-                  title: l10n.composerReuseTitle,
-                  supporting: l10n.composerReuseSubtitle,
-                ),
-              if (canOpenStash) ...[
-                tool(
-                  _PromptTool.saved,
-                  key: 'saved',
-                  icon: AppIconography.bookmarks,
-                  title: l10n.promptStashTitle,
-                  supporting: l10n.composerToolSavedSubtitle,
-                ),
-                tool(
-                  _PromptTool.stash,
-                  key: 'stash',
-                  icon: AppIconography.package,
-                  title: l10n.composerToolSaveForLater,
-                  supporting: l10n.promptStashDescription,
-                  blockedBy: canStash ? null : l10n.composerToolNothingToSave,
-                ),
-              ],
-              if (canClearText)
-                tool(
-                  _PromptTool.clearText,
-                  key: 'clear',
-                  icon: AppIconography.textSnippet,
-                  title: l10n.composerClearTextTitle,
-                  supporting: l10n.composerClearTextSubtitle,
-                ),
-            ],
-          ),
-        KitExpandRow(
-          headerKey: const Key('composer-tools-advanced'),
-          leading: const KitRowIcon(AppIconography.layers),
-          title: l10n.composerToolsMore,
-          children: [
-            if (webSourcesSupported)
-              tool(
-                _PromptTool.webSources,
-                key: 'web-sources',
-                icon: AppIconography.link,
-                title: l10n.webSourcesTitle,
-                supporting: l10n.webSourcesEntryDetail,
-                blockedBy: attachBlocked ? running : null,
-              ),
-            if (platformCapabilities.supportsVoiceConversation)
-              tool(
-                _PromptTool.conversation,
-                key: 'conversation',
-                icon: AppIconography.speakUser,
-                title: l10n.voiceConversationTitle,
-                supporting: l10n.voiceConversationDescription,
-                blockedBy: conversationBlocked ? running : null,
-              ),
-          ],
-        ),
-      ],
+  KitComposerChips _chip(BuildContext context) {
+    final model = selectedModel;
+    final picked = model != null && model.modelID.isNotEmpty;
+    final catalog = conn.catalog;
+    final noModels = catalog != null && catalog.models.isEmpty;
+    // P7.7: before the first send with nothing signed in, the chip says so.
+    // P7.5: while a reply is being written a model is answering, so the chip
+    // never asks to choose one.
+    final state = picked
+        ? KitModelChipState.chosen
+        : noModels && !busy
+        ? KitModelChipState.signInNeeded
+        : KitModelChipState.serverDefault;
+    final cycle = modelSwitch;
+    return KitComposerChips.model(
+      label: picked ? _contextLabel(context) : (selectionFallback ?? ''),
+      onPressed: onChooseModel,
+      state: state,
+      menu: cycle is ModelCycleButton
+          ? modelCycleMenuItems(
+              _chatL10n(context),
+              onCycle: cycle.onCycle,
+              hasRecent: cycle.hasRecent,
+              hasFavorites: cycle.hasFavorites,
+            )
+          : const [],
+      chipKey: const Key('composer-model-context'),
     );
   }
-}
 
-/// P4.3's composer half: a withdrawn waiting message (an edited offline
-/// draft, a cancelled server send) goes back into the draft, ahead of what
-/// was typed since, with "Returned to your draft · Undo". Undo puts the
-/// draft back as it was and runs [onUndo] (the host queues the message
-/// again). Nothing is sent.
-void returnWithdrawnToDraft(
-  BuildContext context, {
-  required TextEditingController composer,
-  required String text,
-  FocusNode? focus,
-  FutureOr<void> Function()? onUndo,
-}) {
-  if (text.trim().isEmpty) return;
-  final before = composer.value;
-  final current = before.text;
-  final next = current.trim().isEmpty ? text : '$text\n$current';
-  composer.value = TextEditingValue(
-    text: next,
-    selection: TextSelection.collapsed(offset: next.length),
-  );
-  focus?.requestFocus();
-  showKitUndo(
-    context,
-    message: lookupAppLocalizations(
-      Localizations.localeOf(context),
-    ).composerReturnedToDraft,
-    key: const Key('composer-returned-undo'),
-    onUndo: () async {
-      // Only the text this call added comes out again; later typing stays.
-      if (composer.text == next) composer.value = before;
-      await onUndo?.call();
-    },
-  );
+  /// The presented model, the agent only when it is not the server's
+  /// default, the effort only when it is a real choice.
+  String _contextLabel(BuildContext context) {
+    final parts = <String>[];
+    if (!agentIsMode &&
+        selectedAgent.isNotEmpty &&
+        selectedAgent != defaultAgent &&
+        selectedAgent.toLowerCase() != 'default') {
+      parts.add(selectedAgent);
+    }
+    final model = selectedModel;
+    if (model != null && model.modelID.isNotEmpty) {
+      final presented = modelLabel?.trim();
+      parts.add(
+        presented == null || presented.isEmpty
+            ? presentedModelLabel(model.providerID, model.modelID)
+            : presented,
+      );
+    }
+    final variant = selectedVariant.trim();
+    if (variant.isNotEmpty && !_isDefaultVariant(variant)) {
+      parts.add(presentedEffort(variant, _chatL10n(context)));
+    }
+    return parts.join(' · ');
+  }
+
+  static bool _isDefaultVariant(String variant) =>
+      switch (variant.toLowerCase()) {
+        'default' || 'medium' || 'normal' || 'standard' || 'auto' => true,
+        _ => false,
+      };
 }

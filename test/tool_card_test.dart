@@ -10,6 +10,7 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/chat/kit_tool_row.dart';
+import 'package:opencode_mobile/ui/kit/kit_diff_view.dart';
 import 'package:opencode_mobile/ui/kit/kit_status_mark.dart';
 import 'package:opencode_mobile/ui/widgets/tool_card.dart';
 
@@ -75,6 +76,188 @@ void main() {
 }
 
 void _shellTests() {
+  testWidgets('Claude Code looking up tools reads "Load tools"', (
+    tester,
+  ) async {
+    await _pumpTool(
+      tester,
+      name: 'toolsearch',
+      state: ToolState.fromJson({
+        'status': 'completed',
+        'input': {'query': 'select:mcp__oc-ui__show'},
+        'output': 'Loaded.',
+        'metadata': <String, Object?>{},
+      }, toolName: 'toolsearch'),
+    );
+    expect(find.text('Load tools'), findsOneWidget);
+    expect(find.text('toolsearch'), findsNothing);
+  });
+
+  testWidgets('a tool an MCP server adds reads in words with its server', (
+    tester,
+  ) async {
+    await _pumpTool(
+      tester,
+      name: 'mcp__github__create_issue',
+      state: ToolState.fromJson({
+        'status': 'completed',
+        'input': {'title': 'Bug'},
+        'output': 'Created.',
+        'metadata': <String, Object?>{},
+      }, toolName: 'mcp__github__create_issue'),
+    );
+    expect(_text('create issue'), findsOneWidget);
+    expect(_text('github'), findsOneWidget);
+    expect(_text('mcp__'), findsNothing);
+  });
+
+  // Claude Code's background-task notice (owner phone, 2026-10-08) read
+  // "task_notification" under a wrench.
+  for (final (status, words) in [
+    ('completed', 'Background task finished'),
+    ('failed', 'Background task failed'),
+    ('killed', 'Background task stopped'),
+  ]) {
+    testWidgets('a background-task notice reads "$words"', (tester) async {
+      await _pumpTool(
+        tester,
+        name: 'task_notification',
+        state: ToolState.fromJson({
+          'status': 'completed',
+          'input': {'status': status, 'summary': 'Release build'},
+          'output': 'done',
+          'metadata': <String, Object?>{},
+        }, toolName: 'task_notification'),
+      );
+      expect(_text(words), findsOneWidget);
+      expect(_text('Release build'), findsOneWidget);
+      expect(_text('task_notification'), findsNothing);
+    });
+  }
+
+  // Owner phone, 2026-10-11: a task cut off with its session read
+  // "Background task finished" and said its one sentence three times.
+  testWidgets('a notice without a status says ended, and its sentence once', (
+    tester,
+  ) async {
+    const sentence =
+        "Background shell command didn't finish before the previous session "
+        'ended';
+    await _pumpTool(
+      tester,
+      name: 'task_notification',
+      state: ToolState.fromJson(const {
+        'status': 'completed',
+        'input': {'name': sentence},
+        'output': sentence,
+        'metadata': <String, Object?>{},
+      }, toolName: 'task_notification'),
+    );
+    expect(_text('Background task ended'), findsOneWidget);
+    expect(_text('Background task finished'), findsNothing);
+    await tester.tap(find.text('Background task ended'));
+    await tester.pump();
+    expect(_text(sentence), findsNWidgets(2)); // the line and the body, once
+    expect(find.text('Name'), findsNothing);
+  });
+
+  testWidgets('an unknown tool id reads as words, not snake_case', (
+    tester,
+  ) async {
+    for (final (name, words) in [
+      ('render_mermaid_diagram', 'Render mermaid diagram'),
+      ('ExitWorktree', 'Exit worktree'),
+    ]) {
+      await _pumpTool(
+        tester,
+        name: name,
+        state: ToolState.fromJson({
+          'status': 'completed',
+          'title': name,
+          'input': <String, Object?>{},
+          'output': 'ok',
+          'metadata': <String, Object?>{},
+        }, toolName: name),
+      );
+      expect(_text(words), findsOneWidget);
+      expect(_text(name), findsNothing);
+    }
+  });
+
+  // The agent card tool before (or instead of) its card: a running call, or
+  // one the connection draws no card for. Its server sets the raw name as the
+  // call's title, which must not win either.
+  for (final name in ['oc-ui_show', 'mcp__oc-ui__show']) {
+    testWidgets('the agent card tool reads "Show card", never "$name"', (
+      tester,
+    ) async {
+      await _pumpTool(
+        tester,
+        name: name,
+        state: ToolState.fromJson({
+          'status': 'running',
+          'title': name,
+          'input': {'id': 'plan', 'title': 'Pick a plan', 'body': []},
+          'metadata': <String, Object?>{},
+        }, toolName: name),
+      );
+      expect(_text('Show card'), findsOneWidget);
+      expect(_text('Pick a plan'), findsOneWidget);
+      expect(_text('oc-ui'), findsNothing);
+    });
+  }
+
+  // Owner's phone, 2026-10-14: a finished card call the card could not be
+  // drawn for showed its input as rows and the model's reply as details.
+  for (final status in ['completed', 'error']) {
+    testWidgets('a $status card call with no card is one quiet line', (
+      tester,
+    ) async {
+      await _pumpTool(
+        tester,
+        name: 'oc-ui_show',
+        state: ToolState.fromJson({
+          'status': status,
+          'title': 'oc-ui_show',
+          'input': {
+            'v': 1,
+            'id': 'financehub-interactive-preview',
+            'title': 'FinanceHub \u2014 interactive answer preview',
+            'body': [
+              {'type': 'text', 'text': 'Hello'},
+            ],
+          },
+          'output': status == 'completed'
+              ? 'Card accepted for display in OpenCode Mobile. If it asks a '
+                    'question, end your turn and wait for the person\'s next '
+                    'message tagged [oc-ui answer <id>]. This call does not '
+                    'return their answer.'
+              : 'Agent card unavailable or invalid.',
+          'metadata': <String, Object?>{},
+        }, toolName: 'oc-ui_show'),
+      );
+      expect(
+        _text(
+          status == 'completed' ? 'Showed a card' : "Couldn't show this card",
+        ),
+        findsOneWidget,
+      );
+      expect(
+        _text('FinanceHub \u2014 interactive answer preview'),
+        findsOneWidget,
+      );
+      // Nothing opens: no input rows, no model-facing reply, no details.
+      expect(find.byType(KitToolRow), findsOneWidget);
+      await tester.tap(find.byType(KitToolRow));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(_text('Id'), findsNothing);
+      expect(_text('V'), findsNothing);
+      expect(find.textContaining('Card accepted'), findsNothing);
+      expect(find.textContaining('unavailable or invalid'), findsNothing);
+      expect(find.text('Technical details'), findsNothing);
+    });
+  }
+
   testWidgets('a passing command says so in words, not "exit 0"', (
     tester,
   ) async {
@@ -90,7 +273,8 @@ void _shellTests() {
     expect(find.text('Failed'), findsNothing);
     await tester.tap(find.text('Shell'));
     await tester.pump();
-    expect(find.byKey(const Key('tool-shell-command')), findsOneWidget);
+    expect(find.byKey(const Key('kit-step-command')), findsOneWidget);
+    expect(_text('\$ flutter test'), findsOneWidget);
     expect(_text('All tests passed.'), findsWidgets);
     expect(_text('Passed · exit code 0'), findsOneWidget);
     expect(_text('shell_metadata'), findsNothing);
@@ -110,7 +294,7 @@ void _shellTests() {
     expect(_text('Failed · exit code 1'), findsOneWidget);
   });
 
-  testWidgets('long output is capped at 12 lines with Open full output', (
+  testWidgets('long output shows its first 6 lines and Show all N lines', (
     tester,
   ) async {
     final output = List.generate(40, (i) => 'line ${i + 1}').join('\n');
@@ -121,9 +305,13 @@ void _shellTests() {
     );
     await tester.tap(find.text('Shell'));
     await tester.pump();
-    expect(_text('line 12'), findsWidgets);
-    expect(_text('line 13'), findsNothing);
-    expect(find.text('Open full output'), findsOneWidget);
+    expect(_text('line 6'), findsWidgets);
+    expect(_text('line 7'), findsNothing);
+    expect(find.text('Show all 40 lines'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('kit-step-show-all')));
+    await tester.pump();
+    expect(_text('line 40'), findsWidgets);
+    expect(find.text('Show all 40 lines'), findsNothing);
   });
 
   testWidgets('Run this command again appears only when the host offers it', (
@@ -149,6 +337,22 @@ void _shellTests() {
     expect(reruns, ['flutter test']);
   });
 
+  for (final status in ['running', 'pending']) {
+    testWidgets('Run this command again waits for a $status command', (
+      tester,
+    ) async {
+      await _pumpTool(
+        tester,
+        name: 'bash',
+        state: _shell(status: status),
+        onRerunCommand: (_) {},
+      );
+      await tester.tap(find.text('Shell'));
+      await tester.pump();
+      expect(find.text('Run this command again'), findsNothing);
+    });
+  }
+
   testWidgets('an embedded failure starts open with the error output', (
     tester,
   ) async {
@@ -163,7 +367,7 @@ void _shellTests() {
       }, toolName: 'bash'),
     );
     expect(find.byKey(const Key('embedded-tool-row')), findsOneWidget);
-    expect(find.byKey(const Key('embedded-tool-error-output')), findsOneWidget);
+    expect(find.byKey(const Key('kit-step-command')), findsOneWidget);
     expect(_text('Checkout test failed'), findsWidgets);
     expect(_text('Error:'), findsNothing);
   });
@@ -266,6 +470,22 @@ void _stateTests() {
     expect(find.text('Output pruned'), findsOneWidget);
   });
 
+  testWidgets('a read with no content shows its line count, no empty box', (
+    tester,
+  ) async {
+    await _pumpTool(
+      tester,
+      name: 'read',
+      state: ToolState(
+        status: 'completed',
+        input: const {'filePath': '/a/b.txt', 'limit': 70},
+      ),
+    );
+    await tester.tap(find.text('Read'));
+    await tester.pump();
+    expect(find.text('(no output)'), findsNothing);
+  });
+
   testWidgets('a call the server never ran says Not run, never failed', (
     tester,
   ) async {
@@ -303,7 +523,7 @@ void _stateTests() {
     expect(find.text('report.csv'), findsOneWidget);
   });
 
-  testWidgets('copying output uses the kit copy of the whole text', (
+  testWidgets('the copy icon in the command box copies the command', (
     tester,
   ) async {
     final writes = <String>[];
@@ -330,11 +550,9 @@ void _stateTests() {
     );
     await tester.tap(find.text('Shell'));
     await tester.pump();
-    final copies = find.bySemanticsLabel(RegExp('^Copy'));
-    expect(copies, findsWidgets);
-    await tester.tap(copies.last);
+    await tester.tap(find.byKey(const Key('kit-step-command-copy')));
     await tester.pump();
-    expect(writes, contains(output));
+    expect(writes, ['flutter test']);
     await tester.pump(const Duration(seconds: 3));
   });
 }
@@ -372,7 +590,33 @@ void _editAndTodoTests() {
     expect(_text('old line'), findsWidgets);
   });
 
-  testWidgets('the plan step reads one count, the same as its list', (
+  testWidgets('an opened write shows its text as the numbered added diff', (
+    tester,
+  ) async {
+    await _pumpTool(
+      tester,
+      name: 'write',
+      state: ToolState.fromJson(const {
+        'status': 'completed',
+        'input': {
+          'filePath': '/workspace/test/tour_test.dart',
+          'content': 'library;\n\nimport \'dart:io\';',
+        },
+        'output': 'File written.',
+        'metadata': <String, Object?>{},
+      }, toolName: 'write'),
+    );
+    expect(find.text('Write'), findsOneWidget);
+    // The host did not say whether the file existed: no guessed "Updated".
+    expect(find.text('Updated'), findsNothing);
+    await tester.tap(find.text('Write'));
+    await tester.pump();
+    expect(find.byType(KitDiffView), findsOneWidget);
+    expect(_text("import 'dart:io';"), findsWidgets);
+    expect(find.textContaining('Open full output'), findsNothing);
+  });
+
+  testWidgets('a task-list update is one line that does not open', (
     tester,
   ) async {
     await _pumpTool(
@@ -390,13 +634,13 @@ void _editAndTodoTests() {
         'output': 'Tasks updated.',
       }, toolName: 'todowrite'),
     );
-    // Cancelled tasks are not tracked: 1 of 2, on the line and in the list.
-    expect(_text('1 of 2 done'), findsOneWidget);
+    // The list itself is the tasks chip and its sheet, never a card here.
+    expect(_text('Updated tasks'), findsOneWidget);
+    expect(_text('1 of 2 done'), findsNothing);
     await tester.tap(find.byType(KitToolRow));
     await tester.pump();
-    expect(find.text('Inspect contract'), findsOneWidget);
-    expect(find.text('Run simulator'), findsOneWidget);
-    expect(_text('1 of 2 done'), findsNWidgets(2));
+    expect(find.text('Inspect contract'), findsNothing);
+    expect(find.text('Run simulator'), findsNothing);
   });
 }
 

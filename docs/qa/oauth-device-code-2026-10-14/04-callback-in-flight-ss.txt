@@ -1,0 +1,8 @@
+Wed Oct 14 08:38:42 AM +04 2026
+after Open browser + return to app; no Finish tap; server pid 3925966:
+ESTAB      0      0                                     127.0.0.1:4160                    127.0.0.1:37402 users:(("opencode",pid=3925966,fd=37))        
+ESTAB      0      0                                  <pc-lan-ip>:48204              172.66.173.149:443   users:(("opencode",pid=3925966,fd=26))        
+ESTAB      0      0                                     127.0.0.1:4160                    127.0.0.1:37366 users:(("opencode",pid=3925966,fd=25))        
+ESTAB      0      0                                     127.0.0.1:4160                    127.0.0.1:37354 users:(("opencode",pid=3925966,fd=24))        
+ESTAB      0      0      [2001:8f8:1763:1583:5d4b:85fe:6917:685a]:38206 [2606:4700:4400::6812:29f1]:443   users:(("opencode",pid=3925966,fd=28))        
+(before Open browser the server held 2 app connections, ports 60618 and 60624; after it 3, so one more request is open: the callback check.)

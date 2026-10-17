@@ -155,8 +155,8 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(secureStorage, (_) async => null);
   });
-  setUpAll(() => ProviderLogo.imageProviderOverride = (_) => null);
-  tearDownAll(() => ProviderLogo.imageProviderOverride = null);
+  setUpAll(() => ProviderLogo.logoLoaderOverride = (_) => null);
+  tearDownAll(() => ProviderLogo.logoLoaderOverride = null);
 
   testWidgets('search with the keyboard up keeps its results in view', (
     tester,

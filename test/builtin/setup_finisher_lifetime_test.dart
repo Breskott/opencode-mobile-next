@@ -49,6 +49,13 @@ class _Connection extends ConnectionController {
 class _Linux extends BuiltinLinux {
   int starts = 0;
 
+  // BB5 reports native idle work; this lifetime fake must not open a real channel.
+  @override
+  Future<void> observePhoneAgentWork({
+    required String profileId,
+    required bool? busy,
+  }) async {}
+
   @override
   Future<BuiltinLinuxStatus> status() async => const BuiltinLinuxStatus(
     installed: true,
@@ -63,7 +70,11 @@ class _Linux extends BuiltinLinux {
   }) async => const BuiltinLinuxRunResult(exitCode: 0, output: '');
 
   @override
-  Future<void> startServer(String script, {int port = 4097}) async => starts++;
+  Future<void> startServer(
+    String script, {
+    int port = 4097,
+    BuiltinServerRestoreRecipe? restoreRecipe,
+  }) async => starts++;
 
   @override
   Future<void> restartServer(

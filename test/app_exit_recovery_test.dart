@@ -87,7 +87,11 @@ class _FakeLinux extends BuiltinLinux {
   }) async => const BuiltinLinuxRunResult(exitCode: 0, output: '');
 
   @override
-  Future<void> startServer(String script, {int port = 4097}) async {
+  Future<void> startServer(
+    String script, {
+    int port = 4097,
+    BuiltinServerRestoreRecipe? restoreRecipe,
+  }) async {
     events.add('start server');
     if (failStart) throw const BuiltinLinuxException('Synthetic start failure');
     serverRunning = true;
@@ -275,6 +279,51 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 20));
       return recovery;
     }
+
+    testWidgets('above another server, the notice says whether the '
+        "phone's OpenCode is back and offers to switch to it, never "
+        '"starting again" over that server\'s stopped page', (tester) async {
+      final recovery = (await tester.runAsync(
+        () => run(_report(_ownerRecord, ['server'])),
+      ))!;
+      expect(linux.serverRunning, isTrue);
+      String? switched;
+      Future<KitStatus> shown(ServerProfile viewing) async {
+        KitStatus? result;
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) {
+                result = appExitKitStatus(
+                  context,
+                  recovery,
+                  viewing: viewing,
+                  onSwitchToPhone: (_, id) => switched = id,
+                );
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+        return result!;
+      }
+
+      final elsewhere = await shown(laptop);
+      expect(elsewhere.message, contains('is running again'));
+      expect(elsewhere.message, isNot(contains('starting again')));
+      expect(elsewhere.action?.label, 'Switch to this phone');
+      expect(elsewhere.more.map((action) => action.label), ['Keep it running']);
+      elsewhere.action!.onPressed!();
+      expect(switched, 'phone');
+
+      // On the phone's own page nothing changes: no switch, Keep it running.
+      final own = await shown(phone);
+      expect(own.message, contains('starting again'));
+      expect(own.action?.label, 'Keep it running');
+      expect(own.more, isEmpty);
+    });
 
     test(
       'delegates to the shared healing owner without duplicate starts or acts',
@@ -674,6 +723,31 @@ void main() {
       expect(shown, isNotNull);
       expect(shown!.message, contains('is running again'));
       expect(shown.action?.label, 'Keep it running');
+    });
+
+    testWidgets('once the server is back, the notice folds away by itself '
+        'instead of staying on every screen', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final recovery = AppExitRecovery(
+        bridge: _FakeBridge(_report(_ownerRecord, ['server'])),
+      );
+      addTearDown(recovery.dispose);
+      final starter = BuiltinServerStarter(linux: _FakeLinux());
+      addTearDown(starter.dispose);
+      await recovery.runOnce(
+        store: _Store(prefs: prefs, all: const []),
+        active: null,
+        starter: starter,
+      );
+      expect(recovery.notice, isNotNull);
+      recovery.noteServerBack();
+      await tester.pump(const Duration(seconds: 10));
+      // Repeated calls (every rebuild) do not restart the clock.
+      recovery.noteServerBack();
+      expect(recovery.notice, isNotNull);
+      await tester.pump(const Duration(seconds: 6));
+      expect(recovery.notice, isNull);
     });
 
     testWidgets('Keep it running opens the guidance', (tester) async {

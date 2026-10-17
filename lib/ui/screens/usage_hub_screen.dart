@@ -2,55 +2,61 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../../state/provider_quota_overview.dart';
 import '../../state/usage_overview.dart';
+import '../../state/usage_subscriptions_controller.dart';
 import '../app_iconography.dart';
 import '../kit/kit.dart';
-import 'provider_quota_screen.dart';
+import 'usage/usage_actions.dart' show UsageSignInLauncher;
+import 'usage/usage_plans_page.dart';
 import 'usage_refresh_slot.dart';
 import 'usage_screen.dart';
 
 /// The two halves of Usage.
-enum UsageSection { spent, remaining }
+enum UsageSection { spending, plans }
 
-/// The one Usage screen: "Spent" (what the connected server reports it used)
-/// and "Remaining" (what a provider account has left, with quota monitoring).
+/// The one Usage screen: "Plans" (every subscription the app can see, with
+/// how much is left and when it resets) and "Spending" (what the connected
+/// OpenCode 2 server reports it used).
 ///
-/// The sections are tabs, not one scroll. Spent is a long report (ranges,
-/// charts, budgets) that would bury Remaining below several screens of
-/// content, and each section loads, fails and refreshes on its own (each
-/// has its own loading bar and pull to refresh); a tab keeps Remaining one
+/// The sections are tabs, not one scroll. Spending is a long report (ranges,
+/// charts, budgets) that would bury Plans below several screens of content,
+/// and each section loads and refreshes on its own; a tab keeps Plans one
 /// tap away.
 ///
-/// A section the connection cannot serve is absent, and with only one section
-/// left there is no tab strip at all.
+/// Plans is always there. Spending is absent on a connection that cannot
+/// serve it, and with only one section left there is no tab strip at all.
 ///
-/// The top bar holds one Refresh, for the active section ("Refresh spending"
-/// or "Refresh remaining usage"); the sections offer it through a
-/// [UsageRefreshSlot] instead of an icon of their own.
+/// The top bar holds one Refresh, for the active section.
 class UsageHubScreen extends StatefulWidget {
   final ConnectionController controller;
 
-  /// The section an entry point means (a quota alert opens Remaining).
+  /// The section an entry point means (a quota alert opens Plans).
   final UsageSection? initialSection;
 
   /// Test seams, handed to the sections unchanged.
   final UsageOverview? usageOverview;
-  final ProviderQuotaOverview? quotaOverview;
+  final UsageSubscriptionsController? usage;
+  final UsageSignInLauncher? launcher;
+  final DateTime Function()? clock;
+  final bool prepare;
 
   const UsageHubScreen({
     super.key,
     required this.controller,
     this.initialSection,
     this.usageOverview,
-    this.quotaOverview,
+    this.usage,
+    this.launcher,
+    this.clock,
+    this.prepare = true,
   });
 
-  /// The sections this connection can show, gated exactly as the two screens
-  /// were: Spent needs usage statistics, Remaining needs a saved server.
+  /// The sections this connection can show: Plans once there is a saved
+  /// server to read, Spending where the connected
+  /// server reports usage statistics.
   static List<UsageSection> sectionsFor(ConnectionController controller) => [
-    if (controller.supportsUsageStatistics) UsageSection.spent,
-    if (controller.profile != null) UsageSection.remaining,
+    if (controller.store.profiles.isNotEmpty) UsageSection.plans,
+    if (controller.supportsUsageStatistics) UsageSection.spending,
   ];
 
   @override
@@ -62,9 +68,10 @@ class _UsageHubScreenState extends State<UsageHubScreen> {
   /// person on the one they chose.
   UsageSection? _chosen;
 
-  final _slots = {
-    for (final section in UsageSection.values) section: UsageRefreshSlot(),
-  };
+  final _spendingSlot = UsageRefreshSlot();
+
+  UsageSubscriptionsController get _usage =>
+      widget.usage ?? widget.controller.usageSubscriptions;
 
   @override
   void initState() {
@@ -74,54 +81,59 @@ class _UsageHubScreenState extends State<UsageHubScreen> {
 
   @override
   void dispose() {
-    for (final slot in _slots.values) {
-      slot.dispose();
-    }
+    _spendingSlot.dispose();
     super.dispose();
   }
 
   /// Refresh for the active section, when it has one now.
   List<KitAction> _refresh(AppLocalizations l10n, UsageSection section) {
-    final slot = _slots[section]!;
-    if (!slot.visible) return const [];
-    return [
-      KitAction(
-        key: ValueKey(switch (section) {
-          UsageSection.spent => 'refresh-usage',
-          UsageSection.remaining => 'quota-refresh',
-        }),
-        label: switch (section) {
-          UsageSection.spent => l10n.usageRefreshSpending,
-          UsageSection.remaining => l10n.quotaRefresh,
-        },
-        icon: AppIconography.retry,
-        onPressed: slot.onRefresh,
-        disabledReason: slot.disabledReason,
-      ),
-    ];
+    switch (section) {
+      case UsageSection.plans:
+        return [
+          KitAction(
+            key: const ValueKey('plans-refresh'),
+            label: l10n.usagePlansRefresh,
+            icon: AppIconography.retry,
+            working: _usage.refreshing,
+            onPressed: () => _usage.refresh(force: true),
+          ),
+        ];
+      case UsageSection.spending:
+        if (!_spendingSlot.visible) return const [];
+        return [
+          KitAction(
+            key: const ValueKey('refresh-usage'),
+            label: l10n.usageRefreshSpending,
+            icon: AppIconography.retry,
+            onPressed: _spendingSlot.onRefresh,
+            disabledReason: _spendingSlot.disabledReason,
+          ),
+        ];
+    }
   }
 
   Widget _body(UsageSection section) => KeyedSubtree(
     key: ValueKey('usage-section-${section.name}'),
     child: switch (section) {
-      UsageSection.spent => UsageScreen(
+      UsageSection.spending => UsageScreen(
         controller: widget.controller,
         overview: widget.usageOverview,
         embedded: true,
-        refreshSlot: _slots[UsageSection.spent],
+        refreshSlot: _spendingSlot,
       ),
-      UsageSection.remaining => ProviderQuotaScreen(
+      UsageSection.plans => UsagePlansPage(
         controller: widget.controller,
-        overview: widget.quotaOverview,
-        embedded: true,
-        refreshSlot: _slots[UsageSection.remaining],
+        usage: _usage,
+        launcher: widget.launcher,
+        clock: widget.clock,
+        prepare: widget.prepare,
       ),
     },
   );
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge(_slots.values.toList()),
+    listenable: Listenable.merge([_spendingSlot, _usage]),
     builder: (context, _) => _build(context),
   );
 
@@ -129,11 +141,10 @@ class _UsageHubScreenState extends State<UsageHubScreen> {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final sections = UsageHubScreen.sectionsFor(widget.controller);
     if (sections.isEmpty) {
-      final topBar = KitTopBar(title: l10n.settingsHubGroupUsage);
       // The Settings row is absent in this case; a deep link or search
       // result that still lands here says why instead of a blank page.
       return KitScreen(
-        topBar: topBar,
+        topBar: KitTopBar(title: l10n.settingsHubGroupUsage),
         body: KitStateView(
           key: const ValueKey('usage-hub-unavailable'),
           icon: AppIconography.usage,
@@ -153,12 +164,11 @@ class _UsageHubScreenState extends State<UsageHubScreen> {
     }
     final found = sections.indexOf(_chosen ?? sections.first);
     final index = found < 0 ? 0 : found;
-    final topBar = KitTopBar(
-      title: l10n.settingsHubGroupUsage,
-      actions: _refresh(l10n, sections[index]),
-    );
     return KitScreen(
-      topBar: topBar,
+      topBar: KitTopBar(
+        title: l10n.settingsHubGroupUsage,
+        actions: _refresh(l10n, sections[index]),
+      ),
       // The strip lines up with the sections' reading column on wide
       // windows instead of sitting at the window's edge.
       width: KitScreenWidth.reading,
@@ -171,8 +181,8 @@ class _UsageHubScreenState extends State<UsageHubScreen> {
             KitTab(
               key: ValueKey('usage-tab-${section.name}'),
               label: switch (section) {
-                UsageSection.spent => l10n.usageSectionSpent,
-                UsageSection.remaining => l10n.usageSectionRemaining,
+                UsageSection.spending => l10n.usageTabSpending,
+                UsageSection.plans => l10n.usageTabPlans,
               },
             ),
         ],

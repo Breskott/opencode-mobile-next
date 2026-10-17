@@ -57,6 +57,10 @@ class PhoneEngineGateway extends NullOrchestrationGateway
     );
     if (adapter != null) _dio.httpClientAdapter = adapter;
   }
+
+  /// One-shot callers revalidate lifetime/ownership after the health await and
+  /// immediately before sending a command. Ordinary controllers leave it null.
+  Future<void> Function()? beforeCommand;
   final String profileId;
   final DateTime Function() _now;
   final OrchestrationCapabilities? probedCapabilities;
@@ -340,7 +344,7 @@ class PhoneEngineGateway extends NullOrchestrationGateway
               accepted: false,
               code: !h.boundary
                   ? 'boundaryUnverified'
-                  : !h.oc1Verified || h.oc2
+                  : !h.protocolVerified
                   ? 'protocolUnverified'
                   : 'engineUnavailable',
             );
@@ -351,6 +355,7 @@ class PhoneEngineGateway extends NullOrchestrationGateway
             Map items => items.map((k, v) => MapEntry(k, safe(v))),
             _ => v,
           };
+          await beforeCommand?.call();
           final raw = await _request(
             'POST',
             '/v1/commands',
@@ -545,7 +550,9 @@ TeamProject _presentPhoneProject(
     );
     status =
         interrupted.isNotEmpty &&
-            interrupted.every((task) => _resumableInterruption(task.reason)) &&
+            interrupted.every(
+              (task) => _resumableTaskInterruption(task.reason),
+            ) &&
             commandActions.contains(TeamProjectAction.resumeProject)
         ? 'paused'
         : 'failed';
@@ -574,7 +581,7 @@ TeamProject _presentPhoneProject(
             'merging' || 'resuming' => 'running',
             'interrupted'
                 when project.status != 'stopped' &&
-                    _resumableInterruption(task.reason) &&
+                    _resumableTaskInterruption(task.reason) &&
                     commandActions.contains(TeamProjectAction.resumeTask) =>
               'paused',
             'interrupted' => 'review',
@@ -595,6 +602,26 @@ TeamProject _presentPhoneProject(
         );
       }),
     ),
+    requests: List.unmodifiable([
+      ...project.requests,
+      // A checker that finished but whose answer could not be read: the
+      // person is asked to resume it (resumeTask re-reads that answer; it
+      // does not ask the model again).
+      if (project.status != 'stopped' &&
+          commandActions.contains(TeamProjectAction.resumeTask))
+        for (final task in project.tasks.where(
+          (task) =>
+              task.status == 'interrupted' &&
+              task.reason == _checkerAnswerUnreadable,
+        ))
+          TeamRequest(
+            id: 'phone-interrupted-${task.id}',
+            kind: 'interrupted',
+            title: 'The check finished, but its answer could not be read',
+            taskId: task.id,
+            createdAt: task.changedAt,
+          ),
+    ]),
     timeline: List.unmodifiable([
       ...project.timeline,
       if (summary != null)
@@ -618,7 +645,7 @@ TeamProject _presentPhoneProject(
             task,
             canResume:
                 project.status != 'stopped' &&
-                _resumableInterruption(task.reason) &&
+                _resumableTaskInterruption(task.reason) &&
                 commandActions.contains(TeamProjectAction.resumeTask),
           ),
         ),
@@ -642,6 +669,15 @@ const _activePhoneTaskStates = {
   'promoting',
   'running',
 };
+
+/// The engine's reason for a checker that completed but whose final answer
+/// could not be parsed. The saved session is complete, so Resume re-reads it.
+const _checkerAnswerUnreadable = 'structuredOutputInvalid';
+
+/// What a task can resume from: the restart/pause checkpoints, and a finished
+/// checker whose answer could not be read (root-cause-4.md).
+bool _resumableTaskInterruption(String reason) =>
+    _resumableInterruption(reason) || reason == _checkerAnswerUnreadable;
 
 bool _resumableInterruption(String reason) => const [
   'restartNeedsReconciliation',
@@ -677,6 +713,7 @@ String _taskCheckpointSummary(TeamTask task, {required bool canResume}) {
   // These are application-authored codes. Never copy paths, model error text
   // or secrets into the diagnostic timeline. Resume only refetches a session.
   final reason = switch (task.reason) {
+    'structuredOutputInvalid' => 'checkerAnswerUnreadable',
     'restartNeedsReconciliation' ||
     'pauseNeedsReconciliation' ||
     'recoveryNeedsReview' ||

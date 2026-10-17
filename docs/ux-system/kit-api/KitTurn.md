@@ -62,7 +62,8 @@ class KitTurn extends StatelessWidget {
     this.footer,          // drawn only when phase is finished, stopped, interrupted or failed
     this.latest = false,  // the newest turn: the footer shows its meta words
     this.highlighted = false, // the find-in-conversation current match
-    this.live,            // KitTurnLive: the running turn's live line with Stop reply (below)
+    this.live,            // KitTurnLive: the running turn's live line (below)
+    this.stall,           // KitTurnStall: with live, why a quiet turn looks stuck (below)
     this.turnKey,
     this.footerKey,
     this.copyKey,         // today's ValueKey('message-copy-<id>')
@@ -84,11 +85,11 @@ class KitTurn extends StatelessWidget {
 
 - **Order.** `prompt`, then `blocks` exactly as given, then the phase line (below), then the footer. `space4` between the prompt and the first block, `space3` between blocks, and `KitTokens.sectionGap` (22) after the turn, so the host adds no spacing between turns.
 - **Phase line** (a quiet `secondary`/`text2` line at the prose's start edge, never a spinner in the body):
-  - `starting` with no blocks: "Starting the model…"; once `since` is `KitMotion.escalateAfter` old (via KitSince) it becomes "Still waiting for the model · {n} s". The way out is the composer's Stop, which the host keeps visible (STATE-5). With blocks, nothing.
+  - `starting` with no blocks: "Starting the model…"; once `since` is `KitMotion.escalateAfter` (8 s, KitSince `isSlow`) old it becomes "Still waiting for the model · {n} s". This phase line is drawn only when the host sets no `live`; with a live line, the slow wait (20 s, `KitTurnLive.slowAfter`) is the only slow-start wording the person sees (STATE-5). With blocks, nothing.
   - `stopped`: "You stopped this reply."
   - `interrupted`: "The connection dropped before this reply finished." (map's missing end marker).
   - `running`, `waitingForYou`, `finished`, `failed`: none (the work line, the request card and the error notice say it).
-- **Live line** (`live: KitTurnLive?`, owner decision 2026-09-29). While a turn runs the host passes `KitTurnLive(activity, since, onStop, stopping, stopKey)` to the row that ends what has come back so far — the prompt itself before anything has — and the turn draws it in place of the phase line on any segment: "{status}…" for the first 5 s, then "{status} · {n} s" / "{m} min {n} s" (KitSince ticking every second), then **Stop reply**, a red tertiary `KitButton` a screen reader reaches as its own button (the status words are its label; the seconds are not announced). `KitTurnActivity`: sending "Sending", waitingForServer "Waiting for the server" (after 20 s: "The server has not answered yet"), waitingForModel "Thinking" (after 20 s: "Waiting for the model's first word"), thinking "Thinking", writing "Writing", working "Working", waitingForYou "Waiting for you". No Stop while sending (`onStop` null). This is the one Stop of a running chat: the composer keeps its mic and Send (KitComposer with no `onStop` shows the mic while busy and empty), so speaking or typing during a reply queues the message.
+- **Live line** (`live: KitTurnLive?`; owner decision 2 Oct 2026, 01B moved the status from the composer's edge back into the turn). Drawn under the turn's last block, in place of the phase line, from the moment the prompt is sent until the turn ends: one pulsing dot (12A, the one thing that moves in a chat; Calm pulses at half pace, Off and remove-animations keep it still) and "{status}…" for the first `KitTurnLive.showElapsedAfter` (5 s), then "{status} · {n} s" / "{m} min {n} s" (KitSince, one tick a second), plus an optional `note` ("Sends after this reply"). The words are a live region; the seconds are not announced. **There is no Stop here**: Send in the composer becomes the one Stop (KitComposer.md). `KitTurnActivity`: sending (reads as thinking), waitingForServer "Thinking" (from 20 s: "The server has not answered yet"), waitingForModel "Thinking" (after 20 s: "Waiting for the model's first word"), thinking "Thinking", writing "Writing", working "Working", waitingForYou "Waiting for you". The composer stays idle and keeps its mic while a reply runs, so speaking or typing during a reply queues the message.
 - **Footer.** Only for finished, stopped, interrupted and failed, and only when `footer` is non-null. One row after the last block: `meta` in `caption`/`text3` at the start (only when `latest`; older turns keep the row quiet, per the owner Fix), then `KitIconButton.copy(text: footer.copyText, tooltip: "Copy reply")` and a More `KitIconButton` ("More for this reply") that opens `showKitMenu(items: footer.menu)`; More is left out when `menu` is empty. The two buttons are 48 dp with 8 dp between them. There is never a second footer, and no step in `blocks` draws Copy or More.
 - **Long-press.** In every phase (running included, where no footer is drawn), long-press and right-click on the turn's replies open `footer.menu` plus a Copy item (`KitMenuItem.copy`), and the same items are the turn's semantic custom actions. A prompt's own long-press opens the prompt's menu (the inner part wins).
 - **Highlighted.** The turn sits on a `surface1` band with `panelCornerRadius`, inset by `space2`; no accent, no outline.
@@ -96,9 +97,11 @@ class KitTurn extends StatelessWidget {
 
 **Kit copy** (ARB, `kit` prefix, en + ar): `kitTurnStarting` "Starting the model…", `kitTurnStillStarting` "Still waiting for the model · {seconds} s", `kitTurnStopped` "You stopped this reply.", `kitTurnInterrupted` "The connection dropped before this reply finished.", `kitTurnCopy` "Copy reply", `kitTurnMore` "More for this reply", `kitTurnActions` "Reply actions" (the menu's name).
 
+- **Stall line** (`stall: KitTurnStall?`, 2026-10-08, FC3). With `live` only: the running turn has gone quiet long enough for the host's stall watchdog to explain it. Drawn under the live line (never instead of it; the turn still runs): the host's one sentence in the secondary tone, a live region read once, and at most two `actions` as tertiary words under it (the chat gives Stop reply and Details). The host never puts error, exception or server text in `message`; technical facts belong behind Details.
+
 ## States
 
-Declared (KIT-12): **starting**, **starting slow** (after 8 s), **running**, **waitingForYou**, **finished**, **finished latest** (meta words), **stopped**, **interrupted**, **failed**, and **highlighted**. No loading (the transcript skeleton is `KitSkeletonTranscript`, the host's), no empty (a turn always has a prompt or a block), no disabled. No working state of its own: the parts inside say what works.
+Declared (KIT-12): **starting**, **starting slow** (after 8 s on the phase line; after 20 s on the live line), **running**, **waitingForYou**, **finished**, **finished latest** (meta words), **stopped**, **interrupted**, **failed**, and **highlighted**. No loading (the transcript skeleton is `KitSkeletonTranscript`, the host's), no empty (a turn always has a prompt or a block), no disabled. No working state of its own: the parts inside say what works.
 
 ## Tokens
 
@@ -139,7 +142,7 @@ The turn fills the width it is given; the host caps the conversation pane at `Ki
 
 - Copy copies the whole turn's reply prose (STATE-16), never tool output or hidden text, read at tap time.
 - A running turn never shows a footer or a "done" look; `stopped` and `interrupted` say which happened, and neither is shown as finished.
-- "Starting the model…" escalates after 8 s instead of waiting silently (STATE-5); it never claims progress it does not have.
+- A start escalates instead of waiting silently (STATE-5): after 8 s on the phase line, after `KitTurnLive.slowAfter` (20 s) on the live line, which is the path the app takes; it never claims progress it does not have. Failures are said in neutral words (LOOK-5).
 - A turn waiting for a request relies on its KitWorkLine saying "Waiting for you" and its KitRequestCard; the turn adds no spinner (AUTO-15).
 
 ## Depends on

@@ -16,6 +16,8 @@ import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/api2/gateway_mappers.dart'
     show api2ServerCapabilities;
+import 'package:opencode_mobile/domain/form_request.dart' show Api2FormInfo;
+import 'package:opencode_mobile/state/automation_policy.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/kit/kit_request_card.dart';
@@ -31,7 +33,20 @@ class _Api extends OpenCodeApi with CompleteMessageHistory {
 
   final bool forms;
   final replies = <(String, String)>[];
+  final pendingFormInventory = <String, Api2FormInfo>{};
   bool failReplies = false;
+
+  void publishForm(ConnectionController controller, EventEnvelope event) {
+    final form = Api2FormInfo.fromJson(
+      Map<String, dynamic>.from(event.properties['form'] as Map),
+    )!;
+    pendingFormInventory[form.id] = form;
+    controller.handleEventForTesting(event);
+  }
+
+  @override
+  Future<List<Api2FormInfo>> pendingForms() async =>
+      pendingFormInventory.values.toList();
 
   @override
   ServerCapabilities get capabilities =>
@@ -64,7 +79,9 @@ class _Api extends OpenCodeApi with CompleteMessageHistory {
     String sessionID,
     String formID,
     Map<String, dynamic> answer,
-  ) async {}
+  ) async {
+    pendingFormInventory.remove(formID);
+  }
 }
 
 class _Questions extends ProductRepository {
@@ -102,6 +119,7 @@ Future<ConnectionController> _controller(
   await store.load();
   final controller = ConnectionController(store)
     ..api = api
+    ..directory = '/work/app'
     ..status = StreamStatus.connected;
   if (questions != null) controller.repository = questions;
   return controller;
@@ -189,10 +207,11 @@ void main() {
     final card = _card(tester);
     expect(card.kind, KitRequestKind.permission);
     expect(card.who, isNotNull, reason: 'the v2 card, never the legacy one');
-    expect(find.text('Run a shell command'), findsOneWidget);
+    expect(find.text('Run this command?'), findsOneWidget);
     expect(find.byKey(const Key('permission-sheet')), findsNothing);
 
     await tester.tap(find.byKey(const Key('permission-card-allow')));
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
     expect(api.replies, [('request-1', 'once')]);
@@ -210,6 +229,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('permission-card-reject')));
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
     expect(api.replies, [('request-1', 'reject')]);
@@ -220,6 +240,11 @@ void main() {
 
   testWidgets('Details opens the one request sheet; Always allow states its '
       'scope before anything is sent', (tester) async {
+    // The card now carries Always allow, so it is taller than the default
+    // 600 dp test window leaves room for above the composer.
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final api = _Api();
     final conn = await _controller(api);
     addTearDown(conn.dispose);
@@ -239,6 +264,7 @@ void main() {
     await tester.ensureVisible(find.text('Turn on'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Turn on'));
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
     expect(api.replies, [('request-1', 'always')]);
     expect(find.byKey(const Key('permission-sheet')), findsNothing);
@@ -255,8 +281,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_card(tester).kind, KitRequestKind.question);
-    expect(find.text('Pick a target'), findsOneWidget);
+    expect(find.text('Pick a target'), findsNothing);
+    expect(find.text('Where should this deploy?'), findsOneWidget);
     await tester.tap(find.text('Staging'));
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
     final (id, answers) = questions.answered.single;
@@ -268,11 +296,12 @@ void main() {
 
   testWidgets('an OpenCode 2 form is the same card, and its answers survive '
       'closing and a restart', (tester) async {
-    final conn = await _controller(_Api(forms: true));
+    final api = _Api(forms: true);
+    final conn = await _controller(api);
     addTearDown(conn.dispose);
     addTearDown(debugForgetFormAnswers);
     await _pumpChat(tester, conn);
-    conn.handleEventForTesting(_form());
+    api.publishForm(conn, _form());
     await tester.pumpAndSettle();
 
     final card = _card(tester);
@@ -307,10 +336,15 @@ void main() {
     expect(find.text('Use the EU region'), findsOneWidget);
   });
 
-  testWidgets('the server-wide approval switch states its scope before it '
+  testWidgets('the server-wide approval choice states its scope before it '
       'turns on', (tester) async {
     final conn = await _controller(_Api());
     addTearDown(conn.dispose);
+    // The automatic modes are offered while the automation policy allows.
+    await AutomationPolicyController.forProfile(
+      conn.store.prefs,
+      'profile-1',
+    ).setSupervision(AutomationSupervision.balanced);
     // Tall enough that the sheet builds every section at once.
     tester.view.physicalSize = const Size(412, 2400);
     tester.view.devicePixelRatio = 1;
@@ -340,24 +374,16 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('session-approvals-sheet')), findsOneWidget);
-    // The rule for new conversations is said once, by the switch; nothing
-    // on the sheet contradicts it (review board: session approvals).
-    expect(find.textContaining('new ones and subagents included'), findsOne);
+    // The scope is said once, in the one-sentence confirm that follows the
+    // choice; nothing on the sheet contradicts it.
     expect(find.textContaining('New conversations always ask'), findsNothing);
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('approvals-rules-note')),
-        matching: find.textContaining('deny rules still apply'),
-      ),
-      findsOneWidget,
-    );
 
-    await tester.tap(find.byKey(const Key('approvals-everything-switch')));
+    await tester.tap(find.byKey(const Key('approvals-mode-everything')));
     await tester.pumpAndSettle();
     expect(conn.approvesEverything, isFalse);
-    expect(find.textContaining('without asking you'), findsWidgets);
+    expect(find.textContaining('without asking'), findsOneWidget);
 
-    await tester.tap(find.text('Turn on'));
+    await tester.tap(find.text('Approve everything').last);
     await tester.pumpAndSettle();
     expect(conn.approvesEverything, isTrue);
   });

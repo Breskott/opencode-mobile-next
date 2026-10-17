@@ -127,7 +127,7 @@ void _phone(WidgetTester tester, [Size size = const Size(390, 844)]) {
 }
 
 Future<void> _openProjectTab(WidgetTester tester) async {
-  await tester.tap(find.byKey(const ValueKey('home-shell-tab-project')));
+  await tester.tap(find.byKey(const ValueKey('home-shell-tab-files')));
   await tester.pumpAndSettle();
 }
 
@@ -166,13 +166,30 @@ void main() {
         ],
       ),
       'Codex': (codexServerCapabilities, const []),
-      'Paseo': (paseoServerCapabilities, const []),
+      'Paseo': (
+        paseoServerCapabilities,
+        const [
+          ProjectTool.files,
+          ProjectTool.changes,
+          ProjectTool.terminal,
+          ProjectTool.worktrees,
+          ProjectTool.search,
+        ],
+      ),
       'files only': (
-        const ServerCapabilities(terminal: false, projectManagement: false),
+        const ServerCapabilities(
+          terminal: false,
+          projectManagement: false,
+          worktreeCreate: false,
+        ),
         const [ProjectTool.files, ProjectTool.changes, ProjectTool.search],
       ),
       'terminal only': (
-        const ServerCapabilities(fileBrowsing: false, projectManagement: false),
+        const ServerCapabilities(
+          fileBrowsing: false,
+          projectManagement: false,
+          worktreeCreate: false,
+        ),
         const [ProjectTool.terminal],
       ),
       'project management only': (
@@ -222,14 +239,14 @@ void main() {
             .map((destination) => destination.label)
             .toList();
         if (tools.isEmpty) {
-          expect(labels, ['Work', 'Inbox', 'Settings']);
+          expect(labels, ['Conversations', 'Settings']);
           expect(find.byType(ProjectHub), findsNothing);
           return;
         }
-        expect(labels, ['Work', 'Inbox', 'Project', 'Settings']);
+        expect(labels, ['Conversations', 'Files', 'Settings']);
         await _openProjectTab(tester);
         final navigation = tester.widget<KitNav>(find.byType(KitNav));
-        expect(navigation.destinations[navigation.selected].label, 'Project');
+        expect(navigation.destinations[navigation.selected].label, 'Files');
         for (final tool in everyTool) {
           // Terminal stays listed, dimmed with its reason, on a server
           // without one (slice-P3.11a).
@@ -271,8 +288,14 @@ void main() {
           for (final tool in displayed) tester.getTopLeft(_tool(tool)).dy,
         ];
         expect(tops, [...tops]..sort());
-        expect(find.text('app'), findsOneWidget);
+        expect(find.bySemanticsLabel(RegExp('app')), findsWidgets);
         expect(find.text('/srv/app'), findsNothing);
+        // The menu ends where the rows' chevrons end, not mid-row.
+        final menuRight = tester
+            .getTopRight(find.byKey(const ValueKey('project-hub-menu')))
+            .dx;
+        final rowRight = tester.getTopRight(_tool(displayed.first)).dx;
+        expect((rowRight - menuRight).abs(), lessThan(24));
         await tester.tap(find.byKey(const ValueKey('project-hub-menu')));
         await tester.pumpAndSettle();
         expect(
@@ -310,6 +333,23 @@ void main() {
         );
       },
     );
+
+    testWidgets('the Project tab tapped again leaves Files for the hub', (
+      tester,
+    ) async {
+      _phone(tester);
+      final controller = await _controller(ServerCapabilities.allV1);
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(_shell(controller));
+      await tester.pumpAndSettle();
+      await _openProjectTab(tester);
+      await tester.tap(_tool(ProjectTool.files));
+      await tester.pumpAndSettle();
+      expect(_tool(ProjectTool.files).hitTestable(), findsNothing);
+
+      await _openProjectTab(tester);
+      expect(_tool(ProjectTool.files).hitTestable(), findsOneWidget);
+    });
 
     testWidgets('Files exposes its own search field without a second hub row', (
       tester,

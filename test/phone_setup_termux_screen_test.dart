@@ -153,7 +153,11 @@ void main() {
     expect(store.saved.single.baseUrl, TermuxBridge.managedServerUrl);
     expect(store.saved.single.password, isNotEmpty);
 
-    termux.statusOutput = termuxSnapshot(phase: 'ready', version: '1.18.29');
+    termux.statusOutput = termuxSnapshot(
+      phase: 'ready',
+      version: termux.runtime.pinnedVersion,
+      runtime: termux.runtime,
+    );
     await pump(tester, frames: 15);
     expect(connection.connectCalls, 1);
     expect(find.text('App home'), findsOneWidget);
@@ -188,6 +192,7 @@ void main() {
     expect(termux.launchCalls, 1);
     termux.statusOutput = termuxSnapshot(
       phase: 'failed',
+      runtime: termux.runtime,
       message: 'OpenCode install failed',
       log: '[oc] Installing OpenCode\n[oc] ERROR: npm could not install\n',
     );
@@ -218,6 +223,7 @@ void main() {
     await pump(tester, frames: 4);
     termux.statusOutput = termuxSnapshot(
       phase: 'installing_opencode',
+      runtime: termux.runtime,
       message: 'Installing OpenCode',
     );
     termux.pendingLaunch!.completeError(
@@ -272,7 +278,11 @@ void main() {
     await pump(tester, frames: 8);
     expect(find.text(_l10n.phoneSetupTermuxUpdatingTitle), findsOneWidget);
     expect(termux.launchCalls, 1);
-    termux.statusOutput = termuxSnapshot(phase: 'ready', version: '1.18.29');
+    termux.statusOutput = termuxSnapshot(
+      phase: 'ready',
+      version: termux.runtime.pinnedVersion,
+      runtime: termux.runtime,
+    );
     await pump(tester, frames: 30);
     expect(find.byType(PhoneSetupTermuxScreen), findsNothing);
     expect(find.text('This phone'), findsOneWidget);

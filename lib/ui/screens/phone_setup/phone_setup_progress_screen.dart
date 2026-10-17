@@ -50,6 +50,9 @@ class _PhoneSetupProgressScreenState extends State<PhoneSetupProgressScreen> {
   bool _restored = false;
   bool _handedOff = false;
 
+  /// The pending job read; leaving the screen cancels its timeout.
+  final _reads = SetupReadScope();
+
   @override
   void initState() {
     super.initState();
@@ -60,12 +63,13 @@ class _PhoneSetupProgressScreenState extends State<PhoneSetupProgressScreen> {
   @override
   void dispose() {
     _engine.progress.removeListener(_onProgress);
+    _reads.cancel();
     super.dispose();
   }
 
   Future<void> _restore() async {
     try {
-      await _engine.restore();
+      await _engine.restore(scope: _reads);
     } catch (_) {
       // Nothing persisted, or the channel is not up yet: the live progress
       // still arrives through the listener.
@@ -167,7 +171,11 @@ class _PhoneSetupProgressScreenState extends State<PhoneSetupProgressScreen> {
                     for (final c in _engine.registry)
                       if (ids.contains(c.id)) c,
                   ],
-            note: l10n.phoneSetupProgressLeaveHint,
+            // FB2: a first setup says where it sits in the journey (install,
+            // name a project, chat); an update or added tools end here.
+            note: widget.firstSetup && progress.adding.isEmpty
+                ? l10n.phoneSetupProgressFirstSetupNote
+                : l10n.phoneSetupProgressLeaveHint,
             onCancel: progress.state == SetupState.running ? _cancel : null,
             onContinue: progress.canContinue ? _continue : null,
           );

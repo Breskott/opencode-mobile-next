@@ -1795,7 +1795,7 @@
  {
   "pageId": "home-shell",
   "area": "a-shell",
-  "title": "{server name} · Work / Inbox / Project / Settings",
+  "title": "{server name} · Chats / Files / Settings",
   "kind": "screen",
   "file": "lib/ui/screens/home_screen.dart",
   "journey": [
@@ -3287,7 +3287,7 @@
  {
   "pageId": "workspace",
   "area": "e-workspace",
-  "title": "Work",
+  "title": "Work (retired 2026-10-03: replaced by Chats)",
   "kind": "tab",
   "file": "lib/ui/screens/workspace_screen.dart",
   "journey": [
@@ -5912,9 +5912,9 @@
    "consistency-kit": "mostly kit"
   },
   "evidence": [
-   "lib/ui/widgets/folder_browser.dart:50",
-   "lib/ui/widgets/folder_browser.dart:253",
-   "lib/ui/widgets/folder_browser.dart:341",
+   "lib/ui/widgets/folder_browser.dart:131",
+   "lib/ui/widgets/folder_browser.dart:522",
+   "lib/ui/widgets/folder_browser.dart:849",
    "docs/qa/screen-census/e-workspace/project-folder-browser--projects.png"
   ]
  },

@@ -1,0 +1,17 @@
+PYTHON_CHECK
+CHECK_RC=127
+[oc] Details: dpkg --audit
+The following packages are in a mess due to serious problems during
+installation.  They must be reinstalled for them (and any packages
+that depend on them) to function properly:
+ libonig5:amd64       (no description available)
+
+The following packages are missing the list control file in the
+database, they need to be reinstalled:
+ libonig5:amd64       (no description available)
+
+The following packages are missing the md5sums control file in the
+database, they need to be reinstalled:
+ libonig5:amd64       (no description available)
+[oc] Some packages are still unfinished. Retry setup to repair the interrupted installation.
+REPAIR_RC=1

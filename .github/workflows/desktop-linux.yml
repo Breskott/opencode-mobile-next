@@ -99,6 +99,9 @@ jobs:
       - name: Resolve generated SDK dependencies
         run: dart pub get --directory packages/opencode_sdk --enforce-lockfile
 
+      - name: Resolve the Widgetbook catalog
+        run: flutter pub get --directory widgetbook
+
       - name: Analyze
         run: flutter analyze
 

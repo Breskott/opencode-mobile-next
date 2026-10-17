@@ -7,6 +7,12 @@ import 'package:dio/dio.dart';
 import '../domain/provider_quota.dart';
 import '../state/profiles.dart';
 import '../diagnostics/perf_trace.dart';
+import '../ui/kit/kit_redact.dart';
+
+/// Where the collector the app runs inside In-app Ubuntu listens: loopback
+/// only, on this phone (tool/quota/README.md, `OCMN_QUOTA_PORT`).
+const inAppQuotaPort = 4195;
+const inAppQuotaOrigin = 'http://127.0.0.1:$inAppQuotaPort';
 
 /// A separately installed, explicitly trusted deployment extension. This is
 /// not an OpenCode API client and must only be acquired after screen consent.
@@ -24,6 +30,12 @@ class HttpProviderQuotaGateway implements ProviderQuotaGateway {
   final String _username;
   final String _password;
   final bool _requiresPasswordReentry;
+
+  /// Set only for the app's own In-app Ubuntu server: reads the collector the
+  /// app runs there, on loopback, with the read token the app made for it
+  /// (kept in secure storage), instead of the server's origin with Basic.
+  /// A missing token means the collector was never set up.
+  final Future<String?> Function()? _inAppToken;
   final Dio _dio;
   final _requests = <CancelToken>{};
   bool _closed = false;
@@ -32,7 +44,9 @@ class HttpProviderQuotaGateway implements ProviderQuotaGateway {
     ServerProfile profile, {
     HttpClientAdapter? adapter,
     this.provider = QuotaProvider.codex,
-  }) : _baseUrl = profile.baseUrl,
+    Future<String?> Function()? inAppToken,
+  }) : _inAppToken = inAppToken,
+       _baseUrl = inAppToken == null ? profile.baseUrl : inAppQuotaOrigin,
        _username = profile.username,
        _password = profile.password,
        _requiresPasswordReentry = profile.requiresPasswordReentry,
@@ -99,6 +113,9 @@ class HttpProviderQuotaGateway implements ProviderQuotaGateway {
           null) {
         return false;
       }
+      // Plain HTTP to a private network address needs a per-profile
+      // confirmation this scope does not carry; quota reads stay off there.
+      if (serverUrlNeedsCleartextConfirmation(baseUrl)) return false;
       final uri = Uri.parse(baseUrl.trim());
       return !uri.hasQuery &&
           !uri.hasFragment &&
@@ -118,19 +135,29 @@ class HttpProviderQuotaGateway implements ProviderQuotaGateway {
         throw const ProviderQuotaFailure(QuotaFailureKind.unsupported);
       }
       if (_closed ||
-          !_validProfile(
-            _baseUrl,
-            _username,
-            _password,
-            _requiresPasswordReentry,
-          )) {
+          (_inAppToken == null &&
+              !_validProfile(
+                _baseUrl,
+                _username,
+                _password,
+                _requiresPasswordReentry,
+              ))) {
         throw const ProviderQuotaFailure(QuotaFailureKind.unavailable);
+      }
+      String? token;
+      if (_inAppToken != null) {
+        token = await _inAppToken();
+        // No token: the collector was never set up here (or was turned off).
+        if (token == null || token.isEmpty) {
+          throw const ProviderQuotaFailure(QuotaFailureKind.unsupported);
+        }
+        KitRedact.registerKnownSecret(token);
       }
       _requests.add(cancel);
       // A total deadline also bounds a peer that keeps dripping body bytes.
       // Cancellation must settle the caller even if an adapter stalls.
       return await Future.any<ProviderQuotaSnapshot>([
-        _read(cancel),
+        _read(cancel, token),
         cancel.whenCancel.then<ProviderQuotaSnapshot>(
           (_) => throw const ProviderQuotaFailure(QuotaFailureKind.unavailable),
         ),
@@ -145,7 +172,7 @@ class HttpProviderQuotaGateway implements ProviderQuotaGateway {
     }
   }
 
-  Future<ProviderQuotaSnapshot> _read(CancelToken cancel) async {
+  Future<ProviderQuotaSnapshot> _read(CancelToken cancel, String? token) async {
     final uri = Uri.parse(
       _baseUrl.trim(),
     ).replace(path: quotaPathFor(provider));
@@ -153,8 +180,9 @@ class HttpProviderQuotaGateway implements ProviderQuotaGateway {
       uri,
       options: Options(
         headers: {
-          'Authorization':
-              'Basic ${base64Encode(utf8.encode('$_username:$_password'))}',
+          'Authorization': token != null
+              ? 'Bearer $token'
+              : 'Basic ${base64Encode(utf8.encode('$_username:$_password'))}',
         },
       ),
       cancelToken: cancel,

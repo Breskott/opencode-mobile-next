@@ -21,7 +21,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show CustomSemanticsAction;
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../../l10n/app_localizations.dart';
 import '../../app_iconography.dart';
@@ -29,6 +28,7 @@ import '../kit_buttons.dart';
 import '../kit_chip.dart' show KitChipWrap;
 import '../kit_copy.dart';
 import '../kit_divider.dart';
+import '../kit_icon.dart';
 import '../kit_image.dart';
 import '../kit_layout.dart';
 import '../kit_menu.dart';
@@ -36,7 +36,8 @@ import '../kit_motion.dart';
 import '../kit_text.dart';
 import '../kit_tappable.dart' show KitPressTracker;
 import '../kit_tokens.dart';
-import '../motion/kit_motion_parts.dart';
+
+export 'kit_composer_status_strip.dart';
 
 /// Which model answers, as far as the composer can say.
 enum KitModelChipState {
@@ -97,7 +98,7 @@ class KitAttachment {
 }
 
 /// What a [KitSuggestion] would insert.
-enum KitSuggestionKind { command, agent }
+enum KitSuggestionKind { command, agent, file }
 
 /// One row of [KitComposerChips.suggestions].
 @immutable
@@ -144,10 +145,8 @@ class KitComposerChips extends StatelessWidget {
     required String this.label,
     required VoidCallback this.onPressed,
     this.state = KitModelChipState.chosen,
-    this.contextUsed,
     this.menu = const <KitMenuItem>[],
     this.chipKey,
-    this.contextKey,
   }) : items = null,
        onRemove = null,
        suggestions = null,
@@ -167,14 +166,12 @@ class KitComposerChips extends StatelessWidget {
   }) : label = null,
        onPressed = null,
        state = KitModelChipState.chosen,
-       contextUsed = null,
        menu = const <KitMenuItem>[],
        suggestions = null,
        onSelected = null,
        onShowAll = null,
        note = null,
        chipKey = null,
-       contextKey = null,
        listKey = null;
 
   /// What `/` or `@` would insert. At most [visibleCount] rows, then
@@ -191,12 +188,10 @@ class KitComposerChips extends StatelessWidget {
   }) : label = null,
        onPressed = null,
        state = KitModelChipState.chosen,
-       contextUsed = null,
        menu = const <KitMenuItem>[],
        items = null,
        onRemove = null,
        chipKey = null,
-       contextKey = null,
        stripKey = null;
 
   /// Behaviour constant, not a look token.
@@ -207,8 +202,6 @@ class KitComposerChips extends StatelessWidget {
   final VoidCallback? onPressed;
   final KitModelChipState state;
 
-  /// 0–1; the chip shows it from 0.7.
-  final double? contextUsed;
   final List<KitMenuItem> menu;
   final List<KitAttachment>? items;
   final ValueChanged<KitAttachment>? onRemove;
@@ -218,7 +211,7 @@ class KitComposerChips extends StatelessWidget {
 
   /// Suggestions form only: the one line shown when [suggestions] is empty.
   final String? note;
-  final Key? chipKey, contextKey, stripKey, listKey;
+  final Key? chipKey, stripKey, listKey;
 
   /// Whether the suggestions form has anything to show: rows, or its
   /// [note] when there are none.
@@ -235,9 +228,7 @@ class KitComposerChips extends StatelessWidget {
         label: label,
         onPressed: onPressed!,
         state: state,
-        contextUsed: contextUsed,
         menu: menu,
-        contextKey: contextKey,
       );
     }
     final items = this.items;
@@ -259,38 +250,6 @@ class KitComposerChips extends StatelessWidget {
       suggestions: suggestions,
       onSelected: onSelected!,
       onShowAll: onShowAll,
-    );
-  }
-}
-
-/// Standing facts about a conversation's run, above the composer: one line
-/// of chips (automatic approvals, context waiting for the agent's next step,
-/// "Background"). Always one line: short labels keep every chip on a
-/// phone's width, and at large text sizes the line scrolls sideways instead
-/// of stacking over the transcript. Draws nothing when [chips] is empty.
-///
-/// States: empty (nothing drawn).
-class KitComposerStatusStrip extends StatelessWidget {
-  const KitComposerStatusStrip({super.key, required this.chips, this.stripKey});
-
-  /// Kit chips ([KitChip] and its forms), in the host's order.
-  final List<Widget> chips;
-
-  /// On the scrolling line, for tests (TEST-5).
-  final Key? stripKey;
-
-  @override
-  Widget build(BuildContext context) {
-    if (chips.isEmpty) return const SizedBox.shrink();
-    final tokens = KitTokens.of(context);
-    return Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: SingleChildScrollView(
-        key: stripKey,
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.space3),
-        child: Row(spacing: tokens.space2, children: chips),
-      ),
     );
   }
 }
@@ -390,26 +349,19 @@ Widget _flexibleWhenBounded(BoxConstraints constraints, Widget child) =>
 
 // ── Model chip ───────────────────────────────────────────────────────────
 
-/// Whether the context meter is shown, and how.
-enum _ContextLevel { none, percent, full }
-
 class _ModelChip extends StatefulWidget {
   const _ModelChip({
     required this.label,
     required this.onPressed,
     required this.state,
-    required this.contextUsed,
     required this.menu,
-    required this.contextKey,
     required this.chipKey,
   });
 
   final String label;
   final VoidCallback onPressed;
   final KitModelChipState state;
-  final double? contextUsed;
   final List<KitMenuItem> menu;
-  final Key? contextKey;
   final Key? chipKey;
 
   @override
@@ -462,13 +414,6 @@ class _ModelChipState extends State<_ModelChip> {
     KitModelChipState.chooseNeeded => l10n.kitModelChoose,
   };
 
-  _ContextLevel get _level {
-    final used = widget.contextUsed;
-    if (used == null || used < 0.7) return _ContextLevel.none;
-    if (used >= 0.95) return _ContextLevel.full;
-    return _ContextLevel.percent;
-  }
-
   /// Whether [text] in [style] fits on one line in [width].
   static bool _fits(
     BuildContext context,
@@ -488,69 +433,31 @@ class _ModelChipState extends State<_ModelChip> {
     return fits;
   }
 
-  static double _width(BuildContext context, String text, TextStyle style) {
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-      maxLines: 1,
-    )..layout();
-    final width = painter.width;
-    painter.dispose();
-    return width;
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
     final roles = tokens.roles;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final words = _words(l10n);
-    final level = _level;
-    String? contextWords;
-    String? contextSpoken;
-    switch (level) {
-      case _ContextLevel.none:
-        break;
-      case _ContextLevel.full:
-        contextWords = l10n.kitModelContextFull;
-        contextSpoken = l10n.kitModelContextFull;
-      case _ContextLevel.percent:
-        // Floor, so "95 %" never shows below the "almost full" line; the
-        // epsilon absorbs binary fractions (0.7 * 100 = 70.000…01).
-        final percent = NumberFormat.decimalPattern(
-          Localizations.localeOf(context).toString(),
-        ).format((widget.contextUsed! * 100 + 1e-9).floor());
-        contextWords = l10n.kitModelContext(percent);
-        contextSpoken = l10n.kitModelContextLabel(percent);
-    }
-    final shownContext = contextWords == null ? null : '· $contextWords';
-    final spoken = contextSpoken == null ? words : '$words, $contextSpoken';
-    final tip = shownContext == null ? words : '$words $shownContext';
+    final spoken = words;
+    final tip = words;
 
     final labelStyle = KitText.styleOf(
       context,
       KitTextRole.label,
       tone: KitTextTone.primary,
     );
-    final contextStyle = labelStyle.copyWith(
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
     final glyphSize = tokens.iconSize(context, tokens.smallIconSize);
     final twoLines = MediaQuery.textScalerOf(context).scale(1) >= 1.3;
 
     Widget body = LayoutBuilder(
       builder: (context, constraints) {
-        final contextWidth = shownContext == null
-            ? 0.0
-            : tokens.space1 + _width(context, shownContext, contextStyle);
         final available =
             constraints.maxWidth -
             2 * tokens.space3 -
             2 * glyphSize -
             tokens.space2 -
-            tokens.space1 -
-            contextWidth;
+            tokens.space1;
         // Glyph only when the label would show fewer than six characters
         // (never a width literal, KitComposerChips.md "Adaptive").
         final chars = words.characters;
@@ -599,24 +506,6 @@ class _ModelChipState extends State<_ModelChip> {
                   maxLines: twoLines ? 2 : 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              KitSwap(
-                alignment: AlignmentDirectional.centerStart,
-                child: shownContext == null
-                    ? SizedBox.shrink(key: ValueKey(level))
-                    : Padding(
-                        key: ValueKey(level),
-                        padding: EdgeInsetsDirectional.only(
-                          start: tokens.space1,
-                        ),
-                        child: Text(
-                          shownContext,
-                          key: widget.contextKey,
-                          style: contextStyle,
-                          maxLines: 1,
-                          softWrap: false,
-                        ),
-                      ),
               ),
               SizedBox(width: tokens.space1),
               chevron,
@@ -1166,8 +1055,9 @@ class _SuggestionPanel extends StatelessWidget {
     final tokens = KitTokens.of(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final visible = suggestions.take(KitComposerChips.visibleCount).toList();
-    final showAll =
-        onShowAll != null && suggestions.length > KitComposerChips.visibleCount;
+    // The host passes [onShowAll] only when it holds more than it gave
+    // (a phone shows fewer rows than [KitComposerChips.visibleCount]).
+    final showAll = onShowAll != null;
     final shape = tokens.shapeOf(KitShape.panel);
     return Semantics(
       container: true,
@@ -1269,7 +1159,23 @@ class _SuggestionRowState extends State<_SuggestionRow> {
           );
 
     Widget content = label;
-    if (description != null) {
+    if (s.kind == KitSuggestionKind.file) {
+      // A path is read left to right and keeps its root and file name when
+      // it is cut: name first, its folder under it.
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          KitText.mono(s.label, cut: KitMonoCut.middle),
+          if (description != null)
+            KitText.mono(
+              description,
+              cut: KitMonoCut.middle,
+              tone: KitTextTone.secondary,
+            ),
+        ],
+      );
+    } else if (description != null) {
       content = LayoutBuilder(
         builder: (context, constraints) {
           final scaler = MediaQuery.textScalerOf(context);
@@ -1340,6 +1246,21 @@ class _SuggestionRowState extends State<_SuggestionRow> {
       );
     }
 
+    // A file says so with its glyph: the name and folder follow it.
+    final Widget body = s.kind == KitSuggestionKind.file
+        ? Row(
+            children: [
+              const KitIcon(AppIconography.fileText, size: KitIconSize.small),
+              SizedBox(width: tokens.space3),
+              Expanded(child: content),
+            ],
+          )
+        : Align(
+            alignment: AlignmentDirectional.centerStart,
+            widthFactor: 1,
+            heightFactor: 1,
+            child: content,
+          );
     Widget row = ConstrainedBox(
       constraints: BoxConstraints(minHeight: tokens.minTarget),
       child: Padding(
@@ -1347,12 +1268,7 @@ class _SuggestionRowState extends State<_SuggestionRow> {
           horizontal: tokens.space4,
           vertical: tokens.space2,
         ),
-        child: Align(
-          alignment: AlignmentDirectional.centerStart,
-          widthFactor: 1,
-          heightFactor: 1,
-          child: content,
-        ),
+        child: body,
       ),
     );
     row = DecoratedBox(

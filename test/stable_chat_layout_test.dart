@@ -206,7 +206,9 @@ void main() {
       tester.getSize(find.byType(KitTopBar)).height,
       lessThanOrEqualTo(64),
     );
-    expect(tester.getSize(_title).height, lessThanOrEqualTo(31));
+    // The title's box is the 48 dp row the buttons share; its words are one
+    // line inside it.
+    expect(tester.getSize(find.text('Fix CI')).height, lessThanOrEqualTo(31));
   });
 
   testWidgets(
@@ -271,13 +273,13 @@ void main() {
         );
 
         // A run starts: Send stays above the keyboard, and the delivery
-        // words do not push it off screen. Stop is on the running turn, never
-        // in the composer.
+        // words do not push it off screen. Typed words keep Send; Stop leads
+        // the row, never beside it.
         conn.busySessions.add(_sessionID);
         conn.notifyListeners();
         await _pumpFrames(tester);
         expect(tester.takeException(), isNull);
-        expect(find.byKey(const ValueKey('kit-composer-stop')), findsNothing);
+        expect(find.byKey(const ValueKey('kit-composer-stop')), findsOneWidget);
         expect(find.text('Sends after this reply'), findsOneWidget);
         expect(tester.getRect(_send).bottom, lessThanOrEqualTo(visibleBottom));
         expect(tester.getRect(_field).bottom, lessThanOrEqualTo(visibleBottom));

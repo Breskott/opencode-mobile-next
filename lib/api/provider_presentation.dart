@@ -59,6 +59,75 @@ String presentedModelLabel(String providerID, String modelID) =>
     ? '${presentedProviderRouteName(providerID)} · $modelID'
     : '$providerID/$modelID';
 
+/// A model as a person reads it, short name first: "GLM-5.3 · Z.AI Coding
+/// Plan", "GPT-6.1 Sol · OpenAI". [modelName] and [providerName] come from a
+/// loaded catalog when there is one; without it the ids are tidied instead,
+/// so a server that is not connected reads the same way as one that is.
+String readableModelLabel(
+  String providerID,
+  String modelID, {
+  String? modelName,
+  String? providerName,
+}) {
+  final model = modelName?.trim().isNotEmpty == true
+      ? modelName!.trim()
+      : _tidyModelId(modelID);
+  final known = _knownProviderNames[providerID.toLowerCase()];
+  final provider = isConsolidatedProviderAlias(providerID)
+      ? presentProvider(providerID).name
+      : providerName?.trim().isNotEmpty == true
+      ? providerName!.trim()
+      : known ?? _capitalise(providerID);
+  return '$model · $provider';
+}
+
+const _knownProviderNames = {
+  'openai': 'OpenAI',
+  'anthropic': 'Anthropic',
+  'google': 'Google',
+  'openrouter': 'OpenRouter',
+  'xai': 'xAI',
+  'mistral': 'Mistral',
+  'deepseek': 'DeepSeek',
+  'github-copilot': 'GitHub Copilot',
+  'opencode': 'OpenCode',
+};
+
+String _capitalise(String word) =>
+    word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1)}';
+
+/// "gpt-6.1-sol" as "GPT-6.1 Sol", "claude-opus-4-5" as "Claude Opus 4.5".
+String _tidyModelId(String modelID) {
+  final id = modelID.contains('/') ? modelID.split('/').last : modelID;
+  final tokens = id.split(RegExp(r'[-_]')).where((t) => t.isNotEmpty).toList();
+  if (tokens.isEmpty) return modelID;
+  bool numeric(String t) => RegExp(r'^\d+(\.\d+)*$').hasMatch(t);
+  final words = <String>[];
+  for (var i = 0; i < tokens.length; i++) {
+    final t = tokens[i];
+    if (numeric(t)) {
+      // Digits that follow digits are one version: 4-5 reads 4.5.
+      if (words.isNotEmpty && numeric(words.last) && t.length < 8) {
+        words[words.length - 1] = '${words.last}.$t';
+      } else {
+        words.add(t);
+      }
+    } else if (const {'gpt', 'glm', 'llm'}.contains(t.toLowerCase())) {
+      words.add(t.toUpperCase());
+    } else {
+      words.add(_capitalise(t));
+    }
+  }
+  // An acronym and its version read as one word: GPT-6.1.
+  if (words.length > 1 &&
+      words.first == words.first.toUpperCase() &&
+      numeric(words[1])) {
+    final head = '${words.first}-${words[1]}';
+    return [head, ...words.skip(2)].join(' ');
+  }
+  return words.join(' ');
+}
+
 String presentedProviderRouteName(String providerID, [String? serverName]) {
   final presentation = presentProvider(providerID, serverName);
   return presentation.route == null
@@ -212,13 +281,11 @@ List<PresentedIntegration> _presentIntegrationGroup(
   ];
 }
 
-/// The web domain whose favicon stands in for a provider's logo.
+/// The web domain a provider is known by (used for search aliases).
 ///
 /// Wire ids are matched case-insensitively; aliases that share a company
 /// (the Z.AI / Zhipu routes, Google's Gemini and Vertex routes) share a
-/// domain. Unknown ids fall back to `<id>.com`, which is right often enough
-/// to be worth a try and cheap when it is not: a missing favicon renders as
-/// a monogram.
+/// domain. Unknown ids fall back to `<id>.com`.
 String providerLogoDomain(String providerID) {
   final id = providerID.trim().toLowerCase();
   return switch (id) {
@@ -256,18 +323,6 @@ bool isOpenCodeProvider(String providerID) =>
       'opencode' || 'opencode-zen' => true,
       _ => false,
     };
-
-/// Google's favicon service, 128px PNG. Same endpoint that
-/// `google.com/s2/favicons` redirects to, addressed directly so the image
-/// pipeline does not pay for the redirect.
-Uri providerLogoUrl(String providerID) =>
-    Uri.https('t1.gstatic.com', '/faviconV2', {
-      'client': 'SOCIAL',
-      'type': 'FAVICON',
-      'fallback_opts': 'TYPE,SIZE,URL',
-      'url': 'https://${providerLogoDomain(providerID)}',
-      'size': '128',
-    });
 
 /// One- or two-letter monogram for a provider whose logo is missing or still
 /// loading: initials of the first two words of its presented name

@@ -69,6 +69,9 @@ class _PhoneSetupWelcomeEntryState extends State<PhoneSetupWelcomeEntry> {
   /// so leaving the welcome cancels it.
   Timer? _giveUp;
 
+  /// The pending job reads; leaving the welcome cancels their timeouts.
+  final _reads = SetupReadScope();
+
   @override
   void initState() {
     super.initState();
@@ -85,12 +88,13 @@ class _PhoneSetupWelcomeEntryState extends State<PhoneSetupWelcomeEntry> {
   @override
   void dispose() {
     _giveUp?.cancel();
+    _reads.cancel();
     super.dispose();
   }
 
   Future<void> _restore() async {
     try {
-      await _engine.restore();
+      await _engine.restore(scope: _reads);
     } catch (_) {
       // No job, or no channel (desktop, tests): the welcome stays as it is.
     }

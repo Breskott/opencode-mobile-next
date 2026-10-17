@@ -365,7 +365,13 @@ void main() {
       // works in an open desktop app (saved-server monitoring, check-ins). It
       // carries no background summary here, and the screen behind it has no
       // foreground-service controls.
-      final row = find.byKey(const ValueKey('settings-category-background'));
+      // Background is Android's: its row is gone on desktop, Notifications
+      // stays.
+      expect(
+        find.byKey(const ValueKey('settings-category-background')),
+        findsNothing,
+      );
+      final row = find.byKey(const ValueKey('settings-category-notifications'));
       expect(row, findsOneWidget);
       expect(find.textContaining('Background:'), findsNothing);
       await tester.ensureVisible(row);
@@ -430,6 +436,17 @@ void main() {
       return BackgroundLiveController(
         preferences: prefs,
         invoke: (method, [arguments]) async {
+          if (method == 'getBackgroundPause') {
+            return const {
+              'supported': true,
+              'active': false,
+              'paused': false,
+              'reason': 'none',
+              'at': null,
+              'canResume': false,
+            };
+          }
+
           calls.add(method);
           return <String, dynamic>{
             'active': true,

@@ -54,6 +54,11 @@ class TermuxChannelFixture {
   /// Held open to keep the launch dispatch pending.
   Completer<Map<String, Object>>? pendingLaunch;
 
+  int historyCheckExitCode = 0;
+  String historyCheckOutput = '';
+  bool failHistoryCheck = false;
+  bool failInventory = false;
+  String? lastLaunchScript;
   bool launched = false;
   int launchCalls = 0;
   int restartCalls = 0;
@@ -65,6 +70,12 @@ class TermuxChannelFixture {
   Future<Object?> handle(MethodCall call) async {
     methods.add(call.method);
     switch (call.method) {
+      case 'setupRun':
+        if (failHistoryCheck) throw PlatformException(code: 'command_timeout');
+        return <String, Object>{
+          ...termuxResult(stdout: historyCheckOutput),
+          'exitCode': historyCheckExitCode,
+        };
       case 'requestRunCommandPermission':
         permissionGranted = permissionResult;
         return permissionResult;
@@ -116,6 +127,10 @@ class TermuxChannelFixture {
     }
     if (script.contains('manager_tmp=')) {
       launchCalls++;
+      lastLaunchScript = script;
+      runtime = script.contains("\"\$self_start\" 'opencode2'")
+          ? TermuxRuntime.openCode2
+          : TermuxRuntime.openCode1;
       final result =
           await (pendingLaunch?.future ??
               Future.value(termuxResult(stdout: 'manager-started:123')));
@@ -125,6 +140,9 @@ class TermuxChannelFixture {
     // The manager text rides inside the launch and restart scripts and
     // mentions the words below: those scripts are matched first.
     if (script.contains('ubuntu=absent') && !script.contains('MANAGER=')) {
+      if (failInventory) {
+        throw PlatformException(code: 'command_timeout');
+      }
       return termuxResult(stdout: inventoryOutput);
     }
     if (script.contains("printf 'opencode-bridge-ok'")) {
@@ -150,10 +168,8 @@ class TermuxChannelFixture {
                     runtime: runtime,
                     log: '[oc] Installing packages\n',
                   )
-                : termuxSnapshot(
-                    phase: 'idle',
-                    message: 'No setup has been started',
-                  )),
+                : 'phase=idle\nmessage=No setup has been started\n'
+                      'version=\n__OC_SETUP_OUTPUT__\n'),
       );
     }
     return termuxResult();

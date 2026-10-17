@@ -280,19 +280,20 @@ void main() {
         findsOneWidget,
       );
       // The graph is smaller than the viewport: shown at 1x, centred.
-      // 368x408: chips are 58 tall, not the retired 44 — KitWorkGraph.md's
+      // 368x400: chips are 56 tall, not the retired 44 — KitWorkGraph.md's
       // 48dp node floor (LAY-9), and since the fixture has a stuck item,
       // every chip holds a second line for a stuck item's state word
-      // (rowTitle 22 + secondary 20 + space2 8 + 8), so a blocked item
+      // (rowTitle 22 + secondary 18 + space2 8 + 8; secondary is 13/18 since the
+      // three-size type scale), so a blocked item
       // never reads as the waiting mark it borrows (this unit's QA record).
       // KitZoom's own canvas fit has no extra margin (KitImage.md), unlike
       // the retired WorkGraph._fit's 12dp one.
       final fitted = transform.value.clone();
       expect(fitted.storage[0], closeTo(1, 1e-9));
       expect(fitted.getTranslation().x, closeTo((800 - 368) / 2, 1e-9));
-      expect(fitted.getTranslation().y, closeTo((600 - 408) / 2, 1e-9));
+      expect(fitted.getTranslation().y, closeTo((600 - 400) / 2, 1e-9));
 
-      final layout = _layout(_six, nodeSize: const Size(156, 58));
+      final layout = _layout(_six, nodeSize: const Size(156, 56));
       final origin = tester.getTopLeft(find.byType(_Graph));
       Offset onScreen(String id) =>
           origin +

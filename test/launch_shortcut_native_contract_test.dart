@@ -13,6 +13,12 @@ void main() {
     '$androidMain/kotlin/io/github/eslamasabry/opencode_mobile/'
     'MainActivity.kt',
   ).readAsStringSync();
+  final channel = File(
+    '$androidMain/kotlin/io/github/eslamasabry/opencode_mobile/LaunchShortcutChannel.kt',
+  ).readAsStringSync();
+  final launches = File(
+    '$androidMain/kotlin/io/github/eslamasabry/opencode_mobile/LaunchActivityBridge.kt',
+  ).readAsStringSync();
   final shortcuts = File(
     '$androidMain/res/xml/shortcuts.xml',
   ).readAsStringSync();
@@ -79,7 +85,7 @@ void main() {
   test('the native whitelist matches the declared shortcut ids', () {
     final whitelist = RegExp(
       r'LAUNCH_ACTIONS\s*=\s*setOf\(([^)]*)\)',
-    ).firstMatch(activity);
+    ).firstMatch(channel);
     expect(whitelist, isNotNull);
     final ids = RegExp(
       r'"([^"]+)"',
@@ -93,49 +99,64 @@ void main() {
       unorderedEquals([
         ...extraValues,
         'activity',
+        'usage',
+        'usage_settings',
+        'background_settings',
         'phone_setup',
         'phone_setup_done',
       ]),
     );
     expect(activity, contains('EXTRA_LAUNCH_ACTION = "oc.shortcut"'));
-    expect(activity, contains('SHORTCUT_CHANNEL_NAME = "oc/shortcut"'));
+    expect(channel, contains('MethodChannel(messenger, "oc/shortcut")'));
   });
 
   test('the extra is removed before the whitelist decides', () {
-    final capture = activity.indexOf('private fun captureLaunchAction');
+    final capture = channel.indexOf('fun captureAction(intent: Intent?)');
     expect(capture, greaterThanOrEqualTo(0));
-    final body = activity.substring(capture);
-    final remove = body.indexOf('removeExtra(EXTRA_LAUNCH_ACTION)');
-    final whitelist = body.indexOf('!in LAUNCH_ACTIONS');
-    final park = body.indexOf('pendingLaunchAction = action');
+    final body = channel.substring(capture);
+    final remove = body.indexOf(
+      'removeExtra(MainActivity.EXTRA_LAUNCH_ACTION)',
+    );
+    final whitelist = body.indexOf(
+      'action in LAUNCH_ACTIONS || USAGE_TARGET.matches(action)',
+    );
+    final park = body.indexOf('if (accepted) pendingAction = action');
     expect(remove, greaterThanOrEqualTo(0));
     expect(whitelist, greaterThan(remove));
     expect(park, greaterThan(whitelist));
   });
 
   test('consumeLaunchAction acknowledges readiness and drains once', () {
-    final consume = activity.indexOf('"consumeLaunchAction"');
+    final consume = channel.indexOf('"consumeLaunchAction"');
     expect(consume, greaterThanOrEqualTo(0));
-    final ready = activity.indexOf('shortcutDartReady = true', consume);
-    final drain = activity.indexOf('pendingLaunchAction = null', consume);
-    final reply = activity.indexOf('result.success(action)', consume);
+    final ready = channel.indexOf('dartReady = true', consume);
+    final drain = channel.indexOf('pendingAction = null', consume);
+    final reply = channel.indexOf('result.success(action)', consume);
     expect(ready, greaterThan(consume));
     expect(drain, greaterThan(ready));
     expect(reply, greaterThan(drain));
   });
 
   test('a live tap is pushed only once Dart is listening', () {
-    final newIntent = activity.indexOf('override fun onNewIntent');
+    expect(activity, contains('launches.configure(messenger, intent)'));
+    expect(activity, contains('launches.onNewIntent(intent)'));
+    expect(launches, contains('shortcuts.configure(messenger)'));
+    expect(launches, contains('shortcuts.onNewIntent(intent)'));
+    final newIntent = channel.indexOf('fun onNewIntent');
     expect(newIntent, greaterThanOrEqualTo(0));
-    final body = activity.substring(newIntent);
-    final captured = body.indexOf('if (captureLaunchAction(intent))');
-    final gate = body.indexOf(
-      'if (shortcutDartReady && channel != null && action != null)',
-      captured,
+    final captured = channel.indexOf(
+      'if (captureAction(intent)) dispatchAction()',
+      newIntent,
     );
-    final push = body.indexOf('invokeMethod("launched", action)', gate);
-    expect(captured, greaterThanOrEqualTo(0));
-    expect(gate, greaterThan(captured));
+    final dispatch = channel.indexOf('private fun dispatchAction()');
+    final gate = channel.indexOf(
+      'if (dartReady && currentChannel != null && action != null)',
+      dispatch,
+    );
+    final push = channel.indexOf('invokeMethod("launched", action)', gate);
+    expect(captured, greaterThan(newIntent));
+    expect(dispatch, greaterThanOrEqualTo(0));
+    expect(gate, greaterThan(dispatch));
     expect(push, greaterThan(gate));
   });
 
@@ -145,7 +166,14 @@ void main() {
     expect(cleanup, greaterThanOrEqualTo(0));
     expect(end, greaterThan(cleanup));
     final body = activity.substring(cleanup, end);
-    expect(body, contains('shortcutChannel = null'));
-    expect(body, contains('shortcutDartReady = false'));
+    expect(body, contains('launches.reset()'));
+    expect(launches, contains('shortcuts.reset()'));
+    final reset = channel.indexOf('fun reset()');
+    final resetEnd = channel.indexOf('fun onNewIntent', reset);
+    expect(reset, isNonNegative);
+    expect(resetEnd, greaterThan(reset));
+    final resetBody = channel.substring(reset, resetEnd);
+    expect(resetBody, contains('channel = null'));
+    expect(resetBody, contains('dartReady = false'));
   });
 }

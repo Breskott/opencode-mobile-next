@@ -1,0 +1,20 @@
+Pinned Flutter 3.47.1, machine_lock test slot, serial --concurrency=1.
+Command: flutter test --no-pub --concurrency=1 test/setup_apt_repair_test.dart test/setup_engine_test.dart test/phone_setup_progress_screen_test.dart test/move_to_opencode2_line_test.dart test/phone_host_runtime_test.dart test/opencode_history_copy_test.dart test/phone_server_card_test.dart test/this_phone_screen_test.dart test/kit_ratchet_test.dart
+
+Final focused run: 244 tests passed in 23 seconds. No skipped tests.
+
+Earlier run: 243 passed, concurrent-refresh regression failed while its screen was being edited. Final run above uses the finished unchanged source and passes that regression.
+
+Additional capture: flutter test --no-pub --concurrency=1 tool/capture/release_setup_test.dart
+2 captures/tests passed; PNGs are synthetic widget evidence.
+
+Analyzer: flutter analyze --no-pub
+No issues found (15.1 seconds), after resolving Widgetbook dependencies.
+
+Catalog: dart run tool/coverage_check.dart
+Blocked by four preexisting uncatalogued screens (see root-cause-setup.md).
+Filtered standard-check render: flutter test --no-pub --concurrency=1 test/standard_check_test.dart --plain-name "standard: servers/this-phone"
+3 use-cases passed; full catalog ratchet not claimed.
+
+Generated localization was temporary build output. The committed branch contains only ARB changes; maintainer owns final gen-l10n.
+Full repository suite not run.

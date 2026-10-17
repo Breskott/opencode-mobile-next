@@ -10,10 +10,12 @@ import '../app_iconography.dart';
 import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit_bidi.dart';
 import '../kit/kit_buttons.dart' show KitAction;
+import '../kit/kit_choice_list.dart';
 import '../kit/kit_code_block.dart';
 import '../kit/kit_copy.dart';
 import '../kit/kit_diff_view.dart';
 import '../kit/kit_field.dart';
+import '../kit/kit_layout.dart';
 import '../kit/kit_menu.dart';
 import '../kit/kit_notice.dart';
 import '../kit/kit_page_route.dart';
@@ -861,16 +863,31 @@ class _ReviewScopePicker extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          KitSegmented<ReviewDiffScope>(
-            key: const Key('review-scope-picker'),
-            semanticsLabel: l10n.reviewWorkspaceScopes,
-            segments: [
-              for (final scope in scopes)
-                KitSegment(value: scope, label: _scopeLabel(l10n, scope)),
-            ],
-            selected: selected,
-            onChanged: onSelected,
-          ),
+          // On a phone three radio-like rows took 40% of the screen above
+          // the diff, so the choice is one row that opens a picker; a wide
+          // window has room for the segmented control.
+          if (KitLayout.windowOf(context) == KitWindow.compact)
+            KitPickerRow<ReviewDiffScope>(
+              key: const Key('review-scope-picker'),
+              title: l10n.reviewWorkspaceScopes,
+              choices: [
+                for (final scope in scopes)
+                  KitChoice(value: scope, title: _scopeLabel(l10n, scope)),
+              ],
+              selected: selected,
+              onSelected: onSelected,
+            )
+          else
+            KitSegmented<ReviewDiffScope>(
+              key: const Key('review-scope-picker'),
+              semanticsLabel: l10n.reviewWorkspaceScopes,
+              segments: [
+                for (final scope in scopes)
+                  KitSegment(value: scope, label: _scopeLabel(l10n, scope)),
+              ],
+              selected: selected,
+              onChanged: onSelected,
+            ),
           if (explain) ...[
             SizedBox(height: tokens.space1),
             KitText(

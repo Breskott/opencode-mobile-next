@@ -333,6 +333,37 @@ final List<KitOverflowScene> kitOverflowDataScenes = [
       ),
     ),
   KitOverflowScene(
+    const ['KitPlanBlock'],
+    'default',
+    build: (_, c) => KitRowGroup(
+      children: [
+        KitPlanBlock(
+          title: c.t('Codex', 'كودكس'),
+          titleNote: c.t(
+            'Plus, the shared team plan',
+            'بلس، خطة الفريق المشتركة',
+          ),
+          summary: c.t('Back at Thursday 1:25 PM', 'تعود الخميس 1:25 م'),
+          onTap: _noop,
+          children: [
+            KitWindowRow(
+              inline: true,
+              title: c.t('5 hours', '5 ساعات'),
+              left: .12,
+              valueLabel: c.t('12% · Thursday 1:25 PM', '12٪ · الخميس 1:25 م'),
+            ),
+            KitWindowRow(
+              inline: true,
+              title: c.t('Week', 'الأسبوع'),
+              left: .14,
+              valueLabel: c.t('14% · Thursday', '14٪ · الخميس'),
+            ),
+          ],
+        ),
+      ],
+    ),
+  ),
+  KitOverflowScene(
     const ['KitGroupNote'],
     'default',
     build: (_, c) => KitGroupNote(

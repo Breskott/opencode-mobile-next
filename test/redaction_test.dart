@@ -255,6 +255,27 @@ Future<void> _settleTimers(WidgetTester tester) =>
 /// Verbatim copies of the person's own content (SEC-13): path -> count and
 /// why the copied text is theirs.
 const _verbatimOwnContent = <String, (int, String)>{
+  'lib/ui/screens/agents/agent_sign_in_terminal.dart': (
+    1,
+    'Copy code copies the one-time device code the agent printed for the '
+        'person to type on its sign-in page; masked it would not work (FA1)',
+  ),
+  'lib/ui/kit/kit_one_time_code.dart': (
+    1,
+    'Copy code copies the one-time sign-in code shown beside it for the '
+        'person to type on the provider\'s page; masked it would not work',
+  ),
+  'lib/ui/screens/library/integrations_autowait.dart': (
+    2,
+    'copies the one-time sign-in code of an automatic provider sign-in so '
+        'the person can type it on the provider\'s page; masked it would '
+        'not work',
+  ),
+  'lib/ui/screens/factsbook/not_saved_screen.dart': (
+    2,
+    'Copy and Export copy the person\'s own FactsBook notes as they are '
+        '(SEC-13)',
+  ),
   'lib/ui/kit/kit_viewer.dart': (
     1,
     'Copy contents copies the person\'s own file as it is (SEC-13)',
@@ -281,7 +302,7 @@ const _verbatimOwnContent = <String, (int, String)>{
     'the reply footer copies message text, which SEC-13 counts as the '
         'person\'s own content',
   ),
-  'lib/main.dart': (
+  'lib/main_parts/share_route.dart': (
     1,
     'owner coord-main: when sharing into the app fails, Copy text copies the '
         'words the person shared from another app, their own text (SEC-13)',
@@ -291,14 +312,26 @@ const _verbatimOwnContent = <String, (int, String)>{
     'an answer option in the conversation, message text the person picks '
         'to paste into their own prompt (SEC-13)',
   ),
-  'lib/ui/screens/chat_screen.dart': (
-    4,
-    'chat chain (P3.5): Copy on a message and the composer draft are the '
-        'person\'s own text; Copy transcript keeps only the person\'s '
-        'prompts verbatim and masks everything else (replies, tool output, '
-        'errors, the title) through KitRedact before the copy '
-        '(_transcriptMarkdown). The share link copy is redacted. '
-        'slice-close-chat: "Copy draft and leave" copies the unsaved draft, '
+  // The chat chain (P3.5), split across the chat library's part files
+  // (G31 split rule: the one entry of 4 became these four of 1).
+  'lib/ui/screens/chat/chat_message_actions.dart': (
+    1,
+    'chat chain (P3.5): Copy on a message is the person\'s own text',
+  ),
+  'lib/ui/screens/chat/chat_composer_region.dart': (
+    1,
+    'chat chain (P3.5): the composer draft is the person\'s own text',
+  ),
+  'lib/ui/screens/chat/chat_session_menu.dart': (
+    1,
+    'chat chain (P3.5): Copy transcript keeps only the person\'s prompts '
+        'verbatim and masks everything else (replies, tool output, errors, '
+        'the title) through KitRedact before the copy (_transcriptMarkdown). '
+        'The share link copy is redacted.',
+  ),
+  'lib/ui/screens/chat/chat_drafts.dart': (
+    1,
+    'slice-close-chat: "Copy draft and leave" copies the unsaved draft, '
         'the person\'s own words',
   ),
 };
@@ -308,12 +341,6 @@ const _verbatimOwnContent = <String, (int, String)>{
 /// copied. Each is for its owner to fix (drop `redact: false`, or split the
 /// person's text from the rest); the count only goes down.
 const _verbatimFindings = <String, (int, String)>{
-  'lib/ui/screens/workspace_screen.dart': (
-    1,
-    'owner: coordinator (workspace page): the share link is a '
-        'server-issued URL, not the person\'s own text',
-  ),
-
   'lib/ui/screens/phone_setup/phone_setup_termux_screen.dart': (
     1,
     'owner: phone setup agent: copies the app-authored Termux setup '

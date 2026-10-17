@@ -5,6 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
+import 'package:opencode_mobile/api2/client.dart';
+import 'package:opencode_mobile/api2/gateway.dart';
+import 'package:opencode_mobile/api2/gateway_operations.dart';
+import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/automatic_activity.dart';
@@ -20,6 +24,24 @@ class _ConnectingApi extends OpenCodeApi {
   final healthGate = Completer<Health>();
   @override
   Future<Health> health() => healthGate.future;
+}
+
+class _ConnectingV2Api extends Api2Gateway {
+  _ConnectingV2Api()
+    : super(
+        client: Api2Client.connect(
+          baseUrl: 'http://127.0.0.1:4097',
+          password: 'test-only',
+        ),
+      );
+  final healthGate = Completer<Health>();
+  @override
+  Future<Health> health() => healthGate.future;
+}
+
+class _NoTeamApi extends _ConnectingApi {
+  @override
+  ServerCapabilities get capabilities => const ServerCapabilities();
 }
 
 void main() {
@@ -81,7 +103,11 @@ void main() {
     );
   });
 
-  ConnectionController connection(NativeBridge bridge, {_ConnectingApi? api}) {
+  ConnectionController connection(
+    NativeBridge bridge, {
+    _ConnectingApi? api,
+    _ConnectingV2Api? v2Api,
+  }) {
     final controller = ConnectionController(
       store,
       phoneEngineBridge: bridge,
@@ -100,6 +126,12 @@ void main() {
                 ),
               ),
       apiFactory: api == null ? null : (_) => api,
+      v2GatewayFactory: v2Api == null
+          ? null
+          : (_) => (
+              gateway: v2Api,
+              operations: Api2OperationsGateway(client: v2Api.client),
+            ),
       localWakeLockEnsurer: () async {},
       draftAttachmentVault: StashMemoryVault(),
       stashAttachmentVault: StashMemoryVault(),
@@ -207,6 +239,126 @@ void main() {
       await controller.disconnect();
       api.healthGate.complete(Health(healthy: true, version: '1.18.32'));
       await connect;
+    },
+  );
+
+  test(
+    'selected profile capabilities use only its matching live gateway',
+    () async {
+      final api = _NoTeamApi();
+      final controller = connection(NativeBridge(), api: api);
+      final selected = store.profiles.single;
+      final connecting = controller.connect(selected, redetectOnFailure: false);
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        controller.serverCapabilitiesFor(selected).phoneTeamExecution,
+        isFalse,
+      );
+      expect(
+        controller
+            .serverCapabilitiesFor(
+              ServerProfile(
+                id: 'other',
+                name: 'Other',
+                baseUrl: 'http://127.0.0.1:4097',
+                flavor: ServerFlavor.v2,
+              ),
+            )
+            .phoneTeamExecution,
+        isTrue,
+      );
+      expect(
+        controller
+            .serverCapabilitiesFor(
+              ServerProfile(
+                id: 'unknown',
+                name: 'Unknown',
+                baseUrl: 'http://127.0.0.1:4097',
+                flavor: ServerFlavor.unknown,
+              ),
+            )
+            .phoneTeamExecution,
+        isFalse,
+      );
+      await controller.disconnect();
+      api.healthGate.complete(Health(healthy: true));
+      await connecting;
+    },
+  );
+
+  test(
+    'OC2 phone installs admission fence and rejects retired dispatch',
+    () async {
+      final profile = ServerProfile(
+        id: 'phone',
+        name: 'Phone OC2',
+        baseUrl: 'http://127.0.0.1:4097',
+        flavor: ServerFlavor.v2,
+      );
+      await store.upsert(profile);
+      final api = _ConnectingV2Api();
+      final controller = connection(NativeBridge(), v2Api: api);
+      final connecting = controller.connect(profile, redetectOnFailure: false);
+      await Future<void>.delayed(Duration.zero);
+      expect(api.beforeSessionDispatch, isNotNull);
+      expect(api.sessionDispatchSettled, isNotNull);
+      await controller.disconnect();
+      await expectLater(
+        api.promptAsync('ses_person', text: 'Help'),
+        throwsA(
+          isA<ApiException>().having(
+            (error) => error.message,
+            'message',
+            'The chat connection changed. Reconnect before sending.',
+          ),
+        ),
+      );
+      api.healthGate.complete(Health(healthy: true, version: '2.0.29'));
+      await connecting;
+    },
+  );
+
+  test(
+    'OC2 admission refuses dispatch if the previous phone engine cannot stop',
+    () async {
+      final profile = ServerProfile(
+        id: 'phone',
+        name: 'Phone OC2',
+        baseUrl: 'http://127.0.0.1:4097',
+        flavor: ServerFlavor.v2,
+      );
+      await store.upsert(profile);
+      await store.upsert(
+        ServerProfile(
+          id: 'alias',
+          name: 'Alias',
+          baseUrl: 'http://127.0.0.1:4097',
+          teamEngineAuth: 'private-engine-token',
+          orchestration: const OrchestrationConfig(
+            provider: OrchestrationProvider.phoneEngine,
+            url: 'http://127.0.0.1:42761',
+          ),
+        ),
+      );
+      final bridge = NativeBridge()..failStop = true;
+      final api = _ConnectingV2Api();
+      final controller = connection(bridge, v2Api: api);
+      final connecting = controller.connect(profile, redetectOnFailure: false);
+      await Future<void>.delayed(Duration.zero);
+      await expectLater(
+        api.shell('ses_person', command: 'pwd', agent: 'build'),
+        throwsA(
+          isA<ApiException>().having(
+            (error) => error.message,
+            'message',
+            'AI Team could not pause safely. Stop AI Team before sending.',
+          ),
+        ),
+      );
+      expect(bridge.calls, ['stop:alias']);
+      await controller.disconnect();
+      api.healthGate.complete(Health(healthy: true, version: '2.0.29'));
+      await connecting;
     },
   );
 

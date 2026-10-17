@@ -54,6 +54,8 @@ class _Phone extends ChangeNotifier implements PhoneTeamSetupPorts {
   @override
   Future<void> closeTerminals() async {}
   @override
+  Future<void> stopEngine() async {}
+  @override
   Future<PhoneEngineHealth> startEngine() =>
       hangStart ?? Future.value(_health());
   @override

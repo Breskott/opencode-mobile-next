@@ -330,7 +330,7 @@ void main() {
       expect(pins['node_sha256_arm64'], isNot(pins['node_sha256_x64']));
       expect(pins['node_base_url'], 'https://nodejs.org/dist');
       // Reviewed patch target; on-device verification is tracked separately.
-      expect(pins['paseo_version'], '0.9.2');
+      expect(pins['paseo_version'], '0.11.2');
       final file = TermuxBridge.localAgentsPinsFile();
       for (final entry in pins.entries) {
         expect(file, contains('${entry.key}=${entry.value}\n'));

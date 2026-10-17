@@ -41,8 +41,8 @@ class _FixtureDelegate extends LocalizationsDelegate<AppLocalizations> {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final captureDirectory = Platform.environment['OC_VOICE_MODEL_CAPTURE_DIR'];
-  setUp(() => ProviderLogo.imageProviderOverride = (_) => null);
-  tearDown(() => ProviderLogo.imageProviderOverride = null);
+  setUp(() => ProviderLogo.logoLoaderOverride = (_) => null);
+  tearDown(() => ProviderLogo.logoLoaderOverride = null);
 
   test(
     'manifest presentation and categorized failures translate without changing data',

@@ -2,17 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/demo/demo_store.dart';
-import 'package:opencode_mobile/domain/provider_quota.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/state/provider_quota_overview.dart';
 import 'package:opencode_mobile/state/usage_overview.dart';
-import 'package:opencode_mobile/ui/screens/provider_quota_screen.dart';
 import 'package:opencode_mobile/ui/screens/usage_screen.dart';
 
-import '../../test/provider_quota_test.dart' show providerQuotaFixture;
 import '../../test/usage_statistics_test.dart' show stats;
 import 'fixtures.dart'
     show capturePng, captureTheme, loadCaptureFonts, writePng;
@@ -54,16 +50,6 @@ class _Connection extends ConnectionController {
       repository;
 }
 
-class _Quota implements ProviderQuotaGateway {
-  @override
-  Future<ProviderQuotaSnapshot> readSnapshot() async =>
-      ProviderQuotaSnapshot.fromJson(
-        providerQuotaFixture(fetchedAtMs: _now.millisecondsSinceEpoch),
-      );
-  @override
-  void close() {}
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadCaptureFonts);
@@ -77,11 +63,6 @@ void main() {
         connection,
         clock: () => _now,
         timezoneLoader: () async => 'UTC',
-      );
-      final quota = ProviderQuotaOverview(
-        connection,
-        clock: () => _now,
-        gatewayFactory: (_) => _Quota(),
       );
       final boundary = GlobalKey();
       final l10n = lookupAppLocalizations(const Locale('en'));
@@ -123,26 +104,8 @@ void main() {
           'docs/qa/provider-quota/consumption-budget-${light ? 'light' : 'dark'}.png',
           await capturePng(tester, boundary, pixelRatio: 1),
         );
-        await tester.pumpWidget(
-          app(ProviderQuotaScreen(controller: connection, overview: quota)),
-        );
-        await tester.pumpAndSettle();
-        await quota.allowAndRefresh();
-        await tester.pumpAndSettle();
-        final threshold = find.byKey(const ValueKey('quota-threshold-primary'));
-        await tester.ensureVisible(threshold);
-        await tester.tap(threshold);
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(l10n.quotaBudgetPercent('90')).last);
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        await writePng(
-          'docs/qa/provider-quota/personal-threshold-${light ? 'light' : 'dark'}.png',
-          await capturePng(tester, boundary, pixelRatio: 1),
-        );
       } finally {
         await tester.pumpWidget(const SizedBox.shrink());
-        quota.dispose();
         usage.dispose();
         connection.dispose();
         await tester.pump();

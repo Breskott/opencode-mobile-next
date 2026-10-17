@@ -14,8 +14,8 @@ import 'fixtures.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadCaptureFonts);
-  setUpAll(() => ProviderLogo.imageProviderOverride = (_) => null);
-  tearDownAll(() => ProviderLogo.imageProviderOverride = null);
+  setUpAll(() => ProviderLogo.logoLoaderOverride = (_) => null);
+  tearDownAll(() => ProviderLogo.logoLoaderOverride = null);
   for (final light in [false, true]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets('simple model $light $scale', (tester) async {

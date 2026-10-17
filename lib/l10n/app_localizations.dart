@@ -7,6 +7,11 @@ import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_ar.dart';
 import 'app_localizations_en.dart';
+import 'app_localizations_es.dart';
+import 'app_localizations_ja.dart';
+import 'app_localizations_pt.dart';
+import 'app_localizations_ru.dart';
+import 'app_localizations_zh.dart';
 
 // ignore_for_file: type=lint
 
@@ -96,6 +101,11 @@ abstract class AppLocalizations {
   static const List<Locale> supportedLocales = <Locale>[
     Locale('ar'),
     Locale('en'),
+    Locale('es'),
+    Locale('ja'),
+    Locale('pt'),
+    Locale('ru'),
+    Locale('zh'),
   ];
 
   /// No description provided for @servicesTitle.
@@ -1739,8 +1749,8 @@ abstract class AppLocalizations {
   /// No description provided for @importParent.
   ///
   /// In en, this message translates to:
-  /// **'Parent conversation {id} must already exist on this server. Import the parent first.'**
-  String importParent(String id);
+  /// **'This conversation was started by another one, which must already exist on this server. Import that one first.'**
+  String get importParent;
 
   /// No description provided for @importArchived.
   ///
@@ -1967,7 +1977,7 @@ abstract class AppLocalizations {
   /// No description provided for @webSourcesDisclosure.
   ///
   /// In en, this message translates to:
-  /// **'Web search is not available through this server’s app gateway. Paste a public URL and optionally an excerpt you want to include. No page is fetched. Nothing is sent to the model here.'**
+  /// **'This server can\'t search the web. Paste a public link, and an excerpt if you like. The page is not opened, and nothing is sent until you send your message.'**
   String get webSourcesDisclosure;
 
   /// No description provided for @webSourcesScopeChanged.
@@ -3455,7 +3465,7 @@ abstract class AppLocalizations {
   /// Explains the disabled Claude subscription collection path without suggesting an OAuth workaround
   ///
   /// In en, this message translates to:
-  /// **'Claude subscription usage is unavailable here pending a supported, permitted integration. Current OpenCode does not include Claude Pro/Max sign-in. This app will not read or reuse that subscription login.'**
+  /// **'Claude plan usage comes from Claude Code, not OpenCode. To show it, open Usage widget settings below and turn on the server or phone that runs Claude Code.'**
   String get quotaClaudeUnavailable;
 
   /// Truthful initial iOS remote-control scope
@@ -4087,6 +4097,72 @@ abstract class AppLocalizations {
   /// **'Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.'**
   String get quotaMonitorRuntime;
 
+  /// Settings row and page title for choosing what the home-screen Usage widget shows
+  ///
+  /// In en, this message translates to:
+  /// **'Usage widget'**
+  String get usageWidgetTitle;
+
+  /// One line at the top of the Usage widget settings page
+  ///
+  /// In en, this message translates to:
+  /// **'Shows what’s left on your plans on the home-screen Usage widget. Updates while the app runs.'**
+  String get usageWidgetIntro;
+
+  /// Usage widget source: the agents running on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get usageWidgetPhoneTitle;
+
+  /// Supporting line of the This phone usage switch
+  ///
+  /// In en, this message translates to:
+  /// **'Claude and other agents on this phone, via Paseo. Read only while they are running.'**
+  String get usageWidgetPhoneSupporting;
+
+  /// Row that opens the Remaining usage page from the Usage widget settings
+  ///
+  /// In en, this message translates to:
+  /// **'Open Remaining usage'**
+  String get usageWidgetOpenRemaining;
+
+  /// One line saying which providers come from OpenCode quota monitoring
+  ///
+  /// In en, this message translates to:
+  /// **'Codex, MiniMax and GLM come from Remaining usage. Set them up there, then turn on their alerts.'**
+  String get usageWidgetCollectorNote;
+
+  /// Row on the Remaining usage page that opens the Usage widget settings
+  ///
+  /// In en, this message translates to:
+  /// **'Usage widget settings'**
+  String get usageWidgetSettingsRow;
+
+  /// Extra search words for the Usage widget settings row
+  ///
+  /// In en, this message translates to:
+  /// **'usage widget home screen claude codex plan limit remaining paseo'**
+  String get usageWidgetSearchAliases;
+
+  /// Headline above the per-server switches that put a Paseo server's plan usage on the Usage home-screen widget
+  ///
+  /// In en, this message translates to:
+  /// **'Show on the widget'**
+  String get paseoUsageTitle;
+
+  /// Supporting line of a Paseo server's usage switch
+  ///
+  /// In en, this message translates to:
+  /// **'Show what is left on this server\'s plans, such as Claude, on the Usage widget. Checked while the app runs.'**
+  String get paseoUsageSupporting;
+
+  /// Shown in place when a Paseo usage switch could not be saved
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save that change. Try again.'**
+  String get paseoUsageSaveFailed;
+
   /// No description provided for @quotaMonitorDisabled.
   ///
   /// In en, this message translates to:
@@ -4489,6 +4565,12 @@ abstract class AppLocalizations {
   /// **'Choose a server to see what needs your attention.'**
   String get launchUiActivityNoServer;
 
+  /// Snackbar shown on the servers screen when the Usage home-screen widget is tapped with no saved server
+  ///
+  /// In en, this message translates to:
+  /// **'Save a server to see what is left on your plans.'**
+  String get launchUiUsageNoServer;
+
   /// Confirmation dialog title before resending an unconfirmed queued draft
   ///
   /// In en, this message translates to:
@@ -4519,13 +4601,13 @@ abstract class AppLocalizations {
   /// **'Its earlier send was never confirmed; it may already be in the conversation.'**
   String get queuedDiscardUnconfirmedMessage;
 
-  /// Existing OpenCode server generation
+  /// Older OpenCode server, still selectable
   ///
   /// In en, this message translates to:
-  /// **'OpenCode 1'**
+  /// **'Older OpenCode'**
   String get setupRuntimeOne;
 
-  /// Experimental new OpenCode server generation
+  /// OpenCode server used for new installs
   ///
   /// In en, this message translates to:
   /// **'OpenCode 2'**
@@ -5803,6 +5885,36 @@ abstract class AppLocalizations {
   /// **'Stops this phone’s server and running tasks. Conversations, provider settings and credentials stay separate; project files and configuration are shared. You can switch back.'**
   String get setupSwitchConfirmDetail;
 
+  /// No description provided for @setupSwitchToTwoDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops this phone’s server and running tasks, then starts OpenCode 2. Your conversations come with you and AI Team keeps working. You can switch back.'**
+  String get setupSwitchToTwoDetail;
+
+  /// No description provided for @moveToOpenCode2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to OpenCode 2'**
+  String get moveToOpenCode2Title;
+
+  /// No description provided for @moveToOpenCode2Detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your conversations come with you. AI Team keeps working.'**
+  String get moveToOpenCode2Detail;
+
+  /// No description provided for @moveToOpenCode2NotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get moveToOpenCode2NotNow;
+
+  /// No description provided for @moveToOpenCode2NotNowSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now: stay on the older OpenCode'**
+  String get moveToOpenCode2NotNowSemantics;
+
   /// This phone › Switch runtime sheet: the confirm button, naming the target runtime.
   ///
   /// In en, this message translates to:
@@ -6913,22 +7025,16 @@ abstract class AppLocalizations {
   /// **'Start a conversation in the active project'**
   String get e7LocaleUiNewSessionHint;
 
-  /// Locale selection or app shell: Workspace
-  ///
-  /// In en, this message translates to:
-  /// **'Work'**
-  String get e7LocaleUiWorkspace;
-
   /// Locale selection or app shell: WorkspaceHint
   ///
   /// In en, this message translates to:
-  /// **'Recent conversations and the active project'**
+  /// **'Every conversation, across projects'**
   String get e7LocaleUiWorkspaceHint;
 
   /// Locale selection or app shell: Files
   ///
   /// In en, this message translates to:
-  /// **'Project'**
+  /// **'Files'**
   String get e7LocaleUiFiles;
 
   /// Locale selection or app shell: FilesHint
@@ -6936,18 +7042,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Files, changes, terminal and other project tools'**
   String get e7LocaleUiFilesHint;
-
-  /// Locale selection or app shell: Activity
-  ///
-  /// In en, this message translates to:
-  /// **'Inbox'**
-  String get e7LocaleUiActivity;
-
-  /// Locale selection or app shell: ActivityHint
-  ///
-  /// In en, this message translates to:
-  /// **'Permissions, questions, and forms'**
-  String get e7LocaleUiActivityHint;
 
   /// Locale selection or app shell: MoreHint
   ///
@@ -7000,7 +7094,7 @@ abstract class AppLocalizations {
   /// App shell command menu or routing: Destinations
   ///
   /// In en, this message translates to:
-  /// **'Work, Inbox, Project, Settings'**
+  /// **'Switch tab'**
   String get e7LocaleUiDestinations;
 
   /// App shell command menu or routing: Terminal
@@ -7841,7 +7935,7 @@ abstract class AppLocalizations {
   /// Empty project catalog guidance
   ///
   /// In en, this message translates to:
-  /// **'Projects opened by this server appear here; choose one for conversations, files, terminals, and coding tools. Create a new folder or open one by its path above, or open a project on this OpenCode server and refresh.'**
+  /// **'Projects you open or create appear here.'**
   String get e7ProjectProjectsEmptyDetail;
 
   /// Cached project catalog refresh error heading
@@ -8612,6 +8706,12 @@ abstract class AppLocalizations {
   /// **'OpenCode needs input'**
   String get e7WorkspaceNeedsInput;
 
+  /// Question sheet title: the agent that asks (Claude Code, Pi, OpenCode) needs the person's answer.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} needs input'**
+  String activityAgentNeedsInput(String agent);
+
   /// Workspace and activity: Send answers
   ///
   /// In en, this message translates to:
@@ -8983,6 +9083,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose the active OpenCode agent'**
   String get chatUiChooseTheActiveOpenCodeAgent;
+
+  /// Command list: the Agent entry in a conversation with an agent on this phone, whose choices are its modes
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how {agent} works: its modes'**
+  String chatUiChooseAgentMode(String agent);
 
   /// Chat journey: Choose the current model variant or reasoning effort
   ///
@@ -9536,6 +9642,18 @@ abstract class AppLocalizations {
   /// **'OpenCode is reconnecting.'**
   String get chatUiOpenCodeIsReconnecting;
 
+  /// A conversation with an agent on this phone: its connection is coming back
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} is reconnecting.'**
+  String chatUiAgentIsReconnecting(String agent);
+
+  /// A conversation with an agent on this phone: its connection is coming back; try the act again
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} is reconnecting. Try again shortly.'**
+  String chatUiAgentIsReconnectingTryAgainShortly(String agent);
+
   /// Chat journey: OpenCode is reconnecting. Try again shortly.
   ///
   /// In en, this message translates to:
@@ -9823,12 +9941,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select a model before compacting this conversation.'**
   String get chatUiSelectAModelBeforeCompactingThisSession;
-
-  /// Chat journey: Send now and steer instead
-  ///
-  /// In en, this message translates to:
-  /// **'Send now and steer instead'**
-  String get chatUiSendNowAndSteerInstead;
 
   /// Chat journey: Server commands
   ///
@@ -10136,11 +10248,17 @@ abstract class AppLocalizations {
   /// **'Voice input is unavailable.'**
   String get chatUiVoiceInputIsUnavailable;
 
-  /// Chat journey: Wait for this run instead
+  /// Chat journey: tool row title when the agent looks up which tools it can use (Claude Code ToolSearch)
   ///
   /// In en, this message translates to:
-  /// **'Wait for this run instead'**
-  String get chatUiWaitForThisRunInstead;
+  /// **'Load tools'**
+  String get chatUiLoadTools;
+
+  /// Chat journey: tool row title for a tool an MCP server adds: the tool's name, then the server's name
+  ///
+  /// In en, this message translates to:
+  /// **'{tool} · {server}'**
+  String chatUiToolFrom(String tool, String server);
 
   /// Chat journey: Web search
   ///
@@ -10607,7 +10725,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: OpenCode is reconnecting. Try again shortly.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode is reconnecting. Try again shortly.'**
+  /// **'The server is reconnecting. Try again shortly.'**
   String get e7LibraryOpenCodeIsReconnectingTryAgainShortly;
 
   /// Library and project tools UI: What is MCP?
@@ -10781,7 +10899,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: OpenCode is reconnecting. Try again.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode is reconnecting. Try again.'**
+  /// **'The server is reconnecting. Try again.'**
   String get e7LibraryOpenCodeIsReconnectingTryAgain;
 
   /// Short title for a saved permission revocation confirmation.
@@ -10907,7 +11025,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: No project folder is open. Choose one from Workspace.
   ///
   /// In en, this message translates to:
-  /// **'No project folder is open. Choose one from Work.'**
+  /// **'No project is open. Choose one at the top of Files.'**
   String get e7LibraryNoProjectFolderIsOpenChooseOne;
 
   /// Library and project tools UI: Switch project
@@ -11051,7 +11169,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: OpenCode could not prepare this worktree.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode could not prepare this worktree.'**
+  /// **'This worktree could not be prepared.'**
   String get e7LibraryOpenCodeCouldNotPrepareThisWorktree;
 
   /// Library and project tools UI: {detail1} was created. Its setup status is not yet confirmed.
@@ -11063,13 +11181,13 @@ abstract class AppLocalizations {
   /// Library and project tools UI: Wait for OpenCode to finish preparing this worktree.
   ///
   /// In en, this message translates to:
-  /// **'Wait for OpenCode to finish preparing this worktree.'**
+  /// **'Wait for this worktree to finish preparing.'**
   String get e7LibraryWaitForOpenCodeToFinishPreparingThis;
 
   /// Library and project tools UI: OpenCode did not switch locations.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode did not switch projects.'**
+  /// **'The server did not switch projects.'**
   String get e7LibraryOpenCodeDidNotSwitchLocations;
 
   /// Library and project tools UI: Could not verify {detail1} before this destructive action: {detail2}
@@ -11836,7 +11954,7 @@ abstract class AppLocalizations {
   /// Setup journey: https hint.
   ///
   /// In en, this message translates to:
-  /// **'https:// for other computers; http:// only on this device.'**
+  /// **'https:// for other computers; http:// only on this device or a private network.'**
   String get e7SetupHttpsHint;
 
   /// Setup journey: observed version save failed.
@@ -12904,7 +13022,7 @@ abstract class AppLocalizations {
   /// Setup journey: include scheme.
   ///
   /// In en, this message translates to:
-  /// **'Include https://. Use http:// only for localhost, 127.0.0.1, or [::1].'**
+  /// **'Include https://. Plain http:// works only on this device or a private network address.'**
   String get e7SetupIncludeScheme;
 
   /// Setup journey: complete url.
@@ -12952,7 +13070,7 @@ abstract class AppLocalizations {
   /// Setup journey: local http.
   ///
   /// In en, this message translates to:
-  /// **'An http:// address only works for a server on this phone. For another computer, pair with a code, use its https:// address, or connect with Tailscale.'**
+  /// **'An http:// address works only for this phone or a private network address such as 192.168.x.x. For anything else, pair with a code, use its https:// address, or connect with Tailscale.'**
   String get e7SetupLocalHttp;
 
   /// Setup journey: refused.
@@ -14478,7 +14596,7 @@ abstract class AppLocalizations {
   /// **'Read-only'**
   String get teamUiAccessReadOnly;
 
-  /// Hint inside the host address field of the manual add form
+  /// Field example: Hint inside the host address field of the manual add form
   ///
   /// In en, this message translates to:
   /// **'http://100.x.x.x:8373'**
@@ -17703,7 +17821,7 @@ abstract class AppLocalizations {
   /// Search aliases for the Usage rows; preserve English terms.
   ///
   /// In en, this message translates to:
-  /// **'usage cost tokens budget quota limit spent remaining threshold quota monitoring provider'**
+  /// **'usage cost tokens budget quota limit spent remaining threshold quota monitoring provider plans subscriptions spending alerts'**
   String get settingsHubSearchUsageAliases;
 
   /// Search aliases for the Privacy row; preserve English terms.
@@ -17781,13 +17899,13 @@ abstract class AppLocalizations {
   /// Notifications screen toggle: notify when a monitored provider quota passes its threshold.
   ///
   /// In en, this message translates to:
-  /// **'Quota thresholds'**
+  /// **'Usage alerts'**
   String get notifyQuotaAlerts;
 
   /// Subtitle of the Quota thresholds toggle.
   ///
   /// In en, this message translates to:
-  /// **'When a monitored provider passes the threshold you set in Usage.'**
+  /// **'Which plans to watch, and at what level. Set in Usage › Alerts.'**
   String get notifyQuotaAlertsDetail;
 
   /// Notifications screen: title of the notice shown when Android is blocking this app's notifications (permission denied or muted).
@@ -17856,23 +17974,11 @@ abstract class AppLocalizations {
   /// **'Remaining'**
   String get usageSectionRemaining;
 
-  /// Bottom navigation label and app bar title of the first tab: conversations in the current project.
-  ///
-  /// In en, this message translates to:
-  /// **'Work'**
-  String get shellTabWork;
-
   /// Bottom navigation label and title of the second tab: everything waiting on the person, then running and finished work.
   ///
   /// In en, this message translates to:
   /// **'Inbox'**
   String get shellTabInbox;
-
-  /// Bottom navigation label and app bar title of the third tab: tools scoped to the current project.
-  ///
-  /// In en, this message translates to:
-  /// **'Project'**
-  String get shellTabProject;
 
   /// Server switcher row that opens the Servers screen.
   ///
@@ -17897,18 +18003,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'In {parent}'**
   String discoverSearchIn(String parent);
-
-  /// No description provided for @discoverWorkAliases.
-  ///
-  /// In en, this message translates to:
-  /// **'work home conversations sessions chats recent pinned new conversation'**
-  String get discoverWorkAliases;
-
-  /// No description provided for @discoverInboxAliases.
-  ///
-  /// In en, this message translates to:
-  /// **'inbox activity needs you approvals permissions questions forms waiting running finished'**
-  String get discoverInboxAliases;
 
   /// No description provided for @discoverProjectAliases.
   ///
@@ -18021,7 +18115,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverRemainingAliases.
   ///
   /// In en, this message translates to:
-  /// **'remaining quota limit provider plan left'**
+  /// **'plans subscriptions remaining quota limit provider plan left reset codex claude glm minimax'**
   String get discoverRemainingAliases;
 
   /// No description provided for @discoverBudgetAliases.
@@ -18033,7 +18127,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverQuotaMonitorAliases.
   ///
   /// In en, this message translates to:
-  /// **'quota monitoring threshold alert warn low'**
+  /// **'usage alerts quota monitoring threshold alert warn low quiet hours wi-fi'**
   String get discoverQuotaMonitorAliases;
 
   /// No description provided for @discoverCommandsAliases.
@@ -19212,7 +19306,7 @@ abstract class AppLocalizations {
   /// **'Context pending'**
   String get chatStripContextPending;
 
-  /// Short chip label above the composer while permission requests are approved automatically; may be followed by a count
+  /// Short chip label above the composer while permission requests are approved automatically
   ///
   /// In en, this message translates to:
   /// **'Auto-approve'**
@@ -19223,6 +19317,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Auto-approve paused'**
   String get chatStripAutoApprovePaused;
+
+  /// Short chip label above the composer: every permission request waits for the person
+  ///
+  /// In en, this message translates to:
+  /// **'Asks first'**
+  String get chatStripApprovalAsk;
+
+  /// Name of the menu that switches how this conversation answers permission requests
+  ///
+  /// In en, this message translates to:
+  /// **'Approval mode'**
+  String get approvalModeMenuLabel;
+
+  /// Menu choice: every permission request waits for the person
+  ///
+  /// In en, this message translates to:
+  /// **'Ask first'**
+  String get approvalModeAskTitle;
+
+  /// Menu choice: this phone answers each request in this conversation with Allow once
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-approve this conversation'**
+  String get approvalModeAutoTitle;
+
+  /// One-line explanation of the Auto-approve menu choice
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed once, as they arrive.'**
+  String get approvalModeAutoDetail;
+
+  /// Menu choice: every conversation on this server is approved automatically
+  ///
+  /// In en, this message translates to:
+  /// **'Approve everything'**
+  String get approvalModeEverythingTitle;
+
+  /// One-line explanation of the Approve everything menu choice
+  ///
+  /// In en, this message translates to:
+  /// **'Every conversation on this server.'**
+  String get approvalModeEverythingDetail;
+
+  /// Approval menu: approve everything, for an agent on this phone (Claude Code)
+  ///
+  /// In en, this message translates to:
+  /// **'Every {agent} conversation on this phone.'**
+  String approvalModeEverythingAgentDetail(String agent);
+
+  /// Menu item that opens the full approvals sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Approval settings…'**
+  String get approvalModeSettings;
+
+  /// Title of the confirmation before approving everything on the server
+  ///
+  /// In en, this message translates to:
+  /// **'Approve everything?'**
+  String get approvalModeConfirmEverythingTitle;
+
+  /// Confirm button naming what it turns on
+  ///
+  /// In en, this message translates to:
+  /// **'Approve everything'**
+  String get approvalModeConfirmEverythingAction;
+
+  /// Short note after switching this conversation to ask first
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation asks first.'**
+  String get approvalModeNowAsk;
+
+  /// Short note after switching this conversation to automatic approval
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation approves automatically.'**
+  String get approvalModeNowAuto;
+
+  /// Short note after turning on approve everything
+  ///
+  /// In en, this message translates to:
+  /// **'Approving everything on this server.'**
+  String get approvalModeNowEverything;
+
+  /// Spoken hint on the approval chip
+  ///
+  /// In en, this message translates to:
+  /// **'Change approval mode'**
+  String get approvalModeChange;
 
   /// Short chip label above the composer: send the running work to the background
   ///
@@ -19523,6 +19707,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You can leave the app. We\'ll notify you when it\'s ready.'**
   String get phoneSetupProgressLeaveHint;
+
+  /// Under the title while a first phone setup runs: where this screen sits in the journey (install, name a project, chat) and that leaving is fine
+  ///
+  /// In en, this message translates to:
+  /// **'Step 1 of 3: install. Then name a project and start a conversation. You can leave the app. We\'ll notify you when it\'s ready.'**
+  String get phoneSetupProgressFirstSetupNote;
 
   /// Title of the confirmation before cancelling phone setup
   ///
@@ -19839,7 +20029,7 @@ abstract class AppLocalizations {
   /// Name of the OpenCode server that runs inside the app, wherever servers are listed
   ///
   /// In en, this message translates to:
-  /// **'This phone'**
+  /// **'In-app Ubuntu'**
   String get phoneServerCardTitle;
 
   /// Status of the server on this phone
@@ -20121,7 +20311,7 @@ abstract class AppLocalizations {
   /// Shown in place of the Open button while the browser shows the projects folder itself
   ///
   /// In en, this message translates to:
-  /// **'Your projects live here. Tap one to open it, or make a new one below.'**
+  /// **'Your projects live here. Tap one to open it.'**
   String get folderBrowserProjectsHere;
 
   /// Shown in place of the Open button while the browser shows the home folder or /
@@ -20139,7 +20329,7 @@ abstract class AppLocalizations {
   /// Empty state body of the projects folder
   ///
   /// In en, this message translates to:
-  /// **'Name one below to make it here.'**
+  /// **'Start one to make it here.'**
   String get folderBrowserNoProjectsBody;
 
   /// Empty state title of a folder with no folders inside
@@ -20151,7 +20341,7 @@ abstract class AppLocalizations {
   /// Empty state body of a folder with no folders inside
   ///
   /// In en, this message translates to:
-  /// **'Make a new project in it below, or go up one folder.'**
+  /// **'Open it as a project, or go up one folder.'**
   String get folderBrowserEmptyBody;
 
   /// Error state title when a folder could not be listed
@@ -20214,17 +20404,29 @@ abstract class AppLocalizations {
   /// **'Run a coding agent right here'**
   String get phoneSetupStartHeadline;
 
-  /// One-line promise under the headline; time and size are computed from the components that Set up installs
+  /// One-line promise under the headline; the size is computed from the components that Set up installs. The time is on the step line below it.
   ///
   /// In en, this message translates to:
-  /// **'No computer and no other apps. {time} and ~{size} the first time.'**
-  String phoneSetupStartPromise(String time, String size);
+  /// **'No computer and no other apps. ~{size} to download the first time.'**
+  String phoneSetupStartPromise(String size);
 
   /// The promise when no download size is known
   ///
   /// In en, this message translates to:
-  /// **'No computer and no other apps. {time} the first time.'**
-  String phoneSetupStartPromiseNoSize(String time);
+  /// **'No computer and no other apps.'**
+  String get phoneSetupStartPromiseNoSize;
+
+  /// The whole first-setup journey in one line on the phone setup start screen, with the setup time computed from the components Set up installs (phoneSetupStartStepsTime)
+  ///
+  /// In en, this message translates to:
+  /// **'Install, name a project, start a conversation · {time}'**
+  String phoneSetupStartSteps(String time);
+
+  /// Estimated setup time at the end of the step line, lower case because it follows a middle dot
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{about 1 min} other{about {minutes} min}}'**
+  String phoneSetupStartStepsTime(int minutes);
 
   /// Estimated setup time, capitalised because it starts a sentence
   ///
@@ -20922,6 +21124,12 @@ abstract class AppLocalizations {
   /// **'Loading'**
   String get workLoadingLabel;
 
+  /// Connection banner while a conversation with a phone agent (Claude Code) can't reach its helper.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} on this phone isn\'t answering'**
+  String agentNotAnsweringPhone(String agent);
+
   /// Status line / connecting card title when the phone's own server does not answer
   ///
   /// In en, this message translates to:
@@ -21024,7 +21232,7 @@ abstract class AppLocalizations {
   /// **'On this phone'**
   String get teamUiHostPhrasePhone;
 
-  /// AI Team host phrase when the team runs on a computer with a name, e.g. "On pop-os"
+  /// AI Team host phrase when the team runs on a computer with a name, e.g. "On dev-pc"
   ///
   /// In en, this message translates to:
   /// **'On {name}'**
@@ -21291,7 +21499,7 @@ abstract class AppLocalizations {
   /// Terminal source: a shell in this phone's built-in Linux
   ///
   /// In en, this message translates to:
-  /// **'This phone'**
+  /// **'Built-in Linux'**
   String get localTerminalSourcePhone;
 
   /// Terminal source: the connected OpenCode server's terminals
@@ -21447,7 +21655,7 @@ abstract class AppLocalizations {
   /// Name of the OpenCode server this app runs in Termux (Servers row, switcher, Work tab header); the app's built-in server is plain "This phone"
   ///
   /// In en, this message translates to:
-  /// **'This phone · Termux'**
+  /// **'Termux'**
   String get phoneServerTermuxTitle;
 
   /// Work tab: where the conversation list would be, once the server has not answered for 8 seconds and nothing is listed yet
@@ -21629,6 +21837,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your phone’s Remove animations is on, so nothing moves whatever you choose here'**
   String get effectsMotionSystemOff;
+
+  /// Settings › Appearance › Effects: switch for the soft glowing ring around the message box while a reply runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Glowing border while replying'**
+  String get effectsActivityGlow;
+
+  /// Settings › Appearance › Effects: one line under the glowing border switch.
+  ///
+  /// In en, this message translates to:
+  /// **'A glowing border circles the message box while a reply is written'**
+  String get effectsActivityGlowHint;
 
   /// Effects: a choice could not be saved; it was put back.
   ///
@@ -22002,7 +22222,7 @@ abstract class AppLocalizations {
   /// **'Team task'**
   String get teamChatUntitled;
 
-  /// Team conversation, under the title: where the team runs (On this phone, On pop-os)
+  /// Team conversation, under the title: where the team runs (On this phone, On dev-pc)
   ///
   /// In en, this message translates to:
   /// **'AI Team · {host}'**
@@ -22625,6 +22845,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'on {day} at {time}'**
   String appExitOnDay(String day, String time);
+
+  /// App-exit notice action shown above another server's page: opens this phone's own OpenCode
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to this phone'**
+  String get appExitSwitchToPhone;
 
   /// Notice action: opens the keep-running guidance
   ///
@@ -23763,26 +23989,20 @@ abstract class AppLocalizations {
   /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
   ///
   /// In en, this message translates to:
-  /// **'Send after'**
-  String get kitComposerSendAfterShort;
-
-  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
-  ///
-  /// In en, this message translates to:
-  /// **'Add to this turn'**
-  String get kitComposerAddToTurnShort;
-
-  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
-  ///
-  /// In en, this message translates to:
-  /// **'When to send'**
-  String get kitComposerDeliveryLabel;
-
-  /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
-  ///
-  /// In en, this message translates to:
   /// **'Sends after this reply'**
   String get kitComposerSendsAfter;
+
+  /// KitComposer: Send while a reply runs, for an agent that cannot take a message mid-reply (sending stops the reply and the agent starts again from the message).
+  ///
+  /// In en, this message translates to:
+  /// **'Stop and send'**
+  String get kitComposerStopAndSend;
+
+  /// KitComposer note line beside Stop and send: why sending stops the running reply for this agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops the current reply and starts again with your message.'**
+  String get kitComposerStopAndSendNote;
 
   /// KitComposer (docs/ux-system/kit-api/KitComposer.md).
   ///
@@ -23970,7 +24190,7 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get kitTopBarClose;
 
-  /// KitShellControls: the glass search button in the shell's top controls, and the field-like search button in the PC sidebar header
+  /// KitShellControls: the search button in the shell's top controls, and the field-like search button in the PC sidebar header
   ///
   /// In en, this message translates to:
   /// **'Search'**
@@ -25626,6 +25846,12 @@ abstract class AppLocalizations {
   /// **'Answer every question first.'**
   String get activityAnswerEveryQuestion;
 
+  /// Question sheet: marks a prompt the person may skip
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. You can leave this one empty.'**
+  String get activityQuestionOptional;
+
   /// Question sheet: why the choices and the own answer are locked while the answer is sent
   ///
   /// In en, this message translates to:
@@ -25662,19 +25888,19 @@ abstract class AppLocalizations {
   /// **'In a conversation'**
   String get shortcutsHelpConversation;
 
-  /// Shell: title of the row and sheet explaining why the Project tab is missing on this server
+  /// Shell: title of the row and sheet explaining why the Files tab is missing on this server
   ///
   /// In en, this message translates to:
-  /// **'Project isn\'t available'**
+  /// **'Files isn\'t available'**
   String get homeShellProjectUnavailable;
 
-  /// Shell: why the Project tab is missing; {server} is the server's display name
+  /// Shell: why the Files tab is missing; {server} is the server's display name
   ///
   /// In en, this message translates to:
   /// **'{server} doesn\'t offer files, changes or code search. Connect to an OpenCode server to use them.'**
   String homeShellProjectUnavailableReason(String server);
 
-  /// Shell: the one-line reason on the row shown after the Project tab went away (a server switch); {server} is the server's display name
+  /// Shell: the one-line reason on the row shown after the Files tab went away (a server switch); {server} is the server's display name
   ///
   /// In en, this message translates to:
   /// **'{server} has no project tools.'**
@@ -26231,18 +26457,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'System'**
   String get appearanceModeSystem;
-
-  /// Appearance › Effects: first tab of the miniature tab bar that shows glass.
-  ///
-  /// In en, this message translates to:
-  /// **'Work'**
-  String get effectsPreviewWork;
-
-  /// Appearance › Effects: second tab of the miniature tab bar that shows glass.
-  ///
-  /// In en, this message translates to:
-  /// **'Settings'**
-  String get effectsPreviewSettings;
 
   /// Privacy and local data: section holding choices that send something to the server.
   ///
@@ -26947,7 +27161,7 @@ abstract class AppLocalizations {
   /// Worktrees: helper under the name field of New worktree.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode makes a separate branch and folder and runs the project’s startup tasks. Spaces become dashes.'**
+  /// **'A separate branch and folder are made and the project’s startup tasks run. Spaces become dashes.'**
   String get worktreesCreateHelper;
 
   /// Worktrees: label of the worktree folder path under Details.
@@ -28624,11 +28838,11 @@ abstract class AppLocalizations {
   /// **'Delete the hidden messages'**
   String get reviewRevertKeepTitle;
 
-  /// Review the undo page: title of the question before the hidden messages are deleted.
+  /// Review the undo page: title of the question before the hidden messages are deleted; names the conversation.
   ///
   /// In en, this message translates to:
-  /// **'Delete hidden messages forever?'**
-  String get reviewRevertKeepConfirmTitle;
+  /// **'Delete messages in “{title}”?'**
+  String reviewRevertKeepConfirmTitle(String title);
 
   /// Review the undo page: body of the delete-hidden-messages question.
   ///
@@ -28654,11 +28868,11 @@ abstract class AppLocalizations {
   /// **'Files stay as they are now'**
   String get reviewRevertKeepConsequenceFiles;
 
-  /// Confirmation before clearing the staged undo.
+  /// Confirmation before clearing the staged undo; names the conversation.
   ///
   /// In en, this message translates to:
-  /// **'Put everything back?'**
-  String get reviewRevertRestoreConfirmTitle;
+  /// **'Restore “{title}”?'**
+  String reviewRevertRestoreConfirmTitle(String title);
 
   /// Confirmation before clearing the staged undo: what happens and that another undo is possible.
   ///
@@ -30658,6 +30872,30 @@ abstract class AppLocalizations {
   /// **'This server takes text only'**
   String get composerToolsTextOnly;
 
+  /// Prompt tools: attaching is off because the conversation's agent on this phone takes text only
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} takes text only here'**
+  String composerToolsAgentTextOnly(String agent);
+
+  /// Command launcher: a conversation found by the search, with its project and agent
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation in {project} · {agent}'**
+  String launcherConversationHint(String project, String agent);
+
+  /// Prompt tools: Attach file is off because the agent on this phone takes pictures but not other files
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} takes pictures only: use Photo library or Take photo'**
+  String composerToolsAgentPicturesOnly(String agent);
+
+  /// New conversation: an agent on this phone is chosen but the project is outside its project space
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} works only in the projects on this phone. Choose one of them.'**
+  String chatsNewAgentNeedsProjectsFolder(String agent);
+
   /// Composer + sheet: the door to the command and agent list.
   ///
   /// In en, this message translates to:
@@ -31255,7 +31493,7 @@ abstract class AppLocalizations {
   /// This phone: the button that stops the running OpenCode server (it asks first)
   ///
   /// In en, this message translates to:
-  /// **'Stop the server'**
+  /// **'Stop OpenCode on this phone'**
   String get thisPhoneStop;
 
   /// This phone: the row that installs the pinned OpenCode version again
@@ -31432,6 +31670,18 @@ abstract class AppLocalizations {
   /// **'From now on, {patterns} runs without asking you, {context}. You can take this back in Settings under Always allowed actions.'**
   String chatRequestAlwaysScope(String patterns, String context);
 
+  /// Permission request card: the one confirm asked before Always allow saves a standing permission. {what} is the command or tool.
+  ///
+  /// In en, this message translates to:
+  /// **'Always allow {what} in this project?'**
+  String chatRequestAlwaysConfirm(String what);
+
+  /// Permission request: where an always-allow grant applies, as the {context} of the scope sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'in this project'**
+  String get chatRequestAlwaysInProject;
+
   /// Permission request sheet: status words while an always-allow rule is on.
   ///
   /// In en, this message translates to:
@@ -31543,7 +31793,7 @@ abstract class AppLocalizations {
   /// The default name of the in-app server inside a sentence ('Disconnect from this phone')
   ///
   /// In en, this message translates to:
-  /// **'this phone'**
+  /// **'the in-app Ubuntu'**
   String get phoneServerNameInSentence;
 
   /// Agent page subtitle end: its task has nothing holding it up
@@ -32608,7 +32858,7 @@ abstract class AppLocalizations {
   /// **'The app keeps trying. Check that your computer is on and online.'**
   String get teamUiStateNotAnsweringComputer;
 
-  /// AI Team screens: under 'The team isn’t answering'. {computer} is the computer's name, e.g. pop-os.
+  /// AI Team screens: under 'The team isn’t answering'. {computer} is the computer's name, e.g. dev-pc.
   ///
   /// In en, this message translates to:
   /// **'The app keeps trying. Check that {computer} is on and online.'**
@@ -32809,7 +33059,7 @@ abstract class AppLocalizations {
   /// Settings hub switch: show each message's time, tokens and cost in every conversation.
   ///
   /// In en, this message translates to:
-  /// **'Show timestamps and usage'**
+  /// **'Show time, tokens and cost'**
   String get settingsHubShowTimestamps;
 
   /// Muted line under a Settings hub group: how many of its rows the connected server cannot serve.
@@ -33577,7 +33827,7 @@ abstract class AppLocalizations {
   /// P6.7: Your answers row: the notification preset.
   ///
   /// In en, this message translates to:
-  /// **'Tell me when the agent needs me'**
+  /// **'Notify me when the agent needs me'**
   String get consentRowNeedsYou;
 
   /// P6.7: Your answers row: 'Always allow' offers turned down after three identical asks.
@@ -33603,12 +33853,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You won\'t get a notification when the agent waits for your answer.'**
   String get consentWhyNeedsYou;
-
-  /// P6.7: a consent asked but left unanswered.
-  ///
-  /// In en, this message translates to:
-  /// **'The question closed before you answered. Tap to answer now.'**
-  String get consentWhyUnfinished;
 
   /// P6.7: an allowed phone consent; the OS setting is the truth.
   ///
@@ -36512,6 +36756,24 @@ abstract class AppLocalizations {
   /// **'{runtime} didn\'t start after the switch. Your conversations are kept.'**
   String thisPhoneSwitchStopped(String runtime);
 
+  /// This phone: the quiet line under the status while OpenCode 2 imports the chats from OpenCode 1 after a switch
+  ///
+  /// In en, this message translates to:
+  /// **'Bringing your earlier conversations across…'**
+  String get thisPhoneHistoryMoving;
+
+  /// This phone: the same line when the server counts the chats it has finished
+  ///
+  /// In en, this message translates to:
+  /// **'Bringing your earlier conversations across ({done} of {total})…'**
+  String thisPhoneHistoryMovingCount(int done, int total);
+
+  /// This phone: the line under the status when OpenCode 2 stopped importing the chats from OpenCode 1; the server's own text is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Your earlier conversations could not be brought across. They are still safe in OpenCode 1.'**
+  String get thisPhoneHistoryFailed;
+
   /// Add server: a connection check failed before the server could answer (a socket or TLS error); the raw error is under Details.
   ///
   /// In en, this message translates to:
@@ -38027,7 +38289,7 @@ abstract class AppLocalizations {
   /// Model picker: top note when no provider is signed in and only OpenCode's free models are listed.
   ///
   /// In en, this message translates to:
-  /// **'Only OpenCode\'s free model is available — it\'s slower.'**
+  /// **'Only OpenCode\'s free models are available — they\'re slower.'**
   String get pickerFreeOnlyNote;
 
   /// Model picker: status after signing in from the picker and the provider loaded.
@@ -38047,18 +38309,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Signed in, but this server can\'t use it'**
   String get integrationsSignedInUnusable;
-
-  /// Appearance › Effects: shown while liquid glass is paused because the app crashed twice with it on screen.
-  ///
-  /// In en, this message translates to:
-  /// **'Liquid glass was turned off after the app closed unexpectedly twice.'**
-  String get effectsGlassCrashOff;
-
-  /// Appearance › Effects: action under the liquid glass paused line; turns liquid glass back on.
-  ///
-  /// In en, this message translates to:
-  /// **'Turn it back on'**
-  String get effectsGlassCrashOn;
 
   /// Confirm sheet title before compacting the conversation
   ///
@@ -39170,10 +39420,28 @@ abstract class AppLocalizations {
   /// **'Demo figures are simulated; device memory, battery, heat and conversation speed have not been measured.'**
   String get teamProjectCostDemo;
 
+  /// No description provided for @teamProjectPlanningElapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Shaping the spec · {minutes} min'**
+  String teamProjectPlanningElapsed(int minutes);
+
+  /// No description provided for @teamProjectPlanningSlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Still shaping the spec · {minutes} min'**
+  String teamProjectPlanningSlow(int minutes);
+
+  /// No description provided for @teamProjectAllTasksDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All {total} tasks complete'**
+  String teamProjectAllTasksDone(int total);
+
   /// No description provided for @teamProjectProgress.
   ///
   /// In en, this message translates to:
-  /// **'{done} of {total} tasks complete · {working} working'**
+  /// **'{done} of {total} tasks complete{working, plural, =0{} other{ · {working} working}}'**
   String teamProjectProgress(int done, int total, int working);
 
   /// No description provided for @teamProjectLaneCount.
@@ -40276,7 +40544,7 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectHeadlineMilestone.
   ///
   /// In en, this message translates to:
-  /// **'Milestone {current} of {total} · {working} working'**
+  /// **'Milestone {current} of {total}{working, plural, =0{} other{ · {working} working}}'**
   String teamProjectHeadlineMilestone(int current, int total, int working);
 
   /// No description provided for @teamProjectHeadlineDone.
@@ -40288,13 +40556,13 @@ abstract class AppLocalizations {
   /// No description provided for @teamProjectGoalStatus.
   ///
   /// In en, this message translates to:
-  /// **'Spec approved {age} · {milestones} milestones · {repos} repos'**
+  /// **'Spec approved {age} · {milestones, plural, one{1 milestone} other{{milestones} milestones}} · {repos, plural, one{1 repo} other{{repos} repos}}'**
   String teamProjectGoalStatus(String age, int milestones, int repos);
 
   /// No description provided for @teamProjectGoalStatusDraft.
   ///
   /// In en, this message translates to:
-  /// **'Draft spec · {milestones} milestones · {repos} repos'**
+  /// **'Draft spec · {milestones, plural, one{1 milestone} other{{milestones} milestones}} · {repos, plural, one{1 repo} other{{repos} repos}}'**
   String teamProjectGoalStatusDraft(int milestones, int repos);
 
   /// No description provided for @teamProjectOpenSpec.
@@ -41272,19 +41540,19 @@ abstract class AppLocalizations {
   /// Way forward for engine code sessionFailed
   ///
   /// In en, this message translates to:
-  /// **'Check the model in Team settings › Model, then approve the spec again.'**
+  /// **'Open the Planner model choice and check it, then ask again.'**
   String get teamRefusalSessionFailedNext;
 
   /// Plain reason for engine code modelNotConfigured
   ///
   /// In en, this message translates to:
-  /// **'The team needs a model.'**
+  /// **'The model for this job didn\'t accept the request.'**
   String get teamRefusalModelNotConfigured;
 
   /// Way forward for engine code modelNotConfigured
   ///
   /// In en, this message translates to:
-  /// **'Pick one in Team settings › Model.'**
+  /// **'It may need a sign-in, or it may not be free to use here. Open the Planner model choice, pick another model, then ask again.'**
   String get teamRefusalModelNotConfiguredNext;
 
   /// Plain reason for engine code modelUnavailable
@@ -41410,7 +41678,7 @@ abstract class AppLocalizations {
   /// Button that opens the team's model choice
   ///
   /// In en, this message translates to:
-  /// **'Pick a model'**
+  /// **'Choose the Planner model'**
   String get teamRefusalModelNotConfiguredAction;
 
   /// Title of the notice on a project whose planning failed
@@ -41634,6 +41902,11070 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Optional. One path per line. The team reads these before it plans.'**
   String get teamProjectEditorContextFilesHelpReal;
+
+  /// Add server: warning under a plain http:// address on a private network (192.168.x.x, 10.x.x.x, .local). Must be confirmed before saving or checking.
+  ///
+  /// In en, this message translates to:
+  /// **'This address uses plain HTTP. On this network, others could read your password and conversations. Use Tailscale or HTTPS if you can.'**
+  String get addServerCleartextWarning;
+
+  /// Add server: action that confirms plain HTTP to a private network address; remembered for that server.
+  ///
+  /// In en, this message translates to:
+  /// **'Use it anyway'**
+  String get addServerCleartextConfirm;
+
+  /// Add server: line shown after the person confirmed plain HTTP for the address.
+  ///
+  /// In en, this message translates to:
+  /// **'Plain HTTP is on for this address. Anyone on this network could read what you send.'**
+  String get addServerCleartextConfirmed;
+
+  /// Shared-storage project: title of the question asked before a folder in the phone's shared storage is opened.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow access to files?'**
+  String get storageAccessTitle;
+
+  /// Shared-storage project: what the problem is.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder is in your phone’s shared storage. Android hides the files in it from apps unless you allow All files access.'**
+  String get storageAccessBody;
+
+  /// Shared-storage project: what access allows.
+  ///
+  /// In en, this message translates to:
+  /// **'The app reads and changes files only in folders you open as projects.'**
+  String get storageAccessWhyScope;
+
+  /// Shared-storage project: why the agent needs it.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent needs it to work in your folder in place. Without it you would see only hidden items such as .git.'**
+  String get storageAccessWhyAgent;
+
+  /// Shared-storage project: how to take it back.
+  ///
+  /// In en, this message translates to:
+  /// **'You can turn it off any time in Android Settings, under All files access.'**
+  String get storageAccessWhyOff;
+
+  /// Shared-storage project: button that opens Android's All files access page.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow access to files'**
+  String get storageAccessAllow;
+
+  /// Shared-storage project: decline.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get storageAccessNotNow;
+
+  /// Shared-storage project: choose a folder in the app's own project space instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the app’s project space'**
+  String get storageAccessUseAppSpace;
+
+  /// Shared-storage project: title after access was not turned on.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder not opened'**
+  String get storageAccessRefusedTitle;
+
+  /// Shared-storage project: body after access was not turned on.
+  ///
+  /// In en, this message translates to:
+  /// **'Without access to files this folder’s files cannot be shown, so it was not opened. Allow access, or choose a folder in the app’s project space.'**
+  String get storageAccessRefusedBody;
+
+  /// Shared-storage project on a Termux server: title.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Termux storage?'**
+  String get storageTermuxTitle;
+
+  /// Shared-storage project on a Termux server: body.
+  ///
+  /// In en, this message translates to:
+  /// **'Your server runs in Termux, and Termux cannot read your phone’s shared storage yet. Without that, this folder shows only hidden items such as .git.'**
+  String get storageTermuxBody;
+
+  /// Shared-storage project on a Termux server: opens Termux to run termux-setup-storage.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Termux'**
+  String get storageTermuxAllow;
+
+  /// Shared-storage project on a Termux server: title of the instruction after Termux opened.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow storage in Termux'**
+  String get storageTermuxStillTitle;
+
+  /// Shared-storage project on a Termux server: what to do.
+  ///
+  /// In en, this message translates to:
+  /// **'In Termux, allow storage when Android asks (the command is termux-setup-storage), then open the folder again.'**
+  String get storageTermuxStillBody;
+
+  /// Files: title when a shared-storage folder lists only hidden items and access is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Files are hidden'**
+  String get filesAccessNeededTitle;
+
+  /// Files: body for the missing-access notice.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder is in your phone’s shared storage and the app cannot read most of its files yet. Only hidden items show.'**
+  String get filesAccessNeededBody;
+
+  /// Files: body for the missing-access notice on a Termux server.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder is in your phone’s shared storage and Termux cannot read most of its files yet. Only hidden items show.'**
+  String get filesAccessNeededTermuxBody;
+
+  /// Shared-storage project while AI Team is on: restart of the in-app OpenCode so a newly opened folder is visible.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart to open folder?'**
+  String get storageRestartTitle;
+
+  /// Shared-storage project while AI Team is on: restart of the in-app OpenCode so a newly opened folder is visible.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode on this phone has to restart before it can see this folder. This takes about 30 seconds.'**
+  String get storageRestartBody;
+
+  /// Shared-storage project while AI Team is on: restart of the in-app OpenCode so a newly opened folder is visible.
+  ///
+  /// In en, this message translates to:
+  /// **'Running replies and AI Team work pause and carry on afterwards.'**
+  String get storageRestartPause;
+
+  /// Shared-storage project while AI Team is on: restart of the in-app OpenCode so a newly opened folder is visible.
+  ///
+  /// In en, this message translates to:
+  /// **'A reply or AI Team task is running right now. It will pause while OpenCode restarts.'**
+  String get storageRestartBusy;
+
+  /// Shared-storage project while AI Team is on: restart of the in-app OpenCode so a newly opened folder is visible.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart and open'**
+  String get storageRestartConfirm;
+
+  /// Shared-storage project while AI Team is on: restart of the in-app OpenCode so a newly opened folder is visible.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart did not finish'**
+  String get storageRestartFailedTitle;
+
+  /// Shared-storage project while AI Team is on: restart of the in-app OpenCode so a newly opened folder is visible.
+  ///
+  /// In en, this message translates to:
+  /// **'The folder was not opened. Try again, or start OpenCode from This phone.'**
+  String get storageRestartFailedBody;
+
+  /// Kit queued message: a receipt check is running; it only looks, it never sends again
+  ///
+  /// In en, this message translates to:
+  /// **'Checking whether your message arrived…'**
+  String get kitQueuedChecking;
+
+  /// Kit queued message: the message left but the server has not confirmed it; it is never resent automatically
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t confirm your message arrived.'**
+  String get kitQueuedUncertain;
+
+  /// Kit queued message: when the last receipt check ran
+  ///
+  /// In en, this message translates to:
+  /// **'Last checked {time}.'**
+  String kitQueuedLastChecked(String time);
+
+  /// Kit queued message: the send receipt could not be stored, so sending stopped and the draft stays
+  ///
+  /// In en, this message translates to:
+  /// **'This phone can\'t safely record sends right now, so your message wasn\'t sent. It is kept here.'**
+  String get kitQueuedStorageFull;
+
+  /// Note after a check finds the server has the message
+  ///
+  /// In en, this message translates to:
+  /// **'Message received.'**
+  String get queuedReceiptConfirmed;
+
+  /// Note after a check could not confirm the message
+  ///
+  /// In en, this message translates to:
+  /// **'Still can\'t confirm it arrived. Nothing was sent again.'**
+  String get queuedReceiptStillUncertain;
+
+  /// Note when the receipt record cannot be read or written
+  ///
+  /// In en, this message translates to:
+  /// **'This phone can\'t safely record or check sends right now. Free up some storage and try again.'**
+  String get queuedReceiptStorageProblem;
+
+  /// Details label: when the message left the phone
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get queuedReceiptDetailSentAt;
+
+  /// Details label: the opaque command identifier
+  ///
+  /// In en, this message translates to:
+  /// **'Command ID'**
+  String get queuedReceiptDetailCommand;
+
+  /// Details label: the opaque receipt identifier
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt ID'**
+  String get queuedReceiptDetailReceipt;
+
+  /// Details note under an unconfirmed message
+  ///
+  /// In en, this message translates to:
+  /// **'The connection ended before we could confirm receipt.'**
+  String get queuedReceiptDetailNote;
+
+  /// KitToolRow: the quiet button under a failed step that tries it again
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get kitToolRetry;
+
+  /// Section label above the folder browser's place switch
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get folderBrowserPlaceLabel;
+
+  /// Folder browser place: the app's project space
+  ///
+  /// In en, this message translates to:
+  /// **'Project space'**
+  String get folderBrowserPlaceProjects;
+
+  /// Folder browser place: the phone's internal storage
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get folderBrowserPlacePhone;
+
+  /// Root of the phone-storage breadcrumb
+  ///
+  /// In en, this message translates to:
+  /// **'Internal storage'**
+  String get folderBrowserInternalStorage;
+
+  /// Section label over phone folders opened as projects before
+  ///
+  /// In en, this message translates to:
+  /// **'Opened before'**
+  String get folderBrowserOpenedBefore;
+
+  /// Switch in the phone-storage browser
+  ///
+  /// In en, this message translates to:
+  /// **'Show hidden folders'**
+  String get folderBrowserShowHidden;
+
+  /// Hint line of an empty folder row
+  ///
+  /// In en, this message translates to:
+  /// **'Empty'**
+  String get folderBrowserHintEmpty;
+
+  /// Hint line of a folder row: a few names inside and how many more
+  ///
+  /// In en, this message translates to:
+  /// **'{names}, {count} more'**
+  String folderBrowserHintMore(String names, int count);
+
+  /// Empty-state body of an empty phone-storage folder
+  ///
+  /// In en, this message translates to:
+  /// **'Open it, or go up one level.'**
+  String get folderBrowserEmptyPhoneBody;
+
+  /// Section label of folders opened before on a remote server
+  ///
+  /// In en, this message translates to:
+  /// **'Recent folders'**
+  String get remoteFolderRecent;
+
+  /// Section label of the remote server's own projects
+  ///
+  /// In en, this message translates to:
+  /// **'Projects on this server'**
+  String get remoteFolderProjects;
+
+  /// Quiet line under the New project step's title: the folder the project will be made in
+  ///
+  /// In en, this message translates to:
+  /// **'In {name}'**
+  String folderBrowserNewProjectIn(String name);
+
+  /// One line under the inline new-project name field: the full path the folder will be created at
+  ///
+  /// In en, this message translates to:
+  /// **'Creates {path}'**
+  String folderBrowserNewProjectCreates(String path);
+
+  /// Primary button of the inline new-project name field in the folder browser
+  ///
+  /// In en, this message translates to:
+  /// **'Create and open'**
+  String get folderBrowserCreateAndOpen;
+
+  /// Section label over the folder list of the folder browser and remote folder sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Folders'**
+  String get folderBrowserFoldersLabel;
+
+  /// One line in the folder browser after All files access was not allowed
+  ///
+  /// In en, this message translates to:
+  /// **'Phone storage is off. Allow access to look here.'**
+  String get folderBrowserPhoneRefused;
+
+  /// Menu item of the phone-storage folder browser that looks for projects on the phone
+  ///
+  /// In en, this message translates to:
+  /// **'Find projects'**
+  String get folderBrowserFindProjects;
+
+  /// Title of the find-projects step in the folder browser
+  ///
+  /// In en, this message translates to:
+  /// **'Projects on this phone'**
+  String get phoneScanTitle;
+
+  /// Subtitle of the find-projects step while it runs
+  ///
+  /// In en, this message translates to:
+  /// **'Looking…'**
+  String get phoneScanLooking;
+
+  /// Subtitle of the find-projects step once it is done
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 found} other{{count} found}}'**
+  String phoneScanFound(int count);
+
+  /// Subtitle when the find-projects scan hit its time cap
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped after {seconds} seconds · {count} found'**
+  String phoneScanStopped(int seconds, int count);
+
+  /// Subtitle when the find-projects scan hit its size cap
+  ///
+  /// In en, this message translates to:
+  /// **'First {count} shown'**
+  String phoneScanFirstShown(int count);
+
+  /// Action that scans again for longer after the time cap
+  ///
+  /// In en, this message translates to:
+  /// **'Look deeper'**
+  String get phoneScanLookDeeper;
+
+  /// Empty title of the find-projects step
+  ///
+  /// In en, this message translates to:
+  /// **'No projects found'**
+  String get phoneScanEmptyTitle;
+
+  /// Way forward when the find-projects scan found nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Browse folders or start a New project.'**
+  String get phoneScanEmptyBody;
+
+  /// Badge on a found project that has a git repository
+  ///
+  /// In en, this message translates to:
+  /// **'Git'**
+  String get phoneScanGit;
+
+  /// Kind word of a found project in the find-projects step
+  ///
+  /// In en, this message translates to:
+  /// **'Dart'**
+  String get phoneScanKindDart;
+
+  /// Kind word of a found project in the find-projects step
+  ///
+  /// In en, this message translates to:
+  /// **'Node'**
+  String get phoneScanKindNode;
+
+  /// Kind word of a found project in the find-projects step
+  ///
+  /// In en, this message translates to:
+  /// **'Python'**
+  String get phoneScanKindPython;
+
+  /// Kind word of a found project in the find-projects step
+  ///
+  /// In en, this message translates to:
+  /// **'Rust'**
+  String get phoneScanKindRust;
+
+  /// Kind word of a found project in the find-projects step
+  ///
+  /// In en, this message translates to:
+  /// **'Go'**
+  String get phoneScanKindGo;
+
+  /// Kind word of a found project in the find-projects step
+  ///
+  /// In en, this message translates to:
+  /// **'Java'**
+  String get phoneScanKindJava;
+
+  /// Kind word of a found project in the find-projects step
+  ///
+  /// In en, this message translates to:
+  /// **'Ruby'**
+  String get phoneScanKindRuby;
+
+  /// Kind word of a found project in the find-projects step
+  ///
+  /// In en, this message translates to:
+  /// **'PHP'**
+  String get phoneScanKindPhp;
+
+  /// Kind word of a found project in the find-projects step
+  ///
+  /// In en, this message translates to:
+  /// **'.NET'**
+  String get phoneScanKindDotnet;
+
+  /// Kind word of a found project in the find-projects step
+  ///
+  /// In en, this message translates to:
+  /// **'C/C++'**
+  String get phoneScanKindCpp;
+
+  /// Kind word of a found project in the find-projects step
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get phoneScanKindGit;
+
+  /// Title of the Open a project sheet's start page
+  ///
+  /// In en, this message translates to:
+  /// **'Open a project'**
+  String get openProjectTitle;
+
+  /// Second row of the Open a project start page: looks for projects on the phone
+  ///
+  /// In en, this message translates to:
+  /// **'Search this phone'**
+  String get openProjectSearchPhone;
+
+  /// Quiet link at the bottom of the Open a project start page that opens the folder browser
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a folder'**
+  String get openProjectChooseFolder;
+
+  /// Quiet link in the New project step that picks another parent folder
+  ///
+  /// In en, this message translates to:
+  /// **'Change folder'**
+  String get openProjectChangeFolder;
+
+  /// Primary button when picking the parent folder of a new project
+  ///
+  /// In en, this message translates to:
+  /// **'Use {name}'**
+  String openProjectUseFolder(String name);
+
+  /// Title of the search step while it runs
+  ///
+  /// In en, this message translates to:
+  /// **'Searching this phone'**
+  String get phoneScanSearching;
+
+  /// Running line of the search step: folders looked at and projects found
+  ///
+  /// In en, this message translates to:
+  /// **'{folders, plural, =1{1 folder} other{{folders} folders}} checked · {found} found'**
+  String phoneScanChecked(int folders, int found);
+
+  /// Subtitle of the search step once it is done; time is m:ss
+  ///
+  /// In en, this message translates to:
+  /// **'{count} found in {time}'**
+  String phoneScanDoneIn(int count, String time);
+
+  /// Action that stops a running search
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get phoneScanStop;
+
+  /// Quiet inline link after the folder line in the New project step
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get openProjectChange;
+
+  /// Folder line of the New project step, before the Change link
+  ///
+  /// In en, this message translates to:
+  /// **'In {folder}'**
+  String openProjectIn(String folder);
+
+  /// Settings › Appearance › Effects: title of the glowing border style choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Style'**
+  String get effectsGlowStyle;
+
+  /// Glowing border style: the original bright highlight travelling the border.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get effectsGlowStyleClassic;
+
+  /// Glowing border style: a soft ring sweep.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft ring'**
+  String get effectsGlowStyleSoft;
+
+  /// Settings › Appearance › Effects: title of the glowing border colour choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Colours'**
+  String get effectsGlowColours;
+
+  /// Glowing border colours: the theme colour with a lighter highlight.
+  ///
+  /// In en, this message translates to:
+  /// **'One colour'**
+  String get effectsGlowColoursOne;
+
+  /// Glowing border colours: the theme colour and its partner colour.
+  ///
+  /// In en, this message translates to:
+  /// **'Two colours'**
+  String get effectsGlowColoursTwo;
+
+  /// Settings › Appearance › Effects: title of the glowing border speed choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed'**
+  String get effectsGlowSpeed;
+
+  /// Glowing border speed: slow.
+  ///
+  /// In en, this message translates to:
+  /// **'Slow'**
+  String get effectsGlowSpeedSlow;
+
+  /// Glowing border speed: the app's own pace.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get effectsGlowSpeedNormal;
+
+  /// Glowing border speed: fast.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast'**
+  String get effectsGlowSpeedFast;
+
+  /// One-line explanation of Ask first
+  ///
+  /// In en, this message translates to:
+  /// **'You answer each request.'**
+  String get approvalModeAskDetail;
+
+  /// One sentence in the confirmation before approving everything on the server
+  ///
+  /// In en, this message translates to:
+  /// **'Agents on this server will run commands and change files without asking, in every conversation.'**
+  String get approvalModeConfirmEverythingBody;
+
+  /// Switch: subagent conversations follow this conversation's automatic approval
+  ///
+  /// In en, this message translates to:
+  /// **'Subagents follow this'**
+  String get approvalsSheetSubagents;
+
+  /// Quiet line: this conversation follows its parent conversation's approval choice
+  ///
+  /// In en, this message translates to:
+  /// **'Set by {name}'**
+  String approvalsSheetSetByParent(String name);
+
+  /// Quiet line: this conversation follows the server-wide Approve everything choice
+  ///
+  /// In en, this message translates to:
+  /// **'Set by this server'**
+  String get approvalsSheetSetByServer;
+
+  /// The one footnote under the approvals choices
+  ///
+  /// In en, this message translates to:
+  /// **'Stops when the app disconnects. Server deny rules still apply.'**
+  String get approvalsSheetFootnote;
+
+  /// Collapsed row listing the requests this phone approved automatically
+  ///
+  /// In en, this message translates to:
+  /// **'Approved automatically'**
+  String get approvalsSheetHistory;
+
+  /// Chats home: the screen's title
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get chatsHomeTitle;
+
+  /// Chats home: the project filter chip when no project is chosen, and the first row of the project sheet
+  ///
+  /// In en, this message translates to:
+  /// **'All projects'**
+  String get chatsHomeAllProjects;
+
+  /// Chats home: filter chip, section name and row tag for conversations waiting on the person
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get chatsHomeNeedsYou;
+
+  /// Chats home: the needs-you filter chip with how many wait
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you · {count}'**
+  String chatsHomeNeedsYouCount(int count);
+
+  /// Chats home: filter chip and row tag for conversations the agent is working in
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get chatsHomeRunning;
+
+  /// The state word on a conversation row that is running now.
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get chatsHomeRowWorking;
+
+  /// Chats home: green row tag for a conversation whose last run finished after the person last opened it
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get chatsHomeDone;
+
+  /// Chats home: row tag for a conversation whose last run ended in failure and that the person has not opened since
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get chatsHomeFailed;
+
+  /// Chats home: section name
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get chatsHomeToday;
+
+  /// Chats home: section name
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get chatsHomeEarlier;
+
+  /// Chats home: quiet line when the server cannot list across projects
+  ///
+  /// In en, this message translates to:
+  /// **'Showing conversations in {project} only. This server can\'t list all projects.'**
+  String chatsHomeOnlyProject(String project);
+
+  /// Chats home: quiet line when the list is partial
+  ///
+  /// In en, this message translates to:
+  /// **'Some conversations couldn\'t load'**
+  String get chatsHomeIncomplete;
+
+  /// Server switcher at the top: the server new conversations start on, and how many other connections the Conversations list also shows
+  ///
+  /// In en, this message translates to:
+  /// **'{name} +{count}'**
+  String shellServerPlusOthers(String name, int count);
+
+  /// Composer on a Claude Code sub-agent's page, which takes no messages; the status line above offers the main conversation
+  ///
+  /// In en, this message translates to:
+  /// **'This sub-agent answers only its main conversation. Write there.'**
+  String get chatSubagentReadOnly;
+
+  /// Conversations list: the tag on a row while it opens (an old agent conversation takes a few seconds)
+  ///
+  /// In en, this message translates to:
+  /// **'Opening…'**
+  String get chatsHomeOpening;
+
+  /// Conversations list: a server the list shows can't be reached; its rows are missing
+  ///
+  /// In en, this message translates to:
+  /// **'{servers} isn\'t answering. Its conversations aren\'t shown.'**
+  String chatsHomeUnreachable(String servers);
+
+  /// Connections sheet: under a shown server that can't be reached now
+  ///
+  /// In en, this message translates to:
+  /// **'Isn\'t answering'**
+  String get chatsSourcesUnreachable;
+
+  /// Conversations list: filter chip when every connection's conversations show
+  ///
+  /// In en, this message translates to:
+  /// **'All connections'**
+  String get chatsSourcesAll;
+
+  /// Conversations list: filter chip when some connections are hidden
+  ///
+  /// In en, this message translates to:
+  /// **'{shown} of {total} connections'**
+  String chatsSourcesSome(int shown, int total);
+
+  /// Title of the sheet that chooses which connections the Conversations list shows
+  ///
+  /// In en, this message translates to:
+  /// **'Connections in this list'**
+  String get chatsSourcesSheetTitle;
+
+  /// Connections sheet: under the connection the app is on
+  ///
+  /// In en, this message translates to:
+  /// **'New conversations start here'**
+  String get chatsSourcesMain;
+
+  /// Connections sheet: under a server that runs on this phone (Termux, in-app Ubuntu)
+  ///
+  /// In en, this message translates to:
+  /// **'On this phone'**
+  String get chatsSourcesOnPhone;
+
+  /// Connections sheet: under a saved server that runs elsewhere; off until turned on
+  ///
+  /// In en, this message translates to:
+  /// **'On another computer'**
+  String get chatsSourcesElsewhere;
+
+  /// Connections sheet: under the agents (Claude Code) row
+  ///
+  /// In en, this message translates to:
+  /// **'Agents on this phone'**
+  String get chatsSourcesAgents;
+
+  /// Connections sheet: the word at the end of the connection the app is on, which can't be hidden
+  ///
+  /// In en, this message translates to:
+  /// **'Always shown'**
+  String get chatsSourcesAlways;
+
+  /// Conversations list: an agent's conversations are still being read while other rows already show
+  ///
+  /// In en, this message translates to:
+  /// **'Loading {agents} conversations…'**
+  String chatsHomeStillLoading(String agents);
+
+  /// Chats home: empty state title
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet'**
+  String get chatsHomeEmptyTitle;
+
+  /// Chats home: empty state body
+  ///
+  /// In en, this message translates to:
+  /// **'Start a conversation and it shows up here.'**
+  String get chatsHomeEmptyBody;
+
+  /// Chats home: empty state action
+  ///
+  /// In en, this message translates to:
+  /// **'Start a conversation'**
+  String get chatsHomeStartChat;
+
+  /// Chats home: nothing matches the filters
+  ///
+  /// In en, this message translates to:
+  /// **'No matching conversations'**
+  String get chatsHomeNoMatchTitle;
+
+  /// Chats home: nothing matches the filters, body
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing fits the filters you chose.'**
+  String get chatsHomeNoMatchBody;
+
+  /// Chats home: removes every filter
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get chatsHomeClearFilters;
+
+  /// Chats home: the chosen project has no chats
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations in {project}'**
+  String chatsHomeProjectEmptyTitle(String project);
+
+  /// Chats home: action in a project with no chats
+  ///
+  /// In en, this message translates to:
+  /// **'Start a conversation in {project}'**
+  String chatsHomeStartChatIn(String project);
+
+  /// Chats home: the floating button and the start screen's title
+  ///
+  /// In en, this message translates to:
+  /// **'New conversation'**
+  String get chatsHomeNewChat;
+
+  /// Chats home: a chat could not be opened
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation couldn\'t be opened. Pull down to refresh the list.'**
+  String get chatsHomeOpenFailed;
+
+  /// Project filter sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Show conversations from'**
+  String get chatsFilterSheetTitle;
+
+  /// Project sheet: how many chats
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 conversation} other{{count} conversations}}'**
+  String chatsFilterChatCount(int count);
+
+  /// Project sheet: how many chats are running
+  ///
+  /// In en, this message translates to:
+  /// **'{running} running'**
+  String chatsFilterRunningCount(int running);
+
+  /// Project sheet: some chat in the project needs the person
+  ///
+  /// In en, this message translates to:
+  /// **'needs you'**
+  String get chatsFilterNeedsYouWord;
+
+  /// Project sheet: opens the Open a project sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Open a project…'**
+  String get chatsFilterOpenProject;
+
+  /// New conversation: the quiet option under the project chip that starts the task in a separate copy (a worktree) of the project. Shown only where the server can make one.
+  ///
+  /// In en, this message translates to:
+  /// **'In a separate copy'**
+  String get chatsNewSeparateCopy;
+
+  /// New chat: the centered question
+  ///
+  /// In en, this message translates to:
+  /// **'What should we work on?'**
+  String get chatsNewPrompt;
+
+  /// New chat: project chip with no project
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a project'**
+  String get chatsNewChooseProject;
+
+  /// New chat: why sending is off
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a project to start a conversation.'**
+  String get chatsNewNeedProject;
+
+  /// New chat: starting failed and the draft is kept
+  ///
+  /// In en, this message translates to:
+  /// **'The conversation didn\'t start. Your message is still here.'**
+  String get chatsNewFailed;
+
+  /// Bottom navigation label and title of the first tab: every conversation across projects, with what needs the person and what is running as filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get shellTabChats;
+
+  /// Bottom navigation label and title of the second tab: the files, changes, terminal and other tools of one project, named by the chip under the title.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get shellTabFiles;
+
+  /// No description provided for @discoverChatsAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'chats conversations sessions work home recent pinned new conversation inbox activity needs you approvals permissions questions forms waiting running finished'**
+  String get discoverChatsAliases;
+
+  /// Screen reader label of the small project chip under a conversation's title; {name} is the project's folder name.
+  ///
+  /// In en, this message translates to:
+  /// **'Project {name}. Opens a menu of its files, terminal and changes.'**
+  String chatProjectChipSemantics(String name);
+
+  /// Screen reader label of the quiet project line under a conversation's title when more than one server is connected; {name} is the project's folder name and {server} the server's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Project {name} on {server}. Opens a menu of its files, terminal and changes.'**
+  String chatProjectServerChipSemantics(String name, String server);
+
+  /// Name of the menu the conversation's project chip opens (Files, Terminal, Changes).
+  ///
+  /// In en, this message translates to:
+  /// **'Project tools'**
+  String get chatProjectMenuLabel;
+
+  /// Agent sheet: title
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an agent'**
+  String get agentsChooseTitle;
+
+  /// New conversation: spoken name of the agent chip
+  ///
+  /// In en, this message translates to:
+  /// **'Agent {agent}. Change agent'**
+  String agentsChipSemantics(String agent);
+
+  /// Agent sheet: an agent that can start conversations
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get agentsStateReady;
+
+  /// Feed row note and agent state: the agent cannot reopen an old conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t reopen old conversations'**
+  String get agentsStateCantReopen;
+
+  /// Agent sheet: an agent that is not installed yet, with its download size
+  ///
+  /// In en, this message translates to:
+  /// **'Not installed · {size}'**
+  String agentsStateNotInstalled(String size);
+
+  /// Agent sheet: an agent that is not installed yet
+  ///
+  /// In en, this message translates to:
+  /// **'Not installed'**
+  String get agentsStateNotInstalledNoSize;
+
+  /// Agent sheet: installed but signed out
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in needed'**
+  String get agentsStateSignInNeeded;
+
+  /// Agent sheet: sign-in state not known yet
+  ///
+  /// In en, this message translates to:
+  /// **'Checking sign-in…'**
+  String get agentsStateChecking;
+
+  /// Agent sheet: the phone check has not passed
+  ///
+  /// In en, this message translates to:
+  /// **'Phone check needed'**
+  String get agentsStatePhoneCheck;
+
+  /// Agent sheet: the agent host stopped while the app was away
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped in the background'**
+  String get agentsStateStopped;
+
+  /// Agent sheet: the plan limit was reached
+  ///
+  /// In en, this message translates to:
+  /// **'Plan limit reached'**
+  String get agentsStateLimit;
+
+  /// Agent sheet: cannot run here
+  ///
+  /// In en, this message translates to:
+  /// **'Not available on this phone yet'**
+  String get agentsStateUnavailable;
+
+  /// Setup step title with the agent's own download size
+  ///
+  /// In en, this message translates to:
+  /// **'Set up {agent} · {size}'**
+  String agentsSetupTitle(String agent, String size);
+
+  /// Setup step title when the size is not known
+  ///
+  /// In en, this message translates to:
+  /// **'Set up {agent}'**
+  String agentsSetupTitleNoSize(String agent);
+
+  /// Setup step body
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} runs on this phone. Installing downloads the agent and anything it needs.'**
+  String agentsSetupBody(String agent);
+
+  /// Setup step: what the shown size covers
+  ///
+  /// In en, this message translates to:
+  /// **'{size} is the agent itself. Shared parts may add more.'**
+  String agentsSetupSizeNote(String size);
+
+  /// Setup step: the one install button
+  ///
+  /// In en, this message translates to:
+  /// **'Install {agent}'**
+  String agentsInstallAction(String agent);
+
+  /// Setup step: stops the setup job this phone started
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel setup'**
+  String get agentsCancelSetup;
+
+  /// Setup step: progress caption
+  ///
+  /// In en, this message translates to:
+  /// **'Installing {agent}…'**
+  String agentsInstalling(String agent);
+
+  /// Setup step: after install, before ready
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the agent connection…'**
+  String get agentsPreparing;
+
+  /// Setup step: interrupted
+  ///
+  /// In en, this message translates to:
+  /// **'Setup stopped before it finished. Install again to continue.'**
+  String get agentsSetupInterrupted;
+
+  /// Setup step: failed
+  ///
+  /// In en, this message translates to:
+  /// **'Setup didn\'t finish. Install again to try once more.'**
+  String get agentsSetupFailed;
+
+  /// Phone check: title and action
+  ///
+  /// In en, this message translates to:
+  /// **'Check this phone'**
+  String get agentsCheckTitle;
+
+  /// Phone check: running
+  ///
+  /// In en, this message translates to:
+  /// **'Checking {agent}…'**
+  String agentsCheckRunning(String agent);
+
+  /// Phone check: passed
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} is ready on this phone.'**
+  String agentsCheckPassed(String agent);
+
+  /// Phone check: failed
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} didn\'t pass the check.'**
+  String agentsCheckFailed(String agent);
+
+  /// Phone check: run it for one agent
+  ///
+  /// In en, this message translates to:
+  /// **'Check {agent}'**
+  String agentsCheckAction(String agent);
+
+  /// Phone check step
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get agentsStepInstall;
+
+  /// Phone check step
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get agentsStepVersion;
+
+  /// Phone check step
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get agentsStepConnection;
+
+  /// Phone check step
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get agentsStepReady;
+
+  /// Phone check failure
+  ///
+  /// In en, this message translates to:
+  /// **'This phone can\'t run this agent yet.'**
+  String get agentsFailUnavailable;
+
+  /// Phone check failure
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save this setup. Free some space and run it again.'**
+  String get agentsFailStorage;
+
+  /// Phone check failure
+  ///
+  /// In en, this message translates to:
+  /// **'The agent didn\'t install. Install it again.'**
+  String get agentsFailInstall;
+
+  /// Phone check failure
+  ///
+  /// In en, this message translates to:
+  /// **'Setup stopped before it finished. Install it again.'**
+  String get agentsFailInterrupted;
+
+  /// Phone check failure
+  ///
+  /// In en, this message translates to:
+  /// **'The installed agent didn\'t pass its version check.'**
+  String get agentsFailVersion;
+
+  /// Phone check failure
+  ///
+  /// In en, this message translates to:
+  /// **'The agent connection didn\'t start.'**
+  String get agentsFailDaemon;
+
+  /// Phone check failure
+  ///
+  /// In en, this message translates to:
+  /// **'The agent started but didn\'t answer.'**
+  String get agentsFailHello;
+
+  /// Phone check failure
+  ///
+  /// In en, this message translates to:
+  /// **'This agent doesn\'t match this phone\'s processor.'**
+  String get agentsFailArchitecture;
+
+  /// Phone check failure
+  ///
+  /// In en, this message translates to:
+  /// **'This check is out of date. Run it again.'**
+  String get agentsFailStale;
+
+  /// Phone check failure
+  ///
+  /// In en, this message translates to:
+  /// **'Another setup is running. Wait for it to finish.'**
+  String get agentsFailBusy;
+
+  /// Sign-in step title
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with {agent}'**
+  String agentsSignInTitle(String agent);
+
+  /// Sign-in step body
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} signs in with its own prompts, on your own Claude account under Anthropic\'s terms. The app never sees your sign-in.'**
+  String agentsSignInIntro(String agent);
+
+  /// Sign-in terminal: what to do while Claude's own sign-in runs
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} opens its sign-in page. Sign in there with your Claude account, then come back. If {agent} asks for a code, copy it on the page and choose Paste.'**
+  String agentsSignInTerminalIntro(String agent);
+
+  /// Sign-in step body for an agent other than Claude Code
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} signs in with its own prompts, on your own account with its provider. The app never sees your sign-in.'**
+  String agentsSignInIntroOther(String agent);
+
+  /// Sign-in terminal: what to do while another agent's own sign-in runs
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} signs in here with its own prompts. If it opens a page, sign in there and come back. If it asks for a code or key, choose Paste.'**
+  String agentsSignInTerminalIntroOther(String agent);
+
+  /// Agent sign-in step, already signed in: start the agent's own sign-in again (an expired login)
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again'**
+  String get agentsSignInAgain;
+
+  /// Sign-in terminal: the sign-in ended without signing in
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} isn\'t signed in yet. Start the sign-in again when you\'re ready.'**
+  String agentsSignInTerminalNotYet(String agent);
+
+  /// Sign-in terminal: ending the previous sign-in failed, so a new one cannot start yet
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in could not be stopped. Keep the app open and try again.'**
+  String get agentsSignInStopFailed;
+
+  /// Sign-in step: first read
+  ///
+  /// In en, this message translates to:
+  /// **'Checking sign-in…'**
+  String get agentsSignInChecking;
+
+  /// Sign-in step: starts the browser sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with {agent}'**
+  String agentsSignInStart(String agent);
+
+  /// Sign-in step: done
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get agentsSignedIn;
+
+  /// Sign-in step: done body
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} is ready for new conversations.'**
+  String agentsSignedInBody(String agent);
+
+  /// Sign-in step: closes with the agent chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Use {agent}'**
+  String agentsSignInDone(String agent);
+
+  /// Settings > Agents row: the agent's own status check confirmed a sign-in and gave the account's name (the account is shown as given, never stored)
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {account}'**
+  String agentsSignedInAs(String account);
+
+  /// Agent sheet, signed in: the action that signs the agent out of its account on this phone; also the confirm button
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out of {agent}'**
+  String agentsSignOutAction(String agent);
+
+  /// Agent sign-out question: the title
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out of {agent}?'**
+  String agentsSignOutTitle(String agent);
+
+  /// Agent sign-out question: what signing out changes
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} can\'t start new conversations until you sign in again.'**
+  String agentsSignOutBody(String agent);
+
+  /// Agent sign-out question: what is kept (marked as kept)
+  ///
+  /// In en, this message translates to:
+  /// **'Your conversations with {agent} stay.'**
+  String agentsSignOutKept(String agent);
+
+  /// Agent sheet: the agent's own sign-out did not end with a confirmed signed-out status; the Sign out action is still there
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t confirm that {agent} signed out. Try again.'**
+  String agentsSignOutFailed(String agent);
+
+  /// Agent sheet, installed agent: the quiet destructive action that removes the installed agent from this phone (BA10)
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {agent}'**
+  String agentsRemoveAction(String agent);
+
+  /// Agent removal question: the title
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {agent}?'**
+  String agentsRemoveTitle(String agent);
+
+  /// Agent removal question: what removing does and keeps
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the installed agent from this phone. Your accounts and conversations stay, and you can install it again.'**
+  String get agentsRemoveBody;
+
+  /// Agent removal: progress while the host deletes the installed agent
+  ///
+  /// In en, this message translates to:
+  /// **'Removing {agent}…'**
+  String agentsRemoving(String agent);
+
+  /// Agent removal done: the measured size freed (the size is a left-to-right isolate)
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} removed. Freed {size}.'**
+  String agentsRemoved(String agent, String size);
+
+  /// Agent removal done: nothing was installed
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} is already removed.'**
+  String agentsAlreadyRemoved(String agent);
+
+  /// Agent removal failure: unsupported agent
+  ///
+  /// In en, this message translates to:
+  /// **'This agent can\'t be removed here.'**
+  String get agentsRemoveUnsupported;
+
+  /// Agent removal failure: the agent is running or another setup is in progress
+  ///
+  /// In en, this message translates to:
+  /// **'This agent is in use. Finish its work and try again.'**
+  String get agentsRemoveBusy;
+
+  /// Agent removal failure: unavailable, unsafe or unconfirmed removal
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t confirm this agent was removed. Check this phone and try again.'**
+  String get agentsRemoveUnconfirmed;
+
+  /// Agent sheet: closes a finished step
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get agentsDone;
+
+  /// Agent model sheet title on New conversation (Claude Code and other phone agents).
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a model'**
+  String get agentsModelTitle;
+
+  /// Agent model chip and first row: use the agent's own default model.
+  ///
+  /// In en, this message translates to:
+  /// **'Default model'**
+  String get agentsModelDefault;
+
+  /// Agent model sheet while the phone's agent host lists its models.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the models…'**
+  String get agentsModelLoading;
+
+  /// Sign-in step: the code was refused before sending
+  ///
+  /// In en, this message translates to:
+  /// **'That code is incomplete. Copy the whole code from the browser (it has a # in the middle) and paste it again.'**
+  String get agentsSignInBadCode;
+
+  /// Sign-in step: failed
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in didn\'t finish. Start it again.'**
+  String get agentsSignInFailed;
+
+  /// Sign-in step: rejected
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} didn\'t accept that code. It may have expired or been used already. Tap Get a new code.'**
+  String agentsSignInRejected(String agent);
+
+  /// Sign-in step: host down
+  ///
+  /// In en, this message translates to:
+  /// **'The agent isn\'t running. Resume it, then sign in.'**
+  String get agentsSignInHostDown;
+
+  /// Sign-in step: no handler for this agent
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in isn\'t ready on this phone yet'**
+  String get agentsSignInUnavailable;
+
+  /// Sign-in step: limit
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} plan limit reached · try again later'**
+  String agentsSignInLimit(String agent);
+
+  /// Status line: limit with the reset time
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} plan limit reached · resets {time}'**
+  String agentsLimitReset(String agent, String time);
+
+  /// Status line: limit without a reset time
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} plan limit reached · try again later'**
+  String agentsLimitUnknown(String agent);
+
+  /// Status line: signed out
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} signed out'**
+  String agentsSignedOutLine(String agent);
+
+  /// Status line action
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {agent}'**
+  String agentsSignInAction(String agent);
+
+  /// Status line: stopped
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} stopped in the background'**
+  String agentsStoppedLine(String agent);
+
+  /// Status line action
+  ///
+  /// In en, this message translates to:
+  /// **'Resume {agent}'**
+  String agentsResumeAction(String agent);
+
+  /// Resume notice: title
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new conversation?'**
+  String get agentsResumeNoticeTitle;
+
+  /// Resume notice: body
+  ///
+  /// In en, this message translates to:
+  /// **'Starts a new conversation. {agent} can\'t reopen this one, and it stays as it is.'**
+  String agentsResumeNoticeBody(String agent);
+
+  /// Resume notice: confirms
+  ///
+  /// In en, this message translates to:
+  /// **'Start new conversation'**
+  String get agentsStartNew;
+
+  /// Resume notice and setup: dismiss
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get agentsCancel;
+
+  /// Restart offer line
+  ///
+  /// In en, this message translates to:
+  /// **'Close and reopen the app to finish clearing sign-ins.'**
+  String get agentsRestartLine;
+
+  /// Restart offer action
+  ///
+  /// In en, this message translates to:
+  /// **'Close the app'**
+  String get agentsRestartAction;
+
+  /// This phone: section name
+  ///
+  /// In en, this message translates to:
+  /// **'Agents'**
+  String get agentsSectionTitle;
+
+  /// Settings: why Agents is empty on another server
+  ///
+  /// In en, this message translates to:
+  /// **'Agents run on the built-in server'**
+  String get agentsRunOnBuiltIn;
+
+  /// Settings > Agents: connects to this phone's built-in server
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to the built-in server'**
+  String get agentsSwitchToBuiltIn;
+
+  /// Settings > Agents: before the first read
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for agents on this phone…'**
+  String get agentsChecking;
+
+  /// Agent sheet: this phone's processor cannot run the agent
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a 64-bit phone'**
+  String get agentsStateNeedsArm;
+
+  /// Agent sheet: the agent has no checked download
+  ///
+  /// In en, this message translates to:
+  /// **'No verified download yet'**
+  String get agentsStateNoDownload;
+
+  /// Agent sheet: quiet hint at the end of a not-installed agent's row
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get agentsInstallHint;
+
+  /// Agents: a step failed; the technical text is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t work on this phone. Open Details to see why.'**
+  String get agentsActionFailed;
+
+  /// Conversations: the filter for conversations in temp, home or root folders
+  ///
+  /// In en, this message translates to:
+  /// **'Other folders'**
+  String get chatsHomeOtherFolders;
+
+  /// Sign-in step: reads the clipboard into the code field
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get agentsSignInPaste;
+
+  /// Request card: the held answer after Allow once, shown collapsed with Undo for a few seconds before it is sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed'**
+  String get chatRequestAnswerAllowed;
+
+  /// Request card: the held answer after Reject, shown collapsed with Undo for a few seconds before it is sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get chatRequestAnswerRejected;
+
+  /// Agent card eyebrow when the card asks the person something.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} asks'**
+  String agentCardAsks(String agent);
+
+  /// Agent card eyebrow for a card that only reports.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} reports'**
+  String agentCardReports(String agent);
+
+  /// Agent card: said once by a screen reader when a waiting card appears.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} asks: {title}'**
+  String agentCardAsksAnnouncement(String agent, String title);
+
+  /// Agent card: sends the answer.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get agentCardSend;
+
+  /// Agent card confirm ask: default confirm label when the agent gave none.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, go ahead'**
+  String get agentCardConfirmDefault;
+
+  /// Agent card confirm ask: default cancel label when the agent gave none.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get agentCardCancelDefault;
+
+  /// Agent card: why Send is off with no option chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an option to send.'**
+  String get agentCardChoosePrompt;
+
+  /// Agent card, several-choice ask: why Send is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one option to send.'**
+  String get agentCardChooseOneOrMore;
+
+  /// Agent card form: why Send is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in the required fields to send.'**
+  String get agentCardFormFix;
+
+  /// Agent card form: a required field is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required.'**
+  String get agentCardFieldRequired;
+
+  /// Agent card form: a number field holds something else.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number.'**
+  String get agentCardFieldNumber;
+
+  /// Agent card form: a number is below the minimum.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter {min} or more.'**
+  String agentCardFieldMin(String min);
+
+  /// Agent card form: a number is above the maximum.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter {max} or less.'**
+  String agentCardFieldMax(String max);
+
+  /// Agent card form: note under a free-text field.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent sees this, and it is saved in the conversation.'**
+  String get agentCardTextNote;
+
+  /// Agent card: controls wait until the session is idle.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent is still working. You can answer when it stops.'**
+  String get agentCardBusy;
+
+  /// Agent card: the answer is on its way.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending your answer…'**
+  String get agentCardSending;
+
+  /// Agent card: state not known yet; read-only.
+  ///
+  /// In en, this message translates to:
+  /// **'We can\'t tell yet whether this card was answered. It updates when the conversation does.'**
+  String get agentCardUnknown;
+
+  /// Agent card: delivery uncertain; never resent automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t confirm that your answer arrived. Check the conversation before answering again.'**
+  String get agentCardDeliveryUnknown;
+
+  /// Agent card: the send failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer didn\'t go through. Nothing was sent, and you can try again.'**
+  String get agentCardFailed;
+
+  /// Agent card: receipt label when the answer has no summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get agentCardSent;
+
+  /// Agent card: opens a collapsed card read-only.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the card'**
+  String get agentCardShow;
+
+  /// Agent card: the conversation moved on before an answer.
+  ///
+  /// In en, this message translates to:
+  /// **'Not answered'**
+  String get agentCardNotAnswered;
+
+  /// Agent card: one line for a card that failed validation.
+  ///
+  /// In en, this message translates to:
+  /// **'This card couldn\'t be shown'**
+  String get agentCardUnreadable;
+
+  /// Agent card: name of the fold holding the technical reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get agentCardDetails;
+
+  /// Composer hint while an agent card waits for an answer.
+  ///
+  /// In en, this message translates to:
+  /// **'Or type your answer'**
+  String get agentCardComposerHint;
+
+  /// Agent card: confirm sheet title for a destructive confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Send this answer?'**
+  String get agentCardDangerTitle;
+
+  /// Agent card: confirm sheet body.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer goes to the agent as a message. The agent decides what to do with it.'**
+  String get agentCardDangerBody;
+
+  /// Agent card photo ask.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get agentCardPhotoTake;
+
+  /// Agent card photo ask.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose photo'**
+  String get agentCardPhotoChoose;
+
+  /// Agent card photo ask: remove control.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo {number}'**
+  String agentCardPhotoRemove(int number);
+
+  /// Agent card photo ask: name of a picked photo.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo {number}'**
+  String agentCardPhotoName(int number);
+
+  /// Agent card photo ask: how many photos are picked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {max}'**
+  String agentCardPhotoCount(int count, int max);
+
+  /// Agent card photo ask: the limit is reached.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s all the photos this card takes.'**
+  String get agentCardPhotoMax;
+
+  /// Agent card photo ask: why Send is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a photo to send.'**
+  String get agentCardPhotoNone;
+
+  /// Agent card photo ask: no photo source here.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos can\'t be added from here. Type your answer instead.'**
+  String get agentCardPhotoUnavailable;
+
+  /// Agent card photo ask: size limit.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos can be up to 10 MB each and 20 MB together.'**
+  String get agentCardPhotoTooLarge;
+
+  /// Agent card chart summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Bar chart'**
+  String get agentCardChartBar;
+
+  /// Agent card chart summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Line chart'**
+  String get agentCardChartLine;
+
+  /// Agent card chart summary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 series} other{{count} series}}'**
+  String agentCardChartSeries(int count);
+
+  /// Agent card chart summary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 point} other{{count} points}}'**
+  String agentCardChartPoints(int count);
+
+  /// Agent card chart summary.
+  ///
+  /// In en, this message translates to:
+  /// **'highest {where}: {value}'**
+  String agentCardChartHighest(String where, String value);
+
+  /// Agent card chart summary.
+  ///
+  /// In en, this message translates to:
+  /// **'no data'**
+  String get agentCardChartNone;
+
+  /// Agent card table: screen reader name.
+  ///
+  /// In en, this message translates to:
+  /// **'Table, {columns} columns, {rows} rows'**
+  String agentCardTableLabel(int columns, int rows);
+
+  /// Agent card changed-files table.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get agentCardDiffFile;
+
+  /// Agent card changed-files table.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get agentCardDiffAdded;
+
+  /// Agent card changed-files table.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed'**
+  String get agentCardDiffRemoved;
+
+  /// Agent card changed-files table: files past the first 20.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{and 1 more file} other{and {count} more files}}'**
+  String agentCardDiffMore(int count);
+
+  /// Agent card progress value.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String agentCardProgressValue(int percent);
+
+  /// Settings > Agents: switch row.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards from agents'**
+  String get cardsFromAgentsTitle;
+
+  /// Settings > Agents: what the switch does.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents can show you choices, forms and reports as cards, and ask for a photo.'**
+  String get cardsFromAgentsSupporting;
+
+  /// Cards setting status.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get cardsStatusOff;
+
+  /// Cards setting status.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking this phone…'**
+  String get cardsStatusChecking;
+
+  /// Cards setting status.
+  ///
+  /// In en, this message translates to:
+  /// **'On for {agents}'**
+  String cardsStatusOn(String agents);
+
+  /// Cards setting status: some agents are ready.
+  ///
+  /// In en, this message translates to:
+  /// **'On for {agents}. {reason}'**
+  String cardsStatusPartial(String agents, String reason);
+
+  /// Cards setting status.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart {agents} to finish turning this on.'**
+  String cardsStatusRestart(String agents);
+
+  /// Cards setting status.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available. {reason}'**
+  String cardsStatusUnavailable(String reason);
+
+  /// Cards setting status.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t turn this on. {reason}'**
+  String cardsStatusFailed(String reason);
+
+  /// Cards setting: the change threw.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t change this setting. Try again.'**
+  String get cardsSettingFailed;
+
+  /// Cards setting: agent name.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code'**
+  String get cardsAgentClaude;
+
+  /// Cards setting reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents on this server can\'t show cards.'**
+  String get cardsProblemUnsupportedHost;
+
+  /// Cards setting reason.
+  ///
+  /// In en, this message translates to:
+  /// **'The tools cards need aren\'t on this phone yet.'**
+  String get cardsProblemRuntimeMissing;
+
+  /// Cards setting reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards haven\'t been checked to work with the agents here yet.'**
+  String get cardsProblemNotQualified;
+
+  /// Cards setting reason.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone wouldn\'t allow the change.'**
+  String get cardsProblemPermissionDenied;
+
+  /// Cards setting reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Another setup already uses the same name. Nothing was changed.'**
+  String get cardsProblemConflict;
+
+  /// Cards setting reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards couldn\'t be installed.'**
+  String get cardsProblemInstallationFailed;
+
+  /// Cards setting reason.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent couldn\'t be told about cards.'**
+  String get cardsProblemRegistrationFailed;
+
+  /// Cards setting reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards were installed but didn\'t pass the check.'**
+  String get cardsProblemVerificationFailed;
+
+  /// Cards setting reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards couldn\'t be fully removed. Try again after restarting the agent.'**
+  String get cardsProblemRemovalFailed;
+
+  /// Cards setting reason.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone couldn\'t save the setting.'**
+  String get cardsProblemStorageFailed;
+
+  /// Cards setting reason.
+  ///
+  /// In en, this message translates to:
+  /// **'The phone is busy with something else. Try again in a moment.'**
+  String get cardsProblemBusy;
+
+  /// Agent card form: helper line under a required field.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get agentCardFieldRequiredHint;
+
+  /// Agent card: held answer line when the words of the answer are not known to this view.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer'**
+  String get agentCardYourAnswer;
+
+  /// Agent card: the confirm sheet's button for a destructive confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Send answer'**
+  String get agentCardDangerConfirm;
+
+  /// Sign-in terminal: opens the sign-in page the agent printed (a device sign-in or Claude's page)
+  ///
+  /// In en, this message translates to:
+  /// **'Open sign-in page'**
+  String get agentsSignInOpenPage;
+
+  /// Sign-in terminal: copies the one-time code the agent printed, to enter on its sign-in page
+  ///
+  /// In en, this message translates to:
+  /// **'Copy code {code}'**
+  String agentsSignInCopyCode(String code);
+
+  /// Cards setting: the named agents are not qualified for cards; {agents} is one or more product names already joined as a list, {count} how many
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{agents} hasn\'t been checked to work with cards yet.} other{{agents} haven\'t been checked to work with cards yet.}}'**
+  String cardsProblemNotQualifiedFor(int count, String agents);
+
+  /// Cards setting: registering cards with the named agents failed
+  ///
+  /// In en, this message translates to:
+  /// **'{agents} couldn\'t be told about cards.'**
+  String cardsProblemRegistrationFailedFor(String agents);
+
+  /// Cards setting: cards were installed for the named agents but did not verify
+  ///
+  /// In en, this message translates to:
+  /// **'Cards were installed for {agents} but didn\'t pass the check.'**
+  String cardsProblemVerificationFailedFor(String agents);
+
+  /// Cards setting: removing cards from the named agents did not finish
+  ///
+  /// In en, this message translates to:
+  /// **'Cards couldn\'t be fully removed from {agents}. Try again after a restart.'**
+  String cardsProblemRemovalFailedFor(String agents);
+
+  /// crash-consent (BD7): Header of the crash reports group on Report a problem.
+  ///
+  /// In en, this message translates to:
+  /// **'Crash reports'**
+  String get crashReportsLabel;
+
+  /// crash-consent (BD7): Switch that opts in to saving crash and not-responding reports locally.
+  ///
+  /// In en, this message translates to:
+  /// **'Save crash reports on this phone'**
+  String get crashReportsSwitch;
+
+  /// crash-consent (BD7): Supporting line under the switch: where reports stay.
+  ///
+  /// In en, this message translates to:
+  /// **'Kept on this phone. Never sent automatically.'**
+  String get crashReportsSwitchBody;
+
+  /// crash-consent (BD7): Disabled reason when the private crash store could not open.
+  ///
+  /// In en, this message translates to:
+  /// **'Crash reports aren\'t available right now. Restart the app and try again.'**
+  String get crashReportsUnavailable;
+
+  /// crash-consent (BD7): Shown when saving the choice or deleting reports failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update crash reports. Restart the app and try again.'**
+  String get crashReportsFailed;
+
+  /// crash-consent (BD7): Row while saving is on and nothing was captured.
+  ///
+  /// In en, this message translates to:
+  /// **'No crash reports yet'**
+  String get crashReportsNone;
+
+  /// crash-consent (BD7): Supporting line of the empty row.
+  ///
+  /// In en, this message translates to:
+  /// **'One appears here if the app closes or stops responding.'**
+  String get crashReportsNoneBody;
+
+  /// crash-consent (BD7): Plain title of a saved Flutter or platform error report.
+  ///
+  /// In en, this message translates to:
+  /// **'The app hit an unexpected error'**
+  String get crashKindError;
+
+  /// crash-consent (BD7): Plain title of a saved widget build error report.
+  ///
+  /// In en, this message translates to:
+  /// **'A screen couldn\'t be shown'**
+  String get crashKindScreen;
+
+  /// crash-consent (BD7): Plain title of a saved native crash report.
+  ///
+  /// In en, this message translates to:
+  /// **'The app closed unexpectedly'**
+  String get crashKindClosed;
+
+  /// crash-consent (BD7): Plain title of an Android not-responding report.
+  ///
+  /// In en, this message translates to:
+  /// **'The app stopped responding'**
+  String get crashKindNotResponding;
+
+  /// crash-consent (BD7): Body of the crash report preview sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Kept on this phone only. It\'s sent only if you include saved errors in a problem report yourself.'**
+  String get crashReportPreviewBody;
+
+  /// crash-consent (BD7): Details label: where the report came from (technical).
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get crashReportDetailSource;
+
+  /// crash-consent (BD7): Details label: fixed error category (technical).
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get crashReportDetailCategory;
+
+  /// crash-consent (BD7): Destructive row that deletes the saved crash reports; names its count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Delete 1 saved crash report} other{Delete {count} saved crash reports}}'**
+  String crashReportsDelete(int count);
+
+  /// crash-consent (BD7): Confirmation title before deleting crash reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete saved crash reports?'**
+  String get crashReportsDeleteTitle;
+
+  /// crash-consent (BD7): Confirmation body before deleting crash reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes the saved crash reports. Saving crash reports stays on.'**
+  String get crashReportsDeleteBody;
+
+  /// crash-consent (BD7): Confirm button that deletes the saved crash reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete crash reports'**
+  String get crashReportsDeleteConfirm;
+
+  /// crash-consent (BD7): Muted note under the crash reports group: what is kept and how much.
+  ///
+  /// In en, this message translates to:
+  /// **'Only what kind of problem happened and when is kept: no error messages, conversations or passwords. Keeps the latest 20 reports.'**
+  String get crashReportsNote;
+
+  /// crash-consent (BD7): Line under the switch while off, only when saved errors exist: turning on clears them.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Turning this on clears the saved error above.} other{Turning this on clears the {count} saved errors above.}}'**
+  String crashReportsOnClears(int count);
+
+  /// crash-consent (BD7): Line under the switch while on, when crash reports are saved and no other errors are.
+  ///
+  /// In en, this message translates to:
+  /// **'Turning this off deletes the saved crash reports.'**
+  String get crashReportsOffDeletes;
+
+  /// crash-consent (BD7): Line under the switch while on, when crash reports and other saved errors exist.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Turning this off deletes the saved crash reports and clears the saved error above.} other{Turning this off deletes the saved crash reports and clears the {count} saved errors above.}}'**
+  String crashReportsOffDeletesAndClears(int count);
+
+  /// crash-consent (BD7): Line under the switch while on, when no crash reports but other saved errors exist.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Turning this off clears the saved error above.} other{Turning this off clears the {count} saved errors above.}}'**
+  String crashReportsOffClears(int count);
+
+  /// crash-consent (BD7): Confirmation body before deleting crash reports, when other saved errors are cleared too.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Deletes the crash reports and clears the saved error above. Saving crash reports stays on.} other{Deletes the crash reports and clears the {count} saved errors above. Saving crash reports stays on.}}'**
+  String crashReportsDeleteBodyWithErrors(int count);
+
+  /// crash-consent (BD7): Consequence line on the Clear errors confirmation when crash reports are saved.
+  ///
+  /// In en, this message translates to:
+  /// **'The saved crash reports are deleted too.'**
+  String get crashReportsClearedToo;
+
+  /// plain-recent-errors: Plain title of a recent error from drawing a screen (Flutter framework).
+  ///
+  /// In en, this message translates to:
+  /// **'A screen couldn\'t be drawn'**
+  String get recentErrorScreen;
+
+  /// plain-recent-errors: Plain title of a recent error from the server's live event stream.
+  ///
+  /// In en, this message translates to:
+  /// **'Lost the live connection to the server'**
+  String get recentErrorConnection;
+
+  /// plain-recent-errors: Plain title of a recent entry recording that Android ended the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Android closed the app'**
+  String get recentErrorAndroidExit;
+
+  /// plain-recent-errors: Plain title of a recent entry from the phone temperature guard.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone temperature changed'**
+  String get recentErrorTemperature;
+
+  /// plain-recent-errors: Plain title of a recent error recorded while the app was starting.
+  ///
+  /// In en, this message translates to:
+  /// **'The app had trouble starting'**
+  String get recentErrorStartup;
+
+  /// plain-recent-errors: Plain title of a recent error when the saved problem report store could not open.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open saved problem reports'**
+  String get recentErrorReportStore;
+
+  /// plain-recent-errors: Plain title of any other recent error.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get recentErrorGeneric;
+
+  /// Chat journey: step title for the agent's notice that a background task it started has finished (Claude Code task_notification)
+  ///
+  /// In en, this message translates to:
+  /// **'Background task finished'**
+  String get chatUiToolBackgroundTaskFinished;
+
+  /// Chat journey: step title for the agent's notice that a background task it started failed
+  ///
+  /// In en, this message translates to:
+  /// **'Background task failed'**
+  String get chatUiToolBackgroundTaskFailed;
+
+  /// Chat journey: step title for the agent's notice that a background task ended without saying whether it finished, failed or was stopped (for example it was cut off when the previous session ended)
+  ///
+  /// In en, this message translates to:
+  /// **'Background task ended'**
+  String get chatUiToolBackgroundTaskEnded;
+
+  /// Chat journey: step title for the agent's notice that a background task it started was stopped
+  ///
+  /// In en, this message translates to:
+  /// **'Background task stopped'**
+  String get chatUiToolBackgroundTaskStopped;
+
+  /// Chat journey: tool row title for the agent card tool (oc-ui show) before or instead of its card; the card's own title follows it
+  ///
+  /// In en, this message translates to:
+  /// **'Show card'**
+  String get chatUiToolShowCard;
+
+  /// Chat journey: quiet one-line step for a finished agent card call whose card cannot be drawn in this place; the card's own title follows it
+  ///
+  /// In en, this message translates to:
+  /// **'Showed a card'**
+  String get chatUiToolShowedCard;
+
+  /// Chat journey: quiet one-line step when the agent's card call failed; the card's own title follows it
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t show this card'**
+  String get chatUiToolCardFailed;
+
+  /// Chat journey: line under a running turn that has been silent for a while while the server still answers (the model is slow)
+  ///
+  /// In en, this message translates to:
+  /// **'The model is taking longer than usual. Wait, or stop the reply and try again.'**
+  String get chatStallModelSlow;
+
+  /// Chat journey: line under a silent running turn when the agent's helper process on this phone is not running
+  ///
+  /// In en, this message translates to:
+  /// **'The agent\'s helper on this phone stopped. Stop the reply and try again.'**
+  String get chatStallHelperDown;
+
+  /// Chat journey: line under a silent running turn when the live connection or the server is down
+  ///
+  /// In en, this message translates to:
+  /// **'The connection to the agent was lost. Stop the reply and try again once it is back.'**
+  String get chatStallConnectionLost;
+
+  /// Chat journey: line under a silent running turn when the connection could not be checked
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing has come back for a while and the connection could not be checked. Wait, or stop the reply and try again.'**
+  String get chatStallConnectionUnchecked;
+
+  /// KitWorkLine: the work chip's words while its steps are open and a step runs; the running step in the list shows the progress
+  ///
+  /// In en, this message translates to:
+  /// **'Hide steps'**
+  String get kitWorkHideSteps;
+
+  /// Status line while the app switches this phone's own server to another OpenCode version; names the version being switched to, never the one being left
+  ///
+  /// In en, this message translates to:
+  /// **'Switching to {target}…'**
+  String connectionSwitchingTo(String target);
+
+  /// The status word beside the server name in the shell's server pill while this phone switches OpenCode versions
+  ///
+  /// In en, this message translates to:
+  /// **'Switching…'**
+  String get shellServerSwitching;
+
+  /// Agent picker: a ready agent whose installed version has not passed the app's certification checks, so it cannot be chosen yet
+  ///
+  /// In en, this message translates to:
+  /// **'Not certified on this version yet'**
+  String get agentsStateNotCertified;
+
+  /// Agent rows: the short Sign in chip; the row title names the agent and screen readers hear agentsSignInAction
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get agentsChipSignIn;
+
+  /// Agent rows: the short Resume chip; the row title names the agent and screen readers hear agentsResumeAction
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get agentsChipResume;
+
+  /// Agent rows: the short phone-check chip; the row title names the agent and screen readers hear agentsCheckAction
+  ///
+  /// In en, this message translates to:
+  /// **'Check'**
+  String get agentsChipCheck;
+
+  /// Joins the last two agent names of a list: 'Claude Code and OpenCode 2'; {first} may itself be a comma list
+  ///
+  /// In en, this message translates to:
+  /// **'{first} and {second}'**
+  String agentNamesPair(String first, String second);
+
+  /// fd-diagnostics: Header of the exit history group on Report a problem.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent app exits'**
+  String get diagnosticsExitHistoryTitle;
+
+  /// fd-diagnostics: Muted note under the exit history group.
+  ///
+  /// In en, this message translates to:
+  /// **'Android records each time the app closes. Nothing here is sent automatically.'**
+  String get diagnosticsExitHistoryNote;
+
+  /// fd-diagnostics: Row title when the phone cannot report exit history.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available on this phone'**
+  String get diagnosticsExitHistoryUnsupported;
+
+  /// fd-diagnostics: Supporting line when exit history is not supported.
+  ///
+  /// In en, this message translates to:
+  /// **'Android 11 and later keep this record.'**
+  String get diagnosticsExitHistoryUnsupportedBody;
+
+  /// fd-diagnostics: Notice when reading exit history failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read recent app exits. Try again, or reopen the app.'**
+  String get diagnosticsExitHistoryFailed;
+
+  /// fd-diagnostics: Exit category: normal close.
+  ///
+  /// In en, this message translates to:
+  /// **'App closed'**
+  String get diagnosticsExitNormal;
+
+  /// fd-diagnostics: Exit category: app update.
+  ///
+  /// In en, this message translates to:
+  /// **'App updated'**
+  String get diagnosticsExitUpdate;
+
+  /// fd-diagnostics: Exit category: force stop.
+  ///
+  /// In en, this message translates to:
+  /// **'App stopped'**
+  String get diagnosticsExitForceStop;
+
+  /// fd-diagnostics: Exit category: low memory.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone needed memory'**
+  String get diagnosticsExitLowMemory;
+
+  /// fd-diagnostics: Exit category: crash.
+  ///
+  /// In en, this message translates to:
+  /// **'App stopped unexpectedly'**
+  String get diagnosticsExitCrash;
+
+  /// fd-diagnostics: Exit category: killed by the system.
+  ///
+  /// In en, this message translates to:
+  /// **'Android ended the app'**
+  String get diagnosticsExitKilled;
+
+  /// fd-diagnostics: Details label: Android's numeric exit reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason code'**
+  String get diagnosticsExitReasonCode;
+
+  /// fd-diagnostics: Details label: Android's numeric process importance.
+  ///
+  /// In en, this message translates to:
+  /// **'Importance'**
+  String get diagnosticsExitImportance;
+
+  /// fd-diagnostics: Details label: the fixed safe summary of the exit.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get diagnosticsExitSummary;
+
+  /// fd-diagnostics: Row that opens the crash report preview before sharing.
+  ///
+  /// In en, this message translates to:
+  /// **'Share saved crash reports'**
+  String get diagnosticsReportOpen;
+
+  /// fd-diagnostics: Title of the crash report preview sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview crash report'**
+  String get diagnosticsReportTitle;
+
+  /// fd-diagnostics: Subtitle of the preview sheet: what is in the report and when it leaves.
+  ///
+  /// In en, this message translates to:
+  /// **'Only error categories and times, no messages or conversations. Nothing leaves this phone until you tap Share report.'**
+  String get diagnosticsReportPrivacy;
+
+  /// fd-diagnostics: Line above the preview text: how many records and how large.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 report · {size}} other{{count} reports · {size}}}'**
+  String diagnosticsReportSize(int count, String size);
+
+  /// fd-diagnostics: Primary action of the preview sheet: opens the system share sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Share report'**
+  String get diagnosticsReportShare;
+
+  /// fd-diagnostics: Notice when the preview went stale and was rebuilt.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved details changed. Check the new report before sharing.'**
+  String get diagnosticsReportStale;
+
+  /// fd-diagnostics: Notice when the share sheet could not open.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open sharing. Try again.'**
+  String get diagnosticsReportShareFailed;
+
+  /// fd-diagnostics: Notice when a report cannot be built because saving is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved crash reports are off. Turn them on to save future app errors.'**
+  String get diagnosticsReportCaptureOff;
+
+  /// fd-diagnostics: Notice when there is nothing to put in a report.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved crash reports to share.'**
+  String get diagnosticsReportEmpty;
+
+  /// fd-diagnostics: Notice when the diagnostics store is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'These details are unavailable. Reopen the app and try again.'**
+  String get diagnosticsUnavailable;
+
+  /// battery-pause (FD3): App-wide notice when Android's daily background limit stopped the background connection. {at} is 'at 3:10 PM' or 'on Sep 25 at 8:19 PM'.
+  ///
+  /// In en, this message translates to:
+  /// **'Background connection paused {at} to save battery.'**
+  String backgroundPauseTimeLimit(String at);
+
+  /// battery-pause (FD3): App-wide notice when Android's battery restriction stopped the background connection.
+  ///
+  /// In en, this message translates to:
+  /// **'Background connection paused: battery use is restricted.'**
+  String get backgroundPauseRestricted;
+
+  /// battery-pause (FD3): App-wide notice when the app was closed (Recents, Settings or the phone maker) while the background connection ran. {at} is 'at 3:10 PM' or 'on Sep 25 at 8:19 PM'.
+  ///
+  /// In en, this message translates to:
+  /// **'Background connection stopped when the app closed {at}.'**
+  String backgroundPauseUserStopped(String at);
+
+  /// battery-pause (FD3): App-wide notice when an app update ended the app while the background connection ran. {at} is 'at 3:10 PM' or 'on Sep 25 at 8:19 PM'.
+  ///
+  /// In en, this message translates to:
+  /// **'Background connection stopped when the app was updated {at}.'**
+  String backgroundPauseAppUpdated(String at);
+
+  /// battery-pause (FD3): App-wide notice when the background connection stopped for an unknown reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Background connection stopped for an unknown reason.'**
+  String get backgroundPauseInterrupted;
+
+  /// battery-pause (FD3): Notice action that starts the background connection again.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume background connection'**
+  String get backgroundPauseResume;
+
+  /// battery-pause (FD3): Compact inline action on the pause line; a screen reader hears backgroundPauseResume instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get backgroundPauseResumeShort;
+
+  /// battery-pause (FD3): Notice line while Android confirms the background connection started.
+  ///
+  /// In en, this message translates to:
+  /// **'Resuming background connection…'**
+  String get backgroundPauseResuming;
+
+  /// battery-pause (FD3): Notice line when Android did not confirm the start; the pause stays.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t resume. Open Keep running settings.'**
+  String get backgroundPauseResumeFailed;
+
+  /// battery-pause (FD3): Notice action that opens the Keep running in the background settings (Notifications and background page).
+  ///
+  /// In en, this message translates to:
+  /// **'Open Keep running settings'**
+  String get backgroundPauseOpenKeepRunning;
+
+  /// battery-pause (FD3): Screen-reader announcement after Android confirmed the background connection runs again.
+  ///
+  /// In en, this message translates to:
+  /// **'Background connection resumed.'**
+  String get backgroundPauseResumed;
+
+  /// exit-list-focus: Line under Recent app exits when no exit was a problem.
+  ///
+  /// In en, this message translates to:
+  /// **'No unexpected closes recently.'**
+  String get diagnosticsExitNoProblems;
+
+  /// exit-list-focus: Quiet row that folds the routine exits (updates, the person closing the app).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 routine close (updates, you closed it)} other{{count} routine closes (updates, you closed it)}}'**
+  String diagnosticsExitRoutine(int count);
+
+  /// exit-list-focus: Row that shows every problem exit beyond the first five.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Show all 1} other{Show all {count}}}'**
+  String diagnosticsExitShowAll(int count);
+
+  /// exit-list-focus: Exit category: Android gave no reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed for an unknown reason'**
+  String get diagnosticsExitUnknown;
+
+  /// exit-list-focus: Time of an exit earlier today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today {time}'**
+  String diagnosticsExitToday(String time);
+
+  /// exit-list-focus: Time of an exit yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday {time}'**
+  String diagnosticsExitYesterday(String time);
+
+  /// Ongoing background notification: the one line saying what the running tool is doing (no command, path or query ever travels); sent to Android as the notification's detail
+  ///
+  /// In en, this message translates to:
+  /// **'Running a command…'**
+  String get liveToolCommand;
+
+  /// Ongoing background notification: the one line saying what the running tool is doing (no command, path or query ever travels); sent to Android as the notification's detail
+  ///
+  /// In en, this message translates to:
+  /// **'Editing files…'**
+  String get liveToolEdit;
+
+  /// Ongoing background notification: the one line saying what the running tool is doing (no command, path or query ever travels); sent to Android as the notification's detail
+  ///
+  /// In en, this message translates to:
+  /// **'Reading files…'**
+  String get liveToolRead;
+
+  /// Ongoing background notification: the one line saying what the running tool is doing (no command, path or query ever travels); sent to Android as the notification's detail
+  ///
+  /// In en, this message translates to:
+  /// **'Searching files…'**
+  String get liveToolSearch;
+
+  /// Ongoing background notification: the one line saying what the running tool is doing (no command, path or query ever travels); sent to Android as the notification's detail
+  ///
+  /// In en, this message translates to:
+  /// **'Browsing the web…'**
+  String get liveToolWeb;
+
+  /// Ongoing background notification: the one line saying what the running tool is doing (no command, path or query ever travels); sent to Android as the notification's detail
+  ///
+  /// In en, this message translates to:
+  /// **'Running a subagent…'**
+  String get liveToolSubagent;
+
+  /// Ongoing background notification: the one line saying what the running tool is doing (no command, path or query ever travels); sent to Android as the notification's detail
+  ///
+  /// In en, this message translates to:
+  /// **'Planning…'**
+  String get liveToolPlan;
+
+  /// Ongoing background notification: the one line saying what the running tool is doing (no command, path or query ever travels); sent to Android as the notification's detail
+  ///
+  /// In en, this message translates to:
+  /// **'Working…'**
+  String get liveToolWorking;
+
+  /// Ongoing background notification: the one line saying what the running tool is doing (no command, path or query ever travels); sent to Android as the notification's detail
+  ///
+  /// In en, this message translates to:
+  /// **'Showing a card…'**
+  String get liveToolCard;
+
+  /// Ongoing background notification: the one line saying what the running tool is doing (no command, path or query ever travels); sent to Android as the notification's detail
+  ///
+  /// In en, this message translates to:
+  /// **'Checking a background task…'**
+  String get liveToolBackgroundTask;
+
+  /// Ongoing background notification: the one line saying what the running tool is doing (no command, path or query ever travels); sent to Android as the notification's detail
+  ///
+  /// In en, this message translates to:
+  /// **'Running {tool}…'**
+  String liveToolOther(String tool);
+
+  /// Language sheet: the language's own name (Japanese), written in that language and never translated, like the Arabic and English rows.
+  ///
+  /// In en, this message translates to:
+  /// **'日本語'**
+  String get e7LocaleUiJapanese;
+
+  /// Language sheet: the language's own name (Chinese), written in that language and never translated, like the Arabic and English rows.
+  ///
+  /// In en, this message translates to:
+  /// **'简体中文'**
+  String get e7LocaleUiChinese;
+
+  /// Language sheet: the language's own name (Spanish), written in that language and never translated, like the Arabic and English rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Español'**
+  String get e7LocaleUiSpanish;
+
+  /// Language sheet: the language's own name (Portuguese), written in that language and never translated, like the Arabic and English rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Português (Brasil)'**
+  String get e7LocaleUiPortuguese;
+
+  /// Language sheet: the language's own name (Russian), written in that language and never translated, like the Arabic and English rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Русский'**
+  String get e7LocaleUiRussian;
+
+  /// Suggested-connector card eyebrow: who recommends adding a connector.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} suggests a connector'**
+  String connectorCardSuggests(String agent);
+
+  /// Suggested-connector card: spoken once when the card appears.
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} suggests a connector: {name}'**
+  String connectorCardAnnouncement(String agent, String name);
+
+  /// Suggested-connector card: label for where the connector runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs'**
+  String get connectorCardRuns;
+
+  /// Suggested-connector card: label for how long the connection lasts.
+  ///
+  /// In en, this message translates to:
+  /// **'Lasts'**
+  String get connectorCardLasts;
+
+  /// Suggested-connector card: the connection is runtime-only and is not saved to configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'While this server runs'**
+  String get connectorCardLastsValue;
+
+  /// Suggested-connector card: an npm package runs on the server.
+  ///
+  /// In en, this message translates to:
+  /// **'On this server, with Node'**
+  String get connectorCardRunsNode;
+
+  /// Suggested-connector card: a PyPI package runs on the server.
+  ///
+  /// In en, this message translates to:
+  /// **'On this server, with Python'**
+  String get connectorCardRunsPython;
+
+  /// Suggested-connector card: a container listing the app cannot start.
+  ///
+  /// In en, this message translates to:
+  /// **'In Docker, which the app cannot start'**
+  String get connectorCardRunsDocker;
+
+  /// Suggested-connector card: a listing with no address or package the app can use.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing the app can start'**
+  String get connectorCardRunsNone;
+
+  /// Connector search step: the connector is hosted by someone else (one word).
+  ///
+  /// In en, this message translates to:
+  /// **'Hosted'**
+  String get connectorCardRunsHosted;
+
+  /// Suggested-connector card: the one primary button.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get connectorCardConnect;
+
+  /// Suggested-connector card: progress on the Connect button.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get connectorCardConnecting;
+
+  /// Suggested-connector card: progress while the server status is read again.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the connection…'**
+  String get connectorCardChecking;
+
+  /// Suggested-connector card: the server asks for sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'This connector needs you to sign in.'**
+  String get connectorCardSignInNeeded;
+
+  /// Suggested-connector card: starts the sign-in in the browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get connectorCardSignIn;
+
+  /// Suggested-connector card: opens the sign-in page again.
+  ///
+  /// In en, this message translates to:
+  /// **'Open sign-in page'**
+  String get connectorCardOpenSignIn;
+
+  /// Suggested-connector card: the browser sign-in is in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for sign-in to finish in your browser.'**
+  String get connectorCardSignInWaiting;
+
+  /// Suggested-connector card: the phone could not listen for the browser return, so the person pastes it.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the browser return URL or authorization code to finish sign-in.'**
+  String get connectorCardManualCode;
+
+  /// Suggested-connector card: label of the field for the pasted sign-in return.
+  ///
+  /// In en, this message translates to:
+  /// **'Return URL or code'**
+  String get connectorCardCodeLabel;
+
+  /// Suggested-connector card: why Finish sign-in is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the return URL or code first.'**
+  String get connectorCardCodeRequired;
+
+  /// Suggested-connector card: sends the pasted return to finish sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish sign-in'**
+  String get connectorCardFinishSignIn;
+
+  /// Suggested-connector card: reads the connector status again.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get connectorCardCheckStatus;
+
+  /// Suggested-connector card: stops waiting for the browser sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel sign-in'**
+  String get connectorCardCancelSignIn;
+
+  /// Suggested-connector card: title of the question before cancelling sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel sign-in?'**
+  String get connectorCardCancelTitle;
+
+  /// Suggested-connector card: what cancelling sign-in does on OpenCode 1 (saved sign-in is cleared).
+  ///
+  /// In en, this message translates to:
+  /// **'{name} stops waiting, and its saved sign-in is cleared. You would sign in again to use it.'**
+  String connectorCardCancelBody(String name);
+
+  /// Suggested-connector card: the safe answer to the cancel-sign-in question.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep waiting'**
+  String get connectorCardKeepWaiting;
+
+  /// Suggested-connector card: the connector is connected (a check mark beside it).
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get connectorCardConnected;
+
+  /// Suggested-connector card: the server confirmed the tools can be used on the next step.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools ready'**
+  String get connectorCardToolsReady;
+
+  /// Suggested-connector card: readiness confirmed; nothing is sent automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'Loaded tools. Continue this conversation to use them.'**
+  String get connectorCardLoadedTools;
+
+  /// Suggested-connector card: connected, but this server cannot confirm the tools are ready.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected. Tool availability has not been confirmed.'**
+  String get connectorCardConnectedUnconfirmed;
+
+  /// Suggested-connector card: this agent cannot connect connectors from chat.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent cannot connect tools from a conversation.'**
+  String get connectorCardFailureUnavailable;
+
+  /// Suggested-connector card: the suggestion cannot be used.
+  ///
+  /// In en, this message translates to:
+  /// **'This connector suggestion is not available. Browse connectors in Tools.'**
+  String get connectorCardFailureInvalidSuggestion;
+
+  /// Suggested-connector card: the connector needs a key, settings or a local package.
+  ///
+  /// In en, this message translates to:
+  /// **'This connector needs setup in Tools before it can connect.'**
+  String get connectorCardFailureSetupRequired;
+
+  /// Suggested-connector card: a server with this name is already set up.
+  ///
+  /// In en, this message translates to:
+  /// **'A connector with this name already exists. Check it in Tools.'**
+  String get connectorCardFailureNameConflict;
+
+  /// Suggested-connector card: the profile, project or server changed.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation\'s connection changed. Reopen the connector card.'**
+  String get connectorCardFailureSourceChanged;
+
+  /// Suggested-connector card: the connect request had no confirmed result.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not confirm the connection. Check its status before trying again.'**
+  String get connectorCardFailureConnectFailed;
+
+  /// Suggested-connector card: the sign-in had no confirmed result.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in could not be confirmed. Check its status before trying again.'**
+  String get connectorCardFailureAuthenticationFailed;
+
+  /// Suggested-connector card: this server cannot finish sign-in from chat.
+  ///
+  /// In en, this message translates to:
+  /// **'This connector cannot sign in from a conversation.'**
+  String get connectorCardFailureOauthUnavailable;
+
+  /// Suggested-connector card: the status read says it is not connected.
+  ///
+  /// In en, this message translates to:
+  /// **'The connector is not connected yet. Check its setup in Tools.'**
+  String get connectorCardFailureNotConnected;
+
+  /// Suggested-connector card: the way forward to the MCP catalogue.
+  ///
+  /// In en, this message translates to:
+  /// **'Open connectors in Tools'**
+  String get connectorCardOpenTools;
+
+  /// Suggested-connector card: connect again (an add that was already sent is only checked, never repeated).
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get connectorCardTryAgain;
+
+  /// Suggested-connector card: builds the card again after the connection changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen card'**
+  String get connectorCardReopen;
+
+  /// Tool step: the agent searched the connector catalogue already loaded on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Searched connectors'**
+  String get chatUiToolSearchedConnectors;
+
+  /// Tool step: a connector search matched nothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No connectors found in the loaded catalogue.'**
+  String get chatUiConnectorSearchEmpty;
+
+  /// Tool step: the connector catalogue has not been loaded on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'The catalogue could not be loaded right now. Ask again in a moment.'**
+  String get chatUiConnectorSearchNotLoaded;
+
+  /// Tool step detail: the person has not turned the connector catalogue on.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalogue is off'**
+  String get chatUiConnectorSearchOff;
+
+  /// Tool step: explains what turning the connector catalogue on does.
+  ///
+  /// In en, this message translates to:
+  /// **'The connector catalogue is a public list of connectors. Turning it on downloads that list and sends your search words to the public registry; nothing gets connected.'**
+  String get chatUiConnectorSearchOffBody;
+
+  /// Button in a connector search step: turn the catalogue on for this profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on connector catalogue'**
+  String get chatUiConnectorSearchTurnOn;
+
+  /// Shown after the person turned the connector catalogue on from a search step.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalogue is on. Ask the agent to search again.'**
+  String get chatUiConnectorSearchTurnedOn;
+
+  /// Shown when turning the connector catalogue on from a search step failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The catalogue could not be turned on. Try again.'**
+  String get chatUiConnectorSearchTurnOnFailed;
+
+  /// Tool step: the connector search could not run.
+  ///
+  /// In en, this message translates to:
+  /// **'Connector search is unavailable. Try again from Tools.'**
+  String get chatUiConnectorSearchUnavailable;
+
+  /// Tool step: the connector search request was refused.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid connector search request.'**
+  String get chatUiConnectorSearchInvalid;
+
+  /// Tool step: a found connector is not connected on this server.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get chatUiConnectorSearchNotConnected;
+
+  /// KitMarkdown: the name of a picture in an agent's reply whose Markdown gave no description (empty, or just the word Image)
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get kitMarkdownImage;
+
+  /// Chat step: the agent's plan for the work, shown as the step's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get toolCardPlan;
+
+  /// Chat step: the title of the setup that prepares a separate copy of the project for an agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Setting up a separate copy'**
+  String get toolCardWorktreeSetup;
+
+  /// Chat sub-agent step: label of the fold listing the steps the sub-agent took.
+  ///
+  /// In en, this message translates to:
+  /// **'What it did'**
+  String get toolCardWhatItDid;
+
+  /// Chat step: label of the fold that holds a tool's nested technical values, kept out of the plain list above.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical details'**
+  String get toolCardTechnicalDetails;
+
+  /// Chat web page step: how the page answered, such as 200 OK or 404 Not Found.
+  ///
+  /// In en, this message translates to:
+  /// **'Page answered {status}'**
+  String toolCardPageStatus(String status);
+
+  /// Chat web page step: what the agent asked of the page.
+  ///
+  /// In en, this message translates to:
+  /// **'Asked: {prompt}'**
+  String toolCardAsked(String prompt);
+
+  /// Chat journey: Note
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get chatUiAgentNote;
+
+  /// Chat journey: Warning
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get chatUiAgentWarning;
+
+  /// Chat journey: Problem
+  ///
+  /// In en, this message translates to:
+  /// **'Problem'**
+  String get chatUiAgentProblem;
+
+  /// Chat journey: Compacted automatically to make room.
+  ///
+  /// In en, this message translates to:
+  /// **'Compacted automatically to make room.'**
+  String get chatUiCompactedAutomatically;
+
+  /// Chat journey: Compacted when you asked.
+  ///
+  /// In en, this message translates to:
+  /// **'Compacted when you asked.'**
+  String get chatUiCompactedWhenAsked;
+
+  /// Chat journey: It was about {tokens} tokens long.
+  ///
+  /// In en, this message translates to:
+  /// **'It was about {tokens} tokens long.'**
+  String chatUiCompactedFrom(String tokens);
+
+  /// Chat journey: Open a web page
+  ///
+  /// In en, this message translates to:
+  /// **'Open a web page'**
+  String get chatRequestTitleFetch;
+
+  /// Chat journey: Search the web
+  ///
+  /// In en, this message translates to:
+  /// **'Search the web'**
+  String get chatRequestTitleWebSearch;
+
+  /// Chat journey: Search the project
+  ///
+  /// In en, this message translates to:
+  /// **'Search the project'**
+  String get chatRequestTitleSearch;
+
+  /// Chat journey: Start a helper agent
+  ///
+  /// In en, this message translates to:
+  /// **'Start a helper agent'**
+  String get chatRequestTitleTask;
+
+  /// Chat journey: Use a skill
+  ///
+  /// In en, this message translates to:
+  /// **'Use a skill'**
+  String get chatRequestTitleSkill;
+
+  /// Chat journey: Switch the agent's mode
+  ///
+  /// In en, this message translates to:
+  /// **'Switch the agent\'s mode'**
+  String get chatRequestTitleMode;
+
+  /// Chat journey: Runs in
+  ///
+  /// In en, this message translates to:
+  /// **'Runs in'**
+  String get chatRequestDetailRunsIn;
+
+  /// Chat journey: What it asks for
+  ///
+  /// In en, this message translates to:
+  /// **'What it asks for'**
+  String get chatRequestDetailAsks;
+
+  /// Chat journey: Part of the file
+  ///
+  /// In en, this message translates to:
+  /// **'Part of the file'**
+  String get chatRequestDetailRange;
+
+  /// Chat journey: Helper type
+  ///
+  /// In en, this message translates to:
+  /// **'Helper type'**
+  String get chatRequestDetailHelper;
+
+  /// Chat journey: from line {line}
+  ///
+  /// In en, this message translates to:
+  /// **'from line {line}'**
+  String chatRequestReadFrom(String line);
+
+  /// Chat journey: {count, plural, one{1 line} other{{count} lines}}
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 line} other{{count} lines}}'**
+  String chatRequestReadLines(num count);
+
+  /// Chat journey: What was sent
+  ///
+  /// In en, this message translates to:
+  /// **'What was sent'**
+  String get toolCardWhatWasSent;
+
+  /// Chat journey: What came back
+  ///
+  /// In en, this message translates to:
+  /// **'What came back'**
+  String get toolCardWhatCameBack;
+
+  /// Request card: Show more
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get kitRequestShowMore;
+
+  /// Request card: Show less
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get kitRequestShowLess;
+
+  /// Add server: the agents a checked Paseo daemon can run right now
+  ///
+  /// In en, this message translates to:
+  /// **'Ready on that computer: {agents}.'**
+  String paseoCheckReady(String agents);
+
+  /// Add server: a checked Paseo daemon reports no agent ready
+  ///
+  /// In en, this message translates to:
+  /// **'No agent is ready on that computer yet.'**
+  String get paseoCheckNoneReady;
+
+  /// Server details sheet: the version the server last reported
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get serverRowDetailsVersion;
+
+  /// Capabilities page: running a project's dev server
+  ///
+  /// In en, this message translates to:
+  /// **'Dev servers'**
+  String get capabilityDevServices;
+
+  /// Capabilities page: dev servers detail
+  ///
+  /// In en, this message translates to:
+  /// **'Start a project\'s server or preview, and stop it again'**
+  String get capabilityDevServicesDetail;
+
+  /// Capabilities page: web search
+  ///
+  /// In en, this message translates to:
+  /// **'Web search'**
+  String get capabilityWebSearch;
+
+  /// Capabilities page: web search detail
+  ///
+  /// In en, this message translates to:
+  /// **'Let the agent look things up on the web'**
+  String get capabilityWebSearchDetail;
+
+  /// Capabilities page: deleting a message
+  ///
+  /// In en, this message translates to:
+  /// **'Delete a message'**
+  String get capabilityDeleteMessage;
+
+  /// Capabilities page: delete message detail
+  ///
+  /// In en, this message translates to:
+  /// **'Remove a message from a conversation'**
+  String get capabilityDeleteMessageDetail;
+
+  /// Capabilities page: the list of always-allowed actions
+  ///
+  /// In en, this message translates to:
+  /// **'Saved approvals'**
+  String get capabilitySavedPermissions;
+
+  /// Capabilities page: saved approvals detail
+  ///
+  /// In en, this message translates to:
+  /// **'See and remove the actions you always allowed'**
+  String get capabilitySavedPermissionsDetail;
+
+  /// Capabilities page: adding MCP servers
+  ///
+  /// In en, this message translates to:
+  /// **'Add MCP servers'**
+  String get capabilityMcpAdd;
+
+  /// Capabilities page: add MCP detail
+  ///
+  /// In en, this message translates to:
+  /// **'Add an MCP server or change its settings from the app'**
+  String get capabilityMcpAddDetail;
+
+  /// Capabilities page: approval prompts
+  ///
+  /// In en, this message translates to:
+  /// **'Ask before acting'**
+  String get capabilityApprovals;
+
+  /// Capabilities page: approvals detail
+  ///
+  /// In en, this message translates to:
+  /// **'Choose whether the agent asks for approval or acts on its own'**
+  String get capabilityApprovalsDetail;
+
+  /// Capabilities page: sending a message while the agent is busy
+  ///
+  /// In en, this message translates to:
+  /// **'Send while it works'**
+  String get capabilitySteer;
+
+  /// Capabilities page: send while busy detail
+  ///
+  /// In en, this message translates to:
+  /// **'Add a message while the agent is busy; it reads it during the current turn'**
+  String get capabilitySteerDetail;
+
+  /// Server settings: the sign-in row of a Claude Code or Pi server with a password saved
+  ///
+  /// In en, this message translates to:
+  /// **'Password saved on this phone'**
+  String get serverSettingsAuthPasswordSaved;
+
+  /// Server settings: the sign-in row of a Codex server with its token saved
+  ///
+  /// In en, this message translates to:
+  /// **'Connection token saved on this phone'**
+  String get serverSettingsAuthTokenSaved;
+
+  /// Server settings: the sign-in row of a Codex server with no token saved
+  ///
+  /// In en, this message translates to:
+  /// **'No connection token saved'**
+  String get serverSettingsAuthTokenMissing;
+
+  /// Status line: the saved password was rejected; names the server
+  ///
+  /// In en, this message translates to:
+  /// **'The password for {server} changed. Update it to reconnect.'**
+  String connectionPasswordRejectedFor(String server);
+
+  /// Status line: the saved connection token was rejected; names the server
+  ///
+  /// In en, this message translates to:
+  /// **'{server} rejected the connection token. Update it to reconnect.'**
+  String connectionTokenRejectedFor(String server);
+
+  /// Server settings: edit the saved server
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {server}'**
+  String serverSettingsEditTitle(String server);
+
+  /// Server settings: edit row detail
+  ///
+  /// In en, this message translates to:
+  /// **'Change its name, address or sign-in'**
+  String get serverSettingsEditDetail;
+
+  /// Server settings: remove the saved server
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {server}'**
+  String serverSettingsRemoveTitle(String server);
+
+  /// Server settings: remove row detail
+  ///
+  /// In en, this message translates to:
+  /// **'Forget it on this phone. Its conversations stay on the server.'**
+  String get serverSettingsRemoveDetail;
+
+  /// Server settings, Paseo: ask the daemon which agents are ready
+  ///
+  /// In en, this message translates to:
+  /// **'Check for agents again'**
+  String get serverSettingsRecheckAgents;
+
+  /// Server settings: recheck detail
+  ///
+  /// In en, this message translates to:
+  /// **'Use it after signing in to an agent on that computer.'**
+  String get serverSettingsRecheckAgentsDetail;
+
+  /// Server settings: recheck in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for agents…'**
+  String get serverSettingsRecheckChecking;
+
+  /// Server settings: recheck failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check for agents. Try again in a moment.'**
+  String get serverSettingsRecheckFailed;
+
+  /// MCP server row: opens what the server said when it failed
+  ///
+  /// In en, this message translates to:
+  /// **'Details for {name}'**
+  String integrationsMcpDetails(String name);
+
+  /// No description provided for @usageBusiestDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Busiest days'**
+  String get usageBusiestDays;
+
+  /// Usage: how many agent steps ran on one day
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {1 step} other {{count} steps}}'**
+  String usageDaySteps(int count);
+
+  /// Model picker: under an agent that has no description of its own, the model it works with
+  ///
+  /// In en, this message translates to:
+  /// **'Uses {model}'**
+  String modelPickerAgentUses(String model);
+
+  /// No description provided for @sessionMenuArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive conversation'**
+  String get sessionMenuArchive;
+
+  /// No description provided for @sessionMenuArchiveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Moves it to Archived; the server keeps it'**
+  String get sessionMenuArchiveHint;
+
+  /// No description provided for @sessionMenuDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete conversation'**
+  String get sessionMenuDelete;
+
+  /// No description provided for @sessionMenuDeleteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Removes it and its history for good'**
+  String get sessionMenuDeleteHint;
+
+  /// Question before archiving the open conversation, naming it
+  ///
+  /// In en, this message translates to:
+  /// **'Archive “{title}”?'**
+  String sessionArchiveTitle(String title);
+
+  /// No description provided for @sessionArchiveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It moves to Archived, where you can still read it.'**
+  String get sessionArchiveBody;
+
+  /// Question before deleting the open conversation, naming it
+  ///
+  /// In en, this message translates to:
+  /// **'Delete “{title}”?'**
+  String sessionDeleteTitle(String title);
+
+  /// No description provided for @sessionDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The conversation and its history are removed for good. This cannot be undone.'**
+  String get sessionDeleteBody;
+
+  /// Inbox: a server the monitor could not check
+  ///
+  /// In en, this message translates to:
+  /// **'{server} can\'t be reached'**
+  String monitorUnreachableTitle(String server);
+
+  /// Inbox: what happens when the unreachable server returns
+  ///
+  /// In en, this message translates to:
+  /// **'Its questions will show here once it\'s back.'**
+  String get monitorUnreachableDetail;
+
+  /// Inbox: check the unreachable server again
+  ///
+  /// In en, this message translates to:
+  /// **'Check {server} again'**
+  String monitorUnreachableCheck(String server);
+
+  /// Agents list: the plan limit was reached and the agent said when it resets
+  ///
+  /// In en, this message translates to:
+  /// **'Plan limit reached · resets {time}'**
+  String agentsStateLimitReset(String time);
+
+  /// Export conversation: shown when the readable transcript is chosen, which is never redacted
+  ///
+  /// In en, this message translates to:
+  /// **'The transcript is not redacted. It holds exactly what you see, including any secrets or private paths in the conversation.'**
+  String get exportMarkdownUnredacted;
+
+  /// Two-step sheet body before a failed run is cancelled; names the task it stops
+  ///
+  /// In en, this message translates to:
+  /// **'“{task}” stops. Its open work stays as it is.'**
+  String teamUiGateAnswerConfirmCancelNamedBody(String task);
+
+  /// Body of the Stop project confirm; names the project
+  ///
+  /// In en, this message translates to:
+  /// **'“{project}” stops. Its running tasks stop and their work and history stay.'**
+  String teamProjectStopNamedBody(String project);
+
+  /// Body of the Stop task confirm; names the task
+  ///
+  /// In en, this message translates to:
+  /// **'“{task}” stops. Its conversation and changes stay for review.'**
+  String teamProjectTaskStopNamedBody(String task);
+
+  /// Row state word for an agent the host says it cannot run
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t start'**
+  String get teamAgentUnavailableState;
+
+  /// Plain reason when the host's unavailable text mentions a model, provider or sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'Its model isn\'t set up on the computer'**
+  String get teamAgentUnavailableModelWords;
+
+  /// Plain reason for any other host unavailable text
+  ///
+  /// In en, this message translates to:
+  /// **'The computer can\'t run it right now'**
+  String get teamAgentUnavailableOtherWords;
+
+  /// Agent page notice title when the host says the agent is unavailable
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} can\'t start'**
+  String teamAgentUnavailableTitle(String agent);
+
+  /// Agent page notice body for an unavailable agent; reason is a plain sentence without a full stop
+  ///
+  /// In en, this message translates to:
+  /// **'{reason}. Fix it on the computer, then check again.'**
+  String teamAgentUnavailableBody(String reason);
+
+  /// Technical details label for the host's own unavailable text
+  ///
+  /// In en, this message translates to:
+  /// **'What the computer says'**
+  String get teamAgentUnavailableHostSays;
+
+  /// Receipt word for the hard kill of an agent session
+  ///
+  /// In en, this message translates to:
+  /// **'Force stop'**
+  String get teamControlForceStop;
+
+  /// Receipt word for pausing a project
+  ///
+  /// In en, this message translates to:
+  /// **'Pause project'**
+  String get teamProjectControlSuspendWord;
+
+  /// Receipt word for resuming a project
+  ///
+  /// In en, this message translates to:
+  /// **'Resume project'**
+  String get teamProjectControlResumeWord;
+
+  /// Receipt word for deleting a project
+  ///
+  /// In en, this message translates to:
+  /// **'Delete project'**
+  String get teamProjectControlRemoveWord;
+
+  /// Receipt word for switching a scheduled job on
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get teamJobTurnOnWord;
+
+  /// Receipt word for switching a scheduled job off
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off'**
+  String get teamJobTurnOffWord;
+
+  /// Section label on the team home for the host's projects
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get teamHomeProjectsTitle;
+
+  /// State word of a project that takes work
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get teamRigStateActive;
+
+  /// State word of a project that was paused
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get teamRigStatePaused;
+
+  /// Project page notice title when it is paused
+  ///
+  /// In en, this message translates to:
+  /// **'{project} is paused'**
+  String teamRigPausedTitle(String project);
+
+  /// Project page notice body when it is paused
+  ///
+  /// In en, this message translates to:
+  /// **'No new work starts in it until you resume it.'**
+  String get teamRigPausedBody;
+
+  /// Button that pauses a project, naming it
+  ///
+  /// In en, this message translates to:
+  /// **'Pause project {project}'**
+  String teamRigPause(String project);
+
+  /// Button that resumes a project, naming it
+  ///
+  /// In en, this message translates to:
+  /// **'Resume project {project}'**
+  String teamRigResume(String project);
+
+  /// Pause confirmation title
+  ///
+  /// In en, this message translates to:
+  /// **'Pause {project}?'**
+  String teamRigPauseTitle(String project);
+
+  /// Pause confirmation body; says what stops
+  ///
+  /// In en, this message translates to:
+  /// **'No new work starts in “{project}” until you resume it. Nothing is deleted.'**
+  String teamRigPauseBody(String project);
+
+  /// Pause confirmation button
+  ///
+  /// In en, this message translates to:
+  /// **'Pause project'**
+  String get teamRigPauseConfirm;
+
+  /// Button that deletes a project, naming it
+  ///
+  /// In en, this message translates to:
+  /// **'Delete project {project}'**
+  String teamRigDelete(String project);
+
+  /// Delete confirmation title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {project}?'**
+  String teamRigDeleteTitle(String project);
+
+  /// Delete confirmation body for a project on a computer's team
+  ///
+  /// In en, this message translates to:
+  /// **'“{project}” is removed from this team. Its folder and files on the computer are not touched.'**
+  String teamRigDeleteBody(String project);
+
+  /// Delete confirmation button
+  ///
+  /// In en, this message translates to:
+  /// **'Delete project'**
+  String get teamRigDeleteConfirm;
+
+  /// Consequence line: what a project delete takes away
+  ///
+  /// In en, this message translates to:
+  /// **'The team stops working on it'**
+  String get teamRigDeleteLost;
+
+  /// Consequence line: what a project delete keeps
+  ///
+  /// In en, this message translates to:
+  /// **'Its folder and files on the computer'**
+  String get teamRigDeleteKeptFiles;
+
+  /// Consequence line: what a project delete keeps
+  ///
+  /// In en, this message translates to:
+  /// **'Its past tasks and history'**
+  String get teamRigDeleteKeptHistory;
+
+  /// Technical details label for a project's folder
+  ///
+  /// In en, this message translates to:
+  /// **'Folder on the computer'**
+  String get teamRigFolderLabel;
+
+  /// Project page state when the project no longer exists
+  ///
+  /// In en, this message translates to:
+  /// **'This project is gone'**
+  String get teamRigNotFoundTitle;
+
+  /// Project page state body
+  ///
+  /// In en, this message translates to:
+  /// **'The computer no longer lists it. Go back to the team.'**
+  String get teamRigNotFoundBody;
+
+  /// Visible row on a project's page that deletes it, naming it
+  ///
+  /// In en, this message translates to:
+  /// **'Delete project {project}'**
+  String teamProjectDelete(String project);
+
+  /// Delete project confirmation title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {project}?'**
+  String teamProjectDeleteTitle(String project);
+
+  /// Delete project confirmation body for the in-app engine
+  ///
+  /// In en, this message translates to:
+  /// **'“{project}” is deleted from this phone\'s AI Team, with the team\'s copy of its code. This can\'t be undone.'**
+  String teamProjectDeleteBody(String project);
+
+  /// Delete project confirmation button
+  ///
+  /// In en, this message translates to:
+  /// **'Delete project'**
+  String get teamProjectDeleteConfirm;
+
+  /// Consequence line: deleted with the project
+  ///
+  /// In en, this message translates to:
+  /// **'Its plan, tasks and history are deleted'**
+  String get teamProjectDeleteLostPlan;
+
+  /// Consequence line: stops with the project
+  ///
+  /// In en, this message translates to:
+  /// **'Running work stops'**
+  String get teamProjectDeleteLostRunning;
+
+  /// Consequence line: kept when the project is deleted
+  ///
+  /// In en, this message translates to:
+  /// **'The folder you added it from stays as it is'**
+  String get teamProjectDeleteKept;
+
+  /// Agent page action and its confirmation button; ends the session at once
+  ///
+  /// In en, this message translates to:
+  /// **'Force stop {agent}'**
+  String teamAgentForceStop(String agent);
+
+  /// Force stop confirmation title
+  ///
+  /// In en, this message translates to:
+  /// **'Force stop {agent}?'**
+  String teamAgentForceStopTitle(String agent);
+
+  /// Force stop confirmation body; says what is lost
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} ends at once, without finishing what it is doing. Work it hasn\'t saved may be lost.'**
+  String teamAgentForceStopBody(String agent);
+
+  /// Agent page notice title when a normal stop did not end the session
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} didn\'t stop'**
+  String teamAgentStopStuckTitle(String agent);
+
+  /// Agent page notice body when a normal stop did not work
+  ///
+  /// In en, this message translates to:
+  /// **'The normal stop didn\'t end it. You can force it to end now.'**
+  String get teamAgentStopStuckBody;
+
+  /// Section label on a project's page for the host's scheduled jobs
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled jobs'**
+  String get teamJobsTitle;
+
+  /// Section label for scheduled jobs that belong to no one project
+  ///
+  /// In en, this message translates to:
+  /// **'For the whole team'**
+  String get teamJobsWholeTeamTitle;
+
+  /// Empty state on a project page: the host has no scheduled jobs for it
+  ///
+  /// In en, this message translates to:
+  /// **'No scheduled jobs'**
+  String get teamJobsEmptyTitle;
+
+  /// Empty state body
+  ///
+  /// In en, this message translates to:
+  /// **'The computer starts nothing on its own for this project.'**
+  String get teamJobsEmptyBody;
+
+  /// Failed state on a project page
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read scheduled jobs'**
+  String get teamJobsFailedTitle;
+
+  /// Failed state body
+  ///
+  /// In en, this message translates to:
+  /// **'Check the connection to the computer, then try again.'**
+  String get teamJobsFailedBody;
+
+  /// Loading label of the scheduled jobs on a project page
+  ///
+  /// In en, this message translates to:
+  /// **'Reading scheduled jobs'**
+  String get teamJobsLoading;
+
+  /// Plain schedule wording
+  ///
+  /// In en, this message translates to:
+  /// **'Every day at {time}'**
+  String teamJobEveryDayAt(String time);
+
+  /// Plain schedule wording for Monday to Friday
+  ///
+  /// In en, this message translates to:
+  /// **'Every weekday at {time}'**
+  String teamJobEveryWeekdayAt(String time);
+
+  /// Plain schedule wording for one weekday
+  ///
+  /// In en, this message translates to:
+  /// **'Every {day} at {time}'**
+  String teamJobEveryDowAt(String day, String time);
+
+  /// Plain schedule wording
+  ///
+  /// In en, this message translates to:
+  /// **'Every hour'**
+  String get teamJobEveryHour;
+
+  /// Plain schedule wording for a repeat every few minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Every minute} other{Every {count} minutes}}'**
+  String teamJobEveryMinutes(int count);
+
+  /// Plain schedule wording for a repeat every few hours
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Every hour} other{Every {count} hours}}'**
+  String teamJobEveryHours(int count);
+
+  /// Plain schedule wording for a repeat every few seconds
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Every second} other{Every {count} seconds}}'**
+  String teamJobEverySeconds(int count);
+
+  /// Plain wording when the schedule is too unusual to say simply
+  ///
+  /// In en, this message translates to:
+  /// **'On a schedule'**
+  String get teamJobOnSchedule;
+
+  /// Plain wording when the repeat time is not understood
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats on its own'**
+  String get teamJobRepeats;
+
+  /// Plain wording for a job started by an event
+  ///
+  /// In en, this message translates to:
+  /// **'When something happens'**
+  String get teamJobWhenEvent;
+
+  /// Plain wording for a job that never starts by itself
+  ///
+  /// In en, this message translates to:
+  /// **'Only when started by hand'**
+  String get teamJobManual;
+
+  /// Plain wording for a job started by a web request
+  ///
+  /// In en, this message translates to:
+  /// **'When a web request arrives'**
+  String get teamJobWebhook;
+
+  /// Plain wording for a job started when a check passes
+  ///
+  /// In en, this message translates to:
+  /// **'When its check passes'**
+  String get teamJobCondition;
+
+  /// Plain wording for an unknown trigger
+  ///
+  /// In en, this message translates to:
+  /// **'Starts on its own'**
+  String get teamJobOther;
+
+  /// Model sheet: section of the agent's own switches
+  ///
+  /// In en, this message translates to:
+  /// **'Agent settings'**
+  String get agentFeaturesLabel;
+
+  /// Agent settings sheet title, e.g. Claude Code settings
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} settings'**
+  String agentFeaturesSheetTitle(String agent);
+
+  /// Spoken label of the composer chip when an agent switch is off, e.g. Fast mode, off
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, off'**
+  String agentFeatureChipOff(String name);
+
+  /// Spoken label of the composer chip when an agent switch is on, e.g. Fast mode, on
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, on'**
+  String agentFeatureChipOn(String name);
+
+  /// Short composer chip for the agent's fast mode switch; lit when on
+  ///
+  /// In en, this message translates to:
+  /// **'Fast'**
+  String get agentFeatureFastChip;
+
+  /// Model sheet: reading the agent's switches failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this agent\'s settings.'**
+  String get agentFeaturesLoadFailed;
+
+  /// Agent switch: fast mode
+  ///
+  /// In en, this message translates to:
+  /// **'Fast mode'**
+  String get agentFeatureFastTitle;
+
+  /// Agent switch: what fast mode does
+  ///
+  /// In en, this message translates to:
+  /// **'Quicker replies from supported models. It costs more.'**
+  String get agentFeatureFastDetail;
+
+  /// Agent switch: change in flight
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get agentFeatureSaving;
+
+  /// Agent switch: the server refused the change
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change {name}. It keeps its old setting.'**
+  String agentFeatureChangeFailed(String name);
+
+  /// Import a conversation started in Claude Code: the entry and the page title
+  ///
+  /// In en, this message translates to:
+  /// **'Import from Claude Code'**
+  String get claudeImportTitle;
+
+  /// Import page: what the list is
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a conversation you started in Claude Code in {project}. It opens here so you can carry on.'**
+  String claudeImportIntro(String project);
+
+  /// Import page: a conversation's project folder and when it was last used
+  ///
+  /// In en, this message translates to:
+  /// **'{project} · {when}'**
+  String claudeImportRowDetail(String project, String when);
+
+  /// Import page: a conversation with no title and no first message
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled conversation'**
+  String get claudeImportUntitled;
+
+  /// Import page: no conversations found
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to import'**
+  String get claudeImportEmptyTitle;
+
+  /// Import page: empty state body
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations you start in Claude Code in this project show up here.'**
+  String get claudeImportEmptyBody;
+
+  /// Import page: reading the list failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not look'**
+  String get claudeImportLoadFailedTitle;
+
+  /// Import page: reading the list failed, body
+  ///
+  /// In en, this message translates to:
+  /// **'The list did not load. Check the connection, then try again.'**
+  String get claudeImportLoadFailedBody;
+
+  /// Import page: conversations left out because they were imported before
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one {1 more conversation is already here.} other {{count} more conversations are already here.}}'**
+  String claudeImportAlready(int count);
+
+  /// Import page: a row while its conversation is being imported
+  ///
+  /// In en, this message translates to:
+  /// **'Importing…'**
+  String get claudeImportWorking;
+
+  /// Import page: importing one conversation failed
+  ///
+  /// In en, this message translates to:
+  /// **'That conversation could not be imported. Try again.'**
+  String get claudeImportFailed;
+
+  /// Server settings, Paseo: row that updates the agent helper on the computer
+  ///
+  /// In en, this message translates to:
+  /// **'Update agents on {computer}'**
+  String hostUpdateRow(String computer);
+
+  /// Technical: Server settings, Paseo: update row detail naming the running version
+  ///
+  /// In en, this message translates to:
+  /// **'Running {version}. Installs the newest agent software.'**
+  String hostUpdateRowRunning(String version);
+
+  /// Server settings, Paseo: update row detail without a version
+  ///
+  /// In en, this message translates to:
+  /// **'Installs the newest agent software on that computer.'**
+  String get hostUpdateRowUnknown;
+
+  /// Confirmation title for updating the agent helper
+  ///
+  /// In en, this message translates to:
+  /// **'Update agents?'**
+  String get hostUpdateConfirmTitle;
+
+  /// Confirmation body for updating the agent helper
+  ///
+  /// In en, this message translates to:
+  /// **'This installs the newest agent software on {computer} and restarts it.'**
+  String hostUpdateConfirmBody(String computer);
+
+  /// Consequence: running chats pause during the restart
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations on {computer} pause while it restarts.'**
+  String hostUpdateConfirmPauses(String computer);
+
+  /// Consequence: nothing is lost
+  ///
+  /// In en, this message translates to:
+  /// **'Your conversations and settings stay as they are.'**
+  String get hostUpdateConfirmKept;
+
+  /// Confirmation button that starts the helper update
+  ///
+  /// In en, this message translates to:
+  /// **'Update agents'**
+  String get hostUpdateConfirmAction;
+
+  /// Update progress: starting
+  ///
+  /// In en, this message translates to:
+  /// **'Starting the update…'**
+  String get hostUpdateStarting;
+
+  /// Update progress: downloading
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading the newest version…'**
+  String get hostUpdateDownloading;
+
+  /// Update progress: installing
+  ///
+  /// In en, this message translates to:
+  /// **'Installing…'**
+  String get hostUpdateInstalling;
+
+  /// Update progress: complete, restarting
+  ///
+  /// In en, this message translates to:
+  /// **'Finishing up…'**
+  String get hostUpdateFinishing;
+
+  /// Technical: Update succeeded, naming the new version
+  ///
+  /// In en, this message translates to:
+  /// **'Updated to {version}. The app reconnects by itself.'**
+  String hostUpdateDone(String version);
+
+  /// Update succeeded, version not reported
+  ///
+  /// In en, this message translates to:
+  /// **'Updated. The app reconnects by itself.'**
+  String get hostUpdateDoneNoVersion;
+
+  /// Update finished and nothing newer existed
+  ///
+  /// In en, this message translates to:
+  /// **'{computer} is already up to date.'**
+  String hostUpdateCurrent(String computer);
+
+  /// Update failed, plain words
+  ///
+  /// In en, this message translates to:
+  /// **'The update did not finish. Try again, or update it on that computer.'**
+  String get hostUpdateFailed;
+
+  /// Update: the connection dropped before an answer
+  ///
+  /// In en, this message translates to:
+  /// **'The connection dropped during the update. The app is reconnecting.'**
+  String get hostUpdateDropped;
+
+  /// Update failed: row that opens the computer's own message
+  ///
+  /// In en, this message translates to:
+  /// **'Why it failed'**
+  String get hostUpdateDetailsRow;
+
+  /// Update failed: details sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Update details'**
+  String get hostUpdateDetailsTitle;
+
+  /// Update failed: label of the computer's own message
+  ///
+  /// In en, this message translates to:
+  /// **'Message from the computer'**
+  String get hostUpdateDetailsMessage;
+
+  /// Files: the search filter that looks for words inside the files, beside Files and Symbols
+  ///
+  /// In en, this message translates to:
+  /// **'Text in files'**
+  String get filesTextSurface;
+
+  /// Files: the search field's label while searching inside the files
+  ///
+  /// In en, this message translates to:
+  /// **'Search text in files'**
+  String get filesSearchText;
+
+  /// Files: first row above the file-name results while typing; searches the typed words inside the files
+  ///
+  /// In en, this message translates to:
+  /// **'Search inside files for \"{query}\"'**
+  String filesSearchInside(String query);
+
+  /// Files › Text: title of the hint shown before anything is typed
+  ///
+  /// In en, this message translates to:
+  /// **'Search inside files'**
+  String get filesTextHintTitle;
+
+  /// Files › Text: the hint under the title before anything is typed
+  ///
+  /// In en, this message translates to:
+  /// **'Type a word or a phrase to see every line that has it.'**
+  String get filesTextHintBody;
+
+  /// Files › Text: title when no file has the typed text
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get filesNoTextTitle;
+
+  /// Files › Text: the line under the no-matches title
+  ///
+  /// In en, this message translates to:
+  /// **'No file has that text. Check the spelling or try fewer words.'**
+  String get filesNoTextBody;
+
+  /// Files › Text: title of the state when the text search failed; the reason is under it
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t search the files'**
+  String get filesTextFailedTitle;
+
+  /// Files › Text: said under the results when there were more matches than are listed
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the first {count} matches. Type more to narrow them.'**
+  String filesTextLimited(int count);
+
+  /// Files › Text: the line number a match is on, under the file name in a result row
+  ///
+  /// In en, this message translates to:
+  /// **'Line {line}'**
+  String filesTextMatchLine(int line);
+
+  /// Failure words when the computer running Claude Code (Paseo) did not answer or could not do what was asked; the daemon's reason goes under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach your computer. Check it\'s on and connected, then try again.'**
+  String get productErrorComputer;
+
+  /// KitImageGallery: the position of the shown picture in the conversation, under its name
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {total}'**
+  String kitGalleryPosition(int current, int total);
+
+  /// KitImageGallery: what a screen reader says for the shown picture
+  ///
+  /// In en, this message translates to:
+  /// **'Picture {current} of {total}: {name}'**
+  String kitGalleryPictureLabel(int current, int total, String name);
+
+  /// KitImageGallery: opens the picture in the markup editor
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get kitGalleryEdit;
+
+  /// KitImageGallery and KitImageMarkup: puts the picture in the message field as a photo
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get kitGallerySend;
+
+  /// KitImageGallery: a picture being read
+  ///
+  /// In en, this message translates to:
+  /// **'Loading picture'**
+  String get kitGalleryLoading;
+
+  /// KitImageGallery: a picture that could not be read
+  ///
+  /// In en, this message translates to:
+  /// **'This picture could not be loaded'**
+  String get kitGalleryLoadFailed;
+
+  /// KitImageGallery: the way forward under a picture that could not be read
+  ///
+  /// In en, this message translates to:
+  /// **'Check the connection, then try again.'**
+  String get kitGalleryLoadFailedBody;
+
+  /// KitImageGallery: reads the picture again
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get kitGalleryTryAgain;
+
+  /// KitImageMarkup: the editor's title
+  ///
+  /// In en, this message translates to:
+  /// **'Edit picture'**
+  String get kitMarkupTitle;
+
+  /// KitImageMarkup: the name of the group of four pen colours
+  ///
+  /// In en, this message translates to:
+  /// **'Pen colour'**
+  String get kitMarkupColours;
+
+  /// KitImageMarkup: a pen colour
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get kitMarkupRed;
+
+  /// KitImageMarkup: a pen colour
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow'**
+  String get kitMarkupYellow;
+
+  /// KitImageMarkup: a pen colour
+  ///
+  /// In en, this message translates to:
+  /// **'White'**
+  String get kitMarkupWhite;
+
+  /// KitImageMarkup: a pen colour
+  ///
+  /// In en, this message translates to:
+  /// **'Black'**
+  String get kitMarkupBlack;
+
+  /// KitImageMarkup: removes the last stroke
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get kitMarkupUndo;
+
+  /// KitImageMarkup: removes every stroke and the crop
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get kitMarkupClear;
+
+  /// KitImageMarkup: starts choosing a rectangle to keep
+  ///
+  /// In en, this message translates to:
+  /// **'Crop'**
+  String get kitMarkupCrop;
+
+  /// KitImageMarkup: keeps the chosen crop rectangle
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get kitMarkupApply;
+
+  /// KitImageMarkup: leaves the crop without applying it
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get kitMarkupCancel;
+
+  /// KitImageMarkup: returns the edited picture to the viewer
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get kitMarkupDone;
+
+  /// KitImageMarkup: the drawing surface's semantic label
+  ///
+  /// In en, this message translates to:
+  /// **'Picture being edited. Draw on it with your finger.'**
+  String get kitMarkupCanvas;
+
+  /// KitImageMarkup: a crop corner handle's semantic label
+  ///
+  /// In en, this message translates to:
+  /// **'Crop corner. Drag to resize.'**
+  String get kitMarkupCropHandle;
+
+  /// KitImageMarkup: the crop rectangle's semantic label
+  ///
+  /// In en, this message translates to:
+  /// **'Crop area. Drag to move it.'**
+  String get kitMarkupCropArea;
+
+  /// KitImageMarkup: the picture could not be rendered
+  ///
+  /// In en, this message translates to:
+  /// **'The edited picture could not be made'**
+  String get kitMarkupFailed;
+
+  /// KitImageMarkup: the way forward after a failed render
+  ///
+  /// In en, this message translates to:
+  /// **'Try again, or go back and send the original.'**
+  String get kitMarkupFailedBody;
+
+  /// Context ring: screen-reader words for how much of the model's context window the conversation uses; {percent} is a locale-formatted whole number
+  ///
+  /// In en, this message translates to:
+  /// **'Context {percent} % used'**
+  String kitContextRingSemantics(String percent);
+
+  /// Context ring: what a tap does, said by the screen reader after its label
+  ///
+  /// In en, this message translates to:
+  /// **'Show context details'**
+  String get kitContextRingTapHint;
+
+  /// Context ring: the word beside the ring while the conversation is being compacted
+  ///
+  /// In en, this message translates to:
+  /// **'Compacting'**
+  String get kitContextRingCompacting;
+
+  /// Context ring: screen-reader words while the conversation is being compacted
+  ///
+  /// In en, this message translates to:
+  /// **'Context, compacting'**
+  String get kitContextRingCompactingSemantics;
+
+  /// Context details sheet: its title
+  ///
+  /// In en, this message translates to:
+  /// **'Context window'**
+  String get kitContextSheetTitle;
+
+  /// Context details sheet: tokens used of the window's size; both are locale-formatted whole numbers
+  ///
+  /// In en, this message translates to:
+  /// **'{used} of {limit} tokens'**
+  String kitContextSheetTokens(String used, String limit);
+
+  /// Context details sheet: the row naming the model
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get kitContextSheetModel;
+
+  /// Context details sheet: the row giving the window's size in tokens
+  ///
+  /// In en, this message translates to:
+  /// **'Context window'**
+  String get kitContextSheetWindow;
+
+  /// Context details sheet: the row saying when the number was measured
+  ///
+  /// In en, this message translates to:
+  /// **'Measured'**
+  String get kitContextSheetMeasured;
+
+  /// Context details sheet: the value of the Measured row
+  ///
+  /// In en, this message translates to:
+  /// **'After the last reply'**
+  String get kitContextSheetMeasuredValue;
+
+  /// Context details sheet: one paragraph saying what the context window is
+  ///
+  /// In en, this message translates to:
+  /// **'The context window is how much of the conversation the model can read at once: your messages, its replies, files and tool results. When it fills up, older parts have to be summarised or left out, so compacting before then keeps the answers sharp.'**
+  String get kitContextSheetExplain;
+
+  /// Context details sheet: the heading above the per-reply chart
+  ///
+  /// In en, this message translates to:
+  /// **'Each reply'**
+  String get kitContextSheetChartTitle;
+
+  /// Context chart: screen-reader summary; {count} and {percent} are locale-formatted whole numbers
+  ///
+  /// In en, this message translates to:
+  /// **'Context after each of {count} replies, the newest at {percent} %'**
+  String kitContextChartSemantics(String count, String percent);
+
+  /// Context chart: the note under a drop where the conversation was compacted
+  ///
+  /// In en, this message translates to:
+  /// **'Compacted here'**
+  String get kitContextChartCompacted;
+
+  /// Context details sheet: the button that compacts the conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Compact now'**
+  String get kitContextSheetCompactNow;
+
+  /// Chat: the accessible name of the row of the person's own common short phrases above the message box
+  ///
+  /// In en, this message translates to:
+  /// **'Quick phrases'**
+  String get phraseChipsRowLabel;
+
+  /// Chat: a phrase chip's accessible name; tapping it sends the phrase
+  ///
+  /// In en, this message translates to:
+  /// **'Send: {phrase}'**
+  String phraseChipsSend(String phrase);
+
+  /// Chat: the name of the menu a long-press on a phrase chip opens
+  ///
+  /// In en, this message translates to:
+  /// **'Phrase options'**
+  String get phraseChipsMenuLabel;
+
+  /// Chat: phrase chip menu; puts the phrase in the message box without sending it
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get phraseChipsEdit;
+
+  /// Chat: phrase chip menu; never suggest this phrase again
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get phraseChipsHide;
+
+  /// Chat: the starter phrase chip offered while the agent is working, before any phrase is learned
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s the update?'**
+  String get phraseChipsWorkingStarter;
+
+  /// Settings switch: show the person's common short phrases as chips above the message box
+  ///
+  /// In en, this message translates to:
+  /// **'Phrase suggestions'**
+  String get settingsPhraseChipsTitle;
+
+  /// Settings: explains the Phrase suggestions switch; nothing leaves the phone
+  ///
+  /// In en, this message translates to:
+  /// **'Your common short phrases, above the message box. Learned on this phone from what you send.'**
+  String get settingsPhraseChipsSupporting;
+
+  /// Settings row: suggest the phrases that were hidden again
+  ///
+  /// In en, this message translates to:
+  /// **'Show hidden phrases'**
+  String get settingsPhraseChipsShowHidden;
+
+  /// Settings: how many phrases were hidden from the suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hidden phrase} other{{count} hidden phrases}}'**
+  String settingsPhraseChipsHiddenCount(int count);
+
+  /// KitFactRow: the provenance word for a fact the person said
+  ///
+  /// In en, this message translates to:
+  /// **'You told it'**
+  String get kitFactToldWord;
+
+  /// KitFactRow: the provenance word for a fact read from a source
+  ///
+  /// In en, this message translates to:
+  /// **'From a source'**
+  String get kitFactSeenWord;
+
+  /// KitFactRow: the provenance word for an inferred fact
+  ///
+  /// In en, this message translates to:
+  /// **'It guessed'**
+  String get kitFactGuessedWord;
+
+  /// KitFactRow: the provenance word for a fact worked out from other facts
+  ///
+  /// In en, this message translates to:
+  /// **'Worked out'**
+  String get kitFactCalculatedWord;
+
+  /// KitFactRow: provenance line for a told fact; {date} is a locale-formatted day
+  ///
+  /// In en, this message translates to:
+  /// **'You told it · {date}'**
+  String kitFactToldLine(String date);
+
+  /// KitFactRow: provenance line for a fact read from a named source; {source} is plain words such as "a shared message"
+  ///
+  /// In en, this message translates to:
+  /// **'From {source} · {date}'**
+  String kitFactSeenLine(String source, String date);
+
+  /// KitFactRow: provenance line when the source has no name
+  ///
+  /// In en, this message translates to:
+  /// **'From a source · {date}'**
+  String kitFactSeenNoSourceLine(String date);
+
+  /// KitFactRow: provenance line for a guess with no known source
+  ///
+  /// In en, this message translates to:
+  /// **'It guessed · {date}'**
+  String kitFactGuessedLine(String date);
+
+  /// KitFactRow: provenance line for a guess made from a named source
+  ///
+  /// In en, this message translates to:
+  /// **'It guessed · {date} · from {source}'**
+  String kitFactGuessedFromLine(String date, String source);
+
+  /// KitFactRow: provenance line for a worked-out fact
+  ///
+  /// In en, this message translates to:
+  /// **'Worked out · {date}'**
+  String kitFactCalculatedLine(String date);
+
+  /// KitFactRow: a provenance line that also says the fact waits for the person
+  ///
+  /// In en, this message translates to:
+  /// **'{line} · waiting for your OK'**
+  String kitFactWaitingLine(String line);
+
+  /// FactsBook: a source named in plain words after "From"
+  ///
+  /// In en, this message translates to:
+  /// **'a conversation you saved'**
+  String get fbSourceChat;
+
+  /// FactsBook: a source named in plain words after "From"
+  ///
+  /// In en, this message translates to:
+  /// **'text you shared'**
+  String get fbSourceShare;
+
+  /// FactsBook: a source named in plain words after "From"
+  ///
+  /// In en, this message translates to:
+  /// **'a note'**
+  String get fbSourceNote;
+
+  /// FactsBook: a source named in plain words after "From"
+  ///
+  /// In en, this message translates to:
+  /// **'pasted text'**
+  String get fbSourceImport;
+
+  /// FactsBook: a source named in plain words after "From"
+  ///
+  /// In en, this message translates to:
+  /// **'a statement'**
+  String get fbSourceStatement;
+
+  /// FactsBook: a source named in plain words after "From"
+  ///
+  /// In en, this message translates to:
+  /// **'another source'**
+  String get fbSourceOther;
+
+  /// FactsBook: the kind of a thing, shown beside its name
+  ///
+  /// In en, this message translates to:
+  /// **'Person'**
+  String get fbKindPerson;
+
+  /// FactsBook: the kind of a thing, shown beside its name
+  ///
+  /// In en, this message translates to:
+  /// **'Document'**
+  String get fbKindDocument;
+
+  /// FactsBook: the kind of a thing, shown beside its name
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get fbKindSubscription;
+
+  /// FactsBook: the kind of a thing, shown beside its name
+  ///
+  /// In en, this message translates to:
+  /// **'Warranty'**
+  String get fbKindWarranty;
+
+  /// FactsBook: the kind of a thing, shown beside its name
+  ///
+  /// In en, this message translates to:
+  /// **'Bill'**
+  String get fbKindBill;
+
+  /// FactsBook: the kind of a thing, shown beside its name
+  ///
+  /// In en, this message translates to:
+  /// **'Card'**
+  String get fbKindCard;
+
+  /// FactsBook: the kind of a thing, shown beside its name
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get fbKindAccount;
+
+  /// FactsBook: the kind of a thing, shown beside its name
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get fbKindOrganization;
+
+  /// FactsBook: the kind of a thing, shown beside its name
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get fbKindPlace;
+
+  /// FactsBook: the kind of a thing, shown beside its name
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get fbKindProject;
+
+  /// FactsBook: the kind of a thing, shown beside its name
+  ///
+  /// In en, this message translates to:
+  /// **'Topic'**
+  String get fbKindTopic;
+
+  /// FactsBook: the kind of a thing, shown beside its name
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get fbKindEvent;
+
+  /// FactsBook: the kind of a thing, shown beside its name
+  ///
+  /// In en, this message translates to:
+  /// **'Thing'**
+  String get fbKindOther;
+
+  /// Inbox: the FactsBook section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get fbMemoryTitle;
+
+  /// Inbox Memory section: the tag after the heading; {count} is how many items need the person
+  ///
+  /// In en, this message translates to:
+  /// **'{count} waiting'**
+  String fbMemoryFromFactsBook(int count);
+
+  /// Inbox Memory section: the tag after the heading when nothing needs the person
+  ///
+  /// In en, this message translates to:
+  /// **'All clear'**
+  String get fbMemoryFromFactsBookNone;
+
+  /// Inbox Memory section: shown when no item needs the person
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in memory needs you.'**
+  String get fbMemoryQuiet;
+
+  /// Memory section: a Needs-you row for proposals waiting for the person
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 change to review} other{{count} changes to review}}'**
+  String fbMemoryReview(int count);
+
+  /// Memory section: a Needs-you row for captures kept on the phone
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 note not saved yet} other{{count} notes not saved yet}}'**
+  String fbMemoryNotSaved(int count);
+
+  /// Memory section: the supporting line of the not-saved row
+  ///
+  /// In en, this message translates to:
+  /// **'Kept on this phone'**
+  String get fbMemoryNotSavedDetail;
+
+  /// Memory section: the supporting line of the review row
+  ///
+  /// In en, this message translates to:
+  /// **'Needs your OK'**
+  String get fbMemoryReviewDetail;
+
+  /// Memory section: a Needs-you row asking the person to save the recovery kit
+  ///
+  /// In en, this message translates to:
+  /// **'Save your recovery kit'**
+  String get fbMemoryRecoveryKit;
+
+  /// Memory section: label above the newest captures
+  ///
+  /// In en, this message translates to:
+  /// **'Recently added to memory'**
+  String get fbMemoryRecent;
+
+  /// Memory section: opens the full About you place
+  ///
+  /// In en, this message translates to:
+  /// **'Open About you'**
+  String get fbMemoryOpenAboutYou;
+
+  /// Memory section: the supporting line of Open About you
+  ///
+  /// In en, this message translates to:
+  /// **'Search, browse and see what is waiting'**
+  String get fbMemoryOpenAboutYouDetail;
+
+  /// Memory section and About you: opens the capture page
+  ///
+  /// In en, this message translates to:
+  /// **'Add something'**
+  String get fbMemoryAddSomething;
+
+  /// Memory section: the supporting line of Add something
+  ///
+  /// In en, this message translates to:
+  /// **'A note or pasted text'**
+  String get fbMemoryAddSomethingDetail;
+
+  /// Memory section: shown when FactsBook does not answer
+  ///
+  /// In en, this message translates to:
+  /// **'Memory could not be reached right now.'**
+  String get fbMemoryUnreachable;
+
+  /// Memory section: a recent capture; {when} is a short age such as "3 hours ago"
+  ///
+  /// In en, this message translates to:
+  /// **'Added {when}'**
+  String fbAddedLine(String when);
+
+  /// About you: the page title
+  ///
+  /// In en, this message translates to:
+  /// **'About you'**
+  String get fbAboutYouTitle;
+
+  /// About you: the status under the title; {device} names where FactsBook runs
+  ///
+  /// In en, this message translates to:
+  /// **'Last saved {when}'**
+  String fbStatusLastSaved(String when);
+
+  /// About you: shown when the node cannot be reached and the page shows its last copy
+  ///
+  /// In en, this message translates to:
+  /// **'Showing what was last saved'**
+  String get fbStatusStale;
+
+  /// About you: the search field label
+  ///
+  /// In en, this message translates to:
+  /// **'Search your memory'**
+  String get fbSearchLabel;
+
+  /// About you: empty state title
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet'**
+  String get fbEmptyTitle;
+
+  /// About you: empty state body
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note, share some text from another app, or paste text from another assistant. What you add shows up here with where it came from.'**
+  String get fbEmptyBody;
+
+  /// About you list: filter for every kind
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get fbListAll;
+
+  /// About you list: filter
+  ///
+  /// In en, this message translates to:
+  /// **'Cards'**
+  String get fbListCards;
+
+  /// About you list: filter
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get fbListPeople;
+
+  /// About you list: filter
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get fbListDocuments;
+
+  /// About you list: the line about locked notes
+  ///
+  /// In en, this message translates to:
+  /// **'Locked notes are not shown. Unlock with your fingerprint or PIN to include them.'**
+  String get fbListLockedNote;
+
+  /// About you list: a thing's kind and one detail
+  ///
+  /// In en, this message translates to:
+  /// **'{kind} · {detail}'**
+  String fbKindLine(String kind, String detail);
+
+  /// Thing page: the area named under the title
+  ///
+  /// In en, this message translates to:
+  /// **'Money area'**
+  String get fbAreaMoney;
+
+  /// Thing page: the area named under the title
+  ///
+  /// In en, this message translates to:
+  /// **'Health area'**
+  String get fbAreaHealth;
+
+  /// Thing page: an area named under the title
+  ///
+  /// In en, this message translates to:
+  /// **'{area} area'**
+  String fbAreaOther(String area);
+
+  /// FactsBook pages: the title of the error state
+  ///
+  /// In en, this message translates to:
+  /// **'Memory did not answer'**
+  String get fbErrorTitle;
+
+  /// FactsBook pages: the node could not be reached
+  ///
+  /// In en, this message translates to:
+  /// **'Memory could not be reached. What you add is kept on this phone until it can be saved.'**
+  String get fbErrorUnreachable;
+
+  /// FactsBook pages: a locked note was asked for
+  ///
+  /// In en, this message translates to:
+  /// **'This is in the locked folder. Unlock it first.'**
+  String get fbErrorLocked;
+
+  /// FactsBook pages: a thing was not found
+  ///
+  /// In en, this message translates to:
+  /// **'That is not in memory any more.'**
+  String get fbErrorNotFound;
+
+  /// FactsBook pages: any other failure
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Try again.'**
+  String get fbErrorGeneric;
+
+  /// FactsBook pages: the request id shown under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Request {id}'**
+  String fbErrorRequest(String id);
+
+  /// Search results: page title
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get fbSearchTitle;
+
+  /// Search results: the count line
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No matches for “{query}”} =1{1 match for “{query}”} other{{count} matches for “{query}”}}'**
+  String fbSearchMatches(int count, String query);
+
+  /// Search results: what the search does
+  ///
+  /// In en, this message translates to:
+  /// **'Matches words in your notes. It does not search by meaning.'**
+  String get fbSearchWordsOnly;
+
+  /// Search results: footer
+  ///
+  /// In en, this message translates to:
+  /// **'Each result shows where it came from and when. A source can still be wrong.'**
+  String get fbSearchEachHit;
+
+  /// Search results: banner about locked notes
+  ///
+  /// In en, this message translates to:
+  /// **'Locked notes are not searched until you unlock.'**
+  String get fbSearchLocked;
+
+  /// Search results: empty state title
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches'**
+  String get fbSearchNoneTitle;
+
+  /// Search results: empty state body
+  ///
+  /// In en, this message translates to:
+  /// **'Try other words.'**
+  String get fbSearchNoneBody;
+
+  /// Thing page: section label
+  ///
+  /// In en, this message translates to:
+  /// **'Facts'**
+  String get fbThingFacts;
+
+  /// Thing page: nothing known
+  ///
+  /// In en, this message translates to:
+  /// **'No facts yet.'**
+  String get fbThingNoFacts;
+
+  /// Thing page: section label for links
+  ///
+  /// In en, this message translates to:
+  /// **'Linked to'**
+  String get fbThingLinks;
+
+  /// Thing page: badge for a locked thing
+  ///
+  /// In en, this message translates to:
+  /// **'Locked folder'**
+  String get fbThingLocked;
+
+  /// Thing page: approve a guessed fact
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, keep it'**
+  String get fbKeepIt;
+
+  /// Thing page: reject a guessed fact
+  ///
+  /// In en, this message translates to:
+  /// **'Not right'**
+  String get fbNotRight;
+
+  /// Thing page: said after the person keeps a guess
+  ///
+  /// In en, this message translates to:
+  /// **'Kept.'**
+  String get fbDecisionKept;
+
+  /// Thing page: said after the person rejects a guess
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from memory.'**
+  String get fbDecisionRemoved;
+
+  /// Capture: page title
+  ///
+  /// In en, this message translates to:
+  /// **'Add something'**
+  String get fbCaptureTitle;
+
+  /// Capture: the segmented control name
+  ///
+  /// In en, this message translates to:
+  /// **'What you are adding'**
+  String get fbCaptureKindLabel;
+
+  /// Capture: segment
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get fbCaptureNote;
+
+  /// Capture: segment
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get fbCapturePaste;
+
+  /// Capture: note field label
+  ///
+  /// In en, this message translates to:
+  /// **'What should it remember?'**
+  String get fbCaptureNoteLabel;
+
+  /// Capture: note field example
+  ///
+  /// In en, this message translates to:
+  /// **'Dentist next Wednesday at 10. Bring the insurance card.'**
+  String get fbCaptureNoteHint;
+
+  /// Capture: paste field label
+  ///
+  /// In en, this message translates to:
+  /// **'Paste text from another app or assistant'**
+  String get fbCapturePasteLabel;
+
+  /// Capture: the primary button
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get fbCaptureSave;
+
+  /// Capture: the line under the buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Anything shared from another app lands here too. A note that cannot be saved yet waits in Not saved yet. It never disappears.'**
+  String get fbCaptureFootnote;
+
+  /// Capture: shown after a save
+  ///
+  /// In en, this message translates to:
+  /// **'Saved. Memory will check it for changes for you to review.'**
+  String get fbCaptureSaved;
+
+  /// Capture: shown after a save with a reminder
+  ///
+  /// In en, this message translates to:
+  /// **'Saved with a reminder for {when}.'**
+  String fbCaptureSavedReminder(String when);
+
+  /// Capture: shown when the capture was kept on the phone
+  ///
+  /// In en, this message translates to:
+  /// **'It could not be saved yet. It is kept on this phone.'**
+  String get fbCaptureKept;
+
+  /// Capture: opens the Not saved yet page
+  ///
+  /// In en, this message translates to:
+  /// **'See Not saved yet'**
+  String get fbCaptureSeeNotSaved;
+
+  /// Reminder check sheet: title
+  ///
+  /// In en, this message translates to:
+  /// **'Check this reminder'**
+  String get fbReminderTitle;
+
+  /// Reminder check sheet: the original text
+  ///
+  /// In en, this message translates to:
+  /// **'You wrote: “{text}”'**
+  String fbReminderWrote(String text);
+
+  /// Reminder check sheet: row
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get fbReminderDate;
+
+  /// Reminder check sheet: row
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get fbReminderTime;
+
+  /// Reminder check sheet: row
+  ///
+  /// In en, this message translates to:
+  /// **'Time zone'**
+  String get fbReminderZone;
+
+  /// Reminder check sheet: zone choice
+  ///
+  /// In en, this message translates to:
+  /// **'Home time zone'**
+  String get fbReminderZoneHome;
+
+  /// Reminder check sheet: what the home zone does
+  ///
+  /// In en, this message translates to:
+  /// **'Rings at this time in your home zone, wherever you are.'**
+  String get fbReminderZoneHomeDetail;
+
+  /// Reminder check sheet: zone choice
+  ///
+  /// In en, this message translates to:
+  /// **'This phone\'s time'**
+  String get fbReminderZoneFloating;
+
+  /// Reminder check sheet: what a floating reminder does
+  ///
+  /// In en, this message translates to:
+  /// **'Stays at the same clock time wherever you are.'**
+  String get fbReminderZoneFloatingDetail;
+
+  /// Reminder check sheet: row for the locale
+  ///
+  /// In en, this message translates to:
+  /// **'Language of dates'**
+  String get fbReminderLocale;
+
+  /// Reminder check sheet: row
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats'**
+  String get fbReminderRepeat;
+
+  /// Reminder check sheet: repeat choice
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get fbRepeatNever;
+
+  /// Reminder check sheet: repeat choice
+  ///
+  /// In en, this message translates to:
+  /// **'Every day'**
+  String get fbRepeatDaily;
+
+  /// Reminder check sheet: repeat choice
+  ///
+  /// In en, this message translates to:
+  /// **'Every week'**
+  String get fbRepeatWeekly;
+
+  /// Reminder check sheet: repeat choice
+  ///
+  /// In en, this message translates to:
+  /// **'Every month'**
+  String get fbRepeatMonthly;
+
+  /// Reminder check sheet: repeat choice
+  ///
+  /// In en, this message translates to:
+  /// **'Every year'**
+  String get fbRepeatYearly;
+
+  /// Reminder check sheet: the date was guessed
+  ///
+  /// In en, this message translates to:
+  /// **'I could not tell the date. Check it.'**
+  String get fbReminderAmbiguousDate;
+
+  /// Reminder check sheet: the time was guessed
+  ///
+  /// In en, this message translates to:
+  /// **'I could not tell the time. Check it.'**
+  String get fbReminderAmbiguousTime;
+
+  /// Reminder check sheet: help line
+  ///
+  /// In en, this message translates to:
+  /// **'Change anything that is wrong before saving.'**
+  String get fbReminderHelp;
+
+  /// Reminder check sheet: primary
+  ///
+  /// In en, this message translates to:
+  /// **'Save reminder'**
+  String get fbReminderSave;
+
+  /// Reminder check sheet: secondary, closes the sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Change what I wrote'**
+  String get fbReminderChange;
+
+  /// Reminder check sheet: the reminder text row
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me about'**
+  String get fbReminderWhat;
+
+  /// Needs you page: title
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get fbNeedsYouTitle;
+
+  /// Needs you page: subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'{count} waiting'**
+  String fbNeedsYouWaiting(int count);
+
+  /// Needs you page: empty state
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs you right now.'**
+  String get fbNeedsYouNone;
+
+  /// Needs you page: empty state body
+  ///
+  /// In en, this message translates to:
+  /// **'Questions, changes to review and notes not saved yet show up here.'**
+  String get fbNeedsYouNoneBody;
+
+  /// Needs you page: opens Not saved yet
+  ///
+  /// In en, this message translates to:
+  /// **'See why'**
+  String get fbNeedsYouSeeWhy;
+
+  /// Needs you page: said after a question is answered
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks. That is answered.'**
+  String get fbNeedsYouAnswered;
+
+  /// Not saved yet page: title
+  ///
+  /// In en, this message translates to:
+  /// **'Not saved yet'**
+  String get fbNotSavedTitle;
+
+  /// Not saved yet page: subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item kept on this phone} other{{count} items kept on this phone}}'**
+  String fbNotSavedCount(int count);
+
+  /// Not saved yet page: where the items live
+  ///
+  /// In en, this message translates to:
+  /// **'Kept until you discard them: on this phone, or by Memory. None is in your cloud yet.'**
+  String get fbNotSavedIntro;
+
+  /// Not saved yet page: footer
+  ///
+  /// In en, this message translates to:
+  /// **'They stay here until you discard them. At 30 days Memory asks: Retry, Export or Discard.'**
+  String get fbNotSavedFooter;
+
+  /// Not saved yet page: empty state title
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is saved'**
+  String get fbNotSavedEmptyTitle;
+
+  /// Not saved yet page: empty state body
+  ///
+  /// In en, this message translates to:
+  /// **'Notes that cannot be saved yet will wait here.'**
+  String get fbNotSavedEmptyBody;
+
+  /// Not saved yet page: retry
+  ///
+  /// In en, this message translates to:
+  /// **'Try now'**
+  String get fbNotSavedTryNow;
+
+  /// Not saved yet page: copy
+  ///
+  /// In en, this message translates to:
+  /// **'Copy text'**
+  String get fbNotSavedCopy;
+
+  /// Not saved yet page: discard
+  ///
+  /// In en, this message translates to:
+  /// **'Discard note'**
+  String get fbNotSavedDiscard;
+
+  /// Not saved yet page: retry at 30 days
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get fbNotSavedRetry;
+
+  /// Not saved yet page: export (copies the text) at 30 days
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get fbNotSavedExport;
+
+  /// Not saved yet page: the 30-day question
+  ///
+  /// In en, this message translates to:
+  /// **'This has been kept for 30 days. Retry it, export the text, or discard it.'**
+  String get fbNotSavedThirtyDays;
+
+  /// Not saved yet page: confirm title
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this note?'**
+  String get fbNotSavedDiscardTitle;
+
+  /// Not saved yet page: confirm body
+  ///
+  /// In en, this message translates to:
+  /// **'It was never saved. Discarding removes it from this phone.'**
+  String get fbNotSavedDiscardBody;
+
+  /// Not saved yet page: after a retry worked
+  ///
+  /// In en, this message translates to:
+  /// **'Saved.'**
+  String get fbNotSavedSaved;
+
+  /// Not saved yet page: after a retry failed
+  ///
+  /// In en, this message translates to:
+  /// **'Still not saved. It stays here.'**
+  String get fbNotSavedStill;
+
+  /// Not saved yet page: the age of an item
+  ///
+  /// In en, this message translates to:
+  /// **'Since {when}'**
+  String fbNotSavedSince(String when);
+
+  /// Not saved yet page: reason
+  ///
+  /// In en, this message translates to:
+  /// **'Memory could not be reached.'**
+  String get fbReasonUnreachable;
+
+  /// Not saved yet page: reason when a device is the cause
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for {device}.'**
+  String fbReasonWaitingFor(String device);
+
+  /// Not saved yet page: reason
+  ///
+  /// In en, this message translates to:
+  /// **'This phone is full. Free some space, then try again.'**
+  String get fbReasonStorageFull;
+
+  /// Not saved yet page: reason
+  ///
+  /// In en, this message translates to:
+  /// **'Your cloud is full. Free some space, then try again.'**
+  String get fbReasonCloudQuota;
+
+  /// Not saved yet page: reason
+  ///
+  /// In en, this message translates to:
+  /// **'The locked folder is locked. Unlock it, then try again.'**
+  String get fbReasonKeyLocked;
+
+  /// Not saved yet page: reason
+  ///
+  /// In en, this message translates to:
+  /// **'It is too large to save.'**
+  String get fbReasonTooLarge;
+
+  /// Not saved yet page: reason
+  ///
+  /// In en, this message translates to:
+  /// **'Memory could not accept it.'**
+  String get fbReasonRejected;
+
+  /// Not saved yet page: reason
+  ///
+  /// In en, this message translates to:
+  /// **'Memory could not sort it yet. Try again.'**
+  String get fbReasonClassification;
+
+  /// FactsBook: closes a note on a page
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get fbDismiss;
+
+  /// Capture: why Save is off while the field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Write something first.'**
+  String get fbCaptureNeedsText;
+
+  /// Thing page: the area named under the title
+  ///
+  /// In en, this message translates to:
+  /// **'Family area'**
+  String get fbAreaFamily;
+
+  /// Thing page: the area named under the title
+  ///
+  /// In en, this message translates to:
+  /// **'Work area'**
+  String get fbAreaWork;
+
+  /// Areas: the area's own name
+  ///
+  /// In en, this message translates to:
+  /// **'Money'**
+  String get fbAreaNameMoney;
+
+  /// Areas: the area's own name
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get fbAreaNameHealth;
+
+  /// Areas: the area's own name
+  ///
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get fbAreaNameFamily;
+
+  /// Areas: the area's own name
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get fbAreaNameWork;
+
+  /// Areas page: title
+  ///
+  /// In en, this message translates to:
+  /// **'Areas and sharing'**
+  String get fbAreasTitle;
+
+  /// Areas page: what the page is for
+  ///
+  /// In en, this message translates to:
+  /// **'Each area keeps its own rules. Other apps and agents read an area only if you let them.'**
+  String get fbAreasIntro;
+
+  /// Areas page: the sharing switch
+  ///
+  /// In en, this message translates to:
+  /// **'Other apps and agents can read it'**
+  String get fbAreasOthersRead;
+
+  /// Areas page: what the switch does
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off to keep this area to you alone.'**
+  String get fbAreasOthersReadDetail;
+
+  /// Areas and status: storage in the locked folder
+  ///
+  /// In en, this message translates to:
+  /// **'Locked folder'**
+  String get fbAreasLockedFolder;
+
+  /// Areas page: storage outside the locked folder
+  ///
+  /// In en, this message translates to:
+  /// **'Normal storage'**
+  String get fbAreasNormalStorage;
+
+  /// Areas page: review-first rule
+  ///
+  /// In en, this message translates to:
+  /// **'New facts wait for your OK first.'**
+  String get fbAreasReviewFirst;
+
+  /// Areas page: automatic rule
+  ///
+  /// In en, this message translates to:
+  /// **'Only safe clean-up happens on its own.'**
+  String get fbAreasReviewAuto;
+
+  /// Areas page: no way to add an area
+  ///
+  /// In en, this message translates to:
+  /// **'These areas are built in.'**
+  String get fbAreasFixed;
+
+  /// Areas page: confirm title when sharing a locked-folder area
+  ///
+  /// In en, this message translates to:
+  /// **'Let others read {area}?'**
+  String fbAreasShareConfirmTitle(String area);
+
+  /// Areas page: confirm body
+  ///
+  /// In en, this message translates to:
+  /// **'Apps and agents you have paired will be able to read what is in this area. You can turn it off again.'**
+  String get fbAreasShareConfirmBody;
+
+  /// Areas page: confirm button
+  ///
+  /// In en, this message translates to:
+  /// **'Let them read'**
+  String get fbAreasShareConfirm;
+
+  /// Capture: the phone queue is full
+  ///
+  /// In en, this message translates to:
+  /// **'This phone\'s queue is full, so the note was not kept. Your text is still here. Send or discard a waiting note first.'**
+  String get fbCaptureFull;
+
+  /// Capture: the node queued it
+  ///
+  /// In en, this message translates to:
+  /// **'Memory is holding it until it can be saved.'**
+  String get fbCaptureQueuedNode;
+
+  /// Capture: the note was kept but the reminder failed
+  ///
+  /// In en, this message translates to:
+  /// **'The reminder was not made. Try it again from the note.'**
+  String get fbCaptureReminderFailed;
+
+  /// Memory care page: subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 waiting for your OK} other{{count} waiting for your OK}}'**
+  String fbCareWaiting(int count);
+
+  /// Memory care: decision
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get fbCareApprove;
+
+  /// Memory care: decision
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get fbCareEdit;
+
+  /// Memory care: decision
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get fbCareReject;
+
+  /// Memory care: decision, leaves it for later
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get fbCareSkip;
+
+  /// Memory care: after approving
+  ///
+  /// In en, this message translates to:
+  /// **'Approved.'**
+  String get fbCareApproved;
+
+  /// Memory care: after rejecting
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected. It will not be proposed again.'**
+  String get fbCareRejected;
+
+  /// Memory care: after skipping
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped. It stays here.'**
+  String get fbCareSkipped;
+
+  /// Memory care: a stale proposal
+  ///
+  /// In en, this message translates to:
+  /// **'That changed after it was proposed, so nothing was applied. It is off this list now.'**
+  String get fbCareStale;
+
+  /// Memory care and Areas: no approval key enrolled
+  ///
+  /// In en, this message translates to:
+  /// **'This phone cannot approve changes yet. Set up approval to continue.'**
+  String get fbCareNeedsOwner;
+
+  /// Memory care: why a decision is off
+  ///
+  /// In en, this message translates to:
+  /// **'Set up approval first'**
+  String get fbCareNeedsOwnerShort;
+
+  /// Memory care: opens setup
+  ///
+  /// In en, this message translates to:
+  /// **'Set up approval'**
+  String get fbCareSetupApproval;
+
+  /// Memory care: edit sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Edit before approving'**
+  String get fbCareEditTitle;
+
+  /// Memory care: edit field
+  ///
+  /// In en, this message translates to:
+  /// **'Fact'**
+  String get fbCareEditLabel;
+
+  /// Memory care: edit sheet primary
+  ///
+  /// In en, this message translates to:
+  /// **'Approve with my edit'**
+  String get fbCareEditSave;
+
+  /// Memory care: proposal class
+  ///
+  /// In en, this message translates to:
+  /// **'Add a fact'**
+  String get fbCareClassFactAdd;
+
+  /// Memory care: proposal class
+  ///
+  /// In en, this message translates to:
+  /// **'Change a fact'**
+  String get fbCareClassFactUpdate;
+
+  /// Memory care: proposal class
+  ///
+  /// In en, this message translates to:
+  /// **'Replace a fact'**
+  String get fbCareClassFactSupersede;
+
+  /// Memory care: proposal class
+  ///
+  /// In en, this message translates to:
+  /// **'Merge two things'**
+  String get fbCareClassMerge;
+
+  /// Memory care: proposal class
+  ///
+  /// In en, this message translates to:
+  /// **'Link two things'**
+  String get fbCareClassLink;
+
+  /// Memory care: proposal class
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get fbCareClassArchive;
+
+  /// Memory care: proposal class
+  ///
+  /// In en, this message translates to:
+  /// **'Forget'**
+  String get fbCareClassForget;
+
+  /// Memory care: proposal class
+  ///
+  /// In en, this message translates to:
+  /// **'Keep an eye on something'**
+  String get fbCareClassWatch;
+
+  /// Memory care: proposal class
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get fbCareClassReminder;
+
+  /// Memory care: proposal class
+  ///
+  /// In en, this message translates to:
+  /// **'From pasted text'**
+  String get fbCareClassImport;
+
+  /// Memory care: proposal class
+  ///
+  /// In en, this message translates to:
+  /// **'A fact for a stricter area'**
+  String get fbCareClassPromotion;
+
+  /// Memory care: risk flag
+  ///
+  /// In en, this message translates to:
+  /// **'Money'**
+  String get fbCareRiskMoney;
+
+  /// Memory care: risk flag
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get fbCareRiskHealth;
+
+  /// Memory care: risk flag
+  ///
+  /// In en, this message translates to:
+  /// **'ID'**
+  String get fbCareRiskId;
+
+  /// Memory care: risk flag
+  ///
+  /// In en, this message translates to:
+  /// **'Contradicts something you told it'**
+  String get fbCareRiskContradiction;
+
+  /// Memory care: risk flag
+  ///
+  /// In en, this message translates to:
+  /// **'Not sure'**
+  String get fbCareRiskLowConfidence;
+
+  /// Connect page: title
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to my server'**
+  String get fbConnectTitle;
+
+  /// Memory section: the row before pairing
+  ///
+  /// In en, this message translates to:
+  /// **'Set up Memory'**
+  String get fbConnectRow;
+
+  /// Memory section: supporting line of the setup row
+  ///
+  /// In en, this message translates to:
+  /// **'Your notes, on this phone'**
+  String get fbConnectRowDetail;
+
+  /// Connect page: what it does
+  ///
+  /// In en, this message translates to:
+  /// **'Connect this app to a Memory server on your home network or your tailnet, or on this phone.'**
+  String get fbConnectIntro;
+
+  /// Connect page: field
+  ///
+  /// In en, this message translates to:
+  /// **'Address of the node'**
+  String get fbConnectAddress;
+
+  /// Field example: where the memory server listens
+  ///
+  /// In en, this message translates to:
+  /// **'127.0.0.1:8787'**
+  String get fbConnectAddressHint;
+
+  /// Connect page: field
+  ///
+  /// In en, this message translates to:
+  /// **'One-time pairing code'**
+  String get fbConnectCode;
+
+  /// Connect page: help under the code
+  ///
+  /// In en, this message translates to:
+  /// **'The node prints it when you run its pair command. It works once, for five minutes.'**
+  String get fbConnectCodeHelp;
+
+  /// Connect page: optional step
+  ///
+  /// In en, this message translates to:
+  /// **'Approve changes (optional)'**
+  String get fbConnectOwnerTitle;
+
+  /// Connect page: what the optional step is
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewing proposals and changing sharing are signed with this phone\'s own key. Give the node the public key below, then enter the owner device id it returns.'**
+  String get fbConnectOwnerBody;
+
+  /// Connect page: the public key
+  ///
+  /// In en, this message translates to:
+  /// **'This phone\'s public key'**
+  String get fbConnectOwnerKey;
+
+  /// Connect page: field
+  ///
+  /// In en, this message translates to:
+  /// **'Owner device id'**
+  String get fbConnectOwnerId;
+
+  /// Connect page: primary
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get fbConnectButton;
+
+  /// Connect page: why Connect is off
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the address and the code first.'**
+  String get fbConnectNeeds;
+
+  /// Connect page: error title
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect'**
+  String get fbConnectFailedTitle;
+
+  /// Status page: action
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect {name}'**
+  String fbDisconnect(String name);
+
+  /// Status page: what disconnecting does
+  ///
+  /// In en, this message translates to:
+  /// **'Forget the pairing, token and approval key on this phone'**
+  String get fbDisconnectDetail;
+
+  /// Status page: confirm title
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect {name}?'**
+  String fbDisconnectTitle(String name);
+
+  /// Status page: confirm body
+  ///
+  /// In en, this message translates to:
+  /// **'This phone forgets the node\'s pairing, token and approval key. The node\'s notes stay where they are, and notes waiting on this phone stay until you discard them.'**
+  String get fbDisconnectBody;
+
+  /// Connect page: address refused
+  ///
+  /// In en, this message translates to:
+  /// **'That address is not on a private network. Use this phone, your home network or your tailnet.'**
+  String get fbErrorAddress;
+
+  /// FactsBook pages: unreadable answer
+  ///
+  /// In en, this message translates to:
+  /// **'Memory answered in a way this app cannot read. Update the app, or update the memory program.'**
+  String get fbErrorBadResponse;
+
+  /// FactsBook pages: scope refused
+  ///
+  /// In en, this message translates to:
+  /// **'This phone is not allowed to do that.'**
+  String get fbErrorForbidden;
+
+  /// FactsBook pages: a capability the node does not offer yet
+  ///
+  /// In en, this message translates to:
+  /// **'That is turned off in this memory.'**
+  String get fbErrorNotEnabled;
+
+  /// FactsBook pages: no approval key
+  ///
+  /// In en, this message translates to:
+  /// **'This phone cannot approve changes yet. Set up approval first.'**
+  String get fbErrorOwner;
+
+  /// Connect page: the code was refused
+  ///
+  /// In en, this message translates to:
+  /// **'That code did not work. Ask the node for a new one.'**
+  String get fbErrorPairCode;
+
+  /// FactsBook pages: rate limited
+  ///
+  /// In en, this message translates to:
+  /// **'Memory is busy. Try again in a moment.'**
+  String get fbErrorSlow;
+
+  /// FactsBook pages: a stale change
+  ///
+  /// In en, this message translates to:
+  /// **'That changed since you looked. Look again, then try once more.'**
+  String get fbErrorStale;
+
+  /// FactsBook pages: node starting
+  ///
+  /// In en, this message translates to:
+  /// **'Memory is starting. Try again in a moment.'**
+  String get fbErrorStarting;
+
+  /// FactsBook pages: not paired or revoked
+  ///
+  /// In en, this message translates to:
+  /// **'This phone is not signed in to Memory. Set it up again.'**
+  String get fbErrorUnauthorized;
+
+  /// FactsBook pages: the node's code under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Code {code}'**
+  String fbErrorCode(String code);
+
+  /// Status page: the locked folder is locked
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get fbKeyLocked;
+
+  /// Status page: the locked folder is open
+  ///
+  /// In en, this message translates to:
+  /// **'Unlocked'**
+  String get fbKeyUnlocked;
+
+  /// Thing kind
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get fbKindInvoice;
+
+  /// Thing kind
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get fbKindHealth;
+
+  /// Status page: module name
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get fbModuleStorage;
+
+  /// Status page: module name
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud backup'**
+  String get fbModuleCloud;
+
+  /// Status page: module name
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get fbModuleCare;
+
+  /// Not saved yet: where the item is
+  ///
+  /// In en, this message translates to:
+  /// **'Held by Memory'**
+  String get fbNotSavedAtNode;
+
+  /// Not saved yet: where the item is
+  ///
+  /// In en, this message translates to:
+  /// **'On this phone'**
+  String get fbNotSavedOnPhone;
+
+  /// Not saved yet: the title of an item the node holds
+  ///
+  /// In en, this message translates to:
+  /// **'A note Memory is holding'**
+  String get fbNotSavedNodeItem;
+
+  /// Status page: reason
+  ///
+  /// In en, this message translates to:
+  /// **'nothing connected yet'**
+  String get fbReasonModuleNotConfigured;
+
+  /// Status page: reason
+  ///
+  /// In en, this message translates to:
+  /// **'not turned on yet'**
+  String get fbReasonModuleNotEnabled;
+
+  /// Not saved yet: reason
+  ///
+  /// In en, this message translates to:
+  /// **'The queue on this phone is full. Send or discard a waiting note.'**
+  String get fbReasonOutboxFull;
+
+  /// Not saved yet: reason
+  ///
+  /// In en, this message translates to:
+  /// **'Memory could not read it. Try again.'**
+  String get fbReasonParserError;
+
+  /// Reminder check: title of the adjustment notice
+  ///
+  /// In en, this message translates to:
+  /// **'Memory adjusted the time'**
+  String get fbReminderAdjusted;
+
+  /// Reminder check: the node's reading differs
+  ///
+  /// In en, this message translates to:
+  /// **'Memory read this differently. Check the date, time and zone, then try again.'**
+  String get fbReminderMismatch;
+
+  /// Reminders: pause button name
+  ///
+  /// In en, this message translates to:
+  /// **'Pause “{what}”'**
+  String fbReminderPause(String what);
+
+  /// Reminders: resume button name
+  ///
+  /// In en, this message translates to:
+  /// **'Resume “{what}”'**
+  String fbReminderResume(String what);
+
+  /// Reminders page: title
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get fbRemindersTitle;
+
+  /// Reminders page: group
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get fbRemindersActive;
+
+  /// Reminders page: group
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get fbRemindersPaused;
+
+  /// Reminders page: group
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get fbRemindersDone;
+
+  /// Reminders page: empty state
+  ///
+  /// In en, this message translates to:
+  /// **'No reminders yet'**
+  String get fbRemindersEmptyTitle;
+
+  /// Reminders page: empty state body
+  ///
+  /// In en, this message translates to:
+  /// **'Add a reminder, or turn on “Also remind me about it” when you add a note, and it shows up here.'**
+  String get fbRemindersEmptyBody;
+
+  /// FactsBook: a source that is an inbox item
+  ///
+  /// In en, this message translates to:
+  /// **'something you saved'**
+  String get fbSourceSaved;
+
+  /// Status: canonical state ok
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get fbStateReady;
+
+  /// Status: canonical state waiting
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get fbStateWaiting;
+
+  /// Status: canonical state stale
+  ///
+  /// In en, this message translates to:
+  /// **'Stale'**
+  String get fbStateStale;
+
+  /// Status: canonical state failed
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get fbStateFailed;
+
+  /// Status: canonical state disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get fbStateOff;
+
+  /// Status: canonical state absent
+  ///
+  /// In en, this message translates to:
+  /// **'Not set up'**
+  String get fbStateNotSetUp;
+
+  /// Status page: title
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get fbStatusTitle;
+
+  /// Status page: row
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get fbStatusSearch;
+
+  /// Status page: row
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get fbStatusBackup;
+
+  /// Status page: row value
+  ///
+  /// In en, this message translates to:
+  /// **'Backed up'**
+  String get fbStatusBackedUp;
+
+  /// Status page: row value
+  ///
+  /// In en, this message translates to:
+  /// **'No backup yet'**
+  String get fbStatusNoBackup;
+
+  /// Status page: group
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get fbStatusThisPhone;
+
+  /// Status page: row
+  ///
+  /// In en, this message translates to:
+  /// **'Approve changes from this phone'**
+  String get fbStatusApprove;
+
+  /// Status page: how long a module has been in its state
+  ///
+  /// In en, this message translates to:
+  /// **'updated {when}'**
+  String fbStatusSince(String when);
+
+  /// Thing page: where to approve a guess
+  ///
+  /// In en, this message translates to:
+  /// **'Facts marked \"waiting for your OK\" are in Needs you.'**
+  String get fbThingWaitingNote;
+
+  /// Reminders: a daily schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Every day at {time}'**
+  String fbWhenDaily(String time);
+
+  /// Reminders: a weekly schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Every week at {time}'**
+  String fbWhenWeekly(String time);
+
+  /// Reminders: a monthly schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Every month at {time}'**
+  String fbWhenMonthly(String time);
+
+  /// Reminders: a yearly schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Every year at {time}'**
+  String fbWhenYearly(String time);
+
+  /// Reminders: a schedule the app does not describe
+  ///
+  /// In en, this message translates to:
+  /// **'Custom schedule'**
+  String get fbWhenCustom;
+
+  /// About: the developer switch that shows FactsBook
+  ///
+  /// In en, this message translates to:
+  /// **'Memory (preview)'**
+  String get fbDeveloperFactsBook;
+
+  /// About: what the FactsBook switch does
+  ///
+  /// In en, this message translates to:
+  /// **'Shows the Memory section in your conversations. Off by default.'**
+  String get fbDeveloperFactsBookDetail;
+
+  /// About: group name
+  ///
+  /// In en, this message translates to:
+  /// **'Developer'**
+  String get fbDeveloperTitle;
+
+  /// FactsBook pages: the request was refused as malformed
+  ///
+  /// In en, this message translates to:
+  /// **'Memory did not accept that. Check what you entered and try again.'**
+  String get fbErrorBadRequest;
+
+  /// FactsBook pages: the node queue is full
+  ///
+  /// In en, this message translates to:
+  /// **'Memory\'s own queue is full. Keep your text and try again later.'**
+  String get fbErrorNodeFull;
+
+  /// FactsBook pages: the search index is rebuilding
+  ///
+  /// In en, this message translates to:
+  /// **'Search is getting ready. Try again in a moment.'**
+  String get fbErrorIndexRebuilding;
+
+  /// FactsBook pages: no device authentication is set up
+  ///
+  /// In en, this message translates to:
+  /// **'This phone has no fingerprint, face or screen lock set up, so it cannot approve changes. Set one up in the phone\'s settings, then try again.'**
+  String get fbErrorAuthUnavailable;
+
+  /// FactsBook pages: the person backed out of device authentication
+  ///
+  /// In en, this message translates to:
+  /// **'Approval was cancelled. Nothing was changed.'**
+  String get fbErrorAuthCancelled;
+
+  /// FactsBook pages: device authentication is locked out
+  ///
+  /// In en, this message translates to:
+  /// **'Too many wrong tries. Wait a little, then try again.'**
+  String get fbErrorAuthLocked;
+
+  /// FactsBook pages: device authentication failed
+  ///
+  /// In en, this message translates to:
+  /// **'The phone could not confirm it is you. Nothing was changed.'**
+  String get fbErrorAuthFailed;
+
+  /// FactsBook pages: rate limited with a wait
+  ///
+  /// In en, this message translates to:
+  /// **'Memory is busy. Try again in {seconds} seconds.'**
+  String fbErrorSlowAfter(int seconds);
+
+  /// The phone's fingerprint or PIN prompt before an approval is signed
+  ///
+  /// In en, this message translates to:
+  /// **'Approve this change in Memory'**
+  String get fbAuthReason;
+
+  /// Reminders: a weekly schedule with its days
+  ///
+  /// In en, this message translates to:
+  /// **'Every week on {days} at {time}'**
+  String fbWhenWeeklyOn(String days, String time);
+
+  /// Reminders: a monthly schedule on the last day
+  ///
+  /// In en, this message translates to:
+  /// **'Every month on the last day at {time}'**
+  String fbWhenMonthLast(String time);
+
+  /// Reminders: a monthly schedule on a day
+  ///
+  /// In en, this message translates to:
+  /// **'Every month on day {day} at {time}'**
+  String fbWhenMonthlyOn(int day, String time);
+
+  /// Reminders: a yearly schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Every year on {date} at {time}'**
+  String fbWhenYearlyOn(String date, String time);
+
+  /// Reminder check: why Save is off while the title is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Write the reminder first.'**
+  String get fbReminderNeedsTitle;
+
+  /// Reminder check: title example
+  ///
+  /// In en, this message translates to:
+  /// **'Call the dentist'**
+  String get fbReminderWhatHint;
+
+  /// Reminder check: row for a monthly reminder
+  ///
+  /// In en, this message translates to:
+  /// **'Day of the month'**
+  String get fbReminderDayOfMonth;
+
+  /// Reminder check: the last day of each month
+  ///
+  /// In en, this message translates to:
+  /// **'Last day'**
+  String get fbReminderLastDay;
+
+  /// Reminders page: opens the reminder check with a title field
+  ///
+  /// In en, this message translates to:
+  /// **'Add a reminder'**
+  String get fbRemindersAdd;
+
+  /// Thing page: an edited fact keeps where it was first read
+  ///
+  /// In en, this message translates to:
+  /// **'Originally read from {source} · {date}'**
+  String fbThingOriginally(String source, String date);
+
+  /// Not saved yet: export sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Export this note'**
+  String get fbExportTitle;
+
+  /// Not saved yet: what an exported note is
+  ///
+  /// In en, this message translates to:
+  /// **'This is the note as an encrypted object. It does not unlock the locked folder, and opening it needs the recovery details from when Memory was set up on its own device.'**
+  String get fbExportBody;
+
+  /// Not saved yet: the exported object
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted object'**
+  String get fbExportObject;
+
+  /// Not saved yet: copies the exported object
+  ///
+  /// In en, this message translates to:
+  /// **'Copy export'**
+  String get fbExportCopy;
+
+  /// Settings page: title
+  ///
+  /// In en, this message translates to:
+  /// **'Memory settings'**
+  String get fbSettingsTitle;
+
+  /// Settings page: group
+  ///
+  /// In en, this message translates to:
+  /// **'Morning brief'**
+  String get fbSettingsBrief;
+
+  /// Settings page: the daily cap
+  ///
+  /// In en, this message translates to:
+  /// **'Items a day'**
+  String get fbSettingsBriefCap;
+
+  /// Settings page: what the cap is
+  ///
+  /// In en, this message translates to:
+  /// **'The most the brief shows in one day.'**
+  String get fbSettingsBriefCapDetail;
+
+  /// Settings page: a cap of zero
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get fbSettingsBriefOff;
+
+  /// Settings page: a cap value
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String fbSettingsBriefItems(int count);
+
+  /// Settings page: row
+  ///
+  /// In en, this message translates to:
+  /// **'Brief time'**
+  String get fbSettingsBriefTime;
+
+  /// Settings page: row
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet hours'**
+  String get fbSettingsQuietHours;
+
+  /// Settings page: group
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get fbSettingsPrivacy;
+
+  /// Settings page: row
+  ///
+  /// In en, this message translates to:
+  /// **'Locked folder stays open for'**
+  String get fbSettingsLockTimeout;
+
+  /// Settings page: a number of minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
+  String fbSettingsMinutes(int count);
+
+  /// Settings page: row to area sharing
+  ///
+  /// In en, this message translates to:
+  /// **'Who else may read each area'**
+  String get fbSettingsAreasDetail;
+
+  /// Settings page: group
+  ///
+  /// In en, this message translates to:
+  /// **'This memory'**
+  String get fbSettingsThisNode;
+
+  /// Settings page: row
+  ///
+  /// In en, this message translates to:
+  /// **'Home time zone'**
+  String get fbSettingsHomeZone;
+
+  /// Settings page: row
+  ///
+  /// In en, this message translates to:
+  /// **'Spending limit'**
+  String get fbSettingsSpending;
+
+  /// Settings page: the spending limit is zero
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing may be spent'**
+  String get fbSettingsSpendingNone;
+
+  /// Settings page: what can and cannot be changed here
+  ///
+  /// In en, this message translates to:
+  /// **'The lock time and the home zone are set on the memory server. Changes here need this phone\'s approval.'**
+  String get fbSettingsFootnote;
+
+  /// Settings page: no approval key
+  ///
+  /// In en, this message translates to:
+  /// **'This phone cannot approve changes yet, so settings are shown but not changed. Set up approval to change them.'**
+  String get fbSettingsNeedsOwner;
+
+  /// Status page: module name
+  ///
+  /// In en, this message translates to:
+  /// **'Replication'**
+  String get fbModuleReplication;
+
+  /// Status page: when the node made its report
+  ///
+  /// In en, this message translates to:
+  /// **'Checked'**
+  String get fbStatusChecked;
+
+  /// Status page: a value the node did not give
+  ///
+  /// In en, this message translates to:
+  /// **'Not known'**
+  String get fbStatusUnknown;
+
+  /// Status page: row
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud copy'**
+  String get fbStatusCloudCopy;
+
+  /// Status page: cloud freshness has never been established
+  ///
+  /// In en, this message translates to:
+  /// **'Not known yet. No cloud copy has been checked.'**
+  String get fbStatusCloudUnknown;
+
+  /// Status page: how old the cloud copy is
+  ///
+  /// In en, this message translates to:
+  /// **'{age} old'**
+  String fbStatusCloudAge(String age);
+
+  /// Status page: row about the control chain
+  ///
+  /// In en, this message translates to:
+  /// **'Signed history'**
+  String get fbStatusHistory;
+
+  /// Status page: the control chain was not checked
+  ///
+  /// In en, this message translates to:
+  /// **'Not checked'**
+  String get fbStatusHistoryNotChecked;
+
+  /// Status page: the control chain is trusted
+  ///
+  /// In en, this message translates to:
+  /// **'Verified against the key pinned when you paired'**
+  String get fbStatusHistoryVerified;
+
+  /// Status page: the control chain failed verification
+  ///
+  /// In en, this message translates to:
+  /// **'Could not be verified. Do not approve anything until it is.'**
+  String get fbStatusHistoryFailed;
+
+  /// Status page: the control chain is forked
+  ///
+  /// In en, this message translates to:
+  /// **'Two competing histories were found. Approvals are paused.'**
+  String get fbStatusHistoryForked;
+
+  /// Status page: honest note about replication and cloud freshness
+  ///
+  /// In en, this message translates to:
+  /// **'Replication is off, so your notes exist only in this memory, and how fresh a cloud copy is cannot be known.'**
+  String get fbStatusNoReplication;
+
+  /// Status page: group
+  ///
+  /// In en, this message translates to:
+  /// **'Not turned on'**
+  String get fbStatusNotYet;
+
+  /// Status page: a capability that is off
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud sync and backup'**
+  String get fbNotYetCloud;
+
+  /// Status page: a capability that is off
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the locked folder'**
+  String get fbNotYetUnlock;
+
+  /// Status page: a capability that is off
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder alarms on this phone'**
+  String get fbNotYetAlarms;
+
+  /// Status page: said for a capability that is off
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get fbNotAvailableYet;
+
+  /// Reminder check: how a clock change is read
+  ///
+  /// In en, this message translates to:
+  /// **'If a time does not exist that day because the clocks change, it runs at the first time that does.'**
+  String get fbReminderClockNote;
+
+  /// Capture: the reminder waits because the note was not saved
+  ///
+  /// In en, this message translates to:
+  /// **'The reminder was not made yet. Add it again once the note is saved.'**
+  String get fbCaptureReminderNotMade;
+
+  /// Not saved yet: confirm body for a note FactsBook holds
+  ///
+  /// In en, this message translates to:
+  /// **'Memory will delete the copy it is holding. It was never saved.'**
+  String get fbNotSavedDiscardBodyNode;
+
+  /// Areas: the area's own name
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get fbAreaNameGeneral;
+
+  /// Areas: the area's own name
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get fbAreaNameHome;
+
+  /// Areas: the area's own name
+  ///
+  /// In en, this message translates to:
+  /// **'Travel'**
+  String get fbAreaNameTravel;
+
+  /// Areas: the area's own name
+  ///
+  /// In en, this message translates to:
+  /// **'Unsorted'**
+  String get fbAreaNameUnsorted;
+
+  /// Areas: the area's own name
+  ///
+  /// In en, this message translates to:
+  /// **'ID'**
+  String get fbAreaNameId;
+
+  /// Status page: module name
+  ///
+  /// In en, this message translates to:
+  /// **'Search index'**
+  String get fbModuleIndex;
+
+  /// Status page: module name
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get fbModuleMembership;
+
+  /// Triggers page: title
+  ///
+  /// In en, this message translates to:
+  /// **'When something new arrives'**
+  String get fbTriggersTitle;
+
+  /// FactsBook settings row for Triggers
+  ///
+  /// In en, this message translates to:
+  /// **'Rules that suggest reminders and conversations from messages you share'**
+  String get fbTriggersSettingsDetail;
+
+  /// Triggers page: the node has no triggers
+  ///
+  /// In en, this message translates to:
+  /// **'Rules are off here'**
+  String get fbTriggersUnavailableTitle;
+
+  /// Triggers page: the node has no triggers
+  ///
+  /// In en, this message translates to:
+  /// **'This memory does not offer rules. Update it to use them.'**
+  String get fbTriggersUnavailableBody;
+
+  /// Triggers page: empty
+  ///
+  /// In en, this message translates to:
+  /// **'No rules yet'**
+  String get fbTriggersEmptyTitle;
+
+  /// Triggers page: empty
+  ///
+  /// In en, this message translates to:
+  /// **'A rule watches for one kind of message and only suggests. Nothing is saved or sent until you approve.'**
+  String get fbTriggersEmptyBody;
+
+  /// Triggers page: new rule button
+  ///
+  /// In en, this message translates to:
+  /// **'New rule'**
+  String get fbTriggersNew;
+
+  /// Triggers page: group heading for shared text
+  ///
+  /// In en, this message translates to:
+  /// **'Text you share · {count, plural, =1{1 rule} other{{count} rules}}'**
+  String fbTriggersGroupShare(int count);
+
+  /// Triggers page: group heading for saved chats
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations you save · {count, plural, =1{1 rule} other{{count} rules}}'**
+  String fbTriggersGroupChat(int count);
+
+  /// Triggers page: group heading for notes
+  ///
+  /// In en, this message translates to:
+  /// **'Notes you write · {count, plural, =1{1 rule} other{{count} rules}}'**
+  String fbTriggersGroupNote(int count);
+
+  /// Triggers page: heading over recent events
+  ///
+  /// In en, this message translates to:
+  /// **'Recent messages'**
+  String get fbTriggersRecent;
+
+  /// Triggers page: footnote
+  ///
+  /// In en, this message translates to:
+  /// **'A rule only suggests. Nothing is saved or sent until you approve. Ignored items are counted, never kept.'**
+  String get fbTriggersFootnote;
+
+  /// Rule row: what it looks for and does
+  ///
+  /// In en, this message translates to:
+  /// **'Looks for {template} → {outcomes}'**
+  String fbRuleFinds(String template, String outcomes);
+
+  /// Template name in a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'an appointment'**
+  String get fbTemplateAppointment;
+
+  /// Template name in a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'a delivery'**
+  String get fbTemplateDelivery;
+
+  /// Template name in a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'a booking'**
+  String get fbTemplateBooking;
+
+  /// Template name in a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'a subscription renewal'**
+  String get fbTemplateSubscription;
+
+  /// Template name in a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'a bill due'**
+  String get fbTemplateBill;
+
+  /// Outcome in a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'propose a reminder'**
+  String get fbOutcomeReminder;
+
+  /// Outcome in a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'propose a fact'**
+  String get fbOutcomeFact;
+
+  /// Outcome in a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'offer to talk about it'**
+  String get fbOutcomeConversation;
+
+  /// Rule row: counts for seven days
+  ///
+  /// In en, this message translates to:
+  /// **'This week: {proposed} proposed, {ignored} ignored'**
+  String fbRuleWeek(int proposed, int ignored);
+
+  /// Rule row: counts for seven days with offers
+  ///
+  /// In en, this message translates to:
+  /// **'This week: {proposed} proposed, {ignored} ignored, {offers, plural, =1{1 offer} other{{offers} offers}}'**
+  String fbRuleWeekOffers(int proposed, int ignored, int offers);
+
+  /// Rule row: tag
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get fbRulePaused;
+
+  /// Rule row: pause button label
+  ///
+  /// In en, this message translates to:
+  /// **'Pause “{name}”'**
+  String fbRulePause(String name);
+
+  /// Rule row: resume button label
+  ///
+  /// In en, this message translates to:
+  /// **'Resume “{name}”'**
+  String fbRuleResume(String name);
+
+  /// Triggers page: notice
+  ///
+  /// In en, this message translates to:
+  /// **'Rule paused.'**
+  String get fbRulePausedDone;
+
+  /// Triggers page: notice
+  ///
+  /// In en, this message translates to:
+  /// **'Rule is on again.'**
+  String get fbRuleResumedDone;
+
+  /// Source kind in words
+  ///
+  /// In en, this message translates to:
+  /// **'Text you share'**
+  String get fbSourceGroupShare;
+
+  /// Source kind in words
+  ///
+  /// In en, this message translates to:
+  /// **'A conversation you saved'**
+  String get fbSourceGroupChat;
+
+  /// Source kind in words
+  ///
+  /// In en, this message translates to:
+  /// **'A note you wrote'**
+  String get fbSourceGroupNote;
+
+  /// Event row title
+  ///
+  /// In en, this message translates to:
+  /// **'{source} · {when}'**
+  String fbEventWhen(String source, String when);
+
+  /// Event result in words
+  ///
+  /// In en, this message translates to:
+  /// **'A rule matched this message.'**
+  String get fbReasonMatched;
+
+  /// Event result in words
+  ///
+  /// In en, this message translates to:
+  /// **'No rule matched this message.'**
+  String get fbReasonNoMatch;
+
+  /// Event result in words
+  ///
+  /// In en, this message translates to:
+  /// **'Memory could not read this safely, so it kept nothing and suggested nothing.'**
+  String get fbReasonUncertain;
+
+  /// Event result in words
+  ///
+  /// In en, this message translates to:
+  /// **'This looked private and locked notes are closed, so it was set aside.'**
+  String get fbReasonSensitive;
+
+  /// Event result in words
+  ///
+  /// In en, this message translates to:
+  /// **'Too many messages came from this source today, so this one was only counted.'**
+  String get fbReasonSourceCap;
+
+  /// Event result in words
+  ///
+  /// In en, this message translates to:
+  /// **'Too many messages arrived today, so this one was only counted.'**
+  String get fbReasonVaultCap;
+
+  /// Event result in words
+  ///
+  /// In en, this message translates to:
+  /// **'This rule reached its daily limit, so this one was only counted.'**
+  String get fbReasonRuleCap;
+
+  /// Event result in words
+  ///
+  /// In en, this message translates to:
+  /// **'Many similar messages came at once, so they were folded into one.'**
+  String get fbReasonStorm;
+
+  /// Event result in words
+  ///
+  /// In en, this message translates to:
+  /// **'No rule is on for this source.'**
+  String get fbReasonNoRule;
+
+  /// Rule editor: title for a new rule
+  ///
+  /// In en, this message translates to:
+  /// **'New rule'**
+  String get fbRuleNewTitle;
+
+  /// Rule editor: title
+  ///
+  /// In en, this message translates to:
+  /// **'Edit rule'**
+  String get fbRuleEditTitle;
+
+  /// Rule editor: field
+  ///
+  /// In en, this message translates to:
+  /// **'Rule name'**
+  String get fbRuleNameLabel;
+
+  /// Rule editor: field hint
+  ///
+  /// In en, this message translates to:
+  /// **'For example: Library appointments'**
+  String get fbRuleNameHint;
+
+  /// Rule editor: section
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get fbRuleWhen;
+
+  /// Rule editor: choice label
+  ///
+  /// In en, this message translates to:
+  /// **'Where the message comes from'**
+  String get fbRuleWhenLabel;
+
+  /// Rule editor: choice
+  ///
+  /// In en, this message translates to:
+  /// **'Shared text'**
+  String get fbSourceKindShare;
+
+  /// Rule editor: choice
+  ///
+  /// In en, this message translates to:
+  /// **'Saved conversation'**
+  String get fbSourceKindChat;
+
+  /// Rule editor: choice
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get fbSourceKindNote;
+
+  /// Rule editor: section
+  ///
+  /// In en, this message translates to:
+  /// **'Says something like'**
+  String get fbRuleSays;
+
+  /// Rule editor: picker
+  ///
+  /// In en, this message translates to:
+  /// **'Kind of message'**
+  String get fbRuleTemplateLabel;
+
+  /// Rule editor: picker
+  ///
+  /// In en, this message translates to:
+  /// **'Message language'**
+  String get fbRuleLanguageLabel;
+
+  /// Rule editor: language choice
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get fbRuleLangEn;
+
+  /// Rule editor: language choice
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic'**
+  String get fbRuleLangAr;
+
+  /// Rule editor: how a message is read
+  ///
+  /// In en, this message translates to:
+  /// **'Memory reads one line like “Appointment: Library visit | 2026-10-15T09:00”.'**
+  String get fbRuleTemplateHelp;
+
+  /// Rule editor: field
+  ///
+  /// In en, this message translates to:
+  /// **'Words it must contain (optional)'**
+  String get fbRuleWordsLabel;
+
+  /// Rule editor: field help
+  ///
+  /// In en, this message translates to:
+  /// **'Up to 4 words, separated by commas. Plain text, not code.'**
+  String get fbRuleWordsHelp;
+
+  /// Rule editor: section
+  ///
+  /// In en, this message translates to:
+  /// **'Then'**
+  String get fbRuleThen;
+
+  /// Rule editor: switch
+  ///
+  /// In en, this message translates to:
+  /// **'Propose a reminder'**
+  String get fbRuleOutcomeReminder;
+
+  /// Rule editor: switch detail
+  ///
+  /// In en, this message translates to:
+  /// **'You confirm the date and time first.'**
+  String get fbRuleOutcomeReminderDetail;
+
+  /// Rule editor: switch
+  ///
+  /// In en, this message translates to:
+  /// **'Offer to talk about it'**
+  String get fbRuleOutcomeConversation;
+
+  /// Rule editor: switch detail
+  ///
+  /// In en, this message translates to:
+  /// **'You choose whether a conversation opens.'**
+  String get fbRuleOutcomeConversationDetail;
+
+  /// Rule editor: note when the rule has a fact outcome
+  ///
+  /// In en, this message translates to:
+  /// **'This rule also proposes a fact. Facts are set up on the memory server, and this stays as it is.'**
+  String get fbRuleOutcomeFactKept;
+
+  /// Rule editor: switch
+  ///
+  /// In en, this message translates to:
+  /// **'Start these conversations by itself'**
+  String get fbRuleAutoStart;
+
+  /// Rule editor: why the switch is off
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations are only offered, never started for you.'**
+  String get fbRuleAutoStartOff;
+
+  /// Rule editor: switch
+  ///
+  /// In en, this message translates to:
+  /// **'This rule is on'**
+  String get fbRuleOn;
+
+  /// Rule editor: switch detail
+  ///
+  /// In en, this message translates to:
+  /// **'Turn it off to pause it. Nothing it already suggested is removed.'**
+  String get fbRuleOnDetail;
+
+  /// Rule editor: picker
+  ///
+  /// In en, this message translates to:
+  /// **'At most each day'**
+  String get fbRuleLimit;
+
+  /// Rule editor: picker value
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 a day} other{{count} a day}}'**
+  String fbRuleLimitValue(int count);
+
+  /// Rule editor: section
+  ///
+  /// In en, this message translates to:
+  /// **'Try it on a sample'**
+  String get fbRuleTest;
+
+  /// Rule editor: field
+  ///
+  /// In en, this message translates to:
+  /// **'Sample message'**
+  String get fbRuleSampleLabel;
+
+  /// Rule editor: button
+  ///
+  /// In en, this message translates to:
+  /// **'Use an example'**
+  String get fbRuleSampleExample;
+
+  /// Rule editor: button
+  ///
+  /// In en, this message translates to:
+  /// **'Test'**
+  String get fbRuleTestRun;
+
+  /// Rule editor: button
+  ///
+  /// In en, this message translates to:
+  /// **'Test again'**
+  String get fbRuleTestAgain;
+
+  /// Rule editor: test not yet possible
+  ///
+  /// In en, this message translates to:
+  /// **'Save the rule first, then test it. A test saves nothing.'**
+  String get fbRuleTestNeedsSave;
+
+  /// Rule editor: test not possible with unsaved changes
+  ///
+  /// In en, this message translates to:
+  /// **'Save your changes first, so the test uses them.'**
+  String get fbRuleTestDirty;
+
+  /// Rule editor: test result
+  ///
+  /// In en, this message translates to:
+  /// **'It matches. Found: {summary}, {when}.'**
+  String fbRuleTestMatch(String summary, String when);
+
+  /// Rule editor: test result
+  ///
+  /// In en, this message translates to:
+  /// **'It matches.'**
+  String get fbRuleTestMatchPlain;
+
+  /// Rule editor: test result
+  ///
+  /// In en, this message translates to:
+  /// **'Would propose: {outcomes}. A test saves nothing.'**
+  String fbRuleTestWould(String outcomes);
+
+  /// Rule editor: test result
+  ///
+  /// In en, this message translates to:
+  /// **'It does not match.'**
+  String get fbRuleTestNoMatch;
+
+  /// Rule editor: button
+  ///
+  /// In en, this message translates to:
+  /// **'Save rule'**
+  String get fbRuleSave;
+
+  /// Rule editor: notice
+  ///
+  /// In en, this message translates to:
+  /// **'Rule saved.'**
+  String get fbRuleSaved;
+
+  /// Rule editor: button
+  ///
+  /// In en, this message translates to:
+  /// **'Delete rule'**
+  String get fbRuleDelete;
+
+  /// Rule editor: confirm title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this rule?'**
+  String get fbRuleDeleteTitle;
+
+  /// Rule editor: confirm body
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” stops suggesting things. What it already suggested stays for you to decide.'**
+  String fbRuleDeleteBody(String name);
+
+  /// Triggers and rule editor: no approval key
+  ///
+  /// In en, this message translates to:
+  /// **'This phone cannot sign rule changes yet, so rules are shown but not changed. Set up approval to change them.'**
+  String get fbRuleNeedsOwner;
+
+  /// Rule editor: stale
+  ///
+  /// In en, this message translates to:
+  /// **'This rule changed in memory. It was reloaded: check it, then save again.'**
+  String get fbRuleStale;
+
+  /// Rule editor: problem
+  ///
+  /// In en, this message translates to:
+  /// **'Give the rule a name of up to 80 letters.'**
+  String get fbRuleProblemName;
+
+  /// Rule editor: problem
+  ///
+  /// In en, this message translates to:
+  /// **'Use up to 4 words, each up to 40 letters.'**
+  String get fbRuleProblemWords;
+
+  /// Rule editor: problem
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one thing for the rule to suggest.'**
+  String get fbRuleProblemOutcome;
+
+  /// Rule editor: problem
+  ///
+  /// In en, this message translates to:
+  /// **'This memory does not read that kind of message.'**
+  String get fbRuleProblemTemplate;
+
+  /// Rule editor: problem
+  ///
+  /// In en, this message translates to:
+  /// **'Choose between 1 and 20 a day.'**
+  String get fbRuleProblemLimit;
+
+  /// Event detail page: title
+  ///
+  /// In en, this message translates to:
+  /// **'What happened here'**
+  String get fbEventTitle;
+
+  /// Event detail: section
+  ///
+  /// In en, this message translates to:
+  /// **'Where it came from'**
+  String get fbEventFrom;
+
+  /// Event detail: row
+  ///
+  /// In en, this message translates to:
+  /// **'Sender (a claim)'**
+  String get fbEventSender;
+
+  /// Event detail: row
+  ///
+  /// In en, this message translates to:
+  /// **'App (a claim)'**
+  String get fbEventApp;
+
+  /// Event detail: row
+  ///
+  /// In en, this message translates to:
+  /// **'Trust'**
+  String get fbEventTrust;
+
+  /// Event detail: trust in words
+  ///
+  /// In en, this message translates to:
+  /// **'From someone else, not verified'**
+  String get fbTrustUntrusted;
+
+  /// Event detail: trust in words
+  ///
+  /// In en, this message translates to:
+  /// **'A conversation you chose'**
+  String get fbTrustSelected;
+
+  /// Event detail: trust in words
+  ///
+  /// In en, this message translates to:
+  /// **'Written by you'**
+  String get fbTrustAuthored;
+
+  /// Event detail: section
+  ///
+  /// In en, this message translates to:
+  /// **'Rule that matched'**
+  String get fbEventRule;
+
+  /// Event detail: section
+  ///
+  /// In en, this message translates to:
+  /// **'Other notes'**
+  String get fbEventIgnored;
+
+  /// Event detail: burst
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 more similar message was folded into this one.} other{{count} more similar messages were folded into this one.}}'**
+  String fbEventCollapsed(int count);
+
+  /// Event detail: warning
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified sender. Memory cannot check who really sent this text, so it will not change a money fact without your OK.'**
+  String get fbEventUnverified;
+
+  /// Event detail: section
+  ///
+  /// In en, this message translates to:
+  /// **'What it suggested'**
+  String get fbEventProposed;
+
+  /// Event detail: footnote
+  ///
+  /// In en, this message translates to:
+  /// **'The original text is never shown here and is never followed as an instruction.'**
+  String get fbEventFootnote;
+
+  /// Memory care: chip on a card made by a rule
+  ///
+  /// In en, this message translates to:
+  /// **'From a trigger'**
+  String get fbTriggerChip;
+
+  /// Memory care: button
+  ///
+  /// In en, this message translates to:
+  /// **'What happened to this message'**
+  String get fbWhyFired;
+
+  /// Memory care: a proposed reminder
+  ///
+  /// In en, this message translates to:
+  /// **'{what}, {when}'**
+  String fbCareProposalWhen(String what, String when);
+
+  /// Needs you: heading over offer cards
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 offer from a trigger} other{{count} offers from triggers}}'**
+  String fbNeedsYouOffers(int count);
+
+  /// Offer card: title
+  ///
+  /// In en, this message translates to:
+  /// **'Discuss with your agent?'**
+  String get fbOfferTitle;
+
+  /// Offer card: label with the rule name
+  ///
+  /// In en, this message translates to:
+  /// **'Offer · {name}'**
+  String fbOfferFromRule(String name);
+
+  /// Offer card: where from
+  ///
+  /// In en, this message translates to:
+  /// **'From {source} · {date}'**
+  String fbOfferSource(String source, String date);
+
+  /// Offer card: button
+  ///
+  /// In en, this message translates to:
+  /// **'Talk about this'**
+  String get fbOfferTalk;
+
+  /// Offer card: button
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get fbOfferNotNow;
+
+  /// Offer card: what happens
+  ///
+  /// In en, this message translates to:
+  /// **'A new conversation opens with your agent. It gets a short summary, not the whole message. It can read and suggest, never act. Replying or paying always asks you first.'**
+  String get fbOfferExplain;
+
+  /// Offer card: the first words of the chat it opens
+  ///
+  /// In en, this message translates to:
+  /// **'Memory noticed something you may want to talk about. This is a short summary, not the original message:'**
+  String get fbOfferChatLead;
+
+  /// Offer card: stale
+  ///
+  /// In en, this message translates to:
+  /// **'This offer changed or ran out, so it was refreshed.'**
+  String get fbOfferStale;
+
+  /// Offer card: start not confirmed
+  ///
+  /// In en, this message translates to:
+  /// **'Memory could not confirm the conversation started, so nothing was opened. It will not try again by itself.'**
+  String get fbOfferUnknown;
+
+  /// Offer card: notice
+  ///
+  /// In en, this message translates to:
+  /// **'Offer dismissed.'**
+  String get fbOfferDismissed;
+
+  /// FactsBook pages: node busy
+  ///
+  /// In en, this message translates to:
+  /// **'Memory is busy for a moment. Try again.'**
+  String get fbErrorBusy;
+
+  /// Rule editor: why the chat offer switch is off
+  ///
+  /// In en, this message translates to:
+  /// **'This memory does not offer conversations from rules.'**
+  String get fbRuleOfferUnavailable;
+
+  /// Memory on this phone page: title
+  ///
+  /// In en, this message translates to:
+  /// **'Memory on this phone'**
+  String get fbNodeTitle;
+
+  /// About developer: row
+  ///
+  /// In en, this message translates to:
+  /// **'Use memory on this phone'**
+  String get fbNodeRow;
+
+  /// About developer: row detail
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your memory inside the built-in Linux on this phone. Nothing leaves the phone.'**
+  String get fbNodeRowDetail;
+
+  /// Memory on this phone: state
+  ///
+  /// In en, this message translates to:
+  /// **'Not available here'**
+  String get fbNodeUnsupportedTitle;
+
+  /// Memory on this phone: state
+  ///
+  /// In en, this message translates to:
+  /// **'Memory on this phone needs the built-in Linux, which only Android phones have.'**
+  String get fbNodeUnsupportedBody;
+
+  /// Memory on this phone: state
+  ///
+  /// In en, this message translates to:
+  /// **'Set up phone first'**
+  String get fbNodeLinuxTitle;
+
+  /// Memory on this phone: state
+  ///
+  /// In en, this message translates to:
+  /// **'Memory runs inside the built-in Linux. Set that up first, then come back.'**
+  String get fbNodeLinuxBody;
+
+  /// Memory on this phone: button
+  ///
+  /// In en, this message translates to:
+  /// **'Set up this phone'**
+  String get fbNodeLinuxAction;
+
+  /// Memory on this phone: state
+  ///
+  /// In en, this message translates to:
+  /// **'No memory build yet'**
+  String get fbNodeNoBuildTitle;
+
+  /// Memory on this phone: state
+  ///
+  /// In en, this message translates to:
+  /// **'This version of the app has no memory program to install for this phone.'**
+  String get fbNodeNoBuildBody;
+
+  /// Memory on this phone: state
+  ///
+  /// In en, this message translates to:
+  /// **'Memory not installed yet'**
+  String get fbNodeNotInstalledTitle;
+
+  /// Memory on this phone: state
+  ///
+  /// In en, this message translates to:
+  /// **'The app installs Memory inside the built-in Linux, starts it and connects to it by itself. It listens only inside this phone.'**
+  String get fbNodeNotInstalledBody;
+
+  /// Memory on this phone: button
+  ///
+  /// In en, this message translates to:
+  /// **'Set up memory on this phone'**
+  String get fbNodeRun;
+
+  /// Memory on this phone: progress
+  ///
+  /// In en, this message translates to:
+  /// **'Installing the program'**
+  String get fbNodeStepCopying;
+
+  /// Memory on this phone: progress
+  ///
+  /// In en, this message translates to:
+  /// **'Creating the memory'**
+  String get fbNodeStepPreparing;
+
+  /// Memory on this phone: progress
+  ///
+  /// In en, this message translates to:
+  /// **'Starting'**
+  String get fbNodeStepStarting;
+
+  /// Memory on this phone: progress
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting this app'**
+  String get fbNodeStepPairing;
+
+  /// Memory on this phone: state
+  ///
+  /// In en, this message translates to:
+  /// **'Memory is running here'**
+  String get fbNodeRunningTitle;
+
+  /// Memory on this phone: state
+  ///
+  /// In en, this message translates to:
+  /// **'Memory runs inside the built-in Linux and is connected to this app. It listens only inside this phone.'**
+  String get fbNodeRunningBody;
+
+  /// Memory on this phone: state
+  ///
+  /// In en, this message translates to:
+  /// **'Memory is stopped'**
+  String get fbNodeStoppedTitle;
+
+  /// Memory on this phone: state
+  ///
+  /// In en, this message translates to:
+  /// **'Your memory is still on this phone. Start it to use it.'**
+  String get fbNodeStoppedBody;
+
+  /// Memory on this phone: button
+  ///
+  /// In en, this message translates to:
+  /// **'Start memory'**
+  String get fbNodeStart;
+
+  /// Memory on this phone: button
+  ///
+  /// In en, this message translates to:
+  /// **'Stop memory'**
+  String get fbNodeStop;
+
+  /// Memory on this phone: button
+  ///
+  /// In en, this message translates to:
+  /// **'Restart memory'**
+  String get fbNodeRestart;
+
+  /// Memory on this phone: progress
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping'**
+  String get fbNodeStopping;
+
+  /// Memory on this phone: progress
+  ///
+  /// In en, this message translates to:
+  /// **'Removing'**
+  String get fbNodeRemoving;
+
+  /// Memory on this phone: button
+  ///
+  /// In en, this message translates to:
+  /// **'Open About you'**
+  String get fbNodeOpen;
+
+  /// Memory on this phone: row
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get fbNodeAddress;
+
+  /// Memory on this phone: row detail
+  ///
+  /// In en, this message translates to:
+  /// **'Only inside this phone'**
+  String get fbNodeAddressValue;
+
+  /// Memory on this phone: button
+  ///
+  /// In en, this message translates to:
+  /// **'Remove memory from this phone'**
+  String get fbNodeRemove;
+
+  /// Memory on this phone: confirm title
+  ///
+  /// In en, this message translates to:
+  /// **'Remove memory from phone?'**
+  String get fbNodeRemoveTitle;
+
+  /// Memory on this phone: confirm body
+  ///
+  /// In en, this message translates to:
+  /// **'This stops Memory and deletes everything it keeps on this phone. It cannot be undone.'**
+  String get fbNodeRemoveBody;
+
+  /// Memory on this phone: what is lost
+  ///
+  /// In en, this message translates to:
+  /// **'Every note, fact and reminder Memory holds here'**
+  String get fbNodeRemoveLoses1;
+
+  /// Memory on this phone: what is lost
+  ///
+  /// In en, this message translates to:
+  /// **'The connection and approval key link to it'**
+  String get fbNodeRemoveLoses2;
+
+  /// Memory on this phone: what stays
+  ///
+  /// In en, this message translates to:
+  /// **'Notes still waiting on this phone stay until you send or discard them.'**
+  String get fbNodeRemoveKeeps;
+
+  /// Memory on this phone: notice
+  ///
+  /// In en, this message translates to:
+  /// **'Memory removed from this phone.'**
+  String get fbNodeRemoved;
+
+  /// Memory on this phone: failure
+  ///
+  /// In en, this message translates to:
+  /// **'The program could not be installed here. Try again; Details says why.'**
+  String get fbNodeFailInstall;
+
+  /// Memory on this phone: failure
+  ///
+  /// In en, this message translates to:
+  /// **'Memory did not start. Try again.'**
+  String get fbNodeFailStart;
+
+  /// Memory on this phone: failure
+  ///
+  /// In en, this message translates to:
+  /// **'Memory is running, but this app could not connect to it. Try again.'**
+  String get fbNodeFailPair;
+
+  /// Memory on this phone: failure
+  ///
+  /// In en, this message translates to:
+  /// **'Memory did not stop. Try again.'**
+  String get fbNodeFailStop;
+
+  /// Memory on this phone: failure
+  ///
+  /// In en, this message translates to:
+  /// **'Memory could not be removed. Some of its data may still be on this phone.'**
+  String get fbNodeFailRemove;
+
+  /// Memory on this phone: button; the technical log goes under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Show the log'**
+  String get fbNodeLog;
+
+  /// Event result in words
+  ///
+  /// In en, this message translates to:
+  /// **'The thing this rule updates changed, so nothing was proposed.'**
+  String get fbReasonTargetStale;
+
+  /// Event result in words
+  ///
+  /// In en, this message translates to:
+  /// **'The thing this rule updates is no longer there or is not open to it, so nothing was proposed.'**
+  String get fbReasonTargetGone;
+
+  /// Event result in words
+  ///
+  /// In en, this message translates to:
+  /// **'Memory did not accept this message.'**
+  String get fbReasonRejectedEvent;
+
+  /// Rule editor: problem
+  ///
+  /// In en, this message translates to:
+  /// **'The sender name must be 1 to 80 letters.'**
+  String get fbRuleProblemSender;
+
+  /// Rule editor: field
+  ///
+  /// In en, this message translates to:
+  /// **'Sender claim (optional)'**
+  String get fbRuleSenderLabel;
+
+  /// Rule editor: field help
+  ///
+  /// In en, this message translates to:
+  /// **'Only messages that say they are from this name. Anyone can claim any name, so this narrows a rule; it never proves who sent it.'**
+  String get fbRuleSenderHelp;
+
+  /// Rule editor: picker
+  ///
+  /// In en, this message translates to:
+  /// **'Area'**
+  String get fbRuleAreaLabel;
+
+  /// Rule editor: note under the test
+  ///
+  /// In en, this message translates to:
+  /// **'The test uses what you see here, saved or not. It saves nothing.'**
+  String get fbRuleTestDraftNote;
+
+  /// Memory care: after editing a proposal
+  ///
+  /// In en, this message translates to:
+  /// **'Changed. Check it, then approve it.'**
+  String get fbCareProposalEdited;
+
+  /// Add something: switch
+  ///
+  /// In en, this message translates to:
+  /// **'Let my rules read this'**
+  String get fbCaptureRulesLook;
+
+  /// Add something: switch detail
+  ///
+  /// In en, this message translates to:
+  /// **'Saves it where your rules can see it. Approving this signs that the text is ordinary.'**
+  String get fbCaptureRulesLookDetail;
+
+  /// Device authentication prompt text
+  ///
+  /// In en, this message translates to:
+  /// **'Let your rules read this text'**
+  String get fbAuthReasonRules;
+
+  /// Offer card: after accepting
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for you to send the first message.'**
+  String get fbOfferPendingNote;
+
+  /// Use memory on this phone: the plain explanation line title
+  ///
+  /// In en, this message translates to:
+  /// **'What is this?'**
+  String get fbNodeWhatTitle;
+
+  /// Use memory on this phone: what this is
+  ///
+  /// In en, this message translates to:
+  /// **'Memory keeps your notes, reminders and facts on this phone, private to you. It runs inside the phone\'s built-in Linux and never leaves the phone.'**
+  String get fbNodeWhatBody;
+
+  /// Use memory on this phone: advanced way to connect to a server the person runs
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to my own server'**
+  String get fbNodeOwnServer;
+
+  /// Use memory on this phone: the advanced fold text
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced: connect this app to a Memory server you run yourself, instead of using this phone.'**
+  String get fbNodeOwnServerBody;
+
+  /// Chats home Memory row: the memory on this phone is stopped
+  ///
+  /// In en, this message translates to:
+  /// **'Memory is stopped'**
+  String get fbMemoryStopped;
+
+  /// Chats home Memory row: why Start
+  ///
+  /// In en, this message translates to:
+  /// **'Start it to see your notes and reminders'**
+  String get fbMemoryStoppedDetail;
+
+  /// Chats home Memory row: the Start button
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get fbMemoryStart;
+
+  /// Chats home Memory row: starting
+  ///
+  /// In en, this message translates to:
+  /// **'Starting memory…'**
+  String get fbMemoryStarting;
+
+  /// Needs you: hint above the cards
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a card to change it or skip it.'**
+  String get fbCareTapHint;
+
+  /// Needs you: Approve button name for screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Approve “{claim}”'**
+  String fbCareApproveNamed(String claim);
+
+  /// Needs you: Reject button name for screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Reject “{claim}”'**
+  String fbCareRejectNamed(String claim);
+
+  /// Needs you: card options, change this claim
+  ///
+  /// In en, this message translates to:
+  /// **'Change “{claim}”'**
+  String fbCareEditNamed(String claim);
+
+  /// Needs you: card options, skip this claim
+  ///
+  /// In en, this message translates to:
+  /// **'Skip “{claim}”'**
+  String fbCareSkipNamed(String claim);
+
+  /// Needs you: what Skip does
+  ///
+  /// In en, this message translates to:
+  /// **'It stays here for later'**
+  String get fbCareSkipDetail;
+
+  /// Needs you: who suggested the card
+  ///
+  /// In en, this message translates to:
+  /// **'A rule suggested it'**
+  String get fbCareSourceRule;
+
+  /// Needs you: who suggested the card
+  ///
+  /// In en, this message translates to:
+  /// **'An agent suggested it'**
+  String get fbCareSourceAgent;
+
+  /// Name of the memory that runs on this phone, used in action names
+  ///
+  /// In en, this message translates to:
+  /// **'this phone\'s memory'**
+  String get fbNodeNameThisPhone;
+
+  /// Name of a memory whose address is not known, used in action names
+  ///
+  /// In en, this message translates to:
+  /// **'this memory'**
+  String get fbNodeNameDefault;
+
+  /// Status: the one summary line when nothing is wrong
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is working'**
+  String get fbStatusAllWorking;
+
+  /// Status: the summary line when something is wrong
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 thing needs a look} other{{count} things need a look}}'**
+  String fbStatusNeedsLook(int count);
+
+  /// Status: backup row when a cloud copy exists
+  ///
+  /// In en, this message translates to:
+  /// **'Backed up · copy {age} old'**
+  String fbStatusBackedUpAge(String age);
+
+  /// Reminders: note on a reminder row; this phone does not sound reminders
+  ///
+  /// In en, this message translates to:
+  /// **'Not sounded on this phone'**
+  String get fbReminderNotSounded;
+
+  /// Message detail: the first line when something was suggested
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{It suggested 1 thing for you} other{It suggested {count} things for you}}'**
+  String fbEventOutcomeProposed(int count);
+
+  /// Message detail: state of a suggestion
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your OK'**
+  String get fbEventWaitingForOk;
+
+  /// Add something: picker row, the thing the note belongs to
+  ///
+  /// In en, this message translates to:
+  /// **'Add to'**
+  String get fbCaptureAddTo;
+
+  /// Add something: no thing picked
+  ///
+  /// In en, this message translates to:
+  /// **'Let memory sort it'**
+  String get fbCaptureAddToNone;
+
+  /// Add something: what picking a thing does
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as one line, for you to approve'**
+  String get fbCaptureAddToFactNote;
+
+  /// Add something: picker row for the area
+  ///
+  /// In en, this message translates to:
+  /// **'Area'**
+  String get fbCaptureArea;
+
+  /// Add something: no area picked
+  ///
+  /// In en, this message translates to:
+  /// **'Let memory choose'**
+  String get fbCaptureAreaAuto;
+
+  /// Add something: switch to make a reminder too
+  ///
+  /// In en, this message translates to:
+  /// **'Also remind me about it'**
+  String get fbCaptureRemindToo;
+
+  /// Add something: what the reminder switch does
+  ///
+  /// In en, this message translates to:
+  /// **'You check the date and time before anything is saved.'**
+  String get fbCaptureRemindTooDetail;
+
+  /// Add something: how many rules would read the text
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No rules are on} =1{1 rule is on} other{{count} rules are on}}'**
+  String fbCaptureRulesOn(int count);
+
+  /// Add something: link to the rules page
+  ///
+  /// In en, this message translates to:
+  /// **'See your rules'**
+  String get fbCaptureSeeRules;
+
+  /// Add something: result line for a fact added to a thing
+  ///
+  /// In en, this message translates to:
+  /// **'Added to {thing}.'**
+  String fbCaptureFactAdded(String thing);
+
+  /// Add something: result line for a fact waiting for approval
+  ///
+  /// In en, this message translates to:
+  /// **'Sent for your OK. It waits in Needs you.'**
+  String get fbCaptureFactProposed;
+
+  /// Add something: link to Needs you
+  ///
+  /// In en, this message translates to:
+  /// **'See Needs you'**
+  String get fbCaptureSeeNeedsYou;
+
+  /// Thing page: action row naming its thing
+  ///
+  /// In en, this message translates to:
+  /// **'Add a fact to {thing}'**
+  String fbThingAddFact(String thing);
+
+  /// Thing page: save button of the add-a-fact sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Add fact'**
+  String get fbThingAddFactSave;
+
+  /// Thing page: action row naming its thing
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me about {thing}'**
+  String fbThingRemind(String thing);
+
+  /// Thing page: result line
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder saved for {thing}.'**
+  String fbThingReminderMade(String thing);
+
+  /// Thing page: edit action in a fact sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Change this fact'**
+  String get fbThingEditFact;
+
+  /// Thing page: save button of the change sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Send my change'**
+  String get fbThingEditFactSave;
+
+  /// Thing page: result line
+  ///
+  /// In en, this message translates to:
+  /// **'Changed.'**
+  String get fbThingFactChanged;
+
+  /// Thing page: result line
+  ///
+  /// In en, this message translates to:
+  /// **'Your change waits for your OK in Needs you.'**
+  String get fbThingChangeProposed;
+
+  /// Thing page: helper under the fact field
+  ///
+  /// In en, this message translates to:
+  /// **'One line. It waits for your OK before it is kept.'**
+  String get fbThingOneLine;
+
+  /// Thing page: hint under the facts
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a fact to see where it came from or to change it.'**
+  String get fbThingTapHint;
+
+  /// Fact sheet: provenance told
+  ///
+  /// In en, this message translates to:
+  /// **'You told Memory this on {date}.'**
+  String fbThingExplainTold(String date);
+
+  /// Fact sheet: provenance seen
+  ///
+  /// In en, this message translates to:
+  /// **'Memory read this from {source} on {date}. A source can be wrong, so check it before you rely on it.'**
+  String fbThingExplainSeen(String source, String date);
+
+  /// Fact sheet: provenance seen, no source
+  ///
+  /// In en, this message translates to:
+  /// **'Memory read this on {date}. A source can be wrong, so check it before you rely on it.'**
+  String fbThingExplainSeenNoSource(String date);
+
+  /// Fact sheet: provenance guessed
+  ///
+  /// In en, this message translates to:
+  /// **'Memory guessed this from {source} on {date}. Nobody has confirmed it.'**
+  String fbThingExplainGuessed(String source, String date);
+
+  /// Fact sheet: provenance guessed, no source
+  ///
+  /// In en, this message translates to:
+  /// **'Memory guessed this on {date}. Nobody has confirmed it.'**
+  String fbThingExplainGuessedNoSource(String date);
+
+  /// Fact sheet: provenance calculated
+  ///
+  /// In en, this message translates to:
+  /// **'Memory worked this out from other facts on {date}.'**
+  String fbThingExplainCalculated(String date);
+
+  /// Fact sheet: a guess waiting for approval
+  ///
+  /// In en, this message translates to:
+  /// **'It is waiting for your OK in Needs you.'**
+  String get fbThingExplainWaiting;
+
+  /// Settings hub group: what the app is connected to.
+  ///
+  /// In en, this message translates to:
+  /// **'Connections'**
+  String get settingsV3GroupConnections;
+
+  /// Settings hub group: who answers, with what, and what it costs.
+  ///
+  /// In en, this message translates to:
+  /// **'AI'**
+  String get settingsV3GroupAi;
+
+  /// Settings hub group: how chats look and behave.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get settingsV3GroupChat;
+
+  /// Settings hub group: setup guide, report a problem, about.
+  ///
+  /// In en, this message translates to:
+  /// **'Help and about'**
+  String get settingsV3GroupHelp;
+
+  /// Settings hub row: every saved server.
+  ///
+  /// In en, this message translates to:
+  /// **'Servers'**
+  String get settingsV3Servers;
+
+  /// Settings hub row: OpenCode running on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get settingsV3ThisPhone;
+
+  /// Settings hub row: model providers and their accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get settingsV3Providers;
+
+  /// Settings hub row: the shell a server runs commands in.
+  ///
+  /// In en, this message translates to:
+  /// **'Shell for commands'**
+  String get settingsV3Shell;
+
+  /// Settings hub row: voice typing and its model.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice typing'**
+  String get settingsV3VoiceTyping;
+
+  /// Settings hub row: what runs by itself and the always allowed actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions and automation'**
+  String get settingsV3Permissions;
+
+  /// Settings hub row: what notifies, quiet hours and which servers are watched.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get settingsV3Notifications;
+
+  /// Settings hub row: keeping the app connected in the background.
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get settingsV3Background;
+
+  /// Settings hub row: the app language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsV3Language;
+
+  /// End of a Settings row that each server answers for itself.
+  ///
+  /// In en, this message translates to:
+  /// **'By server'**
+  String get settingsV3ByServer;
+
+  /// Value at the end of a Settings row: on.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get settingsV3On;
+
+  /// Value at the end of a Settings row: off.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get settingsV3Off;
+
+  /// Value: the server is connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get settingsV3Connected;
+
+  /// Value: the server is not connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get settingsV3NotConnected;
+
+  /// This phone row value: the app is connected to the server on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get settingsV3PhoneRunning;
+
+  /// This phone row value: OpenCode is set up on this phone but the app is not connected to it.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get settingsV3PhoneInstalled;
+
+  /// This phone row value: OpenCode is not set up on this phone yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up'**
+  String get settingsV3PhoneSetUp;
+
+  /// Label over the list of servers under the Settings groups.
+  ///
+  /// In en, this message translates to:
+  /// **'You can change some of these for one server'**
+  String get settingsV3ServersBlock;
+
+  /// Shown on a server page after the server is removed.
+  ///
+  /// In en, this message translates to:
+  /// **'This server was removed'**
+  String get settingsV3ServerGone;
+
+  /// Server page section: reaching the server.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get settingsV3SectionConnection;
+
+  /// Server page section: choices kept on this phone about the server.
+  ///
+  /// In en, this message translates to:
+  /// **'In this app'**
+  String get settingsV3SectionInApp;
+
+  /// Server page row: health, version and updates.
+  ///
+  /// In en, this message translates to:
+  /// **'Status and version'**
+  String get settingsV3StatusVersion;
+
+  /// Server page row: how the app signs in to the server.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in'**
+  String get settingsV3SignIn;
+
+  /// Value: signed in with a password.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get settingsV3SignInPassword;
+
+  /// Value: signed in with a token.
+  ///
+  /// In en, this message translates to:
+  /// **'Token'**
+  String get settingsV3SignInToken;
+
+  /// Value: no sign-in saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get settingsV3SignInNone;
+
+  /// Server page row: edit the saved name and address.
+  ///
+  /// In en, this message translates to:
+  /// **'Name and address'**
+  String get settingsV3NameAddress;
+
+  /// Server page row: the server capabilities page.
+  ///
+  /// In en, this message translates to:
+  /// **'What this server supports'**
+  String get settingsV3Supports;
+
+  /// Server page row: the model new chats start with.
+  ///
+  /// In en, this message translates to:
+  /// **'Model for new conversations'**
+  String get settingsV3ModelNew;
+
+  /// Value: no model chosen on this phone, the server picks.
+  ///
+  /// In en, this message translates to:
+  /// **'The server picks'**
+  String get settingsV3ServerPick;
+
+  /// Value: this server overrides the personal choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Different here'**
+  String get settingsV3DifferentHere;
+
+  /// Server page switch: watch the server in the background.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch this server'**
+  String get settingsV3Watch;
+
+  /// Server page switch: tell the server which chats were read.
+  ///
+  /// In en, this message translates to:
+  /// **'Share read state'**
+  String get settingsV3ShareRead;
+
+  /// Server page row: update the server and manage its service.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates and service'**
+  String get settingsV3Updates;
+
+  /// Server page row: remove this server's difference.
+  ///
+  /// In en, this message translates to:
+  /// **'Use my default'**
+  String get settingsV3UseMyDefault;
+
+  /// Agents page section label.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team'**
+  String get settingsV3AgentsTeam;
+
+  /// Agents page section label.
+  ///
+  /// In en, this message translates to:
+  /// **'On this phone'**
+  String get settingsV3AgentsPhone;
+
+  /// Note on the Model by server page.
+  ///
+  /// In en, this message translates to:
+  /// **'Each server keeps its own choice for new conversations. Conversations already open keep their model.'**
+  String get settingsV3ModelByServerNote;
+
+  /// Note on the Providers by server page.
+  ///
+  /// In en, this message translates to:
+  /// **'Each server signs in to providers on its own. Signing in on one never signs in the others.'**
+  String get settingsV3ProvidersByServerNote;
+
+  /// Note on the Shell by server page.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on each server. Other apps using a server get its shell too.'**
+  String get settingsV3ShellByServerNote;
+
+  /// Servers row value with one server.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · Connected'**
+  String settingsV3ServerConnected(String name);
+
+  /// Servers row value: how many are saved.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 server} other{{count} servers}}'**
+  String settingsV3ServersCount(int count);
+
+  /// Notifications row value: how many servers override the personal choice.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Different on 1 server} other{Different on {count} servers}}'**
+  String settingsV3DifferentOn(int count);
+
+  /// Names whose model the picker sets.
+  ///
+  /// In en, this message translates to:
+  /// **'New conversations on {name}'**
+  String settingsV3ModelNewOn(String name);
+
+  /// Server page section: things saved on the server.
+  ///
+  /// In en, this message translates to:
+  /// **'On {name}'**
+  String settingsV3SectionOn(String name);
+
+  /// Line under what a server stores itself.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on {name}. Other apps using {name} get this too.'**
+  String settingsV3SavedOn(String name);
+
+  /// Technical: server status value, connected, with the server version number.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected · {version}'**
+  String settingsV3ConnectedVersion(String version);
+
+  /// Server page row for a server that is not connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to {name}'**
+  String settingsV3ConnectTo(String name);
+
+  /// Detail under Use my default.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications, the model for new conversations and read sharing for {name} go back to your own choices.'**
+  String settingsV3UseMyDefaultDetail(String name);
+
+  /// Menu item on a saved server: opens that server's own settings page.
+  ///
+  /// In en, this message translates to:
+  /// **'Server settings'**
+  String get settingsV3ServerSettings;
+
+  /// Value of Shell for commands when the server picks the shell.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get settingsV3ShellAutomatic;
+
+  /// Note on the Share read state by server page.
+  ///
+  /// In en, this message translates to:
+  /// **'Each server is asked separately. Nothing is shared with a server until you switch it on for that server.'**
+  String get settingsV3ReadStateByServerNote;
+
+  /// Privacy row value: how many servers share read state.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {total} share'**
+  String settingsV3SharingCount(int count, int total);
+
+  /// Memory settings: action row when the home time zone differs from the phone's
+  ///
+  /// In en, this message translates to:
+  /// **'Use this phone\'s time zone'**
+  String get fbSettingsUsePhoneZone;
+
+  /// Memory settings: under the use-phone-zone row; zone is an IANA name like Asia/Dubai
+  ///
+  /// In en, this message translates to:
+  /// **'{zone}. Reminders keep their clock times.'**
+  String fbSettingsUsePhoneZoneDetail(String zone);
+
+  /// Not saved yet: reason when the node cannot open the locked folder yet
+  ///
+  /// In en, this message translates to:
+  /// **'It has a password or account number, and Memory can\'t save those yet. It stays here on this phone.'**
+  String get fbReasonKeyLockedNotYet;
+
+  /// About you: note above the list while the node cannot open the locked folder yet
+  ///
+  /// In en, this message translates to:
+  /// **'Notes with passwords or account numbers aren\'t saved yet. They wait in Not saved yet.'**
+  String get fbListLockedNoteNotYet;
+
+  /// Reminder check sheet: note before saving while the node cannot sound reminders on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'This phone can\'t ring reminders yet. It\'s saved and shows in Reminders.'**
+  String get fbReminderNotSoundedYet;
+
+  /// Usage > Left this period: the switch for quota alerts on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Low quota alerts'**
+  String get quotaAlertsSwitchTitle;
+
+  /// Under the quota alerts switch in Usage.
+  ///
+  /// In en, this message translates to:
+  /// **'When a monitored provider passes the threshold you set for it. Applies to every server on this phone.'**
+  String get quotaAlertsSwitchSupporting;
+
+  /// Server page action for a connected server: connect to it again.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect to {name}'**
+  String settingsV3ReconnectTo(String name);
+
+  /// Files tab: worktrees/cloud environments opened on a folder with no git commit yet
+  ///
+  /// In en, this message translates to:
+  /// **'Worktrees and cloud environments need a project that git tracks, with at least one commit. Ask the agent to set up git and make a first commit.'**
+  String get projectToolsNeedGitCommit;
+
+  /// Confirmation after Use my default on a server page: names the server and what was put back.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset on {name} to your own choices: {what}.'**
+  String settingsV3UseMyDefaultDone(String name, String what);
+
+  /// Link on one server's notifications page to the page for every server.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications for every server'**
+  String get settingsV3NotificationsAllServers;
+
+  /// No description provided for @settingsV3AgentsOnPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents on this phone'**
+  String get settingsV3AgentsOnPhone;
+
+  /// No description provided for @settingsV3AgentsReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get settingsV3AgentsReady;
+
+  /// Value on the External agents row of Settings Agents.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{None connected} =1{1 connected} other{{count} connected}}'**
+  String settingsV3AgentsExternalCount(int count);
+
+  /// Usage widget settings: status line under a source row. background reading not allowed
+  ///
+  /// In en, this message translates to:
+  /// **'Paused while the app is in the background.'**
+  String get usageWidgetStatusPaused;
+
+  /// Usage widget settings: status line under a source row. a read is under way
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get usageWidgetStatusChecking;
+
+  /// Usage widget settings: status line under a source row. the phone's agent host is not running
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code isn\'t running on this phone. The widget updates once it runs.'**
+  String get usageWidgetStatusPhoneStopped;
+
+  /// Usage widget settings: status line under a source row. the read failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read usage. It tries again in a few minutes.'**
+  String get usageWidgetStatusFailed;
+
+  /// Usage widget settings: status line under a source row. the phone answered with no plan numbers
+  ///
+  /// In en, this message translates to:
+  /// **'No plan numbers yet. Sign in to Claude Code on this phone to see them.'**
+  String get usageWidgetStatusNothingPhone;
+
+  /// Usage widget settings: status line under a source row. a Paseo server answered with no plan numbers
+  ///
+  /// In en, this message translates to:
+  /// **'This server reported no plan numbers.'**
+  String get usageWidgetStatusNothingServer;
+
+  /// Usage widget settings: status line, last successful read time
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {time}'**
+  String usageWidgetStatusUpdated(String time);
+
+  /// Files tab: row that opens the project's file browser
+  ///
+  /// In en, this message translates to:
+  /// **'Browse files'**
+  String get projectHubBrowseFiles;
+
+  /// Technical: server page status value for a saved server that is not connected, with the server version number it had
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected · last seen {version}'**
+  String settingsV3NotConnectedVersion(String version);
+
+  /// Server page: under Connect to <server> when that server is not connected
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to see and change its providers, tools and permissions.'**
+  String get settingsV3ConnectToChange;
+
+  /// Remaining, In-app Ubuntu: title of the set-up block
+  ///
+  /// In en, this message translates to:
+  /// **'Show usage from {server}'**
+  String quotaInAppTitle(String server);
+
+  /// Remaining, In-app Ubuntu: what set-up does and promises
+  ///
+  /// In en, this message translates to:
+  /// **'Reads what is left on Codex, GLM and MiniMax from the sign-ins OpenCode already has here. The app starts a small helper inside {server}. Nothing leaves this phone except the usage questions to each provider.'**
+  String quotaInAppDescription(String server);
+
+  /// Remaining, In-app Ubuntu: the one set-up action
+  ///
+  /// In en, this message translates to:
+  /// **'Set up usage on {server}'**
+  String quotaInAppSetUp(String server);
+
+  /// Set-up progress: first step
+  ///
+  /// In en, this message translates to:
+  /// **'Checking {server}'**
+  String quotaInAppStepChecking(String server);
+
+  /// Set-up progress: copying
+  ///
+  /// In en, this message translates to:
+  /// **'Copying the usage helper in'**
+  String get quotaInAppStepCopying;
+
+  /// Set-up progress: sign-ins
+  ///
+  /// In en, this message translates to:
+  /// **'Finding your sign-ins'**
+  String get quotaInAppStepSignIns;
+
+  /// Set-up progress: starting
+  ///
+  /// In en, this message translates to:
+  /// **'Starting the usage helper'**
+  String get quotaInAppStepStarting;
+
+  /// Set-up progress: reading
+  ///
+  /// In en, this message translates to:
+  /// **'Reading what is left'**
+  String get quotaInAppStepReading;
+
+  /// Details: turn the in-app usage helper off
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off usage on {server}'**
+  String quotaInAppTurnOff(String server);
+
+  /// Details: what turning off does
+  ///
+  /// In en, this message translates to:
+  /// **'Stops the helper and removes its files and key from this phone. Your sign-ins stay as they are.'**
+  String get quotaInAppTurnOffDetail;
+
+  /// Remaining, In-app Ubuntu: re-run set-up after signing in
+  ///
+  /// In en, this message translates to:
+  /// **'Check sign-ins on {server} again'**
+  String quotaInAppCheckAgain(String server);
+
+  /// Remaining, In-app Ubuntu: the collector has no sign-in for this provider
+  ///
+  /// In en, this message translates to:
+  /// **'Not signed in to {provider} in OpenCode on {server}. Sign in there, then check again.'**
+  String quotaInAppNotSignedIn(String provider, String server);
+
+  /// Remaining, In-app Ubuntu: provider sign-in expired
+  ///
+  /// In en, this message translates to:
+  /// **'The {provider} sign-in in OpenCode on {server} has run out. Sign in again there, then check again.'**
+  String quotaInAppSignInExpired(String provider, String server);
+
+  /// Remaining, In-app Ubuntu: the helper does not answer
+  ///
+  /// In en, this message translates to:
+  /// **'Usage on {server} is not answering. Set it up again to start it.'**
+  String quotaInAppNotAnswering(String server);
+
+  /// Set-up failure: Ubuntu not ready
+  ///
+  /// In en, this message translates to:
+  /// **'{server} is not ready yet. Finish setting up In-app Ubuntu, then try again.'**
+  String quotaInAppFailLinux(String server);
+
+  /// Set-up failure: no Node
+  ///
+  /// In en, this message translates to:
+  /// **'{server} has no Node yet, which usage needs. Run the In-app Ubuntu setup again to add it, then try again.'**
+  String quotaInAppFailNoNode(String server);
+
+  /// Set-up failure: Node too old
+  ///
+  /// In en, this message translates to:
+  /// **'Node on {server} is older than version 20. Run the In-app Ubuntu setup again to update it, then try again.'**
+  String quotaInAppFailNodeOld(String server);
+
+  /// Set-up failure: copy or prepare
+  ///
+  /// In en, this message translates to:
+  /// **'Usage could not be prepared on {server}. Try again; if it keeps failing, restart the app.'**
+  String quotaInAppFailPrepare(String server);
+
+  /// Set-up failure: start
+  ///
+  /// In en, this message translates to:
+  /// **'The usage helper on {server} did not start. Try again in a moment.'**
+  String quotaInAppFailStart(String server);
+
+  /// Turn-off failure
+  ///
+  /// In en, this message translates to:
+  /// **'Usage could not be turned off on {server}. Try again.'**
+  String quotaInAppFailRemove(String server);
+
+  /// By-server Tools page: one line on top saying what tools are and that they are saved on each server.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools are what the agent can use, like reading files or running commands. Each server keeps its own set.'**
+  String get settingsV3ToolsByServerNote;
+
+  /// Snackbar shown on the Usage page when a Usage home-screen widget row for a sign-in is tapped but its server was deleted
+  ///
+  /// In en, this message translates to:
+  /// **'That server is no longer saved, so here is your usage instead.'**
+  String get launchUiUsageSignInServerGone;
+
+  /// Snackbar shown on the servers screen when a Usage home-screen widget sign-in row is tapped and its server cannot be reached
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect to that server to sign in. Check it in Servers, then try the widget again.'**
+  String get launchUiUsageSignInConnectionFailed;
+
+  /// Search words for the Show reasoning row (no usage words: those belong to the cost row).
+  ///
+  /// In en, this message translates to:
+  /// **'transcript display thinking reasoning'**
+  String get settingsHubSearchReasoningAliases;
+
+  /// Usage tab: every subscription and what is left
+  ///
+  /// In en, this message translates to:
+  /// **'Plans'**
+  String get usageTabPlans;
+
+  /// Usage tab: what the connected server says it used
+  ///
+  /// In en, this message translates to:
+  /// **'Spending'**
+  String get usageTabSpending;
+
+  /// Usage top bar action: read every connection again
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh plans'**
+  String get usagePlansRefresh;
+
+  /// Usage Plans: nothing signed in or used yet
+  ///
+  /// In en, this message translates to:
+  /// **'No subscriptions yet'**
+  String get usageEmptyTitle;
+
+  /// Usage Plans empty state body
+  ///
+  /// In en, this message translates to:
+  /// **'Add a plan to see how much is left and when it resets.'**
+  String get usageEmptyBody;
+
+  /// Usage Plans: heading of the providers that can be added
+  ///
+  /// In en, this message translates to:
+  /// **'Add a subscription'**
+  String get usageAddSection;
+
+  /// A usage bar: the share of the limit still available
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% left'**
+  String usageLeft(int percent);
+
+  /// An alert level, e.g. 80% used
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% used'**
+  String usageUsedPercent(int percent);
+
+  /// A window on the subscription page
+  ///
+  /// In en, this message translates to:
+  /// **'{used}% used · {left}% left'**
+  String usageUsedLeft(int used, int left);
+
+  /// Name of the 5-hour limit window
+  ///
+  /// In en, this message translates to:
+  /// **'5 hours'**
+  String get usageWindowFiveHour;
+
+  /// Name of the weekly limit window
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get usageWindowWeek;
+
+  /// Name of the monthly limit window
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get usageWindowMonth;
+
+  /// Name of a monthly tools (MCP) limit window
+  ///
+  /// In en, this message translates to:
+  /// **'Tools · month'**
+  String get usageWindowTools;
+
+  /// Name of a limit window that reports no name
+  ///
+  /// In en, this message translates to:
+  /// **'Limit'**
+  String get usageWindowOther;
+
+  /// Suffix naming the connection that holds a subscription, only with several connections
+  ///
+  /// In en, this message translates to:
+  /// **'on {connection}'**
+  String usageOnConnection(String connection);
+
+  /// The name of the phone itself as a connection
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get usageThisPhone;
+
+  /// Usage: the alerts page and its row
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get usageAlertsTitle;
+
+  /// Usage Plans: alerts row summary when alerts are on
+  ///
+  /// In en, this message translates to:
+  /// **'On · at {percent}% used'**
+  String usageAlertsSummaryOn(int percent);
+
+  /// Usage Plans: alerts row summary when alerts are off
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get usageAlertsSummaryOff;
+
+  /// Usage Plans: row opening the widget settings
+  ///
+  /// In en, this message translates to:
+  /// **'Home screen widget'**
+  String get usageWidgetRow;
+
+  /// Usage Plans: how many subscriptions the widget shows
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No subscriptions} =1{1 subscription} other{{count} subscriptions}}'**
+  String usageWidgetSubs(int count);
+
+  /// Usage Details: an API key is not a plan
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} API key on {connection} · pay as you go, no plan limits'**
+  String usageApiKeyOnly(String provider, String connection);
+
+  /// State tag: usage is past the alert level
+  ///
+  /// In en, this message translates to:
+  /// **'Past {percent}%'**
+  String usagePillPast(int percent);
+
+  /// State tag
+  ///
+  /// In en, this message translates to:
+  /// **'Limit reached'**
+  String get usagePillOut;
+
+  /// State tag
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in ran out'**
+  String get usagePillSignInRanOut;
+
+  /// State tag
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t read'**
+  String get usagePillBroken;
+
+  /// State tag
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t read yet'**
+  String get usagePillCantRead;
+
+  /// State tag
+  ///
+  /// In en, this message translates to:
+  /// **'Not signed in'**
+  String get usagePillNotSignedIn;
+
+  /// State tag
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get usagePillOffline;
+
+  /// State tag
+  ///
+  /// In en, this message translates to:
+  /// **'No limits'**
+  String get usagePillNoLimits;
+
+  /// Usage card: signed in where no reader reaches
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in on {connection}. The app can’t read its limits from there yet.'**
+  String usageCantReadBody(String connection);
+
+  /// Usage card, one connection
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in, but the app can’t read its limits yet.'**
+  String get usageCantReadBodyOne;
+
+  /// Usage card
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} sign-in on {connection} ran out'**
+  String usageSignInRanOut(String provider, String connection);
+
+  /// Usage card, one connection
+  ///
+  /// In en, this message translates to:
+  /// **'Your {provider} sign-in ran out.'**
+  String usageSignInRanOutOne(String provider);
+
+  /// Usage card
+  ///
+  /// In en, this message translates to:
+  /// **'Not signed in anywhere'**
+  String get usageNotSignedInAnywhere;
+
+  /// Usage card, one connection
+  ///
+  /// In en, this message translates to:
+  /// **'Not signed in'**
+  String get usageNotSignedInOne;
+
+  /// Usage card
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t read {provider} right now'**
+  String usageReaderBroken(String provider);
+
+  /// Usage card
+  ///
+  /// In en, this message translates to:
+  /// **'No limits reported for this plan'**
+  String get usageNoLimits;
+
+  /// Usage card
+  ///
+  /// In en, this message translates to:
+  /// **'{connection} is offline · read {age} ago'**
+  String usageOfflineStale(String connection, String age);
+
+  /// Usage card, one connection
+  ///
+  /// In en, this message translates to:
+  /// **'Offline · read {age} ago'**
+  String usageOfflineStaleOne(String age);
+
+  /// A short duration
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String usageDurationMinutes(int minutes);
+
+  /// A short duration
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h'**
+  String usageDurationHours(int hours);
+
+  /// A short duration
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String usageDurationHoursMinutes(int hours, int minutes);
+
+  /// A short duration
+  ///
+  /// In en, this message translates to:
+  /// **'{days} d'**
+  String usageDurationDays(int days);
+
+  /// A short duration
+  ///
+  /// In en, this message translates to:
+  /// **'{days} d {hours} h'**
+  String usageDurationDaysHours(int days, int hours);
+
+  /// Subscription page: exact reset
+  ///
+  /// In en, this message translates to:
+  /// **'Resets at {time}, in {duration}'**
+  String usageResetsIn(String time, String duration);
+
+  /// Subscription page
+  ///
+  /// In en, this message translates to:
+  /// **'The reset time has passed. Refresh to check.'**
+  String get usageResetPassed;
+
+  /// Usage card reset line
+  ///
+  /// In en, this message translates to:
+  /// **'Resets {time}'**
+  String usageResetsAt(String time);
+
+  /// Usage card reset line
+  ///
+  /// In en, this message translates to:
+  /// **'5-hour resets {time}'**
+  String usageFiveHourResets(String time);
+
+  /// Usage card reset line, after the 5-hour one
+  ///
+  /// In en, this message translates to:
+  /// **'week resets {time}'**
+  String usageWeekResets(String time);
+
+  /// Usage card: limit reached
+  ///
+  /// In en, this message translates to:
+  /// **'Out until {time}'**
+  String usageOutUntil(String time);
+
+  /// Usage card
+  ///
+  /// In en, this message translates to:
+  /// **'Reset at {time} since the last reading'**
+  String usageResetSince(String time);
+
+  /// Subscription page
+  ///
+  /// In en, this message translates to:
+  /// **'Read {age} ago'**
+  String usageReadAgo(String age);
+
+  /// Usage card: the provider limits checks
+  ///
+  /// In en, this message translates to:
+  /// **'Checked {age} ago'**
+  String usageCheckedAgo(String age);
+
+  /// Fix button and screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Read usage from {connection}'**
+  String usageReadFrom(String connection);
+
+  /// Fix button without a named connection
+  ///
+  /// In en, this message translates to:
+  /// **'Read usage from here'**
+  String get usageReadUsageFromHere;
+
+  /// Fix button
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get usageSignIn;
+
+  /// Fix button
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again'**
+  String get usageSignInAgain;
+
+  /// Fix button
+  ///
+  /// In en, this message translates to:
+  /// **'Add key'**
+  String get usageAddKey;
+
+  /// Fix button
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get usageTryAgain;
+
+  /// Notice when a sign-in cannot be opened
+  ///
+  /// In en, this message translates to:
+  /// **'There is nowhere to sign in to from here yet.'**
+  String get usageSignInUnavailable;
+
+  /// Add flow title
+  ///
+  /// In en, this message translates to:
+  /// **'Add {provider}'**
+  String usageAddTitle(String provider);
+
+  /// Add flow intro
+  ///
+  /// In en, this message translates to:
+  /// **'Where should {provider} be signed in? The app reads usage from whichever you pick.'**
+  String usageAddWhere(String provider);
+
+  /// Tag on the recommended place
+  ///
+  /// In en, this message translates to:
+  /// **'Best'**
+  String get usageBest;
+
+  /// Add flow: In-app Ubuntu
+  ///
+  /// In en, this message translates to:
+  /// **'On this phone · usage works straight away'**
+  String get usageAddInAppNote;
+
+  /// Add flow: a saved server
+  ///
+  /// In en, this message translates to:
+  /// **'A server you saved'**
+  String get usageAddServerNote;
+
+  /// Add flow: the phone agent
+  ///
+  /// In en, this message translates to:
+  /// **'Signs in the {provider} agent on this phone'**
+  String usageAddPhoneNote(String provider);
+
+  /// Add flow with no choice
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t add {provider} yet'**
+  String usageAddNoneTitle(String provider);
+
+  /// Add flow with no choice
+  ///
+  /// In en, this message translates to:
+  /// **'Save a server, or set up In-app Ubuntu, and it will appear here.'**
+  String get usageAddNoneBody;
+
+  /// Read usage screen title when the connection is gone
+  ///
+  /// In en, this message translates to:
+  /// **'Read usage'**
+  String get usageReadFromTitleHere;
+
+  /// Read usage screen
+  ///
+  /// In en, this message translates to:
+  /// **'That connection is gone'**
+  String get usageReadFromGoneTitle;
+
+  /// Read usage screen
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to Plans to see what is left.'**
+  String get usageReadFromGoneBody;
+
+  /// Read usage screen heading
+  ///
+  /// In en, this message translates to:
+  /// **'{providers} signed in on {connection}'**
+  String usageReadFromSignedIn(String providers, String connection);
+
+  /// Read usage screen body for In-app Ubuntu
+  ///
+  /// In en, this message translates to:
+  /// **'To show their limits, the app starts a small reader inside In-app Ubuntu. It only reads how much is left, never your conversations or keys.'**
+  String get usageReadFromBodyInApp;
+
+  /// Read usage screen button for In-app Ubuntu
+  ///
+  /// In en, this message translates to:
+  /// **'Set up usage'**
+  String get usageReadFromSetUpInApp;
+
+  /// Dismiss button
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get usageNotNow;
+
+  /// Subscription page for a plan that vanished
+  ///
+  /// In en, this message translates to:
+  /// **'This plan is gone'**
+  String get usageSubGoneTitle;
+
+  /// Subscription page for a plan that vanished
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to Plans to see what is left.'**
+  String get usageSubGoneBody;
+
+  /// Signed in on: state
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get usageStateSignedIn;
+
+  /// Signed in on: state
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in ran out'**
+  String get usageStateExpired;
+
+  /// Signed in on: state
+  ///
+  /// In en, this message translates to:
+  /// **'Not signed in'**
+  String get usageStateNotSignedIn;
+
+  /// Signed in on: state
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get usageConnOffline;
+
+  /// Signed in on: state
+  ///
+  /// In en, this message translates to:
+  /// **'Numbers come from here'**
+  String get usageConnReadsHere;
+
+  /// Signed in on: state
+  ///
+  /// In en, this message translates to:
+  /// **'Same account'**
+  String get usageSameAccount;
+
+  /// Subscription page heading
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in on'**
+  String get usageSignedInOn;
+
+  /// Alert level row
+  ///
+  /// In en, this message translates to:
+  /// **'Alert me at'**
+  String get usageAlertAt;
+
+  /// Alert level row on a subscription page
+  ///
+  /// In en, this message translates to:
+  /// **'For {provider} only. Other plans use {percent}%.'**
+  String usageAlertAtPlan(String provider, int percent);
+
+  /// Alert level row on the alerts page
+  ///
+  /// In en, this message translates to:
+  /// **'Default for every plan'**
+  String get usageAlertAtDefault;
+
+  /// Alert level row on a subscription page with no override
+  ///
+  /// In en, this message translates to:
+  /// **'Same as your other plans'**
+  String get usageAlertAtSame;
+
+  /// Alert level choice that clears the override
+  ///
+  /// In en, this message translates to:
+  /// **'Same as other plans ({percent}%)'**
+  String usageAlertSameAsOthers(int percent);
+
+  /// Switch on a subscription page
+  ///
+  /// In en, this message translates to:
+  /// **'Tell me when it resets'**
+  String get usageNotifyReset;
+
+  /// Switch help
+  ///
+  /// In en, this message translates to:
+  /// **'A message when a limit that ran out comes back.'**
+  String get usageNotifyResetHelp;
+
+  /// Switch on the alerts page
+  ///
+  /// In en, this message translates to:
+  /// **'Tell me when a limit resets'**
+  String get usageNotifyResetAll;
+
+  /// Save failure
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t save this. It stays as it was.'**
+  String get usageSaveFailed;
+
+  /// Details fold
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get usageDetails;
+
+  /// Details
+  ///
+  /// In en, this message translates to:
+  /// **'Reader'**
+  String get usageDetailReader;
+
+  /// Details
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get usageDetailNone;
+
+  /// Details
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get usageDetailRead;
+
+  /// Details
+  ///
+  /// In en, this message translates to:
+  /// **'Checked'**
+  String get usageDetailChecked;
+
+  /// Details
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get usageDetailAccount;
+
+  /// Details
+  ///
+  /// In en, this message translates to:
+  /// **'Windows'**
+  String get usageDetailWindows;
+
+  /// Details
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, an account is known'**
+  String get usageYes;
+
+  /// Details
+  ///
+  /// In en, this message translates to:
+  /// **'No account known'**
+  String get usageNo;
+
+  /// Alerts page switch
+  ///
+  /// In en, this message translates to:
+  /// **'Usage alerts'**
+  String get usageAlertsSwitch;
+
+  /// Alerts page switch help
+  ///
+  /// In en, this message translates to:
+  /// **'Watches every subscription the app can read'**
+  String get usageAlertsSwitchHelp;
+
+  /// Alerts page group of plans with their own level
+  ///
+  /// In en, this message translates to:
+  /// **'Different from default'**
+  String get usageAlertsDifferent;
+
+  /// Alerts page override detail
+  ///
+  /// In en, this message translates to:
+  /// **'tells you when it resets'**
+  String get usageAlertOverrideResetOn;
+
+  /// Alerts page override detail
+  ///
+  /// In en, this message translates to:
+  /// **'no reset message'**
+  String get usageAlertOverrideResetOff;
+
+  /// Alerts page group: quiet hours and Wi-Fi
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get usageAlertsWhen;
+
+  /// Alerts page quiet hours help
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with your other alerts'**
+  String get usageQuietShared;
+
+  /// Alerts page note
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to watch yet. Alerts start when a plan can be read.'**
+  String get usageAlertsNothingToWatch;
+
+  /// Widget settings group
+  ///
+  /// In en, this message translates to:
+  /// **'Show these plans'**
+  String get usageWidgetSettingsShow;
+
+  /// Widget settings
+  ///
+  /// In en, this message translates to:
+  /// **'Show 5-hour, weekly or both'**
+  String get usageWidgetSettingsWindows;
+
+  /// Widget settings choice
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get usageWidgetWindowBoth;
+
+  /// Widget settings choice
+  ///
+  /// In en, this message translates to:
+  /// **'5 hours'**
+  String get usageWidgetWindowFiveHour;
+
+  /// Widget settings choice
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get usageWidgetWindowWeekly;
+
+  /// Widget settings switch
+  ///
+  /// In en, this message translates to:
+  /// **'Show rows that need setup'**
+  String get usageWidgetSettingsSetup;
+
+  /// Widget settings switch help
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in, add key and set up rows'**
+  String get usageWidgetSettingsSetupHelp;
+
+  /// Widget settings group: Paseo servers it reads from
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get usageSources;
+
+  /// Status line of a key-based plan (GLM, MiniMax) that has no key on any connection
+  ///
+  /// In en, this message translates to:
+  /// **'No key added'**
+  String get usageNoKey;
+
+  /// State of a connection that was never asked or did not answer: its sign-in is unknown
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t check'**
+  String get usageStateCouldntCheck;
+
+  /// Details row: Anthropic is signed in on an OpenCode server, whose plan limits cannot be read there
+  ///
+  /// In en, this message translates to:
+  /// **'Anthropic on {connection} · no plan limits through OpenCode'**
+  String usageViaOpenCodeNoPlan(String connection);
+
+  /// Details value when a plan has no reading
+  ///
+  /// In en, this message translates to:
+  /// **'Not read yet'**
+  String get usageNotReadYet;
+
+  /// Header of the list of connections on a plan page, each with its sign-in state
+  ///
+  /// In en, this message translates to:
+  /// **'Connections'**
+  String get usageConnectionsHeader;
+
+  /// Short button label that sets up reading a plan's usage
+  ///
+  /// In en, this message translates to:
+  /// **'Read usage'**
+  String get usageReadUsage;
+
+  /// Supporting line under the Wi-Fi-only switch on the Alerts page
+  ///
+  /// In en, this message translates to:
+  /// **'Pauses checks when not on Wi-Fi'**
+  String get usageWifiOnlyHelp;
+
+  /// Status line of a plan row under Needs setup: signed in on that connection, usage not readable yet
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in on {connection}'**
+  String usageSetupSignedInOn(String connection);
+
+  /// Status line of a plan row under Needs setup, with one connection
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get usageSetupSignedIn;
+
+  /// Status line of a plan row under Needs setup: the sign-in on that connection expired
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in ran out on {connection}'**
+  String usageSetupRanOutOn(String connection);
+
+  /// Status line of a plan row under Needs setup, with one connection
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in ran out'**
+  String get usageSetupRanOut;
+
+  /// Status line of a plan row under Needs setup whose reader failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t read'**
+  String get usageSetupCouldntRead;
+
+  /// Header of the group of plans that have no numbers yet
+  ///
+  /// In en, this message translates to:
+  /// **'Needs setup'**
+  String get usageNeedsSetupHeader;
+
+  /// Quiet line above Needs setup when no plan can be read yet
+  ///
+  /// In en, this message translates to:
+  /// **'No plan numbers yet. Set one up below.'**
+  String get usageNoNumbersYet;
+
+  /// Read usage from a computer: what the check does
+  ///
+  /// In en, this message translates to:
+  /// **'The app runs a small read-only check on {server} through OpenCode each time it refreshes. Nothing is installed and nothing keeps running. It sends back only how much is left, never your keys or conversations.'**
+  String usageComputerExplain(String server);
+
+  /// Fold label on the computer Read-from screen
+  ///
+  /// In en, this message translates to:
+  /// **'What runs'**
+  String get usageComputerWhatRuns;
+
+  /// Technical row: the command line
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get usageComputerCommandLabel;
+
+  /// Technical row: which files the check reads
+  ///
+  /// In en, this message translates to:
+  /// **'Reads'**
+  String get usageComputerReadsLabel;
+
+  /// Technical row: files the check reads
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode’s sign-in file on {server}, and the Codex CLI’s for Codex. Read only; nothing is written.'**
+  String usageComputerReadsValue(String server);
+
+  /// Primary button: turn the computer check on
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get usageComputerTurnOn;
+
+  /// Button: turn the computer check off
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off'**
+  String get usageComputerTurnOff;
+
+  /// Button: run the computer check once more
+  ///
+  /// In en, this message translates to:
+  /// **'Read now'**
+  String get usageComputerReadNow;
+
+  /// Button: leave the screen after a good check
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get usageComputerDone;
+
+  /// Shown while the check runs
+  ///
+  /// In en, this message translates to:
+  /// **'Checking {server}…'**
+  String usageComputerChecking(String server);
+
+  /// Result of a good check
+  ///
+  /// In en, this message translates to:
+  /// **'Found {plans} on {server}.'**
+  String usageComputerFound(String plans, String server);
+
+  /// Result of a check that found no plan
+  ///
+  /// In en, this message translates to:
+  /// **'The check worked, but no plan is signed in on {server}.'**
+  String usageComputerFoundNone(String server);
+
+  /// Shown once the computer check is on
+  ///
+  /// In en, this message translates to:
+  /// **'Reading {server} through OpenCode.'**
+  String usageComputerOnNote(String server);
+
+  /// Why the computer check cannot run
+  ///
+  /// In en, this message translates to:
+  /// **'{server} needs Node.js 20 or later.'**
+  String usageComputerNeedsNode(String server);
+
+  /// Why the computer check cannot run
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode on {server} is too old for this. Update it and try again.'**
+  String usageComputerServerTooOld(String server);
+
+  /// Why the computer check cannot run
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t reach {server} right now.'**
+  String usageComputerOffline(String server);
+
+  /// Why the computer check cannot run
+  ///
+  /// In en, this message translates to:
+  /// **'The check on {server} didn’t finish. Try again.'**
+  String usageComputerNoAnswer(String server);
+
+  /// Plan page row naming the computer check
+  ///
+  /// In en, this message translates to:
+  /// **'Reading {server}'**
+  String usageComputerRowTitle(String server);
+
+  /// Technical row on the plan page: why the last check failed
+  ///
+  /// In en, this message translates to:
+  /// **'Last check'**
+  String get usageDetailLastCheck;
+
+  /// This phone’s agents are installed but stopped
+  ///
+  /// In en, this message translates to:
+  /// **'Not running'**
+  String get usagePhoneNotRunning;
+
+  /// KitRequestCard: the one amber label above the ask
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get kitRequestNeedsYouLabel;
+
+  /// KitRequestCard: the quiet line's standing grant, for a request that is not a command
+  ///
+  /// In en, this message translates to:
+  /// **'Always allow requests like this'**
+  String get kitRequestAlwaysAllowLike;
+
+  /// Permission card: the quiet line's standing grant for a shell command
+  ///
+  /// In en, this message translates to:
+  /// **'Always allow commands like this'**
+  String get chatRequestAlwaysAllowCommands;
+
+  /// Permission card: the ask for a shell command
+  ///
+  /// In en, this message translates to:
+  /// **'Run this command?'**
+  String get chatRequestAskCommand;
+
+  /// Permission card: the ask for a file edit
+  ///
+  /// In en, this message translates to:
+  /// **'Edit this file?'**
+  String get chatRequestAskEdit;
+
+  /// Permission card: the ask for reading a file
+  ///
+  /// In en, this message translates to:
+  /// **'Read this file?'**
+  String get chatRequestAskRead;
+
+  /// Permission card: the ask for a folder outside the project
+  ///
+  /// In en, this message translates to:
+  /// **'Open this folder?'**
+  String get chatRequestAskDirectory;
+
+  /// Permission card: the ask for fetching a web page
+  ///
+  /// In en, this message translates to:
+  /// **'Open this web page?'**
+  String get chatRequestAskFetch;
+
+  /// Usage plan block: the summary of a used-up plan; time is a clock time or day
+  ///
+  /// In en, this message translates to:
+  /// **'Back at {time}'**
+  String usageBackAt(String time);
+
+  /// Usage: the Alerts row's value when alerts are on
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get usageAlertsOnWord;
+
+  /// Usage: the home screen widget row's value
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No plans} =1{1 plan} other{{count} plans}}'**
+  String usageWidgetPlans(int count);
+
+  /// Usage alerts: the one line under the Usage alerts switch
+  ///
+  /// In en, this message translates to:
+  /// **'For every plan the app can read'**
+  String get usageAlertsForEvery;
+
+  /// Usage alerts: the group of what to tell the person
+  ///
+  /// In en, this message translates to:
+  /// **'Tell me when'**
+  String get usageAlertsTellMe;
+
+  /// Usage alerts: the group of quiet hours and Wi-Fi only
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet'**
+  String get usageAlertsQuietGroup;
+
+  /// Usage alerts: the level row; its value is a percent left
+  ///
+  /// In en, this message translates to:
+  /// **'A plan is down to'**
+  String get usageAlertPlanDownTo;
+
+  /// Usage alerts: the switch for a message when a used-up plan resets
+  ///
+  /// In en, this message translates to:
+  /// **'A used-up plan is back'**
+  String get usageAlertUsedUpBack;
+
+  /// Usage alerts: quiet hours are shared with the app's other alerts
+  ///
+  /// In en, this message translates to:
+  /// **'Same as your other alerts'**
+  String get usageQuietSameAsOthers;
+
+  /// Usage alerts: the Wi-Fi only switch
+  ///
+  /// In en, this message translates to:
+  /// **'Check only on Wi-Fi'**
+  String get usageWifiOnlyShort;
+
+  /// The tasks chip beside the model chip: tasks done out of tasks tracked, never any task title
+  ///
+  /// In en, this message translates to:
+  /// **'{done}/{total}'**
+  String kitTaskChipCount(int done, int total);
+
+  /// The tasks chip for a moment after a task completed
+  ///
+  /// In en, this message translates to:
+  /// **'✓ {done}/{total}'**
+  String kitTaskChipDone(int done, int total);
+
+  /// The tasks chip for a moment after a task was added to the list
+  ///
+  /// In en, this message translates to:
+  /// **'+ {done}/{total}'**
+  String kitTaskChipAdded(int done, int total);
+
+  /// Screen-reader name of the tasks chip
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks, {done} of {total} done'**
+  String kitTaskChipSpoken(int done, int total);
+
+  /// Screen-reader name of the tasks chip while one task is in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks, {done} of {total} done, now {task}'**
+  String kitTaskChipSpokenNow(int done, int total, String task);
+
+  /// The one-line step in the transcript for a change to the agent's task list; the list itself lives in the tasks chip above the field
+  ///
+  /// In en, this message translates to:
+  /// **'Updated tasks'**
+  String get toolCardUpdatedTasks;
+
+  /// KitDiffView: the one fold line over a change standing for unchanged lines above it; tapping it shows more
+  ///
+  /// In en, this message translates to:
+  /// **'… {count, plural, =1{1 line above} other{{count} lines above}}'**
+  String kitDiffFoldAbove(int count);
+
+  /// KitDiffView: the one fold line under the last change standing for unchanged lines below it
+  ///
+  /// In en, this message translates to:
+  /// **'… {count, plural, =1{1 line below} other{{count} lines below}}'**
+  String kitDiffFoldBelow(int count);
+
+  /// KitDiffView: the one fold line between two changes standing for the unchanged lines between them
+  ///
+  /// In en, this message translates to:
+  /// **'… {count, plural, =1{1 line} other{{count} lines}}'**
+  String kitDiffFoldBetween(int count);
+
+  /// Ongoing status notification title when requests wait for the person
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 needs you} other{{count} need you}}'**
+  String notifStatusNeedsYou(int count);
+
+  /// Added after the needs-you title when other chats keep running
+  ///
+  /// In en, this message translates to:
+  /// **'{count} still working'**
+  String notifStatusStillWorking(int count);
+
+  /// Ongoing status title when several chats work
+  ///
+  /// In en, this message translates to:
+  /// **'{count} conversations working'**
+  String notifStatusChatsWorking(int count);
+
+  /// Last inbox line when more chats work than the notification lists
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String notifStatusMore(int count);
+
+  /// Added to the working text when some chats wait for a provider
+  ///
+  /// In en, this message translates to:
+  /// **'{count} waiting'**
+  String notifStatusWaitingCount(int count);
+
+  /// Status notification text: finished tasks out of all tasks
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} tasks'**
+  String notifStatusTasksProgress(int done, int total);
+
+  /// Elapsed time in the status notification's sub text
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min'**
+  String notifStatusMinutes(int count);
+
+  /// Elapsed time in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{count} h'**
+  String notifStatusHours(int count);
+
+  /// Status title while a chat waits out a provider rate limit
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting · {provider} limit'**
+  String notifStatusWaitingProvider(String provider);
+
+  /// Status title while a chat waits and the provider is not known
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting · the provider is busy'**
+  String get notifStatusWaitingGeneric;
+
+  /// Status text with the clock time of the next try
+  ///
+  /// In en, this message translates to:
+  /// **'Tries again at {time}'**
+  String notifStatusTriesAgainAt(String time);
+
+  /// Status text when the next try time is not known
+  ///
+  /// In en, this message translates to:
+  /// **'Tries again soon'**
+  String get notifStatusTriesAgainSoon;
+
+  /// Status title after Android stopped background work
+  ///
+  /// In en, this message translates to:
+  /// **'Paused · Android\'s background limit'**
+  String get notifStatusPausedAndroidTitle;
+
+  /// Status text explaining the Android background limit
+  ///
+  /// In en, this message translates to:
+  /// **'Android stops background work after 6 hours a day. Open OpenCode to keep going.'**
+  String get notifStatusPausedAndroidBody;
+
+  /// Status title while the heat guard pauses work
+  ///
+  /// In en, this message translates to:
+  /// **'Paused · phone is hot'**
+  String get notifStatusPausedHotTitle;
+
+  /// Status text while the heat guard pauses work
+  ///
+  /// In en, this message translates to:
+  /// **'Resumes when it cools down'**
+  String get notifStatusPausedHotBody;
+
+  /// Status title after the phone server stopped itself while idle
+  ///
+  /// In en, this message translates to:
+  /// **'Paused · nothing was running'**
+  String get notifStatusPausedIdleTitle;
+
+  /// Status text after the phone server stopped itself while idle
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to start OpenCode again'**
+  String get notifStatusPausedIdleBody;
+
+  /// Status title while the connection is lost and being retried
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting to {server}'**
+  String notifStatusReconnectingTitle(String server);
+
+  /// Status title while reconnecting, one server only
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting'**
+  String get notifStatusReconnectingGeneric;
+
+  /// Status text while reconnecting and nothing else is known
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the connection'**
+  String get notifStatusReconnectingBody;
+
+  /// Status title when connected and idle
+  ///
+  /// In en, this message translates to:
+  /// **'Ready · nothing running'**
+  String get notifStatusReadyTitle;
+
+  /// Status text when connected, idle and no reply is known
+  ///
+  /// In en, this message translates to:
+  /// **'Ready when you are'**
+  String get notifStatusReadyBody;
+
+  /// Status text when idle: how long ago the last reply finished
+  ///
+  /// In en, this message translates to:
+  /// **'Last reply {ago} ago'**
+  String notifStatusLastReply(String ago);
+
+  /// Status text when idle and the last reply finished under a minute ago
+  ///
+  /// In en, this message translates to:
+  /// **'Last reply just now'**
+  String get notifStatusLastReplyNow;
+
+  /// Status title during first setup
+  ///
+  /// In en, this message translates to:
+  /// **'Setup · {step} of {steps}'**
+  String notifStatusSetupTitle(int step, int steps);
+
+  /// Added when several servers are connected, naming the server
+  ///
+  /// In en, this message translates to:
+  /// **'on {server}'**
+  String notifStatusOnServer(String server);
+
+  /// Sub text when the connected server runs on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'on this phone'**
+  String get notifStatusOnThisPhone;
+
+  /// Lock screen text: only a count
+  ///
+  /// In en, this message translates to:
+  /// **'{count} working'**
+  String notifStatusPublicWorking(int count);
+
+  /// Lock screen text
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get notifStatusPublicWaiting;
+
+  /// Lock screen text
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get notifStatusPublicPaused;
+
+  /// Lock screen text
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting'**
+  String get notifStatusPublicReconnecting;
+
+  /// Lock screen text
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get notifStatusPublicReady;
+
+  /// Lock screen text
+  ///
+  /// In en, this message translates to:
+  /// **'Setting up'**
+  String get notifStatusPublicSetup;
+
+  /// Sign-in sheet: the label above a one-time device code.
+  ///
+  /// In en, this message translates to:
+  /// **'Your code'**
+  String get integrationsSignInCodeLabel;
+
+  /// Sign-in sheet: says that opening the browser also copies the device code.
+  ///
+  /// In en, this message translates to:
+  /// **'Open browser copies the code for you. Paste it on the page that opens.'**
+  String get integrationsSignInCodeHint;
+
+  /// Said after the device code was copied when the browser opened.
+  ///
+  /// In en, this message translates to:
+  /// **'Code copied'**
+  String get integrationsCodeCopied;
+
+  /// Sign-in action and tooltip: copy the one-time device code.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy code'**
+  String get integrationsCopyCode;
+
+  /// Sign-in action: open the sign-in page in the browser again.
+  ///
+  /// In en, this message translates to:
+  /// **'Open browser again'**
+  String get integrationsOpenBrowserAgain;
+
+  /// Providers: the state word of an automatic sign-in the app is waiting on.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for approval in the browser'**
+  String get integrationsSignInWaitingBrowser;
+
+  /// Sign-in sheet: what happens during an automatic sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code in your browser and approve. This app is waiting and finishes the sign-in by itself when you come back.'**
+  String get integrationsSignInWaitingDetail;
+
+  /// Providers: the state word of a sign-in that ended before it was approved.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in ended'**
+  String get integrationsSignInEnded;
+
+  /// Sign-in sheet: why a sign-in ended, in plain words.
+  ///
+  /// In en, this message translates to:
+  /// **'This sign-in ended before it was approved. The code may have run out or the server restarted. Nothing was added.'**
+  String get integrationsSignInEndedDetail;
+
+  /// Sign-in action: begin a new sign-in with a new code.
+  ///
+  /// In en, this message translates to:
+  /// **'Start again'**
+  String get integrationsStartAgain;
+
+  /// Chat composer + sheet: the row that points the agent at a file in the open project
+  ///
+  /// In en, this message translates to:
+  /// **'File from the project'**
+  String get mentionToolTitle;
+
+  /// Chat composer + sheet: supporting line of the project file row
+  ///
+  /// In en, this message translates to:
+  /// **'Point the agent at a file in this project'**
+  String get mentionToolSupporting;
+
+  /// Project file sheet: title
+  ///
+  /// In en, this message translates to:
+  /// **'Project files'**
+  String get mentionSheetTitle;
+
+  /// Project file sheet: search field hint and label
+  ///
+  /// In en, this message translates to:
+  /// **'Find a file by name'**
+  String get mentionSearchLabel;
+
+  /// Project file sheet: line shown before anything is typed and no top-level files were found
+  ///
+  /// In en, this message translates to:
+  /// **'Type part of a file name to search this project.'**
+  String get mentionSearchHint;
+
+  /// Project file sheet: title of the notice when the search failed
+  ///
+  /// In en, this message translates to:
+  /// **'Search did not finish'**
+  String get mentionSearchFailedTitle;
+
+  /// Project file sheet: plain-words body of the failed-search notice
+  ///
+  /// In en, this message translates to:
+  /// **'Check the connection to the server and try again.'**
+  String get mentionSearchFailedMessage;
+
+  /// Project file sheet: names what was searched in 'Nothing in project files matches ...'
+  ///
+  /// In en, this message translates to:
+  /// **'project files'**
+  String get mentionNoMatchWhat;
+
+  /// Composer file suggestion: the folder line for a file at the top of the project
+  ///
+  /// In en, this message translates to:
+  /// **'Project folder'**
+  String get mentionProjectFolder;
+
+  /// Process ownership could not be verified: safely stop the app through Android, preserving saved data.
+  ///
+  /// In en, this message translates to:
+  /// **'The server on this phone couldn\'t restart safely. In app settings, tap Force stop, then reopen the app; your conversations stay.'**
+  String get inAppServerOwnershipRecoveryBody;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Aurora drift'**
+  String get liveStyleAurora;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Breathing mesh'**
+  String get liveStyleMesh;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Dot ripple'**
+  String get liveStyleDotRipple;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Contour lines'**
+  String get liveStyleTopo;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Flow threads'**
+  String get liveStyleFlowThreads;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Glow spill'**
+  String get liveStyleGlowSpill;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Light rays'**
+  String get liveStyleLightRays;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Constellation'**
+  String get liveStyleConstellation;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Halftone'**
+  String get liveStyleHalftone;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Liquid blobs'**
+  String get liveStyleLiquidBlobs;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Matrix rain'**
+  String get liveStyleMatrixRain;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Blueprint'**
+  String get liveStyleBlueprint;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Circuit'**
+  String get liveStyleCircuit;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Oscilloscope'**
+  String get liveStyleOscilloscope;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Radar'**
+  String get liveStyleRadar;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Honeycomb'**
+  String get liveStyleHoneycomb;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Brushed metal'**
+  String get liveStyleBrushedMetal;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Silk'**
+  String get liveStyleSilk;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Caustics'**
+  String get liveStyleCaustics;
+
+  /// Settings › Appearance › Live background: the name of one look.
+  ///
+  /// In en, this message translates to:
+  /// **'Bokeh'**
+  String get liveStyleBokeh;
+
+  /// Settings › Appearance › Live background: heading of the picker of looks.
+  ///
+  /// In en, this message translates to:
+  /// **'Look'**
+  String get liveStylePickerTitle;
+
+  /// Live background preview: apply the previewed look.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this'**
+  String get liveStyleUse;
+
+  /// Live background preview: switch that shows the look while an agent reply runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply running'**
+  String get liveStyleReplyRunning;
+
+  /// Live background picker: spoken label of the chosen look.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, selected'**
+  String liveStyleSelected(String name);
+
+  /// Settings › Appearance › Live background: how strongly the look shows.
+  ///
+  /// In en, this message translates to:
+  /// **'Intensity'**
+  String get liveIntensityTitle;
+
+  /// Live background intensity option.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtle'**
+  String get liveIntensitySubtle;
+
+  /// Live background intensity option.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get liveIntensityNormal;
+
+  /// Live background intensity option.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get liveIntensityBold;
+
+  /// Settings › Appearance › Effects: switch for the slow, soft colour drift behind every page.
+  ///
+  /// In en, this message translates to:
+  /// **'Live background'**
+  String get effectsLiveBackground;
+
+  /// Settings › Appearance › Effects: one line under the live background switch.
+  ///
+  /// In en, this message translates to:
+  /// **'A slow, soft drift of colour behind every page'**
+  String get effectsLiveBackgroundHint;
+
+  /// Conversation menu › Continue with…: carry this work to another agent or model
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with…'**
+  String get continueWithMenu;
+
+  /// Conversation menu › Continue with…: what happens
+  ///
+  /// In en, this message translates to:
+  /// **'Carry this work to another agent or model'**
+  String get continueWithMenuHint;
+
+  /// Continue with… sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Continue this work'**
+  String get continueWithTitle;
+
+  /// Continue with… sheet subtitle: conversation title and project folder
+  ///
+  /// In en, this message translates to:
+  /// **'{title} · {project}'**
+  String continueWithSubtitle(String title, String project);
+
+  /// Continue with… section: models of the same server
+  ///
+  /// In en, this message translates to:
+  /// **'Models on this server'**
+  String get continueWithModelsHere;
+
+  /// Continue with… section: agents that run on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Agents on this phone'**
+  String get continueWithAgents;
+
+  /// Continue with… sheet: empty list
+  ///
+  /// In en, this message translates to:
+  /// **'No other agent or model is ready to take over.'**
+  String get continueWithNothingReady;
+
+  /// Continue with… sheet: the list could not be read
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the agents. Try again.'**
+  String get continueWithLoadFailed;
+
+  /// Continue with… sheet: reload the list
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get continueWithTryAgain;
+
+  /// Continue with… sheet: action on an agent that needs signing in
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get continueWithSignIn;
+
+  /// Continue with… sheet: why an agent is unavailable (signed out)
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to use {agent}.'**
+  String continueWithNeedsSignIn(String agent);
+
+  /// Continue with… sheet: why an agent is unavailable (limit)
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} has reached its limit for now.'**
+  String continueWithLimitReached(String agent);
+
+  /// Continue with… sheet: why an agent is unavailable (not set up)
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} isn\'t ready on this phone yet.'**
+  String continueWithNotReady(String agent);
+
+  /// Continue with… sheet: a model of the same server keeps the conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Your conversation stays here.'**
+  String get continueWithNativeNote;
+
+  /// Continue with… sheet: primary action for a model of the same server
+  ///
+  /// In en, this message translates to:
+  /// **'Use this model'**
+  String get continueWithUseModel;
+
+  /// Continue with… sheet: switching the model failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t change the model. Try again.'**
+  String get continueWithModelFailed;
+
+  /// Continue with… sheet: a new agent starts a new conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new conversation with a record of this one.'**
+  String get continueWithNewNote;
+
+  /// Continue with… sheet: the source is kept
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation stays available.'**
+  String get continueWithSourceStays;
+
+  /// Continue with… sheet: label of the chosen agent
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get continueWithFactAgent;
+
+  /// Continue with… sheet: label of the chosen model
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get continueWithFactModel;
+
+  /// Continue with… sheet: label of the project folder
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get continueWithFactProject;
+
+  /// Continue with… sheet: the record is being read
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the conversation record…'**
+  String get continueWithPreparing;
+
+  /// Continue with… sheet: the file is being written
+  ///
+  /// In en, this message translates to:
+  /// **'Saving the conversation record…'**
+  String get continueWithSaving;
+
+  /// Continue with… sheet: the new conversation is being made
+  ///
+  /// In en, this message translates to:
+  /// **'Starting the conversation…'**
+  String get continueWithStarting;
+
+  /// Continue with… sheet: saving the link between the conversations
+  ///
+  /// In en, this message translates to:
+  /// **'Linking the conversations…'**
+  String get continueWithLinking;
+
+  /// Continue with… sheet: the record section
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation record'**
+  String get continueWithRecordTitle;
+
+  /// Continue with… sheet: the size of the record
+  ///
+  /// In en, this message translates to:
+  /// **'About {kb} KB'**
+  String continueWithRecordSize(int kb);
+
+  /// Continue with… sheet: the record dropped the oldest turns
+  ///
+  /// In en, this message translates to:
+  /// **'Older turns were left out to keep the record small'**
+  String get continueWithOlderLeftOut;
+
+  /// Continue with… sheet: how many messages the record omits
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 message left out} other{{count} messages left out}}'**
+  String continueWithOmittedCount(int count);
+
+  /// Continue with… sheet: the record had secrets masked
+  ///
+  /// In en, this message translates to:
+  /// **'Anything that looked like a password or key was hidden.'**
+  String get continueWithRedacted;
+
+  /// Continue with… sheet: caution about the record
+  ///
+  /// In en, this message translates to:
+  /// **'Read the preview first. It can\'t catch every private detail.'**
+  String get continueWithReadPreview;
+
+  /// Continue with… sheet: unfold the record preview
+  ///
+  /// In en, this message translates to:
+  /// **'Show preview'**
+  String get continueWithShowPreview;
+
+  /// Continue with… sheet: fold the record preview
+  ///
+  /// In en, this message translates to:
+  /// **'Hide preview'**
+  String get continueWithHidePreview;
+
+  /// Continue with… sheet: where the record file will be
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as {path}'**
+  String continueWithRecordFile(String path);
+
+  /// Continue with… sheet: the editable first message
+  ///
+  /// In en, this message translates to:
+  /// **'First message'**
+  String get continueWithFirstMessage;
+
+  /// Continue with… sheet: helper under the first message
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the file name so the agent can read the record.'**
+  String get continueWithFirstMessageHelp;
+
+  /// Continue with… sheet: the first message was refused
+  ///
+  /// In en, this message translates to:
+  /// **'Write a first message that keeps the record\'s file name.'**
+  String get continueWithMessageInvalid;
+
+  /// Continue with… sheet: primary action for a new agent
+  ///
+  /// In en, this message translates to:
+  /// **'Start and continue'**
+  String get continueWithStart;
+
+  /// Continue with… sheet: close without sending
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get continueWithCancel;
+
+  /// Continue with… sheet: read the conversation again
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare again'**
+  String get continueWithPrepareAgain;
+
+  /// Continue with… sheet: retry only the link
+  ///
+  /// In en, this message translates to:
+  /// **'Save link again'**
+  String get continueWithSaveLinkAgain;
+
+  /// Continue with… sheet: after the link failed, open what was started
+  ///
+  /// In en, this message translates to:
+  /// **'Open the conversation'**
+  String get continueWithOpenConversation;
+
+  /// Chat notice after a provider failure: open the Continue with… sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with another agent'**
+  String get continueWithAnother;
+
+  /// Continue with… error: target has no file writer
+  ///
+  /// In en, this message translates to:
+  /// **'This agent can\'t save a conversation record here yet.'**
+  String get continueWithErrNoWriter;
+
+  /// Continue with… error: project identity not verified
+  ///
+  /// In en, this message translates to:
+  /// **'These conversations aren\'t connected to the same project.'**
+  String get continueWithErrProject;
+
+  /// Continue with… error: target model gone
+  ///
+  /// In en, this message translates to:
+  /// **'This model isn\'t available. Choose another one.'**
+  String get continueWithErrTarget;
+
+  /// Continue with… error: source changed
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation changed. Prepare the record again.'**
+  String get continueWithErrSource;
+
+  /// Continue with… error: scope or deletion
+  ///
+  /// In en, this message translates to:
+  /// **'The server or project changed. Start again.'**
+  String get continueWithErrScope;
+
+  /// Continue with… error: history read failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the conversation. Try preparing it again.'**
+  String get continueWithErrRead;
+
+  /// Continue with… error: record too large
+  ///
+  /// In en, this message translates to:
+  /// **'The latest turn is too large to carry over.'**
+  String get continueWithErrTooLarge;
+
+  /// Continue with… error: file write failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the record. No message was sent.'**
+  String get continueWithErrFile;
+
+  /// Continue with… error: creation or delivery unknown
+  ///
+  /// In en, this message translates to:
+  /// **'The result isn\'t confirmed. Check the target conversations before trying again.'**
+  String get continueWithErrUnknown;
+
+  /// Continue with… error: link persistence failed
+  ///
+  /// In en, this message translates to:
+  /// **'The conversation started, but its link couldn\'t be saved.'**
+  String get continueWithErrLink;
+
+  /// Continue with… error: anything else
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t prepare the record. Try again.'**
+  String get continueWithErrGeneric;
+
+  /// Conversation line: this work continued in another agent
+  ///
+  /// In en, this message translates to:
+  /// **'Continued in {agent}'**
+  String continuedIn(String agent);
+
+  /// Conversation line: this conversation continues another
+  ///
+  /// In en, this message translates to:
+  /// **'Continued from {title}'**
+  String continuedFrom(String title);
+
+  /// Conversation line: the linked conversation was deleted
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation is no longer available.'**
+  String get continuedGone;
+
+  /// Continue with… sheet: go back to the list of agents and models
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get continueWithChange;
+
+  /// Quiet line while the phone's own server is alive but slow to answer
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode on this phone is busy'**
+  String get workServerBusyPhone;
+
+  /// Confirm body before restarting the phone's server while a command runs
+  ///
+  /// In en, this message translates to:
+  /// **'The running command will stop too. Your conversations are kept.'**
+  String get workServerRestartBodyCommand;
+
+  /// Connection banner while the app is already reconnecting; the server is not named when only one is live
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting…'**
+  String get connectionReconnectingQuiet;
+
+  /// Menu action to retry the connection without waiting for the next automatic attempt
+  ///
+  /// In en, this message translates to:
+  /// **'Try now'**
+  String get connectionTryNow;
+
+  /// KitComposer note while the agent is not answering and the message waits
+  ///
+  /// In en, this message translates to:
+  /// **'Sends when {agent} answers'**
+  String kitComposerWaitsForAgent(String agent);
+
+  /// Settings › Appearance › Text size: row title.
+  ///
+  /// In en, this message translates to:
+  /// **'Text size'**
+  String get textSizeTitle;
+
+  /// Settings › Appearance › Text size: one choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Smallest'**
+  String get textSizeSmallest;
+
+  /// Settings › Appearance › Text size: one choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get textSizeSmall;
+
+  /// Settings › Appearance › Text size: one choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get textSizeDefault;
+
+  /// Settings › Appearance › Text size: one choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get textSizeLarge;
+
+  /// KitComposer note line beside Add to this turn: the message joins the running turn.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent will read this while it works.'**
+  String get kitComposerAddToTurnNote;
+
+  /// Continued line: the other conversation is on another saved server, so it opens from that server's own chats.
+  ///
+  /// In en, this message translates to:
+  /// **'Find it in that server\'s conversations.'**
+  String get continuedOpenFromList;
+
+  /// Team settings: heading for the per-role model rows
+  ///
+  /// In en, this message translates to:
+  /// **'Models'**
+  String get teamModelsSection;
+
+  /// Team settings: what a saved role model affects
+  ///
+  /// In en, this message translates to:
+  /// **'Each new job starts with the model chosen for its role. A saved choice applies to new jobs, not to ones already running.'**
+  String get teamModelsNote;
+
+  /// Role model row and sheet: no model chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Server default'**
+  String get teamModelServerDefault;
+
+  /// Role model sheet: what the empty choice means
+  ///
+  /// In en, this message translates to:
+  /// **'Uses the model this server falls back to when none is chosen. It may differ from the model your conversations use.'**
+  String get teamModelServerDefaultHint;
+
+  /// Team settings notice after the planner model is saved while a plan has failed
+  ///
+  /// In en, this message translates to:
+  /// **'Planner model saved. Ask again to plan with it.'**
+  String get teamModelPlannerSaved;
+
+  /// Repo folder: switch to typing the folder path
+  ///
+  /// In en, this message translates to:
+  /// **'Type a path'**
+  String get teamProjectEditorTypePath;
+
+  /// Repo folder: opens the folder browser
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a folder'**
+  String get teamProjectEditorChooseFolder;
+
+  /// Repo folder row: nothing chosen
+  ///
+  /// In en, this message translates to:
+  /// **'No folder chosen yet'**
+  String get teamProjectEditorFolderNone;
+
+  /// Button on the empty-repository notice
+  ///
+  /// In en, this message translates to:
+  /// **'Make the first commit for me'**
+  String get teamProjectEditorFirstCommit;
+
+  /// Empty repository on a server this app cannot reach: what to do
+  ///
+  /// In en, this message translates to:
+  /// **'Open a terminal in that folder and run: git commit --allow-empty -m \"First commit\"'**
+  String get teamProjectEditorFirstCommitManual;
+
+  /// First commit failed: what to do instead
+  ///
+  /// In en, this message translates to:
+  /// **'The first commit could not be made. Open a terminal in that folder and run: git commit --allow-empty -m \"First commit\"'**
+  String get teamProjectEditorFirstCommitFailed;
+
+  /// Progress line right after Start planning
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the folder and starting the planner…'**
+  String get teamProjectEditorStarting;
+
+  /// New project form: a saved draft was restored
+  ///
+  /// In en, this message translates to:
+  /// **'Your unsent draft is back.'**
+  String get teamProjectEditorDraftRestored;
+
+  /// New project form: discard the restored draft
+  ///
+  /// In en, this message translates to:
+  /// **'Start fresh'**
+  String get teamProjectEditorStartFresh;
+
+  /// Spec form: the starter milestone seeded from the task text
+  ///
+  /// In en, this message translates to:
+  /// **'A first milestone was drafted from your task. Edit it before you approve.'**
+  String get teamProjectEditorStarterNote;
+
+  /// Plain reason for engine code repoPathInvalid
+  ///
+  /// In en, this message translates to:
+  /// **'The team can\'t find that folder on this phone.'**
+  String get teamRefusalRepoPathInvalid;
+
+  /// Way forward for engine code repoPathInvalid
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the folder from the list instead of typing it.'**
+  String get teamRefusalRepoPathInvalidNext;
+
+  /// Settings › Appearance › Effects: spoken label of the live sample of the chosen look.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} preview. Opens the looks.'**
+  String effectsLookPreviewLabel(String name);
+
+  /// Settings › Appearance › Effects: spoken label of the sample while Live background is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Live background is off. Opens the looks.'**
+  String get effectsLookPreviewOffLabel;
+
+  /// Settings › Appearance › Effects: caption on the flat sample while Live background is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get effectsLookPreviewOff;
+
+  /// No description provided for @teamProjectEditorFolderEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder has no commits yet, and the team needs one to start from.'**
+  String get teamProjectEditorFolderEmpty;
+
+  /// No description provided for @teamProjectEditorChooseModeBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Single lane or Parallel agents, and set a budget or choose No limit.'**
+  String get teamProjectEditorChooseModeBudget;
+
+  /// No description provided for @teamProjectEditorFallbackSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get teamProjectEditorFallbackSection;
+
+  /// No description provided for @teamProjectEditorFallbackNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved with the role, but the team does not switch to it automatically yet.'**
+  String get teamProjectEditorFallbackNote;
+
+  /// No description provided for @teamUiRowChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get teamUiRowChecking;
+
+  /// No description provided for @teamRefusalCheckerUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'The check finished, but its answer could not be read.'**
+  String get teamRefusalCheckerUnreadable;
+
+  /// No description provided for @teamRefusalCheckerUnreadableNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume reads that answer again without asking the model. If the work passes, it merges into dev, and tasks waiting behind it can start.'**
+  String get teamRefusalCheckerUnreadableNext;
+
+  /// No description provided for @teamProjectInterruptedResumeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume reads the finished check again without asking the model. If the work passes, it merges into dev, and tasks waiting behind it can start.'**
+  String get teamProjectInterruptedResumeNote;
+
+  /// No description provided for @teamProjectInterruptedResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get teamProjectInterruptedResume;
+
+  /// No description provided for @widgetV2ConfigureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Widget style'**
+  String get widgetV2ConfigureTitle;
+
+  /// No description provided for @widgetV2BackgroundLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get widgetV2BackgroundLabel;
+
+  /// No description provided for @widgetV2BackgroundSolid.
+  ///
+  /// In en, this message translates to:
+  /// **'Solid'**
+  String get widgetV2BackgroundSolid;
+
+  /// No description provided for @widgetV2BackgroundTinted.
+  ///
+  /// In en, this message translates to:
+  /// **'Tinted'**
+  String get widgetV2BackgroundTinted;
+
+  /// No description provided for @widgetV2BackgroundTransparent.
+  ///
+  /// In en, this message translates to:
+  /// **'Transparent'**
+  String get widgetV2BackgroundTransparent;
+
+  /// No description provided for @widgetV2AccentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Accent colour'**
+  String get widgetV2AccentLabel;
+
+  /// No description provided for @widgetV2AccentWallpaper.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallpaper'**
+  String get widgetV2AccentWallpaper;
+
+  /// No description provided for @widgetV2AccentApp.
+  ///
+  /// In en, this message translates to:
+  /// **'App theme'**
+  String get widgetV2AccentApp;
+
+  /// No description provided for @widgetV2AccentGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get widgetV2AccentGreen;
+
+  /// No description provided for @widgetV2AccentTeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Teal'**
+  String get widgetV2AccentTeal;
+
+  /// No description provided for @widgetV2AccentBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get widgetV2AccentBlue;
+
+  /// No description provided for @widgetV2AccentAmber.
+  ///
+  /// In en, this message translates to:
+  /// **'Amber'**
+  String get widgetV2AccentAmber;
+
+  /// No description provided for @widgetV2SaveStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save style'**
+  String get widgetV2SaveStyle;
+
+  /// No description provided for @widgetV2SteerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to this turn'**
+  String get widgetV2SteerTitle;
+
+  /// No description provided for @widgetV2AfterReplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send after this reply'**
+  String get widgetV2AfterReplyTitle;
+
+  /// No description provided for @widgetV2RestartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop and send'**
+  String get widgetV2RestartTitle;
+
+  /// No description provided for @widgetV2RestartHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops the current reply and starts again with your message.'**
+  String get widgetV2RestartHelp;
+
+  /// No description provided for @widgetV2VoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New message'**
+  String get widgetV2VoiceTitle;
+
+  /// No description provided for @widgetV2MessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a message'**
+  String get widgetV2MessageHint;
+
+  /// No description provided for @widgetV2Dictate.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictate a message'**
+  String get widgetV2Dictate;
+
+  /// No description provided for @widgetV2Send.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get widgetV2Send;
+
+  /// No description provided for @widgetV2Sending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get widgetV2Sending;
+
+  /// No description provided for @widgetV2Accepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get widgetV2Accepted;
+
+  /// No description provided for @widgetV2StaleRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'The conversation changed. Your message is still here.'**
+  String get widgetV2StaleRequest;
+
+  /// No description provided for @widgetV2Unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The background connection is unavailable. Your message is still here.'**
+  String get widgetV2Unavailable;
+
+  /// No description provided for @widgetV2Unsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This connection can’t do that.'**
+  String get widgetV2Unsupported;
+
+  /// No description provided for @widgetV2Uncertain.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn’t confirm whether this was sent. Check the conversation before sending again.'**
+  String get widgetV2Uncertain;
+
+  /// No description provided for @widgetV2Busy.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait for the current action.'**
+  String get widgetV2Busy;
+
+  /// No description provided for @widgetV2InvalidRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a message before sending.'**
+  String get widgetV2InvalidRequest;
+
+  /// No description provided for @widgetV2UnknownBehavior.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for conversation details…'**
+  String get widgetV2UnknownBehavior;
+
+  /// No description provided for @widgetV2Cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get widgetV2Cancel;
+
+  /// No description provided for @widgetV2PreviewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Widget preview'**
+  String get widgetV2PreviewLabel;
+
+  /// No description provided for @widgetV2PreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix the sign-in page'**
+  String get widgetV2PreviewTitle;
+
+  /// No description provided for @widgetV2PreviewSecond.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the release notes'**
+  String get widgetV2PreviewSecond;
+
+  /// No description provided for @widgetV2PreviewStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Editing files'**
+  String get widgetV2PreviewStep;
+
+  /// No description provided for @widgetV2PreviewWorking.
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get widgetV2PreviewWorking;
+
+  /// No description provided for @widgetV2PreviewStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get widgetV2PreviewStop;
+
+  /// No description provided for @widgetV2PreviewSteer.
+  ///
+  /// In en, this message translates to:
+  /// **'Steer'**
+  String get widgetV2PreviewSteer;
+
+  /// No description provided for @widgetV2PreviewAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get widgetV2PreviewAllow;
+
+  /// No description provided for @widgetV2SizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview size'**
+  String get widgetV2SizeLabel;
+
+  /// No description provided for @widgetV2SizeCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get widgetV2SizeCompact;
+
+  /// No description provided for @widgetV2SizeCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get widgetV2SizeCard;
+
+  /// No description provided for @widgetV2SizeList.
+  ///
+  /// In en, this message translates to:
+  /// **'Wide'**
+  String get widgetV2SizeList;
+
+  /// No description provided for @widgetV2StyleStale.
+  ///
+  /// In en, this message translates to:
+  /// **'This widget changed. Close this and try again.'**
+  String get widgetV2StyleStale;
+
+  /// No description provided for @widgetV2StyleUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t save the style. Try again.'**
+  String get widgetV2StyleUnavailable;
+
+  /// No description provided for @widgetV2DictationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictation isn’t available right now. You can type instead.'**
+  String get widgetV2DictationUnavailable;
+
+  /// No description provided for @widgetV2RestartUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation can only be changed from inside the app.'**
+  String get widgetV2RestartUnavailable;
+
+  /// Release setup recovery and safe runtime switching copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Some Linux packages need repair. Continue setup to try again. Details show what stopped it.'**
+  String get phoneSetupErrorPackageRepair;
+
+  /// Release setup recovery and safe runtime switching copy.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode 2 already has its own conversations. Older OpenCode conversations stay in Older OpenCode. Switching is unavailable while both have conversations. Stay on Older OpenCode to keep using these conversations.'**
+  String get setupSwitchSeparateHistoryDetail;
+
+  /// Release setup recovery and safe runtime switching copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check your conversations safely. Stay on Older OpenCode and try again.'**
+  String get setupSwitchHistoryUnavailableDetail;
+
+  /// Release setup recovery and safe runtime switching copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay on Older OpenCode'**
+  String get setupSwitchStay;
 }
 
 class _AppLocalizationsDelegate
@@ -41646,8 +52978,15 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['ar', 'en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>[
+    'ar',
+    'en',
+    'es',
+    'ja',
+    'pt',
+    'ru',
+    'zh',
+  ].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -41660,6 +52999,16 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsAr();
     case 'en':
       return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
+    case 'ja':
+      return AppLocalizationsJa();
+    case 'pt':
+      return AppLocalizationsPt();
+    case 'ru':
+      return AppLocalizationsRu();
+    case 'zh':
+      return AppLocalizationsZh();
   }
 
   throw FlutterError(

@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
+import 'chat/kit_markdown.dart';
 import 'kit_bidi.dart';
 import 'kit_buttons.dart';
 import 'kit_choice_list.dart';
@@ -14,9 +17,12 @@ import 'kit_receipt.dart';
 import 'kit_sheet.dart';
 import 'kit_since.dart';
 import 'kit_text.dart';
+import 'kit_tappable.dart';
 import 'kit_tokens.dart';
 import 'motion/kit_haptics.dart';
 import 'motion/kit_reveal.dart';
+
+part 'kit_request_answers.dart';
 
 /// What the agent asks for (docs/ux-system/kit-api/KitRequestCard.md). No
 /// `change` variant (P2 deferred, C50).
@@ -38,207 +44,6 @@ enum KitRequestPhase {
 
   /// The agent stopped waiting: the collapsed row, nothing to press.
   expired,
-}
-
-/// The common answer shown in place. Sealed, so the kit owns the labels, the
-/// order, the shortcuts, the send haptic and double-send protection.
-sealed class KitRequestAnswers {
-  const KitRequestAnswers();
-}
-
-/// permission and gate: two acts. Shortcuts A and D on a PC.
-final class KitRequestDecide extends KitRequestAnswers {
-  const KitRequestDecide({
-    required this.onAllow,
-    required this.onReject,
-    this.allowLabel,
-    this.rejectLabel,
-    this.disabledReason,
-    this.allowKey,
-    this.rejectKey,
-  }) : assert(
-         (onAllow != null && onReject != null) || disabledReason != null,
-         'KitRequestDecide: a missing callback needs its disabledReason '
-         '(STATE-8)',
-       );
-
-  final VoidCallback? onAllow;
-  final VoidCallback? onReject;
-
-  /// A verb (COPY-8): "Run once". Default by kind: permission "Allow once",
-  /// gate "Approve".
-  final String? allowLabel;
-
-  /// "Don't run". Default by kind: permission "Reject", gate "Send back".
-  final String? rejectLabel;
-
-  /// Shown under the buttons when a callback is null (STATE-8).
-  final String? disabledReason;
-  final Key? allowKey;
-  final Key? rejectKey;
-}
-
-/// question and choice with one answer: a tap sends
-/// ([KitChoiceList.single] with `sends: true`). Shortcuts 1–9 on a PC.
-final class KitRequestChoose<T> extends KitRequestAnswers {
-  const KitRequestChoose({
-    required this.choices,
-    required this.onChosen,
-    this.chosen,
-    this.other,
-  });
-
-  /// At most [KitRequestCard.maxChoicesInPlace] are listed in place.
-  final List<KitChoice<T>> choices;
-
-  /// Called once per answer.
-  final ValueChanged<T> onChosen;
-
-  /// The value sent (sending): its row carries the receipt.
-  final T? chosen;
-
-  /// "Something else": a KitField with a KitDraft.
-  final KitChoiceOther? other;
-
-  /// The choices listed in the card.
-  List<KitChoice<T>> get _inPlace =>
-      choices.length > KitRequestCard.maxChoicesInPlace
-      ? choices.take(KitRequestCard.maxChoicesInPlace - 1).toList()
-      : choices;
-
-  /// How many choices only the details sheet lists.
-  int get _hidden => choices.length - _inPlace.length;
-
-  /// The digit shortcut: sends the [index]th choice in place. False when
-  /// there is no such choice (a digit beyond the list does nothing).
-  bool _sendAt(int index, _KitRequestCardState card) {
-    final shown = _inPlace;
-    if (index < 0 || index >= shown.length || !shown[index].enabled) {
-      return false;
-    }
-    if (card._mayAnswer()) onChosen(shown[index].value);
-    return true;
-  }
-
-  Widget _build(
-    BuildContext context,
-    _KitRequestCardState card, {
-    required String semanticsLabel,
-  }) {
-    final widget = card.widget;
-    final tokens = KitTokens.of(context);
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    if (widget.phase == KitRequestPhase.sending) {
-      // The chosen row carries the receipt; the other rows go.
-      final picked = [
-        for (final choice in choices)
-          if (chosen != null && choice.value == chosen) choice,
-      ];
-      if (picked.isEmpty) return card._answerLine(context);
-      return KitChoiceList<T>.single(
-        choices: picked.take(1).toList(),
-        selected: chosen,
-        onSelected: (_) {},
-        sends: true,
-        receipt: widget.receipt,
-        semanticsLabel: semanticsLabel,
-      );
-    }
-    final other = this.other;
-    final list = IgnorePointer(
-      ignoring: card._answered,
-      child: KitChoiceList<T>.single(
-        choices: _inPlace,
-        selected: null,
-        // KitChoiceList already sent the haptic and holds its own guard.
-        onSelected: (value) {
-          if (card._mayAnswer(haptic: false)) onChosen(value);
-        },
-        sends: true,
-        semanticsLabel: semanticsLabel,
-        other: other == null
-            ? null
-            : KitChoiceOther(
-                label: other.label,
-                fieldLabel: other.fieldLabel,
-                draft: other.draft,
-                fieldKey: other.fieldKey,
-                onSubmitted: (text) {
-                  if (card._mayAnswer(haptic: false)) other.onSubmitted(text);
-                },
-              ),
-      ),
-    );
-    final hidden = _hidden;
-    if (hidden <= 0) return list;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        list,
-        Padding(
-          padding: EdgeInsetsDirectional.only(top: tokens.space1),
-          child: KitInset(
-            child: KitButton.tertiary(
-              label: l10n.kitRequestMoreAnswers(hidden),
-              onPressed: widget.onDetails,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// A question with several answers: the card shows "Answer" (opens the
-/// sheet); the sheet shows KitChoiceList.multi and a pinned Send.
-final class KitRequestChooseMany<T> extends KitRequestAnswers {
-  const KitRequestChooseMany({
-    required this.choices,
-    required this.onSend,
-    this.sendLabel,
-  });
-
-  final List<KitChoice<T>> choices;
-  final ValueChanged<Set<T>> onSend;
-
-  /// The sheet's Send; default "Send".
-  final String? sendLabel;
-}
-
-/// reply (an external task asks for words): a multiline KitField with a
-/// draft and Send in place.
-final class KitRequestReply extends KitRequestAnswers {
-  const KitRequestReply({
-    required this.fieldLabel,
-    required this.draft,
-    required this.onSend,
-    this.sendLabel,
-    this.fieldKey,
-    this.sendKey,
-  });
-
-  /// "Your reply".
-  final String fieldLabel;
-
-  /// DATA-1: survives back, kill, restart. The host clears it once the
-  /// answer is confirmed; the card never does.
-  final KitDraft draft;
-  final ValueChanged<String> onSend;
-
-  /// Default "Send".
-  final String? sendLabel;
-  final Key? fieldKey;
-  final Key? sendKey;
-}
-
-/// form, or anything too long to answer in place: one primary that opens
-/// the sheet ([KitRequestCard.ask]'s `onDetails`). Default label "Answer".
-final class KitRequestInSheet extends KitRequestAnswers {
-  const KitRequestInSheet({this.label, this.key});
-
-  final String? label;
-  final Key? key;
 }
 
 /// The one answer card, in the conversation, for everything an agent asks
@@ -281,6 +86,7 @@ class KitRequestCard extends StatefulWidget {
     this.phase = KitRequestPhase.waiting,
     this.server,
     this.detail,
+    this.detailMarkdown = false,
     this.summary,
     this.answers,
     this.answer,
@@ -291,6 +97,8 @@ class KitRequestCard extends StatefulWidget {
     IconData? icon,
     this.titleKey,
     this.detailsKey,
+    this.inList = false,
+    this.queued = 0,
   }) : _icon = icon,
        tone = null,
        body = null,
@@ -316,6 +124,7 @@ class KitRequestCard extends StatefulWidget {
     this.tertiary = const [],
     this.titleKey,
   }) : _icon = icon,
+       detailMarkdown = false,
        kind = null,
        who = null,
        reason = null,
@@ -328,6 +137,8 @@ class KitRequestCard extends StatefulWidget {
        onDetails = null,
        since = null,
        detailsKey = null,
+       inList = false,
+       queued = 0,
        _ask = false;
 
   /// More choices than this are not listed in place: the first
@@ -377,6 +188,10 @@ class KitRequestCard extends StatefulWidget {
   /// Why it asks, one line: "To check the fix".
   final String? detail;
 
+  /// [detail] is Markdown (a plan): drawn as formatted text in a bounded
+  /// height, with Show more to read the rest in place.
+  final bool detailMarkdown;
+
   /// A command, path or pattern: mono, left to right, two lines.
   final String? summary;
 
@@ -401,6 +216,15 @@ class KitRequestCard extends StatefulWidget {
   final List<KitAction> tertiary;
   final Key? titleKey;
   final Key? detailsKey;
+
+  /// Under a list row: no reading-width centring, page gutter or entrance
+  /// of its own (the list places it), as [KitAgentCard.inList]. The caller
+  /// passes secondary answers, since the screen keeps its one primary.
+  final bool inList;
+
+  /// How many other requests of this conversation wait behind this one; the
+  /// label says so ("Needs you · 1 more request is waiting").
+  final int queued;
 
   /// Pre-v2: [AppStatusTone.attention] paints the needs-you look; every
   /// other tone (and null) a plain `surface1` card.
@@ -620,140 +444,42 @@ class _KitRequestCardState extends State<KitRequestCard> {
         ),
       );
     }
-    final tokens = KitTokens.of(context);
-    return KitEntrance(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: KitLayout.readingWidth),
-          child: Padding(
-            padding: EdgeInsetsDirectional.symmetric(
-              // The card's border sits on the page gutter (the ring adds
-              // its own width around it), like every other block.
-              horizontal: tokens.gutter - KitTokens.needsYouRingWidth,
-              vertical: tokens.space1,
-            ),
-            child: content,
-          ),
-        ),
-      ),
-    );
+    return kitRequestPlacement(context, inList: widget.inList, child: content);
   }
 
   // ── The frame ──────────────────────────────────────────────────────────
 
-  /// The card's frame: the needs-you look when [attention] (with the 4 dp
-  /// ring), else a plain `surface1` card with a hairline; the focus ring
-  /// on its border while the card itself has keyboard focus.
+  /// The card's frame ([kitRequestFrame]) with the focus border on it
+  /// while the card itself has keyboard focus.
   Widget _frame(
     BuildContext context, {
     required bool attention,
     required Widget child,
     Key? key,
   }) {
-    final tokens = KitTokens.of(context);
-    final roles = tokens.roles;
     final focused =
         _focus.hasPrimaryFocus &&
         FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
-    final side = focused
-        ? BorderSide(
-            color: roles.accent,
-            width: KitTokens.focusRingWidth(context),
-          )
-        : BorderSide(
-            color: attention ? roles.attentionLine : roles.hairline,
-            width: KitTokens.hairlineWidth(context),
-          );
-    final large = MediaQuery.textScalerOf(context).scale(10) >= 20;
-    Widget card = DecoratedBox(
+    return kitRequestFrame(
+      context,
       key: key,
-      decoration: ShapeDecoration(
-        color: attention
-            ? Color.alphaBlend(roles.attentionSurface, roles.surface1)
-            : roles.surface1,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(tokens.cardRadius),
-          side: side,
-        ),
-      ),
-      child: Padding(padding: EdgeInsets.all(tokens.space4), child: child),
-    );
-    // At 2.0 text never more than 45 % of the window: the words scroll
-    // inside and the answers stay in sight.
-    if (large) {
-      final largest = MediaQuery.textScalerOf(context).scale(10) >= 25;
-      card = ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight:
-              MediaQuery.sizeOf(context).height *
-              (largest
-                  ? KitTokens.requestMaxHeightShareLarge
-                  : KitTokens.requestMaxHeightShare),
-        ),
-        child: card,
-      );
-    }
-    // The v2 card is one Tab stop; the pre-v2 card keeps today's traversal.
-    card = Focus(
-      focusNode: _focus,
-      canRequestFocus: widget._ask,
-      skipTraversal: !widget._ask,
-      onKeyEvent: _onKey,
-      onFocusChange: (_) => setState(() {}),
-      child: card,
-    );
-    if (!attention) {
-      return Padding(
-        padding: const EdgeInsetsDirectional.symmetric(
-          horizontal: KitTokens.needsYouRingWidth,
-        ),
-        child: card,
-      );
-    }
-    // LOOK-20: the one ring the needs-you look allows, outside the border.
-    return DecoratedBox(
-      decoration: ShapeDecoration(
-        color: roles.attention.withValues(alpha: KitTokens.needsYouRingAlpha),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            tokens.cardRadius + KitTokens.needsYouRingWidth,
-          ),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(KitTokens.needsYouRingWidth),
+      attention: attention,
+      focused: focused,
+      // The v2 card is one Tab stop; the pre-v2 card keeps today's traversal.
+      wrapCard: (card) => Focus(
+        focusNode: _focus,
+        canRequestFocus: widget._ask,
+        skipTraversal: !widget._ask,
+        onKeyEvent: _onKey,
+        onFocusChange: (_) => setState(() {}),
         child: card,
       ),
+      child: child,
     );
   }
 
-  Widget _tile(BuildContext context, {required bool attention}) {
-    final tokens = KitTokens.of(context);
-    final roles = tokens.roles;
-    final tint = attention
-        ? roles.attention.withValues(alpha: tokens.markTintAlpha)
-        : roles.surface3;
-    return ExcludeSemantics(
-      child: SizedBox.square(
-        dimension: KitTokens.requestTileSize,
-        child: DecoratedBox(
-          decoration: ShapeDecoration(
-            color: tint,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(KitTokens.requestTileRadius),
-            ),
-          ),
-          child: Center(
-            child: Icon(
-              widget.icon,
-              size: tokens.smallIconSize,
-              color: attention ? roles.attention : roles.text1,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _tile(BuildContext context, {required bool attention}) =>
+      kitRequestTile(context, icon: widget.icon, attention: attention);
 
   Widget _summary(BuildContext context, String summary) {
     final tokens = KitTokens.of(context);
@@ -822,15 +548,13 @@ class _KitRequestCardState extends State<KitRequestCard> {
     final waiting = widget.phase == KitRequestPhase.waiting;
 
     final (inScroll, fixed) = _answers(context);
-    final tertiary = _tertiaryLine(context);
+    final tertiary = _quietLine(context);
+    final large = MediaQuery.textScalerOf(context).scale(10) >= 20;
 
     return KitSince(
       since: widget.since,
       ticks: KitSinceTicks.minutes,
       builder: (context, status) {
-        final age = widget.since == null
-            ? null
-            : l10n.kitRequestAge(KitSince.ageLabel(context, status.elapsed));
         final ageSpoken = widget.since == null
             ? null
             : l10n.kitNeedsYouWaitingSpoken(status.elapsed.inMinutes);
@@ -843,50 +567,45 @@ class _KitRequestCardState extends State<KitRequestCard> {
           widget.ifIgnored!,
         ].join(', ');
 
-        final header = Row(
+        // A question reads as its own words: the question is the headline
+        // and the short header is left to Details. Everything else keeps the
+        // title and the one line of why under it.
+        final promote =
+            (widget.kind == KitRequestKind.question ||
+                widget.kind == KitRequestKind.choice) &&
+            !widget.detailMarkdown &&
+            detail != null &&
+            detail.isNotEmpty;
+        final header = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _tile(context, attention: true),
-            SizedBox(width: tokens.space3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  KitText(
-                    [reasonWord, whoOnServer, ?age].join(' · '),
-                    role: KitTextRole.caption,
-                    tone: waiting
-                        ? KitTextTone.attention
-                        : KitTextTone.secondary,
-                  ),
-                  SizedBox(height: tokens.space1),
-                  KitText(
-                    widget.title,
-                    key: widget.titleKey,
-                    role: KitTextRole.headline,
-                    tone: KitTextTone.primary,
-                  ),
-                  if (detail != null && detail.isNotEmpty)
-                    Padding(
-                      padding: EdgeInsetsDirectional.only(top: tokens.space1),
-                      child: KitText(
+            KitText(
+              widget.queued > 0
+                  ? '${l10n.kitRequestNeedsYouLabel} · '
+                        '${l10n.chatRequestMoreWaiting(widget.queued).replaceFirst(RegExp(r'[.。]$'), '')}'
+                  : l10n.kitRequestNeedsYouLabel,
+              role: KitTextRole.caption,
+              tone: waiting ? KitTextTone.attention : KitTextTone.secondary,
+            ),
+            SizedBox(height: tokens.space1),
+            KitText(
+              promote ? detail : widget.title,
+              key: widget.titleKey,
+              role: KitTextRole.headline,
+              tone: KitTextTone.primary,
+            ),
+            if (!promote && detail != null && detail.isNotEmpty)
+              Padding(
+                padding: EdgeInsetsDirectional.only(top: tokens.space1),
+                child: widget.detailMarkdown
+                    ? _BoundedMarkdown(detail)
+                    : KitText(
                         detail,
                         role: KitTextRole.secondary,
                         tone: KitTextTone.secondary,
                       ),
-                    ),
-                  Padding(
-                    padding: EdgeInsetsDirectional.only(top: tokens.space1),
-                    child: KitText(
-                      widget.ifIgnored!,
-                      role: KitTextRole.secondary,
-                      tone: KitTextTone.secondary,
-                    ),
-                  ),
-                ],
               ),
-            ),
           ],
         );
 
@@ -914,6 +633,13 @@ class _KitRequestCardState extends State<KitRequestCard> {
                 padding: EdgeInsetsDirectional.only(top: tokens.space3),
                 child: inScroll,
               ),
+            // At large text the quiet line scrolls with the words, so the
+            // answers stay in sight; otherwise it sits under them.
+            if (large && tertiary != null)
+              Padding(
+                padding: EdgeInsetsDirectional.only(top: tokens.space2),
+                child: tertiary,
+              ),
           ],
         );
 
@@ -938,7 +664,7 @@ class _KitRequestCardState extends State<KitRequestCard> {
                     padding: EdgeInsetsDirectional.only(top: tokens.space3),
                     child: fixed,
                   ),
-                if (tertiary != null)
+                if (!large && tertiary != null)
                   Padding(
                     padding: EdgeInsetsDirectional.only(top: tokens.space2),
                     child: tertiary,
@@ -974,18 +700,29 @@ class _KitRequestCardState extends State<KitRequestCard> {
       ),
       KitRequestChooseMany() => (
         null,
-        KitButton.primary(
-          label: l10n.kitRequestAnswer,
-          onPressed: widget.onDetails,
-        ),
+        answers.secondary
+            ? KitButton.secondary(
+                label: l10n.kitRequestAnswer,
+                onPressed: widget.onDetails,
+              )
+            : KitButton.primary(
+                label: l10n.kitRequestAnswer,
+                onPressed: widget.onDetails,
+              ),
       ),
       KitRequestInSheet() => (
         null,
-        KitButton.primary(
-          key: answers.key,
-          label: answers.label ?? l10n.kitRequestAnswer,
-          onPressed: widget.onDetails,
-        ),
+        answers.secondary
+            ? KitButton.secondary(
+                key: answers.key,
+                label: answers.label ?? l10n.kitRequestAnswer,
+                onPressed: widget.onDetails,
+              )
+            : KitButton.primary(
+                key: answers.key,
+                label: answers.label ?? l10n.kitRequestAnswer,
+                onPressed: widget.onDetails,
+              ),
       ),
       KitRequestReply() => _reply(context, answers),
     };
@@ -1021,7 +758,8 @@ class _KitRequestCardState extends State<KitRequestCard> {
         (gate ? l10n.kitRequestSendBack : l10n.kitRequestReject);
     final onAllow = answers.onAllow;
     final onReject = answers.onReject;
-    final allow = KitButton.primary(
+    final allow = KitButton(
+      role: answers.secondary ? KitButtonRole.secondary : KitButtonRole.primary,
       key: answers.allowKey,
       label: allowLabel,
       shortcut: 'A',
@@ -1043,7 +781,7 @@ class _KitRequestCardState extends State<KitRequestCard> {
     );
     final reason = answers.disabledReason;
     final showReason = reason != null && (onAllow == null || onReject == null);
-    final buttons = LayoutBuilder(
+    final pair = LayoutBuilder(
       builder: (context, constraints) {
         final half = (constraints.maxWidth - tokens.space2) / 2;
         final fits =
@@ -1069,6 +807,7 @@ class _KitRequestCardState extends State<KitRequestCard> {
         );
       },
     );
+    final buttons = pair;
     if (!showReason) return buttons;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1085,6 +824,31 @@ class _KitRequestCardState extends State<KitRequestCard> {
         ),
       ],
     );
+  }
+
+  /// The one plain confirm before a standing grant; Cancel, a dismissal or
+  /// an answer that landed meanwhile send nothing.
+  Future<void> _confirmAlways(
+    KitRequestAlwaysAllowStep always,
+    AppLocalizations l10n,
+  ) async {
+    if (_answered || widget.phase != KitRequestPhase.waiting) return;
+    final confirmed = await showKitConfirm(
+      context,
+      title: l10n.chatRequestAlwaysConfirm(KitBidi.ltr(always.what)),
+      body: l10n.chatRequestAlwaysScope(
+        always.covers == null
+            ? l10n.chatUiAllMatchingRequests
+            : KitBidi.ltr(always.covers!),
+        l10n.chatRequestAlwaysInProject,
+      ),
+      confirmLabel: l10n.chatUiAlwaysAllow,
+      icon: AppIconography.permissions,
+      sheetKey: const ValueKey('request-always-confirm'),
+      confirmKey: always.confirmKey,
+    );
+    if (!confirmed || !mounted) return;
+    if (_mayAnswer()) always.onConfirmed();
   }
 
   /// A button's width for [label] on one line: the words at the button
@@ -1139,8 +903,10 @@ class _KitRequestCardState extends State<KitRequestCard> {
     return (field, action);
   }
 
-  /// "Details" and at most one more act, start-aligned (LAY-13).
-  Widget? _tertiaryLine(BuildContext context) {
+  /// The quiet line under the answers (LAY-13): the standing grant and the
+  /// one more act on the left, "Details" on the right, in small plain
+  /// buttons. It wraps rather than clips at large text.
+  Widget? _quietLine(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final tokens = KitTokens.of(context);
     final answers = widget.answers;
@@ -1149,25 +915,59 @@ class _KitRequestCardState extends State<KitRequestCard> {
         widget.phase == KitRequestPhase.waiting &&
         (answers is KitRequestInSheet || answers is KitRequestChooseMany);
     final details = widget.onDetails;
-    final actions = [
-      if (details != null && !sheetPrimary)
-        KitAction(
-          key: widget.detailsKey,
-          label: l10n.kitDetails,
-          onPressed: details,
+    final always =
+        widget.phase == KitRequestPhase.waiting && answers is KitRequestDecide
+        ? answers.alwaysAllow
+        : null;
+    final decide = answers is KitRequestDecide ? answers : null;
+    final disabled = decide?.disabledReason;
+    Widget quiet(
+      String label,
+      VoidCallback? onTap, {
+      Key? key,
+      String? reason,
+    }) => KitTappable(
+      key: key,
+      onTap: onTap,
+      label: label,
+      disabledReason: onTap == null ? (reason ?? label) : null,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.space3),
+        child: KitText(
+          label,
+          role: KitTextRole.secondary,
+          tone: KitTextTone.secondary,
         ),
-      ...widget.tertiary.take(1),
-    ];
-    if (actions.isEmpty) return null;
-    return KitInset(
-      child: Wrap(
-        spacing: tokens.space2,
-        runSpacing: tokens.space1,
-        children: [
-          for (final action in actions)
-            KitButton.fromAction(action, role: KitButtonRole.tertiary),
-        ],
       ),
+    );
+    final start = <Widget>[
+      if (always != null)
+        quiet(
+          always.label ?? l10n.kitRequestAlwaysAllowLike,
+          decide?.onAllow == null
+              ? null
+              : () => unawaited(_confirmAlways(always, l10n)),
+          key: always.buttonKey,
+          reason: disabled,
+        ),
+      for (final action in widget.tertiary.take(1))
+        quiet(action.label, action.onPressed, key: action.key),
+    ];
+    final end = details != null && !sheetPrimary
+        ? quiet(l10n.kitDetails, details, key: widget.detailsKey)
+        : null;
+    if (start.isEmpty && end == null) return null;
+    // Alone, "Details" sits at the far end like it does beside a grant.
+    if (start.isEmpty) {
+      return Align(alignment: AlignmentDirectional.centerEnd, child: end);
+    }
+    // A Wrap, not a Row: at large text "Details" drops under the grant
+    // instead of squeezing it into a sliver.
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: tokens.space4,
+      children: [...start, ?end],
     );
   }
 
@@ -1176,57 +976,25 @@ class _KitRequestCardState extends State<KitRequestCard> {
   /// Answered, answered elsewhere or expired: it no longer needs you
   /// (LOOK-4), so no card, border, ring or attention colour.
   Widget _collapsed(BuildContext context) {
-    final tokens = KitTokens.of(context);
-    final roles = tokens.roles;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final twoLines = MediaQuery.textScalerOf(context).scale(10) >= 13;
     final expired = widget.phase == KitRequestPhase.expired;
-    final Widget outcome = expired
-        ? Semantics(
-            container: true,
-            liveRegion: true,
-            child: KitText(
-              l10n.kitRequestExpired,
-              role: KitTextRole.secondary,
-              tone: KitTextTone.secondary,
-            ),
-          )
-        : widget.receipt!;
-    return ConstrainedBox(
+    return kitAnsweredRow(
+      context,
       key: const ValueKey('kit-request-row'),
-      constraints: BoxConstraints(minHeight: tokens.rowHeight),
-      child: Padding(
-        padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.space4),
-        child: Row(
-          children: [
-            ExcludeSemantics(
-              child: Icon(
-                widget.icon,
-                size: tokens.smallIconSize,
-                color: roles.text2,
+      icon: widget.icon,
+      title: widget.title,
+      titleKey: widget.titleKey,
+      outcome: expired
+          ? Semantics(
+              container: true,
+              liveRegion: true,
+              child: KitText(
+                l10n.kitRequestExpired,
+                role: KitTextRole.secondary,
+                tone: KitTextTone.secondary,
               ),
-            ),
-            SizedBox(width: tokens.space3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  KitText(
-                    widget.title,
-                    key: widget.titleKey,
-                    role: KitTextRole.secondary,
-                    tone: KitTextTone.secondary,
-                    maxLines: twoLines ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  outcome,
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+            )
+          : widget.receipt!,
     );
   }
 
@@ -1306,6 +1074,354 @@ class _KitRequestCardState extends State<KitRequestCard> {
           if (!actions.isEmpty) ...[SizedBox(height: tokens.space3), actions],
         ],
       ),
+    );
+  }
+}
+
+// ── The one shape (FC2) ──────────────────────────────────────────────────
+//
+// Everything an agent asks the person is drawn with these: [KitRequestCard]
+// (permissions, questions, forms, choices, gates, replies) and
+// [KitAgentCard] (an agent's own card). One frame, one heading, one answered
+// row, one placement (docs/design/FC2-one-card-shape.md).
+
+/// Where a request card sits: in a conversation, centred at the reading
+/// width with its border on the page gutter (the ring adds its own width
+/// around it) and an entrance; [inList], exactly as the list places it.
+Widget kitRequestPlacement(
+  BuildContext context, {
+  required bool inList,
+  required Widget child,
+}) {
+  if (inList) return child;
+  final tokens = KitTokens.of(context);
+  return KitEntrance(
+    child: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: KitLayout.readingWidth),
+        child: Padding(
+          padding: EdgeInsetsDirectional.symmetric(
+            horizontal: tokens.gutter - KitTokens.needsYouRingWidth,
+            vertical: tokens.space1,
+          ),
+          child: child,
+        ),
+      ),
+    ),
+  );
+}
+
+/// The request card's frame: the needs-you look when [attention] (the
+/// attention surface and line, and outside them the one 4 dp ring LOOK-20
+/// allows), else a plain `surface1` card with a hairline; the accent border
+/// while [focused]. [wrapCard] wraps the bordered card before the ring (a
+/// [Focus]). With [capHeight], at 2.0 text the card never takes more than
+/// 45 % of the window (its words scroll inside).
+Widget kitRequestFrame(
+  BuildContext context, {
+  required bool attention,
+  required Widget child,
+  Key? key,
+  bool focused = false,
+  bool capHeight = true,
+  Widget Function(Widget card)? wrapCard,
+}) {
+  final tokens = KitTokens.of(context);
+  final roles = tokens.roles;
+  final side = focused
+      ? BorderSide(
+          color: roles.accent,
+          width: KitTokens.focusRingWidth(context),
+        )
+      : BorderSide(
+          color: attention ? roles.attentionLine : roles.hairline,
+          width: KitTokens.hairlineWidth(context),
+        );
+  final large = MediaQuery.textScalerOf(context).scale(10) >= 20;
+  Widget card = DecoratedBox(
+    key: key,
+    decoration: ShapeDecoration(
+      color: attention
+          ? Color.alphaBlend(roles.attentionSurface, roles.surface1)
+          : roles.surface1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(tokens.cardRadius),
+        side: side,
+      ),
+    ),
+    child: Padding(padding: EdgeInsets.all(tokens.space4), child: child),
+  );
+  if (capHeight && large) {
+    final largest = MediaQuery.textScalerOf(context).scale(10) >= 25;
+    card = ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight:
+            MediaQuery.sizeOf(context).height *
+            (largest
+                ? KitTokens.requestMaxHeightShareLarge
+                : KitTokens.requestMaxHeightShare),
+      ),
+      child: card,
+    );
+  }
+  if (wrapCard != null) card = wrapCard(card);
+  if (!attention) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.symmetric(
+        horizontal: KitTokens.needsYouRingWidth,
+      ),
+      child: card,
+    );
+  }
+  return DecoratedBox(
+    decoration: ShapeDecoration(
+      color: roles.attention.withValues(alpha: KitTokens.needsYouRingAlpha),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(
+          tokens.cardRadius + KitTokens.needsYouRingWidth,
+        ),
+      ),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(KitTokens.needsYouRingWidth),
+      child: card,
+    ),
+  );
+}
+
+/// The request's glyph in its tinted tile: the attention tint while it
+/// needs the person, else `surface3`.
+Widget kitRequestTile(
+  BuildContext context, {
+  required IconData icon,
+  required bool attention,
+}) {
+  final tokens = KitTokens.of(context);
+  final roles = tokens.roles;
+  final tint = attention
+      ? roles.attention.withValues(alpha: tokens.markTintAlpha)
+      : roles.surface3;
+  return ExcludeSemantics(
+    child: SizedBox.square(
+      dimension: KitTokens.requestTileSize,
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          color: tint,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(KitTokens.requestTileRadius),
+          ),
+        ),
+        child: Center(
+          child: Icon(
+            icon,
+            size: tokens.smallIconSize,
+            color: attention ? roles.attention : roles.text1,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// The card's heading: the tile ([kitRequestTile]), then the [caption] line
+/// (who asks and why), the [title] as the headline, and [lines] under it
+/// (each brings its own top gap).
+Widget kitRequestHeading(
+  BuildContext context, {
+  required IconData icon,
+  required bool attention,
+  required String caption,
+  required KitTextTone captionTone,
+  required String title,
+  Key? titleKey,
+  List<Widget> lines = const [],
+}) {
+  final tokens = KitTokens.of(context);
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      kitRequestTile(context, icon: icon, attention: attention),
+      SizedBox(width: tokens.space3),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            KitText(caption, role: KitTextRole.caption, tone: captionTone),
+            SizedBox(height: tokens.space1),
+            KitText(
+              title,
+              key: titleKey,
+              role: KitTextRole.headline,
+              tone: KitTextTone.primary,
+            ),
+            ...lines,
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+/// The one answered row: a request that no longer needs the person
+/// (LOOK-4): no card, border, ring or attention colour. The glyph, the
+/// [title], and under it the [outcome] (a [KitReceipt]; "Not answered";
+/// "Stopped waiting"). With [onToggle] the title line opens [body] read-only
+/// under the row ([open]; [toggleLabel] names the tap); nothing in the body
+/// takes a tap.
+Widget kitAnsweredRow(
+  BuildContext context, {
+  Key? key,
+  required IconData icon,
+  required String title,
+  Key? titleKey,
+  required Widget outcome,
+  bool open = false,
+  VoidCallback? onToggle,
+  String? toggleLabel,
+  List<Widget> body = const [],
+}) {
+  final tokens = KitTokens.of(context);
+  final roles = tokens.roles;
+  final twoLines = MediaQuery.textScalerOf(context).scale(10) >= 13;
+  final canOpen = onToggle != null && body.isNotEmpty;
+  Widget titleLine = KitText(
+    title,
+    key: titleKey,
+    role: KitTextRole.secondary,
+    tone: KitTextTone.secondary,
+    maxLines: twoLines ? 2 : 1,
+    overflow: TextOverflow.ellipsis,
+  );
+  if (canOpen) {
+    titleLine = KitTappable(
+      onTap: onToggle,
+      label: toggleLabel,
+      selected: open,
+      child: Row(
+        children: [
+          Expanded(child: titleLine),
+          ExcludeSemantics(
+            child: Icon(
+              open ? AppIconography.chevronUp : AppIconography.chevronDown,
+              size: tokens.smallIconSize,
+              color: roles.text2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  final row = ConstrainedBox(
+    key: canOpen ? null : key,
+    constraints: BoxConstraints(minHeight: tokens.rowHeight),
+    child: Padding(
+      padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.space4),
+      child: Row(
+        children: [
+          ExcludeSemantics(
+            child: Icon(icon, size: tokens.smallIconSize, color: roles.text2),
+          ),
+          SizedBox(width: tokens.space3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [titleLine, outcome],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (!canOpen) return row;
+  return Column(
+    key: key,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      row,
+      KitReveal(
+        child: open
+            ? Padding(
+                padding: EdgeInsetsDirectional.only(
+                  start: tokens.space4 + tokens.smallIconSize + tokens.space3,
+                  top: tokens.space2,
+                  end: tokens.space4,
+                ),
+                // The body is a record now: nothing in it takes a tap.
+                child: IgnorePointer(
+                  child: ExcludeFocus(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (final piece in body) ...[
+                          piece,
+                          SizedBox(height: tokens.space3),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            : null,
+      ),
+    ],
+  );
+}
+
+/// A plan or other long Markdown in a request card: formatted, a bounded
+/// height first, and "Show more" to read the rest in place.
+class _BoundedMarkdown extends StatefulWidget {
+  const _BoundedMarkdown(this.data);
+
+  final String data;
+
+  @override
+  State<_BoundedMarkdown> createState() => _BoundedMarkdownState();
+}
+
+class _BoundedMarkdownState extends State<_BoundedMarkdown> {
+  static const _height = 168.0;
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    // A plan this short needs no fold.
+    final long =
+        widget.data.length > 320 || '\n'.allMatches(widget.data).length > 7;
+    final text = KitMarkdown(
+      widget.data,
+      role: KitTextRole.secondary,
+      selectable: false,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!long || _open)
+          text
+        else
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: _height),
+            child: ClipRect(
+              child: SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                child: text,
+              ),
+            ),
+          ),
+        if (long)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: KitButton.tertiary(
+              key: const Key('request-detail-toggle'),
+              label: _open ? l10n.kitRequestShowLess : l10n.kitRequestShowMore,
+              onPressed: () => setState(() => _open = !_open),
+            ),
+          ),
+      ],
     );
   }
 }

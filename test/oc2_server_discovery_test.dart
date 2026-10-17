@@ -68,6 +68,7 @@ Widget _app(_Store store, _Connection controller, {double scale = 1}) =>
         ),
         routes: {
           '/home': (_) => const Scaffold(body: Text('Connected')),
+          '/servers': (_) => const ServersScreen(),
           '/this-phone': (context) => Scaffold(
             body: Text(
               'Termux route: ${ModalRoute.of(context)!.settings.arguments}',
@@ -138,9 +139,9 @@ void main() {
       await tester.pumpWidget(_app(store, conn));
       await tester.pumpAndSettle();
       for (final entry in {
-        'unknown': 'OpenCode',
-        'v1': 'OpenCode 1',
-        'v2': 'OpenCode 2',
+        'unknown': 'Not connected · OpenCode',
+        'v1': 'Not connected · OpenCode 1',
+        'v2': 'Not connected · OpenCode 2',
       }.entries) {
         // The generation leads the row's supporting line (standard §6).
         final finder = find.byKey(ValueKey('server-row-${entry.key}'));
@@ -228,13 +229,17 @@ void main() {
       ]);
       await tester.pumpWidget(_app(store, conn));
       await tester.pumpAndSettle();
-      // The phone's own server is the one "This phone · Termux" row; a remote one
+      // The phone's own server is the one "Termux" row; a remote one
       // keeps its saved name.
       await tester.tap(
-        find.text(
-          mode == 'mixed-remote' ? 'OpenCode one' : 'This phone · Termux',
-        ),
+        find.text(mode == 'mixed-remote' ? 'OpenCode one' : 'Termux'),
       );
+      await tester.pumpAndSettle();
+      // A row opens the server's page; its Connect row starts the connection.
+      final connect = find.byKey(const ValueKey('server-row-connect'));
+      await tester.ensureVisible(connect);
+      await tester.pumpAndSettle();
+      await tester.tap(connect);
       await tester.pumpAndSettle();
       expect(conn.connectCalls, mode == 'mixed-local' ? 0 : 1);
       expect(
@@ -288,7 +293,7 @@ void main() {
         // to the menu's Details.
         expect(
           _supporting(tester, 'server'),
-          changed ? 'OpenCode' : 'OpenCode 2',
+          changed ? 'Not connected · OpenCode' : 'Not connected · OpenCode 2',
         );
       },
     );

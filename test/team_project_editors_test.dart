@@ -40,7 +40,7 @@ Future<void> _tap(WidgetTester tester, String label) async {
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('project creation requires an explicit mode and budget', (
+  testWidgets('project creation starts from one lane and a modest budget', (
     tester,
   ) async {
     final gateway = _Gateway(
@@ -66,11 +66,9 @@ void main() {
       expect(gateway.commands, isEmpty);
     }
 
-    expectBlocked('Choose Single lane or Parallel agents.');
-    await _tap(tester, 'Single lane');
-    expectBlocked('Set a budget or choose No limit.');
-    await _tap(tester, 'No limit');
+    // Mode and budget start filled in, so only the task and repo are missing.
     expectBlocked('Add a goal and at least one repo.');
+    await _tap(tester, 'No limit');
     for (final entry in {
       'name': 'Reader',
       'goal': 'Read saved articles offline',

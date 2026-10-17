@@ -151,6 +151,9 @@ class _Gateway implements ServerGateway {
   Object? promptError;
 
   @override
+  ServerCapabilities get capabilities => ServerCapabilities.allV1;
+
+  @override
   Future<void> promptAsync(
     String sessionID, {
     required String text,

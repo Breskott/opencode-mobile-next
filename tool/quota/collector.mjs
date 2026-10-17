@@ -144,7 +144,11 @@ export function parseAuthDocument(document, { format = 'codex', nowMs = Date.now
     accountId = document.tokens.account_id;
     idToken = document.tokens.id_token;
   } else {
-    const entry = document.openai;
+    // OpenCode keeps the ChatGPT sign-in under `openai`; the Codex auth
+    // plugin keeps the same OAuth record under `codex`.
+    const oauth = (value) => object(value) && value.type === 'oauth';
+    const entry = oauth(document.openai) ? document.openai
+      : oauth(document.codex) ? document.codex : document.openai;
     if (!object(entry)) return { status: 'authRequired' };
     if (entry.type !== 'oauth') return { status: 'unsupported' };
     token = entry.access;
@@ -236,7 +240,7 @@ function mapWindow(value, id) {
   return window;
 }
 
-function mapWham(payload, auth, ref, now) {
+export function mapWham(payload, auth, ref, now) {
   if (!object(payload) || typeof payload.plan_type !== 'string' || !payload.plan_type) invalid();
   for (const field of ['account_id', 'user_id']) {
     if (payload[field] != null && !identifier(payload[field])) invalid();
@@ -357,6 +361,18 @@ function normalizeGlmAuth(auth) {
     accountId: `glm:${auth.accessToken}`, userId: null, expiresAtMs: null };
 }
 
+const GLM_UNIT_SECONDS = { 3: 3600, 6: 604_800 };
+const GLM_UNIT_LABELS = { 3: 'h', 5: 'mo', 6: 'w' };
+
+function glmSpan(limit) {
+  if (limit.unit == null && limit.number == null) return null;
+  if (!Number.isSafeInteger(limit.unit) || !Number.isSafeInteger(limit.number)
+      || limit.unit < 0 || limit.unit > 99 || limit.number <= 0 || limit.number > 9999) invalid();
+  const unitSeconds = GLM_UNIT_SECONDS[limit.unit];
+  return { label: `${limit.number}${GLM_UNIT_LABELS[limit.unit] ?? `u${limit.unit}`}`,
+    seconds: unitSeconds == null ? null : unitSeconds * limit.number };
+}
+
 export function mapGlmUsage(payload, ref, now) {
   if (!object(payload)) invalid();
   if (payload.success === false) return emptySnapshot('unavailable', now, undefined, 'glm');
@@ -370,19 +386,31 @@ export function mapGlmUsage(payload, ref, now) {
   const ids = new Set();
   for (const limit of data.limits) {
     if (!object(limit)) invalid();
-    const id = limit.type === 'TOKENS_LIMIT' ? 'tokens'
-      : limit.type === 'TIME_LIMIT' ? 'mcp' : null;
-    // Changed or multiple token window contracts require new evidence; never
-    // guess weekly windows, units, resets, or aggregate percentages.
-    if (id == null) return emptySnapshot('unsupported', now, undefined, 'glm');
+    if (limit.type !== 'TOKENS_LIMIT' && limit.type !== 'TIME_LIMIT') {
+      return emptySnapshot('unsupported', now, undefined, 'glm');
+    }
+    const span = glmSpan(limit);
+    // The live API (2026-10-13) sends one TOKENS_LIMIT per window: unit 3 with
+    // number 5 is the five-hour window, unit 6 with number 1 the weekly one,
+    // matching their nextResetTime. A limit without unit/number keeps the
+    // legacy id; any other unit is shown without a guessed length.
+    const id = limit.type === 'TIME_LIMIT' ? 'mcp'
+      : span == null ? 'tokens' : `tokens.${span.label}`;
     if (ids.has(id)) invalid();
     ids.add(id);
-    if (limit.percentage == null) windows.push({ id, status: 'missing' });
+    let window;
+    if (limit.percentage == null) window = { id, status: 'missing' };
     else {
       if (typeof limit.percentage !== 'number' || !Number.isFinite(limit.percentage)
           || limit.percentage < 0 || limit.percentage > 100) invalid();
-      windows.push({ id, status: 'reported', usedPercent: limit.percentage });
+      window = { id, status: 'reported', usedPercent: limit.percentage };
     }
+    if (limit.type === 'TOKENS_LIMIT' && span?.seconds != null) window.durationSeconds = span.seconds;
+    if (limit.nextResetTime != null) {
+      if (!Number.isSafeInteger(limit.nextResetTime) || !timestamp(limit.nextResetTime)) invalid();
+      window.resetsAtMs = limit.nextResetTime;
+    }
+    windows.push(window);
   }
   return { ...emptySnapshot('ok', now, { ref, status: 'sourceBound' }, 'glm'),
     freshness: 'fresh', expiresAtMs: now + CACHE_MS, windows };

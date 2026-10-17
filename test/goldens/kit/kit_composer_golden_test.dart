@@ -18,6 +18,8 @@ import 'package:opencode_mobile/ui/kit/chat/kit_composer.dart';
 import 'package:opencode_mobile/ui/kit/chat/kit_composer_chips.dart';
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/kit/kit_layout.dart';
+import 'package:opencode_mobile/ui/app_iconography.dart';
+import 'package:opencode_mobile/ui/kit/kit_chip.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
@@ -128,12 +130,14 @@ KitComposer _composer({
   bool busy = false,
   bool sending = false,
   bool canSendWhileBusy = false,
-  bool deliveryChoice = false,
+  KitComposerDelivery delivery = KitComposerDelivery.afterThisReply,
   bool offline = false,
   String? readOnlyReason,
   bool attachments = false,
   KitComposerChips? suggestions,
   KitComposerVoice? voice,
+  KitComposerFailure? failure,
+  bool? activityGlow,
 }) => KitComposer(
   controller: _text(text),
   focusNode: _focus,
@@ -143,16 +147,17 @@ KitComposer _composer({
   onStop: _noop,
   sending: sending,
   canSendWhileBusy: canSendWhileBusy,
-  onDeliveryChanged: deliveryChoice ? (_) {} : null,
+  delivery: delivery,
   offline: offline,
   readOnlyReason: readOnlyReason,
-  model: _model(),
   attachments: attachments ? _attachments() : null,
   suggestions: suggestions,
   onTools: _noop,
   onVoice: _noop,
   onOpenEditor: _noop,
   voice: voice,
+  activityGlow: activityGlow,
+  failure: failure,
 );
 
 const _draft = 'Also run the unit tests for the signing config';
@@ -168,7 +173,7 @@ final _states = <String, Widget Function()>{
       text: _draft,
       busy: true,
       canSendWhileBusy: true,
-      deliveryChoice: true,
+      delivery: KitComposerDelivery.addToThisTurn,
     ),
   ),
   'busy_cannot_send': () =>
@@ -236,11 +241,48 @@ final _states = <String, Widget Function()>{
       ),
     ),
   ),
-  'glass_off': () => KitEffectsScope(
-    effects: KitEffects.defaults.copyWith(glass: false),
-    child: _Backdrop(composer: _composer(text: _draft)),
+  // "Glowing border while replying", one frame of each: the restored classic
+  // ring in one and two colours, and the soft ring (the box itself is idle
+  // but for Stop).
+  'glow_classic_one': () => _glowing(const KitEffects()),
+  'glow_classic_two': () =>
+      _glowing(const KitEffects(glowColours: KitGlowColours.two)),
+  'glow_soft_ring': () =>
+      _glowing(const KitEffects(glowStyle: KitGlowStyle.softRing)),
+  // A failed send is neutral words, Retry and Details in the pill's top row.
+  'failed_send': () => _Backdrop(
+    composer: _composer(
+      text: _draft,
+      failure: KitComposerFailure(
+        words: "Didn't send",
+        onRetry: _noop,
+        onDetails: _noop,
+      ),
+    ),
+  ),
+  // 14A: the model chip sits above the field, with the status chips.
+  'model_above': () => _Backdrop(
+    composer: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 6,
+      children: [
+        KitComposerStatusStrip(
+          chips: const [
+            KitChip(icon: AppIconography.sparkle, label: 'Auto-approving'),
+          ],
+          model: _model(),
+        ),
+        _composer(),
+      ],
+    ),
   ),
 };
+
+Widget _glowing(KitEffects effects) => KitEffectsScope(
+  effects: effects,
+  child: _Backdrop(composer: _composer(busy: true)),
+);
 
 Widget _default() => _Backdrop(composer: _composer(text: _draft));
 
@@ -267,6 +309,9 @@ void main() {
           ),
           size: const Size(412, 915),
           light: light,
+          // The glow is drawn only where the system allows motion; its one
+          // frame is the shot.
+          removeAnimations: !state.startsWith('glow_'),
           child: build(),
         );
       });

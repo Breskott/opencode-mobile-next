@@ -173,12 +173,12 @@ void main() {
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(storage, (_) async => null);
-    ProviderLogo.imageProviderOverride = (_) => null;
+    ProviderLogo.logoLoaderOverride = (_) => null;
   });
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(storage, null);
-    ProviderLogo.imageProviderOverride = null;
+    ProviderLogo.logoLoaderOverride = null;
   });
 
   for (final kind in PendingAuthKind.values) {
@@ -335,7 +335,12 @@ void main() {
         await tester.tap(find.text('Browser sign-in'));
         await tester.pumpAndSettle();
       }
-      expect(find.textContaining('Enter code: ABCD-EFGH'), findsOneWidget);
+      // The code stands on its own, large, with its own Copy.
+      expect(find.text('ABCD-EFGH'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('kit-one-time-code-copy')),
+        findsOneWidget,
+      );
       expect(browserLaunches, 0);
       await tester.tap(find.text('Open browser'));
       await tester.pumpAndSettle();

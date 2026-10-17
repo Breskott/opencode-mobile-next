@@ -48,28 +48,12 @@ const _migrated = <String, List<String>>{
     'connection_starting',
     'connection_failed',
   ],
-  // §9 step 2: the Work tab and its own parts.
-  'lib/ui/screens/workspace_screen.dart': [
-    'work_restoring',
-    'work_loading',
-    'work_empty',
-    'work_loaded',
-    'work_not_answering',
-    'work_runaway',
-    'work_chooser',
-    // Step 2 leftovers: conversation rows on KitRow, the parts below.
-    'work_team',
-    'work_nudge',
-    'work_other_servers',
-  ],
-  'lib/ui/widgets/other_projects_panel.dart': ['work_loaded'],
   'lib/ui/widgets/work_status_line.dart': [
     'work_not_answering',
     'work_runaway',
   ],
-  // Step 2 leftovers (test/goldens/work_parts_golden_test.dart): the other
-  // servers and the shell's connection line on the other tabs.
-  'lib/ui/widgets/other_servers_panel.dart': ['work_other_servers'],
+  // Step 2 leftovers (test/goldens/work_parts_golden_test.dart): the shell's
+  // connection line on the other tabs.
   'lib/ui/widgets/connection_status_banner.dart': ['shell_reconnecting'],
   // §9 step 3: phone setup (start, customize, progress, ready, the welcome's
   // setup line) and the "This phone" card.
@@ -146,9 +130,9 @@ const _migrated = <String, List<String>>{
     'team_run_overview',
   ],
   // Finding the AI Team while it is off (docs/qa/team-discover-2026-09-25):
-  // Work without the offer (it moved to Settings › AI Team), and the intro
+  // Settings' AI Team row, and the intro
   // (test/goldens/team_discover_golden_test.dart).
-  'lib/ui/widgets/team_discover.dart': ['team_discover_work'],
+  'lib/ui/widgets/team_discover.dart': ['team_discover_settings'],
   'lib/ui/screens/team/team_intro_screen.dart': [
     'team_intro_phone',
     'team_intro_computer',
@@ -243,7 +227,9 @@ const _migrated = <String, List<String>>{
 const _migratedClasses = <String, Map<String, List<String>>>{
   // The transcript file: only the error a reply carries is a state; the
   // messages themselves are not part of the standard's step 5.
-  'lib/ui/screens/chat/message_view.dart': {
+  // Moved out of message_view.dart for the chat library's 800-line budget
+  // (2026-10-08); same class, same renders.
+  'lib/ui/screens/chat/assistant_error_row.dart': {
     // _ErrorActionCard folded into _AssistantErrorRow (one KitNotice,
     // revamp chat-1, 2026-09-27); its label left with the class.
     '_AssistantErrorRow': ['chat_model_error'],
@@ -278,12 +264,7 @@ const _retired = <String, Map<String, String>>{
 };
 
 /// file -> (pattern, reason) exceptions. Keep it short.
-const _allowed = <String, Map<String, String>>{
-  'lib/ui/screens/workspace_screen.dart': {
-    // Not raw progress: the conversation row's breathing "working" dot is a
-    // state mark, and pull to refresh is the kit's (KitRefresh).
-  },
-};
+const _allowed = <String, Map<String, String>>{};
 
 /// A pattern of the design standard itself (§8), counted in every migrated
 /// file.
@@ -326,7 +307,7 @@ const _grandfathered = <String>{
   'lib/ui/screens/chat/attention_card.dart',
   'lib/ui/screens/chat/chat_states.dart',
   'lib/ui/screens/chat/empty_chat.dart',
-  'lib/ui/screens/chat/message_view.dart#_AssistantErrorRow',
+  'lib/ui/screens/chat/assistant_error_row.dart#_AssistantErrorRow',
   'lib/ui/screens/chat/permission_sheet.dart',
   'lib/ui/screens/perf_trace_section.dart',
   'lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart',
@@ -352,13 +333,10 @@ const _grandfathered = <String>{
   'lib/ui/screens/team/team_needs_you.dart',
   'lib/ui/screens/team/team_states.dart',
   'lib/ui/screens/team/work_sheet.dart',
-  'lib/ui/screens/workspace_screen.dart',
   'lib/ui/widgets/connection_status_banner.dart',
   'lib/ui/widgets/folder_browser.dart',
   'lib/ui/widgets/local_server_row.dart',
   'lib/ui/widgets/managed_server_recovery_option.dart',
-  'lib/ui/widgets/other_projects_panel.dart',
-  'lib/ui/widgets/other_servers_panel.dart',
   'lib/ui/widgets/phone_server_card.dart',
   'lib/ui/widgets/saved_server_connection_card.dart',
   'lib/ui/widgets/setup_progress_view.dart',

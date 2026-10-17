@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -9,6 +8,7 @@ import 'kit_bottom_inset.dart';
 import 'kit_buttons.dart';
 import 'kit_details_fold.dart';
 import 'kit_jump_pill.dart';
+import 'kit_live_background.dart';
 import 'kit_layout.dart';
 import 'kit_nav.dart';
 import 'kit_page_route.dart';
@@ -228,12 +228,26 @@ class KitScreen extends StatelessWidget {
   /// True when this window shows the detail beside the list (expanded or
   /// large, not short).
   static bool showsDetail(BuildContext context) =>
-      KitLayout.windowOf(context).isWide && !KitLayout.isShort(context);
+      KitLayout.windowOf(context).isWide &&
+      !KitLayout.isShort(context) &&
+      _roomForDetail(context) >= KitLayout.paneDetailMinWidth;
+
+  /// What the detail pane gets once the sidebar, the list (unless the
+  /// sidebar already holds it) and, when [withSide], the side pane are
+  /// taken from the window: panes follow the body, not the window.
+  static double _roomForDetail(BuildContext context, {bool withSide = false}) {
+    final list = KitNav.hostsPane(context) ? 0 : KitLayout.paneListWidth;
+    return MediaQuery.sizeOf(context).width -
+        KitNav.sidebarInsetOf(context) -
+        list -
+        (withSide ? KitLayout.paneSideWidth : 0);
+  }
 
   /// True when this window shows threePane's side pane (large, not short).
   static bool showsSide(BuildContext context) =>
       KitLayout.windowOf(context) == KitWindow.large &&
-      !KitLayout.isShort(context);
+      !KitLayout.isShort(context) &&
+      _roomForDetail(context, withSide: true) >= KitLayout.paneDetailMinWidth;
 
   /// True inside a twoPane/threePane detail or side pane. The seam for
   /// `KitTopBar(exit: auto)`, which shows no Back there (KitScreen.md
@@ -472,17 +486,14 @@ class _PageFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = KitTokens.of(context);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final topBar = this.topBar;
-    // One flat ground on every page, root tabs included (critique §4):
-    // the soft colour fields are no longer painted.
-    const ambient = <Color>[];
-    return Material(
-      color: tokens.roles.ground,
-      child: _AmbientGround(
-        fields: ambient,
-        textDirection: Directionality.of(context),
+    // One flat ground on every page, root tabs included (critique §4).
+    // The ground is [KitLiveBackground]: flat, with a calm drift of colour
+    // on it that cards, rows and sheets cover solidly.
+    return KitLiveBackground(
+      child: Material(
+        color: Colors.transparent,
         child: SafeArea(
           bottom: false,
           child: Padding(
@@ -505,80 +516,6 @@ class _PageFrame extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The theme's ambient fields (visual language §6, `ThemeRoles.ambient`):
-/// up to three very soft colour fields on the ground behind a page that
-/// sits under the floating glass navigation layer, so the glass has
-/// something to bend. At the top start (behind the server pill), the end
-/// middle and the bottom start (behind the dock). None paints nothing.
-class _AmbientGround extends StatelessWidget {
-  const _AmbientGround({
-    required this.fields,
-    required this.textDirection,
-    required this.child,
-  });
-
-  final List<Color> fields;
-  final TextDirection textDirection;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    if (fields.isEmpty) return child;
-    return CustomPaint(
-      painter: _AmbientPainter(fields, textDirection),
-      child: child,
-    );
-  }
-}
-
-class _AmbientPainter extends CustomPainter {
-  _AmbientPainter(this.fields, this.textDirection);
-
-  final List<Color> fields;
-  final TextDirection textDirection;
-
-  // Centre (start, top as shares of the page) and radius (share of its
-  // longer side) of each field, in order.
-  static const _places = [
-    (Offset(.12, .06), .5),
-    (Offset(1, .45), .42),
-    (Offset(.1, .95), .36),
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // The fields stay on this page's ground. Unclipped they spill onto
-    // what the shell lays out beside the page (the rail, the sidebar, a
-    // pane before it) and, painted after it, wash over its words: the
-    // contrast rule (ambientFields, theme_roles.dart) holds for text on a
-    // field, not under one.
-    canvas.clipRect(Offset.zero & size);
-    final rtl = textDirection == TextDirection.rtl;
-    final longest = size.longestSide;
-    for (var i = 0; i < fields.length && i < _places.length; i++) {
-      final (at, share) = _places[i];
-      final center = Offset(
-        (rtl ? 1 - at.dx : at.dx) * size.width,
-        at.dy * size.height,
-      );
-      final radius = share * longest;
-      final color = fields[i];
-      canvas.drawCircle(
-        center,
-        radius,
-        Paint()
-          ..shader = RadialGradient(
-            colors: [color, color.withValues(alpha: 0)],
-          ).createShader(Rect.fromCircle(center: center, radius: radius)),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_AmbientPainter old) =>
-      !listEquals(old.fields, fields) || old.textDirection != textDirection;
 }
 
 /// A transparent [Scaffold] around a page so [ScaffoldMessenger] snack bars

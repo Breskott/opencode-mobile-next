@@ -1,0 +1,18 @@
+{
+  "items": [
+    {
+      "slug": "family",
+      "storage": "normal",
+      "review": "auto_safe_only",
+      "share": {
+        "default": "read",
+        "allow": [],
+        "deny": []
+      },
+      "brief": true,
+      "export": true,
+      "notify": "masked"
+    }
+  ],
+  "next_cursor": null
+}

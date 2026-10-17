@@ -8,7 +8,7 @@ import 'consent_owners.dart';
 import 'first_run.dart';
 import 'in_flow_consent.dart';
 
-/// What a yes to "Tell me when the agent needs me" turns on: notifications
+/// What a yes to "Notify me when the agent needs me" turns on: notifications
 /// for requests, and the background connection that delivers them (which
 /// raises Android's notification permission). False when the background
 /// connection could not start; `backgroundLive.lastError` says why.

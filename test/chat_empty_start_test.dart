@@ -198,8 +198,10 @@ void main() {
     final api = _Api();
     await _pumpChat(tester, await _controller(api));
 
-    expect(find.byKey(const ValueKey('chat-start-name')), findsOneWidget);
-    // The folder name is isolated for bidi (COPY-30), so match inside it.
+    // The project is named once, by the header chip; the start header only
+    // says what is in the folder.
+    expect(find.byKey(const ValueKey('chat-start-name')), findsNothing);
+    expect(find.byKey(const ValueKey('chat-project-chip')), findsOneWidget);
     expect(find.textContaining('my-app'), findsOneWidget);
     expect(find.text('Empty folder · Git'), findsOneWidget);
     expect(find.byKey(const ValueKey('chat-start-tip')), findsOneWidget);
@@ -378,9 +380,17 @@ void main() {
     expect(row, findsOneWidget);
     final rowRect = tester.getRect(row);
     final composerRect = tester.getRect(_composerField);
-    // Directly above where you type, and above the keyboard.
+    // Directly above where you type, and above the keyboard. In a window
+    // this short the Ask first chip steps aside, so nothing but a thin strip
+    // may sit between them; when the chip shows it sits in that strip.
     expect(rowRect.bottom, lessThanOrEqualTo(composerRect.top));
-    expect(composerRect.top - rowRect.bottom, lessThan(40));
+    final chip = find.byKey(const Key('auto-approval-indicator'));
+    if (chip.evaluate().isNotEmpty) {
+      final chipRect = tester.getRect(chip);
+      expect(chipRect.top, greaterThanOrEqualTo(rowRect.bottom));
+      expect(chipRect.bottom, lessThanOrEqualTo(composerRect.top));
+    }
+    expect(composerRect.top - rowRect.bottom, lessThan(72));
     expect(rowRect.bottom, lessThanOrEqualTo(800 - 320));
     // The header compacts to one line and the tip is not drawn at all.
     expect(
@@ -388,7 +398,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('chat-start-tip')), findsNothing);
-    final name = tester.getRect(find.byKey(const ValueKey('chat-start-name')));
+    final name = tester.getRect(find.byKey(const ValueKey('chat-start-facts')));
     expect(name.bottom, lessThanOrEqualTo(rowRect.top));
     expect(tester.takeException(), isNull);
   });
@@ -495,8 +505,8 @@ void main() {
       greaterThan(tester.getRect(second).right),
     );
     expect(tester.getRect(first).right, greaterThan(400 - 40));
-    // The name is at the start (right) of the header too.
-    final name = tester.getRect(find.byKey(const ValueKey('chat-start-name')));
+    // The facts line is at the start (right) of the header too.
+    final name = tester.getRect(find.byKey(const ValueKey('chat-start-facts')));
     expect(name.right, greaterThan(400 - 60));
 
     // Arabic labels run long; the row scrolls toward the left to reach it.

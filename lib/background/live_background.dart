@@ -4,7 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/agent_sign_in_foreground.dart';
+import '../domain/background_pause.dart';
+import '../domain/diagnostics_error.dart';
 import '../platform/platform_capabilities.dart';
+import 'notification_status.dart';
+import 'widget_v2_contract.dart';
+
+export '../domain/agent_sign_in_foreground.dart';
+
+part 'signin_foreground.dart';
 
 typedef BackgroundMethodInvoker =
     Future<Map<String, dynamic>> Function(
@@ -18,6 +27,11 @@ enum CodingAlertKind {
   complete('complete'),
   error('error'),
   quota('quota'),
+
+  /// A plan limit came back after it was reached. Same session id and
+  /// monitor token rules as [quota]. Must match the `"quota_reset"` branch in
+  /// BackgroundConnectionService.kt.
+  quotaReset('quota_reset'),
 
   /// A session has been observed busy past the profile's check-in rule.
   /// Must match the `"checkin"` branch in BackgroundConnectionService.kt.
@@ -56,7 +70,13 @@ enum CodingAlertKind {
     teamReview ||
     teamCompleted ||
     teamProgress => true,
-    permission || question || complete || error || quota || checkIn => false,
+    permission ||
+    question ||
+    complete ||
+    error ||
+    quota ||
+    quotaReset ||
+    checkIn => false,
   };
 
   static CodingAlertKind? fromWireValue(Object? value) {
@@ -169,7 +189,13 @@ class LiveStatus {
     this.pendingCount = 0,
     this.title,
     this.detail,
+    this.status,
   });
+
+  /// What the one status notification says (title, text, lines, progress,
+  /// actions). Null only where no wording was built, as in unit tests of
+  /// the plain counts.
+  final NotificationStatus? status;
 
   /// Sessions currently busy (running or retrying).
   final int runningCount;
@@ -192,6 +218,7 @@ class LiveStatus {
     'pendingCount': pendingCount,
     'title': title,
     'detail': detail,
+    if (status != null) 'status': status!.toPayload(),
   };
 
   @override
@@ -200,10 +227,12 @@ class LiveStatus {
       other.runningCount == runningCount &&
       other.pendingCount == pendingCount &&
       other.title == title &&
-      other.detail == detail;
+      other.detail == detail &&
+      other.status == status;
 
   @override
-  int get hashCode => Object.hash(runningCount, pendingCount, title, detail);
+  int get hashCode =>
+      Object.hash(runningCount, pendingCount, title, detail, status);
 
   @override
   String toString() =>
@@ -217,7 +246,8 @@ class LiveStatus {
 /// transport to remain useful while the Activity is backgrounded. Android may
 /// still enforce platform runtime limits, so every foreground transition also
 /// performs a normal REST reconciliation.
-class BackgroundLiveController extends ChangeNotifier {
+class BackgroundLiveController extends ChangeNotifier
+    implements AgentSignInForegroundPort {
   static const preferenceKey = 'oc.keepLiveInBackground';
   static const _channel = MethodChannel('oc/background');
 
@@ -230,6 +260,14 @@ class BackgroundLiveController extends ChangeNotifier {
   bool batteryOptimizationIgnored = false;
   bool busy = false;
   String? lastError;
+  BackgroundPauseState _backgroundPause = BackgroundPauseState.unsupported;
+  int _pauseRevision = 0;
+  bool _foregroundDisposed = false;
+  late final _SignInForegroundState _signInForeground = _SignInForegroundState(
+    this,
+  );
+
+  BackgroundPauseState get backgroundPause => _backgroundPause;
 
   /// Set when Android's foreground-service time limit stopped the service,
   /// and cleared the next time the user turns live mode back on.
@@ -239,15 +277,16 @@ class BackgroundLiveController extends ChangeNotifier {
   /// learns live mode ended from the app rather than from missing events.
   bool stoppedByAndroidTimeout = false;
 
-  /// Minimum spacing between two `updateLiveStatus` pushes. Session events
-  /// arrive in bursts (every streamed part), while the notification only
-  /// needs to be roughly current; Android also rate-limits notify() calls.
+  /// Minimum spacing between two `updateLiveStatus` pushes: one every two
+  /// seconds at most. Session events arrive in bursts (every streamed part),
+  /// while the notification only needs to be roughly current; Android also
+  /// rate-limits notify() calls.
   final Duration liveStatusDebounce;
 
   BackgroundLiveController({
     required this.preferences,
     BackgroundMethodInvoker? invoke,
-    this.liveStatusDebounce = const Duration(milliseconds: 800),
+    this.liveStatusDebounce = const Duration(seconds: 2),
   }) : enabled =
            platformCapabilities.supportsBackgroundService &&
            (preferences.getBool(preferenceKey) ?? false),
@@ -264,26 +303,155 @@ class BackgroundLiveController extends ChangeNotifier {
     return result ?? const {};
   }
 
+  @override
+  AgentSignInForegroundLease reserveAgentSignInForeground() =>
+      _signInForeground.reserve();
+
   Future<void> restore() async {
-    await _run(enabled ? 'enable' : 'getStatus', persist: false);
+    if (_disableIfUnsupported()) return;
+    final savedEnabled = enabled;
+    final pause = await refreshBackgroundPause();
+    // A saved opt-in cannot override a durable OS interruption. Unknown native
+    // state also fails closed rather than starting a service we could not read.
+    if (!pause.supported || pause.paused) return;
+    await _run(savedEnabled ? 'enable' : 'getStatus', persist: false);
+  }
+
+  Future<BackgroundPauseState> refreshBackgroundPause() async {
+    if (_disableIfUnsupported()) return backgroundPause;
+    if (busy) return backgroundPause;
+    final revision = ++_pauseRevision;
+    try {
+      final value = await _invoke('getBackgroundPause');
+      if (_disableIfUnsupported()) return backgroundPause;
+      if (revision != _pauseRevision) return backgroundPause;
+      _applyPauseState(BackgroundPauseState.fromPlatform(value));
+      if (backgroundPause.paused) {
+        await preferences.setBool(preferenceKey, false);
+      }
+    } catch (_) {
+      if (revision == _pauseRevision) {
+        _applyPauseState(BackgroundPauseState.unsupported);
+      }
+    }
+    notifyListeners();
+    return backgroundPause;
+  }
+
+  /// Call only for a visible Resume tap. Android still owns runtime limits.
+  Future<BackgroundResumeResult> resumeBackground() async {
+    if (_disableIfUnsupported()) {
+      return BackgroundResumeResult(
+        backgroundPause,
+        error: DiagnosticsError.unavailable,
+      );
+    }
+    if (busy) {
+      return BackgroundResumeResult(
+        backgroundPause,
+        error: DiagnosticsError.busy,
+      );
+    }
+    busy = true;
+    lastError = null;
+    notifyListeners();
+    final previousPause = backgroundPause;
+    final revision = ++_pauseRevision;
+    try {
+      // The native permission/start path waits a bounded time for foreground
+      // activation. A start request accepted by Android is not yet a success.
+      final status = await _signInForeground.invokeEnable();
+      if (_disableIfUnsupported()) {
+        return BackgroundResumeResult(
+          backgroundPause,
+          error: DiagnosticsError.unavailable,
+        );
+      }
+      if (revision != _pauseRevision) {
+        return BackgroundResumeResult(
+          backgroundPause,
+          error: DiagnosticsError.resumeFailed,
+        );
+      }
+      final state = BackgroundPauseState.fromPlatform(
+        status['backgroundPause'],
+      );
+      if (!state.supported || !state.active) {
+        _applyPauseState(previousPause);
+        return BackgroundResumeResult(
+          backgroundPause,
+          error: DiagnosticsError.resumeFailed,
+        );
+      }
+      _applyStatus(status);
+      enabled = true;
+      await preferences.setBool(preferenceKey, true);
+      if (revision != _pauseRevision) {
+        if (!enabled) {
+          await preferences.setBool(preferenceKey, false);
+        }
+        return BackgroundResumeResult(
+          backgroundPause,
+          error: DiagnosticsError.resumeFailed,
+        );
+      }
+      return BackgroundResumeResult(backgroundPause);
+    } on PlatformException catch (error) {
+      if (_disableIfUnsupported()) {
+        return BackgroundResumeResult(
+          backgroundPause,
+          error: DiagnosticsError.unavailable,
+        );
+      }
+      if (revision == _pauseRevision) _applyPauseState(previousPause);
+      return BackgroundResumeResult(
+        backgroundPause,
+        error: error.code == 'permission_in_progress'
+            ? DiagnosticsError.busy
+            : DiagnosticsError.resumeFailed,
+      );
+    } catch (_) {
+      if (_disableIfUnsupported()) {
+        return BackgroundResumeResult(
+          backgroundPause,
+          error: DiagnosticsError.unavailable,
+        );
+      }
+      if (revision == _pauseRevision) _applyPauseState(previousPause);
+      return BackgroundResumeResult(
+        backgroundPause,
+        error: DiagnosticsError.resumeFailed,
+      );
+    } finally {
+      busy = false;
+      _disableIfUnsupported();
+      notifyListeners();
+    }
   }
 
   Future<bool> setEnabled(bool value) async {
     if (_disableIfUnsupported()) return false;
-    if (busy || value == enabled && (value == active || !value)) {
+    if (!value) {
+      _signInForeground.cancelForUser();
+      if (busy) return _signInForeground.disableUserClaim();
+    } else if (_signInForeground.hasClaims) {
+      return _signInForeground.enableUserClaim();
+    }
+    if (busy || value && value == enabled && value == active) {
       return enabled;
     }
     final previous = enabled;
     enabled = value;
-    // Turning it back on is the user answering the timeout notice; the
-    // banner has served its purpose.
-    if (value) stoppedByAndroidTimeout = false;
     notifyListeners();
+    final revision = _pauseRevision + 1;
     final succeeded = await _run(value ? 'enable' : 'disable');
     if (_disableIfUnsupported()) return false;
-    if (!succeeded) {
+    if (!succeeded && revision == _pauseRevision) {
       enabled = previous;
       await preferences.setBool(preferenceKey, previous);
+      if (revision != _pauseRevision && !enabled) {
+        await preferences.setBool(preferenceKey, false);
+      }
       notifyListeners();
     }
     return enabled;
@@ -335,9 +503,13 @@ class BackgroundLiveController extends ChangeNotifier {
   /// filename, session title, or server error can leak onto the lock screen.
   /// [quickReply] is a capability bit only: it lets a question alert carry a
   /// RemoteInput action; it never carries request content. [subtext] is
-  /// the one user-chosen line an alert may carry — the saved server's
-  /// name, so an AI Team alert says which host wants the person — never a
-  /// title or a prompt.
+  /// a user-chosen line an alert may carry — the saved server's name, so an
+  /// AI Team alert says which host wants the person. [chatTitle] and
+  /// [detail] (a masked command, or the first line of a reply) show in the
+  /// shade only: Android's lock screen gets a count-only public version.
+  /// [reason] is a plain token ('auth', 'context', ...), never raw error
+  /// text. [options] are a question's few short choices, shown as buttons.
+  /// [silent] posts without sound (quiet hours).
   Future<bool> showCodingAlert({
     required CodingAlertKind kind,
     required String sessionID,
@@ -350,12 +522,20 @@ class BackgroundLiveController extends ChangeNotifier {
     String subtext = '',
     String title = '',
     String text = '',
+    String agentName = '',
+    String chatTitle = '',
+    String detail = '',
+    String reason = '',
+    List<String> options = const [],
+    bool silent = false,
+    bool shellCommand = false,
   }) async {
     if (!platformCapabilities.supportsNotifications) return false;
     if (!enabled || !notificationGranted) return false;
     try {
       final result = await _invoke('showCodingAlert', {
         'kind': kind.wireValue,
+        if (agentName.isNotEmpty) 'agentName': agentName,
         'sessionID': sessionID,
         'key': key,
         'quickReply': quickReply,
@@ -366,6 +546,12 @@ class BackgroundLiveController extends ChangeNotifier {
         if (subtext.isNotEmpty) 'subtext': subtext,
         if (title.isNotEmpty) 'title': title,
         if (text.isNotEmpty) 'text': text,
+        if (chatTitle.isNotEmpty) 'chatTitle': chatTitle,
+        if (detail.isNotEmpty) 'detail': detail,
+        if (reason.isNotEmpty) 'reason': reason,
+        if (options.isNotEmpty) 'options': options,
+        if (silent) 'silent': true,
+        if (shellCommand) 'shellCommand': true,
       });
       return result['shown'] == true;
     } on PlatformException {
@@ -407,7 +593,59 @@ class BackgroundLiveController extends ChangeNotifier {
   /// never a real session, so tapping it never opens a run.
   static const testNotificationID = 'oc-test-notification';
 
+  Future<WidgetActionResult> Function(WidgetAction)? _widgetActionHandler;
+
+  void bindWidgetActionHandler(
+    Future<WidgetActionResult> Function(WidgetAction) handler,
+  ) {
+    _widgetActionHandler = handler;
+  }
+
+  @visibleForTesting
+  Future<Map<String, Object?>> handleNativeWidgetAction(
+    Object? arguments,
+  ) async {
+    final action = WidgetAction.fromPlatform(arguments);
+    if (action == null) {
+      return const {
+        'id': '',
+        'action': '',
+        'status': 'rejected',
+        'error': 'invalidRequest',
+      };
+    }
+    final handler = _widgetActionHandler;
+    if (handler == null) {
+      return WidgetActionResult(
+        action.id,
+        action.action,
+        'rejected',
+        'unavailable',
+      ).toJson();
+    }
+    try {
+      return (await handler(action)).toJson();
+    } catch (_) {
+      return WidgetActionResult(
+        action.id,
+        action.action,
+        'uncertain',
+        'uncertainDelivery',
+      ).toJson();
+    }
+  }
+
   Future<bool> Function(CodingAlertAction action)? _actionHandler;
+  Future<bool> Function(String action, String sessionID)? _statusActionHandler;
+
+  /// Registers the resolver for status-notification buttons ("Stop the
+  /// reply"). The native side sends `statusAction` with the button's name and
+  /// the chat it stops; an unhandled one opens the app instead.
+  void bindStatusActionHandler(
+    Future<bool> Function(String action, String sessionID) handler,
+  ) {
+    _statusActionHandler = handler;
+  }
 
   /// Registers the resolver for notification-action taps. The platform
   /// channel replies `{'handled': bool}`; an unhandled action makes Android
@@ -420,9 +658,36 @@ class BackgroundLiveController extends ChangeNotifier {
         handleNativeTimeout(call.arguments);
         return null;
       }
+      if (call.method == statusActionMethod) {
+        return handleNativeStatusAction(call.arguments);
+      }
+      if (call.method == 'widgetAction') {
+        return handleNativeWidgetAction(call.arguments);
+      }
       if (call.method != 'codingAlertAction') return null;
       return handleNativeAction(call.arguments);
     });
+  }
+
+  /// The push StatusActionReceiver sends. Must match `METHOD_STATUS_ACTION`
+  /// in StatusNotification.kt.
+  static const statusActionMethod = 'statusAction';
+
+  /// Resolves one status-notification button; also the test entry point.
+  @visibleForTesting
+  Future<Map<String, dynamic>> handleNativeStatusAction(
+    Object? arguments,
+  ) async {
+    final handler = _statusActionHandler;
+    if (arguments is! Map || handler == null) return const {'handled': false};
+    final action = arguments['action']?.toString().trim() ?? '';
+    final sessionID = arguments['sessionID']?.toString().trim() ?? '';
+    if (action.isEmpty) return const {'handled': false};
+    try {
+      return {'handled': await handler(action, sessionID)};
+    } catch (_) {
+      return const {'handled': false};
+    }
   }
 
   /// The push BackgroundConnectionService.onTimeout sends. Must match
@@ -442,10 +707,26 @@ class BackgroundLiveController extends ChangeNotifier {
   /// is exactly when the user would have noticed anyway.
   @visibleForTesting
   void handleNativeTimeout([Object? arguments]) {
+    if (_foregroundDisposed) return;
+    _signInForeground.serviceStopped(AgentSignInForegroundFailure.paused);
+    ++_pauseRevision;
     // The same push carries the "Pause background" notification action
     // (reason `userPause`): the user asked, so nothing is owed a warning.
-    final reason = arguments is Map ? arguments['reason']?.toString() : null;
+    final rawReason = arguments is Map ? arguments['reason'] : null;
+    final reason = rawReason is String ? rawReason : null;
     stoppedByAndroidTimeout = reason != pauseReason;
+    final nativePause = arguments is Map ? arguments['backgroundPause'] : null;
+    _backgroundPause = nativePause is Map
+        ? BackgroundPauseState.fromPlatform(nativePause)
+        : reason == pauseReason
+        ? const BackgroundPauseState(supported: true)
+        : BackgroundPauseState(
+            supported: true,
+            paused: true,
+            reason: BackgroundPauseReason.timeLimit,
+            at: DateTime.now().toUtc(),
+            canResume: true,
+          );
     enabled = false;
     active = false;
     _cancelPendingLiveStatus();
@@ -463,6 +744,18 @@ class BackgroundLiveController extends ChangeNotifier {
       return {'handled': await handler(action)};
     } catch (_) {
       return const {'handled': false};
+    }
+  }
+
+  /// Rebuilds native copy after the saved app language changes. This bypasses
+  /// status equality suppression, and does not enable any background service.
+  Future<void> refreshNativeLocale() async {
+    if (!platformCapabilities.supportsBackgroundService) return;
+    try {
+      await _invoke('refreshNativeLocale');
+    } catch (_) {
+      // Locale saving still succeeds on desktop or without an Android runner.
+      // Native renders read the saved preference again on the next update.
     }
   }
 
@@ -559,11 +852,20 @@ class BackgroundLiveController extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_foregroundDisposed) return;
+    _foregroundDisposed = true;
+    _signInForeground.invalidate(AgentSignInForegroundFailure.cancelled);
     _cancelPendingLiveStatus();
     super.dispose();
   }
 
+  @override
+  void notifyListeners() {
+    if (!_foregroundDisposed) super.notifyListeners();
+  }
+
   bool _disableIfUnsupported() {
+    if (_foregroundDisposed) return true;
     if (platformCapabilities.supportsBackgroundService) return false;
     // A saved Android opt-in is not evidence that this platform can stay live.
     // Clear runtime state (including a previous platform override's status),
@@ -573,7 +875,10 @@ class BackgroundLiveController extends ChangeNotifier {
         active ||
         notificationGranted ||
         batteryOptimizationIgnored ||
-        lastError != null;
+        lastError != null ||
+        backgroundPause.supported;
+    _backgroundPause = BackgroundPauseState.unsupported;
+    stoppedByAndroidTimeout = false;
     _applyStatus(const {'enabled': false});
     _cancelPendingLiveStatus();
     lastError = null;
@@ -588,22 +893,34 @@ class BackgroundLiveController extends ChangeNotifier {
     if (_disableIfUnsupported()) return false;
     if (busy) return false;
     busy = true;
+    final revision = ++_pauseRevision;
     lastError = null;
     notifyListeners();
     try {
-      final status = await _invoke(method);
+      final status = await (method == 'enable'
+          ? _signInForeground.invokeEnable()
+          : _invoke(method));
       if (_disableIfUnsupported()) return false;
+      if (revision != _pauseRevision) return false;
       _applyStatus(status);
+      if (method == 'disable') {
+        _applyPauseState(const BackgroundPauseState(supported: true));
+      }
       if (persist) await preferences.setBool(preferenceKey, enabled);
       return true;
     } on PlatformException catch (error) {
-      lastError = error.message ?? 'Android could not change background mode.';
+      if (revision != _pauseRevision) return false;
+      lastError = error.code == 'notification_denied'
+          ? 'Notification access is required.'
+          : 'Android could not change background mode.';
       return false;
     } on MissingPluginException {
+      if (revision != _pauseRevision) return false;
       lastError = 'Background live mode is available in the Android app.';
       return false;
-    } catch (error) {
-      lastError = error.toString();
+    } catch (_) {
+      if (revision != _pauseRevision) return false;
+      lastError = 'Android could not change background mode.';
       return false;
     } finally {
       busy = false;
@@ -613,8 +930,34 @@ class BackgroundLiveController extends ChangeNotifier {
   }
 
   void _applyStatus(Map<String, dynamic> status) {
+    _setActive(status['active'] == true);
+    notificationGranted = status['notificationGranted'] == true;
+    batteryOptimizationIgnored = status['batteryOptimizationIgnored'] == true;
+    if (status.containsKey('enabled') &&
+        !_signInForeground.preservesUserClaim) {
+      enabled = status['enabled'] == true;
+    }
+    if (status.containsKey('backgroundPause')) {
+      _applyPauseState(
+        BackgroundPauseState.fromPlatform(status['backgroundPause']),
+      );
+    } else if (active) {
+      _backgroundPause = const BackgroundPauseState(
+        supported: true,
+        active: true,
+      );
+      stoppedByAndroidTimeout = false;
+    }
+  }
+
+  void _setActive(bool value) {
     final wasActive = active;
-    active = status['active'] == true;
+    active = value;
+    if (!active && wasActive) {
+      _signInForeground.serviceStopped(
+        AgentSignInForegroundFailure.unavailable,
+      );
+    }
     if (active != wasActive) {
       // A freshly started service shows the default copy until told
       // otherwise, so the next status must go through even if it equals the
@@ -623,8 +966,21 @@ class BackgroundLiveController extends ChangeNotifier {
       _lastPublishedLiveStatus = null;
       _lastLivePublishAt = null;
     }
-    notificationGranted = status['notificationGranted'] == true;
-    batteryOptimizationIgnored = status['batteryOptimizationIgnored'] == true;
-    if (status.containsKey('enabled')) enabled = status['enabled'] == true;
+  }
+
+  void _applyPauseState(BackgroundPauseState state) {
+    _backgroundPause = state;
+    _setActive(state.active);
+    stoppedByAndroidTimeout =
+        state.paused && state.reason == BackgroundPauseReason.timeLimit;
+    if (!state.supported || state.paused) {
+      _signInForeground.serviceStopped(
+        state.supported
+            ? AgentSignInForegroundFailure.paused
+            : AgentSignInForegroundFailure.unsupported,
+      );
+      enabled = false;
+      _cancelPendingLiveStatus();
+    }
   }
 }

@@ -14,7 +14,9 @@ import 'package:opencode_mobile/ui/kit/chat/kit_markdown.dart';
 import 'package:opencode_mobile/ui/kit/chat/kit_message.dart';
 import 'package:opencode_mobile/ui/kit/chat/kit_turn.dart';
 import 'package:opencode_mobile/ui/kit/chat/kit_work_line.dart';
+import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/kit/kit_menu.dart';
+import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/kit/kit_redact.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 
@@ -339,8 +341,7 @@ void main() {
 
   group('6b · the live line of a running turn', () {
     testWidgets('says what it does, adds the time after 5 s, turns slow '
-        'after 20 s, and carries Stop reply', (tester) async {
-      var stops = 0;
+        'after 20 s, with no dot and no Stop', (tester) async {
       await _pump(
         tester,
         KitTurn(
@@ -349,7 +350,6 @@ void main() {
           live: KitTurnLive(
             activity: KitTurnActivity.waitingForModel,
             since: clock.now(),
-            onStop: () => stops++,
           ),
         ),
       );
@@ -363,12 +363,54 @@ void main() {
         find.text("Waiting for the model's first word · 1 min 5 s"),
         findsOne,
       );
-      await tester.tap(find.text('Stop reply'));
-      expect(stops, 1);
+      expect(find.text('Stop reply'), findsNothing);
+      expect(find.byKey(const ValueKey('kit-turn-live-dot')), findsNothing);
     });
 
-    testWidgets('on the prompt row too, and without Stop while the prompt '
-        'is on its way', (tester) async {
+    testWidgets('a light sweeps over the words; reduced motion holds them '
+        'still', (tester) async {
+      KitMotion.loops = true;
+      addTearDown(() => KitMotion.loops = false);
+      final turn = KitTurn(
+        blocks: const [],
+        phase: KitTurnPhase.running,
+        live: KitTurnLive(
+          activity: KitTurnActivity.waitingForModel,
+          since: clock.now(),
+        ),
+      );
+      await _pump(tester, turn);
+      expect(find.byKey(const ValueKey('kit-turn-live-sweep')), findsOneWidget);
+      expect(find.text('Thinking…'), findsOneWidget);
+      await _pump(tester, turn, reduced: true);
+      expect(find.byKey(const ValueKey('kit-turn-live-sweep')), findsNothing);
+      expect(find.text('Thinking…'), findsOneWidget);
+      // Unmount before the looping sweep outlives the test.
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('waiting for the person: no sweep and no turn clock (the '
+        'request card says how long it waited)', (tester) async {
+      KitMotion.loops = true;
+      addTearDown(() => KitMotion.loops = false);
+      await _pump(
+        tester,
+        KitTurn(
+          blocks: const [],
+          phase: KitTurnPhase.waitingForYou,
+          live: KitTurnLive(
+            activity: KitTurnActivity.waitingForYou,
+            since: clock.now().subtract(const Duration(seconds: 77)),
+          ),
+        ),
+      );
+      expect(find.text('Waiting for you…'), findsOneWidget);
+      expect(find.textContaining('1 min'), findsNothing);
+      expect(find.byKey(const ValueKey('kit-turn-live-sweep')), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('on the prompt row too', (tester) async {
       await _pump(
         tester,
         KitTurn(
@@ -381,8 +423,56 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Sending…'), findsOneWidget);
+      expect(find.text('Thinking…'), findsOneWidget);
       expect(find.text('Stop reply'), findsNothing);
+    });
+  });
+
+  group('6c · the stall line of a quiet running turn', () {
+    testWidgets('drawn under the live line with at most two actions; never '
+        'without a live line', (tester) async {
+      var stops = 0;
+      final stall = KitTurnStall(
+        message: 'The model is taking longer than usual.',
+        actions: [
+          KitAction(
+            key: const Key('stall-stop'),
+            label: 'Stop reply',
+            onPressed: () => stops++,
+          ),
+          KitAction(label: 'Details', onPressed: () {}),
+          KitAction(label: 'Third', onPressed: () {}),
+        ],
+      );
+      await _pump(
+        tester,
+        KitTurn(
+          blocks: const [],
+          phase: KitTurnPhase.running,
+          live: KitTurnLive(
+            activity: KitTurnActivity.thinking,
+            since: clock.now(),
+          ),
+          stall: stall,
+        ),
+      );
+      final line = find.byKey(const ValueKey('kit-turn-live-line'));
+      final words = find.text('The model is taking longer than usual.');
+      expect(words, findsOneWidget);
+      expect(
+        tester.getTopLeft(words).dy,
+        greaterThan(tester.getTopLeft(line).dy),
+      );
+      expect(find.text('Details'), findsOneWidget);
+      expect(find.text('Third'), findsNothing);
+      await tester.tap(find.byKey(const Key('stall-stop')));
+      expect(stops, 1);
+
+      await _pump(
+        tester,
+        KitTurn(blocks: const [], phase: KitTurnPhase.finished, stall: stall),
+      );
+      expect(find.byKey(const ValueKey('turn-stall')), findsNothing);
     });
   });
 

@@ -235,8 +235,8 @@ Future<void> _shot(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadCaptureFonts);
-  setUpAll(() => ProviderLogo.imageProviderOverride = (_) => null);
-  tearDownAll(() => ProviderLogo.imageProviderOverride = null);
+  setUpAll(() => ProviderLogo.logoLoaderOverride = (_) => null);
+  tearDownAll(() => ProviderLogo.logoLoaderOverride = null);
   const secure = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger

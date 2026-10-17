@@ -65,7 +65,16 @@ class LocalServerRow extends StatelessWidget {
     this.needsYou = false,
     this.fixLabel,
     this.onFix,
+    this.connectLabel,
+    this.tapOpensPage = false,
   });
+
+  /// The row opens this server's own page on a tap ([onOpen]); connecting
+  /// is the menu's named act. Off, a tap connects or starts (the switcher).
+  final bool tapOpensPage;
+
+  /// The menu's named connect act ("Connect to This phone").
+  final String? connectLabel;
 
   /// The server waits on the person (no access, not answering): the line
   /// starts with the one "Needs you" span, inline, and wraps whole.
@@ -133,16 +142,22 @@ class LocalServerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final failure = this.failure;
+    // On the Servers list a tap opens this server's own page, whatever its
+    // state; starting and connecting stay named acts (the row's Start, the
+    // menu's Connect). The switcher, which exists to switch, taps to connect.
     final VoidCallback? tap;
     final Key? rowKey;
     if (locked) {
       tap = null;
       rowKey = null;
-    } else if (stopped) {
-      tap = onStart;
-      rowKey = null;
     } else if (onFix != null && onOpen == null) {
       tap = onFix;
+      rowKey = null;
+    } else if (tapOpensPage) {
+      tap = onOpen;
+      rowKey = null;
+    } else if (stopped) {
+      tap = onStart;
       rowKey = null;
     } else if (running && !connected) {
       tap = onConnect;
@@ -152,6 +167,16 @@ class LocalServerRow extends StatelessWidget {
       rowKey = null;
     }
     final items = [
+      if (tapOpensPage &&
+          running &&
+          !connected &&
+          !stopped &&
+          onConnect != null)
+        KitMenuItem(
+          key: _key('connect'),
+          label: connectLabel ?? connectedLabel,
+          onSelected: onConnect!,
+        ),
       if (running && !stopped && onRestart != null)
         KitMenuItem(
           key: _key('restart'),

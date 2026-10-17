@@ -5,6 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
+import 'package:opencode_mobile/api2/client.dart';
+import 'package:opencode_mobile/api2/gateway.dart';
+import 'package:opencode_mobile/api2/gateway_operations.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/domain/phone_project_engine.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
@@ -42,6 +45,31 @@ class _StatusApi extends OpenCodeApi {
   @override
   Future<Session> session(String id) async =>
       Session(id: id, directory: directory);
+}
+
+class _StatusV2Api extends Api2Gateway {
+  _StatusV2Api(this.statusSource)
+    : super(
+        client: Api2Client.connect(
+          baseUrl: 'http://127.0.0.1:4097',
+          password: 'test-only',
+        ),
+      );
+  final _StatusApi statusSource;
+  @override
+  Future<Health> health() => statusSource.health();
+  @override
+  Future<Map<String, String>> sessionStatuses() =>
+      statusSource.sessionStatuses();
+  @override
+  Future<List<Session>> sessions() => statusSource.sessions();
+  @override
+  Future<Session> session(String id) => statusSource.session(id);
+  @override
+  void close() {
+    statusSource.close();
+    super.close();
+  }
 }
 
 class _ChatGateway extends PhoneEngineGateway {
@@ -215,10 +243,11 @@ void main() {
     );
   });
 
-  Future<_Phone> boot(WidgetTester tester) async {
+  Future<_Phone> boot(WidgetTester tester, {bool oc2 = false}) async {
     final profile = ServerProfile(
       id: 'phone',
       name: 'Phone',
+      flavor: oc2 ? ServerFlavor.v2 : ServerFlavor.v1,
       baseUrl: 'http://127.0.0.1:4097',
       teamEngineAuth: 'engine-private-token',
       orchestration: const OrchestrationConfig(
@@ -232,10 +261,17 @@ void main() {
       return store;
     }))!;
     final api = _StatusApi();
+    final api2 = oc2 ? _StatusV2Api(api) : null;
     final beats = <Map<String, dynamic>>[];
     final connection = ConnectionController(
       store,
       apiFactory: (_) => api,
+      v2GatewayFactory: api2 == null
+          ? null
+          : (_) => (
+              gateway: api2,
+              operations: Api2OperationsGateway(client: api2.client),
+            ),
       phoneEngineBridge: NativeBridge(),
       phoneEngineGatewayBuilder:
           ({required baseUrl, required profileId, required bearerToken}) =>
@@ -255,12 +291,58 @@ void main() {
     await tester.pump();
     connection.directory = '/root/projects/person';
     api.setLocation(directory: connection.directory);
+    api2?.setLocation(directory: connection.directory);
     connection.status = StreamStatus.connected;
     final phone = _Phone(tester, connection, api, connecting, beats);
     phones.add(phone);
     await phone.heartbeat();
     return phone;
   }
+
+  phoneTest(
+    'OC2 refetch restores admission after missing status and preserves busy work',
+    (tester) async {
+      final phone = await boot(tester, oc2: true);
+      expect((await phone.heartbeat())['known'], isFalse);
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump();
+      expect((await phone.heartbeat())['known'], isTrue);
+      phone.api.statuses = {'ses_oc2_person': 'busy'};
+      await phone.connection.reconcileBusySessionsForTesting();
+      expect(
+        (await phone.heartbeat())['sessionIds'],
+        contains('ses_oc2_person'),
+      );
+      phone.api.failStatus = true;
+      await phone.connection.reconcileBusySessionsForTesting();
+      expect((await phone.heartbeat())['known'], isFalse);
+      phone.api.failStatus = false;
+      phone.api.statuses = {};
+      await phone.connection.reconcileBusySessionsForTesting();
+      expect((await phone.heartbeat())['known'], isTrue);
+      // OC2 may omit a running session between steps. The first fresh empty
+      // snapshot restores known status but must retain the busy admission fence.
+      expect(phone.heartbeats.last['sessionIds'], contains('ses_oc2_person'));
+      // A second consecutive idle snapshot confirms that the work has ended.
+      await phone.connection.reconcileBusySessionsForTesting();
+      expect((await phone.heartbeat())['known'], isTrue);
+      expect(phone.heartbeats.last['sessionIds'], isEmpty);
+    },
+  );
+
+  phoneTest('OC2 lifecycle disconnect rejects an old idle snapshot', (
+    tester,
+  ) async {
+    final phone = await boot(tester, oc2: true);
+    await phone.connection.reconcileBusySessionsForTesting();
+    expect((await phone.heartbeat())['known'], isTrue);
+    final gate = phone.api.statusGate = Completer<Map<String, String>>();
+    final reading = phone.connection.reconcileBusySessionsForTesting();
+    phone.connection.suspendForLifecycle();
+    gate.complete({});
+    await reading;
+    expect((await phone.heartbeat())['known'], isFalse);
+  });
 
   phoneTest('idle UNKNOWN recovers on the managed phone polling lane', (
     tester,

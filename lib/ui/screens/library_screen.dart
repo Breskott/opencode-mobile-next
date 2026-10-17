@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 
 import '../../api/mcp_oauth.dart';
 import '../../l10n/app_localizations.dart';
+import '../../domain/model_display_name.dart';
 import '../../domain/server_gateway.dart'
     show ProviderRuntimeBusyException, StreamStatus;
 import '../../api/provider_presentation.dart';
+import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../../api/product_repository.dart';
 import '../../state/connection.dart';
 import '../../state/pending_auth.dart';
@@ -23,6 +25,11 @@ import 'mcp_catalog_screen.dart';
 import 'mcp_setup_screen.dart';
 
 part 'library/integrations_screen.dart';
+part 'library/integrations_mcp.dart';
+part 'library/integrations_page.dart';
+part 'library/integrations_signin.dart';
+part 'library/integrations_connect.dart';
+part 'library/integrations_autowait.dart';
 part 'library/integration_tiles.dart';
 part 'library/credential_sheet.dart';
 part 'library/command_auth_sheet.dart';
@@ -46,7 +53,13 @@ String defaultModelLabel(
             candidate.id == model.modelID,
       )
       .firstOrNull;
-  return catalogModel?.name.trim().isNotEmpty == true
-      ? catalogModel!.name
-      : presentedModelLabel(model.providerID, model.modelID);
+  if (catalogModel?.name.trim().isNotEmpty == true) return catalogModel!.name;
+  // While the models are still being read, the name seen before (or one made
+  // from the id) stands in, so a new conversation's chip never flashes
+  // "anthropic/claude-sonnet-5" before "Sonnet 5".
+  if (controller.catalog == null || controller.catalogLoading) {
+    return controller.knownModelName(model.providerID, model.modelID) ??
+        modelNameFromId(model.modelID);
+  }
+  return presentedModelLabel(model.providerID, model.modelID);
 }

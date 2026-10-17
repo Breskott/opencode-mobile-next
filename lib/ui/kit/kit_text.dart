@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 
+import '../../state/effects.dart' show KitTextSize;
 import '../theme_roles.dart';
 import 'kit_layout.dart';
+import 'kit_motion.dart';
 
 /// The type roles of the visual language (docs/design/visual-language-2026-09-26.md
 /// §2, rounded to whole pixels per §7).
@@ -103,6 +106,20 @@ class KitText extends StatelessWidget {
        cut = KitMonoCut.wrap,
        _monoSelectable = false,
        _kind = _KitTextKind.plain;
+
+  /// A quiet inline link: the secondary role in the accent tone ("In
+  /// /root/projects · Change"). Wrap it in a [KitTappable] for the tap.
+  const KitText.link(this.text, {super.key, this.maxLines, this.semanticsLabel})
+    : role = KitTextRole.secondary,
+      tone = KitTextTone.accent,
+      overflow = null,
+      textAlign = null,
+      softWrap = null,
+      tabular = false,
+      span = null,
+      cut = KitMonoCut.wrap,
+      _monoSelectable = false,
+      _kind = _KitTextKind.plain;
 
   /// Spans in one role; a span may carry its own tone colour
   /// ([KitText.toneColor]) or weight.
@@ -215,10 +232,30 @@ class KitText extends StatelessWidget {
   /// person's own [scaler] passes through untouched below [max], including
   /// scales under 1.0, which people pick deliberately; only the extreme top
   /// end is capped, so a runaway scale cannot break the shell.
-  static TextScaler appScaler(TextScaler scaler, {required double max}) {
-    final scale = scaler.scale(1);
+  ///
+  /// [factor] is the app's own text size (Settings > Appearance > Text
+  /// size); it multiplies the phone's scale before the cap.
+  static TextScaler appScaler(
+    TextScaler scaler, {
+    required double max,
+    double factor = 1.0,
+  }) {
+    final scale = scaler.scale(1) * factor;
     return TextScaler.linear(scale > max ? max : scale);
   }
+
+  /// The app root's text scale: [appScaler] with the person's own text size
+  /// ([size], Settings > Appearance > Text size) easing in on a change.
+  static Widget appScale({
+    required ValueListenable<KitTextSize> size,
+    required double max,
+    required Widget child,
+  }) => _AppTextScale(size: size, max: max, child: child);
+
+  /// Stops [child]'s text growing past [max] times its size, for a page
+  /// title that must stay whole (A11Y-8: only kit parts clamp text scale).
+  static Widget capScale({required double max, required Widget child}) =>
+      MediaQuery.withClampedTextScaling(maxScaleFactor: max, child: child);
 
   /// [words] in sentence case: the first letter capitalised, nothing else
   /// changed (LOOK-15: never all capitals).
@@ -229,20 +266,20 @@ class KitText extends StatelessWidget {
   /// mono) the family. No colour: [styleOf] adds it.
   static TextStyle styleFor(KitTextRole role) => switch (role) {
     KitTextRole.largeTitle => const TextStyle(
-      fontSize: 32,
-      height: 38 / 32,
+      fontSize: 28,
+      height: 34 / 28,
       fontWeight: FontWeight(650),
       letterSpacing: -0.8,
     ),
     KitTextRole.title => const TextStyle(
-      fontSize: 24,
-      height: 30 / 24,
+      fontSize: 22,
+      height: 28 / 22,
       fontWeight: FontWeight(650),
       letterSpacing: -0.48,
     ),
     KitTextRole.headline => const TextStyle(
-      fontSize: 17,
-      height: 22 / 17,
+      fontSize: 16,
+      height: 22 / 16,
       fontWeight: FontWeight.w600,
       letterSpacing: -0.17,
     ),
@@ -259,9 +296,9 @@ class KitText extends StatelessWidget {
       letterSpacing: 0,
     ),
     KitTextRole.secondary => const TextStyle(
-      fontSize: 14,
-      height: 20 / 14,
-      fontWeight: FontWeight.w400,
+      fontSize: 13,
+      height: 18 / 13,
+      fontWeight: FontWeight.w500,
       letterSpacing: 0,
     ),
     KitTextRole.label => const TextStyle(
@@ -271,10 +308,10 @@ class KitText extends StatelessWidget {
       letterSpacing: 0,
     ),
     KitTextRole.caption => const TextStyle(
-      fontSize: 12,
-      height: 16 / 12,
+      fontSize: 13,
+      height: 18 / 13,
       fontWeight: FontWeight.w600,
-      letterSpacing: 0.24,
+      letterSpacing: 0,
     ),
     KitTextRole.button => const TextStyle(
       fontSize: 16,
@@ -789,4 +826,46 @@ String _kitMonoTruncate(
     }
   }
   return best;
+}
+
+/// Applies the app's own text size (Settings > Appearance > Text size) once
+/// at the app root, on top of the phone's font scale and under the [max] cap.
+/// A change eases in over a short beat; the system's "remove animations"
+/// makes it instant.
+class _AppTextScale extends StatelessWidget {
+  const _AppTextScale({
+    required this.size,
+    required this.max,
+    required this.child,
+  });
+
+  final ValueListenable<KitTextSize> size;
+  final double max;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<KitTextSize>(
+      valueListenable: size,
+      child: child,
+      builder: (context, textSize, child) => TweenAnimationBuilder<double>(
+        tween: Tween<double>(end: textSize.factor),
+        duration: (MediaQuery.maybeDisableAnimationsOf(context) ?? false)
+            ? Duration.zero
+            : KitMotion.standard,
+        curve: KitMotion.enter,
+        child: child,
+        builder: (context, factor, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: KitText.appScaler(
+              MediaQuery.textScalerOf(context),
+              max: max,
+              factor: factor,
+            ),
+          ),
+          child: child!,
+        ),
+      ),
+    );
+  }
 }

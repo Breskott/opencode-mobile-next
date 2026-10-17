@@ -103,9 +103,44 @@ fn launch(f: &Fixture) -> (Running, u16) {
         .unwrap();
     let ready: Value =
         serde_json::from_str(&line).expect("daemon exited before authenticated readiness");
-    let port = ready["port"].as_u64().unwrap() as u16;
+    assert_eq!(ready["schemaVersion"], 2);
+    assert_eq!(ready["profileId"], "phone");
+    assert_eq!(ready.as_object().unwrap().len(), 6);
+    assert!(line.len() <= 1025); // The bounded frame plus its terminating newline.
+    let port = u16::try_from(ready["port"].as_u64().unwrap()).unwrap();
+    let identity = ready["identity"].as_object().unwrap();
+    assert_eq!(identity.len(), 5);
+    let pid = identity["pid"].as_i64().unwrap();
+    let ticks = identity["startTicks"].as_i64().unwrap();
+    let parent = identity["parent"].as_i64().unwrap();
+    let group = identity["group"].as_i64().unwrap();
+    let session = identity["session"].as_i64().unwrap();
+    assert!((2..=i64::from(i32::MAX)).contains(&pid));
+    assert!(ticks > 0);
+    assert!((0..=i64::from(i32::MAX)).contains(&parent));
+    assert!((1..=i64::from(i32::MAX)).contains(&group));
+    assert!((0..=i64::from(i32::MAX)).contains(&session));
+    assert_eq!(pid, i64::from(running.child.id()));
+    // Spawning on a short-lived thread does not change the child process's
+    // parent TGID, inherited process group, or inherited session.
+    assert_eq!(parent, i64::from(std::process::id()));
+    assert_eq!(group, i64::from(unsafe { libc::getpgrp() }));
+    assert_eq!(session, i64::from(unsafe { libc::getsid(0) }));
+    // Read our own stat only: the real child is deliberately nondumpable and
+    // Android hidepid may deny the parent's /proc/<child>/stat access.
+    let parent_stat = fs::read_to_string("/proc/self/stat").unwrap();
+    let parent_ticks = parent_stat
+        .rsplit_once(')')
+        .unwrap()
+        .1
+        .split_ascii_whitespace()
+        .nth(19)
+        .unwrap()
+        .parse::<i64>()
+        .unwrap();
+    assert!(ticks >= parent_ticks);
     let message = format!(
-        "oc-phone-engine-ready-v1\nphone\n{port}\n{}",
+        "oc-phone-engine-ready-v2\nphone\n{port}\n{}\n{pid}\n{ticks}\n{parent}\n{group}\n{session}",
         ready["nonce"].as_str().unwrap()
     );
     let mut mac = Hmac::<Sha256>::new_from_slice(f.token.as_bytes()).unwrap();

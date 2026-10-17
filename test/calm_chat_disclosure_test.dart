@@ -103,6 +103,8 @@ void main() {
     await tester.pumpAndSettle();
     final clear = find.byKey(const Key('composer-tool-clear'));
     await tester.ensureVisible(clear);
+    // The sheet gained a project-file row; lay out the scrolled sheet first.
+    await tester.pumpAndSettle();
     expect(clear.hitTestable(), findsOneWidget);
     expect(
       tester

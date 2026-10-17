@@ -77,6 +77,35 @@ Matcher safeError(String code) =>
     isA<PhoneEngineException>().having((e) => e.code, 'code', code);
 void main() {
   test(
+    'one-shot guard runs after health read and can prevent command POST',
+    () async {
+      final adapter = FakeEngineAdapter(
+        (request) async =>
+            jsonBody(health('p1', execution: true, actions: ['resumeProject'])),
+      );
+      final client = gateway(adapter);
+      client.beforeCommand = () async {
+        expect(adapter.requests.single.path, '/v1/health');
+        throw StateError('one-shot deadline expired');
+      };
+      await expectLater(
+        client.executeProject(
+          const TeamProjectCommand(
+            requestId: 'widget-tap',
+            action: TeamProjectAction.resumeProject,
+            projectId: 'project',
+            expectedRevision: 4,
+          ),
+        ),
+        throwsStateError,
+      );
+      expect(adapter.requests.where((r) => r.method == 'POST'), isEmpty);
+      await client.close();
+      expect(adapter.closed, true);
+    },
+  );
+
+  test(
     'successful boundary attestation is not a protocol readiness failure',
     () {
       for (final reason in [
@@ -106,6 +135,85 @@ void main() {
   );
 
   tearDown(KitRedact.clearKnownSecrets);
+  test('OC2 identity needs its own verified protocol and execution proof', () {
+    for (final verified in [false, true]) {
+      for (final execution in [false, true]) {
+        for (final boundary in [false, true]) {
+          final wire = health('p1', execution: execution);
+          (wire['capabilities'] as Map<String, Object?>).addAll({
+            'boundary': boundary,
+            'oc1Verified': false,
+            'oc2': true,
+            'oc2Verified': verified,
+          });
+          final parsed = PhoneEngineHealth.fromJson(wire, 'p1');
+          expect(parsed.protocolVerified, verified);
+          expect(parsed.canExecute, verified && execution && boundary);
+        }
+      }
+    }
+    final legacy = health('p1', execution: true);
+    (legacy['capabilities'] as Map)['oc2'] = true;
+    expect(PhoneEngineHealth.fromJson(legacy, 'p1').canExecute, isFalse);
+  });
+
+  test('malformed OC2 verification is refused rather than coerced', () {
+    for (final bad in [null, 1, 'true', <String, Object?>{}]) {
+      final wire = health('p1', execution: true);
+      (wire['capabilities'] as Map)['oc2Verified'] = bad;
+      expect(
+        () => PhoneEngineHealth.fromJson(wire, 'p1'),
+        throwsA(safeError('payloadInvalid')),
+      );
+    }
+  });
+
+  test('contradictory protocol proofs cannot enable execution', () {
+    for (final proof in [
+      {'oc2': true, 'oc1Verified': true, 'oc2Verified': true},
+      {'oc2': false, 'oc1Verified': true, 'oc2Verified': true},
+      {'oc2': false, 'oc1Verified': false, 'oc2Verified': true},
+    ]) {
+      final wire = health('p1', execution: true);
+      (wire['capabilities'] as Map<String, Object?>).addAll(proof);
+      final parsed = PhoneEngineHealth.fromJson(wire, 'p1');
+      expect(parsed.protocolVerified, isFalse);
+      expect(parsed.canExecute, isFalse);
+    }
+  });
+
+  test(
+    'OC2 execution command reaches daemon only after protocol proof',
+    () async {
+      for (final verified in [false, true]) {
+        final wire = health('p1', execution: true, actions: ['promote']);
+        (wire['capabilities'] as Map<String, Object?>).addAll({
+          'oc1Verified': false,
+          'oc2': true,
+          'oc2Verified': verified,
+        });
+        final adapter = FakeEngineAdapter(
+          (request) async => request.path == '/v1/health'
+              ? jsonBody(wire)
+              : jsonBody({'accepted': false, 'code': 'chooseBudget'}, 409),
+        );
+        final client = gateway(adapter);
+        final result = await client.executeProject(
+          const TeamProjectCommand(
+            requestId: 'oc2-promote',
+            action: TeamProjectAction.promote,
+          ),
+        );
+        expect(result.code, verified ? 'chooseBudget' : 'protocolUnverified');
+        expect(
+          adapter.requests.where((request) => request.method == 'POST'),
+          hasLength(verified ? 1 : 0),
+        );
+        await client.close();
+      }
+    },
+  );
+
   test('signed proot and landlock tiers preserve executable health flags', () {
     for (final tier in ['proot', 'landlock']) {
       final wire = health('p1', execution: true)..['boundaryTier'] = tier;

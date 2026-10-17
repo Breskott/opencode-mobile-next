@@ -195,6 +195,8 @@ void main() {
     expect(find.text('Nothing answered on this phone'), findsNothing);
     await tester.tap(find.text('Workstation'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Sign-in'));
+    await tester.pumpAndSettle();
     expect(find.text('Re-enter connection token'), findsNWidgets(2));
     expect(find.text('/work/project'), findsOneWidget);
     expect(connection.connectCalls, 0);
@@ -246,6 +248,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(connection.connectCalls, 0);
+      await tester.tap(find.text('Sign-in'));
+      await tester.pumpAndSettle();
       expect(find.text('Re-enter password'), findsNWidgets(2));
       expect(
         find.textContaining('The saved password is unavailable'),

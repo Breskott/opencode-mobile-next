@@ -494,6 +494,40 @@ void main() {
   );
 
   test(
+    'a finished checker whose answer was unreadable can be resumed and says so',
+    () async {
+      final source = planned.copyWith(
+        status: 'running',
+        planApproved: true,
+        tasks: [
+          task.copyWith(
+            status: 'interrupted',
+            reason: 'structuredOutputInvalid',
+          ),
+        ],
+      );
+      final project = (await client(
+        source,
+        actions: ['resumeProject', 'resumeTask'],
+      ).gateway.teamWorkspace()).projects.single;
+      expect(project.status, 'paused');
+      expect(project.tasks.single.status, 'paused');
+      final ask = project.requests.single;
+      expect(ask.kind, 'interrupted');
+      expect(ask.taskId, task.id);
+      expect(project.timeline.last.text, contains('(checkerAnswerUnreadable)'));
+      expect(project.timeline.last.text, contains('Resume'));
+      // Without the engine's resumeTask there is nothing to offer.
+      final without = (await client(
+        source,
+        actions: [],
+      ).gateway.teamWorkspace()).projects.single;
+      expect(without.requests, isEmpty);
+      expect(without.tasks.single.status, 'review');
+    },
+  );
+
+  test(
     'Resume presentation respects the native command advertisement',
     () async {
       final source = planned.copyWith(

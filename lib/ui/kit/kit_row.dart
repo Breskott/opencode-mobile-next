@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../app_iconography.dart';
 import 'kit_bidi.dart';
 import 'kit_buttons.dart';
+import 'kit_chip.dart';
 import 'kit_divider.dart';
 import 'kit_menu.dart';
 import 'kit_motion.dart';
@@ -15,6 +16,7 @@ import 'kit_swipe_action.dart';
 import 'kit_tappable.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
+import 'motion/kit_motion_parts.dart' show KitSwap;
 
 /// The one list row (design standard §6, visual language §5;
 /// docs/ux-system/kit-api/KitRow.md): a leading icon tile, a title, a muted
@@ -61,13 +63,24 @@ class KitRow extends StatelessWidget {
     this.disabledReason,
     this.selected = false,
     this.action,
+    this.chip,
+    this.titleAccent = false,
   }) : assert(
          action == null || trailing == null,
          'KitRow: the action takes the trailing slot; pass one or the other',
        ),
+       assert(
+         chip == null || (trailing == null && action == null),
+         'KitRow: the chip takes the trailing slot; pass one of chip, action '
+         'or trailing',
+       ),
        capability = null,
        enable = null,
        _unavailable = false;
+
+  /// The title in the accent colour: the row that starts something (New
+  /// project), beside an accent [KitRow.badge].
+  final bool titleAccent;
 
   /// A capability this server lacks (kit-v2.md §2.5; STATE-12): a dimmed
   /// row that says why and, when the capability can be turned on, offers
@@ -80,13 +93,19 @@ class KitRow extends StatelessWidget {
     required this.title,
     required String reason,
     this.enable,
+    this.chip,
     this.capability,
     this.leading,
     this.server,
     this.titleKey,
     this.supportingKey,
     this.padding,
-  }) : supporting = null,
+  }) : assert(
+         enable == null || chip == null,
+         'KitRow.unavailable: pass the enable flow as a button or as a chip, '
+         'not both',
+       ),
+       supporting = null,
        disabledReason = reason,
        enabled = false,
        trailing = null,
@@ -102,6 +121,7 @@ class KitRow extends StatelessWidget {
        swipe = null,
        selected = false,
        action = null,
+       titleAccent = false,
        _unavailable = true;
 
   final Widget? leading;
@@ -191,6 +211,22 @@ class KitRow extends StatelessWidget {
   /// slot, so a row with an action has no [trailing].
   final KitAction? action;
 
+  /// The row's one act as a short chip ("Install", "Sign in") where the
+  /// title already names its target: every chip of a list starts at one
+  /// edge of a shared trailing column ([chipColumnWidth]), so a list of
+  /// acts reads as one column instead of ragged button labels of different
+  /// widths (owner, 2026-10-08). Screen readers hear
+  /// [KitRowChip.semanticsLabel], which names the target ("Install Codex").
+  /// From 1.3× text it moves under the supporting line, like [action]. On
+  /// [KitRow.unavailable] it is the way forward, and a tap anywhere on the
+  /// row runs it.
+  final KitRowChip? chip;
+
+  /// The trailing column a [chip] starts in: wide enough for the short act
+  /// words in both languages ("Install", "تسجيل الدخول"), so their start
+  /// edges line up down a list.
+  static const chipColumnWidth = 112.0;
+
   /// Only on [KitRow.unavailable]: the capabilities.json id ("voice.model").
   final String? capability;
 
@@ -201,6 +237,15 @@ class KitRow extends StatelessWidget {
   /// disabled or unavailable row the glyph turns `text3`.
   static Widget icon(BuildContext context, IconData icon, {Color? color}) =>
       _KitRowIconTile(icon: icon, color: color);
+
+  /// A round icon badge for a row that starts something: [accent] tints the
+  /// circle and the glyph with the accent (the row's main act), otherwise a
+  /// quiet circle. Pair an accent badge with `titleAccent: true`.
+  static Widget badge(
+    BuildContext context,
+    IconData icon, {
+    bool accent = false,
+  }) => _KitRowIconTile(icon: icon, round: true, accent: accent);
 
   List<KitMenuItem> _menuWithTwin(BuildContext context) {
     final swipe = this.swipe;
@@ -255,6 +300,8 @@ class KitRow extends StatelessWidget {
         ? roles.text3
         : destructive
         ? roles.danger
+        : titleAccent
+        ? roles.accent
         : null;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final titleLines = textScale >= 1.3
@@ -276,13 +323,16 @@ class KitRow extends StatelessWidget {
     // The unavailable row's enable flow, or an enabled row's own action:
     // one tertiary button, trailing, under the text from 1.3× text.
     final enable = _unavailable ? this.enable : action;
-    final enableButton = enable == null
-        ? null
-        : KitButton.fromAction(
+    final chip = this.chip;
+    final Widget? enableButton = enable != null
+        ? KitButton.fromAction(
             enable,
             role: KitButtonRole.tertiary,
             expand: false,
-          );
+          )
+        : chip != null
+        ? _KitRowChipSlot(chip: chip)
+        : null;
     // From 1.3× text the enable action moves under the reason, so the
     // reason keeps the row's width instead of sharing it (A11Y-8).
     final enableBelow = enableButton != null && textScale >= 1.3;
@@ -362,7 +412,15 @@ class KitRow extends StatelessWidget {
                 constraints: BoxConstraints(
                   maxWidth: MediaQuery.sizeOf(context).width / 2,
                 ),
-                child: trailing,
+                // A trailing mark that changes kind (chevron, spinner, check)
+                // cross-fades instead of popping.
+                child: KitSwap(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: KeyedSubtree(
+                    key: ValueKey<Object>(trailing.key ?? trailing.runtimeType),
+                    child: trailing,
+                  ),
+                ),
               ),
           ],
         ),
@@ -397,7 +455,7 @@ class KitRow extends StatelessWidget {
   /// enabled: false with the reason as the hint; a tap anywhere on it runs
   /// [enable], since the whole row is the target.
   Widget _unavailableRow(Widget content) {
-    final run = enable?.onPressed;
+    final run = enable?.onPressed ?? chip?.onPressed;
     return Semantics(
       container: true,
       enabled: false,
@@ -458,6 +516,64 @@ class KitRow extends StatelessWidget {
   }
 }
 
+/// A [KitRow]'s one act as a short chip (see [KitRow.chip]): the words on
+/// the chip, the target screen readers hear, and what a tap does.
+@immutable
+class KitRowChip {
+  const KitRowChip({
+    required this.label,
+    required this.semanticsLabel,
+    required this.onPressed,
+    this.key,
+  });
+
+  /// The act alone, from the caller's ARB: "Install", "Sign in".
+  final String label;
+
+  /// The act with its target (COPY-8, actions name their target): "Install
+  /// Codex". The chip's semantic label and tooltip-free name.
+  final String semanticsLabel;
+  final VoidCallback onPressed;
+
+  /// The chip's key, for tests.
+  final Key? key;
+}
+
+/// [KitRow.chip] in its column: at least [KitRow.chipColumnWidth] wide with
+/// the chip at the start, so chips of different widths share a start edge.
+/// One button node named with the target.
+class _KitRowChipSlot extends StatelessWidget {
+  const _KitRowChipSlot({required this.chip});
+
+  final KitRowChip chip;
+
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: const BoxConstraints(minWidth: KitRow.chipColumnWidth),
+    // A Row at its minimum size still honours the column's minimum width,
+    // with the chip at its start.
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Semantics(
+            container: true,
+            button: true,
+            label: chip.semanticsLabel,
+            onTap: chip.onPressed,
+            excludeSemantics: true,
+            child: KitChip.action(
+              key: chip.key,
+              label: chip.label,
+              onPressed: chip.onPressed,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 /// Tells [KitRow.icon] tiles inside a disabled or unavailable row to paint
 /// their glyph in `text3` (LOOK-14: colour, never opacity).
 class _KitRowScope extends InheritedWidget {
@@ -474,10 +590,17 @@ class _KitRowScope extends InheritedWidget {
 }
 
 class _KitRowIconTile extends StatelessWidget {
-  const _KitRowIconTile({required this.icon, this.color});
+  const _KitRowIconTile({
+    required this.icon,
+    this.color,
+    this.round = false,
+    this.accent = false,
+  });
 
   final IconData icon;
   final Color? color;
+  final bool round;
+  final bool accent;
 
   @override
   Widget build(BuildContext context) {
@@ -487,14 +610,23 @@ class _KitRowIconTile extends StatelessWidget {
       dimension: tokens.iconTileSize,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: tokens.roles.surface3,
-          borderRadius: BorderRadius.circular(tokens.iconTileRadius),
+          color: accent
+              ? tokens.roles.accent.withValues(alpha: .18)
+              : tokens.roles.surface3,
+          shape: round ? BoxShape.circle : BoxShape.rectangle,
+          borderRadius: round
+              ? null
+              : BorderRadius.circular(tokens.iconTileRadius),
         ),
         child: Center(
           child: Icon(
             icon,
-            size: tokens.smallIconSize,
-            color: dimmed ? tokens.roles.text3 : color ?? tokens.roles.text1,
+            size: tokens.iconSize(context, tokens.smallIconSize),
+            color: dimmed
+                ? tokens.roles.text3
+                : accent
+                ? tokens.roles.accent
+                : color ?? tokens.roles.text1,
           ),
         ),
       ),
@@ -608,19 +740,31 @@ class KitRowValue extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (count == null)
+            // A new value cross-fades (KitMotion.quick) rather than popping.
             Flexible(
-              child: Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tokens.rowValue,
+              child: KitSwap(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Text(
+                  value,
+                  key: ValueKey<String>(value),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.rowValue,
+                ),
               ),
             )
-          else if (count > 0)
-            Semantics(
-              label: value,
-              excludeSemantics: true,
-              child: _KitCountPill(count > 99 ? '99+' : '$count'),
+          else
+            // The badge fades in, changes number and fades out with its count.
+            KitSwap(
+              alignment: AlignmentDirectional.centerEnd,
+              child: count > 0
+                  ? Semantics(
+                      key: ValueKey<int>(count),
+                      label: value,
+                      excludeSemantics: true,
+                      child: _KitCountPill(count > 99 ? '99+' : '$count'),
+                    )
+                  : const SizedBox.shrink(key: ValueKey<int>(0)),
             ),
           if (chevron)
             Padding(
@@ -630,7 +774,7 @@ class KitRowValue extends StatelessWidget {
               ),
               child: Icon(
                 AppIconography.chevronRight,
-                size: tokens.smallIconSize,
+                size: tokens.iconSize(context, tokens.smallIconSize),
                 color: tokens.roles.text3,
               ),
             )

@@ -10,6 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
+import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
+import 'package:opencode_mobile/builtin/setup/setup_engine.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
@@ -18,9 +20,14 @@ import 'package:opencode_mobile/state/local_server_controls.dart';
 import 'package:opencode_mobile/state/termux_running_server.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/termux/termux_reach.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart'
+    show ServerPageScreen;
 import 'package:opencode_mobile/ui/widgets/termux_running_server_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/fake_setup_engine.dart';
 
 class _Connection extends ConnectionController {
   _Connection(super.store);
@@ -66,6 +73,9 @@ void main() {
     probes.clear();
     secrets.clear();
     debugPlatformCapabilities = const PlatformCapabilities.android();
+    // The welcome entry reads the saved built-in job; with no native channel
+    // here that read would hang on its 10 s limit, so there is no job.
+    PhoneSetup.engine = FakeSetupEngine();
     capabilities = {
       'installed': true,
       'serviceAvailable': true,
@@ -113,6 +123,7 @@ void main() {
     });
   });
   tearDown(() {
+    PhoneSetup.engine = ChannelSetupEngine();
     debugPlatformCapabilities = null;
     termuxRunningServerProbe = oldProbe;
     messenger.setMockMethodCallHandler(channel, null);
@@ -450,12 +461,54 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.textContaining(
-          'OpenCode 1 is set up in Termux but isn\'t answering.',
+          'Older OpenCode is set up in Termux but isn\'t answering.',
         ),
         findsOneWidget,
       );
     },
   );
+
+  testWidgets('opened from Settings the list is named Servers, without About', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+    await store.upsert(remote);
+    final connection = _Connection(store);
+    addTearDown(connection.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bootstrapProvider.overrideWithValue(AppBootstrap(store)),
+          connProvider.overrideWithValue(connection),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const ServersScreen()),
+              ),
+              child: const Text('open servers'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open servers'));
+    await tester.pumpAndSettle();
+    final bar = find.byType(KitTopBar);
+    expect(
+      find.descendant(of: bar, matching: find.text('Servers')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: bar, matching: find.text('OpenCode')),
+      findsNothing,
+    );
+    expect(find.byKey(const ValueKey('servers-about')), findsNothing);
+  });
 
   testWidgets(
     'server list retains remote profiles and connects local only on tap',
@@ -483,12 +536,20 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey('termux-running-server-connect')),
-        findsOneWidget,
-      );
       expect(connection.attempted, isEmpty);
       final before = jsonEncode(remote.toJson());
+      // A tap on the phone's row opens its page and connects to nothing;
+      // connecting is a named act in its menu.
+      await tester.tap(find.byKey(const ValueKey('termux-running-server')));
+      await tester.pumpAndSettle();
+      expect(connection.attempted, isEmpty);
+      expect(find.byType(ServerPageScreen), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('termux-running-server-menu')),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const ValueKey('termux-running-server-connect')),
       );
@@ -707,8 +768,8 @@ void main() {
           stop: () async {},
         ),
       );
-      expect(find.text('This phone · Termux'), findsOneWidget);
-      expect(find.text('OpenCode 1 · Stopped'), findsOneWidget);
+      expect(find.text('Termux'), findsOneWidget);
+      expect(find.text('Older OpenCode · Stopped'), findsOneWidget);
       expect(key('connect'), findsNothing);
       // Nothing to restart or stop: no menu offers them.
       expect(key('menu'), findsNothing);
@@ -718,7 +779,7 @@ void main() {
       await tester.pumpAndSettle();
       // Starting loses nothing, so it does not ask first.
       expect(restarts, 1);
-      expect(find.text('OpenCode 1 · Running'), findsOneWidget);
+      expect(find.text('Older OpenCode · Running'), findsOneWidget);
       expect(key('connect'), findsOneWidget);
     });
 
@@ -822,7 +883,10 @@ void main() {
           onManage: () => managed++,
         );
         // The current mark: the word leads the row's line.
-        expect(find.text('Connected · OpenCode 1 · Running'), findsOneWidget);
+        expect(
+          find.text('Connected · Older OpenCode · Running'),
+          findsOneWidget,
+        );
         expect(
           find.byKey(const ValueKey('kit-row-current-mark')),
           findsOneWidget,

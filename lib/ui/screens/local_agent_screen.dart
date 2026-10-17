@@ -7,6 +7,8 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../kit/kit.dart';
 import '../widgets/local_agent_onboarding.dart';
+import 'agents/agents_section.dart';
+import 'chats/chats_host.dart';
 import 'phone_setup/phone_setup_termux_screen.dart' show openPhoneSetupTermux;
 
 /// Claude Code on this phone, on its own page
@@ -30,6 +32,26 @@ class LocalAgentScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final tokens = KitTokens.of(context);
+    // Where the agents run in the app's own Ubuntu (the connected server is
+    // the built-in one), what is installed there is read from that host, the
+    // same rows Settings > Agents shows. The Termux set-up below is only for
+    // a phone that has no built-in host, so it never offers a first-time
+    // install (or talks about Termux) for an agent that is already here.
+    final host = ref.watch(chatsHostProvider);
+    if (host.agents?.phoneAgentsAvailable ?? false) {
+      return KitScreen(
+        topBar: KitTopBar(title: l10n.agentsSectionTitle),
+        width: KitScreenWidth.reading,
+        body: ListView(
+          key: const ValueKey('local-agent-managed'),
+          padding: EdgeInsetsDirectional.only(
+            top: tokens.space2,
+            bottom: KitScreen.endPadding(context),
+          ),
+          children: const [AgentsSection()],
+        ),
+      );
+    }
     return KitScreen(
       topBar: KitTopBar(title: l10n.localAgentPageTitle),
       width: KitScreenWidth.reading,

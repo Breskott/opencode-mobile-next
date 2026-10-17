@@ -1,0 +1,6 @@
+Command: cd android && ./gradlew :app:testReleaseUnitTest --no-daemon
+JDK: Temurin 17.0.20.1+1
+Prerequisite: pinned Flutter build apk --release --config-only
+Machine build lock held.
+BUILD SUCCESSFUL in 2m 47s
+29 test classes: {'tests': 456, 'failures': 0, 'errors': 0, 'skipped': 0}

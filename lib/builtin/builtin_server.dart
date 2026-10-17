@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +11,7 @@ import '../l10n/app_localizations.dart';
 import '../state/profiles.dart';
 import 'builtin_linux.dart';
 import 'deliberate_stop.dart';
+import 'quota_collector_host.dart';
 import 'setup/setup_engine.dart' show ChannelSetupEngine;
 import 'team/builtin_team.dart';
 
@@ -118,6 +120,9 @@ enum BuiltinStartProblem {
   /// The phone did not let the app start OpenCode (the bridge refused).
   refused,
 
+  /// Android process ownership could not be proven; restarting this app is required.
+  componentRecovery,
+
   /// Another start is already running.
   busy,
 }
@@ -140,6 +145,9 @@ class BuiltinServerStartFailure {
   final String? _detail;
   final int? _timeoutSeconds;
   final BuiltinStartProblem problem;
+
+  /// Native diagnostics for a redacted Details fold only.
+  String? get technicalDetails => _detail;
 
   /// A fast failure that one more start can fix. A timeout already waited
   /// long, a withdrawn start was not wanted, and a missing password needs
@@ -174,6 +182,8 @@ class BuiltinServerStartFailure {
     BuiltinStartProblem.passwordMissing ||
     BuiltinStartProblem.passwordNotSaved => l10n.inAppServerStartPasswordBody,
     BuiltinStartProblem.refused => l10n.inAppServerStartRefusedBody,
+    BuiltinStartProblem.componentRecovery =>
+      l10n.inAppServerOwnershipRecoveryBody,
     BuiltinStartProblem.busy => l10n.inAppServerStartFailedBody,
   };
 }
@@ -203,6 +213,8 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
       problem: BuiltinStartProblem.passwordMissing,
     );
   }
+  // Which step threw, for Details: a start that keeps failing names it.
+  var step = 'password';
   try {
     final written = await linux.run(
       BuiltinLinux.writePasswordScript(profile.password),
@@ -218,8 +230,16 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
     final script = BuiltinLinux.serverScript(
       runtime: BuiltinLinux.runtimeFor(profile.flavor),
     );
+    step = 'start';
     if (recoveryGeneration == null) {
-      await linux.startServer(script, port: BuiltinLinux.serverPort);
+      await linux.startServer(
+        script,
+        port: BuiltinLinux.serverPort,
+        restoreRecipe: BuiltinServerRestoreRecipe(
+          profileId: profile.id,
+          runtime: BuiltinLinux.runtimeFor(profile.flavor),
+        ),
+      );
     } else {
       await linux.restartServer(
         script,
@@ -229,6 +249,7 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
     }
     final deadline = DateTime.now().add(readyTimeout);
     while (wanted()) {
+      step = 'probe';
       final probe = await serverProbe(
         baseUrl: BuiltinLinux.serverUrl,
         username: profile.username,
@@ -237,6 +258,7 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
       if (!wanted()) return cancelled;
       if (probe.ok) {
         if (recoveryGeneration != null) {
+          step = 'confirm';
           await linux.confirmServerRecovery(
             expectedGeneration: recoveryGeneration,
           );
@@ -244,6 +266,7 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
         }
         return null;
       }
+      step = 'status';
       final status = await linux.status();
       if (!status.serverRunning) {
         return const BuiltinServerStartFailure.exited();
@@ -254,14 +277,40 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
       await Future<void>.delayed(pollInterval);
     }
     return cancelled;
-  } catch (_) {
+  } catch (error) {
     // A native refusal after the start was withdrawn is the withdrawal
     // (the app left the screen), not the phone saying no.
     if (!wanted()) return cancelled;
-    return const BuiltinServerStartFailure.detail(
-      'The phone server could not start.',
+    return BuiltinServerStartFailure.detail(
+      couldNotStartReason(error, step),
+      problem: builtinStartProblem(error),
     );
   }
+}
+
+/// Stable native failure code, with legacy detail recognition for older APKs.
+@visibleForTesting
+BuiltinStartProblem builtinStartProblem(Object error) {
+  if (error is BuiltinLinuxException &&
+      (error.code == 'runtime_ownership_unknown' ||
+          (error.details ?? '').contains('ownershipUnknown'))) {
+    return BuiltinStartProblem.componentRecovery;
+  }
+  return BuiltinStartProblem.refused;
+}
+
+/// The reason kept under Details when a start throws: the plain words, then
+/// the step that threw, the error's kind and the phone's own description when
+/// the native side sent one, so a start that keeps failing can be diagnosed
+/// from the card. Only kinds and native check text: never a script or output.
+@visibleForTesting
+String couldNotStartReason(Object error, String step) {
+  final kind = error is BuiltinLinuxException
+      ? error.code ?? 'no code'
+      : error.runtimeType.toString();
+  final details = error is BuiltinLinuxException ? error.details : null;
+  final why = details != null && details.isNotEmpty ? '; $details' : '';
+  return 'The phone server could not start ($step: $kind$why)';
 }
 
 /// Starts the in-app server for the app shell: once on its own when the app
@@ -291,6 +340,31 @@ class BuiltinServerStarter extends ChangeNotifier {
 
   /// True while a start is waiting for the server to answer.
   bool get starting => _starting;
+
+  /// The profile a running start brings up, or null when none runs. While
+  /// the app switches this phone between OpenCode versions it is the
+  /// version being switched to, not the one being left.
+  ServerProfile? get startingProfile => _starting ? _startingProfile : null;
+  ServerProfile? _startingProfile;
+
+  /// The server this starter is bringing up: [startingProfile] while a start
+  /// runs, then for [handover] after a confirmed start answered, the moment
+  /// between "the server answers" and "the app connected to it". A status
+  /// line uses it to name the server being switched to, never the one being
+  /// left ("Switching to OpenCode 1…").
+  ServerProfile? get bringingUp {
+    final starting = startingProfile;
+    if (starting != null) return starting;
+    final until = _handoverUntil;
+    if (until == null || !clock.now().isBefore(until)) return null;
+    return _handoverProfile;
+  }
+
+  /// How long [bringingUp] keeps naming a server that answered: a connect
+  /// follows within moments.
+  static const handover = Duration(seconds: 10);
+  ServerProfile? _handoverProfile;
+  DateTime? _handoverUntil;
 
   /// Grows by one on every start that ended with the server answering, so a
   /// screen waiting on a stopped server knows to connect again.
@@ -407,6 +481,9 @@ class BuiltinServerStarter extends ChangeNotifier {
       );
     }
     _starting = true;
+    _startingProfile = profile;
+    _handoverProfile = null;
+    _handoverUntil = null;
     _failure = null;
     _failedProfileID = null;
     _notify();
@@ -421,12 +498,14 @@ class BuiltinServerStarter extends ChangeNotifier {
         stillWanted: () => !_disposed && (stillWanted?.call() ?? true),
         recoveryGeneration: recoveryGeneration,
       );
-    } catch (_) {
-      failure = const BuiltinServerStartFailure.detail(
-        'The phone server could not start.',
+    } catch (error) {
+      failure = BuiltinServerStartFailure.detail(
+        couldNotStartReason(error, 'owner'),
+        problem: builtinStartProblem(error),
       );
     }
     _starting = false;
+    _startingProfile = null;
     if (failure == null) {
       DeliberateServerStop.clearLater(profile.id);
       _installed = true;
@@ -435,7 +514,11 @@ class BuiltinServerStarter extends ChangeNotifier {
       if (!automatic) {
         _manualReadyCount++;
         _manuallyStartedProfileId = profile.id;
+        _handoverProfile = profile;
+        _handoverUntil = clock.now().add(handover);
       }
+      // Usage on In-app Ubuntu comes back with it unless it was turned off.
+      unawaited(InAppQuotaCollector.restartIfSetUp(profile, linux: linux));
       // A team the person turned on comes back with OpenCode: Android
       // stops both when it reclaims the app.
       if ((!automatic || recoveryGeneration == null) &&
@@ -513,6 +596,29 @@ class BuiltinProjectFolders {
       return (path: path, created: false);
     }
     throw BuiltinLinuxException(_describe(result));
+  }
+
+  /// Makes the folder's first commit when it has none (an empty one, no file
+  /// touched). Throws when the folder is not a git repository or the commit
+  /// failed.
+  Future<void> makeFirstCommit(String path) async {
+    final result = await linux.run(
+      BuiltinLinux.firstCommitScript(path),
+      timeout: const Duration(seconds: 30),
+    );
+    final last = result.output.trim().split('\n').last.trim();
+    if (result.ok && (last == 'committed' || last == 'exists')) return;
+    throw BuiltinLinuxException(_describe(result));
+  }
+
+  /// True when [path] is a git folder with no commit yet.
+  Future<bool> isEmptyRepo(String path) async {
+    final result = await linux.run(
+      BuiltinLinux.repoStateScript(path),
+      timeout: const Duration(seconds: 20),
+    );
+    if (!result.ok) throw BuiltinLinuxException(_describe(result));
+    return result.output.trim().split('\n').last.trim() == 'empty';
   }
 
   static String _describe(BuiltinLinuxRunResult result) {

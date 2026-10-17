@@ -1,18 +1,5 @@
-/// The Work tab's one status line (work-tab cleanup, 2026-09-24), drawn with
-/// the kit's [KitStatusLine] (design standard §5).
-///
-/// At most one thing is said at a time, and only when there is something to
-/// do about it, most urgent first:
-///
-/// The app-wide scope owns the connection. This contributes whatever the
-/// screen passes in [WorkStatusLine.others], in its order:
-///    the project list failed, the waiting requests could not be refreshed
-///    ("may be out of date"), a leftover process burning CPU, a location
-///    notice.
-///
-/// Nothing here knows which kind of server this is: the screen says whether
-/// the server runs on this phone and hands over a restart when it can
-/// restart it.
+/// Phone-server helpers for a quiet notice: the leftover-process notice with
+/// its Stop, and the confirm before restarting the phone's server.
 library;
 
 import 'dart:async';
@@ -21,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show SemanticsService;
 
 import '../../l10n/app_localizations.dart';
-import '../../state/connection.dart';
 import '../../termux/bridge.dart' show TermuxBridgeException;
 import '../../termux/processes.dart'
     show TermuxProcessStopResult, TermuxProcesses;
@@ -199,73 +185,20 @@ Future<RunawayStopOutcome> stopRunawayHelper(
   return outcome;
 }
 
-class WorkStatusLine extends StatelessWidget {
-  const WorkStatusLine({
-    super.key,
-    required this.controller,
-    required this.serverOnThisPhone,
-    this.onRestartServer,
-    this.others = const [],
-  });
-
-  final ConnectionController controller;
-
-  /// The server is the phone's own (Termux or in the app): it is named
-  /// "OpenCode on this phone" and offers Restart.
-  final bool serverOnThisPhone;
-
-  /// Restarts the phone's server; null when this server cannot be
-  /// restarted from here.
-  final Future<void> Function()? onRestartServer;
-
-  /// Lower-priority statuses, most urgent first; nulls are skipped.
-  final List<WorkStatus?> others;
-
-  /// Kept for callers that diagnose stale lists; timing belongs to the
-  /// controller snapshot, never to this screen.
-  static bool serverLost(ConnectionController controller) =>
-      !controller.connectionStatus.reachable &&
-      controller.connectionStatus.visible;
-
-  @override
-  Widget build(BuildContext context) {
-    WorkStatus? selected;
-    for (final other in others) {
-      if (other != null) {
-        selected = other;
-        break;
-      }
-    }
-    final status = selected;
-    return KitStatusContribution(
-      status: status == null
-          ? null
-          : KitStatus(
-              kind: KitStatusKind.work,
-              id: 'work:${status.id}',
-              key: ValueKey('work-status-${status.id}'),
-              icon: status.icon,
-              tone: status.tone,
-              message: status.message,
-              messageKey: status.messageKey,
-              action: status.action,
-              more: status.more,
-              onDismiss: status.onDismiss,
-            ),
-      child: const SizedBox.shrink(),
-    );
-  }
-}
-
 /// Asks before restarting the phone's server: a turn in progress stops.
 /// Neutral (LOOK-5): a restart is not a loss; the cancel word is "Cancel".
-Future<bool> confirmPhoneServerRestart(BuildContext context) {
+Future<bool> confirmPhoneServerRestart(
+  BuildContext context, {
+  bool commandRunning = false,
+}) {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   return showKitConfirm(
     context,
     icon: AppIconography.retry,
     title: l10n.workServerRestartTitle,
-    body: l10n.workServerRestartBody,
+    body: commandRunning
+        ? l10n.workServerRestartBodyCommand
+        : l10n.workServerRestartBody,
     confirmLabel: l10n.workServerRestart,
     confirmKey: const ValueKey('work-server-restart-confirm'),
   );

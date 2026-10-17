@@ -321,7 +321,8 @@ class _CommandSheetState extends State<CommandSheet> {
         agents: agents,
         query: query,
         loading: widget.controller.catalogLoading,
-        error: widget.controller.catalogError,
+        error:
+            widget.controller.catalogFailure ?? widget.controller.catalogError,
         onRefresh: _refresh,
         onClearSearch: _search.clear,
         onSelected: (agent) => widget.onAgentSelected?.call(agent),
@@ -627,8 +628,11 @@ class _CommandList extends StatelessWidget {
 }
 
 /// One command: plain words first, what it does (or the agent it runs
-/// with) under them, and its slash word at the end as the hint for typing
-/// it. A server command copies its slash word from the row's menu.
+/// with) under them, and its slash word as the hint for typing it. The
+/// app's short titles keep the slash word at the end; a server command's
+/// title is its sentence-long description, so its slash word goes under it
+/// and the words take the row's full width. A server command copies its
+/// slash word from the row's menu.
 class _CommandRow extends StatelessWidget {
   const _CommandRow({required this.command, required this.onSelected});
 
@@ -642,13 +646,22 @@ class _CommandRow extends StatelessWidget {
     final slash = '/${command.slash}';
     final hint = command.title != slash;
     final description = command.description;
+    // The slash word under a server command's words, not in a column beside
+    // them.
+    final under = server && hint;
+    final supporting = under
+        ? [
+            KitBidi.ltr(slash),
+            if (description.isNotEmpty) description,
+          ].join(' · ')
+        : description;
     return KitRow(
       key: Key('command-${server ? 'server' : 'mobile'}-${command.slash}'),
       title: command.title,
-      titleMaxLines: 2,
-      supporting: description.isEmpty ? null : TextSpan(text: description),
+      titleMaxLines: under ? 3 : 2,
+      supporting: supporting.isEmpty ? null : TextSpan(text: supporting),
       supportingMaxLines: 2,
-      trailing: hint
+      trailing: hint && !under
           ? KitText(
               slash,
               role: KitTextRole.mono,

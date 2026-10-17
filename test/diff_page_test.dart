@@ -80,9 +80,11 @@ void main() {
     expect(find.text('12'), findsNWidgets(2));
     expect(find.text('old eleven'), findsOneWidget);
     expect(find.text('new twelve'), findsOneWidget);
-    expect(find.text('Lines 10–13'), findsOneWidget);
+    // One fold line says where the change starts: no "Lines 10–13" under it.
+    expect(find.text('Lines 10–13'), findsNothing);
+    expect(find.text('… 9 lines above'), findsOneWidget);
     // The patch does not carry the skipped lines, so the gap only reports.
-    expect(find.text('47 unchanged lines'), findsOneWidget);
+    expect(find.text('… 47 lines'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byKey(const Key('diff-gap-7')),
@@ -109,7 +111,8 @@ void main() {
     // Three lines of context stay on each side; the rest folds.
     expect(find.text('line 30'), findsOneWidget);
     expect(find.text('line 27'), findsNothing);
-    expect(find.text('Show 20 unchanged lines'), findsWidgets);
+    expect(find.text('… 27 lines above'), findsOneWidget);
+    expect(find.text('… 26 lines below'), findsOneWidget);
     expect(
       tester.getSize(find.byKey(const Key('diff-gap-0'))).height,
       greaterThanOrEqualTo(48),
@@ -118,7 +121,7 @@ void main() {
     await tester.tap(find.byKey(const Key('diff-gap-0')));
     await tester.pumpAndSettle();
     // The first gap reveals the 20 lines just above the change.
-    expect(find.text('Show 7 unchanged lines'), findsOneWidget);
+    expect(find.text('… 7 lines above'), findsOneWidget);
     expect(find.text('line 8'), findsOneWidget);
     expect(find.text('line 7'), findsNothing);
     await tester.tap(find.byKey(const Key('diff-collapse-0')));
@@ -224,7 +227,9 @@ void main() {
     );
     await tester.tap(find.text('Review changes'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('More'));
+    // One change: no More button; the same menu opens on a long press.
+    expect(find.byTooltip('More'), findsNothing);
+    await tester.longPress(find.byKey(const Key('diff-file-header-menu')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Copy updated file'));
     await tester.pumpAndSettle();
@@ -240,7 +245,8 @@ void main() {
     await _pump(tester, [
       FileDiff(file: 'a.dart', before: 'old', after: 'new'),
     ]);
-    expect(find.byTooltip('More'), findsOneWidget);
+    expect(find.byTooltip('More'), findsNothing);
+    expect(find.byKey(const Key('diff-file-header-menu')), findsOneWidget);
     await _pump(tester, []);
     await tester.pumpWidget(
       MaterialApp(
@@ -252,6 +258,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byTooltip('More'), findsNothing);
+    expect(find.byKey(const Key('diff-file-header-menu')), findsNothing);
     expect(find.byKey(const Key('diff-file-header-a.dart')), findsOneWidget);
   });
   testWidgets('review capture at normal and large text', (tester) async {

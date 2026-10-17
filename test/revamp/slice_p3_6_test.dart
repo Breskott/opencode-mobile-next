@@ -358,7 +358,7 @@ void main() {
     phoneViewport(tester);
     final (team, _) = await bootTeam();
     final connection = await teamConnection(
-      api: TeamChatApi(const {}),
+      api: TeamChatApi(const {})..phoneTeamExecution = true,
       repository: TeamChatRepository(const []),
     );
     // This team is the connected server's.

@@ -30,7 +30,9 @@ import 'kit_text.dart';
 import 'kit_tokens.dart';
 
 /// Semantic severity for worded chips; neutral preserves the existing look.
-enum KitChipTone { neutral, attention, danger }
+/// [active] is a worded "this is on" state: an accent-tinted pill with
+/// accent-readable words and glyph (the composer's Auto-approve chip).
+enum KitChipTone { neutral, attention, danger, active }
 
 /// The five kinds a [KitChip] can be (KitChip.md "Purpose").
 enum KitChipKind { plain, action, removable, count, summary }
@@ -52,6 +54,10 @@ class KitChip extends StatelessWidget {
     this.icon,
     this.tone = KitChipTone.neutral,
   }) : kind = KitChipKind.plain,
+       onLongPress = null,
+       spoken = null,
+       glyph = null,
+       liveRegion = false,
        onPressed = null,
        onRemove = null,
        count = null,
@@ -72,6 +78,10 @@ class KitChip extends StatelessWidget {
     required VoidCallback this.onPressed,
     this.icon,
     this.selected,
+    this.spoken,
+    this.onLongPress,
+    this.glyph,
+    this.liveRegion = false,
   }) : kind = KitChipKind.action,
        onRemove = null,
        count = null,
@@ -88,6 +98,10 @@ class KitChip extends StatelessWidget {
     this.icon,
     this.onPressed,
   }) : kind = KitChipKind.removable,
+       onLongPress = null,
+       spoken = null,
+       glyph = null,
+       liveRegion = false,
        count = null,
        selected = null,
        expanded = null;
@@ -102,6 +116,10 @@ class KitChip extends StatelessWidget {
     this.onPressed,
     this.icon,
   }) : kind = KitChipKind.count,
+       onLongPress = null,
+       spoken = null,
+       glyph = null,
+       liveRegion = false,
        onRemove = null,
        selected = null,
        expanded = null;
@@ -117,6 +135,10 @@ class KitChip extends StatelessWidget {
     this.icon,
     this.expanded,
   }) : kind = KitChipKind.summary,
+       onLongPress = null,
+       spoken = null,
+       glyph = null,
+       liveRegion = false,
        onRemove = null,
        count = null,
        selected = null;
@@ -133,6 +155,25 @@ class KitChip extends StatelessWidget {
   final int? count;
   final bool? selected;
   final bool? expanded;
+
+  /// An action chip only: a long-press (and the screen reader's long-press
+  /// action) that opens the chip's own menu. It replaces the touch
+  /// long-press that shows the full label (hover still shows it), so a chip
+  /// that has one is not cut off by its host.
+  final VoidCallback? onLongPress;
+
+  /// What a screen reader says when it differs from the visible [label]
+  /// (an action chip only): "Fast mode, on" for a chip that shows "Fast".
+  final String? spoken;
+
+  /// An action chip only: a small widget in the glyph slot instead of an
+  /// [icon] (the task chip's progress ring). It is [KitTokens.smallIconSize]
+  /// square and decoration; the chip's words say everything.
+  final Widget? glyph;
+
+  /// An action chip only: a change of [spoken] (or [label]) is announced
+  /// politely, without taking focus.
+  final bool liveRegion;
 
   static const _removeKey = ValueKey('kit-chip-remove');
   static const _checkKey = ValueKey('kit-chip-check');
@@ -156,12 +197,18 @@ class KitChip extends StatelessWidget {
       KitChipTone.neutral => roles.text2,
       KitChipTone.attention => roles.attention,
       KitChipTone.danger => roles.danger,
+      KitChipTone.active => roles.accent,
     };
+    // An accent chip sits on an accent-tinted pill instead of the neutral
+    // one; its words are made readable on that tint.
+    final tint = tone == KitChipTone.active
+        ? Color.alphaBlend(roles.accent.withValues(alpha: .22), roles.surface3)
+        : null;
     final toneColor = tone == KitChipTone.neutral
         ? semanticColor
         : readableOn(
             semanticColor,
-            [roles.surface2, roles.surface3],
+            tint != null ? [tint] : [roles.surface2, roles.surface3],
             4.7,
             toward: roles.text1,
           );
@@ -176,10 +223,16 @@ class KitChip extends StatelessWidget {
       tone: KitTextTone.secondary,
     );
     // A glyph and the gap after it (start) or before it (end).
-    final glyphExtent = tokens.smallIconSize + tokens.space1;
+    final glyphExtent =
+        tokens.iconSize(context, tokens.smallIconSize) + tokens.space1;
     Widget startGlyph(IconData data, Color color, {Key? key}) => Padding(
       padding: EdgeInsetsDirectional.only(end: tokens.space1),
-      child: Icon(data, key: key, size: tokens.smallIconSize, color: color),
+      child: Icon(
+        data,
+        key: key,
+        size: tokens.iconSize(context, tokens.smallIconSize),
+        color: color,
+      ),
     );
     Widget endGlyph(Widget glyph) => Padding(
       padding: EdgeInsetsDirectional.only(start: tokens.space1),
@@ -190,9 +243,15 @@ class KitChip extends StatelessWidget {
       case KitChipKind.plain:
         return _ChipFrame(
           tokens: tokens,
+          tint: tint,
           span: TextSpan(
             text: label,
-            style: quiet.copyWith(color: toneColor),
+            // Semibold, the caption weight: a thin 13 px name in text2 on its
+            // pill is the one label that reads under AA once sampled (G5).
+            style: quiet.copyWith(
+              color: toneColor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           textSemantics: label,
           leading: icon == null ? null : startGlyph(icon!, toneColor),
@@ -214,34 +273,54 @@ class KitChip extends StatelessWidget {
               key: _checkKey,
             ),
           );
+        } else if (glyph != null) {
+          slotChild = KeyedSubtree(
+            key: const ValueKey('glyph'),
+            child: Padding(
+              padding: EdgeInsetsDirectional.only(end: tokens.space1),
+              child: SizedBox.square(
+                dimension: tokens.iconSize(context, tokens.smallIconSize),
+                child: glyph,
+              ),
+            ),
+          );
         } else if (icon != null) {
           slotChild = KeyedSubtree(
             key: const ValueKey('icon'),
-            child: startGlyph(icon, roles.text1),
+            child: startGlyph(
+              icon,
+              tone == KitChipTone.neutral ? roles.text1 : toneColor,
+            ),
           );
         } else {
           slotChild = const SizedBox.shrink(key: ValueKey('none'));
         }
         return _ChipFrame(
           tokens: tokens,
+          tint: tint,
           span: TextSpan(text: label, style: emphasized),
-          textSemantics: label,
+          textSemantics: spoken ?? label,
           leading: AnimatedSwitcher(
             duration: reduceMotion ? Duration.zero : KitMotion.quick,
             transitionBuilder: (child, animation) =>
                 FadeTransition(opacity: animation, child: child),
             child: slotChild,
           ),
-          leadingExtent: selected == true || icon != null ? glyphExtent : 0,
+          leadingExtent: selected == true || icon != null || glyph != null
+              ? glyphExtent
+              : 0,
           onPressed: onPressed,
-          semanticsLabel: label,
+          onLongPress: onLongPress,
+          semanticsLabel: spoken ?? label,
           toggled: selected,
+          liveRegion: liveRegion,
         );
 
       case KitChipKind.summary:
         final expanded = this.expanded;
         return _ChipFrame(
           tokens: tokens,
+          tint: tint,
           span: TextSpan(text: label, style: emphasized),
           textSemantics: label,
           leading: icon == null
@@ -260,7 +339,7 @@ class KitChip extends StatelessWidget {
                     curve: KitMotion.emphasized,
                     child: Icon(
                       AppIconography.chevronDown,
-                      size: tokens.smallIconSize,
+                      size: tokens.iconSize(context, tokens.smallIconSize),
                       color: roles.text1,
                       textDirection: TextDirection.ltr,
                     ),
@@ -278,6 +357,7 @@ class KitChip extends StatelessWidget {
         ).format(count!);
         return _ChipFrame(
           tokens: tokens,
+          tint: tint,
           span: TextSpan(
             style: quiet,
             children: [
@@ -301,6 +381,7 @@ class KitChip extends StatelessWidget {
         final l10n = lookupAppLocalizations(Localizations.localeOf(context));
         return _ChipFrame(
           tokens: tokens,
+          tint: tint,
           span: TextSpan(text: label, style: emphasized),
           textSemantics: label,
           leading: icon == null
@@ -313,7 +394,7 @@ class KitChip extends StatelessWidget {
           trailing: endGlyph(
             Icon(
               AppIconography.close,
-              size: tokens.smallIconSize,
+              size: tokens.iconSize(context, tokens.smallIconSize),
               color: roles.text2,
             ),
           ),
@@ -337,20 +418,26 @@ class _ChipFrame extends StatefulWidget {
   const _ChipFrame({
     required this.tokens,
     required this.span,
+    this.tint,
     this.textSemantics,
     this.leading,
     this.leadingExtent = 0,
     this.trailing,
     this.trailingExtent = 0,
     this.onPressed,
+    this.onLongPress,
     this.semanticsLabel,
     this.toggled,
     this.expanded,
     this.onRemove,
     this.removeLabel,
+    this.liveRegion = false,
   });
 
   final KitTokens tokens;
+
+  /// The accent tint of an accent chip's pill; null keeps the neutral fill.
+  final Color? tint;
 
   /// The words, drawn on one line with an ellipsis when they do not fit.
   final InlineSpan span;
@@ -369,11 +456,17 @@ class _ChipFrame extends StatefulWidget {
   /// The body's tap; null makes the body static.
   final VoidCallback? onPressed;
 
+  /// The body's long-press, when the chip has a menu of its own.
+  final VoidCallback? onLongPress;
+
   /// The chip's announced name (the body button's, or a static count's).
   /// Null keeps the visible text's own semantics (plain).
   final String? semanticsLabel;
   final bool? toggled;
   final bool? expanded;
+
+  /// A change of [semanticsLabel] is announced politely.
+  final bool liveRegion;
 
   /// The ×'s tap and name; null means the chip has no ×.
   final VoidCallback? onRemove;
@@ -433,33 +526,40 @@ class _ChipFrameState extends State<_ChipFrame> {
   /// A tap zone: the whole area it is given, painting nothing itself (no
   /// ink over the words, no spread past the pill); it tells the pill when
   /// it is hovered, pressed or focused.
-  Widget _zone(_Zone zone, VoidCallback onTap) => _press[zone]!.listen(
-    context: context,
-    enabled: true,
-    child: Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: () {
-          _press[zone]!.confirm();
-          onTap();
-        },
-        onTapCancel: _press[zone]!.cancel,
-        onHover: (on) => _mark(_hovered, zone, on),
-        onFocusChange: (on) => _mark(_focused, zone, on),
-        splashFactory: NoSplash.splashFactory,
-        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-        child: const SizedBox.expand(),
-      ),
-    ),
-  );
+  Widget _zone(_Zone zone, VoidCallback onTap, {VoidCallback? onLongPress}) =>
+      _press[zone]!.listen(
+        context: context,
+        enabled: true,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: () {
+              _press[zone]!.confirm();
+              onTap();
+            },
+            onTapCancel: _press[zone]!.cancel,
+            onLongPress: onLongPress,
+            onHover: (on) => _mark(_hovered, zone, on),
+            onFocusChange: (on) => _mark(_focused, zone, on),
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+            child: const SizedBox.expand(),
+          ),
+        ),
+      );
 
   /// The full label or the ×'s name; no haptic on long-press (MOT-11).
-  Widget _tooltip(String message, Widget child) => Tooltip(
-    message: message,
-    excludeFromSemantics: true,
-    enableFeedback: false,
-    child: child,
-  );
+  ///
+  /// [touchTrigger] false (the chip has its own long-press) leaves only the
+  /// hover showing it, so the touch long-press reaches the chip's menu.
+  Widget _tooltip(String message, Widget child, {bool touchTrigger = true}) =>
+      Tooltip(
+        message: message,
+        excludeFromSemantics: true,
+        enableFeedback: false,
+        triggerMode: touchTrigger ? null : TooltipTriggerMode.manual,
+        child: child,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -499,9 +599,11 @@ class _ChipFrameState extends State<_ChipFrame> {
         }
         final pill = _PillSurface(
           tokens: tokens,
-          fill: _hovered.isNotEmpty || _press.values.any((p) => p.shown)
-              ? roles.surface2
-              : roles.surface3,
+          fill:
+              widget.tint ??
+              (_hovered.isNotEmpty || _press.values.any((p) => p.shown)
+                  ? roles.surface2
+                  : roles.surface3),
           focused: _focused.isNotEmpty,
           child: row,
         );
@@ -561,7 +663,11 @@ class _ChipFrameState extends State<_ChipFrame> {
               end: 0,
               top: 0,
               bottom: 0,
-              child: _zone(_Zone.body, onPressed),
+              child: _zone(
+                _Zone.body,
+                onPressed,
+                onLongPress: widget.onLongPress,
+              ),
             ),
           );
         }
@@ -578,8 +684,15 @@ class _ChipFrameState extends State<_ChipFrame> {
         );
         // The full label on long-press (touch) or hover (a fine pointer),
         // only when it is cut (KitChip.md "Adaptive"). It sits over the tap
-        // zone, not under it, so the gesture reaches it.
-        if (truncated && onRemove == null) frame = _tooltip(fullText, frame);
+        // zone, not under it, so the gesture reaches it. A chip with its own
+        // long-press keeps the hover copy and leaves touch to its menu.
+        if (truncated && onRemove == null) {
+          frame = _tooltip(
+            fullText,
+            frame,
+            touchTrigger: widget.onLongPress == null,
+          );
+        }
 
         if (onRemove != null) {
           // Delete/Backspace on either focused zone removes the chip
@@ -606,7 +719,9 @@ class _ChipFrameState extends State<_ChipFrame> {
           label: widget.semanticsLabel,
           toggled: widget.toggled,
           expanded: widget.expanded,
+          liveRegion: widget.liveRegion,
           onTap: onPressed,
+          onLongPress: widget.onLongPress,
           container: true,
           excludeSemantics: true,
           child: frame,

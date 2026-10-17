@@ -18,7 +18,7 @@ Both were installed from [mcpmarket.com](https://mcpmarket.com) skills. That
 marketplace is where to look for the current upstream and terms.
 
 Neither pack is needed to build, test, or run the app or the Remotion project
-in `video/` — they are prompt guidance for an AI assistant, consumed at
+in `tool/demo-video/` — they are prompt guidance for an AI assistant, consumed at
 authoring time and nowhere else. Removing them costs the product nothing, and
 inventing a license for someone else's work was never an option.
 

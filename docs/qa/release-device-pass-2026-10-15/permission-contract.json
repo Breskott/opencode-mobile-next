@@ -1,0 +1,240 @@
+{
+  "cases": [
+    {
+      "name": "default shell",
+      "permission_actions": [],
+      "file_absent_until_approval": null,
+      "reply": null,
+      "completed": true,
+      "effective_rules": [],
+      "tool": "shell",
+      "tool_status": "completed",
+      "idle_outcome": "succeeded",
+      "approval_driver": "default"
+    },
+    {
+      "name": "asks first shell",
+      "permission_actions": [
+        "shell"
+      ],
+      "file_absent_until_approval": true,
+      "reply": "once",
+      "completed": true,
+      "effective_rules": [
+        {
+          "action": "*",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "*",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "read",
+          "resource": "*.env",
+          "effect": "ask"
+        },
+        {
+          "action": "read",
+          "resource": "*.env.*",
+          "effect": "ask"
+        },
+        {
+          "action": "read",
+          "resource": "*.env.example",
+          "effect": "ask"
+        },
+        {
+          "action": "question",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "browser",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ],
+      "tool": "shell",
+      "tool_status": "completed",
+      "idle_outcome": "succeeded",
+      "approval_driver": "scripted manual once"
+    },
+    {
+      "name": "asks first project write",
+      "permission_actions": [
+        "edit"
+      ],
+      "file_absent_until_approval": true,
+      "reply": "once",
+      "completed": true,
+      "effective_rules": [
+        {
+          "action": "*",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "*",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "read",
+          "resource": "*.env",
+          "effect": "ask"
+        },
+        {
+          "action": "read",
+          "resource": "*.env.*",
+          "effect": "ask"
+        },
+        {
+          "action": "read",
+          "resource": "*.env.example",
+          "effect": "ask"
+        },
+        {
+          "action": "question",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "browser",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ],
+      "tool": "write",
+      "tool_status": "completed",
+      "idle_outcome": "succeeded",
+      "approval_driver": "scripted manual once"
+    },
+    {
+      "name": "asks first outside write",
+      "permission_actions": [
+        "external_directory",
+        "edit"
+      ],
+      "file_absent_until_approval": true,
+      "reply": "once",
+      "completed": true,
+      "effective_rules": [
+        {
+          "action": "*",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "*",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "read",
+          "resource": "*.env",
+          "effect": "ask"
+        },
+        {
+          "action": "read",
+          "resource": "*.env.*",
+          "effect": "ask"
+        },
+        {
+          "action": "read",
+          "resource": "*.env.example",
+          "effect": "ask"
+        },
+        {
+          "action": "question",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "browser",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ],
+      "tool": "write",
+      "tool_status": "completed",
+      "idle_outcome": "succeeded",
+      "approval_driver": "scripted manual once"
+    },
+    {
+      "name": "auto approve shell",
+      "permission_actions": [
+        "shell"
+      ],
+      "file_absent_until_approval": true,
+      "reply": "once",
+      "completed": true,
+      "effective_rules": [
+        {
+          "action": "*",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "*",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "read",
+          "resource": "*.env",
+          "effect": "ask"
+        },
+        {
+          "action": "read",
+          "resource": "*.env.*",
+          "effect": "ask"
+        },
+        {
+          "action": "read",
+          "resource": "*.env.example",
+          "effect": "ask"
+        },
+        {
+          "action": "question",
+          "resource": "*",
+          "effect": "ask"
+        },
+        {
+          "action": "browser",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ],
+      "tool": "shell",
+      "tool_status": "completed",
+      "idle_outcome": "succeeded",
+      "approval_driver": "auto"
+    }
+  ],
+  "version": "2.0.29",
+  "migration_methods": [
+    "get"
+  ],
+  "migration_status": {
+    "status": "completed"
+  },
+  "agent_deny": {
+    "wildcard_ask_overrides_agent_deny": true,
+    "synthesized_agent_deny_preserved": true,
+    "agent_swap_recomputes_original_rules": true
+  },
+  "metadata_patch_readback_verified": true,
+  "saved_always_grant_bypasses_session_ask": true,
+  "default_agent": {
+    "configured": "restricted",
+    "first_agent": "restricted",
+    "fresh_session_omits_agent_and_permissions": true,
+    "synthesized_policy_preserves_default_deny": true
+  },
+  "patch_readback_verified": true,
+  "server_stopped_by_exact_pid": true,
+  "temporary_data_removed": true
+}

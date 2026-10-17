@@ -300,7 +300,9 @@ async fn health(State(e): State<Shared>) -> Json<Value> {
     Json(
         json!({"schemaVersion":1,"engineVersion":env!("CARGO_PKG_VERSION"),"profileId":e.config.profile_id,"boundaryTier":tier,
         "capabilities":{"execution":execution_enabled(&e),"boundary":verified_tier.is_some(),"boundaryTier":tier,
-            "oc1Verified":protocol["pinnedVersion"] == true && protocol["openapiVerified"] == true,"oc2":false},
+            "oc1Verified":protocol["capabilities"]["oc2"] != true && protocol["pinnedVersion"] == true && protocol["openapiVerified"] == true,
+            "oc2":protocol["capabilities"]["oc2"] == true,
+            "oc2Verified":protocol["capabilities"]["oc2"] == true && protocol["pinnedVersion"] == true && protocol["openapiVerified"] == true},
         "commandActions":command_actions(&e),"boundaryReason":if verified_tier.is_some() {"boundary_attested"} else if e.boundary.is_some() {"attestation_rejected"} else {e.config.boundary.reason.as_str()},
         "readinessReason":readiness_reason(&e),"restartRequired":e.config.boundary.restart_required,
         "admission":admission,"chatAuthority":"phoneAppAndKnownDirectories","globalAdmissionAuthority":false,
@@ -719,7 +721,7 @@ async fn reconcile(e: Shared) {
             }
         }
         if tokio::time::Instant::now() >= next_verify {
-            let protocol = e.server.verify().await.unwrap_or_else(|error| json!({"capabilities":{"executionDriver":false,"execution":false},"error":error.code(),"blockers":[error.code()]}));
+            let protocol = e.server.verify().await.unwrap_or_else(|error| json!({"capabilities":{"executionDriver":false,"execution":false,"oc2":e.server.is_oc2()},"error":error.code(),"blockers":[error.code()]}));
             let retry_delay = protocol_retry_delay(&protocol);
             if let Ok(mut value) = e.protocol.lock() {
                 *value = protocol;
@@ -1417,7 +1419,7 @@ async fn task_pipeline(e: &Engine, job: &Value) -> Result<(), &'static str> {
     )
     .await?;
     if planner {
-        let plan = structured_output(&output)?;
+        let plan = structured_output_for_protocol(&output, e.server.is_oc2())?;
         validate_plan(&plan, repo)?;
         patch(e, id, "running", json!({"stage":"completed","plan":plan}))?;
         return Ok(());
@@ -1484,7 +1486,7 @@ async fn check_and_merge(e: &Engine, job: &Value, session: &str) -> Result<(), &
     )
     .await?;
     let checked = await_completion(e, id, "checker", &directory, &checker).await?;
-    let verification = structured_output(&checked)?;
+    let verification = structured_output_for_protocol(&checked, e.server.is_oc2())?;
     let passed = validate_check(&verification, &job["criteria"])?;
     patch(
         e,
@@ -1633,7 +1635,7 @@ async fn resume_job(e: &Engine, job: &Value) -> Result<(), &'static str> {
         return Err("boundaryUnavailable");
     }
     if role == "planner" {
-        let plan = structured_output(&observed)?;
+        let plan = structured_output_for_protocol(&observed, e.server.is_oc2())?;
         validate_plan(&plan, job["repoId"].as_str().ok_or("repoInvalid")?)?;
         patch(e, id, "resuming", json!({"stage":"completed","plan":plan}))?;
         return Ok(());
@@ -1644,7 +1646,7 @@ async fn resume_job(e: &Engine, job: &Value) -> Result<(), &'static str> {
         patch(e, id, "resuming", json!({"stage":"running"}))?;
         return check_and_merge(e, job, session).await;
     }
-    let checked = structured_output(&observed)?;
+    let checked = structured_output_for_protocol(&observed, e.server.is_oc2())?;
     if !validate_check(&checked, &job["criteria"])? {
         patch(e, id, "resuming", json!({"stage":"checking"}))?;
         patch(
@@ -1722,7 +1724,7 @@ async fn await_completion(
                 tokio::time::sleep(Duration::from_secs(2)).await
             }
             Some("blocked") => return Err("needsAnswer"),
-            Some("failed") => return Err("sessionFailed"),
+            Some("failed") => return Err(observed_failure_reason(&observed)),
             Some("unknown") if !seen_running && accepted_at.elapsed() < Duration::from_secs(30) => {
                 // A 204 may precede both status and turn persistence. Missing
                 // evidence stays pending briefly, never completed or resent.
@@ -1732,6 +1734,16 @@ async fn await_completion(
         }
     }
     Err("sessionUncertain")
+}
+
+fn observed_failure_reason(observed: &Value) -> &'static str {
+    // Only the OC2 driver currently supplies this allowlisted recovery hint.
+    // Never forward arbitrary server errors into durable jobs or UI details.
+    if observed["state"] == "failed" && observed["reason"] == "modelNotConfigured" {
+        "modelNotConfigured"
+    } else {
+        "sessionFailed"
+    }
 }
 fn observed_session_usage(job: &Value, role: &str, observed: &Value, day: &str) -> Value {
     let mut out = normalized_usage(observed);
@@ -1826,6 +1838,36 @@ fn strict_json(text: &str) -> Result<Value, &'static str> {
         .map_err(|_| "structuredOutputInvalid")?;
     parser.end().map_err(|_| "structuredOutputInvalid")?;
     Ok(value.0)
+}
+fn structured_output_for_protocol(value: &Value, is_oc2: bool) -> Result<Value, &'static str> {
+    match structured_output(value) {
+        Ok(parsed) => return Ok(parsed),
+        Err(reason) if !is_oc2 => return Err(reason),
+        Err(_) => {}
+    }
+    // OC2 can successfully finish with an inspection summary followed by an
+    // unfenced verdict. Accept only one trailing object at a fresh line; never
+    // search through candidate objects or choose a verdict from competing text.
+    // The caller still requires settled completion and validates the exact
+    // checker criteria (or planner schema) before granting any authority.
+    let raw = value["text"].as_str().ok_or("structuredOutputInvalid")?;
+    if raw.len() > 1024 * 1024 || raw.contains("```") {
+        return Err("structuredOutputInvalid");
+    }
+    let text = raw.trim();
+    let first_structure = text
+        .find(['{', '}', '[', ']'])
+        .ok_or("structuredOutputInvalid")?;
+    let (prefix, body) = text.split_at(first_structure);
+    if !body.starts_with('{')
+        || prefix.trim().is_empty()
+        || !prefix.trim_end_matches([' ', '\t', '\r']).ends_with('\n')
+    {
+        return Err("structuredOutputInvalid");
+    }
+    // Parsing the entire suffix preserves duplicate-key rejection, handles
+    // escaped braces in strings, and rejects trailing prose or another object.
+    strict_json(body)
 }
 pub fn structured_output(value: &Value) -> Result<Value, &'static str> {
     let text = value["text"].as_str().ok_or("structuredOutputInvalid")?;
@@ -2057,6 +2099,11 @@ mod tests {
             let observed = observed.clone();
             async move {
                 if request.method() != axum::http::Method::GET { observed.fetch_add(1, Ordering::SeqCst); }
+                match request.uri().path() {
+                    "/api/info" => return StatusCode::NOT_FOUND.into_response(),
+                    "/global/health" => return Json(json!({"healthy":true,"version":"1.18.32"})).into_response(),
+                    _ => {}
+                }
                 assert_eq!(request.uri().query(), Some("directory=%2Froot%2Fprojects%2Ffresh"));
                 let body = match request.uri().path() {
                     "/config" => json!({"provider":{"fixture":{"apiKey":"never-return-this-secret"}}}),
@@ -2064,7 +2111,7 @@ mod tests {
                     "/provider" => json!({"connected":[],"default":{},"all":[]}),
                     _ => panic!("model resolution must only read config/provider"),
                 };
-                Json(body)
+                Json(body).into_response()
             }
         });
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -2257,6 +2304,25 @@ mod tests {
             axum::serve(listener, app).await.unwrap();
         });
         (address, polls, posts, server)
+    }
+
+    #[test]
+    fn failed_observation_accepts_only_the_fixed_model_recovery_code() {
+        assert_eq!(
+            observed_failure_reason(&json!({"state":"failed","reason":"modelNotConfigured"})),
+            "modelNotConfigured"
+        );
+        // OC1 has no reason field and retains its existing behavior. Unknown
+        // strings, raw provider errors, and nonfailed hints cannot escape.
+        for observation in [
+            json!({"state":"failed"}),
+            json!({"state":"failed","reason":"provider.auth"}),
+            json!({"state":"failed","reason":"fixture-provider-secret"}),
+            json!({"state":"failed","reason":{"code":"modelNotConfigured"}}),
+            json!({"state":"running","reason":"modelNotConfigured"}),
+        ] {
+            assert_eq!(observed_failure_reason(&observation), "sessionFailed");
+        }
     }
 
     #[test]
@@ -3172,6 +3238,84 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         assert!(e.store.lock().unwrap().workspace().is_err());
     }
+    #[test]
+    fn structured_output_accepts_one_trailing_checker_verdict_after_plain_summary() {
+        // Shape observed on OC2 2.0.29 / GLM-5.3-Flash: successful final
+        // assistant turn, inspection summary, then one unfenced JSON paragraph.
+        let criteria = json!([
+            "A file named NOTES.md exists at the repository root",
+            "NOTES.md contains exactly one line with the text 'hid'",
+            "No other files are created or modified"
+        ]);
+        let verdict = json!({"criterionResults": criteria.as_array().unwrap().iter()
+            .map(|criterion| json!({"criterion":criterion,"status":"met"}))
+            .collect::<Vec<_>>(), "findings":[]});
+        let text = include_str!("../tests/fixtures/oc2_checker_summary_verdict.txt");
+        assert_eq!(
+            structured_output_for_protocol(&json!({"text":text}), false),
+            Err("structuredOutputInvalid")
+        );
+        assert_eq!(
+            structured_output(&json!({"text":text})),
+            Err("structuredOutputInvalid")
+        );
+        let parsed = structured_output_for_protocol(&json!({"text":text}), true).unwrap();
+        assert_eq!(parsed, verdict);
+        assert_eq!(validate_check(&parsed, &criteria), Ok(true));
+    }
+
+    #[test]
+    fn structured_output_trailing_object_preserves_json_strings_and_schema_checks() {
+        let criterion = "The example contains literal {braces}, [brackets], and \"quotes\".";
+        let verdict =
+            json!({"findings":[],"criterionResults":[{"criterion":criterion,"status":"met"}]});
+        let parsed = structured_output_for_protocol(
+            &json!({"text":format!("Inspection complete.\n\n{verdict}")}),
+            true,
+        )
+        .unwrap();
+        assert_eq!(validate_check(&parsed, &json!([criterion])), Ok(true));
+        // Parsing an unrelated object is never acceptance authority: the
+        // unchanged checker schema and exact original criteria still decide.
+        let unrelated = structured_output_for_protocol(
+            &json!({"text":"An unrelated example follows.\n\n{\"example\":true}"}),
+            true,
+        )
+        .unwrap();
+        assert_eq!(
+            validate_check(&unrelated, &json!([criterion])),
+            Err("checkInvalid")
+        );
+        assert_eq!(
+            validate_check(&parsed, &json!(["A different criterion"])),
+            Err("checkInvalid")
+        );
+    }
+
+    #[test]
+    fn structured_output_rejects_ambiguous_or_malformed_unfenced_verdicts() {
+        let verdict = r#"{"findings":[],"criterionResults":[{"criterion":"Exact criterion","status":"met"}]}"#;
+        for text in [
+            format!("First verdict.\n\n{verdict}\n\n{verdict}"),
+            format!("Alternative {{proposal}}.\n\n{verdict}"),
+            format!("Inspected [report].\n\n{verdict}"),
+            format!("Quoted \"{{proposal}}\".\n\n{verdict}"),
+            format!("The verdict is {verdict}"),
+            format!("Inspection complete.\n\n{verdict}\nTrailing commentary."),
+            format!("Inspection complete.\n\n{verdict}\n{{malformed"),
+            format!("Inspection complete.\n\n{{malformed\n{verdict}"),
+            format!("Inspection complete.\n\n[{verdict}]"),
+            format!("```json\n{verdict}\n```\n\n{verdict}"),
+            format!("Inspection complete.\n\n{verdict}\n```"),
+            "Inspection complete.\n\n{\"findings\":[],\"findings\":[],\"criterionResults\":[]}".into(),
+            "Inspection complete.\n\n{\"criterionResults\":[{\"status\":\"unmet\",\"status\":\"met\"}],\"findings\":[]}".into(),
+            "Verification complete. All checks passed.".into(),
+            format!("{}\n\n{verdict}", "x".repeat(1024 * 1024)),
+        ] {
+            assert_eq!(structured_output_for_protocol(&json!({"text":text}), true), Err("structuredOutputInvalid"));
+        }
+    }
+
     #[test]
     fn checker_prompt_separates_criterion_status_from_defects_and_requires_evidence() {
         let job = json!({"criteria":["Run cargo test --locked", "Keep README unchanged"]});

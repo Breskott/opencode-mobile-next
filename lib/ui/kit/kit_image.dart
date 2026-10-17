@@ -7,6 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -19,6 +20,8 @@ import 'kit_layout.dart';
 import 'kit_motion.dart';
 import 'kit_text.dart';
 import 'kit_tokens.dart';
+
+part 'kit_vector_logo.dart';
 
 /// The kit's words: the app's bound [AppLocalizations], else the locale's
 /// lookup, else English, so the part never throws in a bare harness with no
@@ -52,6 +55,26 @@ sealed class KitImageSource {
   const factory KitImageSource.asset(String name) = _AssetSource;
   const factory KitImageSource.provider(ImageProvider provider) =
       _ProviderSource;
+
+  /// A monochrome vector logo (KitAvatar only): [id] names it, [load]
+  /// yields its SVG text or null for "none". Drawn tinted `text1`.
+  const factory KitImageSource.vectorLogo({
+    required String id,
+    required KitVectorLogoLoad load,
+  }) = _VectorLogoSource;
+}
+
+class _VectorLogoSource implements KitImageSource {
+  const _VectorLogoSource({required this.id, required this.load});
+  final String id;
+  final KitVectorLogoLoad load;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _VectorLogoSource && other.id == id;
+
+  @override
+  int get hashCode => Object.hash(_VectorLogoSource, id);
 }
 
 class _MemorySource implements KitImageSource {
@@ -73,6 +96,8 @@ ImageProvider _providerOf(KitImageSource source) => switch (source) {
   _MemorySource(:final bytes) => MemoryImage(bytes),
   _AssetSource(:final name) => AssetImage(name),
   _ProviderSource(:final provider) => provider,
+  // KitAvatar draws vector logos itself; anywhere else it is a failure.
+  _VectorLogoSource() => MemoryImage(Uint8List(0)),
 };
 
 /// The decode target for a source drawn with [fit] in a box of [boxWidth]
@@ -443,6 +468,7 @@ class KitAvatar extends StatefulWidget {
     this.icon,
     this.size = KitAvatarSize.tile,
     this.decorative = false,
+    this.optionalImage = false,
   });
 
   /// Always the semantic label, whatever is drawn.
@@ -457,6 +483,11 @@ class KitAvatar extends StatefulWidget {
 
   /// True when the row beside it already says [name].
   final bool decorative;
+
+  /// True when [image] is a nice-to-have (a provider's logo from a catalog
+  /// that lacks many): a failure just keeps the initials, with no error
+  /// badge or words, since nothing is missing for the person.
+  final bool optionalImage;
 
   @override
   State<KitAvatar> createState() => _KitAvatarState();
@@ -493,7 +524,7 @@ class _KitAvatarState extends State<KitAvatar> {
         ? KitTextRole.label
         : KitTextRole.headline;
     final source = widget.image;
-    final failed = _failed && source != null;
+    final failed = _failed && source != null && !widget.optionalImage;
     final identityMark = icon != null
         ? Icon(icon, size: tokens.smallIconSize, color: tokens.roles.text1)
         : MediaQuery.withClampedTextScaling(
@@ -530,7 +561,19 @@ class _KitAvatarState extends State<KitAvatar> {
             alignment: Alignment.center,
             children: [
               identity,
-              if (source != null)
+              if (source is _VectorLogoSource)
+                PositionedDirectional(
+                  start: 0,
+                  end: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: _KitVectorLogo(
+                    key: ValueKey('kit-vector-logo-${source.id}'),
+                    id: source.id,
+                    load: source.load,
+                  ),
+                )
+              else if (source != null)
                 PositionedDirectional(
                   start: 0,
                   end: 0,

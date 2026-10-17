@@ -78,7 +78,7 @@ class AutomationSettingsSections {
 ///
 /// **Your answers** (P6.7) lists what the app asked once on this server, in
 /// flow ([ConsentOwners]): keeping the phone server alive (battery, the
-/// maker's auto-start), "Tell me when the agent needs me", and the "Always
+/// maker's auto-start), "Notify me when the agent needs me", and the "Always
 /// allow" offers turned down. Only asked questions have a row, the ones
 /// still owing an answer first, then the declined (each saying what that
 /// means), then the allowed (opening where the system setting lives).
@@ -472,7 +472,14 @@ class _AutomationSettingsSectionState extends State<AutomationSettingsSection> {
               l10n.consentWhyMaker,
             InFlowConsentExplanation.needsYouAlertsOff =>
               l10n.consentWhyNeedsYou,
-            InFlowConsentExplanation.unfinished => l10n.consentWhyUnfinished,
+            // Asked but never answered: say what it protects, like a plain
+            // setting that is off. Never "the question closed".
+            InFlowConsentExplanation.unfinished => switch (kind) {
+              InFlowConsentKind.batteryExemption => l10n.consentWhyBattery,
+              InFlowConsentKind.makerAutoStart => l10n.consentWhyMaker,
+              InFlowConsentKind.needsYouNotifications =>
+                l10n.consentWhyNeedsYou,
+            },
             InFlowConsentExplanation.acceptedCheckSystemSettings =>
               kind == InFlowConsentKind.needsYouNotifications
                   ? l10n.consentAllowedNeedsYou
@@ -481,11 +488,15 @@ class _AutomationSettingsSectionState extends State<AutomationSettingsSection> {
           },
         ),
         supportingMaxLines: 3,
-        trailing: KitRowValue(switch (answer.choice) {
-          InFlowConsentChoice.accepted => l10n.consentValueAllowed,
-          InFlowConsentChoice.denied => l10n.consentValueDeclined,
-          _ => l10n.consentValueUnanswered,
-        }),
+        trailing: KitRowValue(
+          kind == InFlowConsentKind.needsYouNotifications
+              ? (allowed ? l10n.settingsV3On : l10n.settingsV3Off)
+              : switch (answer.choice) {
+                  InFlowConsentChoice.accepted => l10n.consentValueAllowed,
+                  InFlowConsentChoice.denied => l10n.consentValueDeclined,
+                  _ => l10n.consentValueUnanswered,
+                },
+        ),
         onTap: !enabled && !allowed
             ? null
             : () {

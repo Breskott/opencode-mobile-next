@@ -17,6 +17,7 @@ class PhoneEngineHealth {
     required this.boundary,
     required this.oc1Verified,
     required this.oc2,
+    this.oc2Verified = false,
     required this.commandActions,
     this.admission = 'unknown',
     this.chatAuthority = 'unknown',
@@ -27,7 +28,7 @@ class PhoneEngineHealth {
     this.globalAdmissionAuthority = false,
   }) : _boundaryReason = boundaryReason;
   final String profileId, engineVersion;
-  final bool execution, boundary, oc1Verified, oc2;
+  final bool execution, boundary, oc1Verified, oc2, oc2Verified;
   final Set<TeamProjectAction> commandActions;
 
   /// Admission is separate from supported execution capability.
@@ -46,7 +47,11 @@ class PhoneEngineHealth {
   /// then means unreported, while their existing execution flags remain valid.
   final String boundaryTier;
   final bool restartRequired, globalAdmissionAuthority;
-  bool get canExecute => execution && boundary && oc1Verified && !oc2;
+
+  /// Protocol identity alone never proves the engine's permission boundary.
+  bool get protocolVerified =>
+      oc2 ? oc2Verified && !oc1Verified : oc1Verified && !oc2Verified;
+  bool get canExecute => execution && boundary && protocolVerified;
 
   factory PhoneEngineHealth.fromJson(Object? value, String expectedProfile) {
     if (value is! Map ||
@@ -70,7 +75,8 @@ class PhoneEngineHealth {
           'boundary',
           'oc1Verified',
           'oc2',
-        ].any((k) => flags[k] is! bool)) {
+        ].any((k) => flags[k] is! bool) ||
+        (flags.containsKey('oc2Verified') && flags['oc2Verified'] is! bool)) {
       throw const PhoneEngineException('payloadInvalid');
     }
     const tiers = {'none', 'landlock', 'proot'};
@@ -93,6 +99,7 @@ class PhoneEngineHealth {
       boundary: flags['boundary'] as bool,
       oc1Verified: flags['oc1Verified'] as bool,
       oc2: flags['oc2'] as bool,
+      oc2Verified: flags['oc2Verified'] == true,
       admission: switch (value['admission']) {
         'idle' ||
         'busy' ||

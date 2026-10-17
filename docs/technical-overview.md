@@ -12,9 +12,9 @@ the two server protocols, building, releasing, and the code layout.
 | **Linux desktop** (x64) | Alpha. Builds, packages (`.deb` + tarball), CI-gated — the window has now been seen on a display (Xvfb, 1440x900, connected to a live server), but the `.deb` has still not been installed on a real machine. Contributor testing required. |
 | **Windows desktop** (x64) | Experimental. Compiled and packaged in CI; routine hands-on testing is still needed. Please file Windows reports. |
 
-The app ships **English only**. The localization layer is wired (`l10n.yaml`,
-`lib/l10n/app_en.arb`) but most user-facing strings are still hardcoded in
-the widgets. The plan to finish that is in [localization-todo.md](localization-todo.md).
+The app ships **English and Arabic** (`lib/l10n/app_en.arb`, `app_ar.arb`, a
+language picker in Settings); what is still English-only is listed in
+[localization-todo.md](localization-todo.md).
 
 Two independent audits — public-launch readiness and UI/UX — are under
 [audits/](audits/) with a [post-remediation status](audits/post-remediation-status-2026-08-29.md).
@@ -67,8 +67,18 @@ OpenCode 1 servers have no `pair` command, so the manual path below remains
 for them, and for anyone who prefers it.
 
 Pairing supplies credentials, not a route. The app refuses plain HTTP to
-anything but the phone's own loopback, so the server stays on `127.0.0.1`
-and you bring the connection to the phone through a tunnel that ends at
+public addresses and ordinary host names. Plain HTTP is accepted to the
+phone's own loopback, and to a private network address (10/8, 172.16/12,
+192.168/16, 169.254/16, IPv6 `fc00::/7` and `fe80::/10`, `*.local`) only after
+an inline warning that the password and conversation travel unencrypted on
+that network and an explicit "Use it anyway", recorded per server as
+`oc.cleartextOk.<profileId>` (the confirmed origin; a changed address asks
+again, and profile deletion removes it). A pairing code or QR carrying such an
+address goes through the same confirm before anything is sent. Codex and
+Paseo stay `wss://`-only off this device (Paseo also allows Tailscale), and
+quota reads are off for a plain-HTTP server. A client for plain HTTP never
+follows redirects. The safest layout still keeps the server on `127.0.0.1`
+and brings the connection to the phone through a tunnel that ends at
 `127.0.0.1` there too:
 
 - **USB / adb (simplest)** — with the phone plugged in and USB debugging on,
@@ -80,8 +90,9 @@ and you bring the connection to the phone through a tunnel that ends at
   to `http://127.0.0.1:4096`.
 - **HTTPS** — Tailscale Serve or another reverse proxy that terminates TLS
   in front of the server; connect to the `https://` address. Plain
-  `http://<hostname>:4096` across a network is rejected by the app, because
-  the password would cross it in clear text. Binding the server itself to a
+  `http://<hostname>:4096` across a network is rejected by the app (a private
+  network address is allowed only after the warning above), because the
+  password would cross it in clear text. Binding the server itself to a
   network interface is an advanced path, requires
   `OPENCODE_ALLOW_REMOTE_BIND=1`, and should only be taken behind TLS.
 - **On-device (Termux)** — tap **On-device (Termux)** on the Servers
@@ -176,7 +187,7 @@ OpenAPI dumps under [contracts/](../contracts/).
 
 | Tool | Version |
 |---|---|
-| Flutter | **3.47.2** — the exact version pinned for Shorebird releases |
+| Flutter | **3.47.1** (Shorebird's fork) — the exact version pinned for Shorebird releases; CI's quality gate uses upstream 3.47.2 |
 | Android SDK | API 37 (`flutter_secure_storage` 11 requires it) |
 | Shorebird CLI | 1.6.x (only needed for release/patch work) |
 
@@ -187,11 +198,12 @@ flutter build apk --release
 flutter build linux          # desktop build, same codebase
 ```
 
-The Flutter pin matters: release artifacts and the 1,200+ test suite are
-validated against Shorebird's pinned 3.47.2
+The Flutter pin matters: release artifacts and the local test suite use
+Shorebird's pinned 3.47.1
 (`~/.shorebird/bin/cache/flutter/<rev>/bin/flutter` after installing
-Shorebird). Older local Flutters may fail to resolve packages. Run tests
-serially — `flutter test --concurrency=1`.
+Shorebird); `SHOREBIRD_FLUTTER_VERSION` in `scripts/release.sh` and
+`android-release.yml` must agree. Older local Flutters may fail to resolve
+packages. Run tests serially — `flutter test --concurrency=1`.
 
 Two integration tests run against any live server, no emulator needed:
 
@@ -203,6 +215,48 @@ dart run tool/prompt_test.dart http://127.0.0.1:4123   # needs model auth
 
 
 ## Releases and code push
+
+Every installable release is a Shorebird release, so later Dart-only fixes
+can ship as patches. There are two ways to make one:
+
+- **CI tag build** (the normal path).
+  [android-release.yml](../.github/workflows/android-release.yml) runs on a
+  `v<x.y.z+N>` tag of the current `master`. It runs
+  `shorebird release android --build-name x.y.z --build-number N
+  --flutter-version 3.47.1 --artifact apk`, with the same version derivation as
+  `scripts/release.sh`. It signs with the `RELEASE_*` keystore secrets, checks
+  the APK signer, package and version, and stages a draft GitHub release. The
+  draft notes record `Shorebird release <version>, Flutter 3.47.1 (Shorebird
+  engine)`. Only a tag run uploads to Shorebird. A manual dispatch on a branch
+  builds with `--dry-run` and uploads nothing. `./scripts/release.sh github`
+  will not publish that draft unless the build run ran on the candidate tag and
+  its `Build and upload Shorebird release APK` step succeeded. It also refuses
+  a plain `flutter build apk` or a dry-run build.
+- **Local sideload**: `./scripts/release.sh sideload --publish`.
+
+Shorebird accepts each version once. Once a tag run's Shorebird step has
+succeeded, re-running it fails. If a later step fails, bump the build number in
+`pubspec.yaml`, add the matching `docs/releases/v<version>.md`, and tag again.
+Dart-only fixes ship as `./scripts/release.sh patch --publish`, run against the
+exact released `x.y.z+N`. Changes to native code, assets or
+`pubspec.yaml`/`pubspec.lock` need a new release.
+
+**Release notes have two layers** (`docs/releases/TEMPLATE.md`): "What changed
+for you", two to five plain-word bullets a user can act on, above "Technical
+changes", the full list. `python3 tool/release/release_notes.py new x.y.z+N`
+drafts the file and the technical list from the commits since the last tag;
+`check` validates it (`scripts/release.sh release|sideload` runs it first);
+`store --write` saves the top layer as the fastlane changelog
+`fastlane/metadata/android/en-US/changelogs/N.txt` (write the Arabic one in
+`ar/` by hand).
+
+**CI token (one-time owner step).** The release job fails closed without the
+`SHOREBIRD_TOKEN` repository secret. To create it, the owner runs
+`shorebird login:ci` locally, then
+`gh secret set SHOREBIRD_TOKEN --repo Eslamasabry/opencode-mobile-next` and
+pastes the token at its prompt, which keeps it out of shell history. Never
+print the token in logs, paste it into issues or chat, or commit it. To rotate
+it, run `shorebird login:ci` again and overwrite the secret.
 
 `./scripts/release.sh {release|patch|sideload}` is fail-closed: it demands a
 clean synced `master`, runs analysis, the full test suite, and a Shorebird
@@ -241,8 +295,29 @@ lib/
                    #  terminal, more hub, settings…) and widgets
 packages/opencode_sdk/   # generated Dart SDK from the checked-in OpenAPI contract
 contracts/               # OpenAPI dumps (v1 + v2 beta) + SDK coverage matrix
-video/                   # Remotion showcase project
+tool/demo-video/         # Remotion showcase project
 ```
+
+### Projects in shared storage
+
+A project under `/sdcard`, `/storage/emulated/N` or `/storage/XXXX-XXXX`
+(`lib/domain/shared_storage_path.dart`) is read by the server's host process:
+this app for OpenCode inside the app, Termux for the Termux server. Android 11+
+shows such a folder to a process without storage access but hides other apps'
+non-media files, so it lists only dot-folders such as `.git`. Opening or
+creating one therefore goes through `SharedStorageAccessFlow` (explanation,
+then Android's "All files access" page, `oc/storage` / `StorageAccess.kt`,
+`MANAGE_EXTERNAL_STORAGE`), and `SharedStorageGate` names which host lacks
+access (app, or Termux via `ls /storage/emulated/0`). The Files tab shows
+"Allow access to files" when such a folder lists only hidden entries. proot
+binds all of `/storage` and `/sdcard` until AI Team is on; from then on one
+confined launcher covers every built-in process, so only the exact folders the
+person opened are bound (own path plus `/sdcard` alias) and allowed by
+Landlock (`SharedStorageBinds`, `BuiltinLinux.protectedCommand`). Those folders
+are kept per profile as `oc.sharedProjects.<profileId>` (swept on deletion,
+`lib/state/shared_project_roots.dart`) and mirrored to a native file so binds
+survive a restart. A folder opened for the first time while AI Team is on is
+visible after the next server start. Other servers are never gated.
 
 UI talks to the gateway, never to `api/` or `api2/` directly. See
 [CONTRIBUTING.md](../CONTRIBUTING.md) for the boundaries a change must respect.

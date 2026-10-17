@@ -983,3 +983,82 @@ fn usage_changes_workspace_snapshot_without_invalidating_user_revision() {
             > before["projects"][0]["revision"].as_u64().unwrap()
     );
 }
+
+#[test]
+fn explicit_task_resume_after_checker_parse_failure_preserves_the_completed_turn() {
+    let root = storage();
+    let store = Store::open(root.path(), "p").unwrap();
+    let (project, job) = prepared_task(&store);
+    store
+        .update_job(&job, "queued", &json!({"stage":"starting"}))
+        .unwrap();
+    store
+        .update_job(
+            &job,
+            "starting",
+            &json!({
+                "stage":"running", "directory":"/root/work/task",
+                "sessionIds":{"worker":"original-worker"},
+                "promptDispatch":{"worker":"dispatched"}
+            }),
+        )
+        .unwrap();
+    store
+        .update_job(
+            &job,
+            "running",
+            &json!({
+                "resolvedModels":{"checker":"zai-coding-plan/glm-5.3-flash"}
+            }),
+        )
+        .unwrap();
+    store
+        .update_job(
+            &job,
+            "running",
+            &json!({
+                "stage":"checking", "sessionIds":{"checker":"completed-checker"},
+                "promptDispatch":{"checker":"dispatched"}, "taskCommit":"checked-commit"
+            }),
+        )
+        .unwrap();
+    store
+        .update_job(
+            &job,
+            "checking",
+            &json!({
+                "stage":"interrupted", "reason":"structuredOutputInvalid"
+            }),
+        )
+        .unwrap();
+    let interrupted = store.jobs().unwrap()[1].clone();
+    assert_eq!(interrupted["resumeStage"], "checking");
+    assert_eq!(
+        store.workspace().unwrap()["projects"][0]["tasks"][0]["status"],
+        "interrupted"
+    );
+    // A parse error is resumable without pretending a process restart occurred.
+    // Reopening storage must retain the original completed session checkpoint.
+    drop(store);
+    let store = Store::open(root.path(), "p").unwrap();
+    let mut resume = current_command(&store, "resume-checker", "resumeTask", &project);
+    resume["targetId"] = json!("task");
+    assert_eq!(store.execute(&resume).unwrap()["accepted"], true);
+    assert_eq!(store.execute(&resume).unwrap()["replayed"], true);
+    let jobs = store.jobs().unwrap();
+    assert_eq!(jobs.len(), 2);
+    let resumed = &jobs[1];
+    assert_eq!(resumed["stage"], "resuming");
+    assert_eq!(resumed["reason"], "");
+    for key in [
+        "id",
+        "sessionIds",
+        "promptDispatch",
+        "taskCommit",
+        "directory",
+        "resolvedModels",
+        "resumeStage",
+    ] {
+        assert_eq!(resumed[key], interrupted[key], "changed {key}");
+    }
+}

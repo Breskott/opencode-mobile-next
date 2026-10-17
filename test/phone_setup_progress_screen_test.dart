@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -135,6 +136,68 @@ double? _barValue(WidgetTester tester) => tester
     .value;
 
 void main() {
+  test('ownership recovery ignores running jobs and untrusted log lines', () {
+    expect(
+      SetupProgressView.needsOwnershipRecovery(
+        _job(state: SetupState.running, error: 'runtime_ownership_unknown'),
+      ),
+      isFalse,
+    );
+    expect(
+      SetupProgressView.needsOwnershipRecovery(
+        _job(
+          state: SetupState.failed,
+          log: 'ownershipUnknown',
+          error: 'download failed',
+        ),
+      ),
+      isFalse,
+    );
+    expect(
+      SetupProgressView.needsOwnershipRecovery(
+        _job(state: SetupState.failed, error: 'runtime_ownership_unknown'),
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets(
+    'ownership failure opens Android settings instead of continuing setup',
+    (tester) async {
+      var settings = 0;
+      const channel = MethodChannel('oc/termux');
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'openAppSettings') settings++;
+        return true;
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+      final h = await _pump(
+        tester,
+        initial: _job(
+          state: SetupState.failed,
+          current: const ComponentProgress(
+            id: 'opencode',
+            state: ComponentState.failed,
+            error: 'runtime_ownership_unknown: ownershipUnknown',
+          ),
+        ),
+      );
+      expect(find.textContaining('ownershipUnknown'), findsNothing);
+      expect(find.textContaining('Force stop'), findsOneWidget);
+      expect(find.byKey(const Key('setup-progress-continue')), findsNothing);
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('setup-progress-recover-ownership')),
+      );
+      await _settle(tester);
+      expect(settings, 1);
+      expect(h.engine.runs, isEmpty);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   group('rows show only real numbers', () {
     testWidgets('bytes as "18 of 30 MB" with the stage', (tester) async {
       await _pump(
@@ -218,6 +281,33 @@ void main() {
   });
 
   group('failure', () {
+    testWidgets('Python repair says why and keeps Details reachable', (
+      tester,
+    ) async {
+      final en = lookupAppLocalizations(const Locale('en'));
+      const detail = 'libonig5:amd64: install reinstreq half-installed';
+      await _pump(
+        tester,
+        initial: _job(
+          state: SetupState.failed,
+          done: {'linux', 'essentials', 'node', 'opencode'},
+          current: ComponentProgress(
+            id: 'python',
+            state: ComponentState.failed,
+            error: en.phoneSetupErrorPackageRepair,
+          ),
+          error: en.phoneSetupErrorPackageRepair,
+          log: detail,
+        ),
+      );
+      expect(find.text(en.phoneSetupErrorPackageRepair), findsOneWidget);
+      expect(find.textContaining(detail), findsNothing);
+      await _tapVisible(tester, find.text('Details'));
+      await _settle(tester);
+      expect(find.textContaining(detail), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('says the stage and the reason, red bar, Continue setup', (
       tester,
     ) async {
@@ -470,6 +560,26 @@ void main() {
       // The bar names the place, as the start screen does, with Back.
       expect(find.text('On this phone'), findsOneWidget);
       expect(find.byTooltip('Back'), findsOneWidget);
+      // FB2: a first setup says where it sits in the whole journey.
+      expect(
+        find.text(
+          'Step 1 of 3: install. Then name a project and start a conversation. You can leave '
+          "the app. We'll notify you when it's ready.",
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an update or added tools keep the plain leave note', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        initial: _job(current: _nodeDownloading),
+        firstSetup: false,
+      );
+      // Nothing to name or chat after an update: no step line.
+      expect(find.textContaining('Step 1 of 3'), findsNothing);
       expect(
         find.text("You can leave the app. We'll notify you when it's ready."),
         findsOneWidget,

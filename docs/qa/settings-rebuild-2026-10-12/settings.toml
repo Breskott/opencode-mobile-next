@@ -1,0 +1,18 @@
+# Settings rebuild evidence: hub with one server, with several, a server page,
+# an inner page. Two OpenCode 1.18 servers run on the host loopback; the
+# emulator reaches them at 10.0.2.2. Run: shotlist.py run settings.toml
+[app]
+package = "io.github.eslamasabry.opencode_mobile"
+
+[device]
+width = 720
+min_free_mb = 3500
+ram_mb = 2560
+
+[[builds]]
+name = "after"
+apk = "/home/eslam/Storage2/wt/oc_app-settings-ui/build/app/outputs/flutter-apk/app-release.apk"
+avd = "shots_settings"
+
+[env]
+forbidden = ["eslam", "pop-os", "100.126", "100.117", "@gmail"]

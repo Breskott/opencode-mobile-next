@@ -70,7 +70,7 @@ final class TeamMark {
 // The person's words: host phrase, task line, stages, roles
 // ---------------------------------------------------------------------------
 
-/// The computer's name from the team URL ("pop-os"), or null when the URL
+/// The computer's name from the team URL ("dev-pc"), or null when the URL
 /// names no host or only an address (an IP or `localhost`): an address is
 /// not a name a person would call their computer.
 String? teamComputerName(OrchestrationController controller) {
@@ -158,7 +158,7 @@ String? teamHostCondition(
   return null;
 }
 
-/// Where the team runs, as one short phrase: "On this phone", "On pop-os"
+/// Where the team runs, as one short phrase: "On this phone", "On dev-pc"
 /// or "On your computer", then " · Paused" or " · Not answering" when true.
 /// Never an address, a version or the engine's name: those are under the
 /// info button's Technical details. [working]: see [teamHostCondition].
@@ -180,7 +180,7 @@ String teamHostPhrase(
   return condition == null ? place : '$place$teamUsageSeparator$condition';
 }
 
-/// Where the team runs, alone: "On this phone", "On pop-os" or "On your
+/// Where the team runs, alone: "On this phone", "On dev-pc" or "On your
 /// computer" ([teamHostPhrase] without its condition).
 String teamHostPlace(
   AppLocalizations l10n,
@@ -473,8 +473,8 @@ List<OrchestrationAgent> teamOffAgents(Iterable<OrchestrationAgent> agents) => [
     if (!teamAgentIsLive(agent)) agent,
 ];
 
-/// The host's name from the orchestration URL: `pop-os` for
-/// `https://pop-os:7000`, `100.126.15.6` for an address, IPv6 without its
+/// The host's name from the orchestration URL: `dev-pc` for
+/// `https://dev-pc:7000`, `100.101.102.103` for an address, IPv6 without its
 /// brackets. Null when the URL names no host (a fixture path or a
 /// `fixture://` URL). Never the connected OpenCode profile's name: the
 /// team runs on the host, which is not necessarily the OpenCode server.
@@ -1121,6 +1121,24 @@ String teamAgentStateWord(AppLocalizations l10n, AgentState state) =>
       AgentState.crashed => l10n.teamUiHomeAgentStateCrashed,
       AgentState.unknown => l10n.teamUiHomeAgentStateUnknown,
     };
+
+/// The plain reason the host cannot run [agent] (its `unavailable_reason`),
+/// or null when it can. The host's own text is for Details, never copy:
+/// a model, provider or sign-in problem is named as such, anything else
+/// stays general.
+String? teamAgentUnavailableWords(
+  AppLocalizations l10n,
+  OrchestrationAgent agent,
+) {
+  final reason = agent.unavailableReason?.trim().toLowerCase();
+  if (reason == null || reason.isEmpty) return null;
+  final model = RegExp(
+    r'provider|model|sign(ed)?[ -]?in|log(ged)?[ -]?in|api[ -]?key|credential|auth|token',
+  );
+  return model.hasMatch(reason)
+      ? l10n.teamAgentUnavailableModelWords
+      : l10n.teamAgentUnavailableOtherWords;
+}
 
 /// The mark per agent state: status is never colour-only (§11). An agent
 /// that waits on the person takes the needs-you mark; a blocked one is

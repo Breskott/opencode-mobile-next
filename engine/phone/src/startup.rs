@@ -3,7 +3,91 @@ use hmac::{Hmac, Mac};
 use sha2::Sha256;
 use std::io::{Read, Write};
 
-fn ready_line(port: u16, profile: &str, token: &str, nonce: &str) -> Result<String, &'static str> {
+/// Metadata read by the nondumpable child itself, authenticated over its private
+/// launch pipe. Native may use it only while the exact launching Process lives.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProcessIdentity {
+    pid: i32,
+    start_ticks: i64,
+    parent: i32,
+    group: i32,
+    session: i32,
+}
+
+impl ProcessIdentity {
+    fn validate(&self) -> Result<(), &'static str> {
+        if self.pid <= 1
+            || self.start_ticks <= 0
+            || self.parent < 0
+            || self.group <= 0
+            || self.session < 0
+        {
+            return Err("startupInvalid");
+        }
+        Ok(())
+    }
+
+    fn from_stat(stat: &str) -> Result<Self, &'static str> {
+        if stat.len() > 4096 {
+            return Err("startupInvalid");
+        }
+        // comm can contain spaces and parentheses. Its final ')' is the only
+        // reliable boundary before the fixed-position numeric stat fields.
+        let (pid, _) = stat.split_once(" (").ok_or("startupInvalid")?;
+        let close = stat.rfind(')').ok_or("startupInvalid")?;
+        if close < pid.len() + 2 {
+            return Err("startupInvalid");
+        }
+        let fields: Vec<&str> = stat[close + 1..].split_ascii_whitespace().collect();
+        if fields.len() < 20 {
+            return Err("startupInvalid");
+        }
+        let number = |value: &str| -> Result<i64, &'static str> {
+            if value.is_empty() || !value.bytes().all(|b| b.is_ascii_digit()) {
+                return Err("startupInvalid");
+            }
+            value.parse::<i64>().map_err(|_| "startupInvalid")
+        };
+        let int = |value: &str| -> Result<i32, &'static str> {
+            i32::try_from(number(value)?).map_err(|_| "startupInvalid")
+        };
+        let identity = Self {
+            pid: int(pid)?,
+            start_ticks: number(fields[19])?,
+            parent: int(fields[1])?,
+            group: int(fields[2])?,
+            session: int(fields[3])?,
+        };
+        identity.validate()?;
+        Ok(identity)
+    }
+
+    fn current() -> Result<Self, &'static str> {
+        // /proc/self remains available after PR_SET_DUMPABLE=0 even when
+        // Android hidepid prevents the parent reading /proc/<child>/stat.
+        let mut stat = String::new();
+        std::fs::File::open("/proc/self/stat")
+            .map_err(|_| "startupInvalid")?
+            .take(4097)
+            .read_to_string(&mut stat)
+            .map_err(|_| "startupInvalid")?;
+        let identity = Self::from_stat(&stat)?;
+        if identity.pid as u32 != std::process::id() {
+            return Err("startupInvalid");
+        }
+        Ok(identity)
+    }
+}
+
+fn ready_line(
+    port: u16,
+    profile: &str,
+    token: &str,
+    nonce: &str,
+    identity: ProcessIdentity,
+) -> Result<String, &'static str> {
+    identity.validate()?;
     if port == 0
         || !crate::config::valid_id(profile)
         || token.len() != 64
@@ -14,7 +98,14 @@ fn ready_line(port: u16, profile: &str, token: &str, nonce: &str) -> Result<Stri
     {
         return Err("startupInvalid");
     }
-    let message = format!("oc-phone-engine-ready-v1\n{profile}\n{port}\n{nonce}");
+    let ProcessIdentity {
+        pid,
+        start_ticks,
+        parent,
+        group,
+        session,
+    } = identity;
+    let message = format!("oc-phone-engine-ready-v2\n{profile}\n{port}\n{nonce}\n{pid}\n{start_ticks}\n{parent}\n{group}\n{session}");
     let mut mac = Hmac::<Sha256>::new_from_slice(token.as_bytes()).map_err(|_| "startupInvalid")?;
     mac.update(message.as_bytes());
     let signature: String = mac
@@ -23,16 +114,23 @@ fn ready_line(port: u16, profile: &str, token: &str, nonce: &str) -> Result<Stri
         .iter()
         .map(|b| format!("{b:02x}"))
         .collect();
-    let line = serde_json::json!({"schemaVersion":1,"profileId":profile,"port":port,"nonce":nonce,"mac":signature}).to_string();
+    let line = serde_json::json!({"schemaVersion":2,"profileId":profile,"port":port,"nonce":nonce,"mac":signature,"identity":identity}).to_string();
     if line.len() > 1024 {
         return Err("startupInvalid");
     }
     Ok(line)
 }
 
-/// Call exactly once after binding port 0, and before starting HTTP processing.
+/// Call exactly once after binding port 0 and after startup hygiene, before HTTP.
 pub fn publish_ready(port: u16, profile: &str, token: &str) -> Result<(), &'static str> {
-    let line = ready_line(port, profile, token, &uuid::Uuid::new_v4().to_string())?;
+    let identity = ProcessIdentity::current()?;
+    let line = ready_line(
+        port,
+        profile,
+        token,
+        &uuid::Uuid::new_v4().to_string(),
+        identity,
+    )?;
     let stdout = std::io::stdout();
     let mut out = stdout.lock();
     writeln!(out, "{line}")
@@ -66,14 +164,84 @@ pub fn watch_parent_pipe() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn fixture_identity() -> ProcessIdentity {
+        ProcessIdentity {
+            pid: 12345,
+            start_ticks: 987654321,
+            parent: 12000,
+            group: 12000,
+            session: 0,
+        }
+    }
+    fn stat_line(pid: &str, parent: &str, group: &str, session: &str, ticks: &str) -> String {
+        let mut fields = vec!["0"; 20];
+        fields[0] = "S";
+        fields[1] = parent;
+        fields[2] = group;
+        fields[3] = session;
+        fields[19] = ticks;
+        format!("{pid} (engine ) odd (name)) {}", fields.join(" "))
+    }
     #[test]
-    fn readiness_is_bounded_authenticated_and_not_a_token_disclosure() {
+    fn process_identity_parses_comm_and_checks_native_numeric_bounds() {
+        assert_eq!(
+            ProcessIdentity::from_stat(&stat_line("12345", "12000", "12000", "0", "987654321"))
+                .unwrap(),
+            fixture_identity()
+        );
+        assert!(ProcessIdentity::from_stat(&stat_line(
+            "2147483647",
+            "0",
+            "2147483647",
+            "2147483647",
+            "9223372036854775807"
+        ))
+        .is_ok());
+        for fields in [
+            ["1", "0", "1", "0", "1"],
+            ["2147483648", "0", "1", "0", "1"],
+            ["2", "-1", "1", "0", "1"],
+            ["2", "2147483648", "1", "0", "1"],
+            ["2", "0", "0", "0", "1"],
+            ["2", "0", "2147483648", "0", "1"],
+            ["2", "0", "1", "-1", "1"],
+            ["2", "0", "1", "2147483648", "1"],
+            ["2", "0", "1", "0", "0"],
+            ["2", "0", "1", "0", "-1"],
+            ["2", "0", "1", "0", "9223372036854775808"],
+            ["2", "0", "1", "0", "1.5"],
+        ] {
+            assert_eq!(
+                ProcessIdentity::from_stat(&stat_line(
+                    fields[0], fields[1], fields[2], fields[3], fields[4]
+                ))
+                .unwrap_err(),
+                "startupInvalid"
+            );
+        }
+        for malformed in ["", "2 engine S 1", "2 (engine) S 1", "2 engine) S 1"] {
+            assert!(ProcessIdentity::from_stat(malformed).is_err());
+        }
+        assert!(ProcessIdentity::from_stat(&"x".repeat(4097)).is_err());
+    }
+    #[test]
+    fn self_identity_matches_current_process() {
+        let identity = ProcessIdentity::current().unwrap();
+        assert_eq!(identity.pid as u32, std::process::id());
+        assert_eq!(identity.parent, unsafe { libc::getppid() });
+        assert_eq!(identity.group, unsafe { libc::getpgrp() });
+        assert_eq!(identity.session, unsafe { libc::getsid(0) });
+        assert!(identity.start_ticks > 0);
+    }
+    #[test]
+    fn readiness_is_bounded_authenticated_and_binds_every_identity_field() {
         let token = "ab".repeat(32);
         let nonce = "57cfb6f9-6f2d-4d84-bbc4-26d23927a2c3";
-        let line = ready_line(43123, "phone", &token, nonce).unwrap();
+        let identity = fixture_identity();
+        let line = ready_line(43123, "phone", &token, nonce, identity).unwrap();
         let value: serde_json::Value = serde_json::from_str(&line).unwrap();
         let mut mac = Hmac::<Sha256>::new_from_slice(token.as_bytes()).unwrap();
-        mac.update(b"oc-phone-engine-ready-v1\nphone\n43123\n57cfb6f9-6f2d-4d84-bbc4-26d23927a2c3");
+        mac.update(b"oc-phone-engine-ready-v2\nphone\n43123\n57cfb6f9-6f2d-4d84-bbc4-26d23927a2c3\n12345\n987654321\n12000\n12000\n0");
         let expected: String = mac
             .finalize()
             .into_bytes()
@@ -81,11 +249,62 @@ mod tests {
             .map(|b| format!("{b:02x}"))
             .collect();
         assert_eq!(value["mac"], expected);
-        assert!(!line.contains(&token));
-        assert_ne!(ready_line(43124, "phone", &token, nonce).unwrap(), line);
-        assert_ne!(ready_line(43123, "other", &token, nonce).unwrap(), line);
-        assert!(ready_line(0, "phone", &token, nonce).is_err());
-        assert!(ready_line(43123, "phone", &token, "invalid").is_err());
+        assert_eq!(
+            expected,
+            "a821cb0022b70367032aa1ff3dff2714f9dbbfaf79fcf17b547fb9a52875552f"
+        );
+        assert_eq!(value["schemaVersion"], 2);
+        assert_eq!(value.as_object().unwrap().len(), 6);
+        assert_eq!(
+            value["identity"],
+            serde_json::json!({"pid":12345,"startTicks":987654321,"parent":12000,"group":12000,"session":0})
+        );
+        assert!(line.len() <= 1024 && !line.contains(&token));
+        for changed in [
+            ProcessIdentity {
+                pid: 12346,
+                ..identity
+            },
+            ProcessIdentity {
+                start_ticks: 987654322,
+                ..identity
+            },
+            ProcessIdentity {
+                parent: 12001,
+                ..identity
+            },
+            ProcessIdentity {
+                group: 12001,
+                ..identity
+            },
+            ProcessIdentity {
+                session: 1,
+                ..identity
+            },
+        ] {
+            let changed: serde_json::Value =
+                serde_json::from_str(&ready_line(43123, "phone", &token, nonce, changed).unwrap())
+                    .unwrap();
+            assert_ne!(changed["mac"], value["mac"]);
+        }
+        assert_ne!(
+            ready_line(43124, "phone", &token, nonce, identity).unwrap(),
+            line
+        );
+        assert_ne!(
+            ready_line(43123, "other", &token, nonce, identity).unwrap(),
+            line
+        );
+        assert!(ready_line(0, "phone", &token, nonce, identity).is_err());
+        assert!(ready_line(43123, "phone", &token, "invalid", identity).is_err());
+        assert!(ready_line(
+            43123,
+            "phone",
+            &token,
+            nonce,
+            ProcessIdentity { pid: 1, ..identity }
+        )
+        .is_err());
     }
     #[test]
     fn stdin_eof_child() {

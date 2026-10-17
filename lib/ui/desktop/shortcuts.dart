@@ -62,11 +62,25 @@ class OpenTerminalIntent extends Intent {
   const OpenTerminalIntent();
 }
 
-/// Ctrl/Cmd+1..4 — switch primary destination.
+/// Ctrl/Cmd+1..3 — switch primary destination (Chats, Files, Settings).
 class SelectDestinationIntent extends Intent {
   const SelectDestinationIntent(this.index);
 
   final int index;
+}
+
+/// Opens the Chats destination, optionally on its "Needs you" or "Running"
+/// filter. Not bound to a key: notifications, the Quick Settings tile,
+/// pinned shortcuts and search use it for everything that used to open the
+/// Inbox. Dispatched through [dispatchAtShellRoot] from any route.
+class OpenChatsIntent extends Intent {
+  const OpenChatsIntent({this.needsYou = false, this.running = false});
+
+  /// Open with the "Needs you" chip on.
+  final bool needsYou;
+
+  /// Open with the "Running" chip on.
+  final bool running;
 }
 
 // =====================================================================
@@ -101,7 +115,6 @@ Map<ShortcutActivator, Intent> get appShortcutBindings => {
   ..._accelerator(LogicalKeyboardKey.digit1, const SelectDestinationIntent(0)),
   ..._accelerator(LogicalKeyboardKey.digit2, const SelectDestinationIntent(1)),
   ..._accelerator(LogicalKeyboardKey.digit3, const SelectDestinationIntent(2)),
-  ..._accelerator(LogicalKeyboardKey.digit4, const SelectDestinationIntent(3)),
 };
 
 /// Where a shortcut works: the help groups its rows by it.
@@ -136,7 +149,7 @@ List<ShortcutHelpEntry> shortcutHelp(AppLocalizations l10n) {
     ShortcutHelpEntry('$mod + K', l10n.e7LocaleUiCommandLauncher),
     ShortcutHelpEntry('$mod + N', l10n.e7LocaleUiNewSession),
     ShortcutHelpEntry('$mod + F', l10n.e7LocaleUiFindSurface),
-    ShortcutHelpEntry('$mod + 1 … 4', l10n.e7LocaleUiDestinations),
+    ShortcutHelpEntry('$mod + 1 … 3', l10n.e7LocaleUiDestinations),
     ShortcutHelpEntry('$mod + ,', l10n.e7LocaleUiSettings),
     ShortcutHelpEntry('$mod + `', l10n.e7LocaleUiTerminal),
     ShortcutHelpEntry('$mod + W', l10n.e7LocaleUiCloseScreen),
@@ -210,7 +223,7 @@ class AppShortcutSignals {
 
 /// Pops every pushed route, then offers [intent] to the shell root.
 ///
-/// Ctrl+1..4 and Ctrl+` are shell-level: pressed while chat, the terminal,
+/// Ctrl+1..3 and Ctrl+` are shell-level: pressed while chat, the terminal,
 /// or review is open they must not silently do nothing. The pop is
 /// synchronous, so the root surface is current again by the time the
 /// signal is dispatched; a surface still animating in gets one more try
@@ -396,6 +409,7 @@ class _AppShortcutsState extends State<AppShortcuts> {
     // pushed route (chat, terminal, review) nothing visible claims them, so
     // the fallback returns to the root and asks the shell again.
     SelectDestinationIntent() ||
+    OpenChatsIntent() ||
     OpenTerminalIntent() => _dispatch(intent, (_) => _returnToShell(intent)),
     _ => _dispatch(intent, (_) {}),
   };
@@ -406,7 +420,7 @@ class _AppShortcutsState extends State<AppShortcuts> {
   Widget build(BuildContext context) {
     // Off desktop only the bus is installed, with no key bindings: search
     // results use it to reach the shell's tabs from any route, the same way
-    // Ctrl+1..4 does here, and the shell's search button opens the launcher.
+    // Ctrl+1..3 does here, and the shell's search button opens the launcher.
     if (!desktopInteractions) {
       return AppShortcutScope(
         signals: _signals,
@@ -452,6 +466,7 @@ class DesktopCommand {
     this.hint,
     this.keys,
     this.keywords,
+    this.onlyWhenSearched = false,
   });
 
   final String label;
@@ -466,6 +481,10 @@ class DesktopCommand {
 
   /// Words that find the command without being shown (search-index aliases).
   final String? keywords;
+
+  /// Listed only as a match for a typed query (a conversation), never in
+  /// the full list an empty query shows.
+  final bool onlyWhenSearched;
 }
 
 /// Opens the searchable command launcher: the kit sheet (a centred panel on
@@ -495,7 +514,12 @@ List<DesktopCommand> matchCommands(
   List<DesktopCommand> commands,
   String query,
 ) {
-  if (query.trim().isEmpty) return commands;
+  if (query.trim().isEmpty) {
+    return [
+      for (final command in commands)
+        if (!command.onlyWhenSearched) command,
+    ];
+  }
   final index = SettingsSearchIndex([
     for (final (i, command) in commands.indexed)
       SettingsSearchDocument(
@@ -523,10 +547,17 @@ class _CommandPalette extends StatefulWidget {
 
 class _CommandPaletteState extends State<_CommandPalette> {
   final _query = TextEditingController();
+  final _focus = FocusNode();
 
   @override
   void initState() {
     super.initState();
+    // Opened by a tap on a Search button the field must be ready to type
+    // (keyboard up), not wait for a second tap; autofocus alone loses to the
+    // button that still holds focus while the sheet slides in.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focus.requestFocus();
+    });
     // Filtering is local and instant; the field's settled callback only
     // drives its own count announcement.
     _query.addListener(_changed);
@@ -554,6 +585,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
     _query
       ..removeListener(_changed)
       ..dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -571,6 +603,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
           fieldKey: const ValueKey('command-palette-query'),
           controller: _query,
           label: l10n.shortcutsPaletteSearch,
+          focusNode: _focus,
           autofocus: true,
           resultCount: query.isEmpty ? null : matches.length,
           onChanged: (_) {},
@@ -583,7 +616,17 @@ class _CommandPaletteState extends State<_CommandPalette> {
             children: [
               for (final (index, command) in matches.indexed)
                 KitRow(
-                  key: ValueKey('command-${command.label}'),
+                  // Labels repeat (a tab and a setting both called "Files"):
+                  // a repeated label is numbered, so filtering never leaves
+                  // a stale row behind under a shared key.
+                  key: ValueKey(
+                    matches
+                                .where((other) => other.label == command.label)
+                                .length >
+                            1
+                        ? 'command-${command.label}-$index'
+                        : 'command-${command.label}',
+                  ),
                   leading: KitRow.icon(context, command.icon),
                   title: command.label,
                   supporting: command.hint == null

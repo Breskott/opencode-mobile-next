@@ -13,7 +13,6 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/offline_queue.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
-import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A v2-flavored fake: forms/inbox capabilities on, inbox mutations
@@ -29,7 +28,7 @@ class _V2ChatApi extends OpenCodeApi with CompleteMessageHistory {
 
   @override
   ServerCapabilities get capabilities =>
-      const ServerCapabilities(forms: true, inbox: true);
+      const ServerCapabilities(forms: true, inbox: true, promptSteering: true);
 
   @override
   Future<List<MessageWithParts>> messages(String id) async => [];
@@ -289,9 +288,11 @@ void main() {
     testWidgets('offline there is no Try again: it waits for the reconnect', (
       tester,
     ) async {
-      await pump(tester, connected: false);
+      final (_, controller) = await pump(tester, connected: false);
       expect(find.text('run the migration'), findsOneWidget);
       expect(find.byKey(const ValueKey('queued-bubble-retry')), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+      controller.dispose();
     });
   });
 
@@ -330,61 +331,36 @@ void main() {
     await _settle(tester);
     expect(composerText(), isEmpty);
     expect(api.prompts.single.text, 'bring me back');
-    expect(api.prompts.single.delivery, PromptDelivery.queue);
+    // Undo is an ordinary send now: a running turn is steered, whatever the
+    // withdrawn item used to be.
+    expect(api.prompts.single.delivery, PromptDelivery.steer);
   });
 
-  testWidgets('the bubble offers only the inline flip that changes the mode', (
-    tester,
-  ) async {
+  testWidgets('a waiting message offers Cancel only: no way to switch it '
+      'between steering and waiting', (tester) async {
     final api = _V2ChatApi();
     final controller = await _controller(api);
     addTearDown(controller.dispose);
     await _pumpChat(tester, controller);
-    _enqueue(controller, inboxID: 'msg_1', delivery: 'queue');
+    for (final delivery in ['queue', 'steer']) {
+      _enqueue(controller, inboxID: 'm-$delivery', delivery: delivery);
+    }
     await _settle(tester);
-
-    await tester.tap(find.byKey(const ValueKey('pending-send-msg_1')));
-    await _settle(tester);
-    expect(find.byKey(const ValueKey('inbox-action-steer')), findsOneWidget);
-    expect(find.byKey(const ValueKey('inbox-action-queue')), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('inbox-action-steer')));
-    await _settle(tester);
-
-    expect(api.inboxSteers.single, ('session-1', 'msg_1'));
+    // Older server work keeps its truthful words.
+    expect(find.text('Sends after this reply'), findsOneWidget);
     expect(find.text('Adds to this turn'), findsOneWidget);
 
-    // Now the opposite flip is the one on offer.
-    await tester.tap(find.byKey(const ValueKey('pending-send-msg_1')));
-    await _settle(tester);
-    expect(find.byKey(const ValueKey('inbox-action-queue')), findsOneWidget);
-    expect(find.byKey(const ValueKey('inbox-action-steer')), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('inbox-action-queue')));
-    await _settle(tester);
-    expect(api.inboxQueues.single, ('session-1', 'msg_1'));
-  });
-
-  testWidgets('a 409 flip toasts Already delivered and drops the bubble', (
-    tester,
-  ) async {
-    final api = _V2ChatApi()
-      ..inboxError = ApiException(
-        'delivered',
-        statusCode: 409,
-        errorTag: 'ConflictError',
-      );
-    final controller = await _controller(api);
-    addTearDown(controller.dispose);
-    await _pumpChat(tester, controller);
-    _enqueue(controller, inboxID: 'msg_1', delivery: 'queue');
-    await _settle(tester);
-
-    await tester.tap(find.byKey(const ValueKey('pending-send-msg_1')));
-    await _settle(tester);
-    await tester.tap(find.byKey(const ValueKey('inbox-action-steer')));
-    await _settle(tester);
-
-    expect(find.text('Already delivered'), findsOneWidget);
-    expect(find.byKey(const ValueKey('pending-send-msg_1')), findsNothing);
+    for (final delivery in ['queue', 'steer']) {
+      await tester.tap(find.byKey(ValueKey('pending-send-m-$delivery')));
+      await _settle(tester);
+      expect(find.byKey(const ValueKey('inbox-action-cancel')), findsOneWidget);
+      expect(find.byKey(const ValueKey('inbox-action-steer')), findsNothing);
+      expect(find.byKey(const ValueKey('inbox-action-queue')), findsNothing);
+      expect(find.text('Send now and steer instead'), findsNothing);
+      expect(find.text('Wait for this run instead'), findsNothing);
+      await tester.tapAt(const Offset(2, 2));
+      await _settle(tester);
+    }
   });
 
   testWidgets('non-user inbox items are informational only', (tester) async {
@@ -522,22 +498,12 @@ void main() {
       return (api, controller);
     }
 
-    Future<void> send(
-      WidgetTester tester,
-      String text, {
-      bool steer = false,
-    }) async {
+    Future<void> send(WidgetTester tester, String text) async {
       await tester.enterText(
         find.byKey(const Key('chat-composer-field')),
         text,
       );
       await tester.pump();
-      if (steer) {
-        // "Send after this reply" is the default (P6.6); adding to the
-        // running turn is the person's choice.
-        await tester.tap(find.text('Add to this turn').last);
-        await tester.pump();
-      }
       await tester.tap(find.byKey(const Key('chat-send-button')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -568,7 +534,7 @@ void main() {
       );
       await tester.pump();
 
-      await send(tester, 'with a detail sheet', steer: true);
+      await send(tester, 'with a detail sheet');
 
       expect(api.inboxCancels.map((c) => c.$2), ['m1', 'm2']);
       expect(api.prompts.single.delivery, PromptDelivery.steer);
@@ -590,30 +556,10 @@ void main() {
 
       expect(api.prompts.single.text, 'next thought');
     });
-
-    testWidgets('a message for after the run merges nothing', (tester) async {
-      final (api, controller) = await busyChat(tester);
-      _enqueue(controller, inboxID: 'm1', text: 'Steer me', delivery: 'steer');
-      await tester.pump();
-      await tester.enterText(
-        find.byKey(const Key('chat-composer-field')),
-        'later please',
-      );
-      await tester.pump();
-      await tester.tap(find.text('Send after'));
-      await tester.pump();
-      await tester.tap(find.byKey(const Key('chat-send-button')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(api.inboxCancels, isEmpty);
-      expect(api.prompts.single.text, 'later please');
-      expect(api.prompts.single.delivery, PromptDelivery.queue);
-    });
   });
 
-  testWidgets('while busy on v2 the composer keeps its mic and Send; the '
-      'toggle queues', (tester) async {
+  testWidgets('while busy on v2 Send is Stop and the mic stays; every send '
+      'steers and nothing offers to queue', (tester) async {
     final api = _V2ChatApi();
     final controller = await _controller(api);
     addTearDown(controller.dispose);
@@ -623,15 +569,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // Stop lives on the running turn, never in the composer: with nothing
-    // typed its one trailing control stays the mic (or a disabled Send).
-    expect(find.byKey(const ValueKey('kit-composer-stop')), findsNothing);
-    expect(
-      find.byKey(const Key('composer-voice-button')).evaluate().length +
-          find.byKey(const Key('chat-send-button')).evaluate().length,
-      1,
-    );
-    // Watching a run with nothing typed shows no delivery strip.
+    // The composer's Send is Stop (the only one); the mic, where the
+    // platform has one, stays beside it.
+    expect(find.byKey(const ValueKey('kit-composer-stop')), findsOneWidget);
+    expect(find.byKey(const Key('chat-send-button')), findsNothing);
     expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
 
     await tester.enterText(
@@ -639,44 +580,22 @@ void main() {
       'interject now',
     );
     await tester.pump();
-    // UX-P0-04: once there is something to send, the choice is stated in
-    // words while the run is active.
-    expect(find.byKey(const Key('composer-delivery-control')), findsOneWidget);
-    expect(find.text('Add to this turn'), findsOneWidget);
-    expect(find.text('Send after'), findsOneWidget);
-
+    // One send, said in words, with no choice beside it.
+    expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
+    expect(find.text('Send after'), findsNothing);
+    expect(find.byTooltip('Add to this turn'), findsOneWidget);
     expect(
-      tester
-          .widget<KitSegmented<KitComposerDelivery>>(
-            find.byKey(const Key('composer-delivery-control')),
-          )
-          .selected,
-      KitComposerDelivery.afterThisReply,
+      find.text('The agent will read this while it works.'),
+      findsOneWidget,
     );
-    expect(find.byKey(const Key('chat-send-button')), findsOneWidget);
-    // Select the mid-turn choice; the kit defaults to sending after the reply.
-    await tester.tap(find.text('Add to this turn'));
-    await tester.pump();
+    expect(find.byTooltip('Send after this reply'), findsNothing);
     await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     expect(api.prompts.single.text, 'interject now');
     expect(api.prompts.single.delivery, PromptDelivery.steer);
 
-    await tester.enterText(
-      find.byKey(const Key('chat-composer-field')),
-      'after this run',
-    );
-    await tester.pump();
-    await tester.tap(find.text('Send after'));
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('chat-send-button')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
-    expect(api.prompts.last.text, 'after this run');
-    expect(api.prompts.last.delivery, PromptDelivery.queue);
-    // No hidden gesture: a long press on Send opens nothing.
+    // A long press on Send opens no delivery menu.
     await tester.enterText(
       find.byKey(const Key('chat-composer-field')),
       'one more',
@@ -686,6 +605,15 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byKey(const Key('send-delivery-menu')), findsNothing);
+    // Whatever the press did, nothing reached the server as a queued send.
+    expect(
+      api.prompts.every((p) => p.delivery == PromptDelivery.steer),
+      isTrue,
+    );
+    expect(
+      api.prompts.where((p) => p.delivery == PromptDelivery.queue),
+      isEmpty,
+    );
   });
 
   testWidgets('v1 keeps Send live while busy and queues after the run', (
@@ -720,11 +648,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // OpenCode 1 accepts a prompt mid-turn and runs it afterwards: Stop is
-    // on the running turn, the composer keeps its mic (or Send), and it
-    // says what Send will do once something is typed.
+    // OpenCode 1 accepts a prompt mid-turn and runs it afterwards: Send is
+    // Stop while nothing is typed, and the composer says what Send will do
+    // once something is typed.
     expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
-    expect(find.byKey(const ValueKey('kit-composer-stop')), findsNothing);
+    expect(find.byKey(const ValueKey('kit-composer-stop')), findsOneWidget);
     // Nothing typed yet: no hint competes with the running reply.
     expect(find.text('Sends after this reply'), findsNothing);
 
@@ -757,85 +685,9 @@ void main() {
     expect(find.text('Sends after this reply'), findsNothing);
   });
 
-  testWidgets('the delivery control is absent until a run is active and '
-      'something is typed', (tester) async {
-    final api = _V2ChatApi();
-    final controller = await _controller(api);
-    addTearDown(controller.dispose);
-    await _pumpChat(tester, controller);
-
-    // Idle composer: nothing to deliver into, so no extra density.
-    await tester.enterText(
-      find.byKey(const Key('chat-composer-field')),
-      'typed while idle',
-    );
-    await tester.pump();
-    expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
-
-    controller.busySessions.add('session-1');
-    controller.notifyListeners();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(find.byKey(const Key('composer-delivery-control')), findsOneWidget);
-
-    // Clearing the field while the run continues removes the strip again.
-    await tester.enterText(find.byKey(const Key('chat-composer-field')), '');
-    await tester.pump();
-    expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
-    await tester.enterText(
-      find.byKey(const Key('chat-composer-field')),
-      'typed while busy',
-    );
-    await tester.pump();
-    expect(find.byKey(const Key('composer-delivery-control')), findsOneWidget);
-
-    controller.busySessions.remove('session-1');
-    controller.notifyListeners();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
-  });
-
-  testWidgets('choosing Queue in the visible control sends with queue '
-      'delivery', (tester) async {
-    final api = _V2ChatApi();
-    final controller = await _controller(api);
-    addTearDown(controller.dispose);
-    await _pumpChat(tester, controller);
-    controller.busySessions.add('session-1');
-    controller.notifyListeners();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    await tester.enterText(
-      find.byKey(const Key('chat-composer-field')),
-      'after this run',
-    );
-    await tester.pump();
-    await tester.tap(find.text('Send after'));
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('chat-send-button')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    expect(api.prompts.single.text, 'after this run');
-    expect(api.prompts.single.delivery, PromptDelivery.queue);
-
-    // The choice is remembered, and the label keeps showing it, so the next
-    // send does not silently revert to steering.
-    await tester.enterText(
-      find.byKey(const Key('chat-composer-field')),
-      'and this one too',
-    );
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('chat-send-button')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(api.prompts.last.delivery, PromptDelivery.queue);
-  });
-
-  testWidgets('the busy v2 composer with the delivery control survives 2.5x '
-      'text on a 360dp phone', (tester) async {
+  testWidgets('the busy v2 composer survives 2.5x text on a 360dp phone', (
+    tester,
+  ) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(360, 740);
     addTearDown(tester.view.reset);
@@ -864,46 +716,8 @@ void main() {
     );
     await _settle(tester);
 
-    expect(find.byKey(const Key('composer-delivery-control')), findsOneWidget);
+    expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
+    expect(find.byKey(const Key('chat-send-button')), findsOneWidget);
     expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('the toggle is the only control and remembers its choice', (
-    tester,
-  ) async {
-    final api = _V2ChatApi();
-    final controller = await _controller(api);
-    addTearDown(controller.dispose);
-    await _pumpChat(tester, controller);
-    controller.busySessions.add('session-1');
-    controller.notifyListeners();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    await tester.enterText(
-      find.byKey(const Key('chat-composer-field')),
-      'queued through the toggle',
-    );
-    await tester.pump();
-    await tester.tap(find.text('Send after'));
-    await tester.pump();
-    expect(find.byTooltip('Send after this reply'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('chat-send-button')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
-    expect(api.prompts.single.delivery, PromptDelivery.queue);
-    // The send cleared the field, so the strip is gone; typing the next
-    // prompt brings it back still set to Queue.
-    expect(find.byType(KitSegmented<KitComposerDelivery>), findsNothing);
-    await tester.enterText(
-      find.byKey(const Key('chat-composer-field')),
-      'next one',
-    );
-    await tester.pump();
-    final toggle = tester.widget<KitSegmented<KitComposerDelivery>>(
-      find.byType(KitSegmented<KitComposerDelivery>),
-    );
-    expect(toggle.selected, KitComposerDelivery.afterThisReply);
   });
 }

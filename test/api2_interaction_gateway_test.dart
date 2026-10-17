@@ -11,6 +11,7 @@ import 'package:opencode_mobile/api2/gateway_events.dart';
 import 'package:opencode_mobile/api2/gateway_mappers.dart'
     show api2ServerCapabilities;
 import 'package:opencode_mobile/api2/models.dart';
+import 'package:opencode_mobile/api2/session_permission_policy.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 
 class _RealHttpOverrides extends HttpOverrides {}
@@ -25,6 +26,7 @@ class Recorded {
 Future<void> withServer(
   Future<void> Function(HttpServer server, List<Recorded> requests) body, {
   required Future<void> Function(HttpRequest request) handler,
+  bool readyPermissions = false,
 }) async {
   await HttpOverrides.runZoned(() async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -38,7 +40,13 @@ Future<void> withServer(
           text.isEmpty ? null : jsonDecode(text),
         ),
       );
-      await handler(request);
+      if (readyPermissions && request.uri.path == '/api/agent/build') {
+        await writeJson(request, {
+          'data': {'id': 'build', 'permissions': []},
+        });
+      } else {
+        await handler(request);
+      }
     });
     try {
       await body(server, requests);
@@ -77,6 +85,23 @@ const _session = 'ses_fb3c6f68cffe268QQhp3ZL6V8f';
 const _form = 'frm_04c3909aa001rDGq3xT0IiMZ0B';
 const _inboxID = 'msg_04c392e26001fDTa7Nswnl15Sq';
 
+Map<String, dynamic> readyPermissionSession(String id) => {
+  'id': id,
+  'agent': 'build',
+  'permissions': [
+    const {'action': '*', 'resource': '*', 'effect': 'ask'},
+  ],
+  'metadata': {
+    Api2SessionPermissionPolicy.metadataKey: {
+      'version': 1,
+      'original': [],
+      'applied': [
+        const {'action': '*', 'resource': '*', 'effect': 'ask'},
+      ],
+    },
+  },
+};
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -107,10 +132,9 @@ void main() {
     'ordinary v2 prompt command and shell preserve server selection',
     () async {
       await withServer(
+        readyPermissions: true,
         handler: (request) => request.method == 'GET'
-            ? writeJson(request, {
-                'data': {'id': _session},
-              })
+            ? writeJson(request, {'data': readyPermissionSession(_session)})
             : request.uri.path.endsWith('/prompt')
             ? writeJson(request, fixture('prompt_receipt.json'))
             : writeNoContent(request),
@@ -140,9 +164,13 @@ void main() {
           );
           expect(requests.map((r) => r.uri.path), [
             '/api/session/$_session',
+            '/api/agent/build',
             '/api/session/$_session/prompt',
             '/api/session/$_session',
+            '/api/agent/build',
             '/api/session/$_session/command',
+            '/api/session/$_session',
+            '/api/agent/build',
             '/api/session/$_session/shell',
           ]);
           for (final request in requests.where((r) => r.method == 'POST')) {
@@ -160,7 +188,7 @@ void main() {
       await withServer(
         handler: (request) => writeJson(request, {
           'data': {
-            'id': _session,
+            ...readyPermissionSession(_session),
             'revert': {'messageID': 'msg_boundary'},
           },
         }),
@@ -431,13 +459,12 @@ void main() {
   group('prompt delivery + permission message (v2)', () {
     test('promptAsync carries the queue delivery to the wire', () async {
       await withServer(
+        readyPermissions: true,
         handler: (request) async {
           await writeJson(
             request,
             request.method == 'GET'
-                ? {
-                    'data': {'id': _session},
-                  }
+                ? {'data': readyPermissionSession(_session)}
                 : fixture('prompt_receipt.json'),
           );
         },
@@ -459,13 +486,12 @@ void main() {
       'promptAsync omits delivery when unspecified (server default steer)',
       () async {
         await withServer(
+          readyPermissions: true,
           handler: (request) async {
             await writeJson(
               request,
               request.method == 'GET'
-                  ? {
-                      'data': {'id': _session},
-                    }
+                  ? {'data': readyPermissionSession(_session)}
                   : fixture('prompt_receipt.json'),
             );
           },

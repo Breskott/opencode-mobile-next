@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -124,11 +125,23 @@ Future<BackgroundLiveController> _liveController(
 }) async {
   final controller = BackgroundLiveController(
     preferences: preferences,
-    invoke: (method, [arguments]) async => {
-      'enabled': enabled,
-      'active': enabled,
-      'notificationGranted': true,
-      'batteryOptimizationIgnored': true,
+    invoke: (method, [arguments]) async {
+      if (method == 'getBackgroundPause') {
+        return const {
+          'supported': true,
+          'active': false,
+          'paused': false,
+          'reason': 'none',
+          'at': null,
+          'canResume': false,
+        };
+      }
+      return {
+        'enabled': enabled,
+        'active': enabled,
+        'notificationGranted': true,
+        'batteryOptimizationIgnored': true,
+      };
     },
   );
   await controller.restore();
@@ -138,6 +151,20 @@ Future<BackgroundLiveController> _liveController(
 /// The hub-and-spoke Settings places every section one level deep; open the
 /// category that owns the rows a test asserts on.
 Future<void> _openCategory(WidgetTester tester, String key) async {
+  if (key == 'settings-category-server') {
+    // The server's status and updates are a page of the server itself:
+    // Servers › the server › Status and version.
+    final hub = tester.widget<SettingsScreen>(find.byType(SettingsScreen));
+    unawaited(
+      openServerPage(
+        tester.element(find.byType(SettingsScreen)),
+        hub.controller,
+        hub.controller.profile!.id,
+      ),
+    );
+    await tester.pumpAndSettle();
+    key = 'server-row-status';
+  }
   final row = find.byKey(ValueKey(key));
   await tester.ensureVisible(row);
   await tester.pumpAndSettle();
@@ -722,15 +749,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.byKey(const ValueKey('settings-connection-summary')),
-      findsOneWidget,
-    );
     for (final key in const [
+      'settings-saved-servers',
       'settings-model-and-mode',
       'settings-tools',
       'default-shell-settings-entry',
-      'settings-category-server',
+      'settings-category-notifications',
       'settings-category-background',
       'settings-category-appearance',
       'settings-category-privacy',

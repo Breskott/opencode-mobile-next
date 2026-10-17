@@ -76,6 +76,59 @@ Future<bool> showVoiceModelSetupSheet(
   }
 }
 
+/// Settings › Voice typing as a page of its own, like its siblings: the same
+/// model choice, download and language the setup sheet holds, with the
+/// download pinned at the bottom. The sheet stays for the chat's mic, which
+/// asks in the middle of a task.
+class VoiceSettingsScreen extends StatelessWidget {
+  const VoiceSettingsScreen({super.key, required this.manager});
+
+  final VoiceModelManager manager;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = _voiceStrings(context);
+    final tokens = KitTokens.of(context);
+    final navigator = Navigator.of(context);
+    return ListenableBuilder(
+      listenable: manager,
+      builder: (context, _) {
+        final ready =
+            !_setupBusy(manager) && manager.isInstalled(manager.selectedPack);
+        final primary = _setupPrimary(
+          manager,
+          strings,
+          use: navigator.maybePop,
+          inUse: ready,
+        );
+        return KitScreen(
+          topBar: KitTopBar(title: strings.settingsV3VoiceTyping),
+          width: KitScreenWidth.reading,
+          bottom: primary == null ? null : KitActionStack(primary: primary),
+          body: ListView(
+            key: const ValueKey('voice-settings-list'),
+            padding: EdgeInsetsDirectional.only(
+              start: tokens.gutter,
+              end: tokens.gutter,
+              top: tokens.space2,
+              bottom: KitScreen.endPadding(context),
+            ),
+            children: [
+              KitText(
+                strings.voiceSetupSubtitle,
+                role: KitTextRole.secondary,
+                tone: KitTextTone.secondary,
+              ),
+              SizedBox(height: tokens.space4),
+              _VoiceModelSetupBody(manager: manager),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 KitAction? _setupPrimary(
   VoiceModelManager manager,
   AppLocalizations strings, {

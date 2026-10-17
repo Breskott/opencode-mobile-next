@@ -20,24 +20,6 @@ abstract final class KitMotion {
   /// A control answering a touch: a chip, a toggle, a row's state.
   static const quick = Duration(milliseconds: 150);
 
-  /// The composer's edge light flashing once (a send, a stop).
-  static const composerFlash = Duration(milliseconds: 520);
-
-  /// The composer opening or closing under Animations: Full.
-  static const composerOpen = Duration(milliseconds: 380);
-
-  /// The composer opening or closing under Animations: Calm.
-  static const composerOpenCalm = Duration(milliseconds: 150);
-
-  /// The curve of the composer opening or closing.
-  static const Curve composerOpenCurve = Curves.easeInOutCubic;
-
-  /// The edge light settling after a send.
-  static const Curve sealFade = Curves.easeInOut;
-
-  /// The edge light's tail fading in along its length.
-  static const Curve tailFadeIn = Curves.easeOut;
-
   /// A part appearing or changing size: a notice, a section unfolding.
   static const standard = Duration(milliseconds: 250);
 
@@ -76,8 +58,7 @@ abstract final class KitMotion {
   /// result-count announcement (KitSearchField.md, about 300 ms).
   static const typingSettle = Duration(milliseconds: 300);
 
-  // Fluid glass (the owner's approved "Fluid glass" sample, visual language
-  // §6): the floating navigation layer moves on springs, not on a duration.
+  // The navigation's tab lens moves on springs, not on a duration.
   // Stiffness and damping per unit mass, in logical pixels and seconds; a
   // spring is never used under [reduced], where every state is instant.
 
@@ -117,39 +98,39 @@ abstract final class KitMotion {
     damping: 20,
   );
 
-  /// Glass giving under a finger and springing back on release.
-  static const glassPress = SpringDescription(
-    mass: 1,
-    stiffness: 380,
-    damping: 15,
-  );
-
-  /// Two pieces of glass joining like drops, and pulling apart.
-  static const glassJoin = SpringDescription(
-    mass: 1,
-    stiffness: 170,
-    damping: 17,
-  );
-
-  /// Glass following its content's new size (a composer growing a line).
-  static const glassFlow = SpringDescription(
-    mass: 1,
-    stiffness: 300,
-    damping: 26,
-  );
-
-  /// The composer's edge light (the running reply's status): calm by rule.
-  /// It never travels faster than [edgeLightMaxLapsPerSecond] (one lap in
-  /// 6 s, reached only by a burst of words), rests at
-  /// [edgeLightThinkingLapsPerSecond] while the model thinks, and every
-  /// change of speed eases over [edgeLightSpeedEase] and of hue over
-  /// [edgeLightHueFade]. Where a status touches the border it fades out and
-  /// back in over [edgeLightFadeSpan] dp instead of stopping.
+  /// The most the composer's glowing border (and anything else that
+  /// travels a ring) may turn: one lap in 6 s.
   static const double edgeLightMaxLapsPerSecond = 1 / 6;
-  static const double edgeLightThinkingLapsPerSecond = 1 / 10;
-  static const Duration edgeLightSpeedEase = Duration(milliseconds: 800);
+
+  /// The composer's chosen glowing border: one lap in 8 s (never below 6 s).
+  static const double activityGlowLapsPerSecond = 1 / 8;
+
+  /// The classic glowing border (the original composer ring): one lap in
+  /// 3.6 s at Normal, the pace it always had. It is faster than
+  /// [edgeLightMaxLapsPerSecond] on purpose: that cap belongs to the soft
+  /// ring and the living edge, which have no bright head. The classic ring's
+  /// Slow is half this and Fast twice it, and nothing may turn faster than
+  /// [glowMaxLapsPerSecond] (one lap in 1.8 s; its breath stays under
+  /// 1.2 Hz, well clear of flicker rates).
+  static const double classicGlowLapsPerSecond = 1 / 3.6;
+  static const double glowMaxLapsPerSecond = 1 / 1.8;
+
+  /// The ring around Stop while a reply runs and nothing else moves: one lap
+  /// in two seconds. Never faster, whatever the work does.
+  static const double stopRingLapsPerSecond = 1 / 2;
+
+  /// The glowing border's strength easing in and out.
   static const Duration edgeLightHueFade = Duration(milliseconds: 450);
-  static const double edgeLightFadeSpan = 20;
+
+  /// The context ring (KitContextRing.md): the arc and its number moving to
+  /// a new value, the colour crossing to the next level, the one halo when
+  /// 70 % or 95 % is crossed upward, the arc draining after a compaction,
+  /// and one lap of the short arc while compacting.
+  static const Duration contextValue = Duration(milliseconds: 600);
+  static const Duration contextColor = Duration(milliseconds: 320);
+  static const Duration contextHalo = Duration(milliseconds: 700);
+  static const Duration contextDrain = Duration(milliseconds: 900);
+  static const Duration contextSpin = Duration(milliseconds: 1200);
 
   static const Curve enter = Curves.easeOutCubic;
   static const Curve exit = Curves.easeInCubic;
@@ -158,6 +139,9 @@ abstract final class KitMotion {
   /// A drawing's part landing with a small overshoot: a mark popping in, a
   /// card settling on a lane (the KitScene arrivals, MOT-1).
   static const Curve land = Curves.easeOutBack;
+
+  /// The soft in-and-out of a pulse (the working dot).
+  static const Curve pulse = Curves.easeInOut;
 
   /// Constant speed inside a drawing: a wave, a route being traced.
   static const Curve steady = Curves.linear;

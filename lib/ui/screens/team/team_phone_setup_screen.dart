@@ -13,15 +13,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../builtin/builtin_linux.dart' show BuiltinLinux;
 import '../../../builtin/builtin_server.dart'
-    show
-        BuiltinServerStarter,
-        builtinLinuxProvider,
-        builtinServerStarterProvider;
+    show BuiltinServerStarter, builtinServerStarterProvider;
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/phone_team_setup.dart';
+import '../../../termux/bridge.dart' show TermuxBridge;
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../kit/scenes/team_scenes.dart';
@@ -44,6 +41,28 @@ Future<void> openPhoneTeamSetup(
   ),
 );
 
+/// Every UI entry uses the same server owner as the shell and recovery banner.
+PhoneTeamSetupController phoneTeamSetupForContext(
+  BuildContext context,
+  ConnectionController connection,
+) {
+  BuiltinServerStarter? starter;
+  try {
+    starter = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(builtinServerStarterProvider);
+  } on StateError {
+    // Bare widget tests supply debugPorts. Real setup requires the app owner;
+    // PhoneTeamSetup.of refuses to allocate an independent starter.
+  }
+  return PhoneTeamSetup.of(
+    connection,
+    copy: AppLocalizations.of(context),
+    starter: starter,
+  );
+}
+
 /// The plain title and body of a failure; its technical text is Details.
 /// With [flow] the body also says exactly what state the phone is in:
 /// whether OpenCode is on again and whether terminals were closed.
@@ -52,7 +71,12 @@ Future<void> openPhoneTeamSetup(
   PhoneTeamSetupProblem problem, [
   PhoneTeamSetupController? flow,
 ]) {
-  final base = _problemCopy(l, problem);
+  final base = flow?.needsComponentRecovery == true
+      ? (
+          title: l.phoneTeamFailServerTitle,
+          body: l.inAppServerOwnershipRecoveryBody,
+        )
+      : _problemCopy(l, problem);
   if (flow == null) return base;
   final state = <String>[
     if (const {
@@ -224,25 +248,9 @@ class _TeamPhoneSetupScreenState extends State<TeamPhoneSetupScreen> {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    BuiltinLinux? linux;
-    BuiltinServerStarter? starter;
-    if (widget.controller == null) {
-      try {
-        final container = ProviderScope.containerOf(context, listen: false);
-        linux = container.read(builtinLinuxProvider);
-        starter = container.read(builtinServerStarterProvider);
-      } catch (_) {
-        // No provider scope (a bare test): the flow builds its own.
-      }
-    }
     _flow =
         widget.controller ??
-        PhoneTeamSetup.of(
-          widget.connection,
-          copy: AppLocalizations.of(context),
-          linux: linux,
-          starter: starter,
-        );
+        phoneTeamSetupForContext(context, widget.connection);
     _flow.addListener(_changed);
     if (widget.autoStart && !_flow.isRunning && !_flow.isDone) {
       unawaited(_flow.run());
@@ -363,6 +371,12 @@ class _TeamPhoneSetupScreenState extends State<TeamPhoneSetupScreen> {
           content: problem == PhoneTeamSetupProblem.noServer ? null : checklist,
           primary: problem == PhoneTeamSetupProblem.noServer
               ? null
+              : _flow.needsComponentRecovery
+              ? KitAction(
+                  key: const ValueKey('phone-team-recover-ownership'),
+                  label: l.e7SetupOpenAppSettings,
+                  onPressed: () => unawaited(TermuxBridge.openAppSettings()),
+                )
               : KitAction(
                   key: const ValueKey('phone-team-start-again'),
                   label: l.teamStartAgain,

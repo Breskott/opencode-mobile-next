@@ -68,6 +68,9 @@ Future<bool> showKitConfirm(
   String? typedName,
   KitAction? alternative,
   List<KitTechnicalValue> details = const [],
+  String? code,
+  String? codeLabel,
+  String? codeCopyLabel,
   Future<void> Function()? action,
   RequestRoutes? routes,
   Key? sheetKey,
@@ -90,6 +93,9 @@ Future<bool> showKitConfirm(
     typedName: typedName,
     alternative: alternative,
     details: details,
+    code: code,
+    codeLabel: codeLabel,
+    codeCopyLabel: codeCopyLabel,
     action: action,
     sheetKey: sheetKey,
     confirmKey: confirmKey,
@@ -189,6 +195,9 @@ class _KitConfirmSpec {
     this.typedName,
     this.alternative,
     this.details = const [],
+    this.code,
+    this.codeLabel,
+    this.codeCopyLabel,
     this.action,
     this.sheetKey,
     this.confirmKey,
@@ -205,6 +214,9 @@ class _KitConfirmSpec {
   final String? typedName;
   final KitAction? alternative;
   final List<KitTechnicalValue> details;
+  final String? code;
+  final String? codeLabel;
+  final String? codeCopyLabel;
   final Future<void> Function()? action;
   final Key? sheetKey;
   final Key? confirmKey;
@@ -235,6 +247,9 @@ class _KitConfirmBody extends StatelessWidget {
     typedName: spec.typedName,
     alternative: spec.alternative,
     details: spec.details,
+    code: spec.code,
+    codeLabel: spec.codeLabel,
+    codeCopyLabel: spec.codeCopyLabel,
     action: spec.action,
     confirmKey: spec.confirmKey,
     onConfirm: onConfirm,
@@ -265,6 +280,9 @@ class KitConfirmSheet extends StatefulWidget {
     this.typedName,
     this.alternative,
     this.details = const [],
+    this.code,
+    this.codeLabel,
+    this.codeCopyLabel,
     this.action,
     this.confirmKey,
     this.working = false,
@@ -292,6 +310,12 @@ class KitConfirmSheet extends StatefulWidget {
   final String? typedName;
   final KitAction? alternative;
   final List<KitTechnicalValue> details;
+
+  /// A one-time code the person types elsewhere (a device code): shown
+  /// under the body, large and monospaced, with Copy ([KitOneTimeCode]).
+  final String? code;
+  final String? codeLabel;
+  final String? codeCopyLabel;
   final Future<void> Function()? action;
   final Key? confirmKey;
 
@@ -505,6 +529,14 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                 role: KitTextRole.body,
                 tone: KitTextTone.secondary,
               ),
+              if (widget.code case final code?) ...[
+                SizedBox(height: tokens.space4),
+                KitOneTimeCode(
+                  code: code,
+                  label: widget.codeLabel,
+                  copyLabel: widget.codeCopyLabel,
+                ),
+              ],
               if (consequences.isNotEmpty) ...[
                 SizedBox(height: tokens.space4),
                 KitConsequences(items: consequences),

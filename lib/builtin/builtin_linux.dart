@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 
 import '../api/server_probe.dart' show ServerFlavor;
 import '../diagnostics/perf_trace.dart';
+import '../domain/opencode_history_copy.dart';
 import '../domain/phone_agent_context.dart';
 import '../platform/platform_capabilities.dart';
 import '../termux/bridge.dart' show TermuxBridge, TermuxRuntime;
@@ -22,6 +23,60 @@ enum BuiltinLinuxPhase {
   };
 }
 
+/// Native restoration after OS process reclamation; force-stop stays stopped.
+enum BuiltinServerRestorePhase {
+  idle,
+  waiting,
+  restoring,
+  unavailable;
+
+  static BuiltinServerRestorePhase parse(Object? value) => switch (value) {
+    null || 'idle' => idle,
+    'waiting' => waiting,
+    'restoring' => restoring,
+    _ => unavailable,
+  };
+}
+
+/// Fixed reasons only; native process identity and errors stay private.
+enum BuiltinServerRestoreReason {
+  stopped,
+  policyDisabled,
+  budgetExhausted,
+  ownershipUnknown,
+  storageUnavailable,
+  componentRecoveryRequired,
+  systemTimeout;
+
+  static BuiltinServerRestoreReason? parse(Object? value) => switch (value) {
+    null => null,
+    'stopped' => stopped,
+    'policyDisabled' => policyDisabled,
+    'budgetExhausted' => budgetExhausted,
+    'storageUnavailable' => storageUnavailable,
+    'componentRecoveryRequired' => componentRecoveryRequired,
+    'systemTimeout' => systemTimeout,
+    _ => ownershipUnknown,
+  };
+}
+
+/// Selects a canonical native command. Contains no script or account data.
+class BuiltinServerRestoreRecipe {
+  const BuiltinServerRestoreRecipe({
+    required this.profileId,
+    required this.runtime,
+  });
+
+  final String profileId;
+  final TermuxRuntime runtime;
+
+  Map<String, Object> toMap() => {
+    'version': 1,
+    'profileId': profileId,
+    'runtime': runtime.name,
+  };
+}
+
 /// One reading of `status`.
 class BuiltinLinuxStatus {
   const BuiltinLinuxStatus({
@@ -31,12 +86,23 @@ class BuiltinLinuxStatus {
     this.serverRunning = false,
     this.serverRestartWanted = false,
     this.serverRecoveryGeneration,
+    this.serverRecoveryAuthority = false,
+    this.serverRecoveryScheduled = false,
+    this.serverIdlePolicySupported = false,
+    this.serverIdleEnabled = false,
+    this.serverIdleMinutes,
+    this.serverIdleStopped = false,
+    this.serverIdleHelperStopped = false,
+    this.serverIdleGeneration,
+    bool? serverIdleReceiptValid,
+    this.restorePhase = BuiltinServerRestorePhase.idle,
+    this.restoreReason,
     this.serverUptime,
     this.serverPort,
     this.abi = '',
     this.bytesUsed,
     this.services = const [],
-  });
+  }) : _serverIdleReceiptValid = serverIdleReceiptValid;
 
   /// Nothing installed and nothing running: what a runner without the
   /// channel (desktop, tests) honestly has.
@@ -47,6 +113,17 @@ class BuiltinLinuxStatus {
       serverRunning = false,
       serverRestartWanted = false,
       serverRecoveryGeneration = null,
+      serverRecoveryAuthority = false,
+      serverRecoveryScheduled = false,
+      serverIdlePolicySupported = false,
+      serverIdleEnabled = false,
+      serverIdleMinutes = null,
+      serverIdleStopped = false,
+      serverIdleHelperStopped = false,
+      serverIdleGeneration = null,
+      _serverIdleReceiptValid = false,
+      restorePhase = BuiltinServerRestorePhase.idle,
+      restoreReason = null,
       serverUptime = null,
       serverPort = null,
       abi = '',
@@ -56,6 +133,26 @@ class BuiltinLinuxStatus {
   factory BuiltinLinuxStatus.fromMap(Map<Object?, Object?> map) {
     int? asInt(Object? value) => value is num ? value.toInt() : null;
     final message = map['message'];
+    int? idleInteger(String key) =>
+        map[key] is int && (map[key] as int) >= 0 ? map[key] as int : null;
+    final idleMinutes = idleInteger('serverIdleMinutes');
+    final idleGeneration = idleInteger('serverIdleGeneration');
+    final idleValid =
+        map['serverIdlePolicySupported'] == true &&
+        [
+          'serverIdleEnabled',
+          'serverIdleStopped',
+          'serverIdleHelperStopped',
+          'serverRestartWanted',
+          'serverRunning',
+        ].every((key) => map[key] is bool) &&
+        idleMinutes != null &&
+        idleMinutes >= 1 &&
+        idleMinutes <= 60 &&
+        idleGeneration != null &&
+        (!(map['serverIdleStopped'] == true ||
+                map['serverIdleHelperStopped'] == true) ||
+            idleGeneration > 0);
     return BuiltinLinuxStatus(
       installed: map['installed'] == true,
       phase: BuiltinLinuxPhase.parse(map['phase']),
@@ -63,6 +160,17 @@ class BuiltinLinuxStatus {
       serverRunning: map['serverRunning'] == true,
       serverRestartWanted: map['serverRestartWanted'] == true,
       serverRecoveryGeneration: asInt(map['serverRecoveryGeneration']),
+      serverRecoveryAuthority: map['serverRecoveryAuthority'] == true,
+      serverRecoveryScheduled: map['serverRecoveryScheduled'] == true,
+      serverIdlePolicySupported: map['serverIdlePolicySupported'] == true,
+      serverIdleEnabled: map['serverIdleEnabled'] == true,
+      serverIdleMinutes: idleMinutes,
+      serverIdleStopped: map['serverIdleStopped'] == true,
+      serverIdleHelperStopped: map['serverIdleHelperStopped'] == true,
+      serverIdleGeneration: idleGeneration,
+      serverIdleReceiptValid: idleValid,
+      restorePhase: BuiltinServerRestorePhase.parse(map['restorePhase']),
+      restoreReason: BuiltinServerRestoreReason.parse(map['restoreReason']),
       serverUptime: switch (asInt(map['serverUptimeMs'])) {
         final int ms when ms >= 0 => Duration(milliseconds: ms),
         _ => null,
@@ -89,6 +197,29 @@ class BuiltinLinuxStatus {
 
   /// Admission token invalidated by pause, cancellation and manual actions.
   final int? serverRecoveryGeneration;
+
+  /// Native is the sole durable budget writer once the profile is migrated.
+  final bool serverRecoveryAuthority;
+  final bool serverRecoveryScheduled;
+  final bool serverIdlePolicySupported;
+  final bool serverIdleEnabled;
+  final int? serverIdleMinutes;
+  final bool serverIdleStopped;
+  final bool serverIdleHelperStopped;
+  final int? serverIdleGeneration;
+  final bool? _serverIdleReceiptValid;
+  bool get serverIdleReceiptValid =>
+      _serverIdleReceiptValid ??
+      (serverIdlePolicySupported &&
+          serverIdleMinutes != null &&
+          serverIdleMinutes! >= 1 &&
+          serverIdleMinutes! <= 60 &&
+          serverIdleGeneration != null &&
+          serverIdleGeneration! >= 0 &&
+          (!(serverIdleStopped || serverIdleHelperStopped) ||
+              serverIdleGeneration! > 0));
+  final BuiltinServerRestorePhase restorePhase;
+  final BuiltinServerRestoreReason? restoreReason;
 
   /// How long the app's own tracked OpenCode process has run; null when none
   /// runs, or from an older APK that does not say.
@@ -124,6 +255,100 @@ enum BuiltinProotMode {
   };
 }
 
+/// Classification of an exit, without inferring a confirmed memory shortage.
+enum BuiltinServiceExitReason {
+  /// Exit 137 may be a memory or Android phantom-process kill. The exit code
+  /// alone cannot distinguish those from another SIGKILL.
+  memoryOrPhantomKill,
+  exited,
+  unknown;
+
+  static BuiltinServiceExitReason parse(Object? value) => switch (value) {
+    'memory_or_phantom_kill' => memoryOrPhantomKill,
+    'exited' => exited,
+    _ => unknown,
+  };
+}
+
+/// One app-owned service's lifetime diagnostics, without command or log text.
+class BuiltinServiceDiagnostics {
+  const BuiltinServiceDiagnostics({
+    this.running = false,
+    this.lastExitCode,
+    this.lastUptimeMs,
+    this.lastExitAtMs,
+    this.lastStopRequested,
+    this.uptimeMs,
+    this.restartCount = 0,
+    this.exitReason = BuiltinServiceExitReason.unknown,
+  });
+
+  factory BuiltinServiceDiagnostics.fromMap(Map<Object?, Object?> map) {
+    // Native counters are integers. Do not truncate fractional or non-finite
+    // values into apparently valid diagnostics.
+    int? asInt(Object? value) => value is int ? value : null;
+    int? nonNegativeInt(Object? value) => switch (asInt(value)) {
+      final int number when number >= 0 => number,
+      _ => null,
+    };
+    return BuiltinServiceDiagnostics(
+      running: map['running'] == true,
+      lastExitCode: asInt(map['lastExitCode']),
+      lastUptimeMs: nonNegativeInt(map['lastUptimeMs']),
+      lastExitAtMs: switch (map['lastExitAtMs']) {
+        final int at when at > 0 && at <= 8640000000000000 => at,
+        _ => null,
+      },
+      lastStopRequested: map['lastStopRequested'] is bool
+          ? map['lastStopRequested'] as bool
+          : null,
+      uptimeMs: nonNegativeInt(map['uptimeMs']),
+      restartCount: nonNegativeInt(map['restartCount']) ?? 0,
+      exitReason: BuiltinServiceExitReason.parse(map['exitReason']),
+    );
+  }
+
+  final bool running;
+  final int? lastExitCode;
+
+  /// Completed run duration. Null means no valid observation is available.
+  final int? lastUptimeMs;
+
+  /// Wall-clock time of the observed exit, never fabricated after app death.
+  final int? lastExitAtMs;
+
+  /// Null on older APKs. True when our runtime deliberately stopped the child.
+  final bool? lastStopRequested;
+
+  /// Current run duration. Null means no run or no valid observation.
+  final int? uptimeMs;
+  final int restartCount;
+  final BuiltinServiceExitReason exitReason;
+}
+
+/// Admission of one named chat lease, independent of other work's wake lock.
+class BuiltinWorkLeaseStatus {
+  const BuiltinWorkLeaseStatus({this.held = false, this.capped = false});
+
+  factory BuiltinWorkLeaseStatus.fromMap(Map<Object?, Object?> map) {
+    if (map['held'] is! bool ||
+        map['capped'] is! bool ||
+        map['held'] == true && map['capped'] == true) {
+      return const BuiltinWorkLeaseStatus();
+    }
+    return BuiltinWorkLeaseStatus(
+      held: map['held'] == true,
+      capped: map['capped'] == true,
+    );
+  }
+
+  /// This lease has an admitted CPU hold; never the aggregate work-lock state.
+  final bool held;
+
+  /// Native monotonic lifetime expired or exhausted this logical chat lease.
+  final bool capped;
+}
+
 /// One reading of `performance`: what the Performance details show.
 class BuiltinPerformance {
   const BuiltinPerformance({
@@ -132,16 +357,24 @@ class BuiltinPerformance {
     this.prootFilters,
     this.serverFilters,
     this.workHeld = false,
+    this.services = const {},
   });
 
   factory BuiltinPerformance.fromMap(Map<Object?, Object?> map) {
-    int? asInt(Object? value) => value is num ? value.toInt() : null;
+    int? asInt(Object? value) => value is int ? value : null;
     return BuiltinPerformance(
       serverRunning: map['serverRunning'] == true,
       prootMode: BuiltinProotMode.parse(map['prootMode']),
       prootFilters: asInt(map['prootFilters']),
       serverFilters: asInt(map['serverFilters']),
       workHeld: map['workHeld'] == true,
+      services: Map.unmodifiable({
+        if (map['services'] case final Map services)
+          for (final entry in services.entries)
+            if (entry.key case final String name when name.isNotEmpty)
+              if (entry.value case final Map<Object?, Object?> diagnostics)
+                name: BuiltinServiceDiagnostics.fromMap(diagnostics),
+      }),
     );
   }
 
@@ -155,6 +388,10 @@ class BuiltinPerformance {
 
   /// Whether the phone is kept awake for a running reply now.
   final bool workHeld;
+
+  /// Current and previously launched services keyed by native service name.
+  /// Empty on older APKs. These snapshots contain no credentials or log text.
+  final Map<String, BuiltinServiceDiagnostics> services;
 }
 
 /// The answer of one `run`.
@@ -170,10 +407,14 @@ class BuiltinLinuxRunResult {
 }
 
 class BuiltinLinuxException implements Exception {
-  const BuiltinLinuxException(this.message, {this.code});
+  const BuiltinLinuxException(this.message, {this.code, this.details});
 
   final String message;
   final String? code;
+
+  /// The phone's own description of the failure, when it sent one: kept for
+  /// Details, never shown as the message.
+  final String? details;
 
   @override
   String toString() => message;
@@ -346,6 +587,97 @@ class BuiltinLinux {
     return BuiltinLinuxStatus.fromMap(raw ?? const {});
   }
 
+  /// Saves the authored idle policy on an APK supporting the full contract.
+  Future<BuiltinLinuxStatus> setPhoneServerIdlePolicy({
+    required bool enabled,
+    required int idleMinutes,
+  }) {
+    if (idleMinutes < 1 || idleMinutes > 60) {
+      throw const BuiltinLinuxException(
+        'Choose an idle time between 1 and 60 minutes.',
+        code: 'idle_policy_invalid',
+      );
+    }
+    return _idleStatus('setPhoneServerIdlePolicy', {
+      'enabled': enabled,
+      'idleMinutes': idleMinutes,
+    });
+  }
+
+  Future<BuiltinLinuxStatus> resumeIdleStoppedPhoneServer({
+    required String profileId,
+    required int expectedIdleGeneration,
+  }) {
+    _idleIdentity(profileId, expectedIdleGeneration);
+    return _idleStatus('resumeIdleStoppedPhoneServer', {
+      'profileId': profileId,
+      'expectedIdleGeneration': expectedIdleGeneration,
+    }, timeout: const Duration(seconds: 30));
+  }
+
+  Future<BuiltinLinuxStatus> completePhoneServerIdleResume({
+    required String profileId,
+    required int expectedIdleGeneration,
+  }) {
+    _idleIdentity(profileId, expectedIdleGeneration);
+    return _idleStatus('completePhoneServerIdleResume', {
+      'profileId': profileId,
+      'expectedIdleGeneration': expectedIdleGeneration,
+    });
+  }
+
+  void _idleIdentity(String profileId, int generation) {
+    if (RegExp(r'^[A-Za-z0-9_-]{1,80}$').firstMatch(profileId)?.end !=
+            profileId.length ||
+        generation <= 0) {
+      throw const BuiltinLinuxException(
+        'The phone server could not start. Open setup or try Start again.',
+        code: 'idle_resume_stale',
+      );
+    }
+  }
+
+  Future<void> observePhoneAgentWork({
+    required String profileId,
+    required bool? busy,
+  }) async {
+    if (!supported) return;
+    if (RegExp(r'^[A-Za-z0-9_-]{1,80}$').firstMatch(profileId)?.end !=
+        profileId.length) {
+      return;
+    }
+    try {
+      await _invoke<void>('observePhoneAgentWork', {
+        'profileId': profileId,
+        'busy': busy,
+      }).timeout(const Duration(seconds: 8));
+    } catch (_) {
+      /* Missing/failed heartbeat never proves native idle. */
+    }
+  }
+
+  Future<BuiltinLinuxStatus> _idleStatus(
+    String method,
+    Map<String, Object?> arguments, {
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    if (!supported) return const BuiltinLinuxStatus.absent();
+    try {
+      final raw = await _invoke<Map<Object?, Object?>>(
+        method,
+        arguments,
+      ).timeout(timeout);
+      final result = BuiltinLinuxStatus.fromMap(raw ?? const {});
+      if (!result.serverIdleReceiptValid) throw const FormatException();
+      return result;
+    } catch (_) {
+      throw const BuiltinLinuxException(
+        'The phone server could not start. Open setup or try Start again.',
+        code: 'idle_resume_unavailable',
+      );
+    }
+  }
+
   /// Starts the download and unpack; returns at once. Poll [status].
   Future<void> installUbuntu() => _invoke<void>('installUbuntu');
 
@@ -364,8 +696,45 @@ class BuiltinLinux {
     );
   }
 
-  Future<void> startServer(String script, {int port = serverPort}) =>
-      _invoke<void>('startServer', {'script': script, 'port': port});
+  /// Setup checks in the fixed oc view. Never use for credentials or sign-in.
+  Future<BuiltinLinuxRunResult> runAgentSetupCheck(
+    String script, {
+    Duration timeout = const Duration(minutes: 2),
+  }) async {
+    final raw = await _invoke<Map<Object?, Object?>>('run', {
+      'script': script,
+      'timeoutSeconds': timeout.inSeconds,
+      'agentUser': true,
+    });
+    return BuiltinLinuxRunResult(
+      exitCode: raw?['exitCode'] is num
+          ? (raw!['exitCode'] as num).toInt()
+          : -1,
+      output: (raw?['output'] ?? '').toString(),
+    );
+  }
+
+  Future<void> startServer(
+    String script, {
+    int port = serverPort,
+    BuiltinServerRestoreRecipe? restoreRecipe,
+  }) async {
+    final arguments = {
+      'script': script,
+      'port': port,
+      if (restoreRecipe != null) 'restoreRecipe': restoreRecipe.toMap(),
+    };
+    try {
+      await _invoke<void>('startServer', arguments);
+    } on BuiltinLinuxException catch (error) {
+      if (restoreRecipe == null) rethrow;
+      throw BuiltinLinuxException(
+        'The phone server could not start. Open setup and try again.',
+        code: 'server_start_unavailable',
+        details: error.details,
+      );
+    }
+  }
 
   /// Restarts only a stopped server whose native intent and admission token
   /// still match, while the Android activity is resumed. Does not opt in.
@@ -387,6 +756,95 @@ class BuiltinLinux {
       _invokeRecovery('confirmServerRecovery', {
         'expectedGeneration': expectedGeneration,
       });
+
+  /// Saves the legacy count in native storage without arming crash recovery.
+  Future<Map<Object?, Object?>> stageServerRecovery(
+    String profileId,
+    Map<String, Object?> legacyBudget,
+  ) => _recoveryMap('stageServerRecovery', {
+    'profileId': profileId,
+    'legacyBudget': legacyBudget,
+  });
+
+  Future<Map<Object?, Object?>> bindServerRecovery({
+    required String profileId,
+    required bool enabled,
+    Map<String, Object?>? legacyBudget,
+  }) => _recoveryMap('bindServerRecovery', {
+    'profileId': profileId,
+    'enabled': enabled,
+    'legacyBudget': ?legacyBudget,
+  });
+
+  Future<List<Map<Object?, Object?>>> serverRecoveryReceipts(
+    String profileId,
+  ) async {
+    try {
+      final value = await _invoke<List<Object?>>('serverRecoveryReceipts', {
+        'profileId': profileId,
+      });
+      if (value == null ||
+          value.any((receipt) => receipt is! Map<Object?, Object?>)) {
+        throw const BuiltinLinuxException(
+          'The phone server could not restart.',
+          code: 'recovery_unavailable',
+        );
+      }
+      return value.cast<Map<Object?, Object?>>();
+    } catch (_) {
+      throw const BuiltinLinuxException(
+        'The phone server could not restart.',
+        code: 'recovery_unavailable',
+      );
+    }
+  }
+
+  Future<void> ackServerRecoveryReceipt(String profileId, String eventId) =>
+      _invokeRecovery('ackServerRecoveryReceipt', {
+        'profileId': profileId,
+        'eventId': eventId,
+      });
+
+  Future<Map<Object?, Object?>> serverRecoveryBudget(String profileId) =>
+      _recoveryMap('serverRecoveryBudget', {'profileId': profileId});
+
+  Future<Map<Object?, Object?>> updateServerRecoveryReceipt(
+    String profileId,
+    Map<String, Object?> budget,
+  ) => _recoveryMap('updateServerRecoveryReceipt', {
+    'profileId': profileId,
+    'budget': budget,
+  });
+
+  Future<Map<Object?, Object?>> confirmManualServerStart(String profileId) =>
+      _recoveryMap('confirmManualServerStart', {'profileId': profileId});
+
+  Future<void> unbindServerRecovery(String profileId, {bool delete = false}) =>
+      _invokeRecovery(
+        delete ? 'deleteServerRecovery' : 'unbindServerRecovery',
+        {'profileId': profileId},
+      );
+
+  Future<Map<Object?, Object?>> _recoveryMap(
+    String method,
+    Map<String, Object?> arguments,
+  ) async {
+    try {
+      final value = await _invoke<Map<Object?, Object?>>(method, arguments);
+      if (value == null) {
+        throw const BuiltinLinuxException(
+          'The phone server could not restart.',
+          code: 'recovery_unavailable',
+        );
+      }
+      return value;
+    } catch (_) {
+      throw const BuiltinLinuxException(
+        'The phone server could not restart.',
+        code: 'recovery_unavailable',
+      );
+    }
+  }
 
   /// Invalidates pending automatic work without changing the person's intent.
   Future<void> cancelServerRecovery() =>
@@ -503,6 +961,62 @@ class BuiltinLinux {
         'forMs': hold.inMilliseconds,
       }) ??
       false;
+
+  /// Acquire or renew one opaque chat lease; off releases only [leaseId].
+  /// Native lifetime limits remain authoritative. A capped logical lease cannot
+  /// be renewed until it is explicitly closed; never release/reacquire to renew.
+  /// Setup, sign-in and terminal leases are owned independently in native code.
+  Future<BuiltinWorkLeaseStatus> setChatWorkLease({
+    required String leaseId,
+    required bool on,
+    Duration hold = const Duration(minutes: 10),
+  }) async {
+    if (!supported) return const BuiltinWorkLeaseStatus();
+    if (RegExp(r'^[A-Za-z0-9_.-]{1,80}$').firstMatch(leaseId)?.end !=
+        leaseId.length) {
+      throw const BuiltinLinuxException(
+        'This chat could not keep the phone awake. Try again.',
+        code: 'work_lease_invalid',
+      );
+    }
+    final raw = await _invoke<Object?>('setChatWorkLease', {
+      'leaseId': leaseId,
+      'on': on,
+      'forMs': hold.inMilliseconds,
+    });
+    return raw is Map<Object?, Object?>
+        ? BuiltinWorkLeaseStatus.fromMap(raw)
+        : const BuiltinWorkLeaseStatus();
+  }
+
+  /// A local agent turn has its own scope, admitted only by its live helper.
+  /// Off drains this exact opaque owner even if that helper has since stopped.
+  Future<BuiltinWorkLeaseStatus> setPhoneAgentChatWorkLease({
+    required String profileId,
+    required String leaseId,
+    required bool on,
+    Duration hold = const Duration(minutes: 15),
+  }) async {
+    if (!supported) return const BuiltinWorkLeaseStatus();
+    if (RegExp(r'^[A-Za-z0-9_.-]{1,80}$').firstMatch(leaseId)?.end !=
+            leaseId.length ||
+        RegExp(r'^[A-Za-z0-9_-]{1,80}$').firstMatch(profileId)?.end !=
+            profileId.length) {
+      throw const BuiltinLinuxException(
+        'This chat could not keep the phone awake. Try again.',
+        code: 'work_lease_invalid',
+      );
+    }
+    final raw = await _invoke<Object?>('setPhoneAgentChatWorkLease', {
+      'profileId': profileId,
+      'leaseId': leaseId,
+      'on': on,
+      'forMs': hold.inMilliseconds,
+    });
+    return raw is Map<Object?, Object?>
+        ? BuiltinWorkLeaseStatus.fromMap(raw)
+        : const BuiltinWorkLeaseStatus();
+  }
 
   /// How proot runs the server now and whether the phone is kept awake.
   Future<BuiltinPerformance> performance() async {
@@ -666,6 +1180,9 @@ class BuiltinLinux {
             'setupStatus',
             'status',
             'holdAwakeForWork',
+            'setChatWorkLease',
+            'setPhoneAgentChatWorkLease',
+            'observePhoneAgentWork',
             'performance',
           }.contains(method)
           ? 50
@@ -705,11 +1222,13 @@ class BuiltinLinux {
     try {
       return await _channel.invokeMethod<T>(method, arguments);
     } on PlatformException catch (error) {
+      final details = error.details;
       throw BuiltinLinuxException(
         error.message?.trim().isNotEmpty == true
             ? error.message!
             : 'The built-in Linux failed (${error.code}).',
         code: error.code,
+        details: details is String ? details : null,
       );
     } on MissingPluginException {
       throw const BuiltinLinuxException(
@@ -727,6 +1246,15 @@ class BuiltinLinux {
       ? TermuxRuntime.openCode2
       : TermuxRuntime.openCode1;
 
+  /// The runtime for a profile whose generation is known, or null when it is
+  /// not (so callers can refuse instead of guessing one).
+  static TermuxRuntime? knownRuntimeFor(ServerFlavor flavor) =>
+      switch (flavor) {
+        ServerFlavor.v1 => TermuxRuntime.openCode1,
+        ServerFlavor.v2 => TermuxRuntime.openCode2,
+        ServerFlavor.unknown => null,
+      };
+
   static final _versionPattern = RegExp(r'^[A-Za-z0-9._+-]+$');
 
   /// Installs OpenCode inside Ubuntu with the very script the Termux manager
@@ -738,7 +1266,7 @@ class BuiltinLinux {
   /// fetches the catalog itself later, and a flaky network at this moment
   /// should not throw away a finished install.
   static String installOpenCodeScript({
-    TermuxRuntime runtime = TermuxRuntime.openCode1,
+    TermuxRuntime runtime = TermuxRuntime.defaultForNewInstall,
     String? version,
   }) {
     final selected = version ?? runtime.pinnedVersion;
@@ -848,7 +1376,46 @@ fi
         'if [ -d "\$dir" ]; then printf \'exists %s\\n\' "\$dir"; exit 0; fi\n'
         'mkdir -p "\$dir"\n'
         'git init -q "\$dir"\n'
+        // A new project starts with one empty commit, so a team (which needs
+        // a commit to branch from) works at once. Best effort: the folder
+        // exists either way and "Make the first commit" still covers it.
+        'name=\$(git config user.name || echo "AI Team")\n'
+        'email=\$(git config user.email || echo "aiteam@localhost")\n'
+        '(cd "\$dir" && git -c user.name="\$name" -c user.email="\$email" '
+        'commit -q --allow-empty -m "First commit") || true\n'
         'printf \'created %s\\n\' "\$dir"\n';
+  }
+
+  /// Says whether [path] is a git folder without a commit: prints `empty`,
+  /// `ready` (it has one) or `notgit`.
+  static String repoStateScript(String path) {
+    if (!path.startsWith('/') || path.contains('\n') || path.contains('\x00')) {
+      throw ArgumentError.value(path, 'path', 'Must be an absolute path.');
+    }
+    return 'dir=${_quote(path)}\n'
+        'cd "\$dir" 2>/dev/null || { echo notgit; exit 0; }\n'
+        'git rev-parse --git-dir >/dev/null 2>&1 || { echo notgit; exit 0; }\n'
+        'if git rev-parse --verify -q HEAD >/dev/null 2>&1; then '
+        'echo ready; else echo empty; fi\n';
+  }
+
+  /// Gives a git folder with no commits its first one: an empty commit, so
+  /// no file is touched or staged. Prints `exists` when it already has a
+  /// commit (nothing is made) and `committed` when it made one.
+  static String firstCommitScript(String path) {
+    if (!path.startsWith('/') || path.contains('\n') || path.contains('\x00')) {
+      throw ArgumentError.value(path, 'path', 'Must be an absolute path.');
+    }
+    return 'set -eu\n'
+        'dir=${_quote(path)}\n'
+        'cd "\$dir"\n'
+        'if git rev-parse --verify -q HEAD >/dev/null 2>&1; then '
+        'echo exists; exit 0; fi\n'
+        'name=\$(git config user.name || echo "AI Team")\n'
+        'email=\$(git config user.email || echo "aiteam@localhost")\n'
+        'git -c user.name="\$name" -c user.email="\$email" '
+        'commit -q --allow-empty -m "First commit"\n'
+        'echo committed\n';
   }
 
   /// Saves the server password inside Ubuntu, readable by its root only.
@@ -871,7 +1438,7 @@ fi
   /// OpenCode 2 gets the Termux runner's isolated XDG folders, so its data and
   /// config never mix with OpenCode 1 installed in the same Ubuntu.
   static String serverScript({
-    TermuxRuntime runtime = TermuxRuntime.openCode1,
+    TermuxRuntime runtime = TermuxRuntime.defaultForNewInstall,
     int port = serverPort,
   }) {
     if (port < 1024 || port > 65535) {
@@ -893,6 +1460,8 @@ fi
               'export XDG_CONFIG_HOME=/root/.oc-opencode2/config\n'
               'export OPENCODE_CONFIG_DIR=/root/.oc-opencode2/config/opencode\n'
               'export OPENCODE_DB=/root/.oc-opencode2/data/opencode/opencode.db\n'
+              // OpenCode 1 chats come along before the first start.
+              '(\n$openCode1HistoryCopyScript) || exit 74\n'
         : '';
     return 'set -eu\n'
         'mkdir -p $projectsDir\n'

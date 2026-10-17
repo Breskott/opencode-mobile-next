@@ -36,6 +36,18 @@ void main() {
     expect(report, contains('safe_function'));
   });
 
+  test('diagnostics keep long code names but redact long tokens', () {
+    final diagnostics = AppDiagnosticsController();
+    addTearDown(diagnostics.dispose);
+    const exceptionName = 'ForegroundServiceDidNotStartInTimeException';
+    const token = 'q8Zx1kP0vR7mN2sL5tY9wE3uI6oA4dFgHjK';
+
+    expect(
+      diagnostics.sanitize('RemoteServiceException\$$exceptionName $token'),
+      allOf(contains(exceptionName), isNot(contains(token))),
+    );
+  });
+
   test('diagnostics coalesce bursts and keep a bounded ring', () {
     final diagnostics = AppDiagnosticsController(maxEntries: 3);
     addTearDown(diagnostics.dispose);
@@ -87,7 +99,8 @@ void main() {
 
     expect(find.textContaining('This part of OpenCode hit an error'), findsOne);
     expect(find.textContaining('private widget detail'), findsNothing);
-    expect(diagnostics.reportText(), contains('private widget detail'));
+    expect(diagnostics.reportText(), contains('Invalid state'));
+    expect(diagnostics.reportText(), isNot(contains('private widget detail')));
   });
 
   testWidgets('bootstrap failure is visible and can be retried', (

@@ -1,8 +1,9 @@
 part of '../settings_screen.dart';
 
-/// "This server": connection identity, health, host management, and the
-/// server update flow. Saved servers are a sibling row in the hub, not a row
-/// here, so each has one home.
+/// Status and version of the connected server: health, host management and
+/// the server update flow. Reached from the server's own page (Servers ›
+/// the server); Disconnect and Remove live there, on the page of the thing
+/// they act on.
 ///
 /// Versions are the health probe's first ("Health-reported version
 /// everywhere"): the connection's own reading only fills in until it
@@ -12,18 +13,7 @@ part of '../settings_screen.dart';
 class ServerSettingsScreen extends StatefulWidget {
   final ConnectionController controller;
 
-  /// A section to scroll to once the page is shown: search opens the page
-  /// at the row it names ([disconnectSection]).
-  final String? initialSection;
-
-  const ServerSettingsScreen({
-    super.key,
-    required this.controller,
-    this.initialSection,
-  });
-
-  /// [initialSection] for the Disconnect row.
-  static const disconnectSection = 'disconnect';
+  const ServerSettingsScreen({super.key, required this.controller});
 
   @override
   State<ServerSettingsScreen> createState() => _ServerSettingsScreenState();
@@ -36,39 +26,42 @@ const _serverRestartCommand = 'bash ubuntu-opencode.sh restart';
 /// The official upgrade and model refresh, run on the server's computer.
 const _serverUpdateCommands = 'opencode upgrade\nopencode models --refresh';
 
+/// Last good health per profile id, kept for the process: Settings and its
+/// server page paint it at once and refresh behind it.
+final Map<String, Health> serverHealthCache = {};
+
 class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   Health? _health;
+  bool _blocking = false;
   String? _healthError;
   bool _checking = false;
   bool _upgradingServer = false;
+
+  /// Paseo: asking the daemon which agents are ready again.
+  bool _recheckingAgents = false;
+  String? _agentsLine;
+  bool _agentsFailed = false;
   String? _serverUpgradeError;
+
+  /// Paseo: updating the helper on the computer (server_host_update.dart).
+  bool _hostUpdating = false;
+  HostUpdatePhase? _hostPhase;
+  String? _hostUpdateLine;
+  String? _hostUpdateReason;
+  bool _hostUpdateFailed = false;
+
+  /// Extensions in the part files cannot call [setState] directly.
+  void _setState(VoidCallback fn) => setState(fn);
 
   /// The update commands were copied from their row: its line says so.
   bool _updateCommandsCopied = false;
-  final _disconnectKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialSection == ServerSettingsScreen.disconnectSection) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final target = _disconnectKey.currentContext;
-        if (mounted && target != null) Scrollable.ensureVisible(target);
-      });
-    }
+    _health = serverHealthCache[widget.controller.profile?.id];
     widget.controller.addListener(_connectionChanged);
     _checkHealth();
-  }
-
-  /// Confirms, then disconnects and returns to the server list. The same
-  /// flow the Settings hub's Disconnect button ran before it moved here.
-  Future<void> _disconnect() async {
-    final controller = widget.controller;
-    final confirmed = await confirmDisconnectServer(context, controller);
-    if (!confirmed || !mounted) return;
-    final navigator = Navigator.of(context);
-    await controller.disconnect();
-    navigator.pushNamedAndRemoveUntil('/servers', (_) => false);
   }
 
   void _connectionChanged() {
@@ -78,12 +71,44 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   /// The running version: the health probe's answer, else the connection's.
   String? get _runningVersion => _health?.version ?? widget.controller.version;
 
+  Future<void> _recheckAgents() async {
+    final gateway = widget.controller.api;
+    if (_recheckingAgents || gateway is! HostAgentProviderGateway) return;
+    final copy = _settingsCopy(context);
+    setState(() {
+      _recheckingAgents = true;
+      _agentsFailed = false;
+    });
+    try {
+      final catalog = await (gateway as HostAgentProviderGateway)
+          .loadHostAgentProviders(refresh: true);
+      final names = [for (final p in catalog.selectable) p.displayName];
+      if (mounted) {
+        setState(
+          () => _agentsLine = names.isEmpty
+              ? copy.paseoCheckNoneReady
+              : copy.paseoCheckReady(names.join(', ')),
+        );
+      }
+    } catch (_) {
+      if (mounted) setState(() => _agentsFailed = true);
+    } finally {
+      if (mounted) setState(() => _recheckingAgents = false);
+    }
+  }
+
   Future<void> _checkHealth() async {
     // Runs from initState, so inherited lookups are not yet allowed.
     final copy = earlyAppLocalizations(context);
     if (_checking) return;
+    // Cached means the page painted a last known answer at once (S1).
+    final span = PerfTrace.begin(
+      'settings.health',
+      attrs: {'cached': _health != null},
+    );
     setState(() {
       _checking = true;
+      _blocking = _health == null;
       _healthError = null;
     });
     try {
@@ -92,11 +117,28 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         throw ProductException(copy.e7SettingsUi18);
       }
       final health = await api.health();
+      final id = widget.controller.profile?.id;
+      if (id != null) serverHealthCache[id] = health;
       if (mounted) setState(() => _health = health);
+      span.finish();
     } catch (error) {
-      if (mounted) setState(() => _healthError = productErrorText(error));
+      span.finish(error: error);
+      // A failed check outdates the cached answer: never show "Server
+      // healthy" beside the reason it did not answer.
+      serverHealthCache.remove(widget.controller.profile?.id);
+      if (mounted) {
+        setState(() {
+          _health = null;
+          _healthError = productErrorText(error);
+        });
+      }
     } finally {
-      if (mounted) setState(() => _checking = false);
+      if (mounted) {
+        setState(() {
+          _checking = false;
+          _blocking = false;
+        });
+      }
     }
   }
 
@@ -282,8 +324,12 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       width: KitScreenWidth.reading,
       // The health check and an update in flight are the screen's one
       // loading bar (design standard §4); the rows say what is happening.
-      loading: _checking || _upgradingServer,
-      loadingLabel: _upgradingServer ? serverUpdateTitle : copy.e7SettingsUi11,
+      loading: _blocking || _upgradingServer || _hostUpdating,
+      loadingLabel: _hostUpdating
+          ? _phaseWords(copy, _hostPhase)
+          : _upgradingServer
+          ? serverUpdateTitle
+          : copy.e7SettingsUi11,
       body: ListView(
         padding: EdgeInsets.only(
           top: tokens.space3,
@@ -336,7 +382,17 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                   title: copy.serverSettingsChangeSignIn(serverName),
                   titleMaxLines: 2,
                   supporting: TextSpan(
-                    text: hasPassword
+                    text: profile.usesAgentSocket
+                        // Claude Code, Pi and Codex keep a password or a
+                        // token, not a Basic sign-in.
+                        ? profile.codexToken.isNotEmpty
+                              ? (profile.backend == ServerBackend.codex
+                                    ? copy.serverSettingsAuthTokenSaved
+                                    : copy.serverSettingsAuthPasswordSaved)
+                              : (profile.backend == ServerBackend.codex
+                                    ? copy.serverSettingsAuthTokenMissing
+                                    : copy.e7SettingsUi62)
+                        : hasPassword
                         ? copy.serverSettingsAuthBasic(
                             profile.username.isNotEmpty
                                 ? profile.username
@@ -350,6 +406,38 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                     context,
                   ).pushNamed('/servers', arguments: 'edit-active'),
                 ),
+              // The server's own page edits it, not only its sign-in.
+              if (profile != null)
+                KitRow(
+                  key: const Key('server-edit'),
+                  leading: KitRow.icon(context, AppIconography.edit),
+                  title: copy.serverSettingsEditTitle(serverName),
+                  titleMaxLines: 2,
+                  supporting: TextSpan(text: copy.serverSettingsEditDetail),
+                  trailing: const _RowMark(AppIconography.chevronRight),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).pushNamed('/servers', arguments: 'edit-active'),
+                ),
+              if (profile != null &&
+                  profile.backend == ServerBackend.paseo &&
+                  widget.controller.api is HostAgentProviderGateway)
+                KitRow(
+                  key: const Key('server-recheck-agents'),
+                  leading: KitRow.icon(context, AppIconography.retry),
+                  title: _recheckingAgents
+                      ? copy.serverSettingsRecheckChecking
+                      : copy.serverSettingsRecheckAgents,
+                  supporting: TextSpan(
+                    text: _agentsFailed
+                        ? copy.serverSettingsRecheckFailed
+                        : _agentsLine ?? copy.serverSettingsRecheckAgentsDetail,
+                  ),
+                  supportingMaxLines: 3,
+                  enabled: !_recheckingAgents,
+                  onTap: _recheckAgents,
+                ),
+              ..._hostUpdateRows(context, copy, serverName),
             ],
           ),
           SizedBox(height: tokens.sectionGap),
@@ -376,7 +464,12 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                   ),
                 ),
               // The app's own server has no Linux service to set up.
-              if (!managedLocally && !looksLikeInAppServer(profile))
+              // (The helper script installs OpenCode: Claude Code, Pi and Codex
+              // servers have no such page.)
+              if (!managedLocally &&
+                  !looksLikeInAppServer(profile) &&
+                  (profile == null ||
+                      profile.backend == ServerBackend.openCode))
                 KitRow(
                   key: const Key('host-management-entry'),
                   leading: KitRow.icon(context, AppIconography.terminal),
@@ -392,27 +485,36 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               // §7 row 23. A Termux-managed server is upgraded by this
               // device, so that path is never gated — only the remote-host
               // one is. whenMissing: explains (STATE-12).
-              if (!managedLocally && !controller.capabilities.remoteUpgrade)
-                KitRow.unavailable(
-                  key: const ValueKey('gated-remote-upgrade'),
-                  title: copy.e7SettingsUi67,
-                  reason: copy.e7SettingsUi68,
-                  capability: 'remote-upgrade',
-                  leading: KitRow.icon(context, AppIconography.systemDownload),
-                )
-              else
-                KitRow(
-                  key: const Key('server-updates-tile'),
-                  leading: KitRow.icon(context, AppIconography.systemDownload),
-                  title: serverUpdateTitle,
-                  titleMaxLines: 2,
-                  supporting: TextSpan(text: serverUpdateSubtitle),
-                  supportingMaxLines: 3,
-                  trailing: serverUpdateTrailing,
-                  // Rests while its own update runs; the bar says so.
-                  enabled: !_upgradingServer,
-                  onTap: serverUpdateAction,
-                ),
+              // Paseo updates its own helper from the row above.
+              if (_hostUpdater == null) ...[
+                if (!managedLocally && !controller.capabilities.remoteUpgrade)
+                  KitRow.unavailable(
+                    key: const ValueKey('gated-remote-upgrade'),
+                    title: copy.e7SettingsUi67,
+                    reason: copy.e7SettingsUi68,
+                    capability: 'remote-upgrade',
+                    leading: KitRow.icon(
+                      context,
+                      AppIconography.systemDownload,
+                    ),
+                  )
+                else
+                  KitRow(
+                    key: const Key('server-updates-tile'),
+                    leading: KitRow.icon(
+                      context,
+                      AppIconography.systemDownload,
+                    ),
+                    title: serverUpdateTitle,
+                    titleMaxLines: 2,
+                    supporting: TextSpan(text: serverUpdateSubtitle),
+                    supportingMaxLines: 3,
+                    trailing: serverUpdateTrailing,
+                    // Rests while its own update runs; the bar says so.
+                    enabled: !_upgradingServer,
+                    onTap: serverUpdateAction,
+                  ),
+              ],
             ],
           ),
           if (baseUrl != null) ...[
@@ -436,28 +538,6 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                 id: 'settings-server-plugins',
                 child: ServerPluginsSection(controller: widget.controller),
               ),
-            ),
-          ],
-          // Destructive and last, one section gap below the rest; it names
-          // the server and says what stops and what stays where.
-          if (profile != null) ...[
-            SizedBox(height: tokens.sectionGap),
-            KitRowGroup(
-              key: _disconnectKey,
-              children: [
-                KitRow(
-                  key: const ValueKey('server-disconnect'),
-                  destructive: true,
-                  leading: KitRow.icon(context, AppIconography.unlink),
-                  title: copy.serverSettingsDisconnectTitle(profile.name),
-                  titleMaxLines: 2,
-                  supporting: TextSpan(
-                    text: copy.serverSettingsDisconnectDetail(profile.name),
-                  ),
-                  supportingMaxLines: 4,
-                  onTap: _disconnect,
-                ),
-              ],
             ),
           ],
         ],

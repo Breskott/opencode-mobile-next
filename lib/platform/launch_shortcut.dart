@@ -9,14 +9,24 @@ import 'platform_capabilities.dart';
 /// shortcuts in `res/xml/shortcuts.xml`; `activity` is what the Quick
 /// Settings tile sends when tapped; `phoneSetup` and `phoneSetupDone` are the
 /// phone setup notifications (SetupService.kt): the running or stopped job,
-/// and the finished one. Wire values are the action ids; anything else the
+/// and the finished one; `usage` and `usage_settings` are the Usage home-screen widget (its rows, and its empty state). Wire values are the action ids; anything else the
 /// native side or a future build might send is dropped rather than mapped.
 enum LaunchAction {
   connect('connect'),
   newTask('new_task'),
   activity('activity'),
   phoneSetup('phone_setup'),
-  phoneSetupDone('phone_setup_done');
+  phoneSetupDone('phone_setup_done'),
+  usage('usage'),
+  usageSettings('usage_settings'),
+
+  /// Widget recovery opens the background connection setting without enabling it.
+  backgroundSettings('background_settings'),
+
+  /// A Usage widget row that needs a sign-in or a key. The wire value is
+  /// `usage_target:<action>:<provider>:<profile>`, parsed by
+  /// [UsageSignInTarget]; the enum value stands for "the target is waiting".
+  usageSignIn('usage_target');
 
   const LaunchAction(this.wireValue);
 
@@ -26,11 +36,62 @@ enum LaunchAction {
   static LaunchAction? fromWire(Object? value) {
     if (value is! String) return null;
     final normalized = value.trim();
+    if (UsageSignInTarget.fromWire(normalized) != null) return usageSignIn;
     for (final action in values) {
       if (action.wireValue == normalized) return action;
     }
     return null;
   }
+}
+
+/// The sign-in a Usage widget row asks for: which server (saved profile id,
+/// or `phone` for this phone's agents), which provider, and whether it is a
+/// sign-in or a key. IDs and fixed words only; nothing else travels.
+@immutable
+class UsageSignInTarget {
+  const UsageSignInTarget({
+    required this.profileId,
+    required this.providerId,
+    required this.action,
+  });
+
+  static const prefix = 'usage_target:';
+  static final _idPattern = RegExp(r'^[A-Za-z0-9._-]{1,64}$');
+  static final _providerPattern = RegExp(r'^[a-z0-9][a-z0-9_-]{0,31}$');
+
+  final String profileId;
+  final String providerId;
+
+  /// `sign_in`, `add_key` or `set_up` (read usage from a server).
+  final String action;
+
+  String get wire => '$prefix$action:$providerId:$profileId';
+
+  static UsageSignInTarget? fromWire(Object? value) {
+    if (value is! String || !value.startsWith(prefix)) return null;
+    final parts = value.substring(prefix.length).split(':');
+    if (parts.length != 3) return null;
+    final action = parts[0];
+    if (action != 'sign_in' && action != 'add_key' && action != 'set_up') {
+      return null;
+    }
+    if (!_providerPattern.hasMatch(parts[1]) ||
+        !_idPattern.hasMatch(parts[2])) {
+      return null;
+    }
+    return UsageSignInTarget(
+      profileId: parts[2],
+      providerId: parts[1],
+      action: action,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is UsageSignInTarget && other.wire == wire;
+
+  @override
+  int get hashCode => wire.hashCode;
 }
 
 /// A pinned-session launcher shortcut tapped on the home screen: the exact
@@ -92,6 +153,10 @@ class LaunchShortcut {
   final ValueNotifier<SessionLaunch?> pendingSession =
       ValueNotifier<SessionLaunch?>(null);
 
+  /// The target of a pending [LaunchAction.usageSignIn], set just before
+  /// [pending].
+  UsageSignInTarget? usageTarget;
+
   bool _started = false;
   bool _disposed = false;
   int _acceptGeneration = 0;
@@ -143,6 +208,11 @@ class LaunchShortcut {
     final action = LaunchAction.fromWire(value);
     if (action == null) return;
     _acceptGeneration++;
+    if (action == LaunchAction.usageSignIn) {
+      usageTarget = UsageSignInTarget.fromWire(value);
+      // A repeat tap on the same row must still notify.
+      pending.value = null;
+    }
     pending.value = action;
   }
 
@@ -160,6 +230,13 @@ class LaunchShortcut {
     final action = pending.value;
     pending.value = null;
     return action;
+  }
+
+  /// Takes the sign-in target of a [LaunchAction.usageSignIn], once.
+  UsageSignInTarget? takeUsageTarget() {
+    final target = usageTarget;
+    usageTarget = null;
+    return target;
   }
 
   /// Takes the pending pinned-session tap, leaving nothing behind.

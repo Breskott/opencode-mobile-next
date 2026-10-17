@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/domain/settings_scope.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
@@ -116,11 +117,23 @@ void main() {
         addTearDown(controller.dispose);
         await expectLater(
           controller.setAppearance(AppAppearance.dark),
-          throwsStateError,
+          throwsA(
+            isA<SettingsFailure>().having(
+              (e) => e.reason,
+              'reason',
+              SettingsFailureReason.storageFailed,
+            ),
+          ),
         );
         await expectLater(
           controller.setThemePack(ThemePackId.solarized),
-          throwsStateError,
+          throwsA(
+            isA<SettingsFailure>().having(
+              (e) => e.reason,
+              'reason',
+              SettingsFailureReason.storageFailed,
+            ),
+          ),
         );
         final restarted = ConnectionController(
           ProfileStore(prefs: prefs),

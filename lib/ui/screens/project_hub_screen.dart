@@ -3,11 +3,15 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../../domain/chat_feed.dart' show isTemporaryProjectDirectory;
 import '../../domain/server_gateway.dart'
-    show ProductException, ServerCapabilities;
+    show ProductException, ServerCapabilities, WorkspaceProject;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../app_iconography.dart';
+import '../navigation/last_project.dart';
+import '../kit/kit_bidi.dart';
+import '../kit/kit_chip.dart';
 import '../kit/kit_buttons.dart' show KitAction;
 import '../kit/kit_capability_explainer.dart';
 import '../kit/kit_menu.dart';
@@ -25,9 +29,8 @@ import 'development_services_screen.dart';
 import 'files_screen.dart';
 import 'managed_workspaces_screen.dart';
 import 'project_health_screen.dart';
-import 'projects_screen.dart';
+import 'project_folder_actions.dart';
 import 'terminal_screen.dart';
-import 'workspace_screen.dart';
 import 'worktrees_screen.dart';
 
 /// A tool scoped to the current project, in the order the Project tab lists
@@ -104,13 +107,16 @@ Future<void> openProjectTool(
         final directory = controller.directory;
         final project = directory == null
             ? null
-            : WorkspaceScreen.projectForDirectory(
-                await repository.listProjects(),
-                directory,
-              );
+            : projectForDirectory(await repository.listProjects(), directory);
         if (!context.mounted) return;
         if (project == null) {
-          throw ProductException(l10n.e7LibraryNoProjectFolderIsOpenChooseOne);
+          // A folder is open, but OpenCode does not track it as a git
+          // project with a commit (a new folder, or no git): say that.
+          throw ProductException(
+            directory?.isNotEmpty == true
+                ? l10n.projectToolsNeedGitCommit
+                : l10n.e7LibraryNoProjectFolderIsOpenChooseOne,
+          );
         }
         await pushKitPage<void>(
           context,
@@ -127,17 +133,44 @@ Future<void> openProjectTool(
   }
 }
 
+/// The catalog project that owns [directory]: its root or a listed
+/// worktree first, then any project containing it.
+WorkspaceProject? projectForDirectory(
+  List<WorkspaceProject> projects,
+  String directory,
+) {
+  for (final project in projects) {
+    if (project.directory == directory ||
+        project.worktrees.contains(directory)) {
+      return project;
+    }
+  }
+  for (final project in projects) {
+    if (ConnectionController.projectContainsDirectory(project, directory)) {
+      return project;
+    }
+  }
+  return null;
+}
+
 /// Lets the shell offer system Back to the Project tab before leaving it.
 class ProjectHubBackController {
   bool Function()? _handler;
   bool handleBack() => _handler?.call() ?? false;
+
+  VoidCallback? _hub;
+
+  /// Back to the hub's rows from Files (the Project tab tapped again). The
+  /// browser keeps its folder and scroll for the next visit.
+  void showHub() => _hub?.call();
 }
 
-/// The Project tab: the project's name, then every tool that acts on it, one
-/// row each, Changes first. A row the connected server cannot serve is
-/// absent, and the shell drops the whole tab when no row is left (UX plan
-/// 5.1, rule 7). With no project open the tab says so and offers the
-/// chooser (map project-hub, proposal "fix").
+/// The Files tab: the title, a chip naming the project it shows (tap to
+/// switch), then every tool that acts on that project, one row each, Changes
+/// first. The project is the one last used for a chat, else the open one. A
+/// row the connected server cannot serve is absent, and the shell drops the
+/// whole tab when no row is left (UX plan 5.1, rule 7). With no project the
+/// tab says so and offers the chooser (map project-hub, proposal "fix").
 ///
 /// Files opens inside the tab rather than over it, so the file browser keeps
 /// its folder, search and scroll position across tab switches the way it did
@@ -169,7 +202,8 @@ class ProjectHub extends StatefulWidget {
     if (capabilities.fileBrowsing) ProjectTool.changes,
     if (capabilities.terminal) ProjectTool.terminal,
     if (capabilities.projectManagement) ProjectTool.health,
-    if (capabilities.projectManagement) ProjectTool.worktrees,
+    if (capabilities.projectManagement || capabilities.worktreeBrowsing)
+      ProjectTool.worktrees,
     if (capabilities.developmentServices) ProjectTool.services,
     if (capabilities.projectManagement && capabilities.managedWorkspaces)
       ProjectTool.workspaces,
@@ -220,10 +254,26 @@ class _ProjectHubState extends State<ProjectHub> {
     super.initState();
     widget.focusSearchSignal?.addListener(_searchFiles);
     widget.openFilesSignal?.addListener(_openFiles);
-    widget.backController?._handler = _handleBack;
+    widget.backController
+      ?.._handler = _handleBack
+      .._hub = _showHub;
     widget.controller.addListener(_followConnection);
     _wasBusy = widget.controller.busySessions.isNotEmpty;
     _followConnection();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _followLastProject());
+  }
+
+  /// Files shows the project the person last used for a chat: when that is
+  /// not the open location, the location moves to it once, on first show.
+  void _followLastProject() {
+    if (!mounted) return;
+    final controller = widget.controller;
+    final last = lastUsedProjectOf(controller);
+    if (last == null || last == controller.directory) return;
+    if (!controller.isConnected || !controller.capabilities.projectManagement) {
+      return;
+    }
+    unawaited(controller.selectLocation(directory: last));
   }
 
   /// Reads the live lines again when the server, location or project
@@ -305,8 +355,12 @@ class _ProjectHubState extends State<ProjectHub> {
       widget.openFilesSignal?.addListener(_openFiles);
     }
     if (oldWidget.backController != widget.backController) {
-      oldWidget.backController?._handler = null;
-      widget.backController?._handler = _handleBack;
+      oldWidget.backController
+        ?.._handler = null
+        .._hub = null;
+      widget.backController
+        ?.._handler = _handleBack
+        .._hub = _showHub;
     }
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_followConnection);
@@ -320,7 +374,9 @@ class _ProjectHubState extends State<ProjectHub> {
   void dispose() {
     widget.focusSearchSignal?.removeListener(_searchFiles);
     widget.openFilesSignal?.removeListener(_openFiles);
-    widget.backController?._handler = null;
+    widget.backController
+      ?.._handler = null
+      .._hub = null;
     widget.controller.removeListener(_followConnection);
     _focusFilesSearch.dispose();
     super.dispose();
@@ -333,6 +389,10 @@ class _ProjectHubState extends State<ProjectHub> {
     if (_filesBack.handleBack()) return true;
     setState(() => _filesOpen = false);
     return true;
+  }
+
+  void _showHub() {
+    if (_filesOpen) setState(() => _filesOpen = false);
   }
 
   void _openFiles() {
@@ -371,18 +431,19 @@ class _ProjectHubState extends State<ProjectHub> {
     if (mounted) unawaited(_readStatus());
   });
 
-  /// Chooses a project: the Projects list (select one, create or open a
-  /// folder), where the hub used to only say that none was open (map
-  /// project-hub, `whenMissing.project.open`: explains → offers the chooser).
-  Future<void> _chooseProject() => _guard(
-    () => pushKitPage<bool>(
+  /// Chooses a project in the same "Open a project" sheet the New
+  /// conversation chip uses (New project, Search this phone, Opened before).
+  /// Opening a folder moves the location to it; it also becomes the last
+  /// used project, so Files and the next chat start there.
+  Future<void> _chooseProject() => _guard(() async {
+    final directory = await ProjectFolderActions.openFolder(
       context,
-      (_) => ProjectsScreen(
-        controller: widget.controller,
-        selectedProjectID: null,
-      ),
-    ),
-  );
+      widget.controller,
+    );
+    if (directory != null) {
+      rememberLastUsedProject(widget.controller, directory);
+    }
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -433,7 +494,9 @@ class _ProjectHubState extends State<ProjectHub> {
   Widget _hubBody(BuildContext context) {
     final l10n = _l10n(context);
     final tokens = KitTokens.of(context);
-    final directory = widget.controller.directory;
+    final open = widget.controller.directory;
+    // A temporary folder is never a project: the tab reads as having none.
+    final directory = isTemporaryProjectDirectory(open) ? null : open;
     final available = ProjectHub.toolsFor(widget.controller.capabilities);
     final tools = [
       for (final tool in _hubOrder)
@@ -454,6 +517,7 @@ class _ProjectHubState extends State<ProjectHub> {
             bottom: KitScreen.endPadding(context),
           ),
           children: [
+            _filesTitle(context),
             if (directory != null && directory.isNotEmpty)
               _projectHeader(context, directory)
             else
@@ -490,33 +554,69 @@ class _ProjectHubState extends State<ProjectHub> {
     );
   }
 
-  /// The project's name as the tab's large title. The folder path is not
-  /// repeated under it; it is one Copy away in the menu beside the name,
-  /// with Switch project.
-  Widget _projectHeader(BuildContext context, String directory) {
-    final l10n = _l10n(context);
+  /// The tab's large title.
+  Widget _filesTitle(BuildContext context) {
     final tokens = KitTokens.of(context);
     return Padding(
       padding: EdgeInsetsDirectional.only(
         start: tokens.gutter,
-        end: tokens.space1,
+        end: tokens.gutter,
+        bottom: tokens.space1,
+      ),
+      child: Semantics(
+        header: true,
+        child: KitText(
+          _l10n(context).shellTabFiles,
+          key: const ValueKey('project-hub-title'),
+          role: KitTextRole.largeTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+
+  /// The project chip under the title: its name, and a tap that opens the
+  /// project chooser. The folder path is one Copy away in the menu beside
+  /// the chip.
+  Widget _projectHeader(BuildContext context, String directory) {
+    final l10n = _l10n(context);
+    final tokens = KitTokens.of(context);
+    final canSwitch = widget.controller.capabilities.projectManagement;
+    final name = KitBidi.auto(_basename(directory));
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.gutter,
+        end: tokens.gutter,
         bottom: tokens.sectionGap,
       ),
+      // spaceBetween, not a Spacer: a Spacer beside the loose Flexible only
+      // takes half the free room, which left the menu stranded mid-row.
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: KitText(
-              _basename(directory),
-              key: const ValueKey('project-hub-context'),
-              role: KitTextRole.largeTitle,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          Flexible(
+            child: Semantics(
+              container: true,
+              hint: canSwitch ? l10n.e7LibrarySwitchProject : null,
+              child: canSwitch
+                  ? KitChip.action(
+                      key: const ValueKey('project-hub-context'),
+                      icon: AppIconography.folderOpen,
+                      label: name,
+                      onPressed: () => unawaited(_chooseProject()),
+                    )
+                  : KitChip(
+                      key: const ValueKey('project-hub-context'),
+                      icon: AppIconography.folderOpen,
+                      label: name,
+                    ),
             ),
           ),
           KitRowMenu(
             key: const ValueKey('project-hub-menu'),
             items: [
-              if (widget.controller.capabilities.projectManagement)
+              if (canSwitch)
                 KitMenuItem(
                   key: const ValueKey('project-hub-switch'),
                   label: l10n.e7LibrarySwitchProject,
@@ -546,7 +646,8 @@ class _ProjectHubState extends State<ProjectHub> {
     ProjectTool.files => _row(
       tool,
       icon: AppIconography.files,
-      title: l10n.readerUiFiles,
+      // Not "Files" again inside the Files tab.
+      title: l10n.projectHubBrowseFiles,
       onTap: _openFiles,
     ),
     ProjectTool.changes => _row(

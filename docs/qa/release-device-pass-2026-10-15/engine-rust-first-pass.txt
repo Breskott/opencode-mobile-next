@@ -1,0 +1,183 @@
+   Compiling oc-phone-engine v0.1.0 (/home/eslam/Storage/Code/oc_app-codex-relengine/engine/phone)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.90s
+     Running unittests src/lib.rs (/home/eslam/Storage/tmp/aiteam-phone-engine-build/target/debug/deps/oc_phone_engine-c99d27927a812917)
+
+running 103 tests
+test admission::tests::restart_cleans_worker_directories_without_reviving_authority ... ok
+test attestation::cache_tests::removed_symlinked_and_nonregular_paths_cannot_borrow_cached_hash ... ok
+test attestation::cache_tests::replacement_and_same_size_timestamp_restored_write_invalidate_cache ... ok
+test attestation::cache_tests::same_descriptor_and_current_path_guards_detect_changes_during_read ... ok
+test attestation::cache_tests::unchanged_binary_is_read_once_and_cache_is_bounded ... ok
+test boundary::kernel_probe_tests::stopped_probe_is_killed_and_reaped_at_the_deadline ... ok
+test chat::tests::alive_process_cannot_fall_back_and_old_inflight_heartbeats_cannot_replace_busy ... ok
+test chat::tests::directory_lru_only_evicts_idle_unprotected_scopes ... ok
+test chat::tests::full_busy_capacity_keeps_overflow_evidence_and_fails_closed ... ok
+test chat::tests::heartbeat_teaching_a_new_directory_fences_inflight_snapshot ... ok
+test chat::tests::malformed_observation_recovers_only_from_complete_fresh_connected_snapshot ... ok
+test chat::tests::missing_expired_unknown_and_reversed_clock_never_mean_idle ... ok
+test chat::tests::person_busy_blocks_and_team_ids_do_not_impersonate_a_person ... ok
+test chat::tests::strict_idle_poll_does_not_erase_a_newer_busy_observation ... ok
+test chat::tests::worker_birth_races_never_fill_person_ledger ... ok
+test config::tests::config_read_normalizes_alias_and_rejects_linked_credentials ... ok
+test config::tests::first_start_allows_missing_worker_root_but_never_a_boolean_proof ... ok
+test config::tests::trusted_android_style_ancestor_is_resolved_but_descendant_symlink_is_refused ... ok
+test daemon::tests::accepted_async_turn_can_appear_after_first_idle_poll_without_resubmission ... ok
+test daemon::tests::all_routes_require_bearer_and_workspace_deletion_is_durable ... ok
+test daemon::tests::arbitrary_output_and_dependency_cycles_are_refused ... ok
+test daemon::tests::checker_cannot_waive_findings_or_invent_token_totals ... ok
+test daemon::tests::checker_prompt_separates_criterion_status_from_defects_and_requires_evidence ... ok
+test daemon::tests::daily_usage_requires_same_day_provenance_and_preserves_unknown_cross_day ... ok
+test daemon::tests::exact_native_receipt_composes_driver_capability_and_replacement_closes_it ... ok
+test daemon::tests::failed_observation_accepts_only_the_fixed_model_recovery_code ... ok
+test daemon::tests::failed_protocol_probes_retry_before_the_setup_readiness_window ... ok
+test daemon::tests::first_unknown_usage_poll_does_not_poison_known_same_day_dispatch ... ok
+test daemon::tests::fresh_checker_keeps_observed_worker_cost_and_task_tokens ... ok
+test daemon::tests::fresh_clone_reset_never_reuses_a_dispatched_or_uncertain_checkpoint ... ok
+test daemon::tests::fresh_session_budget_zero_requires_durable_provenance_and_no_dispatch ... ok
+test daemon::tests::health_reports_only_live_signed_boundary_tier_at_both_locations ... ok
+test daemon::tests::heartbeat_ack_waits_for_admission_and_stale_idle_cannot_overwrite_busy ... ok
+test daemon::tests::invalid_model_is_local_before_any_worker_or_dispatch_checkpoint ... ok
+test daemon::tests::late_admission_wait_cannot_overwrite_user_pause_or_stop_checkpoint ... ok
+test daemon::tests::model_preflight_refuses_before_queuing_and_accepts_after_provider_setup ... ok
+test daemon::tests::model_resolution_cannot_bind_a_stopped_job ... ok
+test daemon::tests::omitted_model_never_reaches_prompt_dispatch ... ok
+test daemon::tests::parallel_prompt_waits_for_actual_other_lane_usage_before_dispatch ... ok
+test daemon::tests::parallel_tasks_use_distinct_committed_verification_reports ... ok
+test daemon::tests::persistent_parallel_usage_unknown_is_bounded_and_never_fabricated_zero ... ok
+test daemon::tests::ready_restart_refetches_exact_session_without_new_prompt_or_clone ... ok
+test daemon::tests::rejected_create_is_durable_before_import_and_delete_sweeps_only_unreferenced_repo ... ok
+test daemon::tests::repository_import_refusal_returns_static_typed_code_and_allows_corrected_retry ... ok
+test daemon::tests::runner_error_cannot_overwrite_user_pause_during_pending_budget_admission ... ok
+test daemon::tests::stop_remains_effective_while_unknown_turn_is_in_grace_window ... ok
+test daemon::tests::structured_output_accepts_one_trailing_checker_verdict_after_plain_summary ... ok
+test daemon::tests::structured_output_rejects_ambiguous_or_malformed_unfenced_verdicts ... ok
+test daemon::tests::structured_output_trailing_object_preserves_json_strings_and_schema_checks ... ok
+test daemon::tests::successful_observation_mislabeled_as_a_finding_still_blocks_merge ... ok
+test daemon::tests::transient_observe_failure_refetches_same_session_without_new_prompt ... ok
+test daemon::tests::worker_prompt_requires_committed_actual_acceptance_check_evidence ... ok
+test daemon::tests::workspace_reports_live_server_state_and_preserves_command_revision ... ok
+test opencode1::tests::callable_prompt_contract_must_support_model_omission ... ok
+test opencode1::tests::coding_plan_omission_uses_documented_standard_instead_of_highspeed_catalog_default ... ok
+test opencode1::tests::configured_connected_model_precedes_provider_default ... ok
+test opencode1::tests::empty_model_selection_omits_wire_field_and_keeps_authored_role ... ok
+test opencode1::tests::endpoint_and_error_never_expose_credentials ... ok
+test opencode1::tests::explicit_model_is_preserved_without_runtime_http_and_invalid_choice_fails_locally ... ok
+test opencode1::tests::fallback_requires_complete_valid_known_scope ... ok
+test opencode1::tests::global_fixture_parses_pinned_envelope_without_exposing_retry_text ... ok
+test opencode1::tests::invalid_explicit_model_does_not_send_any_http_request ... ok
+test opencode1::tests::invalid_or_disconnected_configured_models_use_connected_default_only ... ok
+test opencode1::tests::malformed_status_and_pending_requests_fail_closed ... ok
+test opencode1::tests::missing_invalid_or_disconnected_defaults_return_typed_model_not_configured ... ok
+test opencode1::tests::model_resolution_preserves_connected_order_and_never_uses_disconnected_catalog ... ok
+test opencode1::tests::model_resolution_preserves_read_transport_failure ... ok
+test opencode1::tests::model_resolution_preserves_safe_auth_and_server_failure_codes ... ok
+test opencode1::tests::nonempty_model_preflight_and_explicit_wire_selection_agree ... ok
+test opencode1::tests::omitted_model_resolves_authenticated_connected_provider_on_fresh_profile ... ok
+test opencode1::tests::only_latest_final_idle_turn_completes ... ok
+test opencode1::tests::requests_errors_tools_and_busy_prevent_completion ... ok
+test opencode1::tests::role_fields_and_readonly_policy_are_exact ... ok
+test opencode1::tests::split_sse_frames_multiline_crlf_and_eof_are_not_checkpoints ... ok
+test opencode1::tests::usage_omits_unknown_and_preserves_known_zero ... ok
+test opencode2::tests::abort_revokes_and_cancels_queued_work_before_idle_interrupt ... ok
+test opencode2::tests::completion_needs_latest_turn_idle_and_no_pending_or_busy ... ok
+test opencode2::tests::default_selection_preserves_runtime_identity_and_rejects_unavailable ... ok
+test opencode2::tests::events_cannot_supply_idle_without_scope_or_clear_disconnect ... ok
+test opencode2::tests::explicit_selection_does_not_contact_server_or_substitute ... ok
+test opencode2::tests::model_recovery_requires_accepted_turn_and_empty_inbox ... ok
+test opencode2::tests::only_proven_version_and_complete_schema_are_accepted ... ok
+test opencode2::tests::policy_is_exact_replacement_and_shell_is_oc2_action ... ok
+test opencode2::tests::provider_auth_failure_exposes_only_allowlisted_model_recovery ... ok
+test opencode2::tests::wire_policy_mismatch_prevents_agent_model_and_prompt_mutations ... ok
+test opencode2::tests::wire_prompt_readback_pagination_and_uncertainty ... ok
+test opencode::tests::detection_never_falls_back_on_auth_or_explicit_unsupported_version ... ok
+test opencode::tests::local_preflight_never_requires_network_or_protocol_detection ... ok
+test opencode::tests::oc1_release_pin_requires_healthy_supported_server_and_current_schema ... ok
+test opencode::tests::oc1_release_pins_verify_actual_identity_and_current_contract ... ok
+test opencode::tests::oc1_spa_fallback_requires_recognized_pinned_health ... ok
+test opencode::tests::selected_oc2_identity_survives_failed_schema_verification ... ok
+test startup::tests::engine_process_survives_launcher_thread_and_terminates_on_actual_stdin_eof ... ok
+test startup::tests::launching_thread_exit_is_not_pipe_eof_but_parent_endpoint_close_is ... ok
+test startup::tests::process_identity_parses_comm_and_checks_native_numeric_bounds ... ok
+test startup::tests::readiness_is_bounded_authenticated_and_binds_every_identity_field ... ok
+test startup::tests::self_identity_matches_current_process ... ok
+test startup::tests::stdin_eof_child ... ok
+test store::checker_publication_tests::admission_reason_clear_reaches_task_without_clearing_blocked_or_usage_state ... ok
+test store::checker_publication_tests::authored_finding_statuses_publish_open_on_job_and_task_after_restart ... ok
+test store::checker_publication_tests::empty_successful_check_preserves_results_and_merge_ready_stage ... ok
+test store::checker_publication_tests::needs_fix_keeps_explicit_reason_and_defaults_absent_or_empty_reason ... ok
+test store::checker_publication_tests::workspace_projects_latest_scoped_job_reason_without_writing_legacy_checkpoint ... ok
+
+test result: ok. 103 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.04s
+
+     Running unittests src/bin/oc-engine-boundary-probe.rs (/home/eslam/Storage/tmp/aiteam-phone-engine-build/target/debug/deps/oc_engine_boundary_probe-203c09592e134df6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/oc-engine-sandbox.rs (/home/eslam/Storage/tmp/aiteam-phone-engine-build/target/debug/deps/oc_engine_sandbox-41b27849a3981071)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (/home/eslam/Storage/tmp/aiteam-phone-engine-build/target/debug/deps/oc_phone_engine-853ce6f9296cb685)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/attestation.rs (/home/eslam/Storage/tmp/aiteam-phone-engine-build/target/debug/deps/attestation-5deeffc8b22eaacd)
+
+running 10 tests
+test cached_binaries_do_not_cache_receipt_signature_or_runtime_authority ... ok
+test exact_signed_complete_native_handoff_is_valid_and_rechecked ... ok
+test malformed_and_tampered_signature_are_rejected_without_native_details ... ok
+test neither_tier_borrows_the_others_proof_or_skips_common_controls ... ok
+test profile_parent_policy_and_symlink_replacements_are_not_authority ... ok
+test schema_two_accepts_each_explicit_tier_with_its_real_controls ... ok
+test schema_two_requires_explicit_known_tier_and_legacy_never_implies_proot ... ok
+test signer_pin_binary_mismatch_and_missing_controls_reject_authority ... ok
+test stale_future_boot_and_generation_replay_fail_closed ... ok
+test tier_tampering_is_signed_and_cannot_change_an_accepted_generation ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s
+
+     Running tests/boundary_kernel.rs (/home/eslam/Storage/tmp/aiteam-phone-engine-build/target/debug/deps/boundary_kernel-03ac05c937338f55)
+
+running 4 tests
+test blocked_landlock_never_executes_the_requested_program ... ok
+test query_alone_cannot_pass_when_rule_or_restriction_is_blocked ... ok
+test seccomp_sigsys_on_query_preserves_launcher_and_reports_unsupported ... ok
+test unavailable_landlock_is_typed_unsupported ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s
+
+     Running tests/boundary_proof.rs (/home/eslam/Storage/tmp/aiteam-phone-engine-build/target/debug/deps/boundary_proof-8ede8bae1da8d736)
+
+running 3 tests
+test preparer_seeds_real_main_and_refuses_arbitrary_paths_or_reentry ... FAILED
+test raw_syscalls_proc_aliases_metadata_and_descendants_cannot_reach_private_state ... ignored, OS boundary proof requires Landlock ABI6; explicitly run on a capable kernel
+test unsupported_or_unproven_kernel_never_executes_a_tool ... FAILED
+
+failures:
+
+---- preparer_seeds_real_main_and_refuses_arbitrary_paths_or_reentry stdout ----
+
+thread 'preparer_seeds_real_main_and_refuses_arbitrary_paths_or_reentry' (494296) panicked at tests/boundary_proof.rs:8:10:
+set OC_PHONE_PROOF_ROOT to an isolated Storage artifact directory
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- unsupported_or_unproven_kernel_never_executes_a_tool stdout ----
+
+thread 'unsupported_or_unproven_kernel_never_executes_a_tool' (494297) panicked at tests/boundary_proof.rs:8:10:
+set OC_PHONE_PROOF_ROOT to an isolated Storage artifact directory
+
+
+failures:
+    preparer_seeds_real_main_and_refuses_arbitrary_paths_or_reentry
+    unsupported_or_unproven_kernel_never_executes_a_tool
+
+test result: FAILED. 0 passed; 2 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test boundary_proof`

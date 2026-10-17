@@ -8,6 +8,7 @@ import '../app_iconography.dart';
 import 'kit_bidi.dart';
 import 'kit_buttons.dart';
 import 'kit_field.dart';
+import 'kit_divider.dart';
 import 'kit_motion.dart';
 import 'kit_progress.dart';
 import 'kit_receipt.dart';
@@ -417,11 +418,16 @@ class _KitChoiceGroupState<T> extends State<_KitChoiceGroup<T>> {
         children: [
           for (var i = 0; i < rows.length; i++) ...[
             if (i > 0)
-              Divider(
-                height: 0,
-                thickness: 0,
-                indent: tokens.gutter + tokens.smallIconSize + tokens.space3,
-                color: tokens.roles.hairline,
+              Padding(
+                padding: EdgeInsetsDirectional.only(
+                  start:
+                      tokens.gutter +
+                      tokens
+                          .iconSize(context, tokens.smallIconSize)
+                          .roundToDouble() +
+                      tokens.space3,
+                ),
+                child: const KitDivider(),
               ),
             rows[i],
           ],
@@ -575,7 +581,7 @@ class KitChoiceRow<T> extends StatelessWidget {
           ),
         ),
         if (hasSupporting) ...[
-          SizedBox(height: tokens.space1 / 2),
+          const SizedBox(height: KitTokens.rowLineGap),
           Text.rich(
             TextSpan(
               children: [
@@ -807,14 +813,14 @@ class KitPickerRow<T> extends StatelessWidget {
           ),
         ),
         if (stacked && value.isNotEmpty) ...[
-          SizedBox(height: tokens.space1 / 2),
+          const SizedBox(height: KitTokens.rowLineGap),
           Text(
             KitBidi.auto(value),
             style: tokens.rowValue.copyWith(color: roles.text3),
           ),
         ],
         if (supportingText != null && supportingText.isNotEmpty) ...[
-          SizedBox(height: tokens.space1 / 2),
+          const SizedBox(height: KitTokens.rowLineGap),
           Text(supportingText, style: secondary.copyWith(color: roles.text2)),
         ],
       ],

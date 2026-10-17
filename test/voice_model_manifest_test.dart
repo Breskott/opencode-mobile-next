@@ -12,6 +12,9 @@ void main() {
     final activity = File(
       'android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/MainActivity.kt',
     ).readAsStringSync();
+    final media = File(
+      'android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/MainActivityMedia.kt',
+    ).readAsStringSync();
     final audio = File('lib/voice/audio.dart').readAsStringSync();
 
     expect(pubspec, contains('sherpa_onnx: 1.13.7'));
@@ -29,10 +32,12 @@ void main() {
     );
     expect(audio, contains('manageBluetooth: false'));
     expect(audio, contains('audioSource: AndroidAudioSource.mic'));
-    expect(activity, contains('StatFs(filesDir.absolutePath)'));
-    expect(activity, contains('activityManager.memoryClass'));
-    expect(activity, contains('Build.SUPPORTED_ABIS'));
-    expect(activity, contains('permanentlyDenied'));
+    expect(activity, contains('MainActivityMedia(this)'));
+    expect(activity, contains('media.register(messenger)'));
+    expect(media, contains('StatFs(activity.filesDir.absolutePath)'));
+    expect(media, contains('activityManager.memoryClass'));
+    expect(media, contains('Build.SUPPORTED_ABIS'));
+    expect(media, contains('permanentlyDenied'));
     expect(manifest, isNot(contains('android.speech.RecognitionService')));
     expect(pubspec, isNot(contains('speech_to_text')));
   });

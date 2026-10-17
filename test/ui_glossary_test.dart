@@ -1118,6 +1118,10 @@ const _allowedProductKeys = <String>{
   'thisPhoneUpdate',
   'thisPhoneRemove',
   'phoneServerCardStartOpenCode',
+  // The offer to leave OpenCode 1 has to say which OpenCode it moves to.
+  'moveToOpenCode2Title',
+  // A blocked move offers to keep the current runtime; it must name it.
+  'setupSwitchStay',
   // The app's own name, not a backend label.
   'appTitle',
   'aboutBuildVersion',

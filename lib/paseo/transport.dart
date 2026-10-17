@@ -10,6 +10,7 @@
 library;
 
 import 'dart:async';
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -18,6 +19,7 @@ import 'package:crypto/crypto.dart';
 
 import '../api/models.dart';
 import '../domain/loopback_host.dart';
+import 'tested_versions.dart';
 import '../orchestration/adapters/gascity/gascity_probe.dart'
     show isTailnetHost;
 
@@ -28,21 +30,31 @@ enum PaseoFailureKind {
   disconnected,
   invalidResponse,
   unavailable,
+  newChatRequired,
   overloaded,
   deliveryUnknown,
   staleRequest,
   scopeMismatch,
+
+  /// The daemon refused the handshake because its protocol is not one this
+  /// app speaks (`hello.rejected` / close code 4003).
+  incompatibleProtocol,
 }
 
 /// Safe fixed copy: daemon error bodies and the password never escape.
 class PaseoFailure extends ApiException {
   final PaseoFailureKind kind;
 
-  PaseoFailure(this.kind)
-    : super(
+  /// The daemon's own sentence for why it refused, trimmed and capped. It is
+  /// never shown as copy: only the Details fold reads it (product_failure).
+  final String? reason;
+
+  PaseoFailure(this.kind, {String? reason})
+    : reason = tidyPaseoReason(reason),
+      super(
         switch (kind) {
           PaseoFailureKind.invalidEndpoint =>
-            'Use wss://, or ws:// for this device or a Tailscale address.',
+            'Use this device, a Tailscale address, or your SSH tunnel.',
           PaseoFailureKind.authentication =>
             'The Paseo daemon rejected the password.',
           PaseoFailureKind.hostRefused =>
@@ -51,6 +63,8 @@ class PaseoFailure extends ApiException {
           PaseoFailureKind.disconnected => 'The Paseo daemon disconnected.',
           PaseoFailureKind.invalidResponse =>
             'The Paseo daemon returned an unsupported response.',
+          PaseoFailureKind.newChatRequired =>
+            "Can't reopen old chats. Starts a new chat.",
           PaseoFailureKind.unavailable =>
             'The Paseo daemon could not complete this action.',
           PaseoFailureKind.overloaded =>
@@ -61,13 +75,36 @@ class PaseoFailure extends ApiException {
             'This request has changed. Refresh before replying.',
           PaseoFailureKind.scopeMismatch =>
             'This conversation belongs to another project.',
+          PaseoFailureKind.incompatibleProtocol =>
+            'The Paseo daemon and this app cannot talk to each other. Update '
+                'the app or the daemon.',
         },
-        statusCode: kind == PaseoFailureKind.authentication ? 401 : 409,
+        // Only a real clash reads as a conflict ("changed meanwhile"); a
+        // daemon that cannot be reached or did not do it has no status, and
+        // the app's failure words say so (ProductFailureCategory.computer).
+        statusCode: switch (kind) {
+          PaseoFailureKind.authentication => 401,
+          PaseoFailureKind.overloaded => 429,
+          PaseoFailureKind.staleRequest ||
+          PaseoFailureKind.scopeMismatch ||
+          PaseoFailureKind.deliveryUnknown ||
+          PaseoFailureKind.newChatRequired => 409,
+          _ => null,
+        },
         errorTag: 'Paseo${kind.name}',
       );
 }
 
-/// Cleartext is accepted only where the network itself is private: this
+/// A daemon's error sentence made safe for a Details fold: whitespace
+/// collapsed, trimmed and capped; null when nothing is left.
+String? tidyPaseoReason(String? raw) {
+  if (raw == null) return null;
+  final text = raw.replaceAll(RegExp(r'\s+'), ' ').trim();
+  if (text.isEmpty) return null;
+  return text.length <= 240 ? text : '${text.substring(0, 239)}…';
+}
+
+/// Connections are accepted only where the network itself is private: this
 /// device, or a Tailscale address (WireGuard already encrypts that hop).
 bool isPaseoCleartextHost(String host) =>
     isLoopbackHost(host) || isTailnetHost(host);
@@ -83,7 +120,7 @@ Uri paseoEndpoint(String raw) {
       (uri.path.isNotEmpty && uri.path != '/' && uri.path != '/ws')) {
     throw PaseoFailure(PaseoFailureKind.invalidEndpoint);
   }
-  if (uri.scheme == 'ws' && !isPaseoCleartextHost(uri.host)) {
+  if (!isPaseoCleartextHost(uri.host)) {
     throw PaseoFailure(PaseoFailureKind.invalidEndpoint);
   }
   return uri.replace(path: '/ws');
@@ -212,17 +249,36 @@ class PaseoEvent {
   const PaseoEvent(this.epoch, this.type, this.payload);
 }
 
+/// One binary frame of a terminal stream: `[opcode, slot, ...payload]`. Only
+/// terminal output is ever subscribed to, so nothing else arrives this way.
+class PaseoBinaryFrame {
+  final int epoch;
+  final int opcode;
+  final int slot;
+  final List<int> payload;
+  const PaseoBinaryFrame(this.epoch, this.opcode, this.slot, this.payload);
+}
+
 class _PendingRequest {
   final bool mutation;
+
+  /// Progress messages the daemon sends for this request before its answer.
+  final void Function(String type, Map<String, dynamic> payload)? onProgress;
+
+  /// The answer is a report to read even when it carries an `error`.
+  final bool answerErrors;
   final Completer<Map<String, dynamic>> result = Completer();
   Timer? timer;
-  _PendingRequest(this.mutation);
+  _PendingRequest(this.mutation, {this.onProgress, this.answerErrors = false});
 }
 
 class PaseoTransport {
   /// The daemon accepts the upgrade, then closes with this code when the
   /// password is missing or wrong.
   static const closeAuthFailed = 4401;
+
+  /// The daemon closes with this code when it does not speak our protocol.
+  static const closeIncompatibleProtocol = 4003;
   static const maxFrameBytes = 8 * 1024 * 1024;
   static const maxPending = 64;
 
@@ -237,6 +293,7 @@ class PaseoTransport {
   final String clientId;
   final _events = StreamController<PaseoEvent>.broadcast(sync: true);
   final _disconnects = StreamController<int>.broadcast(sync: true);
+  final _binary = StreamController<PaseoBinaryFrame>.broadcast(sync: true);
   final Map<String, _PendingRequest> _pending = {};
   PaseoSocket? _socket;
   StreamSubscription<Object?>? _subscription;
@@ -247,9 +304,17 @@ class PaseoTransport {
   int _nextID = 0;
   bool _closed = false;
   bool _initialized = false;
+  int? _boundedFrameBytes;
+
+  /// Set by a `hello.rejected` frame so the close that follows reports the
+  /// daemon's reason, not just a dropped connection.
+  PaseoFailure? _helloRejection;
 
   /// Daemon version from `server_info`, null before the first handshake.
   String? serverVersion;
+
+  /// Explicit negotiated writer support, reset when the socket is lost.
+  bool workspaceFileEditing = false;
 
   /// The daemon's own wording for the last refused request, clipped. Kept for
   /// diagnostics and tests only; user-facing copy stays the fixed
@@ -277,6 +342,9 @@ class PaseoTransport {
 
   Stream<PaseoEvent> get events => _events.stream;
   Stream<int> get disconnects => _disconnects.stream;
+
+  /// Terminal stream frames, tagged with the connection they came on.
+  Stream<PaseoBinaryFrame> get binaryFrames => _binary.stream;
   int get epoch => _epoch;
   bool get isClosed => _closed;
   bool get connected => _socket != null && _initialized;
@@ -292,6 +360,9 @@ class PaseoTransport {
   }
 
   Future<int> _connect() async {
+    serverVersion = null;
+    workspaceFileEditing = false;
+    _helloRejection = null;
     final epoch = ++_epoch;
     final socket = await socketFactory(endpoint, _password);
     if (_closed || epoch != _epoch) {
@@ -313,11 +384,25 @@ class PaseoTransport {
         'clientType': 'mobile',
         'protocolVersion': 1,
         'appVersion': clientAppVersion,
+        // The header credential below still works (the daemon accepts it
+        // until 2027-03-24); this is the in-protocol form that replaces it.
+        // Daemons before 0.10 ignore the field.
+        if (_password.isNotEmpty)
+          'auth': {'kind': 'password', 'password': _password},
         // Only what this client implements. Unclaimed capabilities keep the
         // daemon on its plain message shapes and on implicit delivery of
         // permission and timeline events, so no subscription bookkeeping is
-        // needed here.
-        'capabilities': {'all_providers': true},
+        // needed here. Claude's sub-agents arrive the same implicit way
+        // (`agent.provider_subagents.update`) with their projected
+        // timelines.
+        'capabilities': {
+          'all_providers': true,
+          // Without this a daemon answers a refused hello with only a close
+          // code; with it, `hello.rejected` names the reason.
+          'hello_rejection': true,
+          'provider_subagents': true,
+          'projected_subagent_timeline': true,
+        },
       }, expectedEpoch: epoch);
       await ready.future.timeout(const Duration(seconds: 8));
       if (_closed || epoch != _epoch) {
@@ -339,14 +424,56 @@ class PaseoTransport {
     }
   }
 
+  /// A read-only recovery request on a private connection. Its strict frame
+  /// budget cannot discard unrelated responses from the live connection.
+  Future<Map<String, dynamic>> requestBoundedHistory(
+    Map<String, dynamic> body, {
+    bool agentSnapshot = false,
+  }) async {
+    if (_closed) throw PaseoFailure(PaseoFailureKind.disconnected);
+    final isolated = PaseoTransport(
+      endpoint: endpoint.toString(),
+      password: _password,
+      socketFactory: socketFactory,
+    ).._boundedFrameBytes = 1024 * 1024;
+    try {
+      return await (() async {
+        await isolated.connect();
+        if (!isolated.connected || !paseoSupports(isolated.serverVersion)) {
+          throw PaseoFailure(PaseoFailureKind.unavailable);
+        }
+        return isolated.request(
+          agentSnapshot
+              ? 'fetch_agent_request'
+              : 'fetch_agent_timeline_request',
+          body,
+          timeout: const Duration(seconds: 10),
+          expectedEpoch: isolated.epoch,
+        );
+      })().timeout(const Duration(seconds: 10));
+    } finally {
+      await isolated.close();
+    }
+  }
+
   /// Sends a session request and completes with the response payload.
   Future<Map<String, dynamic>> request(
     String type,
     Map<String, dynamic> body, {
     bool mutation = false,
     Duration? timeout,
+    int? expectedEpoch,
+    void Function()? beforeSend,
+    void Function(String type, Map<String, dynamic> payload)? onProgress,
+    bool answerErrors = false,
   }) async {
+    if (expectedEpoch != null && (!connected || expectedEpoch != _epoch)) {
+      throw PaseoFailure(PaseoFailureKind.staleRequest);
+    }
     final epoch = await _connectReady();
+    if (expectedEpoch != null && epoch != expectedEpoch) {
+      throw PaseoFailure(PaseoFailureKind.staleRequest);
+    }
     if (_closed || epoch != _epoch || _socket == null || !_initialized) {
       throw PaseoFailure(
         mutation
@@ -354,11 +481,19 @@ class PaseoTransport {
             : PaseoFailureKind.disconnected,
       );
     }
+    if (_boundedFrameBytes != null && !paseoSupports(serverVersion)) {
+      throw PaseoFailure(PaseoFailureKind.unavailable);
+    }
     if (_pending.length >= maxPending) {
       throw PaseoFailure(PaseoFailureKind.overloaded);
     }
+    beforeSend?.call();
     final id = 'm${epoch}_${++_nextID}';
-    final pending = _PendingRequest(mutation);
+    final pending = _PendingRequest(
+      mutation,
+      onProgress: onProgress,
+      answerErrors: answerErrors,
+    );
     _pending[id] = pending;
     pending.timer = Timer(timeout ?? requestTimeout, () {
       if (_pending.remove(id) == null) return;
@@ -421,14 +556,34 @@ class PaseoTransport {
 
   void _receive(int epoch, Object? frame) {
     if (epoch != _epoch || _closed) return;
-    // Binary frames carry terminal data, which this client never requests.
-    if (frame is! String) return;
+    if (frame is! String) {
+      // Binary frames carry terminal data, and only a terminal subscription
+      // asks for any.
+      if (frame is List<int> &&
+          frame.length >= 2 &&
+          frame.length <= maxFrameBytes) {
+        _binary.add(
+          PaseoBinaryFrame(epoch, frame[0], frame[1], frame.sublist(2)),
+        );
+      }
+      return;
+    }
     try {
       if (frame.length > maxFrameBytes) throw const FormatException();
+      final cap = _boundedFrameBytes;
+      if (cap != null &&
+          (frame.length > cap || utf8.encode(frame).length > cap)) {
+        throw const FormatException();
+      }
       final json = jsonDecode(frame);
       if (json is! Map<String, dynamic>) throw const FormatException();
       final outer = json['type'];
       if (outer == 'pong' || outer == 'ping') return;
+      if (outer == 'hello.rejected') {
+        _helloRejection = _rejectionFailure(json['reason']);
+        _lost(epoch);
+        return;
+      }
       if (outer != 'session') return;
       final message = json['message'];
       if (message is! Map<String, dynamic>) throw const FormatException();
@@ -441,10 +596,18 @@ class PaseoTransport {
           ? rawPayload
           : const <String, dynamic>{};
       if (type == 'status' && payload['status'] == 'server_info') {
+        final features = payload['features'];
+        workspaceFileEditing =
+            features is Map && features['workspaceFileEditing'] == true;
         final version = payload['version'];
-        if (version is String && version.length <= 64) {
-          serverVersion = version;
-        }
+        serverVersion =
+            version is String &&
+                version.length <= 64 &&
+                RegExp(
+                  r'^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$',
+                ).hasMatch(version)
+            ? version
+            : null;
         final ready = _ready;
         if (ready != null && !ready.isCompleted) ready.complete();
         return;
@@ -455,12 +618,13 @@ class PaseoTransport {
         pending?.timer?.cancel();
         final error = payload['error'];
         if (error is String) {
-          lastDaemonError = error.length > 500
-              ? error.substring(0, 500)
-              : error;
+          lastDaemonError = 'The agent request could not be completed.';
         }
         pending?.result.completeError(
-          PaseoFailure(PaseoFailureKind.unavailable),
+          PaseoFailure(
+            PaseoFailureKind.unavailable,
+            reason: error is String ? _withoutPassword(error) : null,
+          ),
         );
         return;
       }
@@ -468,16 +632,25 @@ class PaseoTransport {
       // with the push they cause (`agent_archived`, `agent_deleted`). Request
       // ids are minted here and unique, so any payload repeating one settles
       // it; a push is still delivered as an event afterwards.
+      // Progress is not the answer: it repeats the request id but leaves the
+      // request waiting.
+      if (type.endsWith('.progress') &&
+          requestId is String &&
+          _pending.containsKey(requestId)) {
+        _pending[requestId]?.onProgress?.call(type, payload);
+        return;
+      }
       final pending = requestId is String ? _pending.remove(requestId) : null;
       if (pending != null) {
         pending.timer?.cancel();
         final error = payload['error'];
-        if (error is String && error.isNotEmpty) {
-          lastDaemonError = error.length > 500
-              ? error.substring(0, 500)
-              : error;
+        if (!pending.answerErrors && error is String && error.isNotEmpty) {
+          lastDaemonError = 'The agent request could not be completed.';
           pending.result.completeError(
-            PaseoFailure(PaseoFailureKind.unavailable),
+            PaseoFailure(
+              PaseoFailureKind.unavailable,
+              reason: _withoutPassword(error),
+            ),
           );
         } else {
           pending.result.complete(payload);
@@ -490,8 +663,31 @@ class PaseoTransport {
     }
   }
 
+  /// The plain failure for a `hello.rejected` reason. The daemon's technical
+  /// reason travels only in [PaseoFailure.reason], which Details reads.
+  static PaseoFailure _rejectionFailure(Object? reason) {
+    final name = reason is String && reason.length <= 40 ? reason : null;
+    return switch (name) {
+      'password_required' || 'incorrect_password' => PaseoFailure(
+        PaseoFailureKind.authentication,
+        reason: name,
+      ),
+      'incompatible_protocol' => PaseoFailure(
+        PaseoFailureKind.incompatibleProtocol,
+        reason: name,
+      ),
+      _ => PaseoFailure(PaseoFailureKind.disconnected, reason: name),
+    };
+  }
+
+  String _withoutPassword(String text) =>
+      _password.length < 3 ? text : text.replaceAll(_password, '•••');
+
   void _lost(int epoch) {
-    if (epoch != _epoch || _socket == null) return;
+    if (epoch != _epoch) return;
+    serverVersion = null;
+    workspaceFileEditing = false;
+    if (_socket == null) return;
     final disconnectedEpoch = _epoch;
     // Invalidate callbacks and frames from the old socket before allowing a
     // future connect to allocate a replacement epoch.
@@ -505,11 +701,13 @@ class PaseoTransport {
     _ready = null;
     if (ready != null && !ready.isCompleted) {
       ready.completeError(
-        PaseoFailure(
-          socket.closeCode == closeAuthFailed
-              ? PaseoFailureKind.authentication
-              : PaseoFailureKind.disconnected,
-        ),
+        _helloRejection ??
+            PaseoFailure(switch (socket.closeCode) {
+              closeAuthFailed => PaseoFailureKind.authentication,
+              closeIncompatibleProtocol =>
+                PaseoFailureKind.incompatibleProtocol,
+              _ => PaseoFailureKind.disconnected,
+            }),
       );
     }
     unawaited(_subscription?.cancel());
@@ -537,5 +735,6 @@ class PaseoTransport {
     _lost(_epoch);
     await _events.close();
     await _disconnects.close();
+    await _binary.close();
   }
 }

@@ -11,6 +11,7 @@ import 'package:opencode_mobile/builtin/builtin_server.dart';
 import 'package:opencode_mobile/builtin/local_terminal.dart';
 import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
+import 'package:opencode_mobile/domain/opencode_history_copy.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/l10n/app_localizations_ar.dart';
 import 'package:opencode_mobile/l10n/app_localizations_en.dart';
@@ -27,7 +28,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'support/fake_local_terminal.dart';
 import 'support/fake_setup_engine.dart';
 
-// Screen D (docs/design/phone-setup-v2-2026-09-24.md): "This phone", the one
+// Screen D (docs/design/phone-setup-v2-2026-09-24.md): "In-app Ubuntu", the one
 // place OpenCode inside the app is managed, in the switcher and in Servers.
 
 class _Store extends ProfileStore {
@@ -91,6 +92,13 @@ class _Linux extends BuiltinLinux {
   int? bytesUsed = 734003200;
   final calls = <String>[];
   Completer<void>? startGate;
+  BuiltinLinuxException? startError;
+  BuiltinLinuxRunResult historyCheck = const BuiltinLinuxRunResult(
+    exitCode: 0,
+    output: '',
+  );
+  bool historyCheckThrows = false;
+  final historyChecks = <String>[];
 
   @override
   Future<BuiltinLinuxStatus> status() async => BuiltinLinuxStatus(
@@ -104,12 +112,24 @@ class _Linux extends BuiltinLinux {
   Future<BuiltinLinuxRunResult> run(
     String script, {
     Duration timeout = const Duration(minutes: 2),
-  }) async => const BuiltinLinuxRunResult(exitCode: 0, output: '');
+  }) async {
+    if (script == openCode1HistorySwitchCheckScript) {
+      historyChecks.add(script);
+      if (historyCheckThrows) throw StateError('history unavailable');
+      return historyCheck;
+    }
+    return const BuiltinLinuxRunResult(exitCode: 0, output: '');
+  }
 
   @override
-  Future<void> startServer(String script, {int port = 4097}) async {
+  Future<void> startServer(
+    String script, {
+    int port = 4097,
+    BuiltinServerRestoreRecipe? restoreRecipe,
+  }) async {
     calls.add('start');
     await startGate?.future;
+    if (startError case final error?) throw error;
     running = true;
   }
 
@@ -141,7 +161,7 @@ class _Linux extends BuiltinLinux {
 }
 
 /// Words and addresses a person must never see for this server.
-const _forbidden = ['0 B', '127.0.0.1', '4097', 'built-in', 'Ubuntu'];
+const _forbidden = ['0 B', '127.0.0.1', '4097', 'built-in'];
 
 void expectNoForbiddenText() {
   for (final text in _forbidden) {
@@ -206,6 +226,13 @@ void main() {
     connection.dispose();
   });
 
+  /// The dead in-app server is polled every 10 s while its card shows; a test
+  /// that ends with the card still up ends the polling first.
+  Future<void> settleLiveness(WidgetTester tester) async {
+    await tester.pumpWidget(const SizedBox());
+    connection.dispose();
+  }
+
   Widget app(
     Widget home, {
     Locale locale = const Locale('en'),
@@ -250,6 +277,7 @@ void main() {
     ServerProfile? profile,
     bool connected = false,
     VoidCallback? onOpen,
+    VoidCallback? onOpenPage,
     void Function(PhoneServerAction, int?)? onAction,
     VoidCallback? onRemoved,
     Locale locale = const Locale('en'),
@@ -283,6 +311,7 @@ void main() {
                       profile: saved,
                       connected: connected,
                       onOpen: onOpen,
+                      onOpenPage: onOpenPage,
                       onAction: onAction,
                       onRemoved: onRemoved,
                       pollInterval: null,
@@ -346,7 +375,7 @@ void main() {
     testWidgets('running: This phone and its version; Stop and Show log in '
         'its menu, no buttons under the row', (tester) async {
       await mountCard(tester, connected: true);
-      expect(find.text('This phone'), findsOneWidget);
+      expect(find.text('In-app Ubuntu'), findsOneWidget);
       expect(status(tester), 'Running');
       // The size is not on the line (it is said where it matters: Remove).
       expect(detail(tester), 'Connected · OpenCode 1.18.29');
@@ -381,7 +410,7 @@ void main() {
     ) async {
       linux.bytesUsed = null;
       await mountCard(tester, profile: phone()..serverVersion = null);
-      expect(detail(tester), 'OpenCode 1');
+      expect(detail(tester), 'Older OpenCode');
     });
 
     testWidgets('running and not connected: the row connects, and no button '
@@ -510,6 +539,29 @@ void main() {
       expect(find.byKey(const ValueKey('phone-server-remove')), findsOneWidget);
     });
 
+    testWidgets('a tap opens the server page; Connect is a named menu act', (
+      tester,
+    ) async {
+      var page = 0;
+      var connects = 0;
+      await mountCard(
+        tester,
+        asRow: true,
+        onOpen: () => connects++,
+        onOpenPage: () => page++,
+      );
+      await tester.tap(find.byKey(const ValueKey('phone-server-title')));
+      await tester.pumpAndSettle();
+      expect(page, 1);
+      expect(connects, 0);
+      expect(find.byKey(const ValueKey('phone-server-stop')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('phone-server-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('phone-server-connect')));
+      await tester.pumpAndSettle();
+      expect(connects, 1);
+    });
+
     testWidgets('running and connected: no button; Stop lives in the menu', (
       tester,
     ) async {
@@ -522,6 +574,32 @@ void main() {
   });
 
   group('start and stop', () {
+    testWidgets('native start details never become the card explanation', (
+      tester,
+    ) async {
+      linux.running = false;
+      linux.startError = const BuiltinLinuxException(
+        'The phone operation could not finish.',
+        code: 'builtin_linux',
+        details: 'IllegalStateException: ownershipUnknown at BuiltinLinux.x:1',
+      );
+      await mountCard(tester);
+      await tester.tap(find.byKey(const ValueKey('phone-server-start')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(AppLocalizationsEn().inAppServerOwnershipRecoveryBody),
+        findsOneWidget,
+      );
+      expect(find.textContaining('IllegalStateException'), findsNothing);
+      expect(find.textContaining('ownershipUnknown'), findsNothing);
+      expect(status(tester), 'Stopped');
+      expect(find.byKey(const ValueKey('phone-server-start')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('phone-server-recover-ownership')),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('Start starts the server, shows Starting, then Running', (
       tester,
     ) async {
@@ -607,30 +685,62 @@ void main() {
         'opencode': {'runtime': 'opencode2'},
       });
       expect(progressOpened, 1);
+      expect(linux.historyChecks, [openCode1HistorySwitchCheckScript]);
     });
+
+    for (final unreadable in [false, true]) {
+      testWidgets(
+        'Move refuses ${unreadable ? 'unreadable history' : 'two existing histories'} before setup',
+        (tester) async {
+          linux.historyCheck = const BuiltinLinuxRunResult(
+            exitCode: 74,
+            output: 'private diagnostic that must not be displayed',
+          );
+          linux.historyCheckThrows = unreadable;
+          await mountCard(tester);
+          await choose(tester, 'phone-server-switch');
+          expect(engine.runs, isEmpty);
+          expect(progressOpened, 0);
+          expect(linux.running, isTrue);
+          expect(linux.calls, isEmpty);
+          expect(connection.disconnects, 0);
+          expect(
+            find.text(AppLocalizationsEn().thisPhoneHistoryFailed),
+            findsOneWidget,
+          );
+          expect(find.textContaining('private diagnostic'), findsNothing);
+        },
+      );
+    }
 
     testWidgets('on OpenCode 2 it offers the way back', (tester) async {
       await mountCard(tester, profile: phone(flavor: ServerFlavor.v2));
       expect(detail(tester), 'OpenCode 2.0.10');
       await tester.tap(find.byKey(const ValueKey('phone-server-menu')));
       await tester.pumpAndSettle();
-      expect(find.text('Switch to OpenCode 1'), findsOneWidget);
+      expect(find.text('Switch to Older OpenCode'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('phone-server-switch')));
       await tester.pumpAndSettle();
       expect(engine.runParams.single, {
         'opencode': {'runtime': 'opencode1'},
       });
+      expect(linux.historyChecks, isEmpty);
     });
 
-    testWidgets('Update OpenCode re-runs opencode', (tester) async {
-      await mountCard(tester);
-      await choose(tester, 'phone-server-update');
-      expect(engine.runs, [
-        {'opencode'},
-      ]);
-      expect(engine.runParams.single, isEmpty);
-      expect(progressOpened, 1);
-    });
+    testWidgets(
+      'Update preserves older OpenCode after the fresh default changes',
+      (tester) async {
+        await mountCard(tester);
+        await choose(tester, 'phone-server-update');
+        expect(engine.runs, [
+          {'opencode'},
+        ]);
+        expect(engine.runParams.single, {
+          'opencode': {'runtime': 'opencode1'},
+        });
+        expect(progressOpened, 1);
+      },
+    );
 
     testWidgets('Update on OpenCode 2 keeps OpenCode 2', (tester) async {
       await mountCard(tester, profile: phone(flavor: ServerFlavor.v2));
@@ -646,7 +756,40 @@ void main() {
       expect(engine.runs, [
         {'python'},
       ]);
+      expect(engine.runParams.single, {
+        ...SetupJobParams.adding({'python'}),
+        'opencode': {'runtime': 'opencode1'},
+      });
       expect(progressOpened, 1);
+    });
+
+    testWidgets('Add tools preserves the selected OpenCode 2 runtime', (
+      tester,
+    ) async {
+      customizeAnswer = {'python', 'aiteam'};
+      await mountCard(tester, profile: phone(flavor: ServerFlavor.v2));
+      await choose(tester, 'phone-server-add-tools');
+      expect(engine.runs.single, {'python', 'aiteam'});
+      expect(engine.runParams.single, {
+        ...SetupJobParams.adding({'python', 'aiteam'}),
+        'opencode': {'runtime': 'opencode2'},
+      });
+      expect(progressOpened, 1);
+    });
+
+    testWidgets('Add tools refuses an unknown runtime instead of switching', (
+      tester,
+    ) async {
+      await mountCard(tester, profile: phone(flavor: ServerFlavor.unknown));
+      await choose(tester, 'phone-server-add-tools');
+      expect(engine.runs, isEmpty);
+      expect(progressOpened, 0);
+      expect(
+        find.text(
+          lookupAppLocalizations(const Locale('en')).phoneSetupErrorCannotStart,
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Add tools closed without a choice installs nothing', (
@@ -695,13 +838,14 @@ void main() {
 
       expect(connection.disconnects, 1);
       expect(linux.calls, ['uninstall']);
-      // Every saved "This phone" entry goes; other servers stay.
+      // Every saved "In-app Ubuntu" entry goes; other servers stay.
       expect(connection.deleted.toSet(), {'phone', 'phone2'});
       expect(store.saved.map((profile) => profile.id), ['work']);
       expect(removed, 1);
       // The card goes with the server; no toast repeats it (shared-phone-1:
       // failures are one alert, success says nothing more).
       expect(find.text('OpenCode was removed from this phone.'), findsNothing);
+      await settleLiveness(tester);
     });
 
     testWidgets('Remove cancelled changes nothing', (tester) async {
@@ -789,16 +933,18 @@ void main() {
           expect(size.width, greaterThanOrEqualTo(48), reason: key);
         }
         if (locale.languageCode == 'ar') {
-          expect(find.text('هذا الهاتف'), findsOneWidget);
+          expect(find.text('أوبونتو داخل التطبيق'), findsOneWidget);
           expect(find.text('يعمل'), findsOneWidget);
           expect(
-            Directionality.of(tester.element(find.text('هذا الهاتف'))),
+            Directionality.of(
+              tester.element(find.text('أوبونتو داخل التطبيق')),
+            ),
             TextDirection.rtl,
           );
           // At 2.5x the status moves under the name and starts where the
           // name starts: on the right in Arabic.
           final status = tester.getRect(find.text('يعمل'));
-          final title = tester.getRect(find.text('هذا الهاتف'));
+          final title = tester.getRect(find.text('أوبونتو داخل التطبيق'));
           expect(status.top, greaterThanOrEqualTo(title.bottom));
           expect((status.right - title.right).abs(), lessThan(1));
         }
@@ -808,15 +954,41 @@ void main() {
   });
 
   test('the in-app server is named This phone everywhere', () {
-    expect(serverDisplayName(phone(), AppLocalizationsEn()), 'This phone');
-    expect(serverDisplayName(phone(), AppLocalizationsAr()), 'هذا الهاتف');
+    expect(serverDisplayName(phone(), AppLocalizationsEn()), 'In-app Ubuntu');
+    expect(
+      serverDisplayName(phone(), AppLocalizationsAr()),
+      'أوبونتو داخل التطبيق',
+    );
     expect(serverDisplayName(work, AppLocalizationsEn()), 'Work server');
     expect(formatPhoneStorage(1181116006), '1.1 GB');
     expect(formatPhoneStorage(734003200), '700.0 MB');
   });
 
+  test('two saved servers that read the same are told apart by port', () {
+    ServerProfile at(String id, String url) =>
+        ServerProfile(id: id, name: '10.0.2.2', baseUrl: url);
+    final a = at('a', 'http://10.0.2.2:4180');
+    final b = at('b', 'http://10.0.2.2:4181');
+    final c = at('c', 'http://10.0.2.2:4181');
+    final alone = at('d', 'http://10.0.2.2:4182');
+    final en = AppLocalizationsEn();
+    expect(serverDisplayName(a, en, among: [a]), 'Computer at 10.0.2.2');
+    expect(
+      serverDisplayName(a, en, among: [a, b, c]),
+      'Computer at 10.0.2.2:4180',
+    );
+    final names = {
+      for (final p in [a, b, c]) serverDisplayName(p, en, among: [a, b, c]),
+    };
+    expect(names.length, 3, reason: 'same address and port gets a number');
+    expect(
+      serverDisplayName(alone, en, among: [alone, work]),
+      isNot(contains(':')),
+    );
+  });
+
   // Open point 4 of phone setup v2: setup saves one in-app profile per
-  // OpenCode generation and names both "This phone".
+  // OpenCode generation and names both "In-app Ubuntu".
   group('OpenCode 1 and 2 both on this phone', () {
     test('are told apart only when both exist; stored names are kept', () {
       final one = phone(id: 'one');
@@ -825,12 +997,25 @@ void main() {
       final all = [one, two, work];
       final en = AppLocalizationsEn(), ar = AppLocalizationsAr();
 
-      expect(serverDisplayName(one, en, among: all), 'This phone · OpenCode 1');
-      expect(serverDisplayName(two, en, among: all), 'This phone · OpenCode 2');
-      expect(serverDisplayName(two, ar, among: all), 'هذا الهاتف · OpenCode 2');
+      expect(
+        serverDisplayName(one, en, among: all),
+        'In-app Ubuntu · Older OpenCode',
+      );
+      expect(
+        serverDisplayName(two, en, among: all),
+        'In-app Ubuntu · OpenCode 2',
+      );
+      expect(
+        serverDisplayName(one, ar, among: all),
+        'أوبونتو داخل التطبيق · الإصدار الأقدم من OpenCode',
+      );
+      expect(
+        serverDisplayName(two, ar, among: all),
+        'أوبونتو داخل التطبيق · OpenCode 2',
+      );
       // One generation alone keeps the plain name.
-      expect(serverDisplayName(two, en, among: [two, work]), 'This phone');
-      expect(serverDisplayName(one, en, among: [one]), 'This phone');
+      expect(serverDisplayName(two, en, among: [two, work]), 'In-app Ubuntu');
+      expect(serverDisplayName(one, en, among: [one]), 'In-app Ubuntu');
       // Other servers never change.
       expect(serverDisplayName(work, en, among: all), 'Work server');
       // Nothing was renamed to get there.
@@ -849,7 +1034,7 @@ void main() {
         tester
             .widget<Text>(find.byKey(const ValueKey('phone-server-title')))
             .data,
-        'This phone · OpenCode 2',
+        'In-app Ubuntu · OpenCode 2',
       );
     });
 
@@ -859,7 +1044,7 @@ void main() {
         tester
             .widget<Text>(find.byKey(const ValueKey('phone-server-title')))
             .data,
-        'This phone',
+        'In-app Ubuntu',
       );
     });
   });

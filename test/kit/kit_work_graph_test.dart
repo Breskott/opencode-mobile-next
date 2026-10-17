@@ -470,11 +470,11 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
-        // Two rowTitle lines (22 each), the supporting line (20) and the
+        // Two rowTitle lines (22 each), the supporting line (18) and the
         // row's space2 insides (8 + 8), all at this text scale: taller than
         // the two-line row token, and nothing clipped.
         final row = tester.getSize(find.byKey(_nodeKey('g')));
-        expect(row.height, greaterThanOrEqualTo((2 * 22 + 20) * scale + 16));
+        expect(row.height, greaterThanOrEqualTo((2 * 22 + 18) * scale + 16));
         final title = tester.getSize(find.text(KitBidi.auto(_longTitle)));
         expect(title.height, closeTo(2 * 22 * scale, 0.01));
         // A one-line row keeps the two-line row token as its floor.

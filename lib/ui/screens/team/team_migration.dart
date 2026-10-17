@@ -29,7 +29,7 @@ bool teamMigrationOffered(ConnectionController connection) {
   if (provider == null || provider == OrchestrationProvider.phoneEngine) {
     return false;
   }
-  return PhoneTeamSetup.of(connection).ports.hasServer;
+  return PhoneTeamSetup.hasServer(connection);
 }
 
 bool teamMigrationKept(ConnectionController connection) {

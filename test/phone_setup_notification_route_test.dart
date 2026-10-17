@@ -271,5 +271,5 @@ void main() {
 
 class _HangingEngine extends FakeSetupEngine {
   @override
-  Future<void> restore() => Completer<void>().future;
+  Future<void> restore({SetupReadScope? scope}) => Completer<void>().future;
 }

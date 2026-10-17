@@ -31,6 +31,9 @@ String teamErrorReason(AppLocalizations l10n, OrchestrationErrorKind kind) =>
       OrchestrationErrorKind.readFailed => l10n.teamUiReasonReadFailed,
     };
 
+/// How long a first unreachable answer still reads as "Checking…".
+const teamFirstProbeGrace = Duration(seconds: 30);
+
 /// The row subtitle for every state of 02-ux §1.1.
 String teamRowSubtitle(
   AppLocalizations l10n, {
@@ -68,6 +71,15 @@ String teamRowSubtitle(
       return l10n.teamUiRowConnecting;
     case OrchestrationPhase.failed:
       final error = c.lastError;
+      // The host often answers a moment later (it was still starting): the
+      // first miss reads as a check in progress, not as a failure.
+      final failedAt = c.failedAt;
+      if (error?.kind == OrchestrationErrorKind.unreachable &&
+          !c.everReady &&
+          failedAt != null &&
+          now.difference(failedAt) < teamFirstProbeGrace) {
+        return l10n.teamUiRowChecking;
+      }
       return error == null
           ? l10n.teamUiRowNotAvailable
           : l10n.teamUiRowNotAvailableReason(teamErrorReason(l10n, error.kind));

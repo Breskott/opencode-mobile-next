@@ -186,7 +186,10 @@ class _LocalAgentServerEntryState extends State<LocalAgentServerEntry>
       _checking = false;
     });
     if (status == null || !status.isReady) return;
-    final saved = savedLocalAgentProfile(widget.profiles);
+    final saved = savedLocalAgentProfile(
+      widget.profiles,
+      preferID: widget.connectedProfileID,
+    );
     if (saved == null || saved.codexDirectory.trim().isEmpty) {
       // No project folder chosen yet: that step lives in the wizard.
       widget.onManage?.call();
@@ -309,13 +312,17 @@ class _LocalAgentServerEntryState extends State<LocalAgentServerEntry>
     if (!platformCapabilities.supportsTermux) return const SizedBox.shrink();
     final status = _status;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final profile = savedLocalAgentProfile(widget.profiles);
+    final profile = savedLocalAgentProfile(
+      widget.profiles,
+      preferID: widget.connectedProfileID,
+    );
     // Nothing installed is the wizard's business, not a server to control;
     // but a saved server stays on the list as this one row.
     if (status == null || !status.installed) {
       if (profile == null) return const SizedBox.shrink();
       return LocalServerRow(
         dividerAbove: widget.dividerAbove,
+        tapOpensPage: widget.onOpenSaved != null,
         keyPrefix: 'local-agent-server',
         mark: AppIconography.agent,
         title: l10n.localAgentTitle,
@@ -454,9 +461,13 @@ class _LocalAgentServerEntryState extends State<LocalAgentServerEntry>
           stopLabel: l10n.localAgentStopNamed,
           onStart: () => unawaited(_start()),
           onConnect: () => unawaited(_connect()),
+          tapOpensPage: widget.onOpenSaved != null,
+          connectLabel: l10n.settingsV3ConnectTo(l10n.localAgentTitle),
           onRestart: () => unawaited(_restart()),
           onStop: () => unawaited(_stop()),
-          onOpen: widget.onManage,
+          onOpen: profile != null && widget.onOpenSaved != null
+              ? () => widget.onOpenSaved!(profile)
+              : widget.onManage,
         );
       },
     );

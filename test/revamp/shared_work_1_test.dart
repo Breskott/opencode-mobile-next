@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/builtin/builtin_folders.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
-import 'package:opencode_mobile/ui/kit/kit_field.dart';
 import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
 import 'package:opencode_mobile/ui/widgets/folder_browser.dart';
 
@@ -23,6 +22,7 @@ Future<void> _open(
   WidgetTester tester,
   FolderLister list, {
   String start = '/root/projects',
+  bool browse = true,
   void Function(FolderBrowserChoice?)? onClosed,
 }) async {
   tester.view.physicalSize = const Size(412, 915);
@@ -50,6 +50,12 @@ Future<void> _open(
     ),
   );
   await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+  // The sheet opens on its start page; most of these tests browse.
+  if (browse) {
+    await tester.tap(_key('open-project-browse'));
+    await tester.pump();
+  }
 }
 
 List<FolderEntry> _folders(String path, List<String> names) => [
@@ -66,8 +72,12 @@ void main() {
     await tester.pump(const Duration(seconds: 8));
     expect(find.text(_en.folderBrowserSlowTitle), findsOneWidget);
     expect(find.text(_en.folderBrowserSlowBody), findsOneWidget);
-    // The way out stays pinned while it waits.
+    // The way out stays in the header's menu while it waits.
+    await tester.tap(_key('kit-sheet-menu'));
+    await tester.pumpAndSettle();
     expect(find.text(_en.projectFolderEnterPath), findsOneWidget);
+    await tester.tapAt(const Offset(2, 2));
+    await tester.pumpAndSettle();
 
     pending.complete(_folders('/root/projects', ['demo']));
     await tester.pumpAndSettle();
@@ -84,13 +94,8 @@ void main() {
 
     await tester.tap(_key('folder-browser-first-project'));
     await tester.pumpAndSettle();
-    final editable = tester.state<EditableTextState>(
-      find.descendant(
-        of: _key('in-app-new-project-name'),
-        matching: find.byType(EditableText),
-      ),
-    );
-    expect(editable.widget.focusNode.hasFocus, isTrue);
+    // The first step opens the name dialog.
+    expect(_key('phone-new-folder-name'), findsOneWidget);
   });
 
   testWidgets('a folder the app may not read is left by going up', (
@@ -104,11 +109,14 @@ void main() {
         );
       }
       return _folders(path, ['secret', 'notes']);
-    }, start: '/root/projects/secret');
+    });
+    await tester.pumpAndSettle();
+    await tester.tap(_key('folder-browse-secret'));
     await tester.pumpAndSettle();
     expect(find.text(_en.folderBrowserErrorDenied), findsOneWidget);
 
-    await tester.tap(_key('folder-browser-error-up'));
+    // The header's back chevron is the way out; no second "Up" in the body.
+    await tester.tap(_key('folder-browser-up'));
     await tester.pumpAndSettle();
     expect(find.text(_en.folderBrowserErrorTitle), findsNothing);
     expect(find.text('notes'), findsOneWidget);
@@ -140,26 +148,21 @@ void main() {
     expect((closed! as FolderBrowserOpen).path, '/root/projects/demo');
   });
 
-  testWidgets('a new project is named in the kit field and made here', (
+  testWidgets('a new project is named in a dialog and made here', (
     tester,
   ) async {
     FolderBrowserChoice? closed;
     await _open(
       tester,
       (path) async => _folders(path, ['demo']),
+      browse: false,
       onClosed: (choice) => closed = choice,
     );
     await tester.pumpAndSettle();
-    expect(
-      find.descendant(
-        of: _key('in-app-new-project-name'),
-        matching: find.byType(KitField),
-        matchRoot: true,
-      ),
-      findsOneWidget,
-    );
-    await tester.enterText(_key('in-app-new-project-name'), 'fresh');
-    await tester.tap(_key('in-app-new-project-create'));
+    await tester.tap(_key('open-project-new'));
+    await tester.pumpAndSettle();
+    await tester.enterText(_key('phone-new-folder-name'), 'fresh');
+    await tester.tap(_key('phone-new-folder-create'));
     await tester.pumpAndSettle();
     expect(closed, isA<FolderBrowserCreate>());
     expect((closed! as FolderBrowserCreate).path, '/root/projects/fresh');

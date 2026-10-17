@@ -190,8 +190,15 @@ void main() {
       expect(controller.appearance.value, AppAppearance.light);
       controller.dispose();
 
-      await prefs.setString('oc.appearance', 'unknown-old-value');
-      expect(ProfileStore(prefs: prefs).appearance, AppAppearance.dark);
+      // A fresh application owner reads malformed durable data with fallback.
+      SharedPreferences.setMockInitialValues({
+        'oc.appearance': 'unknown-old-value',
+      });
+      final restartedPrefs = await SharedPreferences.getInstance();
+      expect(
+        ProfileStore(prefs: restartedPrefs).appearance,
+        AppAppearance.dark,
+      );
     },
   );
 
@@ -297,4 +304,46 @@ void main() {
     expect(validateCodexConnectionToken(secret), isNull);
     expect(validateCodexConnectionToken('$secret '), isNot(contains(secret)));
   });
+  test(
+    'profile deletion sweeps BYO vault and metadata only for that profile',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'oc.byoHost.phone-a': 'record-a',
+        'oc.byoHost.phone-b': 'record-b',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      _MemoryStorage.values['oc.byoHostSecrets.phone-a'] = 'private-a';
+      _MemoryStorage.values['oc.byoHostSecrets.phone-b'] = 'private-b';
+      final store = ProfileStore(prefs: prefs, secure: const _MemoryStorage());
+      await store.remove('phone-a');
+      expect(prefs.getString('oc.byoHost.phone-a'), isNull);
+      expect(_MemoryStorage.values['oc.byoHostSecrets.phone-a'], isNull);
+      expect(prefs.getString('oc.byoHost.phone-b'), 'record-b');
+      expect(_MemoryStorage.values['oc.byoHostSecrets.phone-b'], 'private-b');
+    },
+  );
+  test(
+    'a private transport lease cannot persist its address or credential',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      _MemoryStorage.values.clear();
+      final store = ProfileStore(prefs: prefs, secure: const _MemoryStorage());
+      await expectLater(
+        store.upsert(
+          ServerProfile(
+            id: 'lease',
+            name: 'Host',
+            baseUrl: 'http://127.0.0.1:19000',
+            transientTransport: true,
+            password: 'must-stay-in-byo-vault',
+          ),
+        ),
+        throwsA(isA<Exception>()),
+      );
+      expect(store.profiles, isEmpty);
+      expect(prefs.getString('oc.profiles'), isNull);
+      expect(_MemoryStorage.values, isEmpty);
+    },
+  );
 }

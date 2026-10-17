@@ -191,8 +191,15 @@ artifacts is not device verification, APK signing, installation or release.
 
 The native `port` argument is now a compatibility hint. The child binds port 0
 and reports its actual port over its private stdout pipe, authenticated with
-HMAC-SHA256 over `oc-phone-engine-ready-v1\n<profile>\n<port>\n<nonce>`.
-Native sends no bearer token to TCP before verifying that child message.
+HMAC-SHA256 over schema-2 canonical bytes:
+`oc-phone-engine-ready-v2\n<profile>\n<port>\n<nonce>\n<pid>\n<startTicks>\n<parent>\n<group>\n<session>`.
+Native sends no bearer token to TCP before verifying that child message and
+matching its identity to the direct child handle and app parent. After
+successful authenticated health, that identity can represent this exact live
+child when Android hides its `/proc` metadata. It cannot authorize another
+PID, survive exit/replacement, or be restored from disk. Inspection protection
+remains enabled. See the [APK 2316 diagnosis](../qa/aiteam-oc2-emulator-2026-10-14/root-cause-2.md).
+Static failure frames remain schema 1.
 Always use `phoneEngineCredentials.baseUrl`; the app must not assume port 4098.
 The app holds child stdin open; EOF on stop or whole-process death triggers
 graceful engine shutdown. A short-lived channel thread exiting no longer stops

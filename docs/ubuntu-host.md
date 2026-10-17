@@ -33,7 +33,7 @@ starts it. Re-running `install` is safe; it refreshes the unit in place.
 How OpenCode itself is installed depends on the script the pin points at.
 The release 1.0.44 script above still runs OpenCode's own installer
 (`opencode.ai/install`). The script in the repository now installs one
-pinned OpenCode release instead (1.18.32, the version the app pins): it
+pinned OpenCode release instead (1.19.0, the version the app pins): it
 downloads the archive for your CPU from OpenCode's GitHub releases, checks
 it against the SHA-256 recorded in the script, and installs it to
 `~/.opencode/bin` only if it matches. The app and this guide move to that

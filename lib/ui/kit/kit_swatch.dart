@@ -46,6 +46,7 @@ class KitSwatch extends StatelessWidget {
     this.disabledReason,
     this.swatchKey,
   }) : color = null,
+       colorsAnotherSurface = false,
        assert(
          onPressed != null || disabledReason != null,
          'KitSwatch: disabledReason is required when onPressed is null.',
@@ -60,6 +61,7 @@ class KitSwatch extends StatelessWidget {
     required this.onPressed,
     this.disabledReason,
     this.swatchKey,
+    this.colorsAnotherSurface = false,
   }) : roles = null,
        assert(
          onPressed != null || disabledReason != null,
@@ -89,6 +91,11 @@ class KitSwatch extends StatelessWidget {
 
   /// Kept by the host (e.g. `ValueKey('theme-pack-${id.name}')`).
   final Key? swatchKey;
+
+  /// True when the colour paints something outside the app (a home-screen
+  /// widget's accent), so it is not held to LOOK-39's distance from this
+  /// theme's attention and danger. The colour is still only a choice here.
+  final bool colorsAnotherSurface;
 
   bool get _isAccent => color != null;
 
@@ -417,7 +424,9 @@ class _SwatchTile extends StatelessWidget {
     bool enabled,
   ) {
     assert(
-      !enabled || accentKeepsMeaning(swatch.color!, roles),
+      !enabled ||
+          swatch.colorsAnotherSurface ||
+          accentKeepsMeaning(swatch.color!, roles),
       'KitSwatch.accent: color must keep LOOK-39\'s distance from the '
       'current theme\'s attention and danger (hue ≥ 30°, ΔE2000 ≥ 20; '
       'accentKeepsMeaning in theme_roles.dart).',

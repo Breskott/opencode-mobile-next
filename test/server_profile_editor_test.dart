@@ -6,6 +6,7 @@ import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/app_iconography.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -319,6 +320,50 @@ void main() {
   );
 
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('adding a server hides the app-wide line about the current '
+      'server', (tester) async {
+    final (store, controller) = await _state();
+    addTearDown(controller.dispose);
+    final conditions = ValueNotifier<List<KitStatus>>(const [
+      KitStatus(
+        kind: KitStatusKind.connection,
+        icon: AppIconography.restart,
+        message: 'Old server is not answering',
+      ),
+    ]);
+    addTearDown(conditions.dispose);
+    await tester.pumpWidget(
+      KitStatusScope(conditions: conditions, child: _app(store, controller)),
+    );
+    await tester.pumpAndSettle();
+    await _openEditor(tester);
+    expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
+    expect(find.text('Old server is not answering'), findsNothing);
+  });
+
+  testWidgets('the last field scrolls clear of the pinned Save & connect', (
+    tester,
+  ) async {
+    final (store, controller) = await _state();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(store, controller));
+    await _openEditor(tester);
+    final more = find.byKey(
+      const ValueKey('server-editor-more-options-header'),
+    );
+    await tester.drag(
+      find.byKey(const ValueKey('server-profile-fields')),
+      const Offset(0, -2000),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.getBottomLeft(more).dy,
+      lessThanOrEqualTo(
+        tester.getTopLeft(find.byKey(const ValueKey('save-server-profile'))).dy,
+      ),
+    );
+  });
 
   testWidgets('remote setup opens a full-screen URL-first editor', (
     tester,

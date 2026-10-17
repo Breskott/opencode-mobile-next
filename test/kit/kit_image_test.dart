@@ -599,6 +599,29 @@ void main() {
       expect((ring.decoration! as BoxDecoration).color, roles.ground);
     });
 
+    testWidgets('an optional image that fails keeps the initials, no badge', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const KitAvatar(
+          name: 'Open AI',
+          image: KitImageSource.provider(_FailingProvider()),
+          optionalImage: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('OA'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(KitAvatar),
+          matching: find.byType(Icon),
+        ),
+        findsNothing,
+      );
+      expect(find.textContaining(_unavailable), findsNothing);
+    });
+
     testWidgets('at 2.0 text the initials stay clamped', (tester) async {
       await _pump(
         tester,

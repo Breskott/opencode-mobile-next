@@ -37,6 +37,7 @@ class AppExitNotice {
     required this.at,
     required this.teamStopped,
     this.recoveryAllowed = true,
+    this.phoneProfileId,
   });
 
   final AppExitKind kind;
@@ -46,6 +47,10 @@ class AppExitNotice {
   /// Policy permission for this launch's recovery, not proof of success.
   /// False must never be worded as "starting again" by a notice consumer.
   final bool recoveryAllowed;
+
+  /// The saved profile of the phone's own OpenCode this notice is about, so
+  /// a page showing another server can offer to switch to it.
+  final String? phoneProfileId;
 
   /// A crash is ours to fix, not a phone setting to change.
   bool get offersKeepAlive => kind != AppExitKind.crash;
@@ -78,10 +83,31 @@ class AppExitRecovery extends ChangeNotifier {
   /// The last start's report, for diagnostics and tests.
   AppLaunchReport? get report => _report;
 
+  /// The phone's OpenCode answered a status read after the restart while
+  /// another server was selected. The notice then says it is running again
+  /// instead of "starting again" above that other server's page.
+  bool get phoneServerRunning => _phoneServerRunning;
+  bool _phoneServerRunning = false;
+
   void dismiss() {
     if (_notice == null) return;
     _notice = null;
     _notify();
+  }
+
+  /// How long the notice stays once the phone's OpenCode is connected again.
+  static const serverBackLinger = Duration(seconds: 15);
+
+  Timer? _serverBackTimer;
+
+  /// The phone's OpenCode is connected again: the notice has said what
+  /// happened, so it folds away on its own after [serverBackLinger] instead
+  /// of sitting on top of every screen until dismissed (owner report,
+  /// 2026-10-07). Keep running stays under In-app Ubuntu. Safe to call on
+  /// every rebuild: only the first call after a notice starts the clock.
+  void noteServerBack() {
+    if (_notice == null || _serverBackTimer != null) return;
+    _serverBackTimer = Timer(serverBackLinger, dismiss);
   }
 
   /// Runs once per app process; later calls do nothing.
@@ -108,6 +134,18 @@ class AppExitRecovery extends ChangeNotifier {
     _ran = true;
     final report = await bridge.launchReport();
     _report = report;
+    final crash = report.lastCrash;
+    if (crash != null) {
+      PerfTrace.mark('crash.last', attrs: crash.traceAttrs);
+      // Existing ReportProblemCapture imports early buffered diagnostics and
+      // persists this full bounded stack once storage attaches at startup.
+      (diagnostics ?? ReportProblemStartup.diagnostics)?.record(
+        crash.diagnosticMessage,
+        StackTrace.fromString(crash.diagnosticStack),
+        source: 'crash.last',
+        at: crash.timestamp,
+      );
+    }
     final stoppedOnPurpose = [
       for (final profile in store.profiles)
         if (looksLikeInAppServer(profile) &&
@@ -164,6 +202,7 @@ class AppExitRecovery extends ChangeNotifier {
               store.prefs,
               recoveryProfile.id,
             ).value.allows(AutomationBehavior.restartPhoneServer),
+        phoneProfileId: recoveryProfile?.id,
       );
       _notify();
     }
@@ -177,6 +216,9 @@ class AppExitRecovery extends ChangeNotifier {
       onRestart: onRestart,
       recover: recover,
     );
+    if (_notice != null && !looksLikeInAppServer(active)) {
+      await _readPhoneServer(starter);
+    }
     if (teamWas && reviveTeam != null) {
       await _reviveTeam(store: store, reviveTeam: reviveTeam);
     }
@@ -271,6 +313,16 @@ class AppExitRecovery extends ChangeNotifier {
     );
   }
 
+  Future<void> _readPhoneServer(BuiltinServerStarter starter) async {
+    try {
+      if (!(await starter.linux.status()).serverRunning) return;
+    } on BuiltinLinuxException {
+      return;
+    }
+    _phoneServerRunning = true;
+    _notify();
+  }
+
   /// The saved in-app server; with the team, the one it belongs to.
   static ServerProfile? _inAppProfile(
     ProfileStore store, {
@@ -296,6 +348,7 @@ class AppExitRecovery extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _serverBackTimer?.cancel();
     super.dispose();
   }
 }

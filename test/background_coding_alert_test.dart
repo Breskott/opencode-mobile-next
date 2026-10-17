@@ -18,6 +18,16 @@ _backgroundController({bool backgrounded = true}) async {
     preferences: preferences,
     liveStatusDebounce: Duration.zero,
     invoke: (method, [arguments]) async {
+      if (method == 'getBackgroundPause') {
+        return const {
+          'supported': true,
+          'active': false,
+          'paused': false,
+          'reason': 'none',
+          'at': null,
+          'canResume': false,
+        };
+      }
       // Ongoing-notification refreshes ride along with every state change;
       // these tests assert on the alert contract alone.
       if (method == 'updateLiveStatus') return const {'updated': true};
@@ -90,6 +100,9 @@ void main() {
         // text maps to reject-with-message (steering by rejection).
         'quickReply': true,
         'requestID': 'permission-1',
+        // The file the request names, shown in the shade (the lock screen
+        // gets only the count).
+        'detail': 'lib/main.dart',
       });
 
       harness.controller.handleEventForTesting(
@@ -116,6 +129,7 @@ void main() {
         'key': 'input:session-1',
         'quickReply': true,
         'requestID': 'question-1',
+        'detail': 'Continue?',
       });
 
       harness.controller.handleEventForTesting(
@@ -271,6 +285,8 @@ void main() {
         'key': 'status:session-1',
         'quickReply': false,
         'requestID': '',
+        // A plain reason token, never the server's own words.
+        'reason': 'other',
       });
       expect(
         shown.single.arguments.toString(),

@@ -1,5 +1,6 @@
 package io.github.eslamasabry.opencode_mobile
 
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -28,23 +29,64 @@ import android.os.IBinder
  */
 class SetupService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val channel = intent?.getStringExtra(EXTRA_CHANNEL) ?: "Setup"
-        val title = intent?.getStringExtra(EXTRA_TITLE) ?: ""
-        val text = intent?.getStringExtra(EXTRA_TEXT) ?: ""
-        createChannel(this, channel)
-        val notification = build(this, title, text, ongoing = true, LAUNCH_ACTION_PROGRESS)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(
-                NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
-            )
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        try {
+            val channel = intent?.getStringExtra(EXTRA_CHANNEL)
+                ?: NativeStrings.get(this, R.string.native_setup_channel)
+            val title = intent?.getStringExtra(EXTRA_TITLE) ?: ""
+            val text = intent?.getStringExtra(EXTRA_TEXT) ?: ""
+            createChannel(this, channel)
+            val notification = build(this, title, text, ongoing = true, LAUNCH_ACTION_PROGRESS)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+            foregroundShown = true
+            // The job may have ended before Android ran this method. Its stop
+            // waited for the notification (a promised foreground service that
+            // stops first crashes the app); stop now that the promise is kept.
+            if (stopPending) {
+                stopPending = false
+                try { stopForeground(STOP_FOREGROUND_REMOVE) } catch (_: Throwable) { }
+                try { stopSelf() } catch (_: Throwable) { }
+            }
+        } catch (_: Throwable) {
+            // Foreground-service/notification policy failures happen here on
+            // Android's main thread, after the channel's worker has replied.
+            // End setup instead of running it without its promised lifetime.
+            try {
+                Thread({
+                    try { SetupRunner.get(applicationContext).cancel() }
+                    catch (_: Throwable) { }
+                }, "oc-setup-policy-stop").start()
+            } catch (_: Throwable) { }
+            try { stopSelf() } catch (_: Throwable) { }
         }
         // Not sticky: a restarted service without the process's job thread
         // would only show a stale percent.
         return START_NOT_STICKY
+    }
+
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        try { BuiltinLinux.get(applicationContext).revokeSetupWork() } catch (_: Throwable) { }
+        try { stopForeground(STOP_FOREGROUND_REMOVE) } catch (_: Throwable) { }
+        try { stopSelf(startId) } catch (_: Throwable) { }
+        Thread({
+            try { SetupRunner.get(applicationContext).cancel() } catch (_: Throwable) { }
+        }, "oc-setup-timeout").apply { isDaemon = true; start() }
+    }
+
+    override fun onDestroy() {
+        try { BuiltinLinux.get(applicationContext).revokeSetupWork() } catch (_: Throwable) { }
+        // A destroyed service owes Android nothing; the next start decides.
+        foregroundShown = false
+        stopPending = false
+        promised = false
+        super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -64,28 +106,75 @@ class SetupService : Service() {
         const val LAUNCH_ACTION_PROGRESS = "phone_setup"
         const val LAUNCH_ACTION_DONE = "phone_setup_done"
 
+        /**
+         * Removes the finished-setup "ready" row. It is part of the status
+         * once the phone server runs, so it must not stay beside it.
+         */
+        fun cancelResult(context: Context) {
+            try { context.getSystemService(NotificationManager::class.java)?.cancel(RESULT_NOTIFICATION_ID) }
+            catch (_: Throwable) { }
+        }
+
         fun start(context: Context, channel: String, title: String, text: String) {
-            context.getSystemService(NotificationManager::class.java)?.cancel(RESULT_NOTIFICATION_ID)
+            cancelResult(context)
             val intent = Intent(context, SetupService::class.java)
                 .putExtra(EXTRA_CHANNEL, channel)
                 .putExtra(EXTRA_TITLE, title)
                 .putExtra(EXTRA_TEXT, text)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            foregroundShown = false
+            stopPending = false
+            promised = false
+            // While the app is on screen a plain start is allowed and makes no
+            // promise; onStartCommand still moves the service to the
+            // foreground. Only a start from the background promises Android a
+            // notification within seconds, which [stop] must then respect.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !appInForeground()) {
+                promised = true
                 context.startForegroundService(intent)
             } else {
-                context.startService(intent)
+                try {
+                    context.startService(intent)
+                } catch (_: IllegalStateException) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        promised = true
+                        context.startForegroundService(intent)
+                    }
+                }
             }
+        }
+
+        // Written on the main thread (onStartCommand) and the job thread.
+        @Volatile private var foregroundShown = false
+        @Volatile private var stopPending = false
+        @Volatile private var promised = false
+
+        private fun appInForeground(): Boolean = try {
+            val info = ActivityManager.RunningAppProcessInfo()
+            ActivityManager.getMyMemoryState(info)
+            info.importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        } catch (_: Throwable) {
+            false
         }
 
         /** Replaces the ongoing notification's text; the service keeps running. */
         fun update(context: Context, channel: String, title: String, text: String) {
-            createChannel(context, channel)
-            context.getSystemService(NotificationManager::class.java)
-                ?.notify(NOTIFICATION_ID, build(context, title, text, ongoing = true, LAUNCH_ACTION_PROGRESS))
+            try {
+                createChannel(context, channel)
+                context.getSystemService(NotificationManager::class.java)
+                    ?.notify(NOTIFICATION_ID, build(context, title, text, ongoing = true, LAUNCH_ACTION_PROGRESS))
+            } catch (_: Throwable) { /* Notifications are best effort. */ }
         }
 
         fun stop(context: Context) {
-            context.stopService(Intent(context, SetupService::class.java))
+            // A promised start that hasn't shown its notification yet must not
+            // be stopped: Android crashes the app for that. onStartCommand
+            // stops it right after the notification appears.
+            if (promised && !foregroundShown) {
+                stopPending = true
+                return
+            }
+            try { context.stopService(Intent(context, SetupService::class.java)) }
+            catch (_: Throwable) { }
         }
 
         /**
@@ -93,11 +182,13 @@ class SetupService : Service() {
          * notification; [done] says whether the job finished or stopped.
          */
         fun finish(context: Context, channel: String, text: String, done: Boolean) {
-            stop(context)
-            createChannel(context, channel)
-            val action = if (done) LAUNCH_ACTION_DONE else LAUNCH_ACTION_PROGRESS
-            context.getSystemService(NotificationManager::class.java)
-                ?.notify(RESULT_NOTIFICATION_ID, build(context, text, null, ongoing = false, action))
+            try {
+                stop(context)
+                createChannel(context, channel)
+                val action = if (done) LAUNCH_ACTION_DONE else LAUNCH_ACTION_PROGRESS
+                context.getSystemService(NotificationManager::class.java)
+                    ?.notify(RESULT_NOTIFICATION_ID, build(context, text, null, ongoing = false, action))
+            } catch (_: Throwable) { /* Notifications are best effort. */ }
         }
 
         private fun createChannel(context: Context, name: String) {

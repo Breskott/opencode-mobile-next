@@ -10,6 +10,23 @@ abstract interface class TerminalCommandGateway {
   Future<TerminalProcess> rerunTerminalCommand(TerminalProcess ended);
 }
 
+/// The title the app gives its one-shot usage check terminal. Terminal lists
+/// leave terminals with this title out: they are not the person's.
+const computerUsageTitle = 'OpenCode Mobile usage check';
+
+/// Optional gateway facet: runs one command in a NEW PTY on the server and
+/// hands back the terminal so a caller can read its output and remove it.
+/// Used by the computer usage check. Nothing is persisted or logged, and a
+/// failure carries no command text.
+abstract interface class OneShotCommandGateway {
+  /// Starts [command] with [arguments] (never joined into a shell line).
+  Future<TerminalProcess> createCommandTerminal({
+    required String command,
+    required List<String> arguments,
+    String? title,
+  });
+}
+
 /// Capability checks for the additive terminal lifecycle facet. An unwired
 /// facet is unavailable; these checks never infer a protocol from its flavor.
 extension TerminalLifecycleCapabilities on ServerCapabilities {

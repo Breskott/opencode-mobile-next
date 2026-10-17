@@ -32,14 +32,110 @@ private class PausedFile(path: String) : File(path) {
         return super.getParentFile()
     }
 }
+private class SpaceFile(path: String, private val initiallyLow: Boolean) : File(path) {
+    override fun getUsableSpace(): Long = if (initiallyLow || File(path, "space-drained").exists()) 1L else 2_000_000_000L
+}
 fun main(args: Array<String>) {
     val dir = Files.createTempDirectory("setup-runner-").toFile()
     try {
         val runner = SetupRunner::class.java.getDeclaredConstructor(Context::class.java)
-            .apply { isAccessible = true }.newInstance(Context(dir))
+            .apply { isAccessible = true }.newInstance(Context(if (args.single().startsWith("low-space")) SpaceFile(dir.path, args.single() == "low-space-first") else dir))
         val state = SetupJobState("job", "running", emptyList(), startedAt = 1)
         field(runner, "job").set(runner, state)
         when (args.single()) {
+            "interrupted-installer-retry" -> {
+                val installedCurl = File(dir, "installed-curl")
+                val nodeStarted = File(dir, "node-started")
+                val specs = listOf(
+                    SetupRunner.Spec("essentials", "touch '${installedCurl.path}'", false, false,
+                        1.0, false, null, null, emptyMap(), emptyMap()),
+                    SetupRunner.Spec("node", "test -f '${installedCurl.path}' && touch '${nodeStarted.path}'", false, false,
+                        1.0, false, null, null, emptyMap(), emptyMap()),
+                )
+                val texts = SetupRunner.Texts("channel", "title", "{percent}", "done", "stopped")
+                BuiltinLinux.interruptNextInstallerWithZeroExit = true
+                runner.start("interrupted", specs, null, texts)
+                (field(runner, "worker").get(runner) as Thread).join(5000)
+                check(!runner.running) { "interrupted installer did not terminate" }
+                val failed = JSONObject(runner.status()!!)
+                check(failed.getString("state") == "failed") { "zero launcher exit hid interrupted installation" }
+                val components = failed.getJSONObject("components")
+                check(components.getJSONObject("essentials").getString("state") == "failed") {
+                    "interrupted essentials was recorded as done"
+                }
+                check(components.getJSONObject("node").getString("state") == "pending") {
+                    "Node ran before essentials completed"
+                }
+                check(!installedCurl.exists() && !nodeStarted.exists())
+                check(BuiltinLinux.installerStarts == 1 && BuiltinLinux.installerFinishes == 1)
+
+                // Continue setup on the same runner and process, without relaunch.
+                runner.start("retry", specs, null, texts)
+                (field(runner, "worker").get(runner) as Thread).join(5000)
+                check(!runner.running) { "same-process retry did not terminate" }
+                val retried = JSONObject(runner.status()!!)
+                check(retried.getString("state") == "done") { "same-process retry failed" }
+                check(installedCurl.exists() && nodeStarted.exists()) { "retry skipped required installation" }
+                check(BuiltinLinux.installerStarts == 3 && BuiltinLinux.installerFinishes == 3)
+            }
+            "paseo-checksum-failed", "paseo-launch-failed" -> {
+                val stage = if (args.single() == "paseo-checksum-failed") "Checking Paseo checksum" else "Checking Paseo launch command"
+                val script = "printf '::oc stage $stage\\nprivate-provider-output\\n'; exit 1"
+                runner.start("paseo-check", listOf(SetupRunner.Spec("agent-paseo", script, false, false,
+                    1.0, false, null, null, emptyMap(), emptyMap(), agentUser = true)), null,
+                    SetupRunner.Texts("channel", "title", "{percent}", "done", "stopped"))
+                (field(runner, "worker").get(runner) as Thread).join(5000)
+                val status = JSONObject(runner.status()!!)
+                check(status.getString("state") == "failed")
+                val component = status.getJSONObject("components").getJSONObject("agent-paseo")
+                check(component.getString("stage") == stage) { "named Paseo stage was lost" }
+                check(component.getString("error").contains(if (args.single() == "paseo-checksum-failed") "checksum check" else "launch command check"))
+                check(!status.toString().contains("private-provider-output"))
+                check(!runner.logFile.readText().contains("private-provider-output"))
+            }
+            "low-space-first", "low-space-next" -> {
+                val next = args.single() == "low-space-next"
+                val first = SetupRunner.Spec("first", "touch '${dir.path}/space-drained'", false, false,
+                    1.0, false, null, null, emptyMap(), emptyMap())
+                val last = SetupRunner.Spec("second", "touch '${dir.path}/should-not-start'", false, false,
+                    1.0, false, null, null, emptyMap(), emptyMap())
+                runner.start("storage", if (next) listOf(first, last) else listOf(last), null,
+                    SetupRunner.Texts("channel", "title", "{percent}", "done", "stopped"))
+                (field(runner, "worker").get(runner) as Thread).join(5000)
+                check(!runner.running)
+                val status = JSONObject(runner.status()!!)
+                check(status.getString("state") == "failed") { "low space allowed setup" }
+                val error = status.getString("error")
+                check(error.contains("free space") && error.contains("try again")) { "low space lacks plain guidance" }
+                check(!error.contains("ENOSPC"))
+                check(!File(dir, "should-not-start").exists()) { "work started with low space" }
+                if (next) check(File(dir, "space-drained").exists()) { "first component never ran" }
+            }
+            "installer-routed", "setup-work-owned", "setup-work-revoked-before-worker" -> {
+                val revoked = args.single() == "setup-work-revoked-before-worker"
+                SetupService.revokeWorkOnStart = revoked
+                runner.start("installer-job", listOf(SetupRunner.Spec("agent-claude",
+                    "printf '::oc version pinned\\n'", false, false, 1.0, false, null, null,
+                    emptyMap(), emptyMap(), agentUser=true)), null,
+                    SetupRunner.Texts("Setup", "Install", "Progress", "Done", "Stopped"))
+                val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+                while (runner.running && System.nanoTime() < deadline) Thread.sleep(10)
+                check(!runner.running)
+                check(JSONObject(runner.status()!!).getString("state") == "done")
+                check(BuiltinLinux.installerStarts == 1 && BuiltinLinux.installerFinishes == 1) {
+                    "setup did not use durable installer admission/completion"
+                }
+                if (args.single() == "setup-work-owned") {
+                    check(BuiltinLinux.setupWorkAcquires == 1 && BuiltinLinux.setupWorkFinishes == 1 && !BuiltinLinux.setupWorkHeld) {
+                        "setup job did not release its CPU work after completion"
+                    }
+                    check(SetupService.finishSawSetupWork) { "setup CPU work ended before terminal persistence/notification" }
+                }
+                if (revoked) {
+                    check(BuiltinLinux.setupWorkAcquires == 1 && BuiltinLinux.setupWorkFinishes == 1 && !BuiltinLinux.setupWorkHeld) { "delayed setup worker readmitted CPU after service loss" }
+                    check(!SetupService.finishSawSetupWork) { "delayed setup worker readmitted CPU after service loss" }
+                }
+            }
             "ordered-terminal" -> {
                 val file = PausedFile(File(dir, "setup.json").path)
                 field(runner, "file").set(runner, file)
@@ -88,6 +184,47 @@ fun main(args: Array<String>) {
                 check(status.getString("state") == "failed")
                 check(status.getString("errorCode") == "setup_persistence")
                 check(status.isNull("error"))
+            }
+            "service-start-denied" -> {
+                SetupService.denyStart = true
+                val failure = runCatching {
+                    runner.start("denied", emptyList(), null,
+                        SetupRunner.Texts("channel", "title", "{percent}", "done", "stopped"))
+                }.exceptionOrNull()
+                check(failure is IllegalStateException)
+                check(!runner.running)
+                check(JSONObject(runner.status()!!).getString("state") == "failed")
+            }
+            "service-finish-denied", "service-update-denied", "agent-output-private" -> {
+                val uncaught = AtomicReference<Throwable?>()
+                Thread.setDefaultUncaughtExceptionHandler { _, error -> uncaught.set(error) }
+                SetupService.denyFinish = args.single() == "service-finish-denied"
+                SetupService.denyUpdate = args.single() == "service-update-denied"
+                val privateOutput = args.single() == "agent-output-private"
+                val script = if (privateOutput) "printf 'private-agent-output\\n::oc stage private-agent-output\\n::oc version private-agent-output\\n'; exit 1"
+                    else if (SetupService.denyUpdate) "sleep 0.4; printf '::oc stage installing\\n'; exit 0"
+                    else "printf '::oc stage installing\\n'; exit 0"
+                runner.start("notifications", listOf(SetupRunner.Spec(
+                    "agent-node", script, false, false, 1.0, false,
+                    null, null, emptyMap(), emptyMap(), agentUser = privateOutput,
+                )), null, SetupRunner.Texts("channel", "title", "{percent}", "done", "stopped"))
+                if (SetupService.denyUpdate) {
+                    // Force the progress interval due without waiting a second.
+                    field(runner, "lastNotified").setLong(runner, 0)
+                    field(runner, "lastNotifiedText").set(runner, "different")
+                    write(runner)
+                    check(SetupService.updateAttempts > 0) { "notification update was not exercised" }
+                }
+                (field(runner, "worker").get(runner) as Thread).join(5000)
+                check(!runner.running)
+                check(uncaught.get() == null) { "worker notification failure was uncaught" }
+                if (SetupService.denyFinish) check(SetupService.finishAttempts > 0)
+                val status = runner.status()!!
+                check(JSONObject(status).getString("state") == if (privateOutput) "failed" else "done")
+                if (privateOutput) {
+                    check(!status.contains("private-agent-output"))
+                    check(!runner.logFile.readText().contains("private-agent-output"))
+                }
             }
             else -> error("unknown scenario")
         }

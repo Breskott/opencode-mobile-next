@@ -236,6 +236,19 @@ void main() {
           ),
           findsOneWidget,
         );
+        // A server nothing is going on with still says its state and has
+        // the same visible More as every other row.
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('server-row-work')),
+            matching: find.textContaining('Not connected', findRichText: true),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('server-row-menu-work')),
+          findsOneWidget,
+        );
         // One list: no group label, no second panel of ways in, no
         // attention page or guide in the bar, no demo beside Add server.
         expect(find.byKey(const ValueKey('servers-list')), findsOneWidget);
@@ -291,12 +304,16 @@ void main() {
       }
     });
 
-    testWidgets('a saved server\'s actions open on long-press, no ⋮ button', (
+    testWidgets('a saved server\'s actions open from its More and long-press', (
       tester,
     ) async {
       final (_, done) = await _mount(tester, boundary: GlobalKey());
       try {
-        expect(find.byKey(const ValueKey('kit-row-menu-button')), findsNothing);
+        // Every row has the visible More, like the phone's own row.
+        expect(
+          find.byKey(const ValueKey('server-row-menu-studio')),
+          findsOneWidget,
+        );
         await _openRowMenu(tester, 'studio');
         expect(find.text('Connect'), findsWidgets);
         expect(find.text('Edit'), findsWidgets);

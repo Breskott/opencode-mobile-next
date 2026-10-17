@@ -195,7 +195,7 @@ covered 223 files (2,186 passed, three skipped, six failed); the six failures
 were corrected and their affected checks passed. Final analyzer, 47 SDK tests,
 format/diff checks, debug build, saved startup and targeted Android approval/
 cancellation checks pass. A corrected-source full rerun and complete final APK
-journey remain pending. See [handover](../../HANDOVER.md) and
+journey remain pending. See [handover](../internal/handover.md) and
 [verification](../verification/codex-connection-2026-09-07.md).
 
 Transfer contains generalized planning and sanitized synthetic evidence.

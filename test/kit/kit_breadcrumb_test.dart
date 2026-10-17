@@ -146,16 +146,17 @@ void main() {
   ) async {
     final selected = await _pump(tester);
     expect(find.byKey(_crumb(-1)), findsOneWidget);
+    expect(find.byKey(_crumb(5)), findsOneWidget);
     expect(find.byKey(_crumb(6)), findsOneWidget);
     expect(find.byKey(_crumb(7)), findsOneWidget);
-    for (var i = 0; i < 6; i++) {
+    for (var i = 0; i < 5; i++) {
       expect(find.byKey(_crumb(i)), findsNothing, reason: 'segment $i');
     }
     expect(find.text('…'), findsOneWidget);
 
     await tester.tap(find.text('…'));
     await tester.pumpAndSettle();
-    final hidden = _eight.take(6).toList();
+    final hidden = _eight.take(5).toList();
     final tops = [
       for (final name in hidden) tester.getTopLeft(find.text(name)),
     ];
@@ -262,7 +263,13 @@ void main() {
     await _pump(tester);
     expect(
       [for (final node in _crumbNodes(tester)) node.label],
-      ['Open oc', '6 more folders', 'Open folder api', 'Current folder: cfg'],
+      [
+        'Open oc',
+        '5 more folders',
+        'Open folder net',
+        'Open folder api',
+        'Current folder: cfg',
+      ],
     );
     handle.dispose();
   });
@@ -276,7 +283,10 @@ void main() {
     expect(_focusedLabel(), 'Open oc');
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
-    expect(_focusedLabel(), '6 more folders');
+    expect(_focusedLabel(), '5 more folders');
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(_focusedLabel(), 'Open folder net');
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
     expect(_focusedLabel(), 'Open folder api');

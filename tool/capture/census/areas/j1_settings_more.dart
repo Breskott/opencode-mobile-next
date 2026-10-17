@@ -320,8 +320,8 @@ final j1SettingsMoreArea = CensusArea(
         UsageHubScreen(controller: controller),
         controller: controller,
       );
-      kit.expectVisible(find.byKey(const ValueKey('usage-tab-spent')));
-      kit.expectVisible(find.byKey(const ValueKey('usage-tab-remaining')));
+      kit.expectVisible(find.byKey(const ValueKey('usage-tab-spending')));
+      kit.expectVisible(find.byKey(const ValueKey('usage-tab-plans')));
     }),
 
     // ---- Appearance ------------------------------------------------------

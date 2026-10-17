@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart' show StreamStatus;
+import 'package:opencode_mobile/domain/server_gateway.dart'
+    show ProductException;
 import 'package:opencode_mobile/paseo/gateway.dart';
 import 'package:opencode_mobile/paseo/mappers.dart';
 import 'package:opencode_mobile/paseo/transport.dart';
@@ -23,6 +25,10 @@ class FakeDaemon implements PaseoSocket {
 
   /// When set, `hello` is answered by closing with this code instead.
   int? rejectWith;
+
+  /// When set, `hello` is answered by a `hello.rejected` frame (the outer,
+  /// non-session envelope) with this reason, then the matching close.
+  String? rejectReason;
   @override
   int? closeCode;
 
@@ -42,6 +48,14 @@ class FakeDaemon implements PaseoSocket {
     final json = jsonDecode(message) as Map<String, dynamic>;
     if (json['type'] == 'hello') {
       hello = json;
+      if (rejectReason != null) {
+        pushRaw({
+          'type': 'hello.rejected',
+          'reason': rejectReason,
+          'accepts': ['password'],
+        });
+        return;
+      }
       if (rejectWith != null) {
         closeCode = rejectWith;
         scheduleMicrotask(close);
@@ -60,6 +74,14 @@ class FakeDaemon implements PaseoSocket {
     }
   }
 
+  /// A top-level frame that is not a session message.
+  void pushRaw(Map<String, dynamic> frame) {
+    scheduleMicrotask(() {
+      if (closed) return;
+      _incoming.add(jsonEncode(frame));
+    });
+  }
+
   void push(String type, Map<String, dynamic> payload) {
     scheduleMicrotask(() {
       if (closed) return;
@@ -69,6 +91,14 @@ class FakeDaemon implements PaseoSocket {
           'message': {'type': type, 'payload': payload},
         }),
       );
+    });
+  }
+
+  /// A binary frame (terminal output): `[opcode, slot, ...payload]`.
+  void pushBinary(int opcode, int slot, List<int> payload) {
+    scheduleMicrotask(() {
+      if (closed) return;
+      _incoming.add(<int>[opcode, slot, ...payload]);
     });
   }
 
@@ -91,6 +121,7 @@ Map<String, dynamic> agentJson(
 }) => {
   'id': id,
   'provider': 'claude',
+  'persistence': {'provider': 'claude', 'sessionId': 'native-$id'},
   'cwd': cwd,
   'model': 'claude-haiku-4-5',
   'title': 'Agent $id',
@@ -204,10 +235,11 @@ void main() {
       expect(paseoEndpoint('ws://127.0.0.1:6767').path, '/ws');
       expect(paseoEndpoint('ws://100.64.0.10:6767').host, '100.64.0.10');
       expect(paseoEndpoint('ws://pc.tail1234.ts.net:6767').scheme, 'ws');
-      expect(paseoEndpoint('wss://paseo.example').path, '/ws');
+      expect(paseoEndpoint('wss://pc.tail1234.ts.net').path, '/ws');
       for (final bad in [
         'ws://192.168.1.10:6767',
         'ws://paseo.example:6767',
+        'wss://paseo.example:6767',
         'http://127.0.0.1:6767',
         'ws://user:pw@127.0.0.1:6767',
         'ws://127.0.0.1:6767/other',
@@ -229,6 +261,8 @@ void main() {
     test('profile validators agree and an empty password is allowed', () {
       expect(validatePaseoServerUrl('ws://100.64.0.10:6767'), isNull);
       expect(validatePaseoServerUrl('ws://192.168.1.10:6767'), isNotNull);
+      expect(validatePaseoServerUrl('wss://public.example:6767'), isNotNull);
+      expect(validatePaseoServerUrl('wss://100.64.0.10:6767'), isNull);
       expect(normalizePaseoServerUrl('100.64.0.10:6767'), startsWith('ws://'));
       expect(normalizePaseoServerUrl('paseo.example'), startsWith('wss://'));
       expect(validatePaseoPassword(''), isNull);
@@ -283,10 +317,48 @@ void main() {
   test('hello claims only what the client implements', () async {
     await gateway.health();
     expect(daemon.hello!['protocolVersion'], 1);
-    expect(daemon.hello!['capabilities'], {'all_providers': true});
+    expect(daemon.hello!['capabilities'], {
+      'all_providers': true,
+      'hello_rejection': true,
+      'provider_subagents': true,
+      'projected_subagent_timeline': true,
+    });
     // Below 0.1.45 the daemon hides Pi and every other newer runtime.
     expect(daemon.hello!['appVersion'], PaseoTransport.clientAppVersion);
     expect((await gateway.health()).version, contains('0.8.0'));
+  });
+
+  test('the agent\'s own commands are listed without its plumbing', () async {
+    daemon.handlers['list_commands_request'] = (_) => (
+      'list_commands_response',
+      {
+        'commands': [
+          {'name': 'compact', 'description': 'Compact the conversation'},
+          {'name': '__remote-workflow'},
+          {'name': '/__internal'},
+          {'name': '/review'},
+        ],
+      },
+    );
+    final commands = await gateway.listCommands();
+    expect(commands.map((c) => c.name), ['compact', 'review']);
+  });
+
+  test('an update keeps the conversation\'s model and mode', () async {
+    await gateway.sessions();
+    events.clear();
+    daemon.push('agent_update', {
+      'kind': 'upsert',
+      'agent': agentJson('a1', status: 'running'),
+    });
+    await pumpEventQueue();
+    final update = events.firstWhere((e) => e.type == 'session.updated');
+    final session = Session.fromJson(
+      update.properties['info'] as Map<String, dynamic>,
+    );
+    expect(session.selection?.model?.modelID, 'claude-haiku-4-5');
+    expect(session.selection?.agent, 'default');
+    expect(session.selection?.modelKnown, isTrue);
   });
 
   test('sessions are this folder\'s unarchived agents', () async {
@@ -501,6 +573,38 @@ void main() {
       events.clear();
     });
 
+    test('a finished turn finishes its replies', () async {
+      daemon.push(
+        'agent_stream',
+        stream(
+          'a1',
+          timeline({
+            'type': 'assistant_message',
+            'text': 'Created flow1.txt',
+            'messageId': 'msg_9',
+          }),
+          seq: 30,
+        ),
+      );
+      await pumpEventQueue();
+      final announced = events.lastWhere((e) => e.type == 'message.updated');
+      expect(
+        (announced.properties['info'] as Map)['time']['completed'],
+        isNull,
+      );
+      daemon.push(
+        'agent_stream',
+        stream('a1', {'type': 'turn_completed', 'provider': 'claude'}, seq: 31),
+      );
+      await pumpEventQueue();
+      final finished = events
+          .where((e) => e.type == 'message.updated')
+          .map((e) => e.properties['info'] as Map)
+          .where((info) => info['id'] == 'msg_9')
+          .last;
+      expect(finished['time']['completed'], isNotNull);
+    });
+
     test('assistant text is announced once, then streamed as deltas', () async {
       for (final (i, text) in ['Done', '. The file', ' exists.'].indexed) {
         daemon.push(
@@ -616,7 +720,7 @@ void main() {
       });
     });
 
-    test('a failed turn surfaces the agent\'s own error', () async {
+    test('a failed turn surfaces safe fixed copy', () async {
       daemon.push(
         'agent_stream',
         stream('a1', {'type': 'turn_started', 'provider': 'claude'}),
@@ -633,7 +737,7 @@ void main() {
       final error = events.firstWhere((e) => e.type == 'session.error');
       expect(
         ((error.properties['error'] as Map)['data'] as Map)['message'],
-        'Not logged in',
+        'The agent could not finish this reply. Check it on your computer.',
       );
       expect(types().last, 'session.idle');
     });
@@ -665,7 +769,11 @@ void main() {
       expect(asked.properties['permission'], 'edit');
       expect(asked.properties['patterns'], ['$_dir/hello.txt']);
       expect(asked.properties['always'], ['$_dir/hello.txt']);
-      expect((asked.properties['metadata'] as Map)['diff'], 'hi');
+      // A new file is a patch of added lines, so the diff view can draw it.
+      expect(
+        (asked.properties['metadata'] as Map)['diff'],
+        '--- /dev/null\n+++ b/$_dir/hello.txt\n@@ -0,0 +1,1 @@\n+hi',
+      );
       expect((await gateway.pendingPermissions()).single.id, 'perm-1');
     });
 
@@ -873,6 +981,17 @@ void main() {
     },
   );
 
+  test('archiveSession sends the archive request (menu: Archive)', () async {
+    await gateway.sessions();
+    daemon.handlers['archive_agent_request'] = (m) => (
+      'agent_archived',
+      {'agentId': m['agentId'], 'archivedAt': '2026-09-19T05:00:00.000Z'},
+    );
+    await gateway.archiveSession('a1');
+    expect(daemon.of('archive_agent_request').single['agentId'], 'a1');
+    expect(daemon.of('delete_agent_request'), isEmpty);
+  });
+
   test(
     'a refused request is a fixed failure, never the daemon\'s text',
     () async {
@@ -887,7 +1006,10 @@ void main() {
               .having((f) => f.message, 'message', isNot(contains('secret'))),
         ),
       );
-      expect(gateway.transport.lastDaemonError, 'secret internals');
+      expect(
+        gateway.transport.lastDaemonError,
+        'The agent request could not be completed.',
+      );
     },
   );
 
@@ -930,6 +1052,177 @@ void main() {
       ]),
     );
     expect(replacement.of('fetch_agents_request'), isNotEmpty);
+  });
+
+  group('sub-agents', () {
+    Map<String, dynamic> agentCall(String status) => timeline({
+      'type': 'tool_call',
+      'callId': 'toolu_sub',
+      'name': 'Agent',
+      'status': status,
+      'error': null,
+      'detail': {
+        'type': 'unknown',
+        'input': {'description': 'List the files', 'subagent_type': 'Explore'},
+      },
+    });
+    Map<String, dynamic> descriptor({String status = 'running'}) => {
+      'id': 's1',
+      'parentAgentId': 'a1',
+      'parentSubagentId': null,
+      'provider': 'claude',
+      'title': 'List the files',
+      'description': 'List the files',
+      'status': status,
+      'createdAt': '2026-10-06T10:00:00.000Z',
+      'updatedAt': '2026-10-06T10:00:01.000Z',
+      'toolCallId': 'toolu_sub',
+      'cwd': _dir,
+      'subtitle': null,
+    };
+
+    setUp(() async {
+      await gateway.sessions();
+      events.clear();
+    });
+
+    test(
+      'a sub-agent is its conversation\'s child, and its card opens it',
+      () async {
+        daemon.push('agent_stream', stream('a1', agentCall('running'), seq: 1));
+        daemon.push('agent.provider_subagents.update', {
+          'kind': 'upsert',
+          'subagent': descriptor(),
+        });
+        await pumpEventQueue();
+        final created = events.firstWhere((e) => e.type == 'session.created');
+        final info = Session.fromJson(
+          created.properties['info'] as Map<String, dynamic>,
+        );
+        expect(info.id, paseoSubagentSessionId('s1'));
+        expect(info.parentID, 'a1');
+        expect(info.title, 'List the files');
+        expect((await gateway.sessionStatuses())[info.id], 'busy');
+        // The card shown before the sub-agent was reported now links to it.
+        final card = events
+            .where((e) => e.type == 'message.part.updated')
+            .map((e) => e.properties['part'] as Map)
+            .last;
+        expect(card['tool'], 'task');
+        expect((card['state'] as Map)['metadata'], {'sessionId': info.id});
+      },
+    );
+
+    test('its steps stream into its own conversation', () async {
+      daemon.push('agent.provider_subagents.update', {
+        'kind': 'upsert',
+        'subagent': descriptor(),
+      });
+      events.clear();
+      daemon.push('agent.provider_subagents.update', {
+        'kind': 'timeline',
+        'parentAgentId': 'a1',
+        'subagentId': 's1',
+        'provider': 'claude',
+        'item': {
+          'type': 'assistant_message',
+          'text': 'Found 7 files',
+          'messageId': 'm_sub',
+        },
+        'timestamp': '2026-10-06T10:00:02.000Z',
+        'seq': 3,
+        'epoch': 'e1',
+      });
+      await pumpEventQueue();
+      final message = events.firstWhere((e) => e.type == 'message.updated');
+      expect(
+        (message.properties['info'] as Map)['sessionID'],
+        paseoSubagentSessionId('s1'),
+      );
+    });
+
+    test('its history is read from the helper; it takes no replies', () async {
+      daemon.push('agent.provider_subagents.update', {
+        'kind': 'upsert',
+        'subagent': descriptor(status: 'completed'),
+      });
+      daemon.handlers['agent.provider_subagents.timeline.get.request'] = (m) {
+        expect(m['parentAgentId'], 'a1');
+        expect(m['subagentId'], 's1');
+        return (
+          'agent.provider_subagents.timeline.get.response',
+          {
+            'parentAgentId': 'a1',
+            'subagentId': 's1',
+            'provider': 'claude',
+            'epoch': 'e1',
+            'endCursor': {'epoch': 'e1', 'seq': 4},
+            'rows': [
+              {
+                'seq': 4,
+                'seqStart': 4,
+                'timestamp': '2026-10-06T10:00:03.000Z',
+                'item': {
+                  'type': 'assistant_message',
+                  'text': '7 files',
+                  'messageId': 'm_done',
+                },
+              },
+            ],
+            'error': null,
+          },
+        );
+      };
+      await pumpEventQueue();
+      final id = paseoSubagentSessionId('s1');
+      final history = await gateway.messages(id);
+      expect(history.single.parts.single.text, '7 files');
+      expect((await gateway.session(id)).parentID, 'a1');
+      await expectLater(
+        gateway.promptAsync(id, text: 'more'),
+        throwsA(isA<ProductException>()),
+      );
+    });
+
+    test('an old conversation\'s cards link to the sub-agents the helper '
+        'still knows', () async {
+      daemon.handlers['agent.provider_subagents.list.request'] = (m) => (
+        'agent.provider_subagents.list.response',
+        {
+          'parentAgentId': 'a1',
+          'subagents': [descriptor(status: 'completed')],
+          'error': null,
+        },
+      );
+      daemon.handlers['fetch_agent_request'] = (_) =>
+          ('fetch_agent_response', {'agent': agentJson('a1')});
+      daemon.handlers['fetch_agent_timeline_request'] = (_) => (
+        'fetch_agent_timeline_response',
+        {
+          'agentId': 'a1',
+          'epoch': 'epoch-1',
+          'entries': [
+            {
+              'provider': 'claude',
+              'seqStart': 1,
+              'timestamp': '2026-10-06T10:00:00.000Z',
+              'item': agentCall('completed')['item'],
+            },
+          ],
+        },
+      );
+      final history = await gateway.messages('a1');
+      expect(history.single.parts.single.toolName, 'task');
+      // The list arrives beside the history; the card then links.
+      await pumpEventQueue();
+      final card = events
+          .where((e) => e.type == 'message.part.updated')
+          .map((e) => e.properties['part'] as Map)
+          .last;
+      expect((card['state'] as Map)['metadata'], {
+        'sessionId': paseoSubagentSessionId('s1'),
+      });
+    });
   });
 
   group('probe', () {
@@ -987,7 +1280,13 @@ void main() {
       'description': 'Fetch a page',
     });
     expect(other.permission, 'webfetch');
-    expect(other.metadata, {'url': 'https://example.com'});
+    expect(other.metadata, {
+      'url': 'https://example.com',
+      // What the card draws as labelled rows.
+      'facts': [
+        {'key': 'url', 'value': 'https://example.com'},
+      ],
+    });
     expect(other.message, 'Fetch a page');
   });
 }

@@ -92,7 +92,7 @@ class PhoneTeamHostState {
 
 /// Everything the flow asks of the phone, so tests can stand in.
 abstract interface class PhoneTeamSetupPorts {
-  /// Whether this phone has an in-app OpenCode 1 server to set up.
+  /// Whether this phone has a supported in-app OpenCode server to set up.
   bool get hasServer;
 
   /// Whether the team was turned on here before (a saved engine config).
@@ -105,6 +105,10 @@ abstract interface class PhoneTeamSetupPorts {
   Future<void> stopServer();
   Future<void> closeTerminals();
   Future<PhoneEngineHealth> startEngine();
+
+  /// Stops this setup's engine and releases its ownership before a retry.
+  /// Keeps saved projects and team settings.
+  Future<void> stopEngine();
   Future<PhoneEngineHealth> probeEngine();
 
   /// Starts OpenCode and waits until it answers; null when it does, else
@@ -118,6 +122,20 @@ abstract interface class PhoneTeamSetupPorts {
   /// nothing when it already answers, else starts it like the Restart
   /// control and reconnects the app. True when OpenCode is on.
   Future<bool> restoreServer();
+}
+
+/// Selects the supported phone profile without allocating setup state or controls.
+ServerProfile? _phoneTeamProfile(ConnectionController connection) {
+  ServerProfile? chosen;
+  for (final profile in connection.store.profiles) {
+    if (!looksLikeInAppServer(profile) ||
+        !connection.serverCapabilitiesFor(profile).phoneTeamExecution) {
+      continue;
+    }
+    if (profile.id == connection.store.activeId) return profile;
+    chosen ??= profile;
+  }
+  return chosen;
 }
 
 /// The real phone: the same controls This phone uses, nothing reimplemented.
@@ -137,16 +155,10 @@ class BuiltinPhoneTeamSetupPorts implements PhoneTeamSetupPorts {
   /// What the engine's ongoing notification says while it runs.
   final String notice;
   final LocalTerminalSessions _terminals;
+  String? _startedEngineProfileId;
+  Future<void>? _engineStop;
 
-  ServerProfile? get _profile {
-    ServerProfile? chosen;
-    for (final p in connection.store.profiles) {
-      if (!looksLikeInAppServer(p) || p.flavor != ServerFlavor.v1) continue;
-      if (p.id == connection.store.activeId) return p;
-      chosen ??= p;
-    }
-    return chosen;
-  }
+  ServerProfile? get _profile => _phoneTeamProfile(connection);
 
   String get _id => _profile!.id;
 
@@ -203,8 +215,29 @@ class BuiltinPhoneTeamSetupPorts implements PhoneTeamSetupPorts {
   }
 
   @override
-  Future<PhoneEngineHealth> startEngine() =>
-      connection.phoneProjectEngine.start(_id, notice: notice);
+  Future<PhoneEngineHealth> startEngine() async {
+    await _engineStop;
+    final id = _id;
+    if (_startedEngineProfileId != null && _startedEngineProfileId != id) {
+      await stopEngine();
+    }
+    _startedEngineProfileId = id;
+    return connection.phoneProjectEngine.start(id, notice: notice);
+  }
+
+  @override
+  Future<void> stopEngine() {
+    final pending = _engineStop;
+    if (pending != null) return pending;
+    final id = _startedEngineProfileId;
+    if (id == null) return Future.value();
+    return _engineStop = connection.phoneProjectEngine
+        .stop(id)
+        .then((_) {
+          if (_startedEngineProfileId == id) _startedEngineProfileId = null;
+        })
+        .whenComplete(() => _engineStop = null);
+  }
 
   @override
   Future<PhoneEngineHealth> probeEngine() =>
@@ -284,6 +317,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
   bool _stopped = false;
   bool _disposed = false;
   bool _serverStopped = false;
+  bool _engineAttempted = false;
   bool _terminalsClosed = false;
   int _hostTerminals = 0;
   PhoneTeamServerState _serverState = PhoneTeamServerState.untouched;
@@ -313,6 +347,9 @@ class PhoneTeamSetupController extends ChangeNotifier {
   bool get isRunning =>
       _phase == PhoneTeamSetupPhase.running ||
       _phase == PhoneTeamSetupPhase.confirming;
+  bool get needsComponentRecovery =>
+      _problem == PhoneTeamSetupProblem.serverStart &&
+      _details == 'componentRecovery';
   bool get isDone => _phase == PhoneTeamSetupPhase.done;
   bool get skipped => _skipped.isNotEmpty;
   bool wasSkipped(PhoneTeamSetupStep step) => _skipped.contains(step);
@@ -398,13 +435,22 @@ class PhoneTeamSetupController extends ChangeNotifier {
     _serverState = PhoneTeamServerState.untouched;
   }
 
-  /// Ends the run in failure, first putting OpenCode back if this run
-  /// stopped it, so the person is never left with it off and Work blank.
+  /// Ends the run in failure, releasing the attempted engine before putting
+  /// OpenCode back. A readiness refusal still owns a live native daemon.
   Future<void> _failWith(
     PhoneTeamSetupProblem problem,
     PhoneTeamSetupStep step,
     String details,
   ) async {
+    if (_engineAttempted) {
+      try {
+        await _bounded(ports.stopEngine(), 'stopEngine');
+        _engineAttempted = false;
+      } catch (_) {
+        // Preserve the original reason while exposing a cleanup failure safely.
+        details = '$details; engineStopFailed';
+      }
+    }
     if (_serverStopped) {
       if (problem == PhoneTeamSetupProblem.serverStart) {
         // It just failed to start; say so instead of waiting for it again.
@@ -468,7 +514,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
     final yes = await confirm.future;
     _confirm = null;
     if (!yes) {
-      _fail(
+      await _failWith(
         PhoneTeamSetupProblem.declined,
         PhoneTeamSetupStep.stop,
         'declined',
@@ -505,6 +551,12 @@ class PhoneTeamSetupController extends ChangeNotifier {
     _reset();
     _emit();
     try {
+      // A failed or timed-out cleanup still owns its original engine. Finish
+      // that cleanup before selecting or starting another phone profile.
+      if (_engineAttempted) {
+        await _bounded(ports.stopEngine(), 'stopEngine');
+        _engineAttempted = false;
+      }
       if (!ports.hasServer) {
         await _failWith(
           PhoneTeamSetupProblem.noServer,
@@ -532,6 +584,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
 
       // c) The engine proves this phone safe.
       _begin(PhoneTeamSetupStep.check);
+      _engineAttempted = true;
       var health = await _bounded(ports.startEngine(), 'startEngine');
       if (health.restartRequired && !stopped) {
         // The engine found an old server it cannot vouch for: ask now.
@@ -599,6 +652,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
         return;
       }
       await _bounded(ports.attach(), 'attach');
+      _engineAttempted = false;
       _end(PhoneTeamSetupStep.server);
       _step = null;
       _phase = PhoneTeamSetupPhase.done;
@@ -665,6 +719,10 @@ class PhoneTeamSetup {
 
   static final Expando<PhoneTeamSetupController> _shared = Expando();
 
+  /// Eligibility checks must not create an independent server starter.
+  static bool hasServer(ConnectionController connection) =>
+      _phoneTeamProfile(connection) != null;
+
   /// Tests replace the phone with this.
   @visibleForTesting
   static PhoneTeamSetupPorts Function(ConnectionController)? debugPorts;
@@ -672,20 +730,25 @@ class PhoneTeamSetup {
   static PhoneTeamSetupController of(
     ConnectionController connection, {
     AppLocalizations? copy,
-    BuiltinLinux? linux,
     BuiltinServerStarter? starter,
   }) {
     final existing = _shared[connection];
     if (existing != null) return existing;
-    final ports =
-        debugPorts?.call(connection) ??
-        BuiltinPhoneTeamSetupPorts(
-          connection: connection,
-          linux: linux ?? BuiltinLinux(),
-          starter:
-              starter ?? BuiltinServerStarter(linux: linux ?? BuiltinLinux()),
-          notice: copy?.aiteamComponentNotice ?? 'AI Team is running',
-        );
+    final testPorts = debugPorts?.call(connection);
+    final PhoneTeamSetupPorts ports;
+    if (testPorts != null) {
+      ports = testPorts;
+    } else {
+      if (starter == null) {
+        throw StateError('Phone team setup requires the app server starter');
+      }
+      ports = BuiltinPhoneTeamSetupPorts(
+        connection: connection,
+        linux: starter.linux,
+        starter: starter,
+        notice: copy?.aiteamComponentNotice ?? 'AI Team is running',
+      );
+    }
     return _shared[connection] = PhoneTeamSetupController(ports);
   }
 }

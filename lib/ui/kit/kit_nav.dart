@@ -49,10 +49,10 @@ class KitNavDestination {
 }
 
 enum KitNavLayout {
-  /// compact: the floating glass dock at the bottom.
+  /// compact: the floating dock at the bottom.
   dock,
 
-  /// medium: a floating glass rail at the start, icons with labels.
+  /// medium: a floating rail at the start, icons with labels.
   rail,
 
   /// expanded and large: the 296 dp sidebar at the start (wider with larger text,
@@ -119,7 +119,12 @@ class KitNav extends StatelessWidget {
       context.dependOnInheritedWidgetOfExactType<_KitNavScope>()?.hostsPane ??
       false;
 
-  /// True below a KitNav: the page sits under the floating glass
+  /// The width the sidebar takes from the window at the start (0 without a
+  /// sidebar), so a page can measure the body it really has.
+  static double sidebarInsetOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_KitNavScope>()?.inset ?? 0;
+
+  /// True below a KitNav: the page sits under the floating
   /// navigation layer, so its ground carries the theme's ambient fields
   /// (visual language §6: the glass has something to bend).
   static bool hosts(BuildContext context) =>
@@ -216,6 +221,7 @@ class KitNav extends StatelessWidget {
                 start: KitLayout.sidebarWidth(context),
                 child: _KitNavScope(
                   hostsPane: destinations[selected].pane != null,
+                  inset: KitLayout.sidebarWidth(context),
                   child: child,
                 ),
               ),
@@ -223,20 +229,23 @@ class KitNav extends StatelessWidget {
           ],
         );
     }
-    // One backdrop read for the dock, the rail and the top controls
-    // (LOOK-28).
-    return BackdropGroup(child: frame);
+    return frame;
   }
 }
 
 class _KitNavScope extends InheritedWidget {
-  const _KitNavScope({required this.hostsPane, required super.child});
+  const _KitNavScope({
+    required this.hostsPane,
+    this.inset = 0,
+    required super.child,
+  });
 
   final bool hostsPane;
+  final double inset;
 
   @override
   bool updateShouldNotify(_KitNavScope oldWidget) =>
-      hostsPane != oldWidget.hostsPane;
+      hostsPane != oldWidget.hostsPane || inset != oldWidget.inset;
 }
 
 /// The floating dock (compact). Public for galleries and tests; the app
@@ -269,8 +278,6 @@ class KitNavBar extends StatelessWidget {
           width / destinations.length,
         );
         return KitGlass(
-          dim: true,
-          respond: true,
           borderRadius: BorderRadius.circular(tokens.navRadius),
           child: SizedBox(
             height: _dockHeightFor(tokens, metrics),
@@ -312,7 +319,7 @@ class KitNavRail extends StatelessWidget {
   /// The sidebar (296 dp, wider with larger text) instead of the glass rail.
   final bool extended;
 
-  /// Sidebar only: the top controls (glass, VL §6).
+  /// Sidebar only: the top controls (VL §6).
   final Widget? header;
 
   /// Sidebar only: the pinned full-width primary.
@@ -328,8 +335,6 @@ class KitNavRail extends StatelessWidget {
     return SizedBox(
       width: KitLayout.railWidth,
       child: KitGlass(
-        dim: true,
-        respond: true,
         borderRadius: BorderRadius.circular(tokens.navRadius),
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: tokens.space2),
@@ -1012,9 +1017,7 @@ class _LensLayout extends SingleChildLayoutDelegate {
       old.devicePixelRatio != devicePixelRatio;
 }
 
-/// The selected tab's glass lens: a clear pill with a one physical pixel
-/// rim, never a second glass layer (glass never sits on glass, VL §6).
-/// Lifted under a finger, its rim catches the light.
+/// The selected tab's lens: a solid pill with a one physical pixel rim.
 class _KitNavLens extends StatelessWidget {
   const _KitNavLens({required this.motion});
 
@@ -1028,7 +1031,6 @@ class _KitNavLens extends StatelessWidget {
         motion: motion,
         fill: roles.surface3,
         rim: roles.hairline,
-        lit: roles.glassRimLight,
         width: KitTokens.hairlineWidth(context),
       ),
     );
@@ -1040,14 +1042,12 @@ class _LensPainter extends CustomPainter {
     required this.motion,
     required this.fill,
     required this.rim,
-    required this.lit,
     required this.width,
   }) : super(repaint: motion);
 
   final _LensMotion motion;
   final Color fill;
   final Color rim;
-  final Color lit;
   final double width;
 
   @override
@@ -1057,14 +1057,9 @@ class _LensPainter extends CustomPainter {
       Offset.zero & size,
       Radius.circular(size.shortestSide / 2),
     );
-    final lift = motion.lift.x.clamp(0.0, 1.0);
     canvas
       ..drawRRect(pill, Paint()..color = fill)
-      ..drawDRRect(
-        pill,
-        pill.deflate(width),
-        Paint()..color = Color.lerp(rim, lit, lift)!,
-      );
+      ..drawDRRect(pill, pill.deflate(width), Paint()..color = rim);
   }
 
   @override
@@ -1072,7 +1067,6 @@ class _LensPainter extends CustomPainter {
       old.motion != motion ||
       old.fill != fill ||
       old.rim != rim ||
-      old.lit != lit ||
       old.width != width;
 }
 

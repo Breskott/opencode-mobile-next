@@ -8,13 +8,14 @@ import '../../builtin/builtin_linux.dart';
 import '../../builtin/builtin_server.dart';
 import '../../builtin/setup/phone_setup.dart';
 import '../../builtin/setup/setup_contract.dart';
+import '../../domain/opencode_history_copy.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/phone_host.dart' show PhoneHostKind;
 import '../../state/profiles.dart';
 import '../../state/queued_prompt_removal.dart'
     show QueuedPromptRemovalException, QueuedPromptRemovalPlan;
-import '../../termux/bridge.dart' show TermuxRuntime;
+import '../../termux/bridge.dart' show TermuxBridge, TermuxRuntime;
 import '../app_iconography.dart';
 import '../kit/kit.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
@@ -84,8 +85,45 @@ String serverDisplayName(
   // ("This phone · Termux"), not by the name setup saved it under; the
   // app's own server is plain "This phone".
   if (isManagedPhoneProfile(profile)) return l10n.phoneServerTermuxTitle;
-  if (!looksLikeInAppServer(profile)) return plainServerName(profile.name);
+  if (!looksLikeInAppServer(profile)) {
+    return _distinctServerName(profile, among);
+  }
   return phoneServerDisplayName(profile, l10n, among: among);
+}
+
+/// The plain name, made distinct when another saved server would read the
+/// same ("Computer at 10.0.2.2" three times): the port is added, and when
+/// the address is the same too, the server's number among them.
+String _distinctServerName(
+  ServerProfile profile,
+  Iterable<ServerProfile> among,
+) {
+  final name = plainServerName(profile.name);
+  final same = [
+    for (final other in among)
+      if (other.id == profile.id ||
+          (!looksLikeInAppServer(other) &&
+              !isManagedPhoneProfile(other) &&
+              plainServerName(other.name) == name))
+        other,
+  ];
+  if (same.length < 2 || !same.any((o) => o.id == profile.id)) return name;
+  String portOf(ServerProfile p) {
+    final uri = Uri.tryParse(p.baseUrl);
+    return uri != null && uri.hasPort ? ':${uri.port}' : '';
+  }
+
+  final port = portOf(profile);
+  final withPort = port.isEmpty ? name : '$name$port';
+  final clashes = same
+      .where((o) => o.id != profile.id && portOf(o) == port)
+      .toList();
+  if (clashes.isEmpty) return withPort;
+  final index = same
+      .where((o) => portOf(o) == port)
+      .toList()
+      .indexWhere((o) => o.id == profile.id);
+  return '$withPort (${index + 1})';
 }
 
 /// [serverDisplayName] for a profile known to be the in-app server (the
@@ -216,6 +254,22 @@ Future<bool> runPhoneServerAction(
       final target = _runtimeOf(profile) == TermuxRuntime.openCode2
           ? TermuxRuntime.openCode1
           : TermuxRuntime.openCode2;
+      if (target == TermuxRuntime.openCode2) {
+        // Refuse before setup can stop the old server or select a new profile.
+        // Restarting an already selected OC2 server does not use this check.
+        try {
+          final check = await linux.run(openCode1HistorySwitchCheckScript);
+          if (!check.ok) {
+            await fail([l10n.thisPhoneHistoryFailed]);
+            return false;
+          }
+        } catch (_) {
+          // An unreadable history is not evidence that moving is safe.
+          await fail([l10n.thisPhoneHistoryFailed]);
+          return false;
+        }
+        if (!context.mounted) return false;
+      }
       await install(
         {'opencode'},
         params: {
@@ -224,22 +278,29 @@ Future<bool> runPhoneServerAction(
       );
       return false;
     case PhoneServerAction.update:
-      // OpenCode 1 is the engine's default runtime; OpenCode 2 must be named
-      // or "update" would install the other one.
+      // Updating preserves the selected runtime, including older installations.
       final runtime = _runtimeOf(profile);
       await install(
         {'opencode'},
-        params: runtime == TermuxRuntime.openCode2
-            ? {
-                'opencode': {'runtime': runtime.wireName},
-              }
-            : const {},
+        params: {
+          'opencode': {'runtime': runtime.wireName},
+        },
       );
       return false;
     case PhoneServerAction.addTools:
       final ids = await PhoneServerCardRoutes.addTools(context);
       if (ids == null || ids.isEmpty || !context.mounted) return false;
-      await install(ids, params: SetupJobParams.adding(ids));
+      if (BuiltinLinux.knownRuntimeFor(profile.flavor) == null) {
+        await fail([l10n.phoneSetupErrorCannotStart]);
+        return false;
+      }
+      await install(
+        ids,
+        params: {
+          ...SetupJobParams.adding(ids),
+          'opencode': {'runtime': _runtimeOf(profile).wireName},
+        },
+      );
       return false;
     case PhoneServerAction.moveQueued:
       await showQueuedPromptMoveSheet(
@@ -539,6 +600,7 @@ class PhoneServerCard extends ConsumerStatefulWidget {
     required this.profile,
     this.connected = false,
     this.onOpen,
+    this.onOpenPage,
     this.onAction,
     this.onRemoved,
     this.onDisconnect,
@@ -558,6 +620,7 @@ class PhoneServerCard extends ConsumerStatefulWidget {
     required this.profile,
     this.connected = false,
     this.onOpen,
+    this.onOpenPage,
     this.onAction,
     this.onRemoved,
     this.onDisconnect,
@@ -578,6 +641,10 @@ class PhoneServerCard extends ConsumerStatefulWidget {
 
   /// Connects to this server; null hides Open.
   final VoidCallback? onOpen;
+
+  /// What tapping the row does: open this server's own page. When given,
+  /// [onOpen] (connect) is a named menu act instead of the tap.
+  final VoidCallback? onOpenPage;
 
   /// A host that must close before navigating (the switcher sheet) takes
   /// the menu action and runs [runPhoneServerAction] from its own screen.
@@ -616,6 +683,14 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
   bool _stopping = false;
   bool _removing = false;
   String? _failure;
+
+  String? get _failureText {
+    final failure = _starter.failureFor(widget.profile);
+    return _failure ??
+        (failure?.problem == BuiltinStartProblem.componentRecovery
+            ? failure!.explanation(_l10n)
+            : null);
+  }
 
   AppLocalizations get _l10n =>
       lookupAppLocalizations(Localizations.localeOf(context));
@@ -731,9 +806,7 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
     final failure = await _starter.start(widget.profile);
     if (!mounted) return;
     if (failure != null) {
-      setState(
-        () => _failure = _l10n.builtinServerStartFailed(failure.reason(_l10n)),
-      );
+      setState(() => _failure = failure.explanation(_l10n));
     }
     await _refresh();
     // The first start is the moment keeping it alive matters (P6.7): asked
@@ -913,6 +986,13 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
             label: l10n.phoneServerCardSetUp,
             onPressed: () => PhoneServerCardRoutes.openStart(context),
           )
+        : _starter.failureFor(widget.profile)?.problem ==
+              BuiltinStartProblem.componentRecovery
+        ? KitAction(
+            key: const ValueKey('phone-server-recover-ownership'),
+            label: l10n.e7SetupOpenAppSettings,
+            onPressed: () => unawaited(TermuxBridge.openAppSettings()),
+          )
         : state == _Status.stopped
         ? KitAction(
             key: const ValueKey('phone-server-start'),
@@ -937,6 +1017,12 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
     final menuOpen = terminalOnly || (!locked && state != _Status.checking);
     void choose(PhoneServerAction action) => unawaited(_menu(action));
     final items = <KitMenuItem>[
+      if (canOpen && !locked && widget.onOpenPage != null)
+        KitMenuItem(
+          key: const ValueKey('phone-server-connect'),
+          label: l10n.settingsV3ConnectTo(name),
+          onSelected: widget.onOpen!,
+        ),
       if (installed && !terminalOnly)
         KitMenuItem(
           key: const ValueKey('phone-server-manage'),
@@ -1052,7 +1138,7 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
     // The one button sits with the row's words, inside the row: no hairline
     // divides it from the server it acts on.
     final actions = KitActionBlock(primary: lead);
-    final failure = _failure;
+    final failure = _failureText;
     final below = <Widget>[
       if (large) status,
       // The failure in words, in text1 (LOOK-5: the error tone marks acts
@@ -1126,7 +1212,9 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
                 ],
               ),
         // The row's tap does the one likely thing: connect when it can.
-        onTap: canOpen && !locked ? widget.onOpen : null,
+        onTap: locked
+            ? null
+            : (widget.onOpenPage ?? (canOpen ? widget.onOpen : null)),
         menu: menu,
         menuLabel: name,
         trailing: trailing.isEmpty
@@ -1173,7 +1261,7 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
     required bool large,
   }) {
     final l10n = _l10n;
-    final failure = _failure;
+    final failure = _failureText;
     // Start and Set up are short and sit at the row's end, like a
     // LocalServerRow's Start; the row itself names what they act on, so
     // Start says only "Start". The longer setup acts (Continue setup, Show
@@ -1245,7 +1333,9 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: below,
                 ),
-          onTap: canOpen && !locked ? widget.onOpen : null,
+          onTap: locked
+              ? null
+              : (widget.onOpenPage ?? (canOpen ? widget.onOpen : null)),
           menu: menu,
           menuLabel: name,
           trailing: trailing.isEmpty

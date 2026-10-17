@@ -37,18 +37,23 @@ void main() {
     'native consumes invalid intents before bounded capture without logging',
     () {
       final activity = File(
-        'android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/MainActivity.kt',
+        'android/app/src/main/kotlin/io/github/eslamasabry/opencode_mobile/LaunchLinkChannel.kt',
       ).readAsStringSync();
-      final start = activity.indexOf('private fun captureSessionLink');
-      final end = activity.indexOf('private fun captureLaunchAction', start);
+      final start = activity.indexOf('fun capture(intent: Intent?)');
+      final end = activity.indexOf('private fun isHandoffRoute', start);
+      expect(start, isNonNegative);
+      expect(end, greaterThan(start));
       final body = activity.substring(start, end);
+      expect(body.indexOf('intent.data = null'), isNonNegative);
+      expect(body.indexOf('SessionLinkIngress.accepts(text)'), isNonNegative);
+      expect(body.indexOf('if (accepted) pending = text'), isNonNegative);
       expect(
         body.indexOf('intent.data = null'),
         lessThan(body.indexOf('SessionLinkIngress.accepts(text)')),
       );
       expect(
         body.indexOf('SessionLinkIngress.accepts(text)'),
-        lessThan(body.indexOf('pendingSessionLink = text')),
+        lessThan(body.indexOf('if (accepted) pending = text')),
       );
       expect(body, isNot(contains('Log.')));
     },

@@ -71,44 +71,19 @@ const _wide = Size(900, 600);
 /// animation (which would read as the part still moving).
 final _theme = AppTheme.dark();
 
-/// The colours of every paragraph (words and icon glyphs) painted under
-/// [root], read from the render tree rather than the widgets that built it.
-Set<Color?> _paintedColors(RenderObject root) {
-  final colors = <Color?>{};
-  void visit(RenderObject node) {
-    if (node is RenderParagraph) {
-      node.text.visitChildren((span) {
-        final color = span.style?.color;
-        if (color != null) colors.add(color);
-        return true;
-      });
-      final base = node.text.style?.color;
-      if (base != null) colors.add(base);
-    }
-    node.visitChildren(visit);
-  }
-
-  visit(root);
-  return colors;
-}
-
 const _chipKey = Key('composer-model-context');
-const _contextKey = Key('composer-context-percent');
 
 Widget _model({
   String label = 'Sonnet 4.5',
   KitModelChipState state = KitModelChipState.chosen,
-  double? contextUsed,
   VoidCallback? onPressed,
   List<KitMenuItem> menu = const [],
 }) => KitComposerChips.model(
   label: label,
   onPressed: onPressed ?? () {},
   state: state,
-  contextUsed: contextUsed,
   menu: menu,
   chipKey: _chipKey,
-  contextKey: _contextKey,
 );
 
 KitAttachment _image({VoidCallback? onOpen, String? detail}) => KitAttachment(
@@ -340,39 +315,13 @@ void main() {
     });
   });
 
-  group('3. context', () {
-    testWidgets('0.69 shows no context words', (tester) async {
-      await _pump(tester, _model(contextUsed: 0.69), size: _wide);
-      expect(find.byKey(_contextKey), findsNothing);
-      expect(find.textContaining('%'), findsNothing);
-    });
-
-    testWidgets('0.7 shows "· 70 %" in tabular figures, text1', (tester) async {
-      await _pump(tester, _model(contextUsed: 0.7), size: _wide);
-      expect(find.text('· 70 %'), findsOneWidget);
-      final text = tester.widget<Text>(find.byKey(_contextKey));
-      expect(
-        text.style!.fontFeatures,
-        contains(const FontFeature.tabularFigures()),
-      );
-      final roles = _roles(tester);
-      expect(text.style!.color, roles.text1);
-    });
-
-    testWidgets('0.96 says "Context almost full", never attention or '
-        'danger', (tester) async {
-      await _pump(tester, _model(contextUsed: 0.96), size: _wide);
-      expect(find.text('· Context almost full'), findsOneWidget);
-      final roles = _roles(tester);
-      // Every colour the chip paints: its words and glyphs, as rendered.
-      final colors = _paintedColors(tester.renderObject(find.byKey(_chipKey)));
-      expect(colors, isNotEmpty);
-      expect(colors, isNot(contains(roles.attention)));
-      expect(colors, isNot(contains(roles.danger)));
-      expect(_paintedColors(tester.renderObject(find.byKey(_contextKey))), {
-        roles.text1,
-      });
-    });
+  testWidgets('3. the chip is the model alone: no context words', (
+    tester,
+  ) async {
+    await _pump(tester, _model(), size: _wide);
+    expect(find.text('Sonnet 4.5'), findsOneWidget);
+    expect(find.textContaining('%'), findsNothing);
+    expect(find.textContaining('Context'), findsNothing);
   });
 
   testWidgets('4. narrow slot: glyph and chevron only, words in semantics '
@@ -385,25 +334,21 @@ void main() {
         width: 120,
         child: Align(
           alignment: AlignmentDirectional.centerStart,
-          child: _model(label: long, contextUsed: 0.8),
+          child: _model(label: long),
         ),
       ),
     );
     expect(find.text(long), findsNothing);
-    expect(find.byKey(_contextKey), findsNothing);
     expect(
       find.descendant(of: find.byKey(_chipKey), matching: find.byType(Icon)),
       findsNWidgets(2),
     );
     expect(tester.getSize(find.byKey(_chipKey)).width, 48);
-    expect(
-      _semanticsOf(tester, find.byKey(_chipKey)).label,
-      '$long, Context 80 % full',
-    );
+    expect(_semanticsOf(tester, find.byKey(_chipKey)).label, long);
     final tooltip = tester.widget<Tooltip>(
       find.descendant(of: find.byKey(_chipKey), matching: find.byType(Tooltip)),
     );
-    expect(tooltip.message, '$long · 80 %');
+    expect(tooltip.message, long);
     semantics.dispose();
   });
 
@@ -557,6 +502,21 @@ void main() {
       await tester.tap(find.text('Show all'));
       await tester.pump();
       expect(showAll, 1);
+    });
+
+    testWidgets('a phone\'s three rows still lead to "Show all"', (
+      tester,
+    ) async {
+      // The host gives fewer rows than it holds; Show all is its way on.
+      await _pump(
+        tester,
+        KitComposerChips.suggestions(
+          suggestions: _suggestions(3),
+          onSelected: (_) {},
+          onShowAll: () {},
+        ),
+      );
+      expect(find.text('Show all'), findsOneWidget);
     });
 
     testWidgets('no "Show all" without onShowAll; empty renders nothing', (
@@ -748,11 +708,11 @@ void main() {
   });
 
   group('8. semantics and targets', () {
-    testWidgets('model chip: words, context, hint', (tester) async {
+    testWidgets('model chip: words, hint', (tester) async {
       final semantics = tester.ensureSemantics();
-      await _pump(tester, _model(contextUsed: 0.85), size: _wide);
+      await _pump(tester, _model(), size: _wide);
       final data = _semanticsOf(tester, find.byKey(_chipKey));
-      expect(data.label, 'Sonnet 4.5, Context 85 % full');
+      expect(data.label, 'Sonnet 4.5');
       expect(data.hint, 'Change model');
       expect(data.flagsCollection.isButton, isTrue);
       final size = tester.getSize(find.byKey(_chipKey));
@@ -844,9 +804,9 @@ void main() {
 
     testWidgets('9. reduced motion: one pump() settles', (tester) async {
       await _pump(tester, _model(), reduced: true, size: _wide);
-      await _pump(tester, _model(contextUsed: 0.8), reduced: true, size: _wide);
+      await _pump(tester, _model(label: 'Opus 5'), reduced: true, size: _wide);
       expect(tester.hasRunningAnimations, isFalse);
-      expect(find.text('· 80 %'), findsOneWidget);
+      expect(find.text('Opus 5'), findsOneWidget);
       await _pump(
         tester,
         KitComposerChips.attachments(items: [_file()], onRemove: (_) {}),
@@ -871,10 +831,7 @@ void main() {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _model(
-                label: 'explore · Claude Sonnet 4.5 · High',
-                contextUsed: 0.85,
-              ),
+              _model(label: 'explore · Claude Sonnet 4.5 · High'),
               KitComposerChips.attachments(
                 items: [
                   _image(detail: 'Recovered'),
@@ -907,7 +864,7 @@ void main() {
   kitMotionStillTests(
     'KitComposerChips',
     builds: {
-      'model': () => _model(contextUsed: 0.8),
+      'model': () => _model(),
       'attachments': () =>
           KitComposerChips.attachments(items: [_file()], onRemove: (_) {}),
       'suggestions': () => KitComposerChips.suggestions(
@@ -916,10 +873,10 @@ void main() {
       ),
     },
     changes: {
-      'context appears': KitMotionChange(
+      'model changes': KitMotionChange(
         build: () => _model(),
-        act: (tester, stage) => stage.rebuild(_model(contextUsed: 0.8)),
-        shows: '· 80 %',
+        act: (tester, stage) => stage.rebuild(_model(label: 'Opus 5')),
+        shows: 'Opus 5',
       ),
       'attachment added': KitMotionChange(
         build: () =>

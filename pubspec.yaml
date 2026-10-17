@@ -1,7 +1,7 @@
 name: opencode_mobile
 description: "OpenCode client for Android - connect to a remote opencode server or one running on-device via Termux."
 publish_to: "none"
-version: 1.1.0+51
+version: 1.4.0+54
 
 environment:
   sdk: ^3.10.0
@@ -45,6 +45,8 @@ dependencies:
   # alpha line, and called out in the release notes.
   flutter_secure_storage: 11.2.0
   crypto: 3.0.7
+  cryptography: 2.9.0
+  local_auth: 3.0.2
   image_picker: 1.2.3
   # Scanning the QR that `opencode2 pair` prints. Pinned exactly, because it
   # registers a platform plugin and ships native camera code.
@@ -100,7 +102,10 @@ dependencies:
   path: ^1.9.1
 dev_dependencies:
   cross_file: 0.3.5+5
+  local_auth_platform_interface: 1.1.0
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   # Lets tests substitute a preferences store that refuses writes, so the
@@ -110,9 +115,6 @@ dev_dependencies:
 
 flutter:
   generate: true
-  # KitGlass's liquid glass (lib/ui/kit/glass/, design standard §10).
-  shaders:
-    - shaders/kit_glass.frag
   assets:
     - shorebird.yaml
     - PRIVACY.md
@@ -129,6 +131,13 @@ flutter:
     # tool/host/aiteam-manifest-<date>.json.
     - assets/aiteam/manifest.json
     - assets/aiteam/manifest-x86_64.json
+    - assets/agents/paseo-package-lock.json
+    # The optional quota collector the app runs in In-app Ubuntu
+    # (lib/builtin/quota_collector_host.dart). One file, no npm install.
+    - tool/quota/collector.mjs
+    # The one-shot, read-only usage check the app runs on a saved computer
+    # through OpenCode's terminal API (lib/state/computer_usage_source.dart).
+    - tool/quota/read_once.mjs
   fonts:
     # Phosphor 2.1.0 artwork (MIT), native IconData for Flutter 3.47.2.
     - family: AppPhosphorRegular

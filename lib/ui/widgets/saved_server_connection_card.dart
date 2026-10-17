@@ -56,6 +56,7 @@ class SavedServerConnectionCard extends StatelessWidget {
     this.inAppStartFailed = false,
     this.inAppStartFailedBody,
     this.onOpenInAppSetup,
+    this.onRecoverInAppOwnership,
     this.notAnswering = false,
     this.size = KitStateSize.page,
   });
@@ -105,6 +106,9 @@ class SavedServerConnectionCard extends StatelessWidget {
   /// start failed, when the log is what the person needs.
   final VoidCallback? onOpenInAppSetup;
 
+  /// Opens Android app settings when process ownership cannot be proven.
+  final VoidCallback? onRecoverInAppOwnership;
+
   /// The connection's eight-second wait ran out with no answer yet. The
   /// controller owns that clock (ConnectionController.connectionStatus), so
   /// this page and every status line escalate at the same moment; the card
@@ -127,13 +131,17 @@ class SavedServerConnectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     if (_starting) return _startingState(l10n);
-    if (requiresTokenReentry || error != null) {
+    if (requiresTokenReentry ||
+        error != null ||
+        onRecoverInAppOwnership != null) {
       return _failedState(context, l10n);
     }
     // Nothing is said during an ordinary connect; once the wait ran out the
     // screen says the server is not answering and offers the ways out
     // (work-tab cleanup item 10, standard §4).
-    if (notAnswering) return _notAnsweringState(context, l10n);
+    if (notAnswering && onRecoverInAppOwnership == null) {
+      return _notAnsweringState(context, l10n);
+    }
     return _connectingState(l10n);
   }
 
@@ -351,7 +359,13 @@ class SavedServerConnectionCard extends StatelessWidget {
           ? inAppStartFailedBody
           : failure.explanation,
       bodyKey: const ValueKey('saved-server-explanation'),
-      primary: escalated
+      primary: onRecoverInAppOwnership != null
+          ? KitAction(
+              key: const ValueKey('saved-server-recover-ownership'),
+              label: l10n.e7SetupOpenAppSettings,
+              onPressed: onRecoverInAppOwnership,
+            )
+          : escalated
           ? KitAction(
               key: const ValueKey('saved-server-change-primary'),
               label: l10n.productStatesSwitchServer,
@@ -360,7 +374,9 @@ class SavedServerConnectionCard extends StatelessWidget {
           : primary,
       // Starting the server already connects, and a stopped server does not
       // answer a retry: no second "Try again" next to Start.
-      secondary: escalated
+      secondary: onRecoverInAppOwnership != null
+          ? null
+          : escalated
           ? retry
           : primaryIsRetry || startsServer
           ? null
@@ -377,7 +393,9 @@ class SavedServerConnectionCard extends StatelessWidget {
             ),
           ),
         if (!primaryIsChange) change,
-        if (inAppServer && onOpenInAppSetup != null)
+        if (inAppServer &&
+            onOpenInAppSetup != null &&
+            onRecoverInAppOwnership == null)
           KitAction(
             key: const ValueKey('saved-server-open-in-app-setup'),
             label: l10n.inAppServerOpenSetup,

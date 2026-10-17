@@ -279,6 +279,11 @@ abstract final class AppIconography {
     fontFamily: 'AppPhosphorRegular',
     matchTextDirection: false,
   );
+  static const crop = IconData(
+    0xe1d4,
+    fontFamily: 'AppPhosphorRegular',
+    matchTextDirection: false,
+  );
   static const pin = IconData(
     0xe3e2,
     fontFamily: 'AppPhosphorRegular',
@@ -469,6 +474,11 @@ abstract final class AppIconography {
   );
   static const contrast = IconData(
     0xe18c,
+    fontFamily: 'AppPhosphorRegular',
+    matchTextDirection: false,
+  );
+  static const textSize = IconData(
+    0xe6ee,
     fontFamily: 'AppPhosphorRegular',
     matchTextDirection: false,
   );
@@ -812,6 +822,13 @@ abstract final class AppIconography {
   static const shield = IconData(
     0xe40a,
     fontFamily: 'AppPhosphorRegular',
+    matchTextDirection: false,
+  );
+
+  /// The filled shield: an automatic approval mode is on.
+  static const shieldFilled = IconData(
+    0xe40a,
+    fontFamily: 'AppPhosphorFill',
     matchTextDirection: false,
   );
   static const sparkle = IconData(

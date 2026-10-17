@@ -97,8 +97,12 @@ void _phone(WidgetTester tester) {
 }
 
 /// Everything a person sees of the one sheet, whichever door opened it.
-void _expectOneSheet({required String apply, String? subtitle}) {
-  expect(find.text('Choose a model'), findsOneWidget);
+void _expectOneSheet({
+  required String apply,
+  String? subtitle,
+  String? title = 'Choose a model',
+}) {
+  if (title != null) expect(find.text(title), findsOneWidget);
   final footer = find.byKey(const Key('model-picker-footer'));
   expect(footer, findsOneWidget);
   expect(
@@ -206,8 +210,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(row);
       await tester.pumpAndSettle();
-      // Hub → sheet: no catalog page in between.
-      _expectOneSheet(apply: 'Use Claude Opus 5.5 · Build');
+      // Hub → sheet: no catalog page in between, and the sheet names whose
+      // chats it is for.
+      _expectOneSheet(apply: 'Use Claude Opus 5.5 · Build', title: null);
+      expect(find.textContaining('New conversations on '), findsOneWidget);
     });
 
     testWidgets('the composer chip opens it for this conversation', (

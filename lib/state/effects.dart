@@ -14,24 +14,77 @@ enum KitMotionLevel {
   off,
 }
 
+/// The app's own text size, chosen in Settings > Appearance > Text size. It
+/// multiplies on top of the phone's font scale and applies at the app root.
+enum KitTextSize {
+  smallest(0.85),
+  small(0.92),
+  normal(1.0),
+  large(1.15);
+
+  const KitTextSize(this.factor);
+
+  /// Multiplies the phone's own text scale.
+  final double factor;
+}
+
+/// How the glowing border while a reply runs is drawn (Settings >
+/// Appearance > Effects).
+enum KitGlowStyle {
+  /// The original: a bright highlight travels the box's own border while a
+  /// glow breathes beneath it.
+  classic,
+
+  /// The soft ring sweep: a wide soft wash and a thin line, no head.
+  softRing,
+}
+
+/// How strongly the live background shows (Settings > Appearance > Live
+/// background > Intensity). Normal is the strength that ships.
+enum KitLiveIntensity {
+  subtle(0.7),
+  normal(1.0),
+  bold(1.6);
+
+  const KitLiveIntensity(this.strength);
+
+  /// Multiplies every look's strength.
+  final double strength;
+}
+
+/// How many hues the glowing border uses.
+enum KitGlowColours {
+  /// The theme's main colour, with a lighter shade of it as the highlight.
+  one,
+
+  /// The theme's main colour and its partner colour.
+  two,
+}
+
+/// How fast the glowing border travels. Normal is the app's own pace; the
+/// ring never turns faster than the design kit allows.
+enum KitGlowSpeed { slow, normal, fast }
+
 /// The person's choices for the app's effects, from Settings › Appearance:
-/// glass, how much things move, celebrations and vibration. Read with
+/// how much things move, celebrations and vibration. Read with
 /// [KitEffects.of]; provided above the app by [KitEffectsScope].
 @immutable
 class KitEffects {
   const KitEffects({
-    this.glass = true,
     this.motion = KitMotionLevel.full,
     this.celebrations = true,
     this.haptics = true,
+    this.activityGlow = true,
+    this.glowStyle = KitGlowStyle.classic,
+    this.glowColours = KitGlowColours.one,
+    this.glowSpeed = KitGlowSpeed.normal,
+    this.liveBackground = true,
+    this.liveStyle = 'aurora',
+    this.liveIntensity = KitLiveIntensity.normal,
   });
 
   /// Everything on: the default until the person changes it.
   static const defaults = KitEffects();
-
-  /// Translucent glass on the dock, composer, bars and sheets (where the
-  /// phone can draw it; see `lib/ui/kit/glass/`). Off: solid surfaces.
-  final bool glass;
 
   final KitMotionLevel motion;
 
@@ -41,6 +94,26 @@ class KitEffects {
 
   /// The light tick on send and the confirmation on a finish.
   final bool haptics;
+
+  /// A glowing border around the message box while a reply runs
+  /// (Settings › Appearance › Effects). On by default.
+  final bool activityGlow;
+
+  /// How that border is drawn, in how many colours, and how fast it moves.
+  final KitGlowStyle glowStyle;
+  final KitGlowColours glowColours;
+  final KitGlowSpeed glowSpeed;
+
+  /// A calm, slowly drifting colour wash on the ground of every page
+  /// (Settings › Appearance › Effects). On by default.
+  final bool liveBackground;
+
+  /// Which look it has (a `KitLiveStyle.id`; an unknown id falls back to the
+  /// default).
+  final String liveStyle;
+
+  /// How strongly the look shows.
+  final KitLiveIntensity liveIntensity;
 
   /// The choices in force here, or [defaults] above any scope (tests).
   static KitEffects of(BuildContext context) =>
@@ -53,27 +126,56 @@ class KitEffects {
       defaults;
 
   KitEffects copyWith({
-    bool? glass,
     KitMotionLevel? motion,
     bool? celebrations,
     bool? haptics,
+    bool? activityGlow,
+    KitGlowStyle? glowStyle,
+    KitGlowColours? glowColours,
+    KitGlowSpeed? glowSpeed,
+    bool? liveBackground,
+    String? liveStyle,
+    KitLiveIntensity? liveIntensity,
   }) => KitEffects(
-    glass: glass ?? this.glass,
     motion: motion ?? this.motion,
     celebrations: celebrations ?? this.celebrations,
     haptics: haptics ?? this.haptics,
+    activityGlow: activityGlow ?? this.activityGlow,
+    glowStyle: glowStyle ?? this.glowStyle,
+    glowColours: glowColours ?? this.glowColours,
+    glowSpeed: glowSpeed ?? this.glowSpeed,
+    liveBackground: liveBackground ?? this.liveBackground,
+    liveStyle: liveStyle ?? this.liveStyle,
+    liveIntensity: liveIntensity ?? this.liveIntensity,
   );
 
   @override
   bool operator ==(Object other) =>
       other is KitEffects &&
-      other.glass == glass &&
       other.motion == motion &&
       other.celebrations == celebrations &&
-      other.haptics == haptics;
+      other.haptics == haptics &&
+      other.activityGlow == activityGlow &&
+      other.glowStyle == glowStyle &&
+      other.glowColours == glowColours &&
+      other.glowSpeed == glowSpeed &&
+      other.liveBackground == liveBackground &&
+      other.liveStyle == liveStyle &&
+      other.liveIntensity == liveIntensity;
 
   @override
-  int get hashCode => Object.hash(glass, motion, celebrations, haptics);
+  int get hashCode => Object.hash(
+    motion,
+    celebrations,
+    haptics,
+    activityGlow,
+    glowStyle,
+    glowColours,
+    glowSpeed,
+    liveBackground,
+    liveStyle,
+    liveIntensity,
+  );
 }
 
 /// Provides the person's [KitEffects] to everything below it (placed once,

@@ -21,10 +21,15 @@ class Api2Client {
   Api2Client.connect({
     required String baseUrl,
     required String password,
+    String username = 'opencode',
     String? directory,
     String? workspace,
   }) : this(
-         transport: Api2Transport(baseUrl: baseUrl, password: password),
+         transport: Api2Transport(
+           baseUrl: baseUrl,
+           password: password,
+           username: username,
+         ),
          directory: directory,
          workspace: workspace,
        );
@@ -176,12 +181,24 @@ class Api2Client {
   Future<Map<String, String>> activeSessions() async {
     final json = await transport.getJson('/session/active');
     final data = _data(json);
+    // An invalid snapshot must never become an empty (idle) observation:
+    // phone-engine admission relies on this being a complete active set.
+    if (data is! Map || data.length > 1000) {
+      throw Api2RequestError('GET /session/active returned invalid status');
+    }
     final out = <String, String>{};
-    if (data is Map) {
-      data.forEach((key, value) {
-        final type = value is Map ? value['type']?.toString() : null;
-        out[key.toString()] = type ?? 'running';
-      });
+    for (final entry in data.entries) {
+      final key = entry.key;
+      final value = entry.value;
+      if (key is! String ||
+          key.isEmpty ||
+          key.length > 256 ||
+          key.contains(RegExp(r'\s')) ||
+          value is! Map ||
+          value['type'] != 'running') {
+        throw Api2RequestError('GET /session/active returned invalid status');
+      }
+      out[key] = 'running';
     }
     return out;
   }

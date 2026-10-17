@@ -12,6 +12,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../app_iconography.dart';
 import '../kit_buttons.dart';
 import '../kit_copy.dart';
+import '../kit_effects.dart';
 import '../kit_icon_button.dart';
 import '../kit_menu.dart';
 import '../kit_motion.dart';
@@ -95,47 +96,34 @@ enum KitTurnActivity {
   waitingForYou,
 }
 
-/// The live line of a running turn: what it is doing, for how long, and
-/// Stop (owner decision 2026-09-29: Stop lives on the running turn, so the
-/// composer keeps Send and the mic while a reply runs). Drawn under the
+/// The live line of a running turn: what it is doing and for how long,
+/// under the reply as it grows (owner decision 2 Oct, 01B). Drawn under the
 /// turn's last block from the moment the prompt is sent until the turn
-/// ends; never a silent turn.
+/// ends; never a silent turn. It carries one pulsing dot while the agent
+/// works (12A). Stop is not here: the composer's Send becomes Stop.
 @immutable
 class KitTurnLive {
   const KitTurnLive({
     required this.activity,
     this.since,
-    this.onStop,
-    this.stopping = false,
-    this.stopKey,
     this.teamAlsoWorking = false,
-    this.pace = 0,
+    this.note,
   });
 
   final KitTurnActivity activity;
-
-  /// 0..1: how fast the reply is arriving now (a smoothed count of the
-  /// parts and words that came in lately). The composer's edge light
-  /// follows it while the reply is being written; 0 when unknown.
-  final double pace;
 
   /// When the turn began, on this phone's clock. The line shows the time
   /// since then after [showElapsedAfter], and the waits turn slow after
   /// [slowAfter].
   final DateTime? since;
 
-  /// Null: no Stop on the line (the prompt is still on its way).
-  final VoidCallback? onStop;
-
-  /// Stop's own tap is in flight.
-  final bool stopping;
-
-  final Key? stopKey;
-
   /// The reply runs on this phone's own server while the in-app AI Team has
   /// working tasks: a slow wait for the model's first word then says the
   /// team shares the phone. False (default): the plain slow words.
   final bool teamAlsoWorking;
+
+  /// A short second segment after the words ("Sends after this reply").
+  final String? note;
 
   /// Under this the line says only what the turn is doing.
   static const showElapsedAfter = Duration(seconds: 5);
@@ -175,6 +163,24 @@ class KitTurnLive {
       KitTurnActivity.waitingForYou => l10n.kitTurnLiveWaitingForYou,
     };
   }
+}
+
+/// A running turn that has gone quiet for long enough to look stuck (the
+/// stall watchdog): one plain line that says why, in the host's words, and
+/// the way forward ([actions]: Stop, Details). Drawn under the live line,
+/// never instead of it: the turn is still running. The host words it and
+/// never puts error, exception or server text in [message]; technical facts
+/// belong behind a Details action.
+@immutable
+class KitTurnStall {
+  const KitTurnStall({required this.message, this.actions = const []});
+
+  /// One sentence: what is going on and what to do ("The model is taking
+  /// longer than usual. Wait, or stop the reply and try again.").
+  final String message;
+
+  /// Tertiary, start-aligned, at most two drawn.
+  final List<KitAction> actions;
 }
 
 /// The one footer of a finished turn (STATE-16).
@@ -242,7 +248,7 @@ class KitTurn extends StatelessWidget {
     this.interruptedAction,
     this.reconnecting = false,
     this.live,
-    this.statusOnComposer = false,
+    this.stall,
     this.segment = KitTurnSegment.whole,
     this.turnKey,
     this.footerKey,
@@ -281,15 +287,14 @@ class KitTurn extends StatelessWidget {
   final bool reconnecting;
 
   /// Non-null: the turn is running and this is its live line (what it is
-  /// doing, the time, Stop). It is drawn in place of the phase line on
-  /// whichever part the host gives it to, the prompt included, so a turn
-  /// with nothing back yet still says it is working.
+  /// doing and the time, with a pulsing dot). It is drawn in place of the
+  /// phase line on whichever part the host gives it to, the prompt
+  /// included, so a turn with nothing back yet still says it is working.
   final KitTurnLive? live;
 
-  /// The composer's edge ([KitComposer.rail]) already says what this
-  /// running turn is doing: the turn draws no starting line of its own, so
-  /// nothing is shown twice. Keep [live] for pages with no composer.
-  final bool statusOnComposer;
+  /// With [live]: the running turn has gone quiet and this line says why,
+  /// under the live line ([KitTurnStall]). Ignored without [live].
+  final KitTurnStall? stall;
 
   /// Which part of the turn this widget draws ([KitTurnSegment]). Only
   /// [KitTurnSegment.whole] and [KitTurnSegment.last] draw the phase line
@@ -443,12 +448,14 @@ class _TurnFrameState extends State<_TurnFrame> {
     final phaseLine = turn.live != null
         ? _KitTurnLiveLine(live: turn.live!)
         : ends
-        ? (turn.statusOnComposer && turn.phase == KitTurnPhase.starting
-              ? null
-              : _phaseLine(context, turn, l10n))
+        ? _phaseLine(context, turn, l10n)
         : null;
     if (phaseLine != null) {
       add(phaseLine, turn.blocks.isEmpty ? tokens.space4 : tokens.space3);
+    }
+
+    if (turn.live != null && turn.stall != null) {
+      add(_KitTurnStallLine(stall: turn.stall!), tokens.space2);
     }
 
     final footer = turn.footer;
@@ -660,8 +667,47 @@ class _BandPainter extends CustomPainter {
       old.color != color || old.outset != outset || old.radius != radius;
 }
 
-/// The running turn's one live line: "Thinking · 12 s" and Stop reply, a
-/// red tertiary action that a screen reader reaches as its own button.
+/// [KitTurnStall] drawn: the host's sentence in the secondary tone, a live
+/// region read once when it appears, and its actions as tertiary words
+/// under it, like the interrupted line's "Send again".
+class _KitTurnStallLine extends StatelessWidget {
+  const _KitTurnStallLine({required this.stall});
+
+  final KitTurnStall stall;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    return Column(
+      key: const ValueKey('turn-stall'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Semantics(
+          liveRegion: true,
+          child: KitText(
+            stall.message,
+            role: KitTextRole.secondary,
+            tone: KitTextTone.secondary,
+          ),
+        ),
+        if (stall.actions.isNotEmpty)
+          Wrap(
+            spacing: tokens.space2,
+            children: [
+              for (final action in stall.actions.take(2))
+                KitButton.fromAction(action, role: KitButtonRole.tertiary),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+/// The running turn's one live line: "Thinking · 12 s", with a soft light
+/// sweeping over the words (owner decision 6 Oct, option C, replacing the
+/// pulsing dot of 2 Oct 12A).
+/// The words are a live region that announces the phase, not the seconds.
 class _KitTurnLiveLine extends StatelessWidget {
   const _KitTurnLiveLine({required this.live});
 
@@ -670,53 +716,148 @@ class _KitTurnLiveLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final tokens = KitTokens.of(context);
-    final stop = live.onStop;
+    final activity = live.activity == KitTurnActivity.sending
+        ? KitTurnActivity.thinking
+        : live.activity;
     return KitSince(
       since: live.since,
       ticks: KitSinceTicks.seconds,
       builder: (context, status) {
-        final words = KitTurnLive.wordsFor(
-          l10n,
-          live.activity,
-          status.elapsed,
-          teamAlsoWorking: live.teamAlsoWorking,
-        );
-        final line = status.elapsed < KitTurnLive.showElapsedAfter
+        final slow = status.elapsed >= KitTurnLive.slowAfter;
+        final words = switch (activity) {
+          KitTurnActivity.waitingForServer when slow =>
+            l10n.kitComposerPillNoAnswer,
+          KitTurnActivity.waitingForServer => l10n.kitTurnLiveThinking,
+          KitTurnActivity.waitingForModel when !slow =>
+            l10n.kitTurnLiveThinking,
+          _ => KitTurnLive.wordsFor(
+            l10n,
+            activity,
+            status.elapsed,
+            teamAlsoWorking: live.teamAlsoWorking,
+          ),
+        };
+        // Waiting for the person: the request card says how long it has
+        // waited, and nothing works meanwhile, so no turn clock and no sweep.
+        final waiting = activity == KitTurnActivity.waitingForYou;
+        var line = waiting || status.elapsed < KitTurnLive.showElapsedAfter
             ? l10n.kitTurnLiveNow(words)
             : l10n.kitTurnLiveFor(
                 words,
                 KitTurnLive.elapsedText(l10n, status.elapsed),
               );
-        return Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: tokens.space2,
+        final note = live.note;
+        if (note != null && note.isNotEmpty) line = '$line · $note';
+        return Row(
+          key: const ValueKey('kit-turn-live-line'),
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Read once as the turn's state; the seconds are not announced
-            // every time they change.
-            Semantics(
-              label: words,
-              child: ExcludeSemantics(
-                child: KitText(
-                  line,
-                  role: KitTextRole.secondary,
-                  tone: KitTextTone.secondary,
+            Flexible(
+              // A live region, read as the phase; the seconds are not
+              // announced every time they change.
+              child: Semantics(
+                liveRegion: true,
+                label: note == null || note.isEmpty ? words : '$words. $note',
+                child: ExcludeSemantics(
+                  child: _LiveSweep(
+                    still: waiting,
+                    child: KitText(
+                      line,
+                      role: KitTextRole.secondary,
+                      tone: KitTextTone.secondary,
+                      tabular: true,
+                    ),
+                  ),
                 ),
               ),
             ),
-            if (stop != null)
-              KitButton.fromAction(
-                KitAction(
-                  key: live.stopKey,
-                  label: live.stopping
-                      ? l10n.kitTurnLiveStopping
-                      : l10n.kitTurnLiveStop,
-                  destructive: true,
-                  onPressed: live.stopping ? null : stop,
-                ),
-                role: KitButtonRole.tertiary,
-              ),
           ],
+        );
+      },
+    );
+  }
+}
+
+/// The one thing that moves in a chat: a soft light sweeping over the live
+/// line's words, in the reading direction, while the agent works. Calm
+/// sweeps at half the pace; Off, reduced motion and tests show the words
+/// still.
+class _LiveSweep extends StatefulWidget {
+  const _LiveSweep({required this.child, this.still = false});
+
+  final Widget child;
+
+  /// Nothing is working (the agent waits for the person): no light moves.
+  final bool still;
+
+  @override
+  State<_LiveSweep> createState() => _LiveSweepState();
+}
+
+class _LiveSweepState extends State<_LiveSweep>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _sweep = AnimationController(vsync: this);
+  bool _moving = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(_LiveSweep oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.still != widget.still) _sync();
+  }
+
+  void _sync() {
+    final level = KitEffects.of(context).motion;
+    _moving =
+        !widget.still &&
+        KitMotion.loops &&
+        !KitMotion.reduced(context) &&
+        level != KitMotionLevel.off;
+    if (!_moving) {
+      _sweep.stop();
+      return;
+    }
+    _sweep.duration = level == KitMotionLevel.calm
+        ? const Duration(milliseconds: 4400)
+        : const Duration(milliseconds: 2200);
+    if (!_sweep.isAnimating) _sweep.repeat();
+  }
+
+  @override
+  void dispose() {
+    _sweep.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_moving) return widget.child;
+    final roles = KitTokens.of(context).roles;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    return AnimatedBuilder(
+      animation: _sweep,
+      child: widget.child,
+      builder: (context, child) {
+        // The light's centre travels from before the words to past them.
+        final t = KitMotion.steady.transform(_sweep.value);
+        final centre = -0.3 + 1.6 * (rtl ? 1 - t : t);
+        return ShaderMask(
+          key: const ValueKey('kit-turn-live-sweep'),
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (bounds) => LinearGradient(
+            colors: [roles.text3, roles.text1, roles.text3],
+            stops: [
+              (centre - 0.18).clamp(0.0, 1.0),
+              centre.clamp(0.0, 1.0),
+              (centre + 0.18).clamp(0.0, 1.0),
+            ],
+          ).createShader(bounds),
+          child: child,
         );
       },
     );

@@ -20,6 +20,12 @@ install_runtime() {
   [ "${FAIL_INSTALL:-0}" != 1 ] || fail_setup 'Test install failed'
   printf '%s' "$1" > "$OC_DIR/binary-$(managed_runtime)"
 }
+# Runs the real history admission script, with the container's OpenCode 2 data
+# folder redirected into the fixture home.
+proot-distro() {
+  printf x >> "$OC_DIR/proot-calls"
+  sed "s#/root/.oc-opencode2#$HOME/oc2-root#g" | sh -s
+}
 stop_server() {
   [ "${REFUSE_STOP:-0}" != 1 ] || return 75
   printf stopped >> "$OC_DIR/stops"
@@ -345,6 +351,29 @@ install_runtime() {
       expect(File('$oc/stops').readAsStringSync(), stops);
       expect(File('$oc/password-opencode1').readAsStringSync(), 'one-fixture');
       expect(File('$oc/server.password').readAsStringSync(), 'two-fixture');
+    },
+  );
+
+  test(
+    'a move with both OpenCode databases refuses before stopping and keeps both',
+    () async {
+      final home = _home();
+      final one = File('${home.path}/.local/share/opencode/opencode.db')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('older history');
+      final two = File('${home.path}/oc2-root/data/opencode/opencode.db')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('beta history');
+      final result = await _run(home, _switch('opencode2', 'two-fixture'));
+      final oc = '${home.path}/.oc';
+      expect(result.exitCode, isNot(0));
+      expect(File('$oc/proot-calls').existsSync(), isTrue);
+      expect(File('$oc/stops').existsSync(), isFalse);
+      expect(File('$oc/installed').existsSync(), isFalse);
+      expect(File('$oc/runtime').readAsStringSync(), 'opencode1');
+      expect(File('$oc/server.password').readAsStringSync(), 'one-fixture');
+      expect(one.readAsStringSync(), 'older history');
+      expect(two.readAsStringSync(), 'beta history');
     },
   );
 

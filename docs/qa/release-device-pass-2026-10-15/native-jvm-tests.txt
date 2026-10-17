@@ -1,0 +1,12 @@
+Direct Kotlin 2.3.20 / Temurin 17, machine_lock test; no Gradle, Flutter, emulator or APK changes.
+Sources: NativeEngineReadiness.kt, NativeRuntimeOwnership.kt, NativeEngineReadinessTest.kt
+Compiler: -J-Xmx256m -J-XX:MaxMetaspaceSize=192m -jvm-target 17
+Runner: org.junit.runner.JUnitCore io.github.eslamasabry.opencode_mobile.NativeEngineReadinessTest
+JUnit version 4.13.2
+.......
+Time: 0.15
+
+OK (7 tests)
+
+Exit: 0
+New PhoneEngineNativeRegressions.releasesUnavailableGenerationBeforeRetry device instrumentation: NOT RUN.

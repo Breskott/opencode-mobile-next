@@ -41,12 +41,10 @@ final _menu = [
 Widget _model({
   String label = 'explore · Sonnet 4.5 · High',
   KitModelChipState state = KitModelChipState.chosen,
-  double? contextUsed,
 }) => KitComposerChips.model(
   label: label,
   onPressed: _noop,
   state: state,
-  contextUsed: contextUsed,
   menu: _menu,
 );
 
@@ -167,14 +165,12 @@ final _states = <String, Widget Function()>{
     _model(state: KitModelChipState.signInNeeded),
     _model(state: KitModelChipState.chooseNeeded),
   ]),
-  'model_context': () =>
-      _scene([_model(contextUsed: 0.85), _model(contextUsed: 0.97)]),
   'model_narrow': () => _scene([
     SizedBox(
       width: 120,
       child: Align(
         alignment: AlignmentDirectional.centerStart,
-        child: _model(contextUsed: 0.85),
+        child: _model(),
       ),
     ),
   ]),
@@ -189,7 +185,7 @@ final _states = <String, Widget Function()>{
   ]),
 };
 
-Widget _default() => _scene([_attachments(), _model(contextUsed: 0.85)]);
+Widget _default() => _scene([_attachments(), _model()]);
 
 void main() {
   setUpAll(loadKitGalleryFonts);

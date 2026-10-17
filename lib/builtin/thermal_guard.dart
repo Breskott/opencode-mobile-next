@@ -8,8 +8,8 @@ import '../diagnostics/app_diagnostics.dart';
 import '../diagnostics/perf_trace.dart';
 import '../l10n/app_localizations.dart';
 import '../platform/thermal.dart';
+import '../background/thermal_pause_signal.dart';
 import '../state/automation_policy.dart';
-import 'setup/setup_engine.dart' show ChannelSetupEngine;
 
 /// What the guard does next.
 enum ThermalAction { none, pause, stop, resume }
@@ -256,9 +256,7 @@ class ThermalGuard extends ChangeNotifier {
     this.onReading,
     this.onAct,
   }) : policy = policy ?? ThermalPolicy(),
-       _clock = clock ?? DateTime.now,
-       _inBackground = inBackground ?? _appInBackground,
-       _strings = strings ?? ChannelSetupEngine.deviceStrings;
+       _clock = clock ?? DateTime.now;
 
   static const enabledKey = 'oc.thermalGuard';
   static const holdKeyPrefix = 'oc.thermalPause.';
@@ -284,8 +282,6 @@ class ThermalGuard extends ChangeNotifier {
   )?
   onAct;
   final DateTime Function() _clock;
-  final bool Function() _inBackground;
-  final AppLocalizations Function() _strings;
 
   final Map<String, ThermalTeamHold> _holds = {};
   ThermalReading _last = ThermalReading.unknown;
@@ -295,11 +291,6 @@ class ThermalGuard extends ChangeNotifier {
   Future<void> _queue = Future.value();
   bool _started = false;
   bool _disposed = false;
-
-  static bool _appInBackground() {
-    final state = WidgetsBinding.instance.lifecycleState;
-    return state != null && state != AppLifecycleState.resumed;
-  }
 
   /// "Pause the AI Team when the phone is hot" (Settings); on by default.
   bool get enabled => prefs.getBool(enabledKey) ?? true;
@@ -423,9 +414,8 @@ class ThermalGuard extends ChangeNotifier {
     }
     _notice = ThermalNotice(kind, now);
     _notify();
-    // Once per episode: the pause, or a stop that came without one. A
-    // pause that turns into a stop updates the line only.
-    if (!escalating) await _post(kind);
+    // The pause shows in the one status notification (thermalPauseActive);
+    // the guard posts nothing of its own.
   }
 
   Future<void> _resume(DateTime now) async {
@@ -473,12 +463,6 @@ class ThermalGuard extends ChangeNotifier {
     );
     _notice = ThermalNotice(ThermalNoticeKind.resumed, now);
     _notify();
-    await _post(ThermalNoticeKind.resumed);
-  }
-
-  Future<void> _post(ThermalNoticeKind kind) async {
-    if (!_inBackground()) return;
-    await bridge.notify(title: thermalNoticeText(_strings(), kind));
   }
 
   void _scheduleCoolCheck(DateTime now) {
@@ -536,12 +520,15 @@ class ThermalGuard extends ChangeNotifier {
   Future<void> _dropHold(String id) => prefs.remove('$holdKeyPrefix$id');
 
   void _notify() {
-    if (!_disposed) notifyListeners();
+    if (_disposed) return;
+    thermalPauseActive.value = policy.hold != ThermalHold.none;
+    notifyListeners();
   }
 
   @override
   void dispose() {
     _disposed = true;
+    thermalPauseActive.value = false;
     _coolTimer?.cancel();
     unawaited(_readings?.cancel());
     super.dispose();

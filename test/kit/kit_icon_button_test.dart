@@ -492,6 +492,33 @@ void main() {
     expect(_glyphColor(tester), isNot(roles.dangerFill));
   });
 
+  testWidgets('selected shows an accent glyph with no filled circle', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        KitIconButton(
+          icon: AppIconography.wrapText,
+          tooltip: 'Wrap lines',
+          selected: true,
+          onPressed: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final roles = ThemeRoles.resolve(AppTheme.dark());
+    expect(_glyphColor(tester), roles.accent);
+    final fills = tester
+        .widgetList<DecoratedBox>(
+          find.descendant(of: _button, matching: find.byType(DecoratedBox)),
+        )
+        .map((box) => box.decoration)
+        .whereType<BoxDecoration>()
+        .map((decoration) => decoration.color)
+        .whereType<Color>();
+    expect(fills, isEmpty);
+  });
+
   group('the copy contract (G9)', () {
     testWidgets(
       'copies at tap time, announces Copied once, shows no SnackBar, and '

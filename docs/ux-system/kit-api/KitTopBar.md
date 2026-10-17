@@ -40,6 +40,7 @@ class KitTopBar extends StatelessWidget {
     this.onTitleTap,                 // the title is a switcher (project, conversation): chevron + button semantics
     this.titleTapLabel,              // what the switcher does: "Switch project" (required when onTitleTap != null)
     this.actions = const [],         // List<KitAction>, most important first; each has an icon
+    this.accessory,                  // Widget?, one status part kept before the overflow at every width (the chat's KitContextRing)
     this.menu = const [],            // List<KitMenuItem>, the overflow's own entries
     this.brand = false,              // the product mark in place of the title (root pages only)
     this.exit = KitTopBarExit.auto,
@@ -144,6 +145,7 @@ Structural rules (debug asserts, G37):
 - `brand: true` only with `exit: none` or `auto` at a root route.
 - The overflow button appears only when something is in it.
 - A screen inside a tab never builds a second bar: `KitScreen(topBar:)` inside the shell's KitScreen asserts (KIT-36, K2 §1.18 rule).
+- `scope` (a `KitTopBarScope`: chip label, semantics label, at least one menu item) puts one small `KitChip.action` under the title and subtitle. It names what the page belongs to (a conversation's project) and opens a compact `KitMenu` of what can be done there. The chip is its own semantics node, outside the title's header label. Chats-first shell, 2026-10-03.
 - `KitTopBar` is not a `PreferredSizeWidget` (a deliberate change from K2 §1.18): it has no fixed height and is hosted only by `KitScreen(topBar:)`, which lets it grow at 200 % text. G16 removes `Scaffold`/`AppBar` outside the kit, so nothing else can host it.
 
 ## States
@@ -237,3 +239,7 @@ kit-KitIcon, kit-KitIconButton-v2 (`tooltip`, `shortcut`), kit-KitNeedsYou (`spa
 ## Open questions
 
 None. The canvas shows the connected server pill as dot + name with no word; STATE-9 (owner-approved: no state by colour alone) requires a visible word, so the word always shows ("Laptop · Connected"). A dot alone when connected would carry the state by colour, which STATE-9 forbids, so this is not left open.
+
+## Accessory (2026-10-11)
+
+`KitTopBar(accessory: Widget?)` keeps one small status part (the chat's `KitContextRing`) in the bar before the ⋯ at every width; it is never moved into the overflow.

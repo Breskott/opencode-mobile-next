@@ -603,7 +603,7 @@ class _KitMenuItemTile extends StatelessWidget {
 
     Widget? leading;
     if (hasLeadingSlot) {
-      final size = tokens.smallIconSize;
+      final size = tokens.iconSize(context, tokens.smallIconSize);
       if (item.checked == true) {
         leading = Icon(
           AppIconography.check,
@@ -657,7 +657,9 @@ class _KitMenuItemTile extends StatelessWidget {
                 if ((!enabled ? item.disabledReason : item.supporting)
                     case final line?)
                   Padding(
-                    padding: EdgeInsetsDirectional.only(top: tokens.space1),
+                    padding: const EdgeInsetsDirectional.only(
+                      top: KitTokens.rowLineGap,
+                    ),
                     child: KitText(
                       line,
                       role: KitTextRole.secondary,

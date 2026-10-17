@@ -131,7 +131,7 @@ class InFlowConsent {
     return List.unmodifiable(candidates);
   });
 
-  /// Call at the action that offers “Tell me when the agent needs me”. Returns
+  /// Call at the action that offers “Notify me when the agent needs me”. Returns
   /// true only to the first caller that may present the consent. Accepting this
   /// is per-server intent, not permission to rewrite global notify preferences.
   Future<bool> requestNeedsYouPreset() => _serial(() async {

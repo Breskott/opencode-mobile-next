@@ -4,6 +4,8 @@
 // opened, and neither noticed the job that changed it. Both pages read again
 // when a setup job ends, whatever way it ends.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -83,6 +85,41 @@ void main() {
     expect(installed, findsWidgets);
     await unmountPhone(tester);
   });
+
+  testWidgets(
+    'a slow read from before the job never overwrites the newer one',
+    (tester) async {
+      final late = Completer<void>();
+      final engine = await pumpPhone(
+        tester,
+        home: const ThisPhoneScreen(kind: PhoneHostKind.inApp),
+        linux: PhoneLinux(running: true),
+        profiles: [inAppProfile],
+      );
+      final installed = find.descendant(
+        of: find.byKey(const ValueKey('this-phone-installed')),
+        matching: find.textContaining('Python'),
+      );
+      // A read starts before the tools exist and is slow to answer.
+      engine.optionalGate = late.future;
+      setupToolsChanged.value++;
+      await tester.pump(const Duration(milliseconds: 100));
+      // The job ends with Python installed; the newer read answers at once.
+      engine.optionalInstalled = {'python'};
+      engine.optionalGate = null;
+      setupToolsChanged.value++;
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(installed, findsWidgets);
+      late.complete();
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(installed, findsWidgets);
+      await unmountPhone(tester);
+    },
+  );
 
   testWidgets('Settings > AI Team reads the phone again when a job ends', (
     tester,

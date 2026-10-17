@@ -5,7 +5,14 @@ part of '../settings_screen.dart';
 /// for a row a search has filtered out.
 class DefaultShellRow extends StatefulWidget {
   final ConnectionController controller;
-  const DefaultShellRow({super.key, required this.controller});
+
+  /// On a server's own page rows carry no icon tile (R4).
+  final bool icon;
+  const DefaultShellRow({
+    super.key,
+    required this.controller,
+    this.icon = true,
+  });
 
   @override
   State<DefaultShellRow> createState() => _DefaultShellRowState();
@@ -82,8 +89,12 @@ class _DefaultShellRowState extends State<DefaultShellRow>
     final choices = _shellChoices(settings);
     final selected = await showKitChoiceSheet<String>(
       context,
-      title: copy.e7SettingsUi35,
-      subtitle: copy.e7SettingsUi36,
+      title: copy.settingsV3Shell,
+      // The shell is the server's own setting, shared with every app that
+      // uses it: the sheet says whose it is before anything is chosen.
+      subtitle: widget.controller.profile == null
+          ? copy.e7SettingsUi36
+          : '${copy.e7SettingsUi36} ${copy.settingsV3SavedOn(serverDisplayName(widget.controller.profile, lookupAppLocalizations(Localizations.localeOf(context)), among: widget.controller.store.profiles))}',
       selected: settings.selected,
       choices: [
         for (final choice in choices)
@@ -168,7 +179,9 @@ class _DefaultShellRowState extends State<DefaultShellRow>
   }
 
   String _selectedShellLabel(TerminalShellSettings settings) {
-    if (settings.selected.isEmpty) return _settingsCopy(context).e7SettingsUi39;
+    if (settings.selected.isEmpty) {
+      return _settingsCopy(context).settingsV3ShellAutomatic;
+    }
     final choices = _shellChoices(settings);
     for (final choice in choices) {
       if (choice.value == settings.selected) return choice.label;
@@ -199,8 +212,11 @@ class _DefaultShellRowState extends State<DefaultShellRow>
     if (only != null) {
       return KitRow(
         key: const ValueKey('default-shell-settings-entry'),
-        leading: KitRow.icon(context, AppIconography.terminal),
-        title: copy.e7SettingsUi35,
+        leading: widget.icon
+            ? KitRow.icon(context, AppIconography.terminal)
+            : null,
+        title: copy.settingsV3Shell,
+        // Nothing to pick, so nothing opens: the row says why in a line.
         supporting: TextSpan(text: copy.defaultShellOnlyOne(only)),
         supportingMaxLines: 2,
       );
@@ -208,14 +224,17 @@ class _DefaultShellRowState extends State<DefaultShellRow>
     // Loading and saving read in the row's own words; no spinner (§4).
     return _CategoryRow(
       rowKey: 'default-shell-settings-entry',
-      icon: AppIconography.terminal,
-      title: copy.e7SettingsUi35,
+      icon: widget.icon ? AppIconography.terminal : null,
+      title: copy.settingsV3Shell,
       subtitle: _shellError != null
           ? copy.e7SettingsRetryError(_shellError!)
           : _saveError != null
           ? copy.defaultShellSaveFailed(_saveError!)
           : settings == null
           ? copy.e7SettingsUi41
+          : null,
+      value: settings == null || _shellError != null || _saveError != null
+          ? null
           : _selectedShellLabel(settings),
       enabled: !busy,
       onTap: _shellError != null ? _loadShellSettings : _chooseShell,

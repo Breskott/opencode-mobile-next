@@ -374,11 +374,14 @@ list endpoint is called. The account reference is an HMAC bound to the selected
 key, not an independently verified account identity. Key rotation cancels
 in-flight work and invalidates the 60-second cache.
 
-Only the official script's `TOKENS_LIMIT` and `TIME_LIMIT` percentages are
-recognized, as `tokens` and `mcp` windows. Explicit finite percentages in 0–100
-are retained; missing percentages remain missing. Counts, plan names, interval
-labels, reset dates and durations are not inferred. In particular the script's
-legacy five-hour/month labels do not prove current reset semantics. Unknown
+Only `TOKENS_LIMIT` and `TIME_LIMIT` are recognized. The live API (checked
+2026-10-13) sends one `TOKENS_LIMIT` per window with `unit`/`number`: unit 3 ×
+5 is the five-hour window (`tokens.5h`, 18,000 s) and unit 6 × 1 the weekly one
+(`tokens.1w`, 604,800 s); `TIME_LIMIT` is the `mcp` window. A limit without
+unit/number keeps the legacy `tokens` id; other units get an id but no length.
+`nextResetTime` (epoch ms) is passed through as the reset. Explicit finite
+percentages in 0–100 are retained; missing percentages remain missing. Counts
+and plan names are not shown. Unknown
 window types return unsupported; duplicates/malformed percentages return
 invalidResponse. Error envelopes carry no measurements or raw provider text.
 The mobile contract already permits absent durations/resets; other providers'
@@ -465,3 +468,7 @@ Synthetic checks live in `test/provider_quota_monitor_test.dart` and the actual
 Remaining-page consent test; `tool/capture/quota_monitor_test.dart` renders the
 consent and review in both themes. Live notification delivery and deployment
 remain unverified until an explicitly authorized device/operator check.
+
+## One-shot reader for a computer (`read_once.mjs`)
+
+The app runs this file through OpenCode's terminal API on a saved computer, as one `node --input-type=module -e <source>` argument (Node >= 20). It is not a service: it opens no port, writes no file, prints exactly one line `OCMN_USAGE_V1 <base64 JSON>` and exits. It reads OpenCode's own sign-in file (`$XDG_DATA_HOME/opencode/auth.json`, `~/.local/share/opencode/auth.json`, the macOS Application Support copy, Windows app-data copies) and, for Codex only, the Codex CLI's `auth.json`, then asks the same fixed provider endpoints, with the same timeouts and byte limits, and the same mappers as the collector above. Output holds the display numbers, a hashed account reference and the sign-in type per provider (`oauth` or `api`); never a token, key, email, path or provider error text. Tests: `node --test tool/quota/read_once.test.mjs` (synthetic files and a stubbed `fetch` only). See `docs/design/usage-subscriptions-contract-2026-10-13.md` section 8.

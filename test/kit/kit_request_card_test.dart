@@ -284,15 +284,20 @@ void main() {
             onDetails: () {},
           ),
         );
-        expect(find.byIcon(KitRequestCard.iconFor(kind)), findsOneWidget);
         final text = _visible(tester);
-        expect(
-          text,
-          contains('Needs your decision · fox on laptop · waiting 4 min'),
-        );
-        expect(text, contains('The ask'));
+        // One amber label; no icon tile, no who, no age tail.
+        expect(text, contains('Needs you'));
+        expect(text, isNot(contains('waiting 4 min')));
+        expect(text, isNot(contains('fox on laptop')));
+        expect(find.byIcon(KitRequestCard.iconFor(kind)), findsNothing);
+        // A question's own words are the headline; other asks keep the title
+        // with the one line of why under it.
+        final asksInWords =
+            kind == KitRequestKind.question || kind == KitRequestKind.choice;
         expect(text, contains('Why it asks'));
-        expect(text, contains('The agent waits; nothing is lost.'));
+        expect(text.contains('The ask'), !asksInWords);
+        // What happens if nobody answers lives in Details, not on the card.
+        expect(text, isNot(contains('The agent waits; nothing is lost.')));
         final summary = tester.widget<Text>(find.text('git push origin main'));
         expect(summary.textDirection, TextDirection.ltr);
         switch (kind) {
@@ -347,6 +352,79 @@ void main() {
     testWidgets('disabled: the reason shows under the answers', (tester) async {
       await _pump(tester, _permission(disabledReason: 'Reconnect to answer.'));
       expect(find.text('Reconnect to answer.'), findsOneWidget);
+    });
+  });
+
+  group('the quiet line under the answers', () {
+    testWidgets('the grant is on the left, Details on the right; the grant '
+        'still asks to confirm', (tester) async {
+      var always = 0;
+      var details = 0;
+      await _pump(
+        tester,
+        KitRequestCard.ask(
+          kind: KitRequestKind.permission,
+          title: 'Run this command?',
+          who: 'fox',
+          reason: KitNeedsYouReason.decision,
+          ifIgnored: 'The agent waits; nothing is lost.',
+          announcement: 'Permission needed',
+          summary: 'git push',
+          onDetails: () => details++,
+          answers: KitRequestDecide(
+            onAllow: () {},
+            onReject: () {},
+            allowKey: _allowKey,
+            rejectKey: _rejectKey,
+            alwaysAllow: KitRequestAlwaysAllowStep(
+              what: 'git push',
+              covers: null,
+              label: 'Always allow',
+              onConfirmed: () => always++,
+              buttonKey: const Key('always'),
+              confirmKey: const Key('always-confirm'),
+            ),
+          ),
+        ),
+      );
+      final grant = tester.getRect(find.text('Always allow'));
+      final more = tester.getRect(find.text('Details'));
+      // Under the two answers, grant first, Details at the far end.
+      expect(
+        grant.top,
+        greaterThan(tester.getRect(find.text('Allow once')).bottom),
+      );
+      expect(more.top, closeTo(grant.top, 12));
+      expect(grant.left, lessThan(more.left));
+      expect(
+        more.right,
+        closeTo(
+          tester.getRect(find.byKey(const Key('kit-request-card'))).right - 16,
+          4,
+        ),
+      );
+      await tester.tap(find.text('Details'));
+      expect(details, 1);
+      // The grant goes through its confirm step: nothing is sent by the tap.
+      await tester.tap(find.text('Always allow'));
+      await tester.pumpAndSettle();
+      expect(always, 0);
+      expect(find.byKey(const Key('always-confirm')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('always-confirm')));
+      await tester.pumpAndSettle();
+      expect(always, 1);
+    });
+
+    testWidgets('the card says "Needs you" once and nothing about how long '
+        'it has waited or who asks', (tester) async {
+      await _pump(
+        tester,
+        _permission(since: clock.now().subtract(const Duration(minutes: 4))),
+      );
+      expect(find.text('Needs you'), findsOneWidget);
+      expect(_visible(tester), isNot(contains('waiting')));
+      expect(_visible(tester), isNot(contains('fox')));
+      expect(find.text('The agent waits; nothing is lost.'), findsNothing);
     });
   });
 

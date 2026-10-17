@@ -24,15 +24,20 @@ import 'support/team_golden_fixture.dart';
 
 final _theme = AppTheme.dark();
 
-Widget _app(Widget home, {bool reduce = false}) => MaterialApp(
-  theme: _theme,
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
-  supportedLocales: AppLocalizations.supportedLocales,
-  builder: (context, child) => MediaQuery(
-    data: MediaQuery.of(context).copyWith(disableAnimations: reduce),
-    child: child!,
+/// The live background drifts for good by design; these tests are about the
+/// team drawings' own motion settling.
+Widget _app(Widget home, {bool reduce = false}) => KitEffectsScope(
+  effects: const KitEffects(liveBackground: false),
+  child: MaterialApp(
+    theme: _theme,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(disableAnimations: reduce),
+      child: child!,
+    ),
+    home: home,
   ),
-  home: home,
 );
 
 /// The drawings under [of], as (scene, ambient, animateEntrance).

@@ -22,6 +22,8 @@ class _CodexApi extends OpenCodeApi with CompleteMessageHistory {
   _CodexApi() : super(baseUrl: 'http://localhost');
 
   List<MessageWithParts> history = const [];
+  final prompts = <({String text, PromptDelivery? delivery})>[];
+  bool acceptPrompts = false;
 
   @override
   Future<List<MessageWithParts>> messages(String id) async => history;
@@ -49,27 +51,34 @@ class _CodexApi extends OpenCodeApi with CompleteMessageHistory {
     List<PromptAgentMention> agentMentions = const [],
     PromptDelivery? delivery,
   }) async {
-    throw StateError('Codex prompt should be kept local while offline');
+    if (!acceptPrompts) {
+      throw StateError('Codex prompt should be kept local while offline');
+    }
+    prompts.add((text: text, delivery: delivery));
   }
 }
 
-Future<ConnectionController> _controller(_CodexApi api) async {
+Future<ConnectionController> _controller(
+  _CodexApi api, {
+  bool connected = false,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final controller = ConnectionController(ProfileStore(prefs: prefs))
     ..api = api
-    ..status = StreamStatus.disconnected;
+    ..status = connected ? StreamStatus.connected : StreamStatus.disconnected;
   addTearDown(controller.dispose);
   return controller;
 }
 
-Future<void> _pumpChat(
+Future<ConnectionController> _pumpChat(
   WidgetTester tester,
   _CodexApi api, {
   String initialText = '',
   List<PromptAttachment> initialAttachments = const [],
+  bool connected = false,
 }) async {
-  final controller = await _controller(api);
+  final controller = await _controller(api, connected: connected);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [connProvider.overrideWithValue(controller)],
@@ -88,6 +97,7 @@ Future<void> _pumpChat(
   );
   await tester.pump();
   await tester.pump();
+  return controller;
 }
 
 void main() {
@@ -139,6 +149,36 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a Codex message sent while it works adds to the turn: one '
+      'send, no queue wording', (tester) async {
+    final api = _CodexApi()..acceptPrompts = true;
+    final controller = await _pumpChat(tester, api, connected: true);
+    controller.busySessions.add('thread-1');
+    controller.notifyListeners();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      'also check the tests',
+    );
+    await tester.pump();
+
+    expect(find.byTooltip('Add to this turn'), findsOneWidget);
+    expect(
+      find.text('The agent will read this while it works.'),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Send after this reply'), findsNothing);
+    expect(find.text('Sends after this reply'), findsNothing);
+    expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('chat-send-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(api.prompts.single.text, 'also check the tests');
+    expect(api.prompts.single.delivery, PromptDelivery.steer);
   });
 
   testWidgets('offline Codex send keeps draft and does not enqueue a turn', (

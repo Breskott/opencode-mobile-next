@@ -495,7 +495,7 @@ void runCensus(List<CensusArea> areas) {
     ).readAsBytesSync();
     mono.addFont(Future.value(ByteData.sublistView(bytes)));
     await mono.load();
-    ProviderLogo.imageProviderOverride = (_) => null;
+    ProviderLogo.logoLoaderOverride = (_) => null;
     KitMotion.loops = false;
     chatScreenFor = (id) => ChatScreen(sessionID: id);
     for (final area in selected) {
@@ -511,7 +511,7 @@ void runCensus(List<CensusArea> areas) {
   });
 
   tearDownAll(() async {
-    ProviderLogo.imageProviderOverride = null;
+    ProviderLogo.logoLoaderOverride = null;
     for (final area in selected) {
       _writeAreaResults(area, partial: pageFilter.isNotEmpty);
     }

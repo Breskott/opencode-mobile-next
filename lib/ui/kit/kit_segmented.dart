@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart' show NumberFormat;
 
+import '../app_iconography.dart';
 import 'kit_choice_list.dart';
+import 'kit_divider.dart';
 import 'kit_motion.dart';
 import 'kit_tappable.dart';
 import 'kit_text.dart';
@@ -488,11 +490,16 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
           children: [
             for (var i = 0; i < rows.length; i++) ...[
               if (i > 0)
-                Divider(
-                  height: 0,
-                  thickness: 0,
-                  indent: tokens.gutter + tokens.smallIconSize + tokens.space3,
-                  color: roles.hairline,
+                Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    start:
+                        tokens.gutter +
+                        tokens
+                            .iconSize(context, tokens.smallIconSize)
+                            .roundToDouble() +
+                        tokens.space3,
+                  ),
+                  child: const KitDivider(),
                 ),
               rows[i],
             ],
@@ -536,6 +543,8 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
     final reduced = KitMotion.reduced(context);
     final hairline = KitTokens.hairlineWidth(context);
     final n = _segments.length;
+    // Half a space1 (2 dp): the selected indicator's inset from the track.
+    final inset = tokens.space1 / 2;
     final selectedIndex = _selectedIndex();
     final indicatorAlign = n > 1
         ? AlignmentDirectional(-1 + selectedIndex * (2 / (n - 1)), 0)
@@ -565,15 +574,17 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
             child: FractionallySizedBox(
               widthFactor: 1 / n,
               heightFactor: 1,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: roles.surface3,
-                  borderRadius: BorderRadius.circular(
-                    tokens.buttonRadius - tokens.space1,
-                  ),
-                  border: Border.all(
-                    color: roles.hairline,
-                    width: KitTokens.hairlineWidth(context),
+              // Inset from the track's own hairline and concentric with its
+              // corners, with no border of its own: two hairlines side by
+              // side would read as one doubled line (LOOK-21).
+              child: Padding(
+                padding: EdgeInsets.all(inset),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: roles.surface3,
+                    borderRadius: BorderRadius.circular(
+                      tokens.buttonRadius - inset,
+                    ),
                   ),
                 ),
               ),
@@ -638,7 +649,7 @@ class _SegmentedGroupState<T> extends State<_SegmentedGroup<T>> {
           child: Padding(
             padding: EdgeInsetsDirectional.only(end: tokens.space1),
             child: Icon(
-              Icons.check,
+              AppIconography.check,
               size: iconSize,
               color: !enabled ? roles.text3 : roles.accent,
             ),

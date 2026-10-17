@@ -10,6 +10,8 @@
 // and look at every changed image before committing it.
 import 'dart:async';
 
+import 'package:clock/clock.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -297,39 +299,42 @@ Future<void> _golden(
   final boundary = GlobalKey();
   final host = GlobalKey();
   debugDefaultTargetPlatformOverride = TargetPlatform.android; // ARCH-11
-  try {
-    await tester.pumpWidget(
-      RepaintBoundary(
-        key: boundary,
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: captureTheme(light: light),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: true),
-            child: child!,
+  // Ages in the team rows read the clock: pin it so the sentences never drift.
+  await withClock(Clock.fixed(_clock), () async {
+    try {
+      await tester.pumpWidget(
+        RepaintBoundary(
+          key: boundary,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: captureTheme(light: light),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child!,
+            ),
+            home: body ?? Scaffold(key: host, body: const SizedBox.expand()),
           ),
-          home: body ?? Scaffold(key: host, body: const SizedBox.expand()),
         ),
-      ),
-    );
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
+      );
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      if (open != null) {
+        unawaited(open(host.currentContext!));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+      }
+      expect(tester.takeException(), isNull);
+      await expectLater(
+        find.byKey(boundary),
+        matchesGoldenFile('goldens/$name.png'),
+      );
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
     }
-    if (open != null) {
-      unawaited(open(host.currentContext!));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 600));
-    }
-    expect(tester.takeException(), isNull);
-    await expectLater(
-      find.byKey(boundary),
-      matchesGoldenFile('goldens/$name.png'),
-    );
-  } finally {
-    debugDefaultTargetPlatformOverride = null;
-  }
+  });
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pump(const Duration(seconds: 1));
 }

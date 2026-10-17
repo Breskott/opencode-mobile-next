@@ -20,7 +20,8 @@ import '../../kit/kit.dart';
 import '../../kit/scenes/setup_phone_scene.dart';
 import '../../kit/scenes/setup_unplugged_scene.dart';
 import '../../widgets/phone_server_consents.dart';
-import '../../widgets/product_states.dart' show productErrorText;
+import '../../widgets/product_states.dart'
+    show connectionErrorText, productErrorText;
 import '../../widgets/setup_progress_view.dart';
 import '../servers_screen.dart' show ServersRouteRequest;
 import 'phone_setup_hero.dart';
@@ -350,10 +351,9 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
           if (!mounted) return;
           await connection.connect(profile);
           if (!connection.hasConnectedServer) {
-            final error = connection.lastError;
-            failure = error == null
-                ? l10n.builtinServerStopped
-                : productErrorText(error, l10n: l10n);
+            failure =
+                connectionErrorText(connection, l10n: l10n) ??
+                l10n.builtinServerStopped;
           }
         }
       }
@@ -524,6 +524,9 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
     final VoidCallback onPressed;
     // The drawing says where the phone stands; it moves only while setup
     // runs or OpenCode starts (design standard §10).
+    // FB2: the shape of the whole journey, only where a first setup can
+    // start (a phone that cannot run it is told why instead).
+    String? steps;
     KitScene scene = const SetupPhoneScene();
     var ambient = false;
     KitProgress? meter;
@@ -531,18 +534,16 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
       case _Hero.loading:
       case _Hero.fresh:
         final totals = setupTotals(install);
-        final time = setupDurationText(l10n, totals.seconds);
         if (preflight != null) {
           headline = setupPreflightHeadline(l10n, preflight.issue!);
           body = setupPreflightBody(l10n, preflight);
         } else {
           headline = l10n.phoneSetupStartHeadline;
+          // The time is on the step line under it (FB2), said once.
           body = totals.bytes > 0
-              ? l10n.phoneSetupStartPromise(
-                  time,
-                  setupSizeText(l10n, totals.bytes),
-                )
-              : l10n.phoneSetupStartPromiseNoSize(time);
+              ? l10n.phoneSetupStartPromise(setupSizeText(l10n, totals.bytes))
+              : l10n.phoneSetupStartPromiseNoSize;
+          steps = setupStepsText(l10n, totals.seconds);
         }
         action = l10n.phoneSetupStartSetUp;
         onPressed = () => unawaited(_run(_selection));
@@ -610,12 +611,19 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
       progress: _opening ? const KitProgress.waiting() : meter,
       // What Set up puts on the phone, next to the promise it counts, and
       // (B2) that it may be slow on a phone with little memory.
-      content: fresh && (includesText != null || slowNote != null)
+      content:
+          fresh && (steps != null || includesText != null || slowNote != null)
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               spacing: KitTokens.of(context).space2,
               children: [
+                if (steps != null)
+                  KitText(
+                    steps,
+                    key: const ValueKey('phone-setup-start-steps'),
+                    role: KitTextRole.label,
+                  ),
                 if (slowNote != null)
                   KitText(
                     slowNote,

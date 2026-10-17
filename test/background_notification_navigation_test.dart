@@ -11,7 +11,6 @@ import 'package:opencode_mobile/main.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
-import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/update/shorebird_update_notice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -134,6 +133,17 @@ Future<ConnectionController> _controllerFor(
     // Fake time never advances past the debounce; send status at once.
     liveStatusDebounce: Duration.zero,
     invoke: (method, [arguments]) async {
+      if (method == 'getBackgroundPause') {
+        return const {
+          'supported': true,
+          'active': false,
+          'paused': false,
+          'reason': 'none',
+          'at': null,
+          'canResume': false,
+        };
+      }
+
       if (method == 'consumeCodingAlertOpen' && !consumed) {
         consumed = true;
         return {
@@ -198,6 +208,10 @@ void main() {
   testWidgets('permission notification opens its exact chat and request', (
     tester,
   ) async {
+    // The card carries Always allow now: give it room above the composer.
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final controller = await _controllerFor(CodingAlertKind.permission);
     addTearDown(controller.dispose);
 
@@ -208,7 +222,7 @@ void main() {
 
     final chat = tester.widget<ChatScreen>(find.byType(ChatScreen));
     expect(chat.sessionID, 'session-1');
-    expect(find.text('Edit a file'), findsOneWidget);
+    expect(find.text('Edit this file?'), findsOneWidget);
     // The card answers in place (chat-5); Details opens the exact request.
     expect(find.byKey(const Key('permission-card-allow')), findsOneWidget);
     expect(find.byKey(const Key('permission-sheet')), findsNothing);
@@ -277,17 +291,11 @@ void main() {
     // app stays on its normal root instead of pushing a chat.
     expect(find.byType(ChatScreen), findsNothing);
     // This server has a question waiting, so the normal root is the shell on
-    // its Inbox tab: the embedded Inbox, never the pushed request route.
+    // Chats: no pushed request route, and the badge says what waits.
     expect(find.byType(HomeScreen), findsOneWidget);
     expect(
       tester.state<NavigatorState>(find.byType(Navigator).first).canPop(),
       isFalse,
-    );
-    expect(
-      tester
-          .widgetList<ActivityScreen>(find.byType(ActivityScreen))
-          .where((screen) => !screen.embedded),
-      isEmpty,
     );
     expect(find.text('Send answers'), findsNothing);
     expect(controller.pendingCodingAlertOpen, isNull);

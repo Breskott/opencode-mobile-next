@@ -633,7 +633,9 @@ class _KitLogPanelState extends State<KitLogPanel> with WidgetsBindingObserver {
       final window = MediaQuery.sizeOf(context).height;
       final height = math.min(
         KitTokens.logFoldedLines * extent + tokens.space2 * 2,
-        window / 2,
+        // Under half the window with room for the header above it (the
+        // state words grow at large text), so the panel never overflows.
+        window * .45,
       );
       body = SizedBox(height: height.floorToDouble(), child: body);
     } else {

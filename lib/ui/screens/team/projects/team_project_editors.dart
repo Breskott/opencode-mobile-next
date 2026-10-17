@@ -5,11 +5,19 @@ import 'package:flutter/material.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../../domain/relative_age.dart';
+import '../../../../builtin/builtin_linux.dart';
+import '../../../../builtin/builtin_server.dart' show BuiltinProjectFolders;
+import '../../../../domain/server_gateway.dart' show CatalogModel;
+import '../../../../state/team_model.dart' show teamModelSpec;
 import '../../../../state/team_project_controller.dart';
+import '../../../app_theme.dart' show AppStatusTone;
 import '../../../kit/kit.dart';
+import '../../project_folder_actions.dart';
 import '../team_model_sheet.dart';
 import 'team_execution_gate.dart';
 import 'team_refusal.dart';
+
+part 'team_project_editors_roles.dart';
 
 /// Opens the team's model sheet for a role; [fallback] picks the fallback
 /// model. Null means the sheet was dismissed.
@@ -19,6 +27,19 @@ typedef TeamRolesModelPicker =
       required String? current,
       required bool fallback,
     });
+
+/// Picks the repo folder (the phone's folder browser). Null: dismissed, or
+/// the person chose to type a path.
+typedef TeamFolderPicker = Future<String?> Function(BuildContext context);
+
+/// Tests hand in a picker and a first-commit maker; the app uses the phone's
+/// own folder browser and its Ubuntu.
+@visibleForTesting
+TeamFolderPicker? teamFolderPickerOverride;
+@visibleForTesting
+Future<void> Function(String path)? teamFirstCommitOverride;
+@visibleForTesting
+Future<bool> Function(String path)? teamRepoEmptyOverride;
 
 Future<void> openTeamNewProject(
   BuildContext context,
@@ -46,10 +67,24 @@ Future<void> openTeamRoles(
   TeamRolesModelPicker? modelPicker,
 }) => _open(context, controller, _Kind.roles, '', modelPicker);
 
+/// Team settings. [focusPlannerModel] opens it on the Planner's model choice
+/// (the recovery for a plan that failed on its model); [retryProjectId] is the
+/// project to offer "Ask again" for once that choice is saved.
 Future<void> openTeamDefaults(
   BuildContext context,
-  TeamProjectController controller,
-) => _open(context, controller, _Kind.defaults);
+  TeamProjectController controller, {
+  bool focusPlannerModel = false,
+  String? retryProjectId,
+  TeamRolesModelPicker? modelPicker,
+}) => _open(
+  context,
+  controller,
+  _Kind.defaults,
+  '',
+  modelPicker,
+  focusPlannerModel,
+  retryProjectId,
+);
 
 enum _Kind { create, quick, spec, plan, settings, roles, defaults }
 
@@ -59,6 +94,8 @@ Future<void> _open(
   _Kind kind, [
   String projectId = '',
   TeamRolesModelPicker? modelPicker,
+  bool focusPlannerModel = false,
+  String? retryProjectId,
 ]) async {
   final gate = TeamExecutionGate.of(controller);
   final startsWork =
@@ -91,6 +128,8 @@ Future<void> _open(
       kind: kind,
       projectId: projectId,
       modelPicker: modelPicker ?? _gatePicker(controller),
+      focusPlannerModel: focusPlannerModel,
+      retryProjectId: retryProjectId,
     ),
   );
 }
@@ -102,7 +141,7 @@ TeamRolesModelPicker? _gatePicker(TeamProjectController controller) {
   if (connection == null) return null;
   return (context, {required current, required fallback}) {
     final l = lookupAppLocalizations(Localizations.localeOf(context));
-    unawaited(connection.refreshCatalog());
+    unawaited(connection.ensureCatalog());
     return showTeamModelSheet(
       context,
       connection: connection,
@@ -110,10 +149,10 @@ TeamRolesModelPicker? _gatePicker(TeamProjectController controller) {
       title: fallback ? l.teamProjectEditorFallback : l.teamProjectEditorModel,
       defaultTitle: fallback
           ? l.teamProjectEditorNoFallback
-          : l.teamRoleModelSheetDefault,
+          : l.teamModelServerDefault,
       defaultHint: fallback
           ? l.teamProjectEditorNoFallbackHint
-          : l.teamRoleModelSheetDefaultHint,
+          : l.teamModelServerDefaultHint,
     );
   };
 }
@@ -167,11 +206,15 @@ class _Editor extends StatefulWidget {
     required this.kind,
     required this.projectId,
     this.modelPicker,
+    this.focusPlannerModel = false,
+    this.retryProjectId,
   });
   final TeamProjectController controller;
   final _Kind kind;
   final String projectId;
   final TeamRolesModelPicker? modelPicker;
+  final bool focusPlannerModel;
+  final String? retryProjectId;
   @override
   State<_Editor> createState() => _EditorState();
 }
@@ -197,6 +240,14 @@ class _EditorState extends State<_Editor> {
   bool _planFirst = true;
   bool _history = false;
   bool _chargingTouched = false;
+  bool _typePath = false;
+  bool _draftRestored = false;
+  bool _starterSeeded = false;
+  bool _makingCommit = false;
+  bool _repoEmpty = false;
+  final GlobalKey _noticeKey = GlobalKey();
+  String? _commitFailure;
+  String? _askAgainProject;
   TeamProjectRole? _role;
   int _id = 0;
   TeamProjectController get _controller => widget.controller;
@@ -219,12 +270,25 @@ class _EditorState extends State<_Editor> {
     final defaults =
         _controller.snapshot?.defaultSettings ?? const TeamProjectSettings();
     _settings =
-        p?.settings ??
-        (_creating
-            ? defaults.copyWith(mode: '', budget: const TeamBudget())
-            : defaults);
+        p?.settings ?? (_creating ? _creationDefaults(defaults) : defaults);
     _repos = [...?p?.repos];
     _milestones = [...?p?.specDraft.milestones];
+    // A first-time spec is not a blank acceptance-criteria form: one
+    // milestone, drafted from the task the person typed, ready to edit.
+    if (widget.kind == _Kind.spec && p != null && _milestones.isEmpty) {
+      final goal = p.specDraft.goal.trim();
+      if (goal.isNotEmpty) {
+        final line = goal.split('\n').first.trim();
+        _milestones = [
+          TeamMilestone(
+            id: _newId(),
+            title: line.length > 60 ? '${line.substring(0, 60).trim()}…' : line,
+            criteria: [line],
+          ),
+        ];
+        _starterSeeded = true;
+      }
+    }
     _tasks = [...?p?.tasks];
     _phases = [...?p?.phases];
     if (_settings.budget.chosen) {
@@ -237,13 +301,32 @@ class _EditorState extends State<_Editor> {
     _text('outOfScope', p?.specDraft.outOfScope ?? '');
     _text('contextFiles', p?.specDraft.contextFiles.join('\n') ?? '');
     _text('lanes', '${_settings.maxLanes}');
-    _text('daily', _settings.budget.daily?.toString() ?? '');
-    _text('total', _settings.budget.total?.toString() ?? '');
+    _text('daily', _plain(_settings.budget.daily));
+    _text('total', _plain(_settings.budget.total));
     _text('tokens', _settings.budget.taskTokens?.toString() ?? '');
     _text('rounds', '${_settings.maxFixRounds}');
     _draftTarget = 'team-editor.${widget.kind.name}.${widget.projectId}';
     unawaited(_restore());
   }
+
+  /// A new project starts from the team's own defaults. Where those never
+  /// chose a mode or a budget, a simple task still just starts: one lane and
+  /// a modest limit the person can read and change.
+  static TeamProjectSettings _creationDefaults(TeamProjectSettings defaults) {
+    final budget = defaults.budget.chosen
+        ? defaults.budget
+        : const TeamBudget(chosen: true, daily: 5, total: 20);
+    return defaults.copyWith(
+      mode: defaults.mode.isEmpty ? 'single' : defaults.mode,
+      budget: budget,
+    );
+  }
+
+  static String _plain(double? v) => v == null
+      ? ''
+      : v == v.roundToDouble()
+      ? v.toInt().toString()
+      : v.toString();
 
   TextEditingController _text(String key, [String initial = '']) =>
       _fields.putIfAbsent(key, () => TextEditingController(text: initial));
@@ -259,6 +342,25 @@ class _EditorState extends State<_Editor> {
   void _change(VoidCallback action) {
     setState(action);
     if (!_restoring && !_complete) _persist();
+  }
+
+  /// The sheet is long and its button is pinned at the bottom, so what the
+  /// last tap produced (the progress line, a problem and its way forward)
+  /// sits above the fold. Bring it into view as soon as it appears.
+  void _revealNotices() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = _noticeKey.currentContext;
+      if (!mounted || target == null) return;
+      unawaited(
+        Scrollable.ensureVisible(
+          target,
+          duration: KitMotion.reduced(target)
+              ? Duration.zero
+              : KitMotion.standard,
+          curve: KitMotion.emphasized,
+        ),
+      );
+    });
   }
 
   void _persist() {
@@ -295,6 +397,8 @@ class _EditorState extends State<_Editor> {
       if (saved != null && saved.isNotEmpty) {
         final data = jsonDecode(saved) as Map<String, dynamic>;
         setState(() {
+          _draftRestored = _creating;
+          _starterSeeded = false;
           for (final e in (data['fields'] as Map<String, dynamic>).entries) {
             _text(e.key).text = e.value as String;
           }
@@ -335,6 +439,12 @@ class _EditorState extends State<_Editor> {
       if (mounted) setState(() => _error = _l.teamProjectEditorDraftFailed);
     }
     if (mounted) setState(() => _restoring = false);
+    if (mounted &&
+        widget.kind == _Kind.defaults &&
+        widget.focusPlannerModel &&
+        widget.modelPicker != null) {
+      unawaited(_pickRoleModel('planner'));
+    }
   }
 
   Widget _field(
@@ -422,6 +532,9 @@ class _EditorState extends State<_Editor> {
   );
   String? _settingsError() {
     final s = _editedSettings();
+    if (s.mode.isEmpty && !s.budget.chosen) {
+      return _l.teamProjectEditorChooseModeBudget;
+    }
     if (s.mode.isEmpty) return _l.teamProjectEditorChooseMode;
     if (s.maxLanes < 1 || s.maxLanes > 32) {
       return _l.teamProjectEditorPositiveLanes;
@@ -503,6 +616,8 @@ class _EditorState extends State<_Editor> {
     List<TeamPhase>? phases,
     TeamProjectRole? role,
     String? text,
+    String? projectId,
+    int? expectedRevision,
     bool close = true,
   }) async {
     if (_working || _complete) return false;
@@ -511,12 +626,13 @@ class _EditorState extends State<_Editor> {
       _error = null;
       _refusal = null;
     });
+    _revealNotices();
     final result = await _controller.execute(
       TeamProjectCommand(
         requestId: _controller.newRequestId(),
         action: action,
-        projectId: widget.projectId,
-        expectedRevision: _reviewedRevision,
+        projectId: projectId ?? widget.projectId,
+        expectedRevision: expectedRevision ?? _reviewedRevision,
         name: _creating ? _projectName() : _value('name'),
         text: text ?? _value('goal'),
         settings: _editedSettings(),
@@ -566,22 +682,140 @@ class _EditorState extends State<_Editor> {
           ? _l.teamProjectEditorChangedElsewhere
           : _refusal!.message;
     });
+    if (!result.accepted) _revealNotices();
     if (result.accepted && close) Navigator.of(context).pop();
     return result.accepted;
   }
 
   /// The plain sentence, a way forward, and the code under Details.
-  List<Widget> _refusalNotice(TeamRefusal refusal) => [
-    KitNotice(
-      key: const ValueKey('team-refusal'),
-      message: refusal.message,
-      notes: [refusal.next],
-      actions: [KitAction(label: _l.teamProjectRetry, onPressed: _save)],
-    ),
-    KitDetailsFold(
-      values: [KitTechnicalValue(_l.teamRefusalCode, refusal.code)],
-    ),
-  ];
+  List<Widget> _refusalNotice(TeamRefusal refusal) {
+    final empty = refusal.code == 'repository_empty';
+    final canCommit = empty && _canFirstCommit;
+    return [
+      KitNotice(
+        key: const ValueKey('team-refusal'),
+        message: refusal.message,
+        notes: [
+          refusal.next,
+          // Where this app cannot make the commit, say exactly what to do.
+          if (empty && !canCommit) _l.teamProjectEditorFirstCommitManual,
+          ?_commitFailure,
+        ],
+        actions: [
+          if (canCommit)
+            KitAction(
+              key: const ValueKey('team-first-commit'),
+              label: _l.teamProjectEditorFirstCommit,
+              onPressed: _makingCommit ? null : _makeFirstCommit,
+            ),
+          KitAction(label: _l.teamProjectRetry, onPressed: _save),
+        ],
+      ),
+      KitDetailsFold(
+        values: [KitTechnicalValue(_l.teamRefusalCode, refusal.code)],
+      ),
+    ];
+  }
+
+  /// The first commit can be made here for a folder on this phone.
+  bool get _canFirstCommit {
+    final repo = _allRepos().firstOrNull;
+    if (repo == null) return false;
+    final onPhone =
+        _controller.snapshot?.servers.any(
+          (s) => s.id == repo.serverId && s.phone,
+        ) ??
+        false;
+    return onPhone &&
+        (teamFirstCommitOverride != null ||
+            TeamExecutionGate.of(_controller) != null);
+  }
+
+  /// An empty commit in the chosen folder (no file touched), then the same
+  /// "Start planning" again.
+  Future<void> _makeFirstCommit({bool thenStart = true}) async {
+    final repo = _allRepos().firstOrNull;
+    if (repo == null || _makingCommit) return;
+    _change(() {
+      _makingCommit = true;
+      _commitFailure = null;
+    });
+    try {
+      final commit = teamFirstCommitOverride;
+      if (commit != null) {
+        await commit(repo.path);
+      } else {
+        await BuiltinProjectFolders(BuiltinLinux()).makeFirstCommit(repo.path);
+      }
+    } catch (_) {
+      if (mounted) {
+        _change(() {
+          _makingCommit = false;
+          _commitFailure = _l.teamProjectEditorFirstCommitFailed;
+        });
+      }
+      return;
+    }
+    if (!mounted) return;
+    _change(() {
+      _makingCommit = false;
+      _repoEmpty = false;
+      _error = null;
+      _refusal = null;
+    });
+    if (thenStart) await _save();
+  }
+
+  TeamFolderPicker? get _folderPicker {
+    final override = teamFolderPickerOverride;
+    if (override != null) return override;
+    final gate = TeamExecutionGate.of(_controller);
+    if (gate == null) return null;
+    return (context) =>
+        ProjectFolderActions.pickFolder(context, gate.connection);
+  }
+
+  /// The folder browser the New chat flow uses. A folder from this phone
+  /// also settles where the work runs.
+  Future<void> _pickFolder() async {
+    final pick = _folderPicker;
+    if (pick == null || _working) return;
+    final path = await pick(context);
+    if (path == null || !mounted) return;
+    final servers = _controller.snapshot?.servers ?? const <TeamServer>[];
+    final phone = servers.where((s) => s.phone).firstOrNull;
+    _change(() {
+      _text('repoPath').text = path;
+      if (_value('repoName').isEmpty) {
+        _text('repoName').text =
+            path.split('/').where((part) => part.isNotEmpty).lastOrNull ?? path;
+      }
+      if (_serverId == null && phone != null) _serverId = phone.id;
+      _pendingRepoId = null;
+      _commitFailure = null;
+      _error = null;
+      _repoEmpty = false;
+      _updateCharging();
+    });
+    unawaited(_probeRepo(path));
+  }
+
+  /// Looks at the chosen folder before anyone taps Start planning: a repo
+  /// with no commit is said at the folder, with the fix beside it.
+  Future<void> _probeRepo(String path) async {
+    if (!_canFirstCommit) return;
+    try {
+      final probe = teamRepoEmptyOverride;
+      final empty = probe != null
+          ? await probe(path)
+          : await BuiltinProjectFolders(BuiltinLinux()).isEmptyRepo(path);
+      if (mounted && empty && _value('repoPath') == path) {
+        _change(() => _repoEmpty = true);
+      }
+    } catch (_) {
+      // Unknown is fine: Start planning still explains an empty repo.
+    }
+  }
 
   Future<void> _reload() async {
     final approved = await showKitConfirm(
@@ -591,6 +825,11 @@ class _EditorState extends State<_Editor> {
       confirmLabel: _l.teamProjectEditorReload,
     );
     if (!approved || !mounted) return;
+    await _discardAndReopen();
+  }
+
+  /// Drops every saved draft of this form and opens it again, empty.
+  Future<void> _discardAndReopen() async {
     _complete = true;
     try {
       await _controller.clearEditorDraft(_draftTarget);
@@ -623,6 +862,7 @@ class _EditorState extends State<_Editor> {
       final error = _settingsError();
       if (error != null) {
         _change(() => _error = error);
+        _revealNotices();
         return;
       }
     }
@@ -630,6 +870,7 @@ class _EditorState extends State<_Editor> {
       final error = _creationError();
       if (error != null) {
         _change(() => _error = error);
+        _revealNotices();
         return;
       }
       await _send(
@@ -828,20 +1069,56 @@ class _EditorState extends State<_Editor> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_error != null && _refusal?.message == _error)
-            ..._refusalNotice(_refusal!)
-          else if (_error != null)
-            KitNotice(message: _error!),
+          Column(
+            key: _noticeKey,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_error != null && _refusal?.message == _error)
+                ..._refusalNotice(_refusal!)
+              else if (_error != null)
+                KitNotice(message: _error!),
+              // Right after "Start planning" the sheet says what is
+              // happening, so the seconds the engine takes are never silent.
+              KitReveal(
+                child: _working && _creating
+                    ? KitNotice(
+                        key: const ValueKey('team-starting'),
+                        message: _l.teamProjectEditorStarting,
+                        tone: AppStatusTone.progress,
+                      )
+                    : null,
+              ),
+            ],
+          ),
+          KitReveal(
+            child: _draftRestored && !_working
+                ? KitNotice(
+                    key: const ValueKey('team-draft-restored'),
+                    message: _l.teamProjectEditorDraftRestored,
+                    actions: [
+                      KitAction(
+                        key: const ValueKey('team-draft-start-fresh'),
+                        label: _l.teamProjectEditorStartFresh,
+                        onPressed: _discardAndReopen,
+                      ),
+                    ],
+                  )
+                : null,
+          ),
           if (_project != null && _project!.revision != _reviewedRevision)
             _button(_l.teamProjectEditorReload, _reload),
           if (_restoring)
             const KitSkeletonRows()
           else ...[
             if (_creating) ..._creation(),
+            if (widget.kind == _Kind.defaults && widget.focusPlannerModel)
+              ..._modelFields(),
             if (_creating ||
                 widget.kind == _Kind.settings ||
                 widget.kind == _Kind.defaults)
               ..._settingsFields(),
+            if (widget.kind == _Kind.defaults && !widget.focusPlannerModel)
+              ..._modelFields(),
             if (widget.kind == _Kind.spec) ..._specFields(),
             if (widget.kind == _Kind.plan) ..._planFields(),
             if (widget.kind == _Kind.roles) ..._roleFields(),
@@ -870,7 +1147,7 @@ class _EditorState extends State<_Editor> {
         ),
       ),
     _field('repoName', _l.teamProjectEditorRepoName),
-    _field('repoPath', _l.teamProjectEditorRepoPath),
+    ..._folderFields(),
     _choice(
       _l.teamProjectEditorWhereRuns,
       {
@@ -923,6 +1200,55 @@ class _EditorState extends State<_Editor> {
       ),
     ],
   ];
+
+  /// The repo folder: chosen in the phone's folder browser, with typing a path
+  /// as the quiet second way (and the only one where there is no browser).
+  List<Widget> _folderFields() {
+    final servers = _controller.snapshot?.servers ?? const <TeamServer>[];
+    final chosen = servers.where((s) => s.id == _serverId).firstOrNull;
+    final browse = _folderPicker != null && (chosen == null || chosen.phone);
+    final path = _value('repoPath');
+    return [
+      if (browse) ...[
+        KitRow(
+          key: const ValueKey('team-repo-folder'),
+          title: _l.teamProjectEditorChooseFolder,
+          supporting: TextSpan(
+            text: path.isEmpty ? _l.teamProjectEditorFolderNone : path,
+          ),
+          onTap: _working ? null : _pickFolder,
+        ),
+        KitReveal(
+          child: _repoEmpty && _canFirstCommit
+              ? KitNotice(
+                  key: const ValueKey('team-repo-empty'),
+                  message: _l.teamProjectEditorFolderEmpty,
+                  notes: [?_commitFailure],
+                  actions: [
+                    KitAction(
+                      key: const ValueKey('team-first-commit-inline'),
+                      label: _l.teamProjectEditorFirstCommit,
+                      onPressed: _makingCommit
+                          ? null
+                          : () => _makeFirstCommit(thenStart: false),
+                    ),
+                  ],
+                )
+              : null,
+        ),
+        if (!_typePath)
+          _button(
+            _l.teamProjectEditorTypePath,
+            () => _change(() => _typePath = true),
+          ),
+      ],
+      KitReveal(
+        child: !browse || _typePath
+            ? _field('repoPath', _l.teamProjectEditorRepoPath)
+            : null,
+      ),
+    ];
+  }
 
   /// The host that will run the work: the chosen one, else where the first
   /// repo lives. Only measured numbers are shown; with none, it says so.
@@ -1051,6 +1377,11 @@ class _EditorState extends State<_Editor> {
         ];
   List<Widget> _specFields() => [
     KitNotice(message: _l.teamProjectEditorDraftApproval),
+    if (_starterSeeded)
+      KitNotice(
+        key: const ValueKey('team-starter-milestone'),
+        message: _l.teamProjectEditorStarterNote,
+      ),
     _field('changeRequest', _l.teamProjectEditorChangeRequest, multiline: true),
     _button(_l.teamProjectEditorAskChange, _requestChange),
     _field('goal', _l.teamProjectEditorGoal, multiline: true),
@@ -1162,192 +1493,4 @@ class _EditorState extends State<_Editor> {
       ],
     );
   }
-
-  Future<void> _recoverPlan(TeamProjectAction action) async {
-    if (await _send(action, close: false) && mounted) {
-      _change(() {
-        _tasks = [...?_project?.tasks];
-        _phases = [...?_project?.phases];
-        for (final task in _tasks) {
-          _text('task-${task.id}').text = task.title;
-          _text('criteria-${task.id}').text = task.criteria.join('\n');
-        }
-      });
-    }
-  }
-
-  List<Widget> _planFields() => [
-    if (_project?.status == 'planFailed') ...[
-      KitNotice(message: _l.teamProjectEditorPlanFailed),
-      _button(
-        _l.teamProjectEditorUseAsTask,
-        () => _recoverPlan(TeamProjectAction.usePlanAsTask),
-      ),
-      _button(
-        _l.teamProjectEditorAskAgain,
-        () => _recoverPlan(TeamProjectAction.retryPlan),
-      ),
-    ] else ...[
-      KitNotice(message: _l.teamProjectEditorPlanHelp),
-      for (final phase in _phases) ...[
-        KitSectionLabel.inline(phase.title),
-        KitSwitchRow(
-          title: _l.teamProjectEditorRisky,
-          value: phase.risky,
-          onChanged: (v) => _change(() {
-            _phases[_phases.indexOf(phase)] = phase.copyWith(risky: v);
-          }),
-        ),
-        for (final t in _tasks.where((t) => t.phaseId == phase.id)) ...[
-          _field(
-            'task-${t.id}',
-            _l.teamProjectEditorTaskTitle,
-            initial: t.title,
-          ),
-          _field(
-            'criteria-${t.id}',
-            _l.teamProjectEditorCriteria,
-            initial: t.criteria.join('\n'),
-            multiline: true,
-          ),
-          _choice(
-            _l.teamProjectEditorRole,
-            {
-              for (final r
-                  in _controller.snapshot?.roles ?? <TeamProjectRole>[])
-                r.id: r.name,
-            },
-            t.roleId,
-            (v) => _change(
-              () => _tasks[_tasks.indexOf(t)] = t.copyWith(roleId: v),
-            ),
-          ),
-          _choice(
-            _l.teamProjectEditorRepo,
-            {for (final r in _repos) r.id: r.name},
-            t.repoId,
-            (v) => _change(() {
-              final r = _repos.firstWhere((r) => r.id == v);
-              _tasks[_tasks.indexOf(t)] = t.copyWith(
-                repoId: r.id,
-                serverId: r.serverId,
-              );
-            }),
-          ),
-          _choice(
-            _l.teamProjectEditorServer,
-            {
-              for (final server
-                  in _controller.snapshot?.servers ?? <TeamServer>[])
-                server.id: server.name,
-            },
-            t.serverId,
-            (v) => _change(
-              () => _tasks[_tasks.indexOf(t)] = t.copyWith(serverId: v),
-            ),
-          ),
-          if (_tasks.length > 1)
-            KitChoiceList<String>.multi(
-              semanticsLabel: _l.teamProjectEditorDependencies,
-              choices: [
-                for (final other in _tasks.where((o) => o.id != t.id))
-                  KitChoice(value: other.id, title: other.title),
-              ],
-              selected: t.dependsOn.toSet(),
-              onChanged: (v) => _change(
-                () => _tasks[_tasks.indexOf(t)] = t.copyWith(
-                  dependsOn: v.toList(),
-                ),
-              ),
-            ),
-          _button(
-            _l.teamProjectEditorRemoveTask,
-            () => _change(() {
-              _tasks.removeWhere((other) => other.id == t.id);
-              _tasks = [
-                for (final other in _tasks)
-                  other.copyWith(
-                    dependsOn: other.dependsOn
-                        .where((id) => id != t.id)
-                        .toList(),
-                  ),
-              ];
-            }),
-          ),
-        ],
-      ],
-    ],
-  ];
-
-  /// The model the same way Team settings picks it, from the phone's
-  /// models; typed only where there is no catalog (the demo).
-  Widget _modelField(String key, String label, {required bool fallback}) {
-    final picker = widget.modelPicker;
-    if (picker == null) return _field(key, label);
-    final current = _value(key);
-    return KitRow(
-      key: ValueKey(key),
-      title: label,
-      supporting: TextSpan(
-        text: current.isNotEmpty
-            ? current
-            : fallback
-            ? _l.teamProjectEditorNoFallback
-            : _l.teamRoleModelSheetDefault,
-      ),
-      onTap: () async {
-        final choice = await picker(
-          context,
-          current: current.isEmpty ? null : current,
-          fallback: fallback,
-        );
-        if (choice == null || !mounted) return;
-        _change(() => _text(key).text = choice.spec ?? '');
-      },
-    );
-  }
-
-  void _editRole(TeamProjectRole role) => _change(() {
-    _role = role;
-    _text('roleName').text = role.name;
-    _text('roleInstructions').text = role.instructions;
-    _text('roleModel').text = role.model;
-    _text('roleFallback').text = role.fallbackModel;
-  });
-  List<Widget> _roleFields() => [
-    if (_role == null) ...[
-      for (final role in _controller.snapshot?.roles ?? <TeamProjectRole>[])
-        KitRow(
-          title: role.name,
-          supporting: TextSpan(
-            text: [
-              role.model,
-              if (role.readOnly) _l.teamProjectEditorReadOnlyShort,
-            ].where((t) => t.isNotEmpty).join(' · '),
-          ),
-          onTap: () => _editRole(role),
-        ),
-      _button(
-        _l.teamProjectEditorAddRole,
-        () => _editRole(TeamProjectRole(id: _newId())),
-      ),
-    ] else ...[
-      _field('roleName', _l.teamProjectEditorRoleName),
-      _field(
-        'roleInstructions',
-        _l.teamProjectEditorInstructions,
-        multiline: true,
-      ),
-      if (_role!.readOnly) KitNotice(message: _l.teamProjectEditorReadOnlyRole),
-      _modelField('roleModel', _l.teamProjectEditorModel, fallback: false),
-      _modelField('roleFallback', _l.teamProjectEditorFallback, fallback: true),
-      for (final p in _controller.snapshot?.projects ?? <TeamProject>[])
-        for (final t in p.tasks.where((t) => t.roleId == _role!.id))
-          KitRow(
-            title: t.title,
-            supporting: TextSpan(text: p.name),
-          ),
-      _button(_l.teamProjectEditorAllRoles, () => _change(() => _role = null)),
-    ],
-  ];
 }

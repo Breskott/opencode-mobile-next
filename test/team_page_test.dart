@@ -129,7 +129,7 @@ void _mockChannels() {
 /// A team over the recorded city: [url] is the fixture's own folder for a
 /// team the connection starts itself.
 OrchestrationConfig _fixtureConfig({
-  String url = 'http://pop-os:7000',
+  String url = 'http://dev-pc:7000',
   OrchestrationHostMode hostMode = OrchestrationHostMode.computer,
 }) => OrchestrationConfig(
   provider: OrchestrationProvider.fixture,
@@ -386,6 +386,7 @@ void main() {
       expect(connection.profile!.orchestration, isNull);
       expect(find.byType(TeamIntroScreen), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
+      connection.dispose();
     });
 
     testWidgets('opened on its own over a task, a turned-off team goes back '
@@ -627,11 +628,11 @@ void main() {
       final computer = await _team(
         profileId: 'pc',
         hostMode: OrchestrationHostMode.computer,
-        url: 'http://pop-os:7000',
+        url: 'http://dev-pc:7000',
       );
       expect(
         teamNotAnsweringBody(_en, computer),
-        _en.teamUiStateNotAnsweringComputerNamed('pop-os'),
+        _en.teamUiStateNotAnsweringComputerNamed('dev-pc'),
       );
       final address = await _team(
         profileId: 'ip',

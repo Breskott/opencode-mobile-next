@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../termux/bridge.dart';
 import '../termux/managed_server_recovery.dart';
 import 'connection.dart';
+import 'move_to_opencode2.dart';
 import 'profiles.dart';
 
 /// Where a Termux-hosted setup stands (phone setup v2, the Termux host).
@@ -151,7 +152,18 @@ class TermuxHostSetup extends ChangeNotifier {
         (status.runtimeSelected || status.version.isNotEmpty)) {
       return status.runtime;
     }
-    return _installation?.runtime ?? TermuxRuntime.openCode1;
+    final installation = _installation;
+    if (installation != null &&
+        (installation.runtimeSelected || installation.ubuntuInstalled)) {
+      return installation.runtime;
+    }
+    for (final profile in store.profiles) {
+      if (profile.backend == ServerBackend.openCode &&
+          profile.baseUrl == localUrl) {
+        return ManagedRuntimeFlavor.runtimeOf(profile);
+      }
+    }
+    return TermuxRuntime.defaultForNewInstall;
   }
 
   /// The OpenCode version Termux reported, if any.
@@ -371,15 +383,13 @@ class TermuxHostSetup extends ChangeNotifier {
   }
 
   Future<void> _inspect() async {
-    try {
-      final installation = await TermuxBridge.inspectInstallation();
-      if (_disposed) return;
-      _installation = installation;
-      if (installation.openCodeVersion != null) {
-        await restoreProfileIfMissing(installation.runtime);
-      }
-    } on TermuxBridgeException {
-      // Unknown: the job installs, which is safe over a working copy.
+    // An unreadable installation is not a fresh one. Let failure stop setup
+    // before the new default can replace an unconfirmed runtime selection.
+    final installation = await TermuxBridge.inspectInstallation();
+    if (_disposed) return;
+    _installation = installation;
+    if (installation.openCodeVersion != null) {
+      await restoreProfileIfMissing(installation.runtime);
     }
   }
 
@@ -621,6 +631,13 @@ class TermuxHostSetup extends ChangeNotifier {
       }
       await connection.prepareManagedRuntimeSwitch();
       final profile = await _ensureLocalProfile(target, forSwitch: true);
+      await teamFollowsRuntime(
+        store,
+        profile,
+        sameHost: (p) =>
+            p.backend == ServerBackend.openCode &&
+            TermuxBridge.managesServerUrl(p.baseUrl),
+      );
       if (_disposed) return;
       final operation = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
       _operationID = operation;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -54,8 +55,19 @@ Future<ConnectionController> _controllerFor(String baseUrl) async {
     ..status = StreamStatus.connected;
 }
 
+/// Servers › the server › Status and version (and the Linux service row
+/// beside it on that page).
 Future<void> _openServerCategory(WidgetTester tester) async {
-  final row = find.byKey(const ValueKey('settings-category-server'));
+  final hub = tester.widget<SettingsScreen>(find.byType(SettingsScreen));
+  unawaited(
+    openServerPage(
+      tester.element(find.byType(SettingsScreen)),
+      hub.controller,
+      hub.controller.profile!.id,
+    ),
+  );
+  await tester.pumpAndSettle();
+  final row = find.byKey(const ValueKey('server-row-status'));
   await tester.ensureVisible(row);
   await tester.tap(row);
   await tester.pumpAndSettle();

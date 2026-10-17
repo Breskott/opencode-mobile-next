@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
@@ -8,6 +9,7 @@ import '../../builtin/setup/setup_contract.dart';
 import '../../diagnostics/failed_job_report.dart';
 import '../../feedback/bug_report.dart' show failedJobReportAction;
 import '../../l10n/app_localizations.dart';
+import '../../termux/bridge.dart' show TermuxBridge;
 import '../app_theme.dart';
 import '../kit/kit_buttons.dart';
 import '../kit/kit_checklist.dart';
@@ -96,6 +98,20 @@ class SetupProgressView extends StatefulWidget {
     r'|no internet|offline',
     caseSensitive: false,
   );
+
+  /// A failed ownership check cannot be repaired by rerunning this job.
+  static bool needsOwnershipRecovery(SetupProgress progress) =>
+      progress.state == SetupState.failed &&
+      [
+        progress.error,
+        for (final row in progress.components)
+          if (row.state == ComponentState.failed) row.error,
+      ].any(
+        (error) =>
+            error != null &&
+            (error == 'runtime_ownership_unknown' ||
+                RegExp(r'\bownershipUnknown\b').hasMatch(error)),
+      );
 
   /// Formats a byte pair in the total's unit ("18 of 30 MB"). The done
   /// figure is rounded down so the row never claims more than has arrived.
@@ -329,7 +345,10 @@ class _SetupProgressViewState extends State<SetupProgressView> {
         progress.state == SetupState.cancelled;
     final done = progress.state == SetupState.done;
     final running = !failed && !stopped && !done;
-    final network = failed && _looksLikeNetwork(progress);
+    final ownershipRecovery = SetupProgressView.needsOwnershipRecovery(
+      progress,
+    );
+    final network = !ownershipRecovery && failed && _looksLikeNetwork(progress);
     final title = widget.title ?? l10n.phoneSetupProgressTitle;
 
     // A job can fail between components (the server start after the last
@@ -373,7 +392,7 @@ class _SetupProgressViewState extends State<SetupProgressView> {
             personAction: row.state == ComponentState.pending
                 ? widget.personActions[row.id]
                 : null,
-            retry: row.state == ComponentState.failed
+            retry: row.state == ComponentState.failed && !ownershipRecovery
                 ? widget.failureActions[row.id]
                 : null,
             // Report this failure (P8.4): the job's log as it is at the tap
@@ -391,7 +410,13 @@ class _SetupProgressViewState extends State<SetupProgressView> {
           ),
       ],
       since: running ? _lastReport : null,
-      resume: progress.canContinue && widget.onContinue != null
+      resume: ownershipRecovery
+          ? KitAction(
+              key: const Key('setup-progress-recover-ownership'),
+              label: l10n.e7SetupOpenAppSettings,
+              onPressed: () => unawaited(TermuxBridge.openAppSettings()),
+            )
+          : progress.canContinue && widget.onContinue != null
           ? KitAction(
               key: const Key('setup-progress-continue'),
               label: l10n.setupProgressViewContinue,
@@ -596,8 +621,14 @@ class _SetupProgressViewState extends State<SetupProgressView> {
     ComponentProgress row,
     bool network,
   ) {
+    if (SetupProgressView.needsOwnershipRecovery(progress)) {
+      return l10n.inAppServerOwnershipRecoveryBody;
+    }
     if (network) return l10n.setupProgressViewNoInternet;
     final reason = row.error ?? progress.error;
+    if (reason == l10n.phoneSetupErrorInstall(_titleOf(row.id))) {
+      return reason!;
+    }
     // The host's own row: its words are already the person's.
     if (_hostRow(row.id) && reason != null) return reason;
     // A message the app wrote is said in its words; anything else (a
@@ -612,6 +643,9 @@ class _SetupProgressViewState extends State<SetupProgressView> {
   /// A job that failed with no failed row (between components): where it
   /// stopped, in words; its own text is under Details.
   String _jobFailureText(AppLocalizations l10n, SetupProgress progress) {
+    if (SetupProgressView.needsOwnershipRecovery(progress)) {
+      return l10n.inAppServerOwnershipRecoveryBody;
+    }
     final error = progress.error;
     final plain = error == null ? null : setupPlainMessage(l10n, error);
     if (plain != null) return plain;

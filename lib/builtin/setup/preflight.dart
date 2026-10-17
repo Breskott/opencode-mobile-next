@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../../voice/device.dart';
+import '../int64_max_shim.dart';
 
 /// Pre-flight checks before phone setup downloads anything (P0.8): the CPU
 /// ABI the Ubuntu rootfs ships for, free space against what the chosen
@@ -33,13 +34,31 @@ const minimumSetupMemoryMb = 1800;
 /// which report a little under their label.
 const comfortableSetupMemoryMb = 3072;
 
-/// Bytes required on disk beyond a selection's own download size:
-/// unpacking, apt/npm scratch space and the Ubuntu base itself take real
-/// disk beyond what gets downloaded. Mirrors the order of magnitude the
-/// Termux install script already asks for (`bridge.dart`'s
-/// `INSTALL_REQUIRED_MB=2048` against "about 1 GB installed").
-int requiredSetupFreeBytes(int downloadBytes) =>
-    math.max(downloadBytes * 2, 300 * 1000 * 1000);
+/// Free space needed before a download starts. A known extracted payload
+/// coexists with its retained archive during installation, plus 64 MiB of
+/// scratch space. Unknown payload sizes retain the existing 300 MB/2x policy;
+/// estimates here never become download-consent evidence.
+int requiredSetupFreeBytes(int downloadBytes, {int? installedBytes}) {
+  const maximumBytes = int64Max;
+  const scratchBytes = 64 * 1024 * 1024;
+  final nonnegative = math.max(downloadBytes, 0);
+  final doubled = nonnegative > maximumBytes ~/ 2
+      ? maximumBytes
+      : nonnegative * 2;
+  final legacy = math.max(doubled, 300 * 1000 * 1000);
+  if (installedBytes == null || installedBytes <= 0) return legacy;
+  final retainedAndExtracted = _saturatedSetupBytes(
+    nonnegative,
+    installedBytes,
+  );
+  final peak = _saturatedSetupBytes(retainedAndExtracted, scratchBytes);
+  return math.max(legacy, peak);
+}
+
+int _saturatedSetupBytes(int first, int second) {
+  const maximumBytes = int64Max;
+  return first >= maximumBytes - second ? maximumBytes : first + second;
+}
 
 enum SetupPreflightIssue { unsupportedAbi, lowMemory, lowSpace }
 
@@ -91,6 +110,24 @@ class SetupPreflightResult {
   bool get mayBeSlow => issue == null && totalMemoryMb != null;
 }
 
+/// Checks storage alone so setup can repeat the same policy between installs.
+/// An unavailable reading retains the initial preflight's allow-to-try policy.
+SetupPreflightResult checkSetupStoragePreflight(
+  int? availableBytes, {
+  required int downloadBytes,
+  int? installedBytes,
+}) {
+  if (availableBytes == null) return const SetupPreflightResult.ok();
+  final required = requiredSetupFreeBytes(
+    downloadBytes,
+    installedBytes: installedBytes,
+  );
+  if (availableBytes < required) {
+    return SetupPreflightResult.lowSpace(required - availableBytes);
+  }
+  return const SetupPreflightResult.ok();
+}
+
 /// Checks [device] against what a selection needs ([downloadBytes], the sum
 /// of its components' `downloadBytes`). ABI first (nothing else matters if
 /// there is no rootfs for this CPU), then RAM, then free space. Total RAM
@@ -101,6 +138,7 @@ class SetupPreflightResult {
 SetupPreflightResult checkSetupPreflight(
   VoiceDeviceInfo device, {
   required int downloadBytes,
+  int? installedBytes,
 }) {
   final abis = device.supportedAbis;
   if (abis.isNotEmpty && !abis.any(supportedSetupAbis.contains)) {
@@ -110,13 +148,12 @@ SetupPreflightResult checkSetupPreflight(
   if (memory != null && memory < minimumSetupMemoryMb) {
     return SetupPreflightResult.lowMemory(memory);
   }
-  final available = device.availableStorageBytes;
-  if (available != null) {
-    final required = requiredSetupFreeBytes(downloadBytes);
-    if (available < required) {
-      return SetupPreflightResult.lowSpace(required - available);
-    }
-  }
+  final storage = checkSetupStoragePreflight(
+    device.availableStorageBytes,
+    downloadBytes: downloadBytes,
+    installedBytes: installedBytes,
+  );
+  if (!storage.supported) return storage;
   if (memory != null && memory < comfortableSetupMemoryMb) {
     return SetupPreflightResult.mayBeSlow(memory);
   }

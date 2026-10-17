@@ -183,6 +183,7 @@ void main() {
     expect(engine.runs.single, {'python'});
     // A fresh Termux: the job keeps the app's default OpenCode.
     expect(engine.runParams.single, SetupJobParams.firstSetup);
+    // The engine supplies fresh OC2 only when no older job exists.
     // The old manager never ran: the components are the v2 job's.
     expect(termux.launchCalls, 0);
   });
@@ -198,6 +199,40 @@ void main() {
       ...SetupJobParams.firstSetup,
       'opencode': {'runtime': 'opencode2'},
     });
+  });
+
+  testWidgets('installed legacy Ubuntu without a runtime stays on OC1', (
+    tester,
+  ) async {
+    termux.inventoryOutput = 'ubuntu=installed\nversion=\n';
+    await mount(tester);
+    expect(engine.runParams.single, {
+      ...SetupJobParams.firstSetup,
+      'opencode': {'runtime': 'opencode1'},
+    });
+  });
+
+  testWidgets('failed inventory never installs and Continue retries safely', (
+    tester,
+  ) async {
+    termux.failInventory = true;
+    await mount(tester);
+    expect(engine.runs, isEmpty);
+    expect(find.text(_l10n.e7SetupInspectTermuxFailed), findsWidgets);
+    expect(
+      find.byKey(const ValueKey('phone-setup-termux-get-current')),
+      findsNothing,
+    );
+    final resume = find.byKey(const Key('setup-progress-continue'));
+    expect(resume, findsOneWidget);
+    termux
+      ..failInventory = false
+      ..inventoryOutput = 'ubuntu=installed\nversion=\n';
+    await tester.ensureVisible(resume);
+    await tester.tap(resume);
+    await pump(tester);
+    expect(engine.runs, hasLength(1));
+    expect(engine.runParams.single['opencode'], {'runtime': 'opencode1'});
   });
 
   testWidgets('a job Termux kept running while the app was gone is followed, '
@@ -229,6 +264,16 @@ void main() {
     });
     // The stopped job's own params (its OpenCode, first setup) carry over.
     expect(engine.runParams.single, isEmpty);
+  });
+
+  testWidgets('adding tools before Ubuntu exists does not override a saved '
+      'job runtime', (tester) async {
+    engine.emit(_job(SetupState.interrupted));
+    termux.inventoryOutput = 'ubuntu=absent\nversion=\n';
+    await mount(tester, firstSetup: false, adding: {'python'});
+    expect(engine.runs.single, {'python'});
+    expect(engine.runParams.single, SetupJobParams.adding(['python']));
+    expect(engine.runParams.single, isNot(contains('opencode')));
   });
 
   testWidgets('a first setup that finishes opens "name your first project"', (

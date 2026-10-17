@@ -101,7 +101,7 @@ class _ChooserState extends State<_Chooser> {
 
 /// The check glyphs a person can see: painted with an opacity above zero.
 List<Element> _visibleChecks(WidgetTester tester) => [
-  for (final element in find.byIcon(Icons.check).evaluate())
+  for (final element in find.byIcon(AppIconography.check).evaluate())
     if (_painted(element.renderObject!)) element,
 ];
 

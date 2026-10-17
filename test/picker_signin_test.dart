@@ -208,8 +208,8 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(secureStorage, null);
   });
-  setUpAll(() => ProviderLogo.imageProviderOverride = (_) => null);
-  tearDownAll(() => ProviderLogo.imageProviderOverride = null);
+  setUpAll(() => ProviderLogo.logoLoaderOverride = (_) => null);
+  tearDownAll(() => ProviderLogo.logoLoaderOverride = null);
 
   final anthropic = IntegrationInfo(
     id: 'anthropic',
@@ -392,7 +392,7 @@ void main() {
     addTearDown(controller.dispose);
     await _open(tester, controller);
     expect(
-      find.text("Only OpenCode's free model is available — it's slower."),
+      find.text("Only OpenCode's free models are available — they're slower."),
       findsOneWidget,
     );
     expect(find.text('Add an API key'), findsOneWidget);

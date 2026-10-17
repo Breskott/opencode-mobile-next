@@ -1,6 +1,8 @@
 // KitMessage (docs/ux-system/kit-api/KitMessage.md; STATE-16, KIT-41,
 // LOOK-26, LOOK-5, KIT-28, A11Y-5): the words of a transcript. The numbered
 // groups follow the spec's "Tests required".
+import 'dart:convert';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -14,6 +16,7 @@ import 'package:opencode_mobile/ui/kit/chat/kit_markdown.dart';
 import 'package:opencode_mobile/ui/kit/chat/kit_message.dart';
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/kit/kit_divider.dart';
+import 'package:opencode_mobile/ui/kit/kit_image.dart';
 import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
 import 'package:opencode_mobile/ui/kit/kit_layout.dart';
 import 'package:opencode_mobile/ui/kit/kit_menu.dart';
@@ -96,6 +99,11 @@ List<KitMenuItem> _menu(List<String> ran) => [
   KitMenuItem(label: 'Edit and resend', onSelected: () => ran.add('edit')),
 ];
 
+/// A 1×1 PNG.
+final _onePixelPng = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+);
+
 ThemeRoles _roles(WidgetTester tester) =>
     KitTokens.of(tester.element(find.byType(KitMessage))).roles;
 
@@ -164,16 +172,17 @@ void main() {
           } else {
             expect(rect.left, 16);
           }
+          // Owner decision 04A: at most 85 % of the column.
           expect(
             rect.width,
-            lessThanOrEqualTo(400 - KitLayout.bubbleStartInset),
+            lessThanOrEqualTo((400 * KitLayout.bubbleMaxShare).floorToDouble()),
           );
 
           final box = tester.renderObject<RenderDecoratedBox>(
             find.byKey(_bubbleKey),
           );
           final decoration = box.decoration as BoxDecoration;
-          expect(decoration.color, _roles(tester).surface2);
+          expect(decoration.color, kitPromptBubbleFill(_roles(tester)));
           expect(decoration.border, isNull);
           expect(decoration.boxShadow, isNull);
           final radius = decoration.borderRadius!.resolve(direction);
@@ -195,6 +204,26 @@ void main() {
     testWidgets('a short prompt hugs its words', (tester) async {
       await _pump(tester, _prompt(text: 'Hi'));
       expect(tester.getSize(find.byKey(_bubbleKey)).width, lessThan(120));
+    });
+
+    testWidgets('a link prompt hugs its label, not the address', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        _prompt(
+          text: '[docs](https://example.com/a/very/long/address/that/goes/on)',
+        ),
+      );
+      expect(tester.getSize(find.byKey(_bubbleKey)).width, lessThan(140));
+    });
+
+    test('display text drops marks and counts path chips', () {
+      final shown = kitMarkdownDisplay(
+        'See [docs](https://x.dev/a), **bold** and `lib/a/b.dart`.',
+      );
+      expect(shown.text, 'See docs, bold and lib/a/b.dart.');
+      expect(shown.pathChips, 1);
     });
 
     testWidgets('time shows as a caption under the bubble', (tester) async {
@@ -298,6 +327,44 @@ void main() {
       tester.getSemantics(find.byKey(_bubbleKey)).label,
       allOf(contains('checkout_test.dart'), contains('screenshot.png')),
     );
+    semantics.dispose();
+  });
+
+  testWidgets('3b. a photo with pixels shows as a thumbnail that opens', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    var opened = 0;
+    await _pump(
+      tester,
+      _prompt(
+        attachments: [
+          KitAttachment(
+            id: 1,
+            label: 'screenshot.png',
+            kind: KitAttachmentKind.image,
+            thumbnail: KitImageSource.memory(_onePixelPng),
+            onOpen: () => opened++,
+            chipKey: const ValueKey('photo-open'),
+            thumbnailKey: const ValueKey('photo-thumb'),
+          ),
+          const KitAttachment(
+            id: 2,
+            label: 'notes.pdf',
+            kind: KitAttachmentKind.file,
+          ),
+        ],
+      ),
+    );
+    final thumb = find.byKey(const ValueKey('photo-thumb'));
+    expect(thumb, findsOneWidget);
+    expect(tester.getSize(thumb), const Size.square(KitLayout.promptPhotoSize));
+    // The photo is its picture, not its name; other files stay chips.
+    expect(find.textContaining('screenshot.png'), findsNothing);
+    expect(find.textContaining('notes.pdf'), findsOneWidget);
+    expect(find.bySemanticsLabel('Preview screenshot.png'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('photo-open')));
+    expect(opened, 1);
     semantics.dispose();
   });
 
@@ -715,4 +782,18 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  test('the prompt bubble is visible on the page in light and dark', () {
+    for (final roles in [graphiteLight, graphiteDark]) {
+      final fill = kitPromptBubbleFill(roles);
+      for (final page in [roles.ground, if (!roles.isDark) roles.surface1]) {
+        expect(
+          contrastRatio(fill, page),
+          greaterThanOrEqualTo(1.12),
+          reason: '${roles.brightness} bubble against $page',
+        );
+      }
+      expect(contrastRatio(roles.text1, fill), greaterThanOrEqualTo(7));
+    }
+  });
 }

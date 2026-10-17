@@ -362,42 +362,23 @@ void main() {
     await tester.tap(find.textContaining('Connected', findRichText: true));
     await tester.tap(find.byTooltip('Search'));
     expect((servers, searches), (1, 1));
-    // Pill and search are one pair of dim glass that joins while the page
-    // is scrolled (fluid glass; test/kit/kit_glass_test.dart).
+    // Pill and search are one solid pair that sits together while the page
+    // is scrolled.
     final glass = tester.widgetList<KitGlass>(find.byType(KitGlass));
     expect(glass.length, 1);
-    expect(glass.single.dim, isTrue);
     expect(glass.single.trailing, isNotNull);
     semantics.dispose();
   });
 
-  testWidgets('shell: glass off makes the controls solid', (tester) async {
+  // Emulator QA F8, then sweep 2310: at 2.0 the pill is one line. A name
+  // too long for it ends in an ellipsis; "Connected" is left to the dot.
+  testWidgets('shell at 200 % text: a long server name is one line with an '
+      'ellipsis, not three lines', (tester) async {
     await _pump(
       tester,
       KitTopBar.shell(
         controls: KitShellControls(
-          server: 'Laptop',
-          serverStatus: 'Connected',
-          onServer: () {},
-          onSearch: () {},
-        ),
-      ),
-      effects: const KitEffects(glass: false),
-    );
-    for (final element in find.byType(KitGlass).evaluate()) {
-      expect(KitGlass.lookOf(element), KitGlassLook.solid);
-    }
-  });
-
-  // Emulator QA F8: at 2.0 the pill cut "127.0.0.1" to "127.…" to keep
-  // " · Connected" beside it.
-  testWidgets('shell at 200 % text: the server name is whole, the status '
-      'goes under it', (tester) async {
-    await _pump(
-      tester,
-      KitTopBar.shell(
-        controls: KitShellControls(
-          server: '127.0.0.1',
+          server: 'Computer at 10.0.2.2',
           serverStatus: 'Connected',
           serverTone: AppStatusTone.ok,
           onServer: () {},
@@ -407,11 +388,32 @@ void main() {
       textScale: 2,
     );
     expect(tester.takeException(), isNull);
-    final name = find.textContaining('127.0.0.1');
+    final name = find.textContaining('Computer at');
     expect(name, findsOneWidget);
-    final painter = tester.renderObject<RenderParagraph>(name);
-    expect(painter.didExceedMaxLines, isFalse);
-    final status = find.text('Connected');
+    final paragraph = tester.renderObject<RenderParagraph>(name);
+    expect(paragraph.didExceedMaxLines, isTrue);
+    expect(paragraph.size.height, lessThan(60));
+    expect(find.text('Connected'), findsNothing);
+  });
+
+  testWidgets('shell at 200 % text: a status that needs words stays on one '
+      'line under the name', (tester) async {
+    await _pump(
+      tester,
+      KitTopBar.shell(
+        controls: KitShellControls(
+          server: '127.0.0.1',
+          serverStatus: 'Reconnecting',
+          serverTone: AppStatusTone.attention,
+          onServer: () {},
+          onSearch: () {},
+        ),
+      ),
+      textScale: 2,
+    );
+    expect(tester.takeException(), isNull);
+    final name = find.textContaining('127.0.0.1');
+    final status = find.text('Reconnecting');
     expect(status, findsOneWidget);
     expect(
       tester.getTopLeft(status).dy,
@@ -524,5 +526,68 @@ void main() {
     await tester.pump();
     expect(find.text('Working', findRichText: true), findsNothing);
     expect(find.text('Not answering', findRichText: true), findsOneWidget);
+  });
+
+  group('accessory', () {
+    const key = Key('top-bar-accessory');
+    final menuKey = const Key('top-bar-menu');
+
+    for (final (name, size) in [
+      ('phone', const Size(412, 915)),
+      ('pc', const Size(1280, 800)),
+    ]) {
+      testWidgets('stays in the bar before the overflow on a $name', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          KitTopBar(
+            title: 'Fix login',
+            exit: KitTopBarExit.none,
+            actions: _threeActions([]),
+            accessory: const SizedBox(key: key, width: 40, height: 40),
+            menu: [KitMenuItem(label: 'Rename', onSelected: () {})],
+            menuKey: menuKey,
+          ),
+          size: size,
+        );
+        final accessory = tester.getCenter(find.byKey(key));
+        final menu = tester.getCenter(find.byKey(menuKey));
+        expect(accessory.dx, lessThan(menu.dx));
+        expect(accessory.dy, closeTo(menu.dy, 6));
+      });
+    }
+
+    testWidgets('mirrors under right-to-left', (tester) async {
+      await _pump(
+        tester,
+        KitTopBar(
+          title: 'Fix login',
+          exit: KitTopBarExit.none,
+          accessory: const SizedBox(key: key, width: 40, height: 40),
+          menu: [KitMenuItem(label: 'Rename', onSelected: () {})],
+          menuKey: menuKey,
+        ),
+        direction: TextDirection.rtl,
+      );
+      expect(
+        tester.getCenter(find.byKey(key)).dx,
+        greaterThan(tester.getCenter(find.byKey(menuKey)).dx),
+      );
+    });
+
+    testWidgets('alone it still shows, with no actions or menu', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const KitTopBar(
+          title: 'Fix login',
+          exit: KitTopBarExit.none,
+          accessory: SizedBox(key: key, width: 40, height: 40),
+        ),
+      );
+      expect(find.byKey(key), findsOneWidget);
+    });
   });
 }

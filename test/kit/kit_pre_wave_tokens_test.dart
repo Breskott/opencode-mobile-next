@@ -134,7 +134,7 @@ void main() {
       'needsYouRingWidth': 4,
       'needsYouRingAlpha': .06,
       'requestTileSize': 36,
-      'requestTileRadius': 10,
+      'requestTileRadius': 9,
       'requestMaxHeightShare': .45,
       'scannerWindow': 240,
       'scannerBracket': 28,
@@ -157,7 +157,7 @@ void main() {
       'graphDash': 4,
     });
     expect(KitTokens.qrInk, graphiteLight.text1);
-    expect(KitTokens.qrPaper, graphiteLight.surface1);
+    expect(KitTokens.qrPaper, graphiteLight.surface2);
   });
 
   test('KitLayout pre-wave widths and shares', () {

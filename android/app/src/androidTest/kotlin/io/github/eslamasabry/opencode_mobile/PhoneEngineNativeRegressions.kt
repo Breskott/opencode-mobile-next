@@ -19,6 +19,28 @@ import java.util.concurrent.atomic.AtomicReference
 
 /** Real packaged daemon, real occupied TCP port, and forged child-pipe control. */
 internal object PhoneEngineNativeRegressions {
+    /** Stable-target subset: no daemon, service, Ubuntu or provider mutations. */
+    fun runOfflineSmoke(context: Context, passed: (String) -> Unit = {}): List<String> {
+        check(context.packageName == "io.github.eslamasabry.opencode_mobile")
+        refusesUnauthenticatedChildBeforeHttp(context)
+        passed("auth_pipe_before_http")
+        propagatesOnlyStaticPrivateFailureFrames(context)
+        passed("private_failure_frames")
+        requiresGenuineServerPassword(context)
+        passed("qa_password_file")
+        acceptsOnlyAuthenticatedHealthTiers()
+        passed("authenticated_health_tiers")
+        trustsOnlyRegisteredPdfProcess(context)
+        passed("registered_pdf_identity")
+        signsBeforeRequiringProtection()
+        passed("receipt_before_protection")
+        stopsRemainingServicesAfterFailure()
+        passed("stop_callback_order")
+        return listOf("auth_pipe_before_http", "private_failure_frames", "qa_password_file",
+            "authenticated_health_tiers", "registered_pdf_identity", "receipt_before_protection",
+            "stop_callback_order")
+    }
+
     fun run(context: Context) {
         check(context.packageName == "io.github.eslamasabry.opencode_mobile.preview")
         refusesUnauthenticatedChildBeforeHttp(context)
@@ -27,6 +49,7 @@ internal object PhoneEngineNativeRegressions {
         acceptsOnlyAuthenticatedHealthTiers()
         ignoresSquatterAndSurvivesLauncher(context)
         repeatsNativeProofFactoryWithoutReusingDaemon(context)
+        releasesUnavailableGenerationBeforeRetry(context)
         trustsOnlyRegisteredPdfProcess(context)
         signsBeforeRequiringProtection()
         stopsRemainingServicesAfterFailure()
@@ -40,17 +63,55 @@ internal object PhoneEngineNativeRegressions {
         var attempts = 0
         try {
             val first = native.start(profile, 4098, false, "fixture_unverified") { attempts++; null }
+            val firstIdentity = native.ownedIdentity() ?: error("Live engine identity missing")
+            check(firstIdentity.pid == native.processId() && firstIdentity.parent == android.os.Process.myPid())
             val oldAuth = native.credentials(profile)["bearerToken"]
             val second = native.start(profile, 4098, false, "fixture_unverified") { attempts++; null }
             check(attempts == 2) { "The running daemon skipped the new proof factory" }
             check(first !== second && !first.isAlive && second.isAlive)
+            val secondIdentity = native.ownedIdentity() ?: error("Replacement engine identity missing")
+            check(!firstIdentity.sameProcess(secondIdentity)) { "Replacement reused stale identity" }
             check(native.credentials(profile)["bearerToken"] != oldAuth)
             check(native.status(profile)["boundary"] == false) // No fake proof grants authority.
             var refused = false
             try { native.start("qa_other", 4098, false, "fixture_unverified") { error("Wrong owner reached proof") } }
             catch (failure: PhoneEngineNative.Failure) { check(failure.code == "engine_in_use"); refused = true }
             check(refused && second.isAlive) { "Start displaced another profile's daemon" }
-        } finally { native.stop(profile); native.delete(profile) }
+        } finally { native.stop(profile); check(native.ownedIdentity() == null); native.delete(profile) }
+    }
+
+    /** A UI readiness rejection must stop its owner before retrying either runtime profile. */
+    private fun releasesUnavailableGenerationBeforeRetry(context: Context) {
+        val profile = "qa_retry_${UUID.randomUUID().toString().replace("-", "")}"
+        val other = "${profile}_other"
+        val native = PhoneEngineNative(context)
+        try {
+            val first = native.start(profile, 4098, false, "fixture_unverified") { null }
+            check(first.isAlive && native.status(profile)["execution"] == false)
+            // A healthy transport can still fail the UI's execution readiness gate.
+            // Rollback must target that exact owner, never a different profile.
+            native.stop(other)
+            check(first.isAlive && native.status(profile)["running"] == true)
+            native.stop(profile)
+            check(!first.isAlive && native.ownedIdentity() == null)
+            check(native.status(profile)["running"] == false)
+            check(!File(context.filesDir, "oc.teamEngine.$profile/oc1-credentials.json").exists())
+
+            // Reopen the same private store after its owning process has been reaped.
+            val retry = native.start(profile, 4098, false, "fixture_unverified") { null }
+            check(retry.isAlive)
+            native.stop(profile)
+            check(!retry.isAlive)
+
+            // Switching runtime profiles must not require an app force-stop.
+            val switched = native.start(other, 4098, false, "fixture_unverified") { null }
+            check(switched.isAlive && native.status(other)["running"] == true)
+        } finally {
+            native.stop(profile)
+            native.stop(other)
+            native.delete(profile)
+            native.delete(other)
+        }
     }
 
     /** Full proof mode is separate: requires compatible kernel and idle runtime. */

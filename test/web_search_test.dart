@@ -130,6 +130,8 @@ Future<void> _openSearchFromChat(
   await tester.tap(find.byKey(const Key('composer-tools-button')));
   await _chatFrames(tester);
   await tester.ensureVisible(find.byKey(const Key('composer-tools-advanced')));
+  // The sheet has one more row (the project file): lay out the scrolled sheet.
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('composer-tools-advanced')));
   await _chatFrames(tester);
   // The tools sheet is kit rows since e28442b0 (composer from kit parts).

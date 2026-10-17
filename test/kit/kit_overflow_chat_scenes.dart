@@ -197,7 +197,6 @@ final kitOverflowChatScenes = <KitOverflowScene>[
     'sending',
     'busy empty',
     'busy with text',
-    'busy with delivery choice',
     'busy cannot send yet',
     'offline',
     'read-only',
@@ -216,16 +215,6 @@ final kitOverflowChatScenes = <KitOverflowScene>[
       build: (_, c) => KitComposerChips.model(
         label: c.t('Sonnet 4.5 · High', 'Sonnet 4.5 · عالٍ'),
         state: state,
-        onPressed: _noop,
-      ),
-    ),
-  for (final used in [0.75, 0.97])
-    KitOverflowScene(
-      const ['KitComposerChips'],
-      used == 0.75 ? 'context warning' : 'context almost full',
-      build: (_, _) => KitComposerChips.model(
-        label: 'Sonnet 4.5',
-        contextUsed: used,
         onPressed: _noop,
       ),
     ),
@@ -490,6 +479,42 @@ final kitOverflowChatScenes = <KitOverflowScene>[
           ],
         ),
       ),
+  for (final expanded in [false, true])
+    KitOverflowScene(
+      const ['KitStepTimeline'],
+      expanded ? 'expanded' : 'folded',
+      build: (_, c) => KitStepTimeline(
+        label: c.t(
+          'Read 3 files · edited 1 file · ran 8 commands · 6 other steps',
+          'قرأ 3 ملفات · عدّل ملفًا واحدًا · شغّل 8 أوامر · 6 خطوات أخرى',
+        ),
+        icon: AppIconography.terminal,
+        expanded: expanded,
+        onPressed: _noop,
+        steps: [
+          KitMessage.thought(
+            heading: _reply(c),
+            body: KitMarkdown(_reply(c), role: KitTextRole.secondary),
+          ),
+          KitToolRow(
+            kind: KitToolKind.edit,
+            title: c.t('Write the queue test', 'كتابة اختبار القائمة'),
+            path: 'test/queue/offline_queue_reconnect_test.dart',
+            added: 12,
+            status: KitToolStatus.done,
+            duration: const Duration(seconds: 3),
+            preview: KitStepPreview.fromText(
+              List.generate(
+                8,
+                (i) => 'expect(queue.items, hasLength($i)); // ${_reply(c)}',
+              ).join('\n'),
+            ),
+            body: [KitCodeBlock(text: _reply(c), kind: KitCodeKind.code)],
+          ),
+          _tool(c, KitToolStatus.running),
+        ],
+      ),
+    ),
 ];
 
 KitTurn _turn(
@@ -610,13 +635,11 @@ class _ComposerSceneState extends State<_ComposerScene> {
       onOpenEditor: _noop,
       busy: state.startsWith('busy'),
       canSendWhileBusy: state != 'busy cannot send yet',
-      onDeliveryChanged: state == 'busy with delivery choice' ? (_) {} : null,
       sending: state == 'sending',
       offline: state == 'offline',
       readOnlyReason: state == 'read-only'
           ? c.t('Watching this worker’s conversation', 'عرض محادثة هذا العامل')
           : null,
-      model: KitComposerChips.model(label: 'Sonnet 4.5', onPressed: _noop),
       voice: voice == null
           ? null
           : KitComposerVoice(

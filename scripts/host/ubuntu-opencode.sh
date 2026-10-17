@@ -14,6 +14,7 @@
 #   bash ubuntu-opencode.sh password   # print the server password for the app
 #
 # Configuration (environment variables, all optional):
+#   OPENCODE_RUNTIME   opencode2, or opencode (Older OpenCode)
 #   OPENCODE_PORT      port to listen on            (default 4096)
 #   OPENCODE_HOSTNAME  address to bind              (default 127.0.0.1)
 #
@@ -25,7 +26,7 @@
 # WireGuard address. A password is generated on install and required on every
 # request; it lives in a 0600 environment file, never on the command line.
 #
-# OpenCode itself comes from one pinned release on GitHub, never from a
+# OpenCode itself comes from a pinned npm/GitHub archive, never from a
 # script piped into a shell: the archive for this CPU is downloaded, checked
 # against the SHA-256 recorded below, and only then unpacked and installed
 # to ~/.opencode/bin. A download that does not match stops before anything
@@ -42,17 +43,31 @@ readonly ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/$SERVICE_NAME.env"
 readonly UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 readonly UNIT_FILE="$UNIT_DIR/$SERVICE_NAME.service"
 
-# The OpenCode 1 release the app pins (lib/termux/bridge.dart), and the
-# SHA-256 of each Linux archive as GitHub publishes it for that release
-# (asset digests of https://github.com/anomalyco/opencode/releases/tag/v1.18.32,
-# read 2026-09-28 and matched against the downloaded files). x64 uses the
-# baseline build, which also runs on CPUs without AVX2, as the app does.
-readonly OPENCODE_VERSION="1.18.32"
-readonly OPENCODE_RELEASES="https://github.com/anomalyco/opencode/releases/download"
-readonly OPENCODE_X64_ASSET="opencode-linux-x64-baseline.tar.gz"
-readonly OPENCODE_X64_SHA256="763af386ef88a8cab18df00fcf055690e5a55e31a7088beabe02307142a6adce"
-readonly OPENCODE_ARM64_ASSET="opencode-linux-arm64.tar.gz"
-readonly OPENCODE_ARM64_SHA256="568461b7d4d8c19865c97e9a1102e613049c6039d01fe772154de873c1865840"
+# Fresh installs default to OpenCode 2. Explicit Older OpenCode selection is
+# OPENCODE_RUNTIME=opencode; an existing binary is never changed by install.
+# npm tarball SHA-256 values match lib/builtin/setup/components.dart (the
+# published SHA-512 integrity was verified on 2026-10-14).
+case "${OPENCODE_RUNTIME:-opencode2}" in
+  opencode2)
+    readonly OPENCODE_VERSION="2.0.29"
+    readonly OPENCODE_RELEASES="https://registry.npmjs.org/@opencode"
+    readonly OPENCODE_X64_ASSET="cli-linux-x64-baseline-2.0.29.tgz"
+    readonly OPENCODE_X64_SHA256="152c42ff57b15728f39e1d7b68a9c13b0635fe1c5e6dcccdc8b710955e4cef0b"
+    readonly OPENCODE_ARM64_ASSET="cli-linux-arm64-2.0.29.tgz"
+    readonly OPENCODE_ARM64_SHA256="0af39e75dbdfacc20f8f531ef35fb4dcc0b44c08084203518614272f232283ae"
+    readonly OPENCODE_MEMBER="package/bin/opencode"
+    ;;
+  opencode)
+    readonly OPENCODE_VERSION="1.19.0"
+    readonly OPENCODE_RELEASES="https://github.com/anomalyco/opencode/releases/download"
+    readonly OPENCODE_X64_ASSET="opencode-linux-x64-baseline.tar.gz"
+    readonly OPENCODE_X64_SHA256="6334d70db3990721ea454357e9cf2573c8685524ad7769af9d52cbffb7008438"
+    readonly OPENCODE_ARM64_ASSET="opencode-linux-arm64.tar.gz"
+    readonly OPENCODE_ARM64_SHA256="e9841d43d3e1a8f36ed2691592d3b8b4fb097e606c8b559a277a1b845840e26b"
+    readonly OPENCODE_MEMBER="opencode"
+    ;;
+  *) echo "ERROR: OPENCODE_RUNTIME must be opencode2 or opencode (Older OpenCode)." >&2; exit 1 ;;
+esac
 readonly OPENCODE_BIN_DIR="$HOME/.opencode/bin"
 
 WORK_DIR=""
@@ -127,6 +142,9 @@ install_pinned_opencode() {
   done
 
   local url="$OPENCODE_RELEASES/v$OPENCODE_VERSION/$asset"
+  if [[ "$OPENCODE_MEMBER" == "package/bin/opencode" ]]; then
+    url="$OPENCODE_RELEASES/${asset%-$OPENCODE_VERSION.tgz}/-/$asset"
+  fi
   WORK_DIR="$(mktemp -d)"
   echo "==> Downloading OpenCode $OPENCODE_VERSION ($asset)" >&2
   curl -fsSL --retry 3 --connect-timeout 20 -o "$WORK_DIR/$asset" "$url" ||
@@ -142,13 +160,13 @@ Re-run this script; if it fails again, do not install this file."
   fi
   echo "==> Checksum matches ($expected)" >&2
 
-  tar -xzf "$WORK_DIR/$asset" -C "$WORK_DIR" opencode ||
+  tar -xzf "$WORK_DIR/$asset" -C "$WORK_DIR" "$OPENCODE_MEMBER" ||
     fail "Could not unpack the OpenCode archive. Re-run this script."
-  [[ -f "$WORK_DIR/opencode" && ! -L "$WORK_DIR/opencode" ]] ||
+  [[ -f "$WORK_DIR/$OPENCODE_MEMBER" && ! -L "$WORK_DIR/$OPENCODE_MEMBER" ]] ||
     fail "The OpenCode archive did not contain the opencode program. Nothing was installed."
   mkdir -p "$OPENCODE_BIN_DIR"
   # Rename over the old copy so a running server keeps its file until restart.
-  install -m 0755 "$WORK_DIR/opencode" "$OPENCODE_BIN_DIR/opencode.new"
+  install -m 0755 "$WORK_DIR/$OPENCODE_MEMBER" "$OPENCODE_BIN_DIR/opencode.new"
   mv -f "$OPENCODE_BIN_DIR/opencode.new" "$OPENCODE_BIN_DIR/opencode"
   cleanup_work_dir
   WORK_DIR=""
@@ -227,6 +245,8 @@ After=network-online.target
 # The password is read from a 0600 file so it never appears in the unit
 # text, in 'ps' output, or in the journal.
 EnvironmentFile=$ENV_FILE
+# OC2 prefers this alias; do not inherit a different manager-level secret.
+UnsetEnvironment=OPENCODE_PASSWORD
 ExecStart=$opencode_bin serve --hostname $BIND_HOST --port $PORT
 Restart=on-failure
 RestartSec=3
@@ -278,6 +298,14 @@ cmd_update() {
   opencode_bin="$(find_opencode)" || fail "OpenCode is not installed. Run: bash $0 install"
   local installed
   installed="$(opencode_version "$opencode_bin")"
+  # Changing runtime also changes history/config semantics. Phase 2 never
+  # turns a normal update into the owner-visible migration of phase 3.
+  if [[ "$installed" == 1.* && "$OPENCODE_VERSION" == 2.* ]]; then
+    fail "Older OpenCode is unchanged. Use OPENCODE_RUNTIME=opencode to update it; moving to OpenCode 2 is a separate action."
+  fi
+  if [[ -z "$installed" ]]; then
+    fail "Could not identify the installed OpenCode; nothing was changed."
+  fi
   if [[ -n "$installed" ]] && version_at_least "$installed" "$OPENCODE_VERSION"; then
     # Never downgrade: a newer OpenCode may have moved its data forward.
     echo "==> OpenCode $installed is already at or past the pinned $OPENCODE_VERSION: $opencode_bin"

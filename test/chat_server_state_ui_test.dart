@@ -244,7 +244,8 @@ void main() {
           ),
           now: now,
         ),
-        'Rate limited. Retrying 1 in 0:00',
+        // Past due: no clock stuck at 0:00.
+        'Rate limited. Retrying 1…',
       );
       expect(
         retryBannerHeadline(const SessionRetryState(attempt: 0), now: now),
@@ -415,6 +416,66 @@ void main() {
         expect(api.prompts, ['Hi']);
       },
     );
+
+    testWidgets('a provider failure on the newest reply offers a quiet '
+        'Continue with another agent that opens the sheet, never by itself', (
+      tester,
+    ) async {
+      // A prompt with a file cannot simply be sent again, so nothing else
+      // fixes this failure and the way on is inline.
+      final prompt = _user('u1');
+      prompt.parts.add(Part(id: 'u1-f', messageID: 'u1', type: 'file'));
+      final api = _Api()
+        ..messagesResult = [
+          prompt,
+          _assistant(
+            'a1',
+            errorText: 'The provider is overloaded. Please retry.',
+            errorKind: MessageErrorKind.unknown,
+          ),
+        ];
+      await _pumpChat(tester, api);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('continue-with-sheet')), findsNothing);
+      await tester.tap(find.byKey(const Key('error-action-continue-with')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('continue-with-sheet')), findsOneWidget);
+    });
+
+    testWidgets('no Continue with another agent for an older failure, a '
+        'content-filter refusal or a healthy reply', (tester) async {
+      final api = _Api()
+        ..messagesResult = [
+          _user('u1'),
+          _assistant(
+            'a1',
+            errorText: 'Something odd',
+            errorKind: MessageErrorKind.unknown,
+          ),
+          _user('u2'),
+          _assistant(
+            'a2',
+            parts: [
+              Part(id: 'a2-t', messageID: 'a2', type: 'text', text: 'Done.'),
+            ],
+          ),
+        ];
+      await _pumpChat(tester, api);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('error-action-continue-with')), findsNothing);
+      final filtered = _Api()
+        ..messagesResult = [
+          _user('u1'),
+          _assistant(
+            'a1',
+            errorText: 'Blocked by the content filter.',
+            errorKind: MessageErrorKind.contentFilter,
+          ),
+        ];
+      await _pumpChat(tester, filtered);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('error-action-continue-with')), findsNothing);
+    });
 
     testWidgets('a turn that ended with nothing and no error says so and '
         'offers Send again', (tester) async {

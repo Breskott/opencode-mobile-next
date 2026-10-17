@@ -2,6 +2,11 @@
 <resources>
     <string name="widget_new_session">+ New</string>
     <string name="widget_empty">Open the app to connect. Conversations appear here.</string>
+    <string name="widget_label">Conversations</string>
+    <string name="widget_preview_title_1">Release notes</string>
+    <string name="widget_preview_step_1">Working · 2m</string>
+    <string name="widget_preview_title_2">Fix login</string>
+    <string name="widget_preview_step_2">Reply drafted</string>
     <string name="widget_description">Your newest OpenCode conversations, one tap away.</string>
     <!-- Static launcher shortcuts (res/xml/shortcuts.xml). Short labels
          must fit a launcher tile: keep them to two words. -->
@@ -22,4 +27,144 @@
         <item quantity="one">%1$d needs you</item>
         <item quantity="other">%1$d need you</item>
     </plurals>
+    <!-- Pause/resume Quick Settings tile (PauseTileService.kt). -->
+    <string name="pause_tile_label">Background mode</string>
+    <string name="pause_tile_label_with_state">Background mode · %1$s</string>
+    <string name="pause_tile_on">On</string>
+    <string name="pause_tile_paused">Paused</string>
+    <string name="pause_tile_off">Off in Settings</string>
+    <!-- Native notification copy follows the app's selected language. -->
+    <string name="native_live_channel">Live coding connection</string>
+    <string name="native_live_description">Shown while OpenCode keeps a server session live in the background</string>
+    <plurals name="native_chip_running">
+        <item quantity="one">%1$d running</item>
+        <item quantity="other">%1$d running</item>
+    </plurals>
+    <plurals name="native_chip_pending">
+        <item quantity="one">%1$d needs you</item>
+        <item quantity="other">%1$d need you</item>
+    </plurals>
+    <string name="native_alert_quota_title">Provider usage reached your threshold</string>
+    <string name="native_alert_quota_body">Open to check current usage.</string>
+    <string name="native_alert_quota_reset_title">%1$s is back</string>
+    <string name="native_alert_quota_reset_generic_title">A usage limit reset</string>
+    <string name="native_alert_quota_reset_body">Open to see how much is left.</string>
+    <string name="native_alert_permission_title">%1$s needs permission</string>
+    <string name="native_alert_permission_body">Tap to review the pending request.</string>
+    <string name="native_alert_question_title">%1$s needs your input</string>
+    <string name="native_alert_question_body">Tap to answer the pending question.</string>
+    <string name="native_alert_complete_title">%1$s finished</string>
+    <string name="native_alert_complete_body">Tap to review the latest result.</string>
+    <string name="native_alert_error_title">%1$s session needs attention</string>
+    <string name="native_alert_error_body">Tap to review the session error.</string>
+    <string name="native_alert_checkin_title">%1$s is still working</string>
+    <string name="native_alert_checkin_body">Tap to check in on the session.</string>
+    <string name="native_team_decision_title">AI Team needs a decision</string>
+    <string name="native_team_decision_body">Tap to answer it in the app.</string>
+    <string name="native_team_failed_title">A run failed</string>
+    <string name="native_team_failed_body">Tap to see what happened.</string>
+    <string name="native_team_review_title">A run is ready for review</string>
+    <string name="native_team_review_body">Tap to review it.</string>
+    <string name="native_team_completed_title">A run completed</string>
+    <string name="native_team_completed_body">Tap to see the result.</string>
+    <string name="native_team_title">AI Team</string>
+    <string name="native_team_working">Working</string>
+    <string name="native_allow_once">Allow once</string>
+    <string name="native_deny">Deny</string>
+    <string name="native_reply">Reply</string>
+    <string name="native_coding_requests_channel">Coding requests</string>
+    <string name="native_coding_requests_description">Alerts when OpenCode needs permission or input</string>
+    <string name="native_coding_status_channel">Coding session updates</string>
+    <string name="native_coding_status_description">Alerts when a background OpenCode session finishes</string>
+    <string name="native_team_progress_channel">AI Team progress</string>
+    <string name="native_team_progress_description">A quiet line while the AI Team is working</string>
+    <string name="native_voice_setup">Voice setup</string>
+    <string name="native_voice_downloading">Downloading voice pack</string>
+    <string name="native_voice_preparing">Preparing voice input</string>
+    <string name="native_voice_ready">Voice input is ready</string>
+    <string name="native_voice_failed">Voice setup failed. Open the app to try again.</string>
+    <string name="native_setup_channel">Setup</string>
+    <string name="native_phone_server_channel">OpenCode on this phone</string>
+    <string name="native_phone_server_description">Shown while the phone server or project engine runs</string>
+    <string name="native_phone_server_title">OpenCode is running on this phone</string>
+    <string name="native_phone_server_body">Your agent keeps working while you use other apps.</string>
+    <string name="native_stop">Stop</string>
+    <string name="native_widget_now">now</string>
+    <string name="native_widget_minutes">%1$dm</string>
+    <string name="native_widget_hours">%1$dh</string>
+    <string name="native_widget_days">%1$dd</string>
+
+    <!-- Usage home-screen widget -->
+    <string name="usage_widget_title">Usage</string>
+    <string name="usage_widget_description">What is left on each plan limit, and when it resets.</string>
+    <string name="usage_widget_empty">Choose what to show in OpenCode → Settings → Usage widget</string>
+    <string name="usage_widget_row_title">%1$s · %2$s</string>
+    <string name="usage_widget_left">%1$d%% left</string>
+    <string name="usage_widget_resets">Resets in %1$s</string>
+    <string name="usage_widget_updated">Updated %1$s ago</string>
+    <string name="usage_widget_sign_in">Sign in</string>
+    <string name="usage_widget_add_key">Add key</string>
+    <string name="usage_widget_not_signed_in">Not signed in</string>
+    <string name="usage_widget_no_key">No key added</string>
+    <string name="usage_widget_set_up">Set up</string>
+    <string name="usage_widget_cant_read">Can\'t read yet</string>
+    <string name="usage_widget_auth">Sign-in needed</string>
+    <string name="usage_widget_join">%1$s · %2$s</string>
+    <string name="usage_widget_window_hours">%1$d-hour</string>
+    <string name="usage_widget_window_days">%1$d-day</string>
+    <string name="usage_widget_window_weekly">Weekly</string>
+    <string name="usage_widget_window_monthly">Monthly</string>
+    <string name="usage_widget_this_phone">This phone</string>
+    <string name="usage_widget_provider_claude">Claude</string>
+    <string name="usage_widget_provider_codex">Codex</string>
+    <string name="usage_widget_provider_minimax">MiniMax</string>
+    <string name="usage_widget_provider_glm">GLM</string>
+    <string name="usage_widget_column">%1$s  %2$d%% left</string>
+    <string name="usage_widget_short_hours">%1$dh</string>
+    <string name="usage_widget_short_days">%1$dd</string>
+    <string name="usage_widget_short_week">Week</string>
+    <string name="usage_widget_short_month">Month</string>
+    <string name="usage_widget_preview_col_1">5h  62% left</string>
+    <string name="usage_widget_preview_col_2">Week  85% left</string>
+    <string name="usage_widget_preview_title_1">Codex · 5-hour</string>
+    <string name="usage_widget_preview_left_1">62% left</string>
+    <string name="usage_widget_preview_detail_1">Resets in 3h</string>
+    <string name="usage_widget_preview_title_2">Codex · Weekly</string>
+    <string name="usage_widget_preview_left_2">85% left</string>
+    <string name="usage_widget_preview_detail_2">Resets in 4d</string>
+    <!-- The one status notification (docs/design/notifications-2026-10-14.md). -->
+    <string name="native_status_action_open">Open</string>
+    <string name="native_status_action_stop_reply">Stop the reply</string>
+    <string name="native_status_action_start">Start</string>
+    <string name="native_status_action_new_chat">New chat</string>
+    <string name="native_status_action_stop_opencode">Stop OpenCode</string>
+    <string name="native_status_ready_title">Ready · nothing running</string>
+    <string name="native_status_ready_body">Ready when you are</string>
+    <string name="native_status_on_this_phone">on this phone</string>
+    <string name="native_status_paused_android_title">Paused · Android\'s background limit</string>
+    <string name="native_status_paused_android_body">Android stops background work after 6 hours a day. Open OpenCode to keep going.</string>
+    <string name="native_status_paused_idle_title">Paused · nothing was running</string>
+    <string name="native_status_paused_idle_body">Tap to start OpenCode again</string>
+    <string name="native_status_public_ready">OpenCode · ready</string>
+    <string name="native_status_public_paused">OpenCode · paused</string>
+    <string name="native_status_public_stopped">OpenCode · a chat stopped</string>
+    <!-- Moments: summaries, plain reasons, quiet hours -->
+    <string name="native_alert_stopped_title">%1$s stopped</string>
+    <string name="native_alert_reason_auth">The provider rejected the key. Tap to sign in again.</string>
+    <string name="native_alert_reason_context">The chat is too long for the model. Tap to review.</string>
+    <string name="native_alert_reason_length">The reply hit its length limit. Tap to review.</string>
+    <string name="native_alert_reason_filter">The provider blocked the reply. Tap to review.</string>
+    <string name="native_alert_reason_model">That model is not available. Tap to choose another.</string>
+    <string name="native_alert_reason_other">Something went wrong. Tap to review.</string>
+    <plurals name="native_group_need_you">
+        <item quantity="one">%d needs you</item>
+        <item quantity="other">%d need you</item>
+    </plurals>
+    <plurals name="native_group_finished">
+        <item quantity="one">%d reply finished</item>
+        <item quantity="other">%d replies finished</item>
+    </plurals>
+    <string name="native_coding_requests_quiet_channel">Coding requests (quiet hours)</string>
+    <string name="native_coding_requests_quiet_description">Requests that arrive during quiet hours, with no sound</string>
+    <string name="native_alert_permission_command_title">Run this command?</string>
 </resources>

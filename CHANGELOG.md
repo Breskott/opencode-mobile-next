@@ -2,6 +2,30 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 1.4.0+54 — 2026-10-15
+
+Home-screen widgets that act on your agents (Allow, Stop, Steer, voice),
+Continue with… to hand a conversation to another agent, a live background in
+20 looks, app-only text size, a one-line chat header, steering instead of a
+queue, and AI Team on OpenCode 2 with new phones starting on OpenCode 2, as
+we prepare to end support for OpenCode 1. Full notes: [docs/releases/v1.4.0+54.md](docs/releases/v1.4.0+54.md).
+
+## 1.3.0+53 — 2026-10-10
+
+Claude Code chats get Files, Changes, Terminal, Worktrees, Fast mode and
+Import from Claude Code; waiting questions are answered from the Conversations
+list; Delete and Archive conversation are back; AI Team can pause, delete and
+force-stop from the phone; more languages and plain-word errors. Full notes:
+[docs/releases/v1.3.0+53.md](docs/releases/v1.3.0+53.md); pictures:
+[docs/releases/v1.3.0+53/README.md](docs/releases/v1.3.0+53/README.md).
+
+## 1.2.0+52 — 2026-10-07
+
+Claude Code on the phone beside OpenCode, every connection on the phone in
+one conversation list, Claude's sub-agents as conversations of their own,
+and the first Shorebird (over-the-air) release since 1.0.17. Full notes:
+[docs/releases/v1.2.0+52.md](docs/releases/v1.2.0+52.md).
+
 ## Unreleased — Paseo backend (2026-09-19)
 
 Built and verified locally on `feat/paseo-backend-20260919`; not merged.

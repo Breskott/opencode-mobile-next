@@ -9,7 +9,8 @@
 ///
 /// It reads two variables from its environment:
 /// - `OC_REQUESTED_VERSION`: the npm version to install, never empty.
-/// - `OC_RUNTIME`: `opencode1` (the default) or `opencode2`.
+/// - `OC_RUNTIME`: the selected `opencode1` or `opencode2`. Without a selection,
+///   preserve an existing `opencode` binary; otherwise install OpenCode 2.
 ///
 /// It is fed on stdin to `bash` (it uses arrays), ends with a newline, and
 /// holds no heredoc terminator of its own, so callers wrap it in
@@ -34,7 +35,16 @@ fi
 export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--dns-result-order=ipv4first"
 # Project folders live here; the server starts in it instead of /root.
 mkdir -p /root/projects
-case "${OC_RUNTIME:-opencode1}" in
+# Callers pass the chosen runtime. For direct fresh setup, choose OpenCode 2;
+# a pre-existing unrecorded OpenCode binary belongs to the older installation.
+if [ -z "${OC_RUNTIME:-}" ]; then
+  if command -v opencode >/dev/null 2>&1; then
+    OC_RUNTIME=opencode1
+  else
+    OC_RUNTIME=opencode2
+  fi
+fi
+case "$OC_RUNTIME" in
   opencode1) command=opencode ;;
   opencode2) command=opencode2 ;;
   *) printf '[oc] ERROR: Unsupported managed runtime\n' >&2; exit 64 ;;
@@ -51,7 +61,7 @@ install_opencode() {
     *) printf '[oc] ERROR: OpenCode requires a 64-bit ARM or x64 Ubuntu environment\n' >&2; return 64 ;;
   esac
   local prefix_args=()
-  if [ "${OC_RUNTIME:-opencode1}" = opencode2 ]; then
+  if [ "$OC_RUNTIME" = opencode2 ]; then
     # OpenCode 2 is published as @opencode/cli since 2026-09-07 (the old
     # @opencode-ai/cli name stopped at a beta). Its package installs a command
     # named `opencode` as well as `opencode2`, which collides with OpenCode 1's
@@ -84,7 +94,7 @@ install_opencode() {
     "$binary_package@$OC_REQUESTED_VERSION" \
     "$main_package@$OC_REQUESTED_VERSION"; then
     install_code=0
-    if [ "${OC_RUNTIME:-opencode1}" = opencode2 ]; then
+    if [ "$OC_RUNTIME" = opencode2 ]; then
       # The overrides exist for the script tests only.
       ln -sfn "${OC2_PREFIX:-/opt/oc2}/bin/opencode2" \
         "${OC2_LINK_DIR:-$(npm prefix -g)/bin}/opencode2" || install_code=$?

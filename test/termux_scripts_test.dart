@@ -325,7 +325,9 @@ message=This belongs to the terminal
     // setup that reaches the default by a different route drifts.
     expect(pinned, matches(RegExp(r'^\d+\.\d+\.\d+$')));
     expect(script, contains("setup '4096' '$pinned'"));
-    expect(manager, contains('opencode1) requested_version=$pinned'));
+    expect(pinned, TermuxRuntime.defaultForNewInstall.pinnedVersion);
+    expect(manager, contains('opencode2) requested_version=$pinned'));
+    expect(script, contains("\"\$self_start\" 'opencode2'"));
     expect(manager, contains('local main_package=opencode-ai'));
     expect(manager, contains(r'"$main_package@$OC_REQUESTED_VERSION"'));
     expect(
@@ -342,6 +344,56 @@ message=This belongs to the terminal
     expect(manager, contains('opencode models --refresh'));
     expect(manager, contains('refreshing_models'));
   });
+
+  test('manager setup defaults only fresh state to OC2', () {
+    final result = _runManagerClockProbe(r'''
+ubuntu_rootfs_exists() { [ "${EXISTING_ROOTFS:-0}" = 1 ]; }
+[ "$(setup_runtime)" = opencode2 ] || exit 81
+# Status and restart never adopt the fresh setup default.
+[ "$(managed_runtime)" = opencode1 ] || exit 82
+EXISTING_ROOTFS=1
+[ "$(setup_runtime)" = opencode1 ] || exit 83
+EXISTING_ROOTFS=0
+printf 'version=1.19.0\n' > "$STATE"
+[ "$(setup_runtime)" = opencode1 ] || exit 84
+printf opencode2 > "$RUNTIME_FILE"
+[ "$(setup_runtime)" = opencode2 ] || exit 85
+''');
+    expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+  });
+
+  test(
+    'direct Ubuntu setup preserves existing binary or selects fresh OC2',
+    () {
+      final manager = TermuxBridge.managerScriptForTesting();
+      final selection = manager.substring(
+        manager.indexOf('# Callers pass the chosen runtime.'),
+        manager.indexOf('\ninstall_opencode() {'),
+      );
+      for (final scenario in [
+        (runtime: '', legacy: '0', expected: 'opencode2'),
+        (runtime: '', legacy: '1', expected: 'opencode1'),
+        (runtime: 'opencode1', legacy: '0', expected: 'opencode1'),
+        (runtime: 'opencode2', legacy: '1', expected: 'opencode2'),
+      ]) {
+        final result = Process.runSync(
+          'bash',
+          [
+            '-c',
+            'command() { [ "\$1" = -v ] && [ "\$2" = opencode ] && '
+                '[ "\$HAS_LEGACY" = 1 ]; }\n'
+                '$selection\nprintf "%s" "\$OC_RUNTIME"\n',
+          ],
+          environment: {
+            'OC_RUNTIME': scenario.runtime,
+            'HAS_LEGACY': scenario.legacy,
+          },
+        );
+        expect(result.exitCode, 0, reason: result.stderr as String);
+        expect(result.stdout, scenario.expected);
+      }
+    },
+  );
 
   test('Ubuntu bootstrap disables io_uring before Node and npm run', () {
     final manager = TermuxBridge.managerScriptForTesting();
@@ -548,8 +600,8 @@ proot-distro() {
 printf opencode2 > "$RUNTIME_FILE"
 [ "$(runtime_version)" = 0.0.0-beta-18600 ] || exit 86
 # The stable line names itself `opencode`, not `opencode2`.
-MOCK_OC2_VERSION='opencode v2.0.10'
-[ "$(runtime_version)" = 2.0.10 ] || exit 89
+MOCK_OC2_VERSION='opencode v2.0.29'
+[ "$(runtime_version)" = 2.0.29 ] || exit 89
 printf unsupported > "$RUNTIME_FILE"
 if runtime_version; then exit 87; fi
 if write_state preparing bad 4096; then exit 88; fi
@@ -558,16 +610,15 @@ if write_state preparing bad 4096; then exit 88; fi
     },
   );
 
-  test('first-run runtime choice cannot silently migrate an installation', () {
+  test('fresh OC2 default cannot silently migrate an installation', () {
     final script = TermuxBridge.installAndServeScript(
       password: 'test-password',
-      runtime: TermuxRuntime.openCode2,
     );
     final guard = script.substring(
       script.indexOf('\nold_runtime='),
       script.indexOf('\npassword_tmp='),
     );
-    expect(script, contains("setup '4096' '2.0.10'"));
+    expect(script, contains("setup '4096' '2.0.29'"));
     expect(script, contains("\"\$self_start\" 'opencode2'"));
     expect(
       script.indexOf(guard),
@@ -715,6 +766,21 @@ printf 'ubuntu=installed\nversion=1.18.29\n'
       '-c',
     ]);
     expect(probe(9).exitCode, 9);
+  });
+
+  test('explicit Older OpenCode setup retains its own pin and runtime', () {
+    final script = TermuxBridge.installAndServeScript(
+      password: 'test-password',
+      runtime: TermuxRuntime.openCode1,
+    );
+    expect(script, contains("setup '4096' '1.19.0'"));
+    expect(script, contains("\"\$self_start\" 'opencode1'"));
+    expect(TermuxRuntime.parse(null), TermuxRuntime.openCode1);
+    expect(TermuxRuntime.parse(''), TermuxRuntime.openCode1);
+    expect(
+      () => TermuxRuntime.parse('unknown'),
+      throwsA(isA<TermuxBridgeException>()),
+    );
   });
 
   test('the npm dist-tag is reachable only by asking for it', () {

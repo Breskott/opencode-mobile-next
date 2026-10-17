@@ -1,6 +1,8 @@
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
@@ -52,7 +54,7 @@ class _Api extends OpenCodeApi {
 }
 
 class _Controller extends ConnectionController {
-  _Controller(super.store);
+  _Controller(super.store) : super(isIsolated: true);
   Completer<void>? wake;
   void recover(_Repository next) {
     repository = next;
@@ -74,15 +76,33 @@ Session _session({int idle = 100, int viewed = 20}) => Session(
   time: SessionTime(created: 1, updated: 100, idle: idle, viewed: viewed),
 );
 
-Future<({_Controller controller, _Repository repository, _Api api})>
-_harness() async {
+Future<({_Controller controller, _Repository repository, _Api api})> _harness({
+  bool enableSharing = false,
+}) async {
   final repository = _Repository();
   final api = _Api();
-  final controller =
-      _Controller(ProfileStore(prefs: await SharedPreferences.getInstance()))
-        ..repository = repository
-        ..api = api
-        ..directory = '/work';
+  final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+  await store.load();
+  if (!store.profiles.any((profile) => profile.id == 'read-profile')) {
+    await store.upsert(
+      ServerProfile(
+        id: 'read-profile',
+        name: 'Read-state server',
+        baseUrl: 'http://localhost',
+      ),
+    );
+  }
+  await store.setActiveId('read-profile');
+  final controller = _Controller(store)
+    ..repository = repository
+    ..api = api
+    ..directory = '/work';
+  if (enableSharing) {
+    await controller.setShareSessionViews(
+      true,
+      expectedProfileId: 'read-profile',
+    );
+  }
   controller.sessionsById['ses_1'] = _session();
   addTearDown(controller.dispose);
   return (controller: controller, repository: repository, api: api);
@@ -99,13 +119,23 @@ void _viewed(ConnectionController controller, int idle) =>
 Future<void> _flush() => Future<void>.delayed(Duration.zero);
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
+  const secure = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      secure,
+      (call) async => call.method == 'readAll' ? <String, String>{} : null,
+    );
+  });
+  tearDown(() {
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(secure, null);
+  });
 
   testWidgets('an unread transcript waits until its visible content is ready', (
     tester,
   ) async {
-    final h = await _harness();
+    final h = await _harness(enableSharing: true);
     Widget app(bool ready) => MaterialApp(
       home: SessionViewObserver(
         controller: h.controller,
@@ -125,7 +155,7 @@ void main() {
   test(
     'a deferred rendered receipt retains its completion and location',
     () async {
-      final h = await _harness();
+      final h = await _harness(enableSharing: true);
       h.controller.sessionsById['ses_1'] = _session(idle: 200);
       await h.controller.viewSession(
         'ses_1',
@@ -156,7 +186,7 @@ void main() {
   testWidgets('a visible chat retries read sync after reconnect', (
     tester,
   ) async {
-    final h = await _harness();
+    final h = await _harness(enableSharing: true);
     h.repository.fail = true;
     await tester.pumpWidget(
       MaterialApp(
@@ -226,7 +256,7 @@ void main() {
   test(
     'refresh and remote viewed events synchronize without sending receipts',
     () async {
-      final h = await _harness();
+      final h = await _harness(enableSharing: true);
       await h.controller.refreshSessions();
       expect(
         h.controller.isSessionUnread(h.controller.sessionsById['ses_1']!),
@@ -251,7 +281,7 @@ void main() {
   test(
     'a receipt acknowledges only the observed run when a newer one finishes',
     () async {
-      final h = await _harness();
+      final h = await _harness(enableSharing: true);
       final write = Completer<void>();
       h.repository.write = write;
       final view = h.controller.viewSession('ses_1', isForeground: () => true);
@@ -270,7 +300,7 @@ void main() {
 
   for (final change in ['background', 'location', 'privacy', 'busy']) {
     test('$change during wake prevents a server receipt', () async {
-      final h = await _harness();
+      final h = await _harness(enableSharing: true);
       final wake = Completer<void>();
       h.controller.wake = wake;
       var visible = true;
@@ -298,7 +328,7 @@ void main() {
   test(
     'private read state persists locally and ignores another client receipts',
     () async {
-      final h = await _harness();
+      final h = await _harness(enableSharing: true);
       await h.controller.setShareSessionViews(false);
       _viewed(h.controller, 100);
       expect(
@@ -328,7 +358,7 @@ void main() {
   test(
     'a newly opened viewer can finish after a covered viewer cancels',
     () async {
-      final h = await _harness();
+      final h = await _harness(enableSharing: true);
       final wake = Completer<void>();
       h.controller.wake = wake;
       var firstVisible = true;
@@ -351,7 +381,7 @@ void main() {
   test(
     'failed server sync keeps local read state and retries only on explicit observation',
     () async {
-      final h = await _harness();
+      final h = await _harness(enableSharing: true);
       h.repository.fail = true;
       await expectLater(
         h.controller.viewSession('ses_1', isForeground: () => true),
@@ -370,7 +400,7 @@ void main() {
   testWidgets(
     'covered chat stays unread until it becomes the foreground route',
     (tester) async {
-      final h = await _harness();
+      final h = await _harness(enableSharing: true);
       final navigator = GlobalKey<NavigatorState>();
       await tester.pumpWidget(
         MaterialApp(navigatorKey: navigator, home: const Scaffold()),
@@ -401,7 +431,7 @@ void main() {
   testWidgets('backgrounded chat sends nothing and observes on resume', (
     tester,
   ) async {
-    final h = await _harness();
+    final h = await _harness(enableSharing: true);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
     addTearDown(
       () => tester.binding.handleAppLifecycleStateChanged(
@@ -428,7 +458,7 @@ void main() {
   testWidgets('unread status is text and reacts to cross-client receipts', (
     tester,
   ) async {
-    final h = await _harness();
+    final h = await _harness(enableSharing: true);
     final semantics = tester.ensureSemantics();
     await tester.pumpWidget(
       MaterialApp(
@@ -447,20 +477,42 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('privacy control is available only with the v2 capability', (
-    tester,
-  ) async {
-    final h = await _harness();
-    await tester.pumpWidget(
-      MaterialApp(home: PrivacySettingsScreen(controller: h.controller)),
-    );
-    expect(find.byKey(const ValueKey('share-session-views')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('share-session-views')));
-    await tester.pumpAndSettle();
-    expect(h.controller.shareSessionViews, isFalse);
-    h.controller.repository = null;
-    _viewed(h.controller, 100);
-    await tester.pump();
-    expect(find.byKey(const ValueKey('share-session-views')), findsNothing);
-  });
+  testWidgets(
+    'privacy points at each server; the switch lives on that server\'s page',
+    (tester) async {
+      final h = await _harness(enableSharing: true);
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: PrivacySettingsScreen(controller: h.controller),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // One row, no switch of its own: it says whether this server shares.
+      final row = find.byKey(const ValueKey('share-session-views'));
+      expect(row, findsOneWidget);
+      expect(find.byType(Switch), findsNothing);
+      expect(
+        find.descendant(of: row, matching: find.text('On')),
+        findsOneWidget,
+      );
+
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(find.byType(ServerPageScreen), findsOneWidget);
+      final toggle = find.byKey(const ValueKey('server-row-share-read'));
+      expect(toggle, findsOneWidget);
+      // The per-profile consent is switched for the captured profile only.
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(h.controller.shareSessionViews, isFalse);
+      expect(
+        h.controller.store.appPreferences.readStateConsent.enabled(
+          h.controller.profile!.id,
+        ),
+        isFalse,
+      );
+    },
+  );
 }

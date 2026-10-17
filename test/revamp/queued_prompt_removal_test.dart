@@ -42,36 +42,48 @@ String _golden(String shot, Size size) => [
   'dark.png',
 ].join('_');
 
-final _day = DateTime(2026, 9, 26, 18).millisecondsSinceEpoch;
+/// Queued an hour ago: the offline queue drops prompts older than
+/// OfflineQueueStore.maxAge (14 days) against the real clock, so a fixed date
+/// stops counting as queued once the calendar passes it. No screen shows it.
+final _day = DateTime.now()
+    .subtract(const Duration(hours: 1))
+    .millisecondsSinceEpoch;
+
+/// The Saved prompts goldens show the time, so they keep a fixed day: the
+/// drafts store applies no age limit.
+final _fixedDay = DateTime(2026, 9, 26, 18).millisecondsSinceEpoch;
 
 /// Two prompts queued for Studio Mac while it was offline; the second one's
 /// send started and was never confirmed.
-String _queue() => jsonEncode([
-  {
-    'id': 'q1',
-    'profileID': 'studio',
-    'sessionID': 'ses_a',
-    'text':
-        'Add a test for an expired coupon: the total must stay the same '
-        'and the banner must say why.',
-    'attachments': [
-      {
-        'mime': 'text/plain',
-        'filename': 'coupon-notes.txt',
-        'url': 'file:///home/dev/coupon-notes.txt',
-      },
-    ],
-    'createdAt': _day,
-  },
-  {
-    'id': 'q2',
-    'profileID': 'studio',
-    'sessionID': 'ses_b',
-    'text': 'Run the checkout tests on CI too.',
-    'createdAt': _day + 60000,
-    'dispatchedAt': _day + 61000,
-  },
-]);
+String _queue({int? at}) {
+  final day = at ?? _day;
+  return jsonEncode([
+    {
+      'id': 'q1',
+      'profileID': 'studio',
+      'sessionID': 'ses_a',
+      'text':
+          'Add a test for an expired coupon: the total must stay the same '
+          'and the banner must say why.',
+      'attachments': [
+        {
+          'mime': 'text/plain',
+          'filename': 'coupon-notes.txt',
+          'url': 'file:///home/dev/coupon-notes.txt',
+        },
+      ],
+      'createdAt': day,
+    },
+    {
+      'id': 'q2',
+      'profileID': 'studio',
+      'sessionID': 'ses_b',
+      'text': 'Run the checkout tests on CI too.',
+      'createdAt': day + 60000,
+      'dispatchedAt': day + 61000,
+    },
+  ]);
+}
 
 class _Store extends ProfileStore {
   _Store({required super.prefs, required List<ServerProfile> seeded})
@@ -267,7 +279,7 @@ Future<Future<void> Function()> _savedPrompts(
   addTearDown(tester.view.reset);
   debugDefaultTargetPlatformOverride = TargetPlatform.android;
   final kept = [
-    for (final entry in jsonDecode(_queue()) as List)
+    for (final entry in jsonDecode(_queue(at: _fixedDay)) as List)
       {...(entry as Map), 'profileID': 'studio'},
   ];
   SharedPreferences.setMockInitialValues({

@@ -52,11 +52,33 @@ class _RefusedStore extends InMemorySharedPreferencesStore {
   Future<bool> setValue(String type, String key, Object value) async => false;
 }
 
+/// The preferences store answers on the real clock; give it a moment, then
+/// let the sheet react.
+Future<void> _storeSettles(WidgetTester tester) async {
+  await tester.runAsync(
+    () => Future<void>.delayed(const Duration(milliseconds: 100)),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late ConnectionController controller;
   late SharedPreferences prefs;
   setUp(() async {
+    // Saving a language also asks Android to rebuild its notification copy
+    // (oc/background refreshNativeLocale); an unanswered channel would leave
+    // the sheet on "Saving language..." for good.
+    const background = MethodChannel('oc/background');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          background,
+          (call) async => <String, dynamic>{},
+        );
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(background, null),
+    );
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
     controller = ConnectionController(
@@ -102,7 +124,7 @@ void main() {
     await tester.tap(find.text('Language'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('العربية'));
-    await tester.pumpAndSettle();
+    await _storeSettles(tester);
     expect(controller.appLocale.value, const Locale('ar'));
     expect(prefs.getString(AppLocaleStore.preferenceKey), 'ar');
     await tester.tap(find.text('Language'));
@@ -122,7 +144,7 @@ void main() {
     await tester.tap(find.text('Language'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('العربية'));
-    await tester.pumpAndSettle();
+    await _storeSettles(tester);
     expect(controller.appLocale.value, isNull);
     expect(
       find.textContaining('Your previous choice is still active'),
@@ -181,7 +203,7 @@ void main() {
         });
       }
       await tester.tap(find.text('العربية'));
-      await tester.pumpAndSettle();
+      await _storeSettles(tester);
       expect(controller.appLocale.value, const Locale('ar'));
     });
   }

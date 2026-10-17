@@ -4,10 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api2/gateway_mappers.dart';
+import 'package:opencode_mobile/builtin/builtin_linux.dart';
+import 'package:opencode_mobile/builtin/builtin_server.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/domain/phone_project_engine.dart';
+import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/orchestration/adapters/fixture/project_fixture_gateway.dart';
+import 'package:opencode_mobile/orchestration/adapters/inapp/phone_engine_gateway.dart';
+import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
@@ -16,9 +22,36 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/team/projects/team_execution_gate.dart';
 import 'package:opencode_mobile/ui/screens/team/projects/team_projects_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_phone_setup_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/team_page.dart'
+    show PhoneTeamOffPage;
+import 'package:opencode_mobile/ui/screens/team/team_migration.dart'
+    show teamMigrationOffered;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'team_project_fixture_test.dart' show MemoryPersistence;
+import 'phone_project_engine_controller_test.dart' show NativeBridge;
+import 'phone_project_engine_gateway_test.dart' as engine;
+
+class _OwnershipFailureLinux extends BuiltinLinux {
+  int starts = 0;
+  @override
+  Future<BuiltinLinuxRunResult> run(
+    String script, {
+    Duration timeout = const Duration(minutes: 2),
+  }) async => const BuiltinLinuxRunResult(exitCode: 0, output: '');
+  @override
+  Future<void> startServer(
+    String script, {
+    int port = 4097,
+    BuiltinServerRestoreRecipe? restoreRecipe,
+  }) async {
+    starts++;
+    throw const BuiltinLinuxException(
+      'The server on this phone could not restart safely.',
+      code: 'runtime_ownership_unknown',
+    );
+  }
+}
 
 final _en = lookupAppLocalizations(const Locale('en'));
 
@@ -26,6 +59,7 @@ PhoneEngineHealth _health({
   bool execution = true,
   bool boundary = true,
   bool oc1Verified = true,
+  bool oc2 = false,
   bool restartRequired = false,
   String reason = '',
   String tier = 'none',
@@ -35,8 +69,9 @@ PhoneEngineHealth _health({
   engineVersion: '1',
   execution: execution,
   boundary: boundary,
-  oc1Verified: oc1Verified,
-  oc2: false,
+  oc1Verified: !oc2 && oc1Verified,
+  oc2: oc2,
+  oc2Verified: oc2,
   commandActions: const {},
   restartRequired: restartRequired,
   boundaryReason: reason,
@@ -57,6 +92,10 @@ class _Phone extends ChangeNotifier implements PhoneTeamSetupPorts {
 
   /// Holds the engine's proof open (a golden of the step while it works).
   Future<void>? holdStart;
+  Future<void>? holdStop;
+  bool engineRunning = false;
+  bool failStop = false;
+  bool requireReleasedStart = false;
 
   @override
   bool get hasServer => server;
@@ -86,7 +125,19 @@ class _Phone extends ChangeNotifier implements PhoneTeamSetupPorts {
     calls.add('startEngine');
     startCalls++;
     await holdStart;
+    if (engineRunning && requireReleasedStart) {
+      throw const PhoneEngineException('engine_in_use');
+    }
+    engineRunning = true;
     return started;
+  }
+
+  @override
+  Future<void> stopEngine() async {
+    calls.add('stopEngine');
+    await holdStop;
+    if (failStop) throw StateError('private native details');
+    engineRunning = false;
   }
 
   @override
@@ -202,6 +253,227 @@ class _Gateway extends ProjectFixtureGateway {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   tearDown(() => PhoneTeamSetup.debugPorts = null);
+
+  test('eligibility does not allocate a flow or a private starter', () async {
+    _mockChannels();
+    final connection = await _connection();
+    var created = 0;
+    PhoneTeamSetup.debugPorts = (_) {
+      created++;
+      return _Phone();
+    };
+    expect(PhoneTeamSetup.hasServer(connection), isFalse);
+    expect(created, 0);
+  });
+
+  testWidgets('migration and off-page access share the shell server owner', (
+    tester,
+  ) async {
+    _mockChannels();
+    _size(tester);
+    final connection = await _connection();
+    final profile = ServerProfile(
+      id: 'phone',
+      name: 'This phone',
+      baseUrl: BuiltinLinux.serverUrl,
+      flavor: ServerFlavor.v2,
+      password: 'fixture-server-password',
+      orchestration: const OrchestrationConfig(
+        provider: OrchestrationProvider.gascity,
+        url: 'http://127.0.0.1:8472',
+      ),
+    );
+    await connection.store.upsert(profile);
+    await connection.store.setActiveId(profile.id);
+    connection.adoptConnectedProfileForTesting(profile);
+    expect(teamMigrationOffered(connection), isTrue);
+    final linux = _OwnershipFailureLinux();
+    final starter = BuiltinServerStarter(linux: linux);
+    var claimed = 0;
+    starter.beforeManualStart = (_) async => claimed++;
+    addTearDown(starter.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [builtinServerStarterProvider.overrideWithValue(starter)],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: PhoneTeamOffPage(connection: connection),
+        ),
+      ),
+    );
+    await _settle(tester);
+    final context = tester.element(find.byType(PhoneTeamOffPage));
+    final flow = phoneTeamSetupForContext(context, connection);
+    addTearDown(flow.dispose);
+    expect((flow.ports as BuiltinPhoneTeamSetupPorts).starter, same(starter));
+    expect(await flow.ports.startServer(), 'componentRecovery');
+    expect(linux.starts, 1);
+    expect(claimed, 1);
+    expect(
+      starter.failureFor(profile)?.problem,
+      BuiltinStartProblem.componentRecovery,
+    );
+    expect(PhoneTeamSetup.of(connection, starter: starter), same(flow));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  test('phone-team capability is opt-in and survives managed-host overlay', () {
+    expect(const ServerCapabilities().phoneTeamExecution, isFalse);
+    for (final capabilities in [
+      ServerCapabilities.allV1,
+      api2ServerCapabilities,
+    ]) {
+      expect(capabilities.phoneTeamExecution, isTrue);
+      expect(capabilities.withGenUi(true).phoneTeamExecution, isTrue);
+      expect(capabilities.withGenUi(false).phoneTeamExecution, isTrue);
+    }
+  });
+
+  test(
+    'setup accepts inactive OC2 and prefers the active supported phone',
+    () async {
+      _mockChannels();
+      debugPlatformCapabilities = const PlatformCapabilities.android();
+      addTearDown(() => debugPlatformCapabilities = null);
+      final connection = await _connection();
+      final store = connection.store;
+      await store.upsert(
+        ServerProfile(
+          id: 'remote',
+          name: 'Remote',
+          baseUrl: 'https://example.org',
+          backend: ServerBackend.paseo,
+        ),
+      );
+      await store.upsert(
+        ServerProfile(
+          id: 'phone2',
+          name: 'Phone 2',
+          baseUrl: 'http://127.0.0.1:4097',
+          flavor: ServerFlavor.v2,
+          orchestration: const OrchestrationConfig(
+            provider: OrchestrationProvider.phoneEngine,
+            url: 'http://127.0.0.1:4098',
+          ),
+          teamEngineAuth: 'fixture-engine-token',
+        ),
+      );
+      await store.setActiveId('remote');
+      final linux = BuiltinLinux();
+      final starter = BuiltinServerStarter(linux: linux);
+      addTearDown(starter.dispose);
+      final ports = BuiltinPhoneTeamSetupPorts(
+        connection: connection,
+        linux: linux,
+        starter: starter,
+        notice: 'fixture',
+      );
+      expect(ports.hasServer, isTrue);
+      expect(ports.wasOn, isTrue);
+
+      await store.upsert(
+        ServerProfile(
+          id: 'phone1',
+          name: 'Phone 1',
+          baseUrl: 'http://127.0.0.1:4097',
+        ),
+      );
+      await store.setActiveId('phone1');
+      expect(ports.wasOn, isFalse);
+      await store.setActiveId('phone2');
+      expect(ports.wasOn, isTrue);
+    },
+  );
+
+  test('setup does not borrow a supported remote profile capability', () async {
+    _mockChannels();
+    debugPlatformCapabilities = const PlatformCapabilities.android();
+    addTearDown(() => debugPlatformCapabilities = null);
+    final connection = await _connection();
+    await connection.store.upsert(
+      ServerProfile(
+        id: 'unknown',
+        name: 'Unknown phone',
+        baseUrl: 'http://127.0.0.1:4097',
+        flavor: ServerFlavor.unknown,
+      ),
+    );
+    await connection.store.upsert(
+      ServerProfile(
+        id: 'remote',
+        name: 'Remote',
+        baseUrl: 'https://example.org',
+      ),
+    );
+    await connection.store.setActiveId('remote');
+    final linux = BuiltinLinux();
+    final starter = BuiltinServerStarter(linux: linux);
+    addTearDown(starter.dispose);
+    final ports = BuiltinPhoneTeamSetupPorts(
+      connection: connection,
+      linux: linux,
+      starter: starter,
+      notice: 'fixture',
+    );
+    expect(connection.capabilities.phoneTeamExecution, isTrue);
+    expect(ports.hasServer, isFalse);
+  });
+
+  test(
+    'real setup ports stop the attempted profile after selection changes',
+    () async {
+      _mockChannels();
+      debugPlatformCapabilities = const PlatformCapabilities.android();
+      addTearDown(() => debugPlatformCapabilities = null);
+      SharedPreferences.setMockInitialValues({});
+      final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+      for (final id in ['older', 'oc2']) {
+        await store.upsert(
+          ServerProfile(
+            id: id,
+            name: id,
+            baseUrl: BuiltinLinux.serverUrl,
+            flavor: id == 'oc2' ? ServerFlavor.v2 : ServerFlavor.v1,
+          ),
+        );
+      }
+      await store.setActiveId('older');
+      final bridge = NativeBridge();
+      final connection = ConnectionController(
+        store,
+        phoneEngineBridge: bridge,
+        phoneEngineGatewayBuilder:
+            ({required baseUrl, required profileId, required bearerToken}) =>
+                PhoneEngineGateway(
+                  baseUrl: baseUrl,
+                  profileId: profileId,
+                  bearerToken: bearerToken,
+                  adapter: engine.FakeEngineAdapter(
+                    (_) async => engine.jsonBody(engine.health(profileId)),
+                  ),
+                ),
+      );
+      addTearDown(connection.dispose);
+      addTearDown(connection.phoneProjectEngine.close);
+      final linux = BuiltinLinux();
+      final starter = BuiltinServerStarter(linux: linux);
+      addTearDown(starter.dispose);
+      final ports = BuiltinPhoneTeamSetupPorts(
+        connection: connection,
+        linux: linux,
+        starter: starter,
+        notice: 'fixture',
+      );
+      await ports.startEngine();
+      bridge.calls.clear();
+      await store.setActiveId('oc2');
+      await ports.stopEngine();
+      expect(bridge.calls, ['stop:older']);
+      await ports.startEngine();
+      expect(bridge.calls, contains('start:oc2'));
+    },
+  );
 
   group('the flow', () {
     test('a running reply is waited for, never cut short', () async {
@@ -326,6 +598,8 @@ void main() {
       expect(flow.failedStep, PhoneTeamSetupStep.check);
       expect(flow.details, 'boundary_proof_failed');
       expect(phone.calls, isNot(contains('startServer')));
+      expect(phone.calls.last, 'stopEngine');
+      expect(phone.engineRunning, isFalse);
     });
 
     test(
@@ -376,6 +650,7 @@ void main() {
       await flow.run();
       expect(flow.problem, PhoneTeamSetupProblem.serverStart);
       expect(flow.failedStep, PhoneTeamSetupStep.server);
+      expect(phone.calls.last, 'stopEngine');
     });
 
     test(
@@ -386,6 +661,105 @@ void main() {
         await flow.run();
         expect(flow.problem, PhoneTeamSetupProblem.notReady);
         expect(phone.calls.where((c) => c == 'probe'), hasLength(2));
+        expect(phone.engineRunning, isFalse);
+      },
+    );
+
+    test(
+      'unsupported OC1 readiness releases the engine before an OC2 retry',
+      () async {
+        final phone = _Phone()
+          ..requireReleasedStart = true
+          ..host = const PhoneTeamHostState(serverRunning: true)
+          ..probed = _health(
+            oc1Verified: false,
+            reason: 'unsupported_server_version',
+          );
+        final flow = _flow(phone);
+        final first = flow.run();
+        await Future<void>.delayed(Duration.zero);
+        flow.answer(true);
+        await first;
+        expect(flow.problem, PhoneTeamSetupProblem.notReady);
+        expect(flow.details, 'unsupported_server_version');
+        expect(phone.engineRunning, isFalse);
+        expect(
+          phone.calls,
+          containsAllInOrder(['probe', 'stopEngine', 'restoreServer']),
+        );
+
+        phone.host = const PhoneTeamHostState();
+        phone.probed = _health(oc2: true);
+        await flow.run();
+        expect(flow.isDone, isTrue);
+        expect(phone.engineRunning, isTrue);
+        expect(phone.startCalls, 2);
+      },
+    );
+
+    test(
+      'failure waits for engine cleanup before restoring or accepting retry',
+      () async {
+        final stop = Completer<void>();
+        final phone = _Phone()
+          ..host = const PhoneTeamHostState(serverRunning: true)
+          ..probed = _health(execution: false)
+          ..holdStop = stop.future;
+        final flow = _flow(phone);
+        final first = flow.run();
+        await Future<void>.delayed(Duration.zero);
+        flow.answer(true);
+        await Future<void>.delayed(Duration.zero);
+        expect(phone.calls, contains('stopEngine'));
+        expect(phone.calls, isNot(contains('restoreServer')));
+        expect(flow.isRunning, isTrue);
+        final joined = flow.run();
+        expect(identical(joined, first), isTrue);
+        expect(phone.startCalls, 1);
+        stop.complete();
+        await first;
+        expect(phone.engineRunning, isFalse);
+        expect(phone.calls.last, 'restoreServer');
+      },
+    );
+
+    test(
+      'cleanup failure retains the refusal and only a safe cleanup code',
+      () async {
+        final phone = _Phone()
+          ..probed = _health(
+            execution: false,
+            reason: 'unsupported_server_version',
+          )
+          ..failStop = true;
+        final flow = _flow(phone);
+        await flow.run();
+        expect(flow.details, 'unsupported_server_version; engineStopFailed');
+        expect(flow.details, isNot(contains('private')));
+        expect(flow.phase, PhoneTeamSetupPhase.failed);
+        phone.calls.clear();
+        phone.failStop = false;
+        phone.probed = _health();
+        await flow.run();
+        expect(phone.calls.first, 'stopEngine');
+        expect(flow.isDone, isTrue);
+      },
+    );
+
+    test(
+      'declining a restart discovered after launch releases that engine',
+      () async {
+        final phone = _Phone()..started = _health(restartRequired: true);
+        final flow = _flow(phone);
+        final run = flow.run();
+        await Future<void>.delayed(Duration.zero);
+        expect(flow.phase, PhoneTeamSetupPhase.confirming);
+        expect(phone.engineRunning, isTrue);
+        flow.answer(false);
+        await run;
+        expect(flow.problem, PhoneTeamSetupProblem.declined);
+        expect(phone.calls, ['inspect', 'startEngine', 'stopEngine']);
+        expect(phone.engineRunning, isFalse);
       },
     );
 
@@ -493,6 +867,46 @@ void main() {
       expect(find.text(_en.phoneTeamDoneTitle), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
+
+    testWidgets(
+      'unknown ownership offers Android recovery without another start',
+      (tester) async {
+        _size(tester);
+        final connection = await _connection();
+        final phone = _Phone()..serverFailure = 'componentRecovery';
+        final flow = _flow(phone);
+        var settings = 0;
+        const channel = MethodChannel('oc/termux');
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        messenger.setMockMethodCallHandler(channel, (call) async {
+          if (call.method == 'openAppSettings') settings++;
+          return true;
+        });
+        addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+        await tester.pumpWidget(
+          _app(TeamPhoneSetupScreen(connection: connection, controller: flow)),
+        );
+        await _settle(tester);
+        expect(flow.needsComponentRecovery, isTrue);
+        expect(find.text(_en.inAppServerOwnershipRecoveryBody), findsOneWidget);
+        expect(find.textContaining('componentRecovery'), findsNothing);
+        expect(
+          find.byKey(const ValueKey('phone-team-start-again')),
+          findsNothing,
+        );
+        await tester.tap(
+          find.byKey(const ValueKey('phone-team-recover-ownership')),
+        );
+        await _settle(tester);
+        expect(settings, 1);
+        expect(
+          phone.calls.where((call) => call == 'startServer'),
+          hasLength(1),
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
 
     testWidgets('B-3/B-4: after a stop, the failure says OpenCode is back on', (
       tester,

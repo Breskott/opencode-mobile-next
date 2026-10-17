@@ -135,8 +135,25 @@ extension on RenderParagraph {
   ).map((b) => b.top.round()).toSet().length;
 }
 
-Color _fillColor(WidgetTester tester) =>
-    (tester.widget<DecoratedBox>(_fill).decoration as ShapeDecoration).color!;
+/// The fill the pill shows: KitTappable's hover or press fill when it has
+/// one, the resting stadium under it otherwise.
+Color _fillColor(WidgetTester tester) {
+  final over =
+      (tester
+                  .widget<AnimatedContainer>(
+                    find.descendant(
+                      of: find.byType(KitTappable),
+                      matching: find.byType(AnimatedContainer),
+                    ),
+                  )
+                  .decoration!
+              as ShapeDecoration)
+          .color!;
+  if (over.a != 0) return over;
+  return (tester.widget<DecoratedBox>(_fill.first).decoration
+          as ShapeDecoration)
+      .color!;
+}
 
 void main() {
   KitJumpPill motionPill(bool visible) =>
@@ -316,9 +333,9 @@ void main() {
       // Focus it first, so hiding has to take focus away, not just refuse it.
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pump();
-      expect(_focusIn(tester, find.byType(InkWell)), isTrue);
+      expect(_focusIn(tester, find.byType(KitTappable)), isTrue);
       expect(find.semantics.byLabel('Jump to latest'), findsOne);
-      final rect = tester.getRect(find.byType(InkWell));
+      final rect = tester.getRect(find.byType(KitTappable));
 
       await tester.pumpWidget(host(false));
       await tester.pump(const Duration(milliseconds: 50));
@@ -639,7 +656,7 @@ void main() {
       );
       // Focusability itself is proven by real Tab traversal in "8. desktop
       // capabilities" below; `excludeSemantics` merges only this node's own
-      // flags, not InkWell's contributed `isFocusable`.
+      // flags, not the tappable's contributed `isFocusable`.
       expect(
         semantics,
         isSemantics(
@@ -653,7 +670,7 @@ void main() {
         isFalse,
         reason: 'K2 §1.19: not a live region',
       );
-      final box = tester.getSize(find.byType(InkWell));
+      final box = tester.getSize(find.byType(KitTappable));
       expect(box.width, greaterThanOrEqualTo(48));
       expect(box.height, greaterThanOrEqualTo(48));
       handle.dispose();
@@ -661,7 +678,7 @@ void main() {
   });
 
   group('8. desktop capabilities', () {
-    testWidgets('focus ring painted outside the pill in accent when '
+    testWidgets('focus ring painted inside the pill in accent when '
         'focused; Enter activates', (tester) async {
       var taps = 0;
       final boundary = GlobalKey();
@@ -669,7 +686,6 @@ void main() {
         tester,
         RepaintBoundary(
           key: boundary,
-          // Room around the pill for a ring drawn outside its bounds.
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: KitJumpPill(
@@ -683,19 +699,20 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       final roles = ThemeRoles.resolve(AppTheme.dark());
       final origin = tester.getTopLeft(find.byKey(boundary));
-      final pill = tester.getRect(find.byType(InkWell)).shift(-origin);
+      final pill = tester.getRect(find.byType(KitTappable)).shift(-origin);
       // The ring is focusRingWidth (2 logical px at a ratio of 1), drawn
-      // outside the stadium: sample the two columns just left of the pill's
-      // leftmost point, and the two rows just above its middle.
+      // inside the stadium like every KitTappable's: sample the columns
+      // just inside the pill's leftmost point, and the rows just inside its
+      // top.
       final y = pill.center.dy.floor();
       final x = pill.center.dx.floor();
       final left = pill.left.floor();
       final top = pill.top.floor();
       List<Color> ringSamples(({ByteData bytes, int width}) px) => [
-        _pixel(px, left - 1, y),
-        _pixel(px, left - 2, y),
-        _pixel(px, x, top - 1),
-        _pixel(px, x, top - 2),
+        _pixel(px, left + 1, y),
+        _pixel(px, left + 2, y),
+        _pixel(px, x, top + 1),
+        _pixel(px, x, top + 2),
       ];
 
       final before = await _paintedPixels(tester, boundary);
@@ -707,23 +724,23 @@ void main() {
 
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pump();
-      expect(_focusIn(tester, find.byType(InkWell)), isTrue);
+      expect(_focusIn(tester, find.byType(KitTappable)), isTrue);
       final after = await _paintedPixels(tester, boundary);
-      // Left of the pill and above it, the painted pixel is accent — the
-      // ring is on screen, not clipped by the pill's own shape.
+      // At the pill's left and top edge the painted pixel is accent — the
+      // ring is on screen, inside the stadium.
       expect(
-        _near(_pixel(after, left - 1, y), roles.accent) ||
-            _near(_pixel(after, left - 2, y), roles.accent),
+        _near(_pixel(after, left + 1, y), roles.accent) ||
+            _near(_pixel(after, left + 2, y), roles.accent),
         isTrue,
-        reason: 'accent ring left of the pill',
+        reason: 'accent ring at the pill\'s left edge',
       );
       expect(
-        _near(_pixel(after, x, top - 1), roles.accent) ||
-            _near(_pixel(after, x, top - 2), roles.accent),
+        _near(_pixel(after, x, top + 1), roles.accent) ||
+            _near(_pixel(after, x, top + 2), roles.accent),
         isTrue,
-        reason: 'accent ring above the pill',
+        reason: 'accent ring at the pill\'s top edge',
       );
-      // The pill's own fill inside is untouched (the ring sits outside).
+      // The pill's own fill in the middle is untouched.
       expect(_near(_pixel(after, x, y), roles.accent), isFalse);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
@@ -743,7 +760,7 @@ void main() {
       final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await mouse.addPointer(location: Offset.zero);
       addTearDown(mouse.removePointer);
-      await mouse.moveTo(tester.getCenter(find.byType(InkWell)));
+      await mouse.moveTo(tester.getCenter(find.byType(KitTappable)));
       await tester.pump();
       expect(_fillColor(tester), roles.surface2);
     });
@@ -777,7 +794,7 @@ void main() {
       expect(paragraph._renderedLines, lessThanOrEqualTo(2));
       expect(paragraph.didExceedMaxLines, isFalse, reason: 'never truncated');
       expect(
-        tester.getRect(find.byType(InkWell)).width,
+        tester.getRect(find.byType(KitTappable)).width,
         lessThanOrEqualTo(320 - 2 * 16),
         reason: 'max width = area width - 2 x gutter',
       );
@@ -815,7 +832,7 @@ void main() {
       // A label longer than the area: the pill takes exactly the area's
       // width less two gutters (KitJumpPill.md "Adaptive"), no more.
       expect(
-        tester.getRect(find.byType(InkWell)).width,
+        tester.getRect(find.byType(KitTappable)).width,
         moreOrLessEquals(240 - 2 * 16),
       );
     });

@@ -22,7 +22,7 @@ import '../../widgets/relative_time.dart';
 import '../../widgets/team_controls.dart' show teamControlWord;
 import '../../widgets/team_receipt.dart';
 import '../../widgets/team_vocabulary.dart';
-import 'gate_sheet.dart' show gateSheetDraftTarget;
+import 'gate_sheet.dart' show gateSheetDraftTarget, teamGateIfIgnored;
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -305,11 +305,7 @@ class _TeamNeedsYouCardState extends State<TeamNeedsYouCard> {
       reason: gate.kind == GateKind.runFailed
           ? KitNeedsYouReason.blocked
           : KitNeedsYouReason.decision,
-      ifIgnored: switch (gate.kind) {
-        GateKind.runFailed => l10n.teamGateCardIfIgnoredFailed,
-        GateKind.reviewReady => l10n.teamGateCardIfIgnoredReview,
-        _ => l10n.teamGateCardIfIgnored,
-      },
+      ifIgnored: teamGateIfIgnored(l10n, gate.kind),
       announcement: l10n.teamUiHomeNeedsYouAnnouncement(gate.title),
       detail: detail.isEmpty ? null : detail,
       since: gate.createdAt,

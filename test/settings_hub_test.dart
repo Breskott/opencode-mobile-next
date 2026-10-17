@@ -22,7 +22,7 @@ import 'package:opencode_mobile/ui/screens/about_screen.dart';
 import 'package:opencode_mobile/ui/screens/guide_screen.dart';
 import 'package:opencode_mobile/ui/screens/server_capabilities_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
-import 'package:opencode_mobile/ui/screens/tools_hub_screen.dart';
+import 'package:opencode_mobile/ui/screens/capabilities_screen.dart';
 import 'package:opencode_mobile/ui/search/search_index.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -94,12 +94,15 @@ Widget _app(
   ConnectionController controller, {
   Locale locale = const Locale('en'),
   SettingsGroup? initialGroup,
+  Widget? home,
 }) => MaterialApp(
   theme: AppTheme.light(),
   locale: locale,
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
-  home: SettingsScreen(controller: controller, initialGroup: initialGroup),
+  home:
+      home ??
+      SettingsScreen(controller: controller, initialGroup: initialGroup),
 );
 
 final _en = lookupAppLocalizations(const Locale('en'));
@@ -141,9 +144,9 @@ void main() {
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
 
-    // target-ia §1.3: the server under its own name (canvas), Agent,
-    // Conversations, This app, then an unlabelled last panel.
-    const slugs = ['server', 'agent', 'conversations', 'this-app', 'help'];
+    // Settings Standard G1: Connections, AI, Chat, This app, Help and about,
+    // five fixed labels that never change with the server.
+    const slugs = ['connections', 'ai', 'chat', 'this-app', 'help'];
     expect(SettingsGroup.values.map((group) => group.slug), slugs);
     var previous = double.negativeInfinity;
     for (final slug in slugs) {
@@ -156,7 +159,7 @@ void main() {
   });
 
   testWidgets(
-    'Disconnect is not on Settings; the server page names it and explains it',
+    'Disconnect is not on Settings; the server page names it and puts it last',
     (tester) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
@@ -166,10 +169,17 @@ void main() {
       // No floating Disconnect below the Connection group any more.
       expect(_row('settings-disconnect'), findsNothing);
       expect(find.text(_en.e7SettingsUi8), findsNothing);
+      expect(_row('server-disconnect'), findsNothing);
 
-      await tester.ensureVisible(_row('settings-category-server'));
-      await tester.pumpAndSettle();
-      await tester.tap(_row('settings-category-server'));
+      await tester.pumpWidget(
+        _app(
+          controller,
+          home: ServerPageScreen(
+            controller: controller,
+            profileId: 'profile-1',
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final disconnect = _row('server-disconnect');
@@ -185,28 +195,11 @@ void main() {
         ),
         findsOneWidget,
       );
+      // Destructive and last: Remove follows Disconnect, nothing after it.
       expect(
-        find.descendant(
-          of: disconnect,
-          matching: find.text(
-            'Stops live updates from Workstation. Conversations stay on '
-            'Workstation; unsent messages stay on this phone until you '
-            'reconnect.',
-          ),
-        ),
-        findsOneWidget,
+        tester.getTopLeft(_row('server-remove')).dy,
+        greaterThan(tester.getBottomLeft(disconnect).dy),
       );
-      // Last on the page, one section gap below the rest: no divider.
-      expect(_row('server-disconnect-divider'), findsNothing);
-      expect(
-        tester.getTopLeft(disconnect).dy,
-        greaterThan(
-          tester
-              .getBottomLeft(find.byKey(const Key('server-authentication')))
-              .dy,
-        ),
-      );
-      // The page is titled with the server; no identity row repeats it.
       expect(find.byKey(const Key('server-identity')), findsNothing);
     },
   );
@@ -225,13 +218,13 @@ void main() {
         scope,
         'disconnect',
       ).firstWhere((entry) => entry.id == 'inside-server-disconnect');
-      expect(result.parent, _en.settingsHubThisServer);
+      expect(result.parent, _en.settingsV3Servers);
 
       unawaited(
         result.open(tester.element(find.byType(SettingsScreen)), scope),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(ServerSettingsScreen), findsOneWidget);
+      expect(find.byType(ServerPageScreen), findsOneWidget);
       final row = _row('server-disconnect');
       expect(row, findsOneWidget);
       // Opened at the row: it is on screen without scrolling.
@@ -253,8 +246,8 @@ void main() {
     // query -> keys of rows that must be among the results.
     final cases = <String, List<String>>{
       // Titles.
-      _en.settingsHubThisServer: ['settings-category-server'],
-      _en.activitySavedServers: ['settings-saved-servers'],
+      _en.settingsV3StatusVersion: ['settings-category-server'],
+      _en.settingsV3Servers: ['settings-saved-servers'],
       _en.onboardingTermuxSetup: ['search-result-settings-on-this-phone'],
       _en.settingsHubAccounts: ['search-result-settings-accounts'],
       _en.settingsHubProvidersRow: ['settings-providers'],
@@ -263,6 +256,7 @@ void main() {
       _en.e7SettingsUi8: ['search-result-inside-server-disconnect'],
       _en.settingsHubModelRow: ['settings-model-and-mode'],
       _en.settingsHubModelAndMode: ['settings-model-and-mode'],
+      _en.settingsV3Shell: ['default-shell-settings-entry'],
       _en.e7SettingsUi35: ['default-shell-settings-entry'],
       _en.e7SettingsUi74: ['search-result-saved-permissions-entry'],
       _en.automationTitle: ['settings-automation'],
@@ -437,64 +431,64 @@ void main() {
     expect(nudges.offer(NudgeId.compact, scope: 'ses_1'), isTrue);
   });
 
-  testWidgets(
-    'the last panel is the guide, Report a problem, Available and About',
-    (tester) async {
-      final controller = await _controller();
-      addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(controller));
-      await tester.pumpAndSettle();
-      final last = _row('settings-group-help');
-      for (final key in [
-        'settings-setup-guide',
-        'library-report-bug',
-        'settings-server-capabilities',
-        'settings-about-notices',
-      ]) {
-        expect(find.descendant(of: last, matching: _row(key)), findsOneWidget);
-      }
-      // No Help page any more: its rows are hub rows or live on About.
-      expect(_row('settings-help'), findsNothing);
-      for (final key in [
-        'app-diagnostics-entry',
-        'settings-show-tips-again',
-        'settings-privacy-data-use',
-        'settings-voice-notices',
-        'settings-models',
-        'settings-tailscale',
-        'settings-external-agents',
-        'settings-mcp',
-        'settings-commands-tools',
-        'settings-category-plugins',
-        'settings-accounts',
-        'settings-transcript-display',
-        'library-import-session',
-      ]) {
-        expect(_row(key), findsNothing, reason: '$key is not a hub row');
-      }
-      // The demo stays reachable once a server is saved: on the guide.
-      await tester.ensureVisible(_row('settings-setup-guide'));
-      await tester.pumpAndSettle();
-      await tester.tap(_row('settings-setup-guide'));
-      await tester.pumpAndSettle();
-      expect(find.byType(GuideScreen), findsOneWidget);
-      final demo = _row('settings-try-demo');
-      await tester.scrollUntilVisible(
-        demo,
-        200,
-        scrollable: find
-            .descendant(
-              of: find.byType(GuideScreen),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      expect(
-        find.descendant(of: demo, matching: find.text(_en.settingsTryDemo)),
-        findsOneWidget,
-      );
-    },
-  );
+  testWidgets('the last panel is the guide, Report a problem and About', (
+    tester,
+  ) async {
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    final last = _row('settings-group-help');
+    for (final key in [
+      'settings-setup-guide',
+      'library-report-bug',
+      'settings-about-notices',
+    ]) {
+      expect(find.descendant(of: last, matching: _row(key)), findsOneWidget);
+    }
+    // What this server supports moved to the server's own page.
+    expect(_row('settings-server-capabilities'), findsNothing);
+    // No Help page any more: its rows are hub rows or live on About.
+    expect(_row('settings-help'), findsNothing);
+    for (final key in [
+      'app-diagnostics-entry',
+      'settings-show-tips-again',
+      'settings-privacy-data-use',
+      'settings-voice-notices',
+      'settings-models',
+      'settings-tailscale',
+      'settings-external-agents',
+      'settings-mcp',
+      'settings-commands-tools',
+      'settings-category-plugins',
+      'settings-accounts',
+      'settings-transcript-display',
+      'library-import-session',
+    ]) {
+      expect(_row(key), findsNothing, reason: '$key is not a hub row');
+    }
+    // The demo stays reachable once a server is saved: on the guide.
+    await tester.ensureVisible(_row('settings-setup-guide'));
+    await tester.pumpAndSettle();
+    await tester.tap(_row('settings-setup-guide'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GuideScreen), findsOneWidget);
+    final demo = _row('settings-try-demo');
+    await tester.scrollUntilVisible(
+      demo,
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byType(GuideScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(
+      find.descendant(of: demo, matching: find.text(_en.settingsTryDemo)),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('keyboard shortcuts are an About row on desktop only', (
     tester,
@@ -560,7 +554,7 @@ void main() {
         // No exception any more: the shell row is absent, not disabled, and
         // Help → "Available on this server" says why (rule 7).
         expect(_row('gated-shell-settings'), findsNothing);
-        expect(_row('settings-server-capabilities'), findsOneWidget);
+        expect(_row('settings-unavailable'), findsOneWidget);
         // The Providers row is the account's door; no second row for it.
         expect(_row('settings-accounts'), findsNothing);
         // Tools stays: plugins and external agents are not the server's.
@@ -569,7 +563,7 @@ void main() {
         expect(_found(controller, 'mcp'), isNot(contains('settings-mcp')));
         // What is about the app, not the server, survives.
         expect(_row('settings-category-appearance'), findsOneWidget);
-        expect(_row('settings-category-server'), findsOneWidget);
+        expect(_row('settings-saved-servers'), findsOneWidget);
       });
     }
 
@@ -592,14 +586,15 @@ void main() {
         expect(_row(key), findsNothing, reason: key);
       }
       // Plugins ("In this app") still needs only a saved server.
-      expect(_row('settings-group-server'), findsOneWidget);
+      expect(_row('settings-group-connections'), findsOneWidget);
       // Notifications stays off Android: saved-server monitoring and
-      // check-ins work in the open app, so its one row is never empty. The
-      // background summary is what goes.
-      expect(_row('settings-category-background'), findsOneWidget);
+      // check-ins work in the open app, so its row is never empty. The
+      // Background row is Android's alone and goes.
+      expect(_row('settings-category-notifications'), findsOneWidget);
+      expect(_row('settings-category-background'), findsNothing);
       expect(find.textContaining('Background:'), findsNothing);
 
-      // Usage has one row, for "Spent" or "Remaining". With neither usage
+      // Usage has one row, for "Spending" or "Plans". With neither usage
       // statistics nor a saved server the group is gone, not an empty header.
       final bare = await _controller(
         savedServer: false,
@@ -703,7 +698,10 @@ void main() {
     final help = tester.getRect(_row('settings-group-help'));
     expect(help.top, lessThan(700));
     expect(help.top, greaterThanOrEqualTo(0));
-    expect(tester.getRect(_row('settings-group-server')).bottom, lessThan(0));
+    expect(
+      tester.getRect(_row('settings-group-connections')).bottom,
+      lessThan(0),
+    );
   });
 
   group('screen-settings-1: two panes from expanded', () {
@@ -779,7 +777,7 @@ void main() {
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('settings-list-pane')), findsNothing);
-      expect(_row('settings-group-server'), findsOneWidget);
+      expect(_row('settings-group-connections'), findsOneWidget);
     });
 
     testWidgets('Show tips again says so on its row, not in a snackbar', (
@@ -835,7 +833,7 @@ void main() {
           matching: find.byType(KitArrival),
         );
         final count = rows.evaluate().length;
-        expect(count, inInclusiveRange(1, 5), reason: group.slug);
+        expect(count, inInclusiveRange(2, 6), reason: group.slug);
         total += count;
         for (final row in tester.widgetList<KitArrival>(rows)) {
           titles.add(row.id);
@@ -845,7 +843,9 @@ void main() {
       // row but the setup assistant (P2.2, not built yet) and This phone,
       // which joins the hub once the phone is set up (before that, setting
       // it up is one of Add server's ways, R3).
-      expect(total, 18);
+      // Agents is on every phone (where it cannot run it says why).
+      // Phrase suggestions (the chat's own-phrase chips) is one Conversations row.
+      expect(total, 21);
       expect(titles.toSet().length, titles.length);
       // The pairs that used to sit side by side are one row each now.
       for (final gone in [
@@ -879,29 +879,38 @@ void main() {
       );
     });
 
-    testWidgets('This phone joins the hub once the phone is set up', (
-      tester,
-    ) async {
-      final controller = await _controller(
-        baseUrl: 'http://127.0.0.1:${TermuxBridge.managedServerPort}',
-      );
-      addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(controller));
-      await tester.pumpAndSettle();
-      expect(
-        find.descendant(
-          of: _row('settings-group-server'),
-          matching: _row('settings-this-phone'),
-        ),
-        findsOneWidget,
-      );
-      // No second way to set it up again from search.
-      expect(
-        _found(controller, 'termux'),
-        isNot(contains('settings-on-this-phone')),
-      );
-      expect(_row('settings-this-phone'), findsOneWidget);
-    });
+    testWidgets(
+      'This phone is always on the hub and says whether it is set up',
+      (tester) async {
+        final controller = await _controller(
+          baseUrl: 'http://127.0.0.1:${TermuxBridge.managedServerPort}',
+        );
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(_app(controller));
+        await tester.pumpAndSettle();
+        expect(
+          find.descendant(
+            of: _row('settings-group-connections'),
+            matching: _row('settings-this-phone'),
+          ),
+          findsOneWidget,
+        );
+        // The app is connected to the server this phone hosts: it is running.
+        expect(
+          find.descendant(
+            of: _row('settings-this-phone'),
+            matching: find.text(_en.settingsV3PhoneRunning),
+          ),
+          findsOneWidget,
+        );
+        // No second way to set it up again from search.
+        expect(
+          _found(controller, 'termux'),
+          isNot(contains('settings-on-this-phone')),
+        );
+        expect(_row('settings-this-phone'), findsOneWidget);
+      },
+    );
 
     testWidgets('the transcript switches act on the hub', (tester) async {
       final controller = await _controller();
@@ -943,23 +952,21 @@ void main() {
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
 
-      // Paseo has neither a provider catalog nor saved permissions: the
-      // Agent and Conversations groups each say so once, the rest do not.
-      expect(_row('settings-unavailable-server'), findsNothing);
-      expect(_row('settings-unavailable-this-app'), findsNothing);
-      expect(_row('settings-unavailable-help'), findsNothing);
-      final agent = _row('settings-unavailable-agent');
-      expect(agent, findsOneWidget);
+      // Rows never move because a server lacks a feature (N6): every missing
+      // row is counted once, under the groups, never one note per group.
+      expect(find.byType(KitGroupNote), findsOneWidget);
+      final note = _row('settings-unavailable');
+      expect(note, findsOneWidget);
       expect(
         find.descendant(
-          of: agent,
-          matching: find.text(_en.settingsHubUnavailableCount(1)),
+          of: note,
+          matching: find.textContaining('available on this server'),
         ),
         findsOneWidget,
       );
-      expect(_row('settings-unavailable-conversations'), findsOneWidget);
 
-      await tester.tap(_row('settings-unavailable-why-agent'));
+      await tester.ensureVisible(_row('settings-unavailable-why'));
+      await tester.tap(_row('settings-unavailable-why'));
       await tester.pumpAndSettle();
       expect(find.byType(ServerCapabilitiesScreen), findsOneWidget);
     });
@@ -974,7 +981,7 @@ void main() {
       expect(find.byType(KitGroupNote), findsNothing);
     });
 
-    testWidgets('Tools holds MCP, the catalog and external agents', (
+    testWidgets('Tools is one page: MCP, the catalog and external agents', (
       tester,
     ) async {
       final controller = await _controller();
@@ -985,11 +992,25 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(_row('settings-tools'));
       await tester.pumpAndSettle();
-      expect(find.byType(ToolsHubScreen), findsOneWidget);
-      for (final key in ToolsHubScreen.rows) {
-        expect(_row(key), findsOneWidget, reason: key);
+      expect(find.byType(CapabilitiesScreen), findsOneWidget);
+      for (final label in [
+        _en.libraryMcpTitle,
+        _en.runResultsCommandsTitle,
+        _en.e7SettingsDetailUi25,
+        _en.e7SettingsDetailUi26,
+        _en.e7SettingsDetailUi27,
+        _en.a2aTitle,
+      ]) {
+        expect(_row('capabilities-tab-$label'), findsOneWidget, reason: label);
       }
-      expect(_row('tools-hub-unavailable'), findsNothing);
+      expect(_row('tools-unavailable'), findsNothing);
+      // The first tab is MCP; External agents is one tap away, on the same
+      // page.
+      expect(_row('tools-section-mcp'), findsOneWidget);
+      await tester.tap(_row('capabilities-tab-${_en.a2aTitle}'));
+      await tester.pumpAndSettle();
+      expect(_row('tools-section-externalAgents'), findsOneWidget);
+      expect(_row('external-agents-empty'), findsOneWidget);
     });
 
     testWidgets('Codex Tools keeps external agents, says why', (tester) async {
@@ -1001,16 +1022,16 @@ void main() {
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: ToolsHubScreen(controller: controller),
+          home: CapabilitiesScreen(controller: controller),
         ),
       );
       await tester.pumpAndSettle();
-      expect(_row('settings-mcp'), findsNothing);
-      expect(_row('settings-commands-tools'), findsNothing);
+      expect(_row('capabilities-tab-${_en.libraryMcpTitle}'), findsNothing);
+      expect(_row('tools-section-mcp'), findsNothing);
       expect(_row('settings-category-plugins'), findsNothing);
-      expect(_row('settings-external-agents'), findsOneWidget);
+      expect(_row('tools-section-externalAgents'), findsOneWidget);
       expect(find.text(_en.settingsHubUnavailableCount(2)), findsOneWidget);
-      await tester.tap(_row('tools-hub-unavailable-why'));
+      await tester.tap(_row('tools-unavailable-why'));
       await tester.pumpAndSettle();
       expect(find.byType(ServerCapabilitiesScreen), findsOneWidget);
     });
@@ -1069,13 +1090,24 @@ void main() {
       await tester.tap(_row('settings-about-notices'));
       await tester.pumpAndSettle();
       expect(find.byType(AboutScreen), findsOneWidget);
-      expect(
-        find.descendant(
-          of: _row('about-open-source'),
-          matching: _row('settings-voice-notices'),
-        ),
-        findsOneWidget,
-      );
+      // The four parts are rows of About itself, below Open source: the
+      // Voice licenses page is gone.
+      for (final part in const [
+        'whisper',
+        'sherpa-onnx',
+        'onnx-runtime',
+        'record',
+      ]) {
+        expect(
+          find.descendant(
+            of: _row('about-voice-licences'),
+            matching: _row('voice-notice-$part'),
+          ),
+          findsOneWidget,
+          reason: part,
+        );
+      }
+      expect(find.text(_en.voiceNoticesTitle), findsOneWidget);
       expect(_row('about-tabs'), findsNothing);
       expect(_row('settings-show-tips-again'), findsOneWidget);
     });

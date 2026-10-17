@@ -130,9 +130,9 @@
           "key": "settings-tools",
           "line": 300,
           "action": "navigate",
-          "target": "tools-hub",
+          "target": "capabilities",
           "targetWidget": null,
-          "effect": "Opens Settings › Tools: MCP, Commands & tools, Plugins, External agents.",
+          "effect": "Opens Settings › Tools: one page with MCP, Commands, Tools, Skills, References and External agents tabs.",
           "gates": [],
           "destructive": false
         },
@@ -344,98 +344,6 @@
       ]
     },
     {
-      "id": "tools-hub",
-      "title": "Tools",
-      "kind": "screen",
-      "file": "lib/ui/screens/tools_hub_screen.dart",
-      "widget": "ToolsHubScreen",
-      "presentedBy": [],
-      "line": 22,
-      "purpose": "Settings › Tools (target-ia §1.3 row 7, slice-P3.10): one row each for MCP, the server's commands, skills, tools and references (capabilities), Plugins and External agents. Rows the server cannot serve are absent and one muted line counts them with a Why.",
-      "reachedFrom": [
-        {
-          "page": "settings",
-          "element": "settings-tools"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "tools-hub-mcp",
-          "type": "list-tile",
-          "label": "MCP",
-          "key": "settings-mcp",
-          "line": 84,
-          "action": "navigate",
-          "target": "integrations",
-          "targetWidget": null,
-          "effect": "Opens IntegrationsScreen in MCP mode.",
-          "gates": [
-            "capabilities.serverCatalog"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "tools-hub-commands-tools",
-          "type": "list-tile",
-          "label": "Commands & tools",
-          "key": "settings-commands-tools",
-          "line": 84,
-          "action": "navigate",
-          "target": "capabilities",
-          "targetWidget": null,
-          "effect": "Opens CapabilitiesScreen (Commands, Tools, Skills, References tabs).",
-          "gates": [
-            "capabilities.serverCatalog"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "tools-hub-plugins",
-          "type": "list-tile",
-          "label": "Plugins",
-          "key": "settings-category-plugins",
-          "line": 84,
-          "action": "navigate",
-          "target": "team-intro",
-          "targetWidget": null,
-          "effect": "Opens PluginsSettingsScreen.",
-          "gates": [
-            "profile != null || capabilities.pluginInventory"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "tools-hub-external-agents",
-          "type": "list-tile",
-          "label": "External agents",
-          "key": "settings-external-agents",
-          "line": 84,
-          "action": "navigate",
-          "target": "external-agents",
-          "targetWidget": null,
-          "effect": "openExternalAgents(context, controller): ExternalAgentsScreen with its own store.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "tools-hub-unavailable-why",
-          "type": "link",
-          "label": "Why",
-          "key": "tools-hub-unavailable-why",
-          "line": 100,
-          "action": "navigate",
-          "target": "server-capabilities",
-          "targetWidget": null,
-          "effect": "Opens Available on this server.",
-          "gates": [
-            "a Tools row is hidden by the connected server"
-          ],
-          "destructive": false
-        }
-      ]
-    },
-    {
       "id": "settings-disconnect-sheet",
       "title": "Disconnect from {server}?",
       "kind": "sheet",
@@ -497,18 +405,6 @@
         {
           "page": "settings",
           "element": "settings-category-background"
-        },
-        {
-          "page": "activity",
-          "element": "activity-background-hint"
-        },
-        {
-          "page": "workspace",
-          "element": "workspace-section-menu-background"
-        },
-        {
-          "page": "provider-quota",
-          "element": "provider-quota-monitor-notification-settings"
         }
       ],
       "gates": [],
@@ -854,7 +750,7 @@
           "key": "usage-tab-remaining",
           "line": 88,
           "action": "other",
-          "target": "provider-quota",
+          "target": "usage-plans",
           "targetWidget": "ProviderQuotaScreen",
           "effect": "Shows the embedded ProviderQuotaScreen body.",
           "gates": [
@@ -957,6 +853,22 @@
           "effect": "_ThemePackTile (one per ThemePackId.values): onSelect -> showThemePackPreview(context, controller:, pack: id); the sheet writes controller.setThemePack(pack). Selected pack shows a check.",
           "gates": [
             "dynamic pack disabled unless harvestedDynamicPack.value != null (subtitle \"Material You colors are not available on this device.\")"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "appearance-settings-live-style",
+          "type": "list-tile",
+          "label": "Look (Live background)",
+          "key": "effects-live-style",
+          "file": "lib/ui/screens/settings/personal_settings_screens.dart",
+          "line": 468,
+          "action": "navigate",
+          "target": "live-style-picker",
+          "targetWidget": "LiveStylePickerScreen",
+          "effect": "Pushes LiveStylePickerScreen(controller); the supporting line names the chosen look.",
+          "gates": [
+            "row shown only while the Live background switch (effects-live-background) is on"
           ],
           "destructive": false
         }
@@ -1251,7 +1163,7 @@
       "widget": "AboutScreen",
       "presentedBy": [],
       "line": 30,
-      "purpose": "Build identity (version, update check, Details), non-affiliation and build notices, Tips and shortcuts (Show tips again; keyboard shortcuts on a desktop) and Open source (all package licences, the voice models' licences on Android, the third-party notices). The privacy policy moved to Privacy and data (slice-P3.10).",
+      "purpose": "Build identity (version, update check, Details), non-affiliation and build notices, Tips and shortcuts (Show tips again; keyboard shortcuts on a desktop) and Open source (all package licences, the voice models' licences on Android as a Voice licenses group, the third-party notices). The privacy policy moved to Privacy and data (slice-P3.10).",
       "reachedFrom": [
         {
           "page": "settings",
@@ -1316,15 +1228,15 @@
           "destructive": false
         },
         {
-          "id": "about-voice-notices",
+          "id": "about-voice-licence-row",
           "type": "list-tile",
-          "label": "Voice licenses and provenance",
-          "key": "settings-voice-notices",
+          "label": "<voice component name> / <maker · license>",
+          "key": "voice-notice-<id>",
           "line": 304,
-          "action": "navigate",
-          "target": "voice-notices",
+          "action": "open-sheet",
+          "target": null,
           "targetWidget": null,
-          "effect": "showVoiceNotices(context).",
+          "effect": "showVoiceNoticeLicense: opens the part's license text in the kit viewer, with an Open website action (openExternalLink). The four rows form the Voice licenses group under Open source (FG6: the Voice licenses page is gone).",
           "gates": [
             "platformCapabilities.supportsVoice"
           ],
@@ -2330,6 +2242,88 @@
         "controller.isConnected (hub row and search entry gate)"
       ],
       "elements": []
+    },
+    {
+      "id": "live-style-picker",
+      "title": "Look",
+      "kind": "screen",
+      "file": "lib/ui/screens/settings/live_background_screens.dart",
+      "widget": "LiveStylePickerScreen",
+      "presentedBy": [],
+      "line": 9,
+      "purpose": "Settings > Appearance > Live background > Look: a grid of the live looks, the chosen one marked; a tap opens that look in a full-screen preview.",
+      "reachedFrom": [
+        {
+          "page": "appearance-settings",
+          "element": "appearance-settings-live-style"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "live-style-picker-tile",
+          "type": "card",
+          "label": "<look name>",
+          "key": "live-style-<id>",
+          "file": "lib/ui/screens/settings/live_background_screens.dart",
+          "line": 23,
+          "action": "navigate",
+          "target": "live-style-preview",
+          "targetWidget": "LiveStylePreviewScreen",
+          "effect": "Pushes LiveStylePreviewScreen(controller, style). Nothing is changed until Use this.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "live-style-preview",
+      "title": "<look name>",
+      "kind": "screen",
+      "file": "lib/ui/screens/settings/live_background_screens.dart",
+      "widget": "LiveStylePreviewScreen",
+      "presentedBy": [],
+      "line": 34,
+      "purpose": "One live look full screen behind a mock chat, with a Reply running switch to see it brighten and a Use this button.",
+      "reachedFrom": [
+        {
+          "page": "live-style-picker",
+          "element": "live-style-picker-tile"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "live-style-preview-running",
+          "type": "toggle",
+          "label": "Reply running",
+          "key": "live-style-running",
+          "file": "lib/ui/kit/kit_live_style_preview.dart",
+          "line": 58,
+          "action": "other",
+          "target": null,
+          "targetWidget": "KitSwitchRow",
+          "effect": "Local view state: makes the preview behave as if a reply were running. Not stored.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "live-style-preview-use",
+          "type": "button",
+          "label": "Use this",
+          "key": "live-style-use",
+          "file": "lib/ui/kit/kit_live_style_preview.dart",
+          "line": 70,
+          "action": "toggle-setting",
+          "target": "appearance-settings",
+          "targetWidget": "KitButton",
+          "effect": "controller.setEffects(effects.copyWith(liveStyle: style.id)) (oc.effectsLiveStyle), then pops back to the picker. Disabled for the look already in use.",
+          "gates": [
+            "disabled while the look is the one in use"
+          ],
+          "destructive": false
+        }
+      ]
     }
   ],
   "notPages": [
@@ -2364,6 +2358,22 @@
     {
       "file": "lib/ui/screens/settings/server_plugins_section.dart",
       "reason": "ServerPluginsSection is the 'Plugins on this server' section of the This server page (server-settings); its elements keep their plugins-* ids on that page's host."
+    },
+    {
+      "file": "lib/ui/screens/crash_reports_section.dart",
+      "reason": "CrashReportsSection is the 'Crash reports' opt-in block of App diagnostics (host page app-diagnostics), not a surface of its own; its switch, Share and Delete actions belong to that page."
+    },
+    {
+      "file": "lib/ui/screens/crash_report_share.dart",
+      "reason": "Preview sheet opened from the Crash reports block of App diagnostics showing exactly what Share sends; part of the app-diagnostics page flow, no route of its own."
+    },
+    {
+      "file": "lib/ui/screens/exit_history_section.dart",
+      "reason": "ExitHistorySection is the 'Recent app exits' block of App diagnostics (host page app-diagnostics), not a surface of its own."
+    },
+    {
+      "file": "lib/ui/screens/recent_error_words.dart",
+      "reason": "Pure helpers that turn recorded error categories into plain words for App diagnostics; no visual surface or gestures."
     }
   ],
   "notes": [

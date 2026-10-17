@@ -110,11 +110,30 @@ void main() {
       .text
       .toPlainText();
 
+  testWidgets('nothing on the page is red: Stop and Remove are plain, and '
+      'Stop still asks first', (tester) async {
+    await inApp(tester);
+    expect(
+      find.byWidgetPredicate((w) => w is KitButton && w.destructive),
+      findsNothing,
+    );
+    expect(
+      find.byWidgetPredicate((w) => w is KitRow && w.destructive),
+      findsNothing,
+    );
+    await tester.tap(find.byKey(const ValueKey('this-phone-stop')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('stop-local-server-confirm-sheet')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('in the app: the status, the one act it needs, then one list', (
     tester,
   ) async {
     await inApp(tester);
-    expect(find.text(_l10n.phoneServerCardTitle), findsOneWidget);
+    expect(find.text(_l10n.setupRuntimeOne), findsOneWidget);
     expect(text(tester, 'this-phone-state'), _l10n.phoneServerCardRunning);
     expect(
       text(tester, 'this-phone-detail'),
@@ -181,7 +200,7 @@ void main() {
     tester,
   ) async {
     await termux(tester, scan: () async => const TermuxProcessReport([]));
-    expect(find.text(_l10n.phoneServerCardTitle), findsOneWidget);
+    expect(find.text(_l10n.setupRuntimeOne), findsOneWidget);
     expect(text(tester, 'this-phone-state'), _l10n.phoneServerCardRunning);
     expect(
       text(tester, 'this-phone-detail'),
@@ -367,7 +386,10 @@ void main() {
     expect(engine.runs, [
       {'python'},
     ]);
-    expect(engine.runParams.single, SetupJobParams.adding({'python'}));
+    expect(engine.runParams.single, {
+      ...SetupJobParams.adding({'python'}),
+      'opencode': {'runtime': 'opencode1'},
+    });
     expect(progressOpened, 1);
     // The sheet's device look gives up after 5 s off a phone.
     await tester.pump(const Duration(seconds: 6));

@@ -523,6 +523,10 @@ void main() {
     final repository = _BackgroundRepository();
     conn.repository = repository;
     (conn.api as _FakeApi).transcript = [_task()];
+    // The session is busy when the chat opens: a tool left running on an idle
+    // session is shown finished (transcript_settle.dart), and a settled
+    // transcript is not revived by a later busy flag.
+    conn.busySessions.add('session-1');
     await _pumpChat(
       tester,
       conn,
@@ -530,8 +534,6 @@ void main() {
       textScale: 1,
       settle: false,
     );
-    conn.busySessions.add('session-1');
-    conn.notifyListeners();
     await tester.pump();
     expect(find.text('Background'), findsOneWidget);
     expect(repository.capabilityReads, 1);
@@ -560,6 +562,7 @@ void main() {
         ..result = BackgroundWorkResult.unchanged;
       conn.repository = repository;
       (conn.api as _FakeApi).transcript = [_task()];
+      conn.busySessions.add('session-1');
       await _pumpChat(
         tester,
         conn,
@@ -567,8 +570,11 @@ void main() {
         textScale: 1,
         settle: false,
       );
-      conn.busySessions.add('session-1');
-      conn.notifyListeners();
+      await tester.pump();
+      // The approval chip now shares the sideways-scrolling strip.
+      await tester.ensureVisible(
+        find.byKey(const Key('background-running-work')),
+      );
       await tester.pump();
       await tester.tap(find.byKey(const Key('background-running-work')));
       await tester.pump();
@@ -776,6 +782,9 @@ void main() {
         await tester.pumpAndSettle();
         final choice = find.byKey(Key('composer-tool-$name'));
         await tester.ensureVisible(choice);
+        // The sheet has one more row (the project file) and, at 1.7x text on
+        // a 320 dp phone, scrolls: lay out the scrolled sheet before tapping.
+        await tester.pumpAndSettle();
         await tester.tap(choice);
         await tester.pumpAndSettle();
         await tester.pumpAndSettle();
@@ -835,8 +844,8 @@ void main() {
     },
   );
 
-  testWidgets('a busy run writes its status on the composer edge with a '
-      'Stop; the pill keeps its mic', (tester) async {
+  testWidgets('a busy run writes its status in the turn; the composer is idle '
+      'and its Send becomes the one Stop', (tester) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
     (controller.api! as _FakeApi).transcript = [_sentPrompt()];
@@ -853,11 +862,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // The composer's top edge says what the run is doing and carries Stop;
-    // the pill has no ring, no glow (LOOK-20) and no Stop circle of its own.
+    // The turn says what the run is doing (01B); the composer's Send became
+    // Stop (11B), the only one.
     expect(find.text('Thinking…'), findsOneWidget);
     expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
-    expect(find.byKey(const ValueKey('kit-composer-stop')), findsNothing);
+    expect(find.byKey(const ValueKey('kit-composer-stop')), findsOneWidget);
+    expect(find.text('Stop reply'), findsNothing);
     expect(find.byKey(const ValueKey('composer-activity')), findsNothing);
     expect(find.byKey(const ValueKey('typing-indicator')), findsNothing);
     expect(find.byKey(const Key('chat-composer-field')), findsOneWidget);

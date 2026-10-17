@@ -10,6 +10,8 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/guide_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart'
+    show ServerPageScreen;
 
 import 'support/profile_monitor_fixture.dart';
 
@@ -117,6 +119,24 @@ void main() {
     expect(find.byType(ServersScreen), findsOneWidget);
     expect(_key('servers-menu'), findsNothing);
     expect(find.text(_en.e7LibraryReportABug), findsNothing);
+    await _finish(tester, controller);
+  });
+
+  testWidgets('tapping a server opens its own page and does not connect', (
+    tester,
+  ) async {
+    final controller = await _controller();
+    await tester.pumpWidget(_app(controller, const ServersScreen()));
+    await tester.pump();
+
+    final row = find.byKey(const ValueKey('saved-server-profile-1'));
+    expect(row, findsOneWidget);
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ServerPageScreen), findsOneWidget);
+    expect(controller.isConnected, isFalse);
+    expect(controller.profile, isNull);
     await _finish(tester, controller);
   });
 }

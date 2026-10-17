@@ -16,11 +16,11 @@ import 'package:opencode_mobile/state/first_run.dart';
 import 'package:opencode_mobile/state/nudges.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/desktop/shortcuts.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart'
     show KitAction, KitButton, KitNotice;
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/review_workspace.dart';
-import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _Api extends OpenCodeApi with CompleteMessageHistory {
@@ -267,7 +267,7 @@ void main() {
       await tester.tap(_action(NudgeId.approvals));
       await tester.pumpAndSettle();
       expect(find.byType(SessionApprovalsSheet), findsOneWidget);
-      expect(find.text('Approvals for this conversation'), findsOneWidget);
+      expect(find.byKey(const Key('approvals-mode-ask')), findsOneWidget);
       expect(_nudge(NudgeId.approvals), findsNothing);
 
       // Closing the sheet and meeting a fourth request does not bring it back.
@@ -276,6 +276,8 @@ void main() {
       await askAndAnswer(tester, controller, 'r5', 'edit');
       expect(_nudge(NudgeId.approvals), findsNothing);
       expect(controller.nudges.record(NudgeId.approvals)?.dismissed, isTrue);
+      // Inventory reconciles before Home opens; dispose before timer verification.
+      controller.dispose();
     });
 
     testWidgets('closing it removes it for good', (tester) async {
@@ -296,6 +298,8 @@ void main() {
 
       await askAndAnswer(tester, controller, 'r4', 'bash');
       expect(_nudge(NudgeId.approvals), findsNothing);
+      // Inventory reconciles before Home opens; dispose before timer verification.
+      controller.dispose();
     });
 
     testWidgets('never during first run before the first reply', (
@@ -538,6 +542,28 @@ void main() {
       expect(_nudge(NudgeId.compact), findsNothing);
     });
 
+    testWidgets('an open find keeps the height: the tip waits', (tester) async {
+      final controller = await _controller(_Api(transcript: transcript(85)));
+      addTearDown(controller.dispose);
+      controller
+        ..catalog = catalog
+        ..selectedModel = ModelRef(providerID: 'p', modelID: 'm');
+      await _pumpChat(tester, controller);
+      await tester.pumpAndSettle();
+      expect(_nudge(NudgeId.compact), findsOneWidget);
+
+      Actions.invoke(
+        tester.element(find.byKey(const Key('chat-composer-field'))),
+        const FindInSurfaceIntent(),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('transcript-find-input')),
+        findsOneWidget,
+      );
+      expect(_nudge(NudgeId.compact), findsNothing);
+    });
+
     testWidgets('closing it removes it without compacting', (tester) async {
       final repository = _Repository();
       final controller = await _controller(
@@ -579,105 +605,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(_nudge(NudgeId.compact), findsNothing);
       expect(unsupported.nudges.wasShown(NudgeId.compact), isFalse);
-    });
-  });
-
-  group('pin conversations', () {
-    Session session(String id, String directory) => Session(
-      id: id,
-      title: id,
-      directory: directory,
-      time: SessionTime(created: 1, updated: 2),
-    );
-
-    Widget work(ConnectionController controller) => MaterialApp(
-      theme: AppTheme.light(),
-      home: Scaffold(body: WorkspaceScreen(controller: controller)),
-    );
-
-    testWidgets('the second project used brings the tip to Work', (
-      tester,
-    ) async {
-      final controller = await _controller(_Api());
-      addTearDown(controller.dispose);
-      controller
-        ..directory = '/work/app'
-        ..sessionsById = {
-          'one': session('one', '/work/app'),
-          'two': session('two', '/work/site'),
-        };
-      await tester.pumpWidget(work(controller));
-      await tester.pumpAndSettle();
-      expect(controller.nudges.projectsUsed, 1);
-      expect(_nudge(NudgeId.pinConversations), findsNothing);
-
-      controller.directory = '/work/site';
-      await tester.pumpWidget(work(controller));
-      await tester.pumpAndSettle();
-      expect(controller.nudges.projectsUsed, 2);
-      expect(_nudge(NudgeId.pinConversations), findsOneWidget);
-      expect(
-        find.text(
-          'Pin conversations you return to from their menu; they stay at the '
-          'top of Work.',
-        ),
-        findsOneWidget,
-      );
-
-      await tester.tap(_dismiss(NudgeId.pinConversations));
-      await tester.pumpAndSettle();
-      expect(_nudge(NudgeId.pinConversations), findsNothing);
-
-      controller.directory = '/work/app';
-      await tester.pumpWidget(work(controller));
-      await tester.pumpAndSettle();
-      expect(_nudge(NudgeId.pinConversations), findsNothing);
-    });
-
-    testWidgets('Got it closes it too', (tester) async {
-      final controller = await _controller(_Api());
-      addTearDown(controller.dispose);
-      await controller.nudges.noteProjectUsed(
-        profileID: 'server-a',
-        directory: '/work/earlier',
-      );
-      controller
-        ..directory = '/work/app'
-        ..sessionsById = {'one': session('one', '/work/app')};
-      await tester.pumpWidget(work(controller));
-      await tester.pumpAndSettle();
-      expect(_nudge(NudgeId.pinConversations), findsOneWidget);
-      await tester.tap(_action(NudgeId.pinConversations));
-      await tester.pumpAndSettle();
-      expect(_nudge(NudgeId.pinConversations), findsNothing);
-      expect(
-        controller.nudges.record(NudgeId.pinConversations)?.dismissed,
-        isTrue,
-      );
-    });
-
-    testWidgets('someone who already pins here is not told', (tester) async {
-      final controller = await _controller(_Api());
-      addTearDown(controller.dispose);
-      await controller.nudges.noteProjectUsed(
-        profileID: 'server-a',
-        directory: '/work/earlier',
-      );
-      controller
-        ..directory = '/work/app'
-        ..sessionsById = {
-          'one': session('one', '/work/app'),
-          'two': session('two', '/work/app'),
-        };
-      await controller.setSessionPinned(
-        'one',
-        true,
-        locationRevision: controller.locationRevision,
-      );
-      await tester.pumpWidget(work(controller));
-      await tester.pumpAndSettle();
-      expect(_nudge(NudgeId.pinConversations), findsNothing);
-      expect(controller.nudges.wasShown(NudgeId.pinConversations), isFalse);
     });
   });
 

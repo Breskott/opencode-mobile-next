@@ -25,11 +25,12 @@ import 'screens/phone_setup/phone_setup_termux_screen.dart';
 import 'screens/project_hub_screen.dart';
 import 'screens/projects_screen.dart';
 import 'screens/servers_screen.dart' show ServersRouteRequest;
-import 'screens/settings_screen.dart' show NotificationsSettingsScreen;
+import 'screens/settings_screen.dart'
+    show NotificationsPage, NotificationsSettingsScreen;
 import 'screens/tailscale_setup_screen.dart';
 import 'screens/team/team_page.dart';
 import 'screens/this_phone_screen.dart';
-import 'screens/tools_hub_screen.dart';
+import 'screens/capabilities_screen.dart';
 import 'screens/usage_hub_screen.dart';
 import 'widgets/pickers.dart';
 import 'widgets/product_states.dart';
@@ -82,13 +83,8 @@ Map<String, KitEnableFlowHandler> capabilityFlowHandlers(
         if (context.mounted) await editTeamAddress(context, controller);
       },
     ),
-    KitEnableFlows.mcpAdd: (context, _) => pushKitPage<void>(
-      context,
-      (_) => IntegrationsScreen(
-        controller: controller,
-        mode: IntegrationsMode.mcp,
-      ),
-    ),
+    KitEnableFlows.mcpAdd: (context, _) =>
+        openTools(context, controller, section: ToolsSection.mcp),
     KitEnableFlows.projectChoose: (context, _) => pushKitPage<bool>(
       context,
       (_) => ProjectsScreen(controller: controller, selectedProjectID: null),
@@ -104,7 +100,7 @@ Map<String, KitEnableFlowHandler> capabilityFlowHandlers(
             context,
             (_) => UsageHubScreen(
               controller: controller,
-              initialSection: UsageSection.remaining,
+              initialSection: UsageSection.plans,
             ),
           ),
     KitEnableFlows.addExternalAgent: (context, _) =>
@@ -128,7 +124,10 @@ Map<String, KitEnableFlowHandler> capabilityFlowHandlers(
     if (platform.supportsNotifications)
       KitEnableFlows.allowNotifications: (context, _) => pushKitPage<void>(
         context,
-        (_) => NotificationsSettingsScreen(controller: controller),
+        (_) => NotificationsSettingsScreen(
+          controller: controller,
+          page: NotificationsPage.notifications,
+        ),
       ),
     if (platform.supportsBackgroundService)
       KitEnableFlows.allowBackground: (context, _) =>

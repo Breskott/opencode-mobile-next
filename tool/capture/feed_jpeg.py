@@ -7,7 +7,7 @@ here at quality 95 and piped in:
     python3 tool/capture/feed_jpeg.py FRAMES_DIR \
       | ffmpeg -f image2pipe -c:v mjpeg -framerate 30 -i pipe:0 \
           -c:v libvpx -b:v 3M -pix_fmt yuv420p -vf scale=585:1266 \
-          video/public/demo.webm
+          tool/demo-video/public/demo.webm
 """
 import glob, io, os, sys
 from PIL import Image

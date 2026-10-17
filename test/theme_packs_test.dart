@@ -4,7 +4,6 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/kit/kit_nav.dart';
 import 'package:opencode_mobile/ui/kit/kit_undo.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/theme_packs.dart';
@@ -34,7 +33,7 @@ void main() {
 
     final light = AppTheme.light();
     expect(light.colorScheme.primary, const Color(0xFF087F43));
-    expect(light.colorScheme.surfaceContainerLow, const Color(0xFFFFFFFF));
+    expect(light.colorScheme.surfaceContainerLow, const Color(0xFFFAFAF8));
     expect(light.scaffoldBackgroundColor, const Color(0xFFF3F3F1));
     expect(AppTheme.successOf(light), const Color(0xFF087F43));
   });
@@ -334,37 +333,39 @@ void main() {
     testWidgets('the language is a picker row with its value', (tester) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
+      // Language lives once, on the Settings hub, not on Appearance.
       await tester.pumpWidget(page(controller));
       await tester.pumpAndSettle();
-
-      expect(find.text('Language'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('appearance-language')));
+      expect(find.text('Language'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: AppTheme.light(),
+          home: SettingsScreen(controller: controller),
+        ),
+      );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('appearance-language-ar')));
+
+      final row = find.byKey(const ValueKey('settings-category-language'));
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: row, matching: find.text('Language')),
+        findsOneWidget,
+      );
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('settings-language-ar')));
       await tester.pumpAndSettle();
       expect(controller.appLocale.value, const Locale('ar'));
       // The row shows the value now in force.
       expect(
         find.descendant(
-          of: find.byKey(const ValueKey('appearance-language')),
+          of: find.byKey(const ValueKey('settings-category-language')),
           matching: find.textContaining('العربية'),
         ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('effects preview glass through the kit tab bar', (
-      tester,
-    ) async {
-      final controller = await _controller();
-      addTearDown(controller.dispose);
-      await tester.pumpWidget(page(controller));
-      await tester.pumpAndSettle();
-      final preview = find.byKey(const ValueKey('effects-preview-glass'));
-      await tester.ensureVisible(preview);
-      await tester.pumpAndSettle();
-      expect(
-        find.descendant(of: preview, matching: find.byType(KitNavBar)),
         findsOneWidget,
       );
     });

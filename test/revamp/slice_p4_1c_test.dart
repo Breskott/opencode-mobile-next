@@ -311,11 +311,13 @@ void main() {
     expect(card.reason, KitNeedsYouReason.blocked);
     expect(card.answers, isA<KitRequestInSheet>());
     expect(find.text(_en.teamGateCardRunFailedOpen), findsOneWidget);
-    expect(find.text(_en.teamGateCardIfIgnoredFailed), findsOneWidget);
+    // The quiet card keeps the reassurance for Details, not the card.
+    expect(find.text(_en.teamGateCardIfIgnoredFailed), findsNothing);
 
     await tester.tap(key('gate-answer'));
     await settle(tester);
     expect(key('team-gate-sheet'), findsOneWidget);
+    expect(find.text(_en.teamGateCardIfIgnoredFailed), findsOneWidget);
     // The sheet is the card's Details: titled after the task that stopped.
     expect(
       find.text(_en.teamUiGateRunStoppedTitle('Offline-first sessions')),

@@ -1,0 +1,2 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_v2_todo_row" android:layout_width="match_parent" android:layout_height="24dp"><CheckBox android:id="@+id/widget_v2_todo" android:layout_width="match_parent" android:layout_height="24dp" android:clickable="false" android:focusable="false" android:gravity="center_vertical" android:textSize="11sp" android:buttonTint="@color/widgetAccent" android:maxLines="1" android:ellipsize="end" android:textColor="@color/widgetText" />
+</LinearLayout>

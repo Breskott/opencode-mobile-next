@@ -19,7 +19,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart'
-    show teamRowSubtitle;
+    show teamRowSubtitle, teamFirstProbeGrace;
 import 'package:opencode_mobile/ui/screens/team/team_page.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
@@ -298,6 +298,40 @@ void main() {
       await settle(tester);
       expect(probe.calls, isEmpty);
     });
+
+    test(
+      'a first unreachable answer reads as Checking, not as a failure',
+      () async {
+        final store = OrchestrationStore(prefs, secure: secure);
+        final p = profile(config: fixtureConfig());
+        final c = OrchestrationController(
+          profile: p,
+          config: p.orchestration!,
+          store: store,
+          probe: (config) => probe.call(config.url),
+        );
+        addTearDown(c.dispose);
+        await c.start();
+        expect(c.phase, OrchestrationPhase.failed);
+        String line(DateTime now) => teamRowSubtitle(
+          l10n,
+          profile: p,
+          orchestration: c,
+          discovery: null,
+          now: now,
+        );
+        final failedAt = c.failedAt!;
+        expect(
+          line(failedAt.add(const Duration(seconds: 5))),
+          l10n.teamUiRowChecking,
+        );
+        // Still down after the grace: now it is a failure.
+        expect(
+          line(failedAt.add(teamFirstProbeGrace)),
+          l10n.teamUiRowNotAvailableReason(l10n.teamUiReasonUnreachable),
+        );
+      },
+    );
 
     test('read-only and unreachable states', () async {
       final store = OrchestrationStore(prefs, secure: secure);

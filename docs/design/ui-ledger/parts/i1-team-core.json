@@ -694,13 +694,6 @@
           "line": 79
         },
         {
-          "page": "?",
-          "element": null,
-          "widget": "ActivityAgentBlockedTile",
-          "file": "lib/ui/screens/activity_screen.dart",
-          "line": 928
-        },
-        {
           "page": "team-task-details",
           "element": "team-task-details-agent"
         }
@@ -1240,19 +1233,6 @@
           "file": "lib/ui/screens/team/team_board_screen.dart"
         },
         {
-          "id": "team-board-tabs",
-          "type": "tab",
-          "label": "Backlog | Ready | Working | Review | Done",
-          "key": null,
-          "file": "lib/ui/widgets/team_board_tabs.dart",
-          "line": 78,
-          "action": "other",
-          "target": null,
-          "effect": "TeamBoardTabs.onSelect -> _select(column): setState(() => _column = column) then pages.animateToPage (jumpToPage when motion is reduced).",
-          "gates": [],
-          "destructive": false
-        },
-        {
           "id": "team-board-add",
           "type": "icon-button",
           "label": "Give the team a task",
@@ -1571,14 +1551,6 @@
           "element": "team-board-move-open"
         },
         {
-          "page": "workspace",
-          "element": "workspace-team-task-row"
-        },
-        {
-          "page": "workspace",
-          "element": "workspace-new-session"
-        },
-        {
           "page": "team-home",
           "element": "team-home-runs-row"
         },
@@ -1719,20 +1691,6 @@
           "gates": [
             "the team is overdue (GraceTimer, 8 s) and not answering"
           ],
-          "destructive": false
-        },
-        {
-          "id": "team-conversation-gate-card",
-          "type": "card",
-          "label": "[Needs-you gate card]",
-          "key": null,
-          "file": "lib/ui/widgets/team_needs_you.dart",
-          "line": 397,
-          "action": "open-sheet",
-          "target": "gate-sheet",
-          "targetWidget": "showGateSheet",
-          "effect": "TeamNeedsYouCard.onOpen -> showGateSheet(context, team, gate.id, now: widget.now); one card per open gate on this task.",
-          "gates": [],
           "destructive": false
         },
         {
@@ -2683,9 +2641,74 @@
           "destructive": false
         }
       ]
+    },
+    {
+      "id": "team-rig",
+      "title": "<project>",
+      "kind": "page",
+      "file": "lib/ui/screens/team/team_rig_screen.dart",
+      "widget": "TeamRigScreen",
+      "presentedBy": [
+        "openTeamRig"
+      ],
+      "line": 37,
+      "purpose": "One project on the computer's team: pause or resume it, delete it from the team (folder and files stay), and switch its scheduled jobs on or off.",
+      "reachedFrom": [],
+      "gates": [
+        "controlProject",
+        "controlProjectRemove",
+        "scheduledJobs",
+        "controlScheduledJobs"
+      ],
+      "elements": [
+        {
+          "type": "row",
+          "key": null,
+          "targetWidget": null,
+          "target": null,
+          "gates": [],
+          "destructive": false,
+          "id": "team-rig-pause",
+          "label": "Pause project <name> | Resume project <name>",
+          "file": "lib/ui/screens/team/team_rig_screen.dart",
+          "line": 96,
+          "action": "confirm",
+          "effect": "Pause asks first and stops the team working on it; Resume is one tap."
+        },
+        {
+          "type": "row",
+          "key": null,
+          "targetWidget": null,
+          "target": null,
+          "gates": [],
+          "destructive": true,
+          "id": "team-rig-delete",
+          "label": "Delete project <name>",
+          "file": "lib/ui/screens/team/team_rig_screen.dart",
+          "line": 111,
+          "action": "confirm",
+          "effect": "Asks first, then removes the project from the team; its folder and files stay."
+        }
+      ]
     }
   ],
   "notPages": [
+    {
+      "file": "lib/ui/screens/team/projects/screen/board_timeline.dart",
+      "reason": "Part file of lib/ui/screens/team/projects/team_projects_screen.dart (same screen, same library): its elements are listed under that screen's ledger entries; no separate surface."
+    },
+    {
+      "file": "lib/ui/screens/team/projects/screen/overview.dart",
+      "reason": "Part file of lib/ui/screens/team/projects/team_projects_screen.dart (same screen, same library): its elements are listed under that screen's ledger entries; no separate surface."
+    },
+    {
+      "file": "lib/ui/screens/team/projects/screen/overview_helpers.dart",
+      "reason": "Part file of lib/ui/screens/team/projects/team_projects_screen.dart (same screen, same library): its elements are listed under that screen's ledger entries; no separate surface."
+    },
+    {
+      "file": "lib/ui/screens/team/projects/screen/servers_card.dart",
+      "reason": "Part file of lib/ui/screens/team/projects/team_projects_screen.dart (same screen, same library): its elements are listed under that screen's ledger entries; no separate surface."
+    },
     {
       "file": "lib/ui/screens/team/projects/team_digest.dart",
       "reason": "Pure function (teamDigestEvents) choosing which timeline rows 'Since you were away' lists; no surface and no interactive element."
@@ -2693,6 +2716,10 @@
     {
       "file": "lib/ui/screens/team/projects/team_refusal.dart",
       "reason": "Pure mapping from a refused project command's code to plain words, a way forward and Details text; no surface and no interactive element."
+    },
+    {
+      "file": "lib/ui/screens/team/projects/team_status_words.dart",
+      "reason": "Pure functions (teamProgressWords, teamPlanningMinutes) turning project task counts and planner timestamps into the Tasks line and the slow-planning threshold; no surface and no interactive element."
     },
     {
       "file": "lib/ui/screens/team/policy_block.dart",

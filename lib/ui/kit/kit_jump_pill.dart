@@ -319,11 +319,10 @@ class _KitJumpPillTransitionState extends State<_KitJumpPillTransition>
 
 /// The pill's look (KitJumpPill.md "Tokens"): a [KitShape.pill] stadium in
 /// `surface3`, a `hairline` border, `text1` icon and label, `minTarget`
-/// (48) tall minimum. No shadow, no glass, no blur. Hover (a fine pointer)
-/// and press both step the fill to `surface2` (KitTappable's rule, not yet
-/// merged: no overlay colour or opacity); focus draws a 2-physical-pixel
-/// `accent` ring.
-class _KitJumpPillButton extends StatefulWidget {
+/// (48) tall minimum. No shadow, no glass, no blur. The press, hover (a fine
+/// pointer) and focus ring are [KitTappable]'s: hover and press step the
+/// fill to `surface2`, focus draws an `accent` ring inside the stadium.
+class _KitJumpPillButton extends StatelessWidget {
   const _KitJumpPillButton({
     required this.label,
     required this.icon,
@@ -337,133 +336,79 @@ class _KitJumpPillButton extends StatefulWidget {
   final Key? pillKey;
 
   @override
-  State<_KitJumpPillButton> createState() => _KitJumpPillButtonState();
-}
-
-class _KitJumpPillButtonState extends State<_KitJumpPillButton> {
-  bool _hovered = false;
-  bool _focused = false;
-  // The pill answers a touch on the next frame (KitPressTracker), not after
-  // the InkWell's tap-or-scroll wait.
-  late final _press = KitPressTracker(() {
-    if (mounted) setState(() {});
-  });
-
-  @override
-  void dispose() {
-    _press.dispose();
-    super.dispose();
-  }
-
-  void _setHovered(bool value) {
-    if (_hovered == value) return;
-    setState(() => _hovered = value);
-  }
-
-  void _setFocused(bool value) {
-    if (_focused == value) return;
-    setState(() => _focused = value);
-  }
-
-  @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
     final roles = tokens.roles;
-    final shape = tokens.shapeOf(KitShape.pill);
-    final fill = _hovered || _press.shown ? roles.surface2 : roles.surface3;
-    final borderedShape = StadiumBorder(
-      side: BorderSide(
-        color: roles.hairline,
-        width: KitTokens.hairlineWidth(context),
-      ),
-    );
 
     // KitJumpPill.md "Tokens": the `button` label is one line, two from
     // 2.0 text (kit_request_card.dart's own large-text test).
     final maxLines = MediaQuery.textScalerOf(context).scale(10) >= 20 ? 2 : 1;
 
-    Widget pill = ConstrainedBox(
+    final content = ConstrainedBox(
       constraints: BoxConstraints(minHeight: tokens.minTarget),
-      child: DecoratedBox(
-        decoration: ShapeDecoration(color: fill, shape: borderedShape),
-        child: Padding(
-          padding: EdgeInsetsDirectional.symmetric(
-            horizontal: tokens.space4,
-            vertical: tokens.space2,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(widget.icon, size: tokens.smallIconSize, color: roles.text1),
-              SizedBox(width: tokens.space2),
-              Flexible(
-                child: KitText(
-                  widget.label,
-                  role: KitTextRole.button,
-                  tone: KitTextTone.primary,
-                  maxLines: maxLines,
-                  // Last resort only: the pill takes the area's width less
-                  // two gutters before a label ever reaches its line limit.
-                  overflow: TextOverflow.ellipsis,
-                ),
+      child: Padding(
+        padding: EdgeInsetsDirectional.symmetric(
+          horizontal: tokens.space4,
+          vertical: tokens.space2,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: tokens.iconSize(context, tokens.smallIconSize),
+              color: roles.text1,
+            ),
+            SizedBox(width: tokens.space2),
+            Flexible(
+              child: KitText(
+                label,
+                role: KitTextRole.button,
+                tone: KitTextTone.primary,
+                maxLines: maxLines,
+                // Last resort only: the pill takes the area's width less
+                // two gutters before a label ever reaches its line limit.
+                overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
 
-    // The ring wraps the clipped Material, not its child: drawn outside the
-    // stadium (strokeAlignOutside), it would otherwise be clipped away by
-    // the Material's own ShapeBorderClipper. The DecoratedBox is always in
-    // the tree (an empty decoration while unfocused) so a focus change
-    // never remounts the InkWell that holds the focus.
-    final button = DecoratedBox(
-      position: DecorationPosition.foreground,
-      decoration: _focused
-          ? ShapeDecoration(
-              shape: StadiumBorder(
-                side: BorderSide(
-                  color: roles.accent,
-                  width: KitTokens.focusRingWidth(context),
-                  strokeAlign: BorderSide.strokeAlignOutside,
-                ),
-              ),
-            )
-          : const BoxDecoration(),
-      child: _press.listen(
-        context: context,
-        enabled: true,
-        child: Material(
-          type: MaterialType.transparency,
-          shape: shape,
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            key: widget.pillKey,
-            onTap: () {
-              _press.confirm();
-              widget.onPressed();
-            },
-            onTapCancel: _press.cancel,
-            onHover: _setHovered,
-            onFocusChange: _setFocused,
-            customBorder: shape,
-            splashFactory: NoSplash.splashFactory,
-            overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-            child: pill,
-          ),
-        ),
-      ),
-    );
-
+    // The resting fill sits under the tappable (whose hover and press fills
+    // are surface2 over it); the hairline is painted over both.
     return Semantics(
       button: true,
-      label: widget.label,
+      label: label,
       container: true,
       excludeSemantics: true,
-      onTap: widget.onPressed,
-      child: button,
+      onTap: onPressed,
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          color: roles.surface3,
+          shape: tokens.shapeOf(KitShape.pill),
+        ),
+        child: DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration: ShapeDecoration(
+            shape: StadiumBorder(
+              side: BorderSide(
+                color: roles.hairline,
+                width: KitTokens.hairlineWidth(context),
+              ),
+            ),
+          ),
+          child: KitTappable(
+            tappableKey: pillKey,
+            onTap: onPressed,
+            shape: KitShape.pill,
+            surface: KitSurfaceLevel.surface3,
+            child: content,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -49,10 +49,27 @@ class _QuestionRepository extends ProductRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-Future<ConnectionController> _controller(_QuestionRepository repository) async {
+/// A chat with Claude Code through Paseo: the card names that agent.
+class _ClaudeConnection extends ConnectionController {
+  _ClaudeConnection(super.store);
+
+  @override
+  ServerProfile? get profile => ServerProfile(
+    id: 'p1',
+    name: 'Phone agents',
+    baseUrl: 'ws://127.0.0.1:6767',
+    backend: ServerBackend.paseo,
+  );
+}
+
+Future<ConnectionController> _controller(
+  _QuestionRepository repository, {
+  bool claude = false,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
-  return ConnectionController(ProfileStore(prefs: prefs))
+  final store = ProfileStore(prefs: prefs);
+  return (claude ? _ClaudeConnection(store) : ConnectionController(store))
     ..api = _ChatApi()
     ..repository = repository
     ..status = StreamStatus.connected;
@@ -60,9 +77,10 @@ Future<ConnectionController> _controller(_QuestionRepository repository) async {
 
 Future<ConnectionController> _pumpChat(
   WidgetTester tester,
-  _QuestionRepository repository,
-) async {
-  final controller = await _controller(repository);
+  _QuestionRepository repository, {
+  bool claude = false,
+}) async {
+  final controller = await _controller(repository, claude: claude);
   addTearDown(controller.dispose);
   await tester.pumpWidget(
     ProviderScope(
@@ -115,6 +133,18 @@ EventEnvelope _permission() => EventEnvelope(
   },
 );
 
+/// A live question or permission schedules one debounced inventory refresh
+/// (2 s, coalesced); a test that ends before it fires would leave the timer
+/// pending, so these tests let it run.
+Future<void> _afterInventoryRefresh(WidgetTester tester) =>
+    tester.pump(const Duration(seconds: 3));
+
+/// An answer waits out its undo window before it is sent.
+Future<void> _afterHold(WidgetTester tester) async {
+  await tester.pump(const Duration(seconds: 3));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -135,7 +165,8 @@ void main() {
     );
     final card = tester.widget<KitRequestCard>(find.byType(KitRequestCard));
     expect(card.kind, KitRequestKind.question);
-    expect(find.text('Pick a target'), findsOneWidget);
+    // The question is the headline; its short header stays in Details.
+    expect(find.text('Pick a target'), findsNothing);
     expect(find.text('Where should this deploy?'), findsOneWidget);
     expect(find.text('Staging'), findsOneWidget);
     expect(find.text('Test environment'), findsOneWidget);
@@ -149,6 +180,40 @@ void main() {
       final row = find.byKey(ValueKey('question-card-option-$index'));
       expect(tester.getSize(row).height, greaterThanOrEqualTo(48));
     }
+    await _afterInventoryRefresh(tester);
+  });
+
+  testWidgets('a Claude Code chat names Claude Code as the one who asks', (
+    tester,
+  ) async {
+    final repository = _QuestionRepository();
+    final controller = await _pumpChat(tester, repository, claude: true);
+
+    controller.handleEventForTesting(_question(prompts: 3));
+    await tester.pumpAndSettle();
+
+    final card = tester.widget<KitRequestCard>(find.byType(KitRequestCard));
+    expect(card.who, 'Claude Code');
+    await tester.tap(find.byKey(const Key('question-card-answer')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('question-sheet')), findsOneWidget);
+    expect(
+      find.textContaining(RegExp('Claude Code.*needs input')),
+      findsOneWidget,
+    );
+    await _afterInventoryRefresh(tester);
+  });
+
+  testWidgets('an OpenCode chat keeps "The agent"', (tester) async {
+    final repository = _QuestionRepository();
+    final controller = await _pumpChat(tester, repository);
+
+    controller.handleEventForTesting(_question());
+    await tester.pumpAndSettle();
+
+    final card = tester.widget<KitRequestCard>(find.byType(KitRequestCard));
+    expect(card.who, 'The agent');
+    await _afterInventoryRefresh(tester);
   });
 
   testWidgets('tapping a single-select choice answers immediately', (
@@ -161,7 +226,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Staging'));
-    await tester.pumpAndSettle();
+    await _afterHold(tester);
 
     expect(repository.answered.single.$1, 'question-1');
     expect(repository.answered.single.$2, [
@@ -173,6 +238,38 @@ void main() {
       find.byKey(const ValueKey('question-card-question-1')),
       findsNothing,
     );
+  });
+
+  testWidgets('a choice is held for 3 s with Undo; Undo sends nothing', (
+    tester,
+  ) async {
+    final repository = _QuestionRepository();
+    final controller = await _pumpChat(tester, repository);
+    controller.handleEventForTesting(_question());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Staging'));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(repository.answered, isEmpty);
+    expect(find.textContaining('Staging', findRichText: true), findsOneWidget);
+    expect(find.byKey(const Key('question-card-undo')), findsOneWidget);
+    expect(find.text('Production'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('question-card-undo')));
+    await tester.pumpAndSettle();
+    expect(find.text('Production'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    expect(repository.answered, isEmpty);
+
+    await tester.tap(find.text('Production'));
+    await tester.pump(const Duration(milliseconds: 2900));
+    expect(repository.answered, isEmpty);
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+    expect(repository.answered.single.$2, [
+      ['Production'],
+    ]);
   });
 
   testWidgets('a typed answer sends from Something else', (tester) async {
@@ -194,7 +291,7 @@ void main() {
     await tester.enterText(field, 'Canary');
     // A multiline answer sends from the field's own Send button.
     await tester.tap(find.byTooltip('Send answer'));
-    await tester.pumpAndSettle();
+    await _afterHold(tester);
 
     expect(repository.answered.single.$2, [
       ['Canary'],
@@ -223,7 +320,7 @@ void main() {
     expect(repository.answered, isEmpty);
 
     await tester.tap(find.text('Send').last);
-    await tester.pumpAndSettle();
+    await _afterHold(tester);
 
     expect(repository.answered.single.$2, [
       ['Staging', 'Production'],
@@ -246,6 +343,7 @@ void main() {
 
     // The full question sheet, as a form's Answer opens the form.
     expect(find.text('OpenCode needs input'), findsOneWidget);
+    await _afterInventoryRefresh(tester);
   });
 
   testWidgets('more than two prompts also collapse to the Answer button', (
@@ -259,6 +357,7 @@ void main() {
 
     expect(find.byKey(const Key('question-card-answer')), findsOneWidget);
     expect(find.textContaining('3 questions'), findsOneWidget);
+    await _afterInventoryRefresh(tester);
   });
 
   testWidgets('Details opens the one request sheet', (tester) async {
@@ -274,6 +373,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('question-sheet')), findsOneWidget);
+    await _afterInventoryRefresh(tester);
   });
 
   testWidgets('a pending permission outranks the question card', (
@@ -291,6 +391,7 @@ void main() {
       find.byKey(const ValueKey('question-card-question-1')),
       findsNothing,
     );
+    await _afterInventoryRefresh(tester);
   });
 
   testWidgets('a failed answer keeps the card and says why', (tester) async {
@@ -302,7 +403,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Staging'));
-    await tester.pumpAndSettle();
+    await _afterHold(tester);
 
     expect(controller.questions, contains('question-1'));
     expect(

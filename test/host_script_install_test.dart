@@ -16,7 +16,7 @@ import 'package:opencode_mobile/termux/bridge.dart';
 const _script = 'scripts/host/ubuntu-opencode.sh';
 
 final _sha256Line = RegExp(
-  r'^(readonly OPENCODE_(X64|ARM64)_SHA256=)"[0-9a-f]{64}"$',
+  r'^(    readonly OPENCODE_(X64|ARM64)_SHA256=)"[0-9a-f]{64}"$',
   multiLine: true,
 );
 
@@ -39,9 +39,11 @@ void main() {
   }
 
   /// A release archive holding one `opencode` that reports [version].
-  void buildArchive(String version) {
+  void buildArchive(String version, {bool older = false}) {
     final staging = Directory('${root.path}/staging')..createSync();
-    final binary = File('${staging.path}/opencode')
+    Directory('${staging.path}/package/bin').createSync(recursive: true);
+    final member = older ? 'opencode' : 'package/bin/opencode';
+    final binary = File('${staging.path}/$member')
       ..writeAsStringSync('#!/bin/sh\necho "$version"\n');
     Process.runSync('chmod', ['755', binary.path]);
     final tar = Process.runSync('tar', [
@@ -49,7 +51,7 @@ void main() {
       archive.path,
       '-C',
       staging.path,
-      'opencode',
+      member,
     ]);
     expect(tar.exitCode, 0, reason: '${tar.stderr}');
     archiveSha = sha256.convert(archive.readAsBytesSync()).toString();
@@ -59,7 +61,7 @@ void main() {
   /// standing in for the published release it would otherwise download.
   String scriptTrustingFakeArchive() {
     final text = File(_script).readAsStringSync();
-    expect(_sha256Line.allMatches(text), hasLength(2));
+    expect(_sha256Line.allMatches(text), hasLength(4));
     final copy = File('${root.path}/ubuntu-opencode.sh')
       ..writeAsStringSync(
         text.replaceAllMapped(_sha256Line, (m) => '${m[1]}"$archiveSha"'),
@@ -77,18 +79,20 @@ void main() {
     return binary.path;
   }
 
-  ProcessResult run(String script, String command) => Process.runSync(
-    'bash',
-    [script, command],
-    environment: {
-      'HOME': home.path,
-      'TMPDIR': tmp.path,
-      'PATH': '${root.path}/bin:/usr/bin:/bin',
-      'USER': 'tester',
-      'FAKE_ROOT': root.path,
-    },
-    includeParentEnvironment: false,
-  );
+  ProcessResult run(String script, String command, {bool older = false}) =>
+      Process.runSync(
+        'bash',
+        [script, command],
+        environment: {
+          'HOME': home.path,
+          'TMPDIR': tmp.path,
+          'PATH': '${root.path}/bin:/usr/bin:/bin',
+          'USER': 'tester',
+          'FAKE_ROOT': root.path,
+          if (older) 'OPENCODE_RUNTIME': 'opencode',
+        },
+        includeParentEnvironment: false,
+      );
 
   String unitExecStart() => File(
     '${home.path}/.config/systemd/user/opencode-serve.service',
@@ -96,8 +100,8 @@ void main() {
 
   String pinnedAsset() =>
       switch (Process.runSync('uname', ['-m']).stdout.toString().trim()) {
-        'x86_64' || 'amd64' => 'opencode-linux-x64-baseline.tar.gz',
-        'aarch64' || 'arm64' => 'opencode-linux-arm64.tar.gz',
+        'x86_64' || 'amd64' => 'cli-linux-x64-baseline-2.0.29.tgz',
+        'aarch64' || 'arm64' => 'cli-linux-arm64-2.0.29.tgz',
         final other => throw StateError('no OpenCode build for $other'),
       };
 
@@ -128,7 +132,7 @@ cp "$FAKE_ROOT/release.tar.gz" "$out"
       '${bin.path}/curl',
       '${bin.path}/systemctl',
     ]);
-    buildArchive(TermuxRuntime.openCode1.pinnedVersion);
+    buildArchive(TermuxRuntime.openCode2.pinnedVersion);
   });
 
   tearDown(() => root.deleteSync(recursive: true));
@@ -151,8 +155,8 @@ cp "$FAKE_ROOT/release.tar.gz" "$out"
         expect(result.stderr, contains('got:      $archiveSha'));
         expect(
           read('curl.log').trim(),
-          'https://github.com/anomalyco/opencode/releases/download/'
-          'v${TermuxRuntime.openCode1.pinnedVersion}/${pinnedAsset()}',
+          'https://registry.npmjs.org/@opencode/'
+          '${pinnedAsset().replaceFirst('-2.0.29.tgz', '')}/-/${pinnedAsset()}',
         );
         expect(
           File('${home.path}/.opencode/bin/opencode').existsSync(),
@@ -171,16 +175,30 @@ cp "$FAKE_ROOT/release.tar.gz" "$out"
         expect(
           result.stderr,
           contains(
-            '==> Installed OpenCode ${TermuxRuntime.openCode1.pinnedVersion} '
+            '==> Installed OpenCode ${TermuxRuntime.openCode2.pinnedVersion} '
             'to $binary',
           ),
         );
         expect(unitExecStart(), startsWith('ExecStart=$binary serve '));
         expect(
+          File(
+            '${home.path}/.config/systemd/user/opencode-serve.service',
+          ).readAsStringSync(),
+          contains('UnsetEnvironment=OPENCODE_PASSWORD'),
+        );
+        expect(
           read('systemctl.log'),
           contains('--user enable --now opencode-serve'),
         );
         expect(tmp.listSync(), isEmpty);
+      });
+
+      test('Older OpenCode remains an explicit fresh install choice', () {
+        buildArchive(TermuxRuntime.openCode1.pinnedVersion, older: true);
+        final result = run(scriptTrustingFakeArchive(), 'install', older: true);
+        expect(result.exitCode, 0, reason: '${result.stderr}');
+        expect(result.stderr, contains('Installed OpenCode 1.19.0'));
+        expect(read('curl.log'), contains('/v1.19.0/opencode-linux-'));
       });
 
       test('install leaves an OpenCode that is already there alone', () {
@@ -197,8 +215,8 @@ cp "$FAKE_ROOT/release.tar.gz" "$out"
         expect(unitExecStart(), startsWith('ExecStart=$existing serve '));
       });
 
-      test('update moves an older OpenCode to the pinned release', () {
-        existingOpenCode('1.0.0');
+      test('update moves an older OpenCode 2 to the pinned release', () {
+        existingOpenCode('2.0.28');
 
         final result = run(scriptTrustingFakeArchive(), 'update');
 
@@ -206,8 +224,8 @@ cp "$FAKE_ROOT/release.tar.gz" "$out"
         expect(
           result.stdout,
           contains(
-            'Moving OpenCode 1.0.0 to the pinned '
-            '${TermuxRuntime.openCode1.pinnedVersion}',
+            'Moving OpenCode 2.0.28 to the pinned '
+            '${TermuxRuntime.openCode2.pinnedVersion}',
           ),
         );
         expect(
@@ -218,6 +236,16 @@ cp "$FAKE_ROOT/release.tar.gz" "$out"
           read('systemctl.log'),
           contains('--user restart opencode-serve'),
         );
+      });
+
+      test('update does not migrate an existing Older OpenCode', () {
+        final existing = existingOpenCode('1.19.0');
+        final result = run(scriptTrustingFakeArchive(), 'update');
+        expect(result.exitCode, 1);
+        expect(result.stderr, contains('Older OpenCode is unchanged'));
+        expect(read('curl.log'), isEmpty);
+        expect(read('systemctl.log'), isNot(contains('restart')));
+        expect(File(existing).readAsStringSync(), contains('1.19.0'));
       });
 
       test('update never downgrades a newer OpenCode', () {
@@ -235,7 +263,7 @@ cp "$FAKE_ROOT/release.tar.gz" "$out"
       });
 
       test('update refuses a mismatched download and keeps the old one', () {
-        final existing = existingOpenCode('1.0.0');
+        final existing = existingOpenCode('2.0.28');
 
         final result = run(_script, 'update');
 

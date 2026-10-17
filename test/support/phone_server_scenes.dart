@@ -55,10 +55,10 @@ String phoneServerSceneName(PhoneServerScene scene) => switch (scene) {
 
 const _readyStatus =
     'phase=ready\nmessage=OpenCode is ready\nport=4096\nrunner=proot\n'
-    'version=2.0.10\nruntime=opencode2\npid=123\n__OC_SETUP_OUTPUT__\n';
+    'version=2.0.29\nruntime=opencode2\npid=123\n__OC_SETUP_OUTPUT__\n';
 const _stoppedStatus =
     'phase=stopped\nmessage=Stopped\nport=4096\nrunner=proot\n'
-    'version=2.0.10\nruntime=opencode2\npid=\n__OC_SETUP_OUTPUT__\n';
+    'version=2.0.29\nruntime=opencode2\npid=\n__OC_SETUP_OUTPUT__\n';
 
 /// Twelve processes at 29 % CPU in all, as on the owner's phone.
 String _processes() => jsonEncode([
@@ -106,7 +106,7 @@ void _mockPlatform(WidgetTester tester, {required bool running}) {
         final script = (call.arguments as Map)['script'] as String;
         if (script.contains('ubuntu=absent')) {
           return result(
-            'ubuntu=installed\nversion=2.0.10\nruntime=opencode2\n',
+            'ubuntu=installed\nversion=2.0.29\nruntime=opencode2\n',
           );
         }
         if (script.contains("printf 'opencode-bridge-ok'")) {
@@ -181,7 +181,7 @@ ServerProfile phoneProfile() => ServerProfile(
   name: 'This device (Termux)',
   baseUrl: TermuxBridge.managedServerUrl,
   flavor: ServerFlavor.v2,
-  serverVersion: '2.0.10',
+  serverVersion: '2.0.29',
   password: 'synthetic-phone',
 )..username = 'opencode';
 
@@ -190,7 +190,7 @@ ServerProfile _remote() => ServerProfile(
   name: 'Studio Mac',
   baseUrl: 'https://studio.tail0c1.ts.net',
   flavor: ServerFlavor.v2,
-  serverVersion: '2.0.10',
+  serverVersion: '2.0.29',
   password: 'synthetic',
 );
 
@@ -205,7 +205,7 @@ Future<Future<void> Function()> mountPhoneServerSwitcher(
   final previousProbe = termuxRunningServerProbe;
   termuxRunningServerProbe =
       ({required baseUrl, username, password, cancellation}) async =>
-          const ServerProbeResult.success('2.0.10');
+          const ServerProbeResult.success('2.0.29');
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -219,7 +219,7 @@ Future<Future<void> Function()> mountPhoneServerSwitcher(
     ..repository = CaptureRepository()
     ..status = StreamStatus.connected
     ..directory = projectDirectory
-    ..version = '2.0.10';
+    ..version = '2.0.29';
   await tester.pumpWidget(
     captureApp(
       home: Builder(
@@ -264,7 +264,7 @@ Future<Future<void> Function()> mountPhoneServerScene(
   final previousProbe = termuxRunningServerProbe;
   termuxRunningServerProbe =
       ({required baseUrl, username, password, cancellation}) async =>
-          const ServerProbeResult.success('2.0.10');
+          const ServerProbeResult.success('2.0.29');
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -287,7 +287,7 @@ Future<Future<void> Function()> mountPhoneServerScene(
         ? StreamStatus.disconnected
         : StreamStatus.connected
     ..directory = projectDirectory
-    ..version = '2.0.10';
+    ..version = '2.0.29';
   if (scene == PhoneServerScene.phoneStopped) controller.api = null;
   controller.appearance.value = light
       ? AppAppearance.light

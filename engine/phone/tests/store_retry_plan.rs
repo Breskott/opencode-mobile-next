@@ -262,3 +262,64 @@ fn retry_allows_proven_pre_dispatch_failure_and_completed_invalid_proposal() {
         true
     );
 }
+
+#[test]
+fn retry_after_terminal_model_auth_failure_uses_new_explicit_role_model() {
+    let (_, store, id) = fixture(true);
+    let old = fail(&store, "modelNotConfigured");
+    let planner = json!({"id":"planner","name":"Planner","instructions":"Plan only",
+        "model":"zai-coding-plan/glm-5.3-flash","fallbackModel":"","readOnly":true});
+    assert_eq!(
+        store
+            .execute(&json!({"requestId":"role","action":"saveRole","role":planner}))
+            .unwrap()["accepted"],
+        true
+    );
+    assert_eq!(
+        store
+            .execute(&command(&store, &id, "retry", "retryPlan"))
+            .unwrap()["accepted"],
+        true
+    );
+    let jobs = store.jobs().unwrap();
+    assert_eq!(jobs.len(), 2);
+    assert_eq!(jobs[0]["id"], old);
+    assert_eq!(jobs[0]["reason"], "modelNotConfigured");
+    assert_eq!(jobs[0]["stage"], "stopped");
+    assert_eq!(jobs[1]["model"], "zai-coding-plan/glm-5.3-flash");
+    assert_eq!(jobs[1]["sessionIds"], json!({}));
+    assert!(jobs[1]["promptDispatch"].is_null());
+}
+
+#[test]
+fn model_failure_does_not_authorize_retry_of_uncertain_dispatch() {
+    let (_, store, id) = fixture(true);
+    let planner = store.jobs().unwrap()[0]["id"].as_str().unwrap().to_owned();
+    store
+        .update_job(&planner, "queued", &json!({"stage":"starting"}))
+        .unwrap();
+    store
+        .update_job(
+            &planner,
+            "starting",
+            &json!({"stage":"running",
+        "directory":"/root/work/retry","sessionIds":{"planner":"possibly-live"},
+        "promptDispatch":{"planner":"dispatching"}}),
+        )
+        .unwrap();
+    store
+        .update_job(
+            &planner,
+            "running",
+            &json!({"stage":"interrupted","reason":"modelNotConfigured"}),
+        )
+        .unwrap();
+    let before = store.jobs().unwrap();
+    assert_eq!(
+        store
+            .execute(&command(&store, &id, "retry", "retryPlan"))
+            .unwrap()["code"],
+        "planningNeedsReconciliation"
+    );
+    assert_eq!(store.jobs().unwrap(), before);
+}

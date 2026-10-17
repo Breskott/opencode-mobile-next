@@ -9,6 +9,7 @@ import 'kit_menu.dart';
 import 'kit_row.dart';
 import 'kit_status_line.dart';
 import 'kit_status_slot.dart';
+import 'kit_text.dart';
 import 'kit_tokens.dart';
 import 'motion/kit_motion_parts.dart';
 import 'motion/kit_reveal.dart';
@@ -46,7 +47,7 @@ class KitRowIcon extends StatelessWidget {
       ),
       child: Icon(
         icon,
-        size: tokens.smallIconSize,
+        size: tokens.iconSize(context, tokens.smallIconSize),
         color: tokens.roles.onAccent,
       ),
     );
@@ -57,10 +58,16 @@ class KitRowIcon extends StatelessWidget {
 /// in the accent colour: "Connected · ".
 TextSpan kitCurrentSpan(BuildContext context, String word) => TextSpan(
   text: '$word · ',
-  style: TextStyle(
-    color: KitTokens.of(context).roles.accent,
-    fontWeight: FontWeight.w600,
-  ),
+  // The same label role as KitNeedsYou.span, so both state words read alike.
+  style: KitText.styleOf(context, KitTextRole.label, tone: KitTextTone.accent),
+);
+
+/// The start of a row's supporting line that marks the one choice to take
+/// when unsure, in the accent colour: "Recommended · ". The word carries the
+/// meaning, never the colour alone (STATE-9).
+TextSpan kitRecommendedSpan(BuildContext context) => kitCurrentSpan(
+  context,
+  lookupAppLocalizations(Localizations.localeOf(context)).kitChoiceRecommended,
 );
 
 /// The one overflow button (⋮): opens [items] with [showKitMenu]. For a top
@@ -136,7 +143,7 @@ class KitChevron extends StatelessWidget {
       dimension: tokens.minTarget,
       child: Icon(
         AppIconography.chevronRight,
-        size: tokens.smallIconSize,
+        size: tokens.iconSize(context, tokens.smallIconSize),
         color: tokens.roles.text3,
       ),
     );
@@ -217,6 +224,7 @@ class KitSwitchRow extends StatelessWidget {
     required this.onChanged,
     this.leading,
     this.supporting,
+    this.supportingMaxLines = 2,
     this.switchKey,
     this.below,
     this.risk,
@@ -230,6 +238,9 @@ class KitSwitchRow extends StatelessWidget {
   final ValueChanged<bool>? onChanged;
   final Widget? leading;
   final String? supporting;
+
+  /// How many lines the supporting line may take before it is cut.
+  final int supportingMaxLines;
   final Key? switchKey;
 
   /// Under the supporting line: what the setting has done so far (a
@@ -342,7 +353,7 @@ class _KitSwitchRowBodyState extends State<_KitSwitchRowBody> {
           supporting: row.supporting == null
               ? null
               : TextSpan(text: row.supporting),
-          supportingMaxLines: 2,
+          supportingMaxLines: row.supportingMaxLines,
           below: row.below,
           trailing: Padding(
             key: const ValueKey('kit-switch-locked'),
@@ -426,7 +437,7 @@ class _KitSwitchRowBodyState extends State<_KitSwitchRowBody> {
           leading: row.leading,
           titleMaxLines: 2,
           supporting: supporting == null ? null : TextSpan(text: supporting),
-          supportingMaxLines: 2,
+          supportingMaxLines: row.supportingMaxLines,
           below: row.below,
           onTap: onChanged == null ? null : _toggle,
           trailing: Padding(

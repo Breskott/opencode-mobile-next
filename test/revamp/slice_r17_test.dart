@@ -3,22 +3,12 @@
 // says per unit what to enter and what Save saves, and the quota monitor's
 // paused / Wi-Fi / source-changed states no longer borrow the Needs-you
 // attention tone. Asserts what the person sees and what is sent.
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/domain/provider_quota.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
-import 'package:opencode_mobile/state/connection.dart';
-import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/state/provider_quota_monitor.dart';
-import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/session_destination_sheet.dart';
 import 'package:opencode_mobile/ui/screens/usage_screen.dart';
-import 'package:opencode_mobile/ui/widgets/quota_monitor_section.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../tool/capture/fixtures.dart' show loadCaptureFonts;
 import 'screen_chat_1_support.dart';
@@ -60,70 +50,6 @@ Future<ChatOneConnection> _openMove(
   await tester.tap(find.text('Open'));
   await tester.pumpAndSettle();
   return conn;
-}
-
-/// A monitor that reports one fixed state for every source, and never reads.
-class _FixedMonitor extends ProviderQuotaMonitor {
-  _FixedMonitor(ProfileStore store, this.status)
-    : super(
-        store: store,
-        createGateway: (_, _) => throw StateError('no reads here'),
-        isReadable: (_) => true,
-        networkWifi: () async => true,
-        alert: ({required profileID, required key, required token}) async =>
-            false,
-        dismiss: (_) async => true,
-      );
-
-  final QuotaMonitorStatus status;
-
-  @override
-  QuotaMonitorObservation observationFor(String id, QuotaProvider provider) =>
-      QuotaMonitorObservation(status);
-}
-
-class _FixedConnection extends ConnectionController {
-  _FixedConnection(super.store, QuotaMonitorStatus status)
-    : fixed = _FixedMonitor(store, status);
-  final _FixedMonitor fixed;
-
-  @override
-  ProviderQuotaMonitor get quotaMonitor => fixed;
-}
-
-const _hash =
-    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-
-Future<_FixedConnection> _monitored(QuotaMonitorStatus status) async {
-  SharedPreferences.setMockInitialValues({
-    'oc.profiles': jsonEncode([
-      {
-        'id': 'profile-1',
-        'name': 'Workstation',
-        'baseUrl': 'http://192.168.1.20:4096',
-        'username': '',
-      },
-    ]),
-    'oc.activeProfile': 'profile-1',
-    ProviderQuotaMonitor.key('profile-1'): jsonEncode({
-      'version': 1,
-      'rules': {
-        QuotaProvider.codex.name: QuotaMonitorRules(
-          source: _hash,
-          account: _hash,
-          token: _hash,
-          notifications: true,
-          wifiOnly: true,
-          quietStart: 22 * 60,
-          quietEnd: 8 * 60,
-          threshold: 80,
-        ).toJson(),
-      },
-    }),
-  });
-  final store = ProfileStore(prefs: await SharedPreferences.getInstance());
-  await store.load();
-  return _FixedConnection(store, status);
 }
 
 void main() {
@@ -286,62 +212,5 @@ void main() {
       expect(find.text('Enter a whole number of tokens above 0'), findsOne);
       expect(find.text(_en.usageBudgetInvalidUsd), findsNothing);
     });
-  });
-
-  group('quota monitor tones', () {
-    setUp(() {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-            (_) async => null,
-          );
-    });
-
-    for (final (status, message) in [
-      (QuotaMonitorStatus.paused, _en.quotaMonitorPaused),
-      (QuotaMonitorStatus.wifiRequired, _en.quotaMonitorWifiRequired),
-      (QuotaMonitorStatus.sourceChanged, _en.quotaMonitorSourceChanged),
-    ]) {
-      testWidgets('${status.name} is said without the Needs-you tone', (
-        tester,
-      ) async {
-        final c = await _monitored(status);
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AppTheme.light(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ListView(
-                children: [
-                  QuotaMonitorSection(
-                    controller: c,
-                    onOpenNotifications: () {},
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-        // Said in words on the source's own row beside a neutral mark,
-        // never as a tinted notice (slice-close-misc).
-        expect(
-          find.ancestor(of: find.text(message), matching: find.byType(KitRow)),
-          findsOneWidget,
-        );
-        expect(
-          find.ancestor(
-            of: find.text(message),
-            matching: find.byType(KitNotice),
-          ),
-          findsNothing,
-        );
-        await tester.pumpWidget(const SizedBox.shrink());
-        c.quotaMonitor.dispose();
-        c.dispose();
-        await tester.pump();
-      });
-    }
   });
 }

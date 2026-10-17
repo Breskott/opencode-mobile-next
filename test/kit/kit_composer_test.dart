@@ -14,6 +14,7 @@ import 'package:opencode_mobile/ui/kit/glass/kit_glass.dart';
 import 'package:opencode_mobile/ui/kit/kit_bottom_inset.dart';
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/kit/kit_segmented.dart';
+import 'package:opencode_mobile/ui/kit/kit_tappable.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
 import 'kit_harness.dart';
@@ -26,14 +27,12 @@ const _field = Key('chat-composer-field');
 const _tools = Key('composer-tools-button');
 const _editor = Key('prompt-editor-button');
 const _voice = Key('voice-button');
-const _delivery = Key('composer-delivery-control');
 
 class _Host {
   _Host(String text) : controller = TextEditingController(text: text);
   final TextEditingController controller;
   final FocusNode focus = FocusNode();
   int sends = 0, stops = 0, voices = 0, tools = 0, editors = 0;
-  final deliveries = <KitComposerDelivery>[];
 
   void dispose() {
     controller.dispose();
@@ -54,13 +53,12 @@ KitComposer _composer(
   bool sending = false,
   bool canSendWhileBusy = false,
   KitComposerDelivery delivery = KitComposerDelivery.afterThisReply,
-  bool deliveryChoice = false,
   bool offline = false,
   String? readOnlyReason,
   bool voiceButton = true,
   KitComposerVoice? voice,
   KitComposerChips? suggestions,
-  bool model = false,
+  KitComposerFailure? failure,
 }) => KitComposer(
   controller: h.controller,
   focusNode: h.focus,
@@ -71,15 +69,11 @@ KitComposer _composer(
   sending: sending,
   canSendWhileBusy: canSendWhileBusy,
   delivery: delivery,
-  onDeliveryChanged: deliveryChoice ? h.deliveries.add : null,
   offline: offline,
   readOnlyReason: readOnlyReason,
   onVoice: voiceButton ? () => h.voices++ : null,
   voice: voice,
   suggestions: suggestions,
-  model: model
-      ? KitComposerChips.model(label: 'Sonnet 4.5 · High', onPressed: () {})
-      : null,
   onTools: () => h.tools++,
   onOpenEditor: () => h.editors++,
   fieldKey: _field,
@@ -88,7 +82,7 @@ KitComposer _composer(
   toolsKey: _tools,
   voiceButtonKey: _voice,
   editorKey: _editor,
-  deliveryKey: _delivery,
+  failure: failure,
 );
 
 Future<void> _pump(
@@ -210,6 +204,23 @@ void main() {
       semantics.dispose();
     });
 
+    // Owner decisions 2 Oct, 11B: Stop takes Send's slot and the mic stays
+    // its own button beside it, so speaking while a reply runs still works.
+    testWidgets('busy, no text: Stop in the end slot, the mic beside it', (
+      tester,
+    ) async {
+      final h = _host('');
+      await _pump(tester, _composer(h, busy: true));
+      final stop = tester.getRect(find.byKey(_stop));
+      final mic = tester.getRect(find.byKey(_voice));
+      expect(find.byKey(_voice), findsOneWidget);
+      expect(mic.right, lessThanOrEqualTo(stop.left));
+      expect(mic.width, greaterThanOrEqualTo(48));
+      await tester.tap(find.byKey(_voice));
+      expect(h.voices, 1);
+      expect(h.stops, 0);
+    });
+
     testWidgets('busy with Stop on the running turn (no onStop), no text: '
         'the mic stays, so a message can be spoken while the reply runs', (
       tester,
@@ -257,52 +268,40 @@ void main() {
     expect(send.left - stop.right, greaterThanOrEqualTo(8));
   });
 
-  // Owner decision (critique 2026-09-29): Stop is always red.
-  testWidgets('Stop is a red circle', (tester) async {
+  // Owner decision 2 Oct (02B): Stop is neutral, a text-colour circle with a
+  // ground square; red is for destructive actions only.
+  testWidgets('Stop is a neutral text-colour circle with a turning ring', (
+    tester,
+  ) async {
     final h = _host('');
     await _pump(tester, _composer(h, busy: true));
     final roles = KitTokens.of(tester.element(find.byType(KitComposer))).roles;
     final circle = tester.widget<DecoratedBox>(
       find.byKey(const ValueKey('kit-composer-circle-stop')),
     );
+    expect((circle.decoration as BoxDecoration).color, roles.text1);
     expect(
-      (circle.decoration as BoxDecoration).color,
-      anyOf(roles.danger, roles.dangerFill),
+      find.byKey(const ValueKey('kit-composer-stop-ring')),
+      findsOneWidget,
     );
   });
 
+  testWidgets('idle: no ring, and nothing about the reply is written on the '
+      'box', (tester) async {
+    final h = _host('');
+    await _pump(tester, _composer(h));
+    expect(find.byKey(const ValueKey('kit-composer-stop-ring')), findsNothing);
+  });
+
   group('delivery', () {
-    testWidgets('segments only when busy, text, can send and a choice', (
-      tester,
-    ) async {
+    testWidgets('there is never a delivery choice; the fixed delivery is said '
+        'on Send and in the note', (tester) async {
+      final semantics = tester.ensureSemantics();
       final h = _host('more');
       await _pump(tester, _composer(h, busy: true, canSendWhileBusy: true));
       expect(find.byType(KitSegmented<KitComposerDelivery>), findsNothing);
       expect(find.text('Sends after this reply'), findsOneWidget);
-
-      await _pump(
-        tester,
-        _composer(h, busy: false, canSendWhileBusy: true, deliveryChoice: true),
-      );
-      expect(find.byKey(_delivery), findsNothing);
-    });
-
-    testWidgets('default Send after; a change is reported once and Send '
-        'follows', (tester) async {
-      final semantics = tester.ensureSemantics();
-      final h = _host('more');
-      await _pump(
-        tester,
-        _composer(h, busy: true, canSendWhileBusy: true, deliveryChoice: true),
-      );
-      final segmented = tester.widget<KitSegmented<KitComposerDelivery>>(
-        find.byKey(_delivery),
-      );
-      expect(segmented.selected, KitComposerDelivery.afterThisReply);
-      expect(find.text('Send after'), findsOneWidget);
-      await tester.tap(find.text('Add to this turn'));
-      await tester.pumpAndSettle();
-      expect(h.deliveries, [KitComposerDelivery.addToThisTurn]);
+      expect(_label(tester, _send), 'Send after this reply');
 
       await _pump(
         tester,
@@ -310,13 +309,106 @@ void main() {
           h,
           busy: true,
           canSendWhileBusy: true,
-          deliveryChoice: true,
           delivery: KitComposerDelivery.addToThisTurn,
         ),
       );
+      expect(find.byType(KitSegmented<KitComposerDelivery>), findsNothing);
       expect(_label(tester, _send), 'Add to this turn');
+      expect(
+        find.text('The agent will read this while it works.'),
+        findsOneWidget,
+      );
+      expect(find.text('Sends after this reply'), findsNothing);
       semantics.dispose();
     });
+
+    testWidgets('an agent that restarts: Stop and send, said why, no choice', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final h = _host('more');
+      await _pump(
+        tester,
+        _composer(
+          h,
+          busy: true,
+          canSendWhileBusy: true,
+          delivery: KitComposerDelivery.stopAndSend,
+        ),
+      );
+      expect(_label(tester, _send), 'Stop and send');
+      expect(
+        find.text(
+          'Stops the current reply and starts again with your message.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Sends after this reply'), findsNothing);
+      expect(find.byType(KitSegmented<KitComposerDelivery>), findsNothing);
+      semantics.dispose();
+    });
+  });
+
+  testWidgets('a failed send is neutral words with Try again, never red', (
+    tester,
+  ) async {
+    final h = _host('');
+    var retries = 0;
+    await _pump(
+      tester,
+      _composer(
+        h,
+        failure: KitComposerFailure(
+          words: "Didn't send",
+          onRetry: () => retries++,
+        ),
+      ),
+    );
+    final roles = KitTokens.of(tester.element(find.byType(KitComposer))).roles;
+    Color? colorOf(String text) {
+      final rich = tester.widget<RichText>(
+        find.descendant(
+          of: find.byType(KitComposer),
+          matching: find.byWidgetPredicate(
+            (w) => w is RichText && w.text.toPlainText() == text,
+          ),
+        ),
+      );
+      return rich.text.style?.color;
+    }
+
+    expect(colorOf("Didn't send"), roles.text1);
+    expect(colorOf('· Try again'), roles.text1);
+    expect(colorOf("Didn't send"), isNot(roles.danger));
+    await tester.tap(find.text('· Try again'));
+    expect(retries, 1);
+  });
+
+  testWidgets('a failed send keeps Retry and Details at 48 dp', (tester) async {
+    final h = _host('');
+    const retryKey = ValueKey('failure-retry');
+    await _pump(
+      tester,
+      _composer(
+        h,
+        failure: KitComposerFailure(
+          words: "Didn't send",
+          retryKey: retryKey,
+          onRetry: () {},
+          onDetails: () {},
+        ),
+      ),
+    );
+    final retry = tester.getSize(find.byKey(retryKey));
+    expect(retry.height, greaterThanOrEqualTo(48));
+    final details = tester.getSize(
+      find.ancestor(
+        of: find.byIcon(AppIconography.info),
+        matching: find.byType(KitTappable),
+      ),
+    );
+    expect(details.width, greaterThanOrEqualTo(48));
+    expect(details.height, greaterThanOrEqualTo(48));
   });
 
   testWidgets('offline: Send says it queues and still sends', (tester) async {
@@ -324,7 +416,7 @@ void main() {
     final h = _host('later');
     await _pump(tester, _composer(h, offline: true));
     expect(_label(tester, _send), 'Send when back online');
-    expect(find.text("Offline · sends when you're back online"), findsOne);
+    expect(find.text("Sends when OpenCode answers"), findsOne);
     await tester.tap(find.byKey(_send));
     expect(h.sends, 1);
     semantics.dispose();
@@ -458,7 +550,7 @@ void main() {
     final h = _host('');
     await _pump(
       tester,
-      _composer(h, readOnlyReason: 'This session is archived', model: true),
+      _composer(h, readOnlyReason: 'This session is archived'),
     );
     expect(find.text('This session is archived'), findsOneWidget);
     final field = tester.widget<TextField>(
@@ -647,17 +739,10 @@ void main() {
     });
   });
 
-  testWidgets('glass: a dimmed KitGlass, solid under remove animations', (
-    tester,
-  ) async {
+  testWidgets('the pill is one solid KitGlass surface', (tester) async {
     final h = _host('');
-    await _pump(tester, _composer(h), disableAnimations: true);
-    final glass = tester.widget<KitGlass>(find.byType(KitGlass));
-    expect(glass.dim, isTrue);
-    expect(
-      KitGlass.lookOf(tester.element(find.byType(KitGlass))),
-      KitGlassLook.solid,
-    );
+    await _pump(tester, _composer(h));
+    expect(find.byType(KitGlass), findsOneWidget);
   });
 
   group('layer', () {
@@ -696,6 +781,35 @@ void main() {
       expect(rect.bottom, 915 - 8);
     });
 
+    testWidgets('the band paints no ground: the live background shows', (
+      tester,
+    ) async {
+      await pumpLayer(tester);
+      final band = tester.widget<ColoredBox>(
+        find.byKey(const ValueKey('kit-composer-band')),
+      );
+      expect(band.color.a, 0);
+    });
+
+    testWidgets('the transcript is clipped at the band, not painted under it', (
+      tester,
+    ) async {
+      await pumpLayer(tester);
+      final band = tester.getRect(
+        find.byKey(const ValueKey('kit-composer-band')),
+      );
+      final clip = tester.widget<ClipRect>(
+        find
+            .ancestor(
+              of: find.byType(SizedBox),
+              matching: find.byType(ClipRect),
+            )
+            .first,
+      );
+      final rect = clip.clipper!.getClip(const Size(412, 915));
+      expect(rect.bottom, lessThanOrEqualTo(band.top + 0.5));
+    });
+
     testWidgets('the keyboard lifts the composer', (tester) async {
       final bottom = await pumpLayer(tester, keyboard: 300);
       final rect = tester.getRect(find.byType(KitComposer));
@@ -724,10 +838,7 @@ void main() {
   testWidgets('every control is labelled and at least 48 dp', (tester) async {
     final semantics = tester.ensureSemantics();
     final h = _host('more');
-    await _pump(
-      tester,
-      _composer(h, busy: true, canSendWhileBusy: true, model: true),
-    );
+    await _pump(tester, _composer(h, busy: true, canSendWhileBusy: true));
     for (final (key, label) in [
       (_tools, 'Attach and more'),
       (_editor, 'Open full-screen editor'),
@@ -823,14 +934,7 @@ void main() {
     final h = _host('a long message to the agent');
     await _pump(
       tester,
-      _composer(
-        h,
-        busy: true,
-        canSendWhileBusy: true,
-        deliveryChoice: true,
-        model: true,
-        offline: true,
-      ),
+      _composer(h, busy: true, canSendWhileBusy: true, offline: true),
       size: const Size(320, 800),
       textScale: 2,
     );

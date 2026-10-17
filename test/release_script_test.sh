@@ -35,6 +35,11 @@ new_fixture() {
   cp "$CUT_SCRIPT" "$FIXTURE/scripts/cut-alpha.sh"
   mkdir -p "$FIXTURE/tool/qa" "$FIXTURE/test/nested"
   cp "$REPO_ROOT/tool/qa/run_serial_tests.py" "$FIXTURE/tool/qa/run_serial_tests.py"
+  # Release notes are checked for both layers before any build (FG4).
+  mkdir -p "$FIXTURE/tool/release" "$FIXTURE/docs/releases"
+  cp "$REPO_ROOT/tool/release/release_notes.py" "$FIXTURE/tool/release/release_notes.py"
+  printf '# OpenCode Mobile 1.0.12+13\n\nA fixture release.\n\n## What changed for you\n\n- **Chats** open faster after a restart.\n- **Photos** you send show as pictures.\n\n## Technical changes\n\n### Fixed\n- Fixture change.\n' \
+    >"$FIXTURE/docs/releases/v1.0.12+13.md"
   printf 'void main() {}\n' >"$FIXTURE/test/nested/release_gate_test.dart"
   chmod +x "$FIXTURE/scripts/release.sh" "$FIXTURE/scripts/cut-alpha.sh"
   : >"$FIXTURE/commands.log"
@@ -186,7 +191,7 @@ EOF
 set -euo pipefail
 printf 'flutter %s\n' "$*" >>"$MOCK_COMMAND_LOG"
 if [[ "${1:-}" == "--version" ]]; then
-  printf 'Flutter %s • channel stable\n' "${MOCK_FLUTTER_VERSION:-3.47.2}"
+  printf 'Flutter %s • channel stable\n' "${MOCK_FLUTTER_VERSION:-3.47.1}"
   exit 0
 fi
 if [[ "${MOCK_FLUTTER_FAIL:-}" == "${1:-}" ]]; then
@@ -267,7 +272,7 @@ run_release() {
       MOCK_REMOTE_TAG_EXISTS="${MOCK_REMOTE_TAG_EXISTS:-true}" \
       MOCK_REMOTE_TAG_COMMIT="${MOCK_REMOTE_TAG_COMMIT:-base-commit}" \
       MOCK_DIFF_FILES="${MOCK_DIFF_FILES:-}" \
-      MOCK_FLUTTER_VERSION="${MOCK_FLUTTER_VERSION:-3.47.2}" \
+      MOCK_FLUTTER_VERSION="${MOCK_FLUTTER_VERSION:-3.47.1}" \
       MOCK_FLUTTER_FAIL="${MOCK_FLUTTER_FAIL:-}" \
       MOCK_SHOREBIRD_FAIL="${MOCK_SHOREBIRD_FAIL:-false}" \
       MOCK_KEYSTORE_OWNER="${MOCK_KEYSTORE_OWNER:-CN=OpenCode Release}" \
@@ -362,7 +367,8 @@ test_strict_arguments() {
   new_fixture
   run_release
   assert_status 64
-  assert_output_contains 'Usage: ./scripts/release.sh <release|sideload|patch|github> [--publish]'
+  # BD1 added the read-only patch-plan mode to the documented command list.
+  assert_output_contains 'Usage: ./scripts/release.sh <release|sideload|patch|github|patch-plan> [--publish]'
   assert_log_line_count 0 'shorebird '
 
   run_release ship
@@ -376,6 +382,25 @@ test_strict_arguments() {
   run_release release --publish extra
   assert_status 64
   assert_log_line_count 0 'shorebird '
+}
+
+test_patch_plan_never_executes_release_commands() {
+  new_fixture
+  # Plans remain available without a releasable worktree or signing files.
+  rm "$FIXTURE/android/key.properties" "$KEYSTORE_PATH"
+  MOCK_BRANCH='feature/plan-only' MOCK_GIT_STATUS=' M lib/main.dart' run_release patch-plan
+  assert_status 0
+  assert_output_contains 'Patch canary plan for 1.0.12+13'
+  assert_output_contains '--track staging --dry-run'
+  assert_output_contains 'On the owner phone'
+  assert_output_contains 'Rollback (separate owner approval)'
+  assert_output_contains 'shorebird patches rollback --release-version "1.0.12+13"'
+  [[ ! -s "$FIXTURE/commands.log" ]] || fail_test 'patch-plan executed a release tool'
+
+  run_release patch-plan --publish
+  assert_status 1
+  assert_output_contains 'patch-plan is instructions only; --publish is unavailable'
+  [[ ! -s "$FIXTURE/commands.log" ]] || fail_test 'rejected patch-plan publication executed a release tool'
 }
 
 test_git_gates() {
@@ -407,7 +432,7 @@ test_flutter_toolchain_gate() {
   new_fixture
   MOCK_FLUTTER_VERSION='3.38.5' run_release patch --publish
   assert_status 1
-  assert_output_contains 'Flutter 3.47.2 is required'
+  assert_output_contains 'Flutter 3.47.1 is required'
   assert_output_contains 'PATH provides 3.38.5'
   assert_log_not_contains 'git status'
   assert_log_not_contains 'shorebird '
@@ -483,7 +508,7 @@ test_release_is_dry_run_by_default_and_builds_aab() {
   assert_output_contains 'nothing was uploaded'
   assert_log_contains 'flutter analyze'
   assert_log_contains 'flutter test --no-pub --concurrency=1 test/nested/release_gate_test.dart'
-  assert_log_contains 'shorebird release android --build-name 1.0.12 --build-number 13 --flutter-version 3.47.2 --artifact aab --dry-run'
+  assert_log_contains 'shorebird release android --build-name 1.0.12 --build-number 13 --flutter-version 3.47.1 --artifact aab --dry-run'
   assert_log_line_count 1 'shorebird '
   assert_log_not_contains '--artifact apk'
 
@@ -511,7 +536,7 @@ test_sideload_requires_public_lineage_and_verifies_apk() {
   assert_output_contains 'Publish explicitly with: ./scripts/release.sh sideload --publish'
   assert_log_contains 'flutter analyze'
   assert_log_contains 'flutter test --no-pub --concurrency=1 test/nested/release_gate_test.dart'
-  assert_log_contains 'shorebird release android --build-name 1.0.12 --build-number 13 --flutter-version 3.47.2 --artifact apk --dry-run'
+  assert_log_contains 'shorebird release android --build-name 1.0.12 --build-number 13 --flutter-version 3.47.1 --artifact apk --dry-run'
   assert_log_contains 'apksigner verify --print-certs build/app/outputs/flutter-apk/app-release.apk'
   assert_log_contains 'aapt dump badging build/app/outputs/flutter-apk/app-release.apk'
   assert_log_not_contains '--artifact aab'
@@ -713,7 +738,8 @@ test_alpha_publish_verifies_the_body_github_stored() {
 # subshell (its own fixture numbers, so its own directories), side by side.
 group_index=0
 pids=()
-for group in test_strict_arguments test_git_gates test_flutter_toolchain_gate \
+for group in test_strict_arguments test_patch_plan_never_executes_release_commands \
+  test_git_gates test_flutter_toolchain_gate \
   test_release_signing_blocker test_release_is_dry_run_by_default_and_builds_aab \
   test_sideload_requires_public_lineage_and_verifies_apk \
   test_quality_gate_failure_prevents_shorebird \

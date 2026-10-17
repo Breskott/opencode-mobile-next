@@ -15,9 +15,12 @@ import '../../builtin/setup/phone_setup.dart';
 import '../../builtin/setup/setup_contract.dart';
 import '../../builtin/setup/termux_setup_host.dart';
 import '../../builtin/team/builtin_team.dart';
+import '../../domain/opencode_history_copy.dart';
+import '../../domain/server_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/free_model_notice.dart';
+import '../../state/move_to_opencode2.dart';
 import '../../state/orchestration_store.dart' show PhoneOffer;
 import '../../state/phone_host.dart';
 import '../../state/profiles.dart' show OrchestrationHostKind;
@@ -45,6 +48,7 @@ import 'phone_setup/phone_setup_selection.dart';
 import 'phone_setup/phone_setup_termux_job_screen.dart';
 import 'phone_setup/phone_setup_termux_screen.dart';
 import 'termux_processes_screen.dart';
+part 'this_phone/this_phone_details.dart';
 
 /// Which host This phone shows when nobody said: the one in use, else the
 /// in-app one when it is saved, else Termux.
@@ -118,8 +122,16 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
   late final PhoneHost _host;
   late final bool _ownsHost;
   Set<String>? _installedOptional;
+  var _installedReads = 0;
   bool _connecting = false;
   bool _removing = false;
+
+  /// Set when "Not now" is pressed, so the line folds away at once even if
+  /// the saved dismissal is slow or refused.
+  bool _moveDismissedNow = false;
+  OpenCodeHistorySwitchAdmission _moveAdmission =
+      OpenCodeHistorySwitchAdmission.unavailable;
+  int _moveAdmissionRead = 0;
 
   /// The host's tools that can be removed one by one (P1.4), read after
   /// the page loads; null until then or when there is no engine.
@@ -128,6 +140,12 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
 
   /// The tool whose removal runs now.
   String? _removingTool;
+
+  /// Where OpenCode 2's import of the OpenCode 1 chats stands after a
+  /// switch: read while this page is open and OpenCode 2 is connected, and
+  /// shown as one quiet line only while it is not done (or if it failed).
+  HistoryMigrationStatus? _history;
+  bool _historyPolling = false;
 
   /// What runs in Termux (P5.3), for the Running on this phone row: null
   /// until read. When it cannot be read the row is left out of the list
@@ -273,7 +291,47 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
       return;
     }
     // The reads run in the host's Linux; none waits for another.
-    await Future.wait([_readInstalled(), _readRemovable(), _readProcesses()]);
+    await Future.wait([
+      _readInstalled(),
+      _readRemovable(),
+      _readProcesses(),
+      _readMoveAdmission(),
+    ]);
+    unawaited(_pollHistory());
+  }
+
+  /// Reads the chat import until it is finished or failed. A server without
+  /// the route (OpenCode 1) says nothing, so nothing shows.
+  Future<void> _pollHistory({
+    Duration every = const Duration(seconds: 2),
+    int limit = 150,
+  }) async {
+    if (_historyPolling) return;
+    _historyPolling = true;
+    try {
+      for (var i = 0; i < limit && mounted; i++) {
+        final Object? api = _connection.api;
+        final reporter = api is HistoryMigrationGateway ? api : null;
+        final profile = _host.profile;
+        final here =
+            profile != null &&
+            _connection.hasConnectedServer &&
+            _connection.profile?.id == profile.id;
+        if (!here || reporter == null) return;
+        HistoryMigrationStatus? status;
+        try {
+          status = await reporter.historyMigrationStatus();
+        } catch (_) {
+          status = null;
+        }
+        if (!mounted) return;
+        setState(() => _history = status);
+        if (status == null || !status.pending) return;
+        await Future<void>.delayed(every);
+      }
+    } finally {
+      _historyPolling = false;
+    }
   }
 
   /// Termux's process list: only Termux's tools can list what runs there
@@ -305,9 +363,15 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
   Future<void> _readInstalled() async {
     final engine = _hostEngine();
     if (engine == null) return;
+    // Reads can overlap (the page's first read, then one when a job ends):
+    // only the newest answer counts, or an old slow read puts back a list
+    // from before the tools were added.
+    final read = ++_installedReads;
     try {
       final installed = await engine.installedOptional();
-      if (mounted) setState(() => _installedOptional = installed);
+      if (mounted && read == _installedReads) {
+        setState(() => _installedOptional = installed);
+      }
     } catch (_) {
       // Unknown: the list shows what every setup installs.
     }
@@ -483,18 +547,110 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     if (mounted) unawaited(_load());
   }
 
+  /// Whether the one quiet "Move to OpenCode 2" line is due: this phone's
+  /// own server (the in-app one or Termux's, never a remote one) still runs
+  /// the older OpenCode, can switch, is not busy, and the person has not
+  /// said "Not now" for it. Nothing else on the app offers the move.
+  bool get _moveLineDue {
+    if (_moveDismissedNow || !_host.installed || !_host.runtimeKnown) {
+      return false;
+    }
+    if (_host.runtime != TermuxRuntime.openCode1) return false;
+    if (_moveAdmission != OpenCodeHistorySwitchAdmission.allowed) return false;
+    if (_host.switchTarget != null || !_host.canSwitchRuntime) return false;
+    if (_host.termuxProblem?.blocksTermux ?? false) return false;
+    if (_host.kind == PhoneHostKind.inApp && _engine() == null) return false;
+    if (_connecting || _removing || _removingTool != null) return false;
+    if (const {
+      PhoneHostState.settingUp,
+      PhoneHostState.starting,
+      PhoneHostState.stopping,
+      PhoneHostState.checking,
+      PhoneHostState.notSetUp,
+    }.contains(_host.state)) {
+      return false;
+    }
+    final id = _host.profile?.id;
+    if (id == null) return false;
+    return !MoveToOpenCode2Dismissal.dismissed(_connection.store.prefs, id);
+  }
+
+  Future<OpenCodeHistorySwitchAdmission> _readMoveAdmission() async {
+    final read = ++_moveAdmissionRead;
+    final runtime = _host.runtime;
+    final profileId = _host.profile?.id;
+    var admission = runtime == TermuxRuntime.openCode1
+        ? await _host.checkHistorySwitch()
+        : OpenCodeHistorySwitchAdmission.unavailable;
+    if (_host.runtime != runtime || _host.profile?.id != profileId) {
+      admission = OpenCodeHistorySwitchAdmission.unavailable;
+    }
+    if (mounted && read == _moveAdmissionRead) {
+      setState(() => _moveAdmission = admission);
+    }
+    // A tap uses its own answer, even if another page refresh superseded the
+    // displayed state while this read was in flight.
+    return admission;
+  }
+
+  String? get _moveBlockedDetail => _blockedMoveDetail(_moveAdmission);
+
+  String? _blockedMoveDetail(OpenCodeHistorySwitchAdmission admission) =>
+      switch (admission) {
+        OpenCodeHistorySwitchAdmission.allowed => null,
+        OpenCodeHistorySwitchAdmission.separateHistory =>
+          _l10n.setupSwitchSeparateHistoryDetail,
+        OpenCodeHistorySwitchAdmission.unavailable =>
+          _l10n.setupSwitchHistoryUnavailableDetail,
+      };
+
+  Future<void> _dismissMoveLine() async {
+    final id = _host.profile?.id;
+    if (id == null) return;
+    setState(() => _moveDismissedNow = true);
+    await MoveToOpenCode2Dismissal.dismiss(_connection.store.prefs, id);
+  }
+
   Future<void> _switchRuntime(TermuxRuntime target) async {
+    final previousRuntime = _host.runtime;
+    final previousProfileId = _host.profile?.id;
+    if (target == TermuxRuntime.openCode2) {
+      final admission = await _readMoveAdmission();
+      if (!mounted) return;
+      final blocked = _blockedMoveDetail(admission);
+      if (blocked != null) {
+        await showKitAlert(
+          context,
+          title: _l10n.setupSwitchConfirmTitle(_runtimeName(target)),
+          body: blocked,
+          closeLabel: _l10n.setupSwitchStay,
+          icon: AppIconography.warning,
+          alertKey: const ValueKey('this-phone-switch-blocked'),
+          closeKey: const ValueKey('this-phone-switch-stay'),
+        );
+        return;
+      }
+    }
     final l10n = _l10n;
     final confirmed = await showKitConfirm(
       context,
       title: l10n.setupSwitchConfirmTitle(_runtimeName(target)),
-      body: l10n.setupSwitchConfirmDetail,
+      body: target == TermuxRuntime.openCode2
+          ? l10n.setupSwitchToTwoDetail
+          : l10n.setupSwitchConfirmDetail,
       confirmLabel: l10n.setupSwitchConfirm(_runtimeName(target)),
       icon: AppIconography.sync,
       sheetKey: const ValueKey('this-phone-switch-sheet'),
       confirmKey: const ValueKey('this-phone-switch-confirm'),
     );
     if (!confirmed || !mounted) return;
+    // The confirmation belongs to the runtime/profile it described. Another
+    // setup finishing while it was open must not switch a different server.
+    if (_host.runtime != previousRuntime ||
+        _host.profile?.id != previousProfileId) {
+      unawaited(_load());
+      return;
+    }
     if (_host.kind == PhoneHostKind.inApp) {
       return _inApp(PhoneServerAction.switchRuntime);
     }
@@ -712,7 +868,7 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     final tokens = KitTokens.of(context);
     final state = _host.state;
     return KitScreen(
-      topBar: KitTopBar(title: l10n.phoneServerCardTitle),
+      topBar: KitTopBar(title: l10n.settingsV3ThisPhone),
       width: KitScreenWidth.reading,
       loading: state == PhoneHostState.checking,
       loadingLabel: l10n.phoneServerCardChecking,
@@ -754,6 +910,35 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
                   ),
                 ),
               ],
+              // The one quiet offer to move this phone's server to
+              // OpenCode 2; it folds away on "Not now" and never returns.
+              KitReveal(
+                key: const ValueKey('this-phone-move-reveal'),
+                child: _moveLineDue
+                    ? Padding(
+                        padding: EdgeInsetsDirectional.only(
+                          top: tokens.space3,
+                          start: tokens.gutter,
+                          end: tokens.gutter,
+                        ),
+                        child: KitNotice.offer(
+                          key: const ValueKey('this-phone-move-line'),
+                          icon: AppIconography.sync,
+                          message: l10n.moveToOpenCode2Detail,
+                          action: KitAction(
+                            key: const ValueKey('this-phone-move'),
+                            label: l10n.moveToOpenCode2Title,
+                            onPressed: () => unawaited(
+                              _switchRuntime(TermuxRuntime.openCode2),
+                            ),
+                          ),
+                          onDismiss: () => unawaited(_dismissMoveLine()),
+                          dismissKey: const ValueKey('this-phone-move-not-now'),
+                          dismissLabel: l10n.moveToOpenCode2NotNow,
+                        ),
+                      )
+                    : null,
+              ),
               if (_host.installed) ...[
                 SizedBox(height: tokens.sectionGap),
                 _list(context, l10n),
@@ -821,13 +1006,15 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     final String? line = switch (problem) {
       _ when _removing || working => null,
       _ when reachWords != null => reachWords.line,
+      PhoneHostProblem.componentRecovery =>
+        l10n.inAppServerOwnershipRecoveryBody,
       _ when state == PhoneHostState.needsYou && switchTarget != null =>
         l10n.thisPhoneSwitchStopped(_runtimeName(switchTarget)),
       PhoneHostProblem.start => l10n.thisPhoneStartFailed(runtimeName),
       PhoneHostProblem.install => l10n.thisPhoneInstallFailed(runtimeName),
       PhoneHostProblem.stop => l10n.thisPhoneStopFailed(runtimeName),
       PhoneHostProblem.check => l10n.thisPhoneCheckFailed(runtimeName),
-      null => null,
+      null => historyLine(l10n, _history),
     };
 
     KitAction? primary;
@@ -841,6 +1028,13 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
       );
     } else if (!working) {
       switch (state) {
+        case PhoneHostState.needsYou
+            when problem == PhoneHostProblem.componentRecovery:
+          primary = KitAction(
+            key: const ValueKey('this-phone-recover-ownership'),
+            label: l10n.e7SetupOpenAppSettings,
+            onPressed: () => unawaited(TermuxBridge.openAppSettings()),
+          );
         case PhoneHostState.notSetUp:
           primary = KitAction(
             key: const ValueKey('this-phone-set-up'),
@@ -909,8 +1103,9 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
           }
           secondary = KitAction(
             key: const ValueKey('this-phone-stop'),
+            // Stopping keeps everything and is undone by Start: a plain
+            // secondary button, never red (LOOK-5); it still asks first.
             label: l10n.thisPhoneStop,
-            destructive: true,
             onPressed: () => unawaited(_stop()),
           );
         case PhoneHostState.checking ||
@@ -1099,8 +1294,10 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
             title: l10n.phoneServerCardSwitchTo(_runtimeName(other)),
             supporting: switchLocked
                 ? TextSpan(text: l10n.setupSwitchLegacyTwo)
+                : other == TermuxRuntime.openCode2 && _moveBlockedDetail != null
+                ? TextSpan(text: _moveBlockedDetail)
                 : null,
-            supportingMaxLines: 3,
+            supportingMaxLines: 8,
             trailing: const KitChevron(),
             enabled: !busy && !switchLocked,
             disabledReason: switchLocked
@@ -1119,15 +1316,17 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
             disabledReason: busyReason,
             onTap: () => unawaited(_addTools()),
           ),
-        if (!inApp)
-          KitRow(
-            key: const ValueKey('local-agent-row'),
-            leading: icon(AppIconography.agent),
-            title: l10n.localAgentTitle,
-            supporting: TextSpan(text: l10n.localAgentRowOptional),
-            trailing: const KitChevron(),
-            onTap: _openLocalAgent,
+        // Both ways of running agents here open the same page.
+        KitRow(
+          key: const ValueKey('local-agent-row'),
+          leading: icon(AppIconography.agent),
+          title: inApp ? l10n.settingsV3AgentsOnPhone : l10n.localAgentTitle,
+          supporting: TextSpan(
+            text: inApp ? l10n.localAgentTitle : l10n.localAgentRowOptional,
           ),
+          trailing: const KitChevron(),
+          onTap: _openLocalAgent,
+        ),
         _installed(context, l10n),
         if (inApp)
           KitRow(
@@ -1201,7 +1400,6 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
             key: const ValueKey('this-phone-remove'),
             leading: icon(AppIconography.delete),
             title: l10n.thisPhoneRemove,
-            destructive: true,
             enabled: !busy && state != PhoneHostState.settingUp,
             disabledReason: busyReason,
             onTap: () => unawaited(_inApp(PhoneServerAction.remove)),
@@ -1259,7 +1457,6 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
             text: neededBy ?? _removeDetail(l10n, component.id),
           ),
           supportingMaxLines: 2,
-          destructive: true,
           enabled: !busy && neededBy == null,
           disabledReason: neededBy ?? busyReason,
           onTap: () => unawaited(_removeTool(component)),
@@ -1268,146 +1465,19 @@ class _ThisPhoneScreenState extends ConsumerState<ThisPhoneScreen> {
     }
     return rows;
   }
-
-  /// The technical truth, last and folded (KIT-33): the server's log in
-  /// the one log view (KIT-31), titled by the server it comes from so it
-  /// does not repeat "Details".
-  Widget _logFold(BuildContext context, AppLocalizations l10n) {
-    final tokens = KitTokens.of(context);
-    final running = _host.state == PhoneHostState.running;
-    final version = _host.version;
-    return Padding(
-      padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
-      child: KitDetailsFold(
-        foldKey: const ValueKey('this-phone-details'),
-        expanded: _detailsOpen,
-        onExpansionChanged: _details,
-        // What the host said went wrong, word for word (redacted by the
-        // fold); the status row says it in plain words.
-        text: _removing ? null : _host.failure,
-        textKey: const ValueKey('this-phone-failure-details'),
-        values: _performanceValues(l10n),
-        child: KitLogPanel(
-          lines: _log,
-          panelKey: const ValueKey('this-phone-log'),
-          title: version == null
-              ? _runtimeName(_host.runtime)
-              : l10n.phoneServerCardVersion(version),
-          emptyText: l10n.phoneServerCardLogEmpty,
-          live: running,
-          onRefresh: running ? _readLog : null,
-          ended: running ? null : const KitLogEnd(),
-        ),
-      ),
-    );
-  }
-
-  /// How fast the last reply on this phone's server came, in plain words;
-  /// left out until one was timed since the app opened.
-  Widget? _replySpeed(BuildContext context, AppLocalizations l10n) {
-    final last = _replies.lastInApp;
-    if (last == null) return null;
-    final first = last.firstToken;
-    return KitRow(
-      key: const ValueKey('this-phone-reply-speed'),
-      leading: KitRow.icon(context, AppIconography.speed),
-      title: l10n.replySpeedTitle,
-      supporting: TextSpan(
-        text: first == null
-            ? l10n.replySpeedNoWords(_seconds(l10n, last.total))
-            : l10n.replySpeedLast(
-                _seconds(l10n, first),
-                _seconds(l10n, last.total),
-              ),
-      ),
-      supportingKey: const ValueKey('this-phone-reply-speed-detail'),
-      supportingMaxLines: 2,
-    );
-  }
-
-  /// Performance, technical and folded under Details: how proot runs the
-  /// server, whether the phone is kept awake for a reply, and the last
-  /// reply's first-words wait split between the app and the server.
-  List<KitTechnicalValue> _performanceValues(AppLocalizations l10n) {
-    if (_host.kind != PhoneHostKind.inApp) return const [];
-    final performance = _performance;
-    final last = _replies.lastInApp;
-    final first = last?.firstToken;
-    final server = last?.serverFirstToken;
-    return [
-      if (performance != null) ...[
-        KitTechnicalValue(
-          l10n.perfDetailLinuxMode,
-          switch (performance.prootMode) {
-            BuiltinProotMode.seccomp => l10n.perfLinuxModeFast,
-            BuiltinProotMode.ptrace => l10n.perfLinuxModeSlow,
-            BuiltinProotMode.unknown => l10n.perfLinuxModeUnknown,
-          },
-          key: const ValueKey('this-phone-perf-mode'),
-          copyable: false,
-        ),
-        KitTechnicalValue(
-          l10n.perfDetailAwake,
-          performance.workHeld ? l10n.perfAwakeNow : l10n.perfAwakeWhenWorking,
-          key: const ValueKey('this-phone-perf-awake'),
-          copyable: false,
-        ),
-      ],
-      if (first != null)
-        KitTechnicalValue(
-          l10n.perfDetailFirstWords,
-          server == null
-              ? _seconds(l10n, first)
-              : l10n.perfFirstWordsSplit(
-                  _seconds(l10n, first),
-                  _seconds(l10n, server),
-                ),
-          key: const ValueKey('this-phone-perf-first-words'),
-        ),
-      if (last?.model case final model?)
-        KitTechnicalValue(
-          l10n.perfDetailModel,
-          model,
-          key: const ValueKey('this-phone-perf-model'),
-        ),
-    ];
-  }
-
-  /// What is installed on this phone, folded: the parts setup put there,
-  /// on either host. What every setup installs, then the optional tools the
-  /// host's checks find (Python, AI Team, voice typing and more).
-  Widget _installed(BuildContext context, AppLocalizations l10n) {
-    final names = <String>[];
-    final engine = _hostEngine();
-    final optional = _installedOptional ?? const <String>{};
-    for (final component
-        in engine == null
-            ? const <SetupComponent>[]
-            : installableComponents(engine.registry)) {
-      if (component.required || optional.contains(component.id)) {
-        names.add(component.shortTitle);
-      }
-    }
-    if (names.isEmpty) {
-      names.add(l10n.phoneSetupLinuxTitle);
-      if (_host.kind == PhoneHostKind.termux) {
-        names.add(_runtimeName(_host.runtime));
-      }
-    }
-    return KitExpandRow(
-      key: const ValueKey('this-phone-installed'),
-      headerKey: const ValueKey('this-phone-installed-header'),
-      leading: KitRow.icon(context, AppIconography.check),
-      title: l10n.thisPhoneInstalled,
-      supporting: TextSpan(text: joinSetupNames(l10n, names)),
-      supportingMaxLines: 2,
-      children: [
-        for (final name in names)
-          KitRow(
-            title: name,
-            leading: const KitStatusMark(state: KitMarkState.done),
-          ),
-      ],
-    );
-  }
 }
+
+/// The one quiet line about the chat import, or null when there is nothing
+/// to say (finished, not started, or a server that does not report it).
+/// Plain words only: the server's own error text goes under Details.
+@visibleForTesting
+String? historyLine(AppLocalizations l10n, HistoryMigrationStatus? status) =>
+    switch (status?.phase) {
+      HistoryMigrationPhase.required => l10n.thisPhoneHistoryMoving,
+      HistoryMigrationPhase.running =>
+        status!.done != null && status.total != null && status.total! > 0
+            ? l10n.thisPhoneHistoryMovingCount(status.done!, status.total!)
+            : l10n.thisPhoneHistoryMoving,
+      HistoryMigrationPhase.error => l10n.thisPhoneHistoryFailed,
+      _ => null,
+    };

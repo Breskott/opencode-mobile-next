@@ -30,8 +30,8 @@ the README (a placeholder is there waiting).
 
 ### B2. The README's screenshots are gitignored
 
-`video/.gitignore` ignores `public/shots/*.png` and `*.mp4`. The four stills
-the rewritten README references (`video/public/shots/still-workspace.png`,
+`tool/demo-video/.gitignore` ignores `public/shots/*.png` and `*.mp4`. The four stills
+the rewritten README references (`tool/demo-video/public/shots/still-workspace.png`,
 `still-rec3-end.png`, `still-more-grid.png`, `still-steal-sheet.png`) exist
 on disk and show app surfaces only, but they are **not tracked**, so they
 will 404 the moment the repo is public. (This entry originally cleared them
@@ -42,13 +42,13 @@ not a substitute for looking.)
 Fix before the flip, either way works:
 
 ```bash
-git add -f video/public/shots/still-workspace.png \
-           video/public/shots/still-rec3-end.png \
-           video/public/shots/still-more-grid.png \
-           video/public/shots/still-steal-sheet.png
+git add -f tool/demo-video/public/shots/still-workspace.png \
+           tool/demo-video/public/shots/still-rec3-end.png \
+           tool/demo-video/public/shots/still-more-grid.png \
+           tool/demo-video/public/shots/still-steal-sheet.png
 ```
 
-or add `!still-*.png` to `video/.gitignore`. (~770 KB total — negligible.)
+or add `!still-*.png` to `tool/demo-video/.gitignore`. (~770 KB total — negligible.)
 The large `.mp4` recordings should stay ignored; the showcase videos are
 already hosted as release assets.
 
@@ -117,7 +117,7 @@ verification anchor for sideloaders.
 
 - **N1. Secret scan (working tree) — clean.** Patterns checked across all
   tracked and untracked files (excluding `.git`, `build/`, `.dart_tool/`,
-  `node_modules`, `video/out`): provider key formats (`sk-…`, `ghp_…`,
+  `node_modules`, `tool/demo-video/out`): provider key formats (`sk-…`, `ghp_…`,
   `github_pat_`, `AIza…`, `AKIA…`, `xox…`, JWTs, PEM blocks) — zero hits;
   `password=`/`storePassword`/`keyPassword`/`OPENCODE_SERVER_PASSWORD`
   occurrences are all placeholders (`your-secret`,
@@ -167,13 +167,13 @@ verification anchor for sideloaders.
   — a font bundled under OFL does not restrict the app's license choice.
 - **N8. Hygiene.** TODO/FIXME density in `lib/`: exactly one. `.gitignore`
   coverage verified for `build/`, `.dart_tool/`, `*.iml`,
-  `.claude/worktrees/`, `video/node_modules/`, `video/out/`, keystores and
+  `.claude/worktrees/`, `tool/demo-video/node_modules/`, `tool/demo-video/out/`, keystores and
   `key.properties`. `incoming-photo.jpg` (untracked test asset) is excluded
   only via local `.git/info/exclude` — harmless (it is untracked), but a
   root `.gitignore` entry would be tidier. The 644 KB
-  `marketing/opencode-mobile-demo/opencode-mobile-outreach.mp4` is the only
+  `docs/marketing/opencode-mobile-demo/opencode-mobile-outreach.mp4` is the only
   committed binary of note; acceptable.
-- **N9. `video/public/shots/` recordings** (untracked, stay untracked):
+- **N9. `tool/demo-video/public/shots/` recordings** (untracked, stay untracked):
   filenames map to app-surface flows only — first-run, quick-ask, live-run,
   picker, more-hub, settings, files, review, terminal, themes,
   mission-control, plus the five stills. All were recorded on a clean

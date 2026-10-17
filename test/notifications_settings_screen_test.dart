@@ -35,6 +35,9 @@ Future<ConnectionController> _controller({
   Map<String, Object> legacy = const {},
   int servers = 2,
   bool notificationGranted = true,
+  // Android has stopped the service at its time limit: its own answer to
+  // the next read of the pause says so.
+  bool timedOut = false,
   void Function(String method)? onInvoke,
 }) async {
   SharedPreferences.setMockInitialValues({
@@ -59,15 +62,28 @@ Future<ConnectionController> _controller({
     preferences: preferences,
     liveStatusDebounce: Duration.zero,
     invoke: (method, [arguments]) async {
+      // What Android says about the background connection: still allowed,
+      // or stopped at its time limit (then every status carries it).
+      final pause = {
+        'supported': true,
+        'active': false,
+        'paused': timedOut,
+        'reason': timedOut ? 'timeLimit' : 'none',
+        'at': timedOut ? 1791428400000 : null,
+        'canResume': timedOut,
+      };
+      if (method == 'getBackgroundPause') return pause;
+
       onInvoke?.call(method);
       if (method == 'showCodingAlert') {
         return {'shown': notificationGranted};
       }
       return {
-        'enabled': method != 'disable',
-        'active': method != 'disable',
+        'enabled': !timedOut && method != 'disable',
+        'active': !timedOut && method != 'disable',
         'notificationGranted': notificationGranted,
         'batteryOptimizationIgnored': false,
+        if (timedOut) 'backgroundPause': pause,
       };
     },
   );
@@ -178,6 +194,54 @@ void main() {
     // "Check in after" and "Notify" appear only once they apply.
     expect(_key('notify-check-in-after'), findsNothing);
     expect(_key('monitor-notify-profile-1'), findsNothing);
+    await _finish(tester, controller);
+  });
+
+  testWidgets('quota alerts are not switched here: the row leads to Usage', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final controller = await _controller(servers: 1);
+    await tester.pumpWidget(
+      _app(NotificationsSettingsScreen(controller: controller)),
+    );
+    await tester.pump();
+
+    final row = _key('notify-quota-alerts');
+    expect(row, findsOneWidget);
+    expect(
+      find.descendant(of: row, matching: find.byType(Switch)),
+      findsNothing,
+    );
+    expect(find.text(_en.notifyQuotaAlerts), findsOneWidget);
+    expect(find.text(_en.notifyQuotaAlertsDetail), findsOneWidget);
+    await _finish(tester, controller);
+  });
+
+  testWidgets('the one usage alerts row opens the Alerts page, which does not '
+      'lead back here', (tester) async {
+    tester.view.physicalSize = const Size(400, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final controller = await _controller(servers: 1);
+    await tester.pumpWidget(
+      _app(NotificationsSettingsScreen(controller: controller)),
+    );
+    await tester.pump();
+    // Exactly one such row, and it is the way to the Alerts page.
+    expect(_key('notify-quota-alerts'), findsOneWidget);
+    await tester.ensureVisible(_key('notify-quota-alerts'));
+    await tester.pump();
+    await tester.tap(_key('notify-quota-alerts'));
+    await tester.pumpAndSettle();
+
+    expect(_key('usage-alerts'), findsOneWidget);
+    expect(find.text(_en.usageAlertsTitle), findsWidgets);
+    // No loop: the Alerts page has no row back to Notifications.
+    expect(_key('notify-quota-alerts'), findsNothing);
+    expect(find.text(_en.settingsV3Notifications), findsNothing);
     await _finish(tester, controller);
   });
 
@@ -369,7 +433,6 @@ void main() {
     );
     expect(toggle('notify-quiet-hours').value, isTrue);
     expect(toggle('notify-wifi-only').value, isTrue);
-    expect(toggle('notify-quota-alerts').value, isTrue);
     expect(toggle('notify-check-ins').value, isTrue);
     expect(_key('notify-check-in-after'), findsOneWidget);
     // KitPickerRow isolates the value's direction (477e2075).
@@ -403,8 +466,6 @@ void main() {
     expect(controller.notificationPreferences.finishedRuns, isFalse);
     await _tapSwitch(tester, 'notify-requests');
     expect(controller.notificationPreferences.requests, isFalse);
-    await _tapSwitch(tester, 'notify-quota-alerts');
-    expect(controller.sharedNotifyRules.quotaAlerts, isTrue);
 
     await _tapSwitch(tester, 'notify-check-ins');
     expect(
@@ -439,13 +500,13 @@ void main() {
     final controller = await _controller();
     await tester.pumpWidget(_app(SettingsScreen(controller: controller)));
     await tester.pumpAndSettle();
-    final row = _key('settings-category-background');
+    final row = _key('settings-category-notifications');
     await tester.ensureVisible(row);
     await tester.pumpAndSettle();
     expect(
       find.descendant(
         of: row,
-        matching: find.text(_en.settingsHubGroupNotifications),
+        matching: find.text(_en.settingsV3Notifications),
       ),
       findsOneWidget,
     );
@@ -532,11 +593,23 @@ void main() {
       final live = BackgroundLiveController(
         preferences: preferences,
         liveStatusDebounce: Duration.zero,
-        invoke: (method, [arguments]) async => {
-          'enabled': true,
-          'active': true,
-          'notificationGranted': granted,
-          'batteryOptimizationIgnored': false,
+        invoke: (method, [arguments]) async {
+          if (method == 'getBackgroundPause') {
+            return const {
+              'supported': true,
+              'active': false,
+              'paused': false,
+              'reason': 'none',
+              'at': null,
+              'canResume': false,
+            };
+          }
+          return {
+            'enabled': true,
+            'active': true,
+            'notificationGranted': granted,
+            'batteryOptimizationIgnored': false,
+          };
         },
       );
       await live.restore();
@@ -597,6 +670,13 @@ void main() {
   });
 
   group('layout at 320 dp and 2.5x text', () {
+    // The timeout notice is an Android row: lay it out as Android, not as
+    // the host the tests run on.
+    setUp(
+      () => debugPlatformCapabilities = const PlatformCapabilities.android(),
+    );
+    tearDown(() => debugPlatformCapabilities = null);
+
     for (final locale in const [Locale('en'), Locale('ar')]) {
       testWidgets('no overflow in ${locale.languageCode}', (tester) async {
         const phone = Size(320, 640);
@@ -605,6 +685,7 @@ void main() {
         addTearDown(tester.view.reset);
         // Everything on: every conditional row is laid out.
         final controller = await _controller(
+          timedOut: true,
           legacy: {
             for (final id in ['profile-1', 'profile-2'])
               ProfileMonitor.rulesKey(id): jsonEncode(

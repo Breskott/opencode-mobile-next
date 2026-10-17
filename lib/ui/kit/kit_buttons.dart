@@ -33,6 +33,10 @@ class KitAction {
     this.working = false,
     this.disabledReason,
     this.shortcut,
+    this.calm = false,
+    this.neutral = false,
+    this.semanticsLabel,
+    this.visible = true,
   }) : copyText = null,
        redact = true;
 
@@ -52,7 +56,11 @@ class KitAction {
        onPressed = null,
        destructive = false,
        working = false,
-       disabledReason = null;
+       disabledReason = null,
+       calm = false,
+       neutral = false,
+       semanticsLabel = null,
+       visible = true;
 
   /// A verb naming what happens (COPY-8): "Delete conversation".
   final String label;
@@ -82,6 +90,26 @@ class KitAction {
   /// from [KitWindow.expanded] up (visual language §5 "keyboard hints on
   /// buttons"). Display only; the shortcut layer binds it.
   final String? shortcut;
+
+  /// A quieter primary fill in dark mode: the accent eased toward the
+  /// sheet's ground, so a sheet's one main action does not glare at night.
+  /// Light mode is unchanged. Only meaningful on a primary action.
+  final bool calm;
+
+  /// A control that is not the sheet's main act (Stop): drawn as a neutral
+  /// secondary button even in the primary slot, never filled with the accent.
+  final bool neutral;
+
+  /// What a screen reader says instead of [label], when a compact label
+  /// leans on the words around it: "Resume" on a line about the background
+  /// connection is read as "Resume background connection" (COPY-8: the
+  /// action still names its target).
+  final String? semanticsLabel;
+
+  /// False while the act has nothing to do right now (Collapse all steps
+  /// with no step open). In a [KitTopBar] it leaves its slot with a short
+  /// fade instead of vanishing, and never shows in the overflow.
+  final bool visible;
 
   /// Set only by [KitAction.copy].
   final String Function()? copyText;
@@ -131,9 +159,11 @@ class KitButton extends StatelessWidget {
     this.maxLines = 2,
     this.shortcut,
   }) : copyText = null,
+       calm = false,
        disabledReason = null,
        copied = false,
-       redact = true;
+       redact = true,
+       semanticsLabel = null;
 
   const KitButton.primary({
     super.key,
@@ -146,10 +176,12 @@ class KitButton extends StatelessWidget {
     this.destructive = false,
     this.shortcut,
   }) : role = KitButtonRole.primary,
+       calm = false,
        copyText = null,
        disabledReason = null,
        copied = false,
-       redact = true;
+       redact = true,
+       semanticsLabel = null;
 
   const KitButton.secondary({
     super.key,
@@ -162,10 +194,12 @@ class KitButton extends StatelessWidget {
     this.maxLines = 2,
     this.shortcut,
   }) : role = KitButtonRole.secondary,
+       calm = false,
        copyText = null,
        disabledReason = null,
        copied = false,
-       redact = true;
+       redact = true,
+       semanticsLabel = null;
 
   const KitButton.tertiary({
     super.key,
@@ -176,12 +210,14 @@ class KitButton extends StatelessWidget {
     this.maxLines = 2,
     this.shortcut,
   }) : role = KitButtonRole.tertiary,
+       calm = false,
        working = false,
        expand = false,
        copyText = null,
        disabledReason = null,
        copied = false,
-       redact = true;
+       redact = true,
+       semanticsLabel = null;
 
   /// Used only by [fromAction] to carry what a plain [KitAction] cannot
   /// name as a public constructor parameter without widening the four
@@ -202,6 +238,8 @@ class KitButton extends StatelessWidget {
     this.disabledReason,
     this.copied = false,
     this.redact = true,
+    this.calm = false,
+    this.semanticsLabel,
   });
 
   factory KitButton.fromAction(
@@ -210,7 +248,10 @@ class KitButton extends StatelessWidget {
     bool expand = true,
   }) => KitButton._derived(
     key: action.key,
-    role: role,
+    role: role == KitButtonRole.primary && action.neutral
+        ? KitButtonRole.secondary
+        : role,
+    calm: action.calm,
     label: action.label,
     onPressed: action.onPressed,
     icon: action.icon,
@@ -221,6 +262,7 @@ class KitButton extends StatelessWidget {
     copyText: action.copyText,
     disabledReason: action.disabledReason,
     redact: action.redact,
+    semanticsLabel: action.semanticsLabel,
   );
 
   /// A tertiary button's side padding; blocks pull the row back by it so
@@ -241,11 +283,17 @@ class KitButton extends StatelessWidget {
   /// Set only through [fromAction] from [KitAction.copyText].
   final String Function()? copyText;
 
+  /// Set only through [fromAction] from [KitAction.calm].
+  final bool calm;
+
   /// Set only through [fromAction] from [KitAction.disabledReason].
   final String? disabledReason;
 
   /// Set only through [fromAction] from [KitAction.redact].
   final bool redact;
+
+  /// Set only through [fromAction] from [KitAction.semanticsLabel].
+  final String? semanticsLabel;
 
   /// Set only by [_KitCopyButton]: keys the check icon `kit-action-copied`
   /// instead of `kit-button-icon` while a copy button shows it.
@@ -287,18 +335,22 @@ class KitButton extends StatelessWidget {
     final tokens = KitTokens.of(context);
     final roles = tokens.roles;
     final still = KitMotion.reduced(context);
-    final Widget labelWidget = _KitButtonLabel(
+    final spoken = semanticsLabel;
+    final Widget shownLabel = _KitButtonLabel(
       label: label,
       shortcut: shortcut,
       role: role,
       maxLines: maxLines,
     );
+    final Widget labelWidget = spoken == null
+        ? shownLabel
+        : Semantics(label: spoken, excludeSemantics: true, child: shownLabel);
     Widget? leading;
     Widget child = labelWidget;
     if (role != KitButtonRole.tertiary && icon != null) {
       // The icon and the spinner share one slot and crossfade.
       leading = SizedBox.square(
-        dimension: tokens.smallIconSize,
+        dimension: tokens.iconSize(context, tokens.smallIconSize),
         child: AnimatedSwitcher(
           duration: still ? Duration.zero : KitMotion.quick,
           switchInCurve: KitMotion.enter,
@@ -308,7 +360,7 @@ class KitButton extends StatelessWidget {
               : Icon(
                   icon,
                   key: copied ? _copiedKey : const ValueKey('kit-button-icon'),
-                  size: tokens.smallIconSize,
+                  size: tokens.iconSize(context, tokens.smallIconSize),
                 ),
         ),
       );
@@ -346,7 +398,7 @@ class KitButton extends StatelessWidget {
       leading = Icon(
         icon,
         key: copied ? _copiedKey : null,
-        size: tokens.smallIconSize,
+        size: tokens.iconSize(context, tokens.smallIconSize),
       );
     }
     final minimum = expand
@@ -422,7 +474,12 @@ class KitButton extends StatelessWidget {
             minimumSize: minimum,
             shape: shape,
             elevation: 0,
-            backgroundColor: destructive ? roles.dangerFill : roles.accent,
+            backgroundColor: destructive
+                ? roles.dangerFill
+                : calm && Theme.of(context).brightness == Brightness.dark
+                // Calm (dark mode): the accent eased toward the ground.
+                ? Color.lerp(roles.accent, roles.surface1, .32)
+                : roles.accent,
             foregroundColor: destructive ? roles.onDangerFill : roles.onAccent,
             disabledBackgroundColor: roles.surface3,
             disabledForegroundColor: roles.text3,
@@ -500,7 +557,7 @@ class KitButton extends StatelessWidget {
       container: inFlight,
       button: inFlight ? true : null,
       enabled: inFlight ? false : null,
-      label: inFlight ? label : null,
+      label: inFlight ? (semanticsLabel ?? label) : null,
       excludeSemantics: inFlight,
       child: result,
     );
@@ -571,7 +628,9 @@ class _Spinner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox.square(
-    dimension: KitTokens.of(context).smallIconSize,
+    dimension: KitTokens.of(
+      context,
+    ).iconSize(context, KitTokens.of(context).smallIconSize),
     child: CircularProgressIndicator(
       // The kit's one small-spinner stroke, shared with KitStatusMark and
       // KitIconButton.

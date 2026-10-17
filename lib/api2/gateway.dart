@@ -12,10 +12,12 @@ import '../api/models.dart';
 import '../domain/server_gateway.dart';
 import '../domain/parallel_requests.dart';
 import 'client.dart';
+import 'gen_ui_history.dart';
 import 'gateway_events.dart';
 import 'gateway_mappers.dart';
 import 'models.dart';
 import 'transport.dart';
+import 'session_permission_policy.dart';
 import '../diagnostics/perf_trace.dart';
 
 /// The OpenCode 2 side of the domain gateway.
@@ -26,8 +28,23 @@ import '../diagnostics/perf_trace.dart';
 /// result or throws a typed [ProductException], and the matching
 /// [ServerCapabilities] flag is false (see [api2ServerCapabilities]).
 class Api2Gateway
+    with Api2GenUiHistory
     implements ServerGateway, SessionSelectionGateway, WebSearchGateway {
   final Api2Client client;
+
+  /// Admission fence shared with the phone engine's OC1 chat path. A settled
+  /// request is not proof of idle: transport failure may follow acceptance.
+  Future<void> Function(String sessionID)? beforeSessionDispatch;
+  void Function(String sessionID)? sessionDispatchSettled;
+
+  Future<void> _dispatch(String sessionID, Future<void> Function() send) async {
+    await beforeSessionDispatch?.call(sessionID);
+    try {
+      await send();
+    } finally {
+      sessionDispatchSettled?.call(sessionID);
+    }
+  }
 
   Api2Gateway({required this.client});
 
@@ -43,6 +60,7 @@ class Api2Gateway
          workspace: workspace,
        );
 
+  @override
   Api2Transport get transport => client.transport;
 
   @override
@@ -354,11 +372,47 @@ class Api2Gateway
 
   // ---------------- Prompting ----------------
 
-  Future<void> _requireResolvedRevert(String sessionID) async {
+  Future<void> _prepareSessionDispatch(
+    String sessionID, {
+    bool allowReverted = false,
+  }) async {
+    Future<Api2SessionPermissionPolicy> read() async =>
+        Api2SessionPermissionPolicy.fromSession(
+          await transport.getJson('/session/$sessionID'),
+          sessionID,
+        );
+    final policy = await read();
     // The pinned server implicitly commits a stage before admitting a
     // prompt, even with resume:false. Never let Send or offline replay
     // silently perform that permanent operation.
-    if ((await client.session(sessionID)).reverted) {
+    if (!allowReverted && policy.reverted) {
+      throw ApiException(
+        'Review the staged revert, then clear it or make it permanent before sending.',
+        statusCode: 409,
+        errorTag: 'SessionRevertPending',
+      );
+    }
+    final agent = policy.agent;
+    final agentResponse = agent == null
+        ? Api2SessionPermissionPolicy.defaultAgent(
+            await transport.getJson('/agent', query: _loc()),
+          )
+        : await transport.getJson(
+            '/agent/${Uri.encodeComponent(agent)}',
+            query: _loc(),
+          );
+    final update = policy.updateForAgent(agentResponse);
+    if (policy.confirms(update)) return;
+    await transport.patchJson('/session/$sessionID', body: update);
+    // A successful HTTP response alone cannot establish the permission mode.
+    // Read back before any prompt, command, or offline replay can execute.
+    final confirmed = await read();
+    if (confirmed.agent != policy.agent || !confirmed.confirms(update)) {
+      throw const Api2RequestError(
+        'Could not turn on permission requests. Your message was not sent.',
+      );
+    }
+    if (!allowReverted && confirmed.reverted) {
       throw ApiException(
         'Review the staged revert, then clear it or make it permanent before sending.',
         statusCode: 409,
@@ -394,36 +448,48 @@ class Api2Gateway
     required List<PromptAttachment> attachments,
     required List<PromptAgentMention> agentMentions,
     required PromptDelivery? delivery,
-  }) => _run(() async {
-    await _requireResolvedRevert(sessionID);
-    await client.prompt(
-      sessionID,
-      text: text,
-      delivery: switch (delivery) {
-        null => null,
-        PromptDelivery.steer => Api2Delivery.steer,
-        PromptDelivery.queue => Api2Delivery.queue,
-      },
-      files: [
-        for (final attachment in attachments)
-          Api2PromptFile(
-            uri: attachment.url,
-            name: attachment.filename.isNotEmpty ? attachment.filename : null,
-          ),
-      ],
-      agents: [
-        for (final mention in agentMentions)
-          Api2PromptAgentMention(
-            name: mention.name,
-            mention: Api2Mention(
-              start: mention.start,
-              end: mention.end,
-              text: mention.value,
+  }) => _dispatch(
+    sessionID,
+    () => _run(() async {
+      await _prepareSessionDispatch(sessionID);
+      await client.prompt(
+        sessionID,
+        text: text,
+        delivery: switch (delivery) {
+          null => null,
+          PromptDelivery.steer => Api2Delivery.steer,
+          PromptDelivery.queue => Api2Delivery.queue,
+        },
+        files: [
+          for (final attachment in attachments)
+            Api2PromptFile(
+              uri: attachment.url,
+              name: attachment.filename.isNotEmpty ? attachment.filename : null,
+              mention:
+                  attachment.mentionStart == null ||
+                      attachment.mentionEnd == null
+                  ? null
+                  : Api2Mention(
+                      start: attachment.mentionStart!,
+                      end: attachment.mentionEnd!,
+                      text: attachment.mentionText,
+                    ),
             ),
-          ),
-      ],
-    );
-  });
+        ],
+        agents: [
+          for (final mention in agentMentions)
+            Api2PromptAgentMention(
+              name: mention.name,
+              mention: Api2Mention(
+                start: mention.start,
+                end: mention.end,
+                text: mention.value,
+              ),
+            ),
+        ],
+      );
+    }),
+  );
 
   @override
   Future<void> shell(
@@ -432,13 +498,17 @@ class Api2Gateway
     required String agent,
     ModelRef? model,
     String? variant,
-  }) => _run(() async {
-    // v2 uses its existing session selection for ordinary sends.
-    await transport.postJson(
-      '/session/$sessionID/shell',
-      body: {'command': command},
-    );
-  });
+  }) => _dispatch(
+    sessionID,
+    () => _run(() async {
+      // v2 uses its existing session selection for ordinary sends.
+      await _prepareSessionDispatch(sessionID, allowReverted: true);
+      await transport.postJson(
+        '/session/$sessionID/shell',
+        body: {'command': command},
+      );
+    }),
+  );
 
   @override
   Future<void> slashCommand(
@@ -447,14 +517,17 @@ class Api2Gateway
     String args, {
     ModelRef? model,
     String? variant,
-  }) => _run(() async {
-    await _requireResolvedRevert(sessionID);
-    final name = command.startsWith('/') ? command.substring(1) : command;
-    await transport.postJson(
-      '/session/$sessionID/command',
-      body: {'command': name, 'text': args},
-    );
-  });
+  }) => _dispatch(
+    sessionID,
+    () => _run(() async {
+      await _prepareSessionDispatch(sessionID);
+      final name = command.startsWith('/') ? command.substring(1) : command;
+      await transport.postJson(
+        '/session/$sessionID/command',
+        body: {'command': name, 'text': args},
+      );
+    }),
+  );
 
   @override
   Future<void> abort(String sessionID) =>

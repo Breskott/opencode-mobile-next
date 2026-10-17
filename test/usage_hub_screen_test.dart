@@ -8,25 +8,22 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
-import 'package:opencode_mobile/domain/provider_quota.dart';
+import 'package:opencode_mobile/domain/usage_subscriptions.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/state/provider_quota_monitor.dart';
 import 'package:opencode_mobile/state/usage_overview.dart';
+import 'package:opencode_mobile/state/usage_subscriptions_controller.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
-import 'package:opencode_mobile/ui/screens/provider_quota_screen.dart';
-import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/usage_hub_screen.dart';
 import 'package:opencode_mobile/ui/screens/usage_screen.dart';
-import 'package:opencode_mobile/ui/widgets/quota_monitor_section.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/usage_ui_harness.dart';
+
 final _en = lookupAppLocalizations(const Locale('en'));
-const _hash =
-    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 class _Api extends OpenCodeApi {
   _Api() : super(baseUrl: 'http://localhost');
@@ -61,12 +58,16 @@ class _Connection extends ConnectionController {
   Future<ServerGateway?> prepareActionTransport() async => api;
 }
 
-Future<({_Connection connection, _Repository repository})> _harness({
-  bool profile = true,
-  bool monitoredSource = false,
-}) async {
+Future<
+  ({
+    _Connection connection,
+    _Repository repository,
+    UsageSubscriptionsController usage,
+  })
+>
+_harness({bool statistics = true, bool savedServer = true}) async {
   SharedPreferences.setMockInitialValues({
-    if (profile) ...{
+    if (savedServer)
       'oc.profiles': jsonEncode([
         {
           'id': 'profile-1',
@@ -75,40 +76,51 @@ Future<({_Connection connection, _Repository repository})> _harness({
           'username': '',
         },
       ]),
-      'oc.activeProfile': 'profile-1',
-    },
+    if (savedServer) 'oc.activeProfile': 'profile-1',
   });
   final preferences = await SharedPreferences.getInstance();
   final store = ProfileStore(prefs: preferences);
   await store.load();
-  final repository = _Repository();
+  final repository = _Repository()..supported = statistics;
   final connection = _Connection(store)
     ..api = _Api()
     ..repository = repository
     ..status = StreamStatus.connected;
-  if (monitoredSource) {
-    // Written as the monitor itself stores a source, so the section has one
-    // to show without a collector to read.
-    await preferences.setString(
-      ProviderQuotaMonitor.key('profile-1'),
-      jsonEncode({
-        'version': 1,
-        'rules': {
-          QuotaProvider.codex.name: QuotaMonitorRules(
-            source: _hash,
-            account: _hash,
-            token: _hash,
-            notifications: true,
-            wifiOnly: true,
-            quietStart: 22 * 60,
-            quietEnd: 8 * 60,
-            threshold: 90,
-          ).toJson(),
-        },
-      }),
-    );
-  }
-  return (connection: connection, repository: repository);
+  final usage = UsageSubscriptionsController(
+    prefs: preferences,
+    connections: () => const [usageInApp, usagePc],
+    sources: [
+      FakeUsageSource(
+        UsageSourceResult(
+          readings: [
+            usageReading('codex', 'inapp', account: 'a', plan: 'plus'),
+            usageReading(
+              'glm',
+              'inapp',
+              account: 'b',
+              windows: usageBoth(five: 100, week: 30),
+            ),
+            usageReading(
+              'minimax',
+              'pc',
+              account: 'c',
+              status: UsageReadingStatus.authRequired,
+            ),
+          ],
+          signIns: const [
+            UsageSignIn(providerId: 'claude', connectionId: 'pc'),
+          ],
+          authoritativeSignIns: {'pc'},
+        ),
+      ),
+    ],
+    sharedRules: () => connection.sharedNotifyRules,
+    setQuotaAlerts: (value) => connection.updateSharedNotifyRules(
+      (rules) => rules.copyWith(quotaAlerts: value),
+    ),
+    clock: () => usageNow,
+  );
+  return (connection: connection, repository: repository, usage: usage);
 }
 
 Widget _app(Widget home, {Locale locale = const Locale('en')}) => MaterialApp(
@@ -127,9 +139,13 @@ UsageOverview _overview(ConnectionController connection) => UsageOverview(
 
 Finder _key(String key) => find.byKey(ValueKey(key));
 
-Future<void> _finish(WidgetTester tester, _Connection connection) async {
+Future<void> _finish(
+  WidgetTester tester,
+  _Connection connection,
+  UsageSubscriptionsController usage,
+) async {
   await tester.pumpWidget(const SizedBox.shrink());
-  connection.quotaMonitor.dispose();
+  usage.dispose();
   connection.dispose();
   await tester.pump();
 }
@@ -146,7 +162,7 @@ void main() {
   });
   tearDown(() => debugPlatformCapabilities = null);
 
-  testWidgets('two sections: Spent first, Remaining one tap away', (
+  testWidgets('two sections: Plans first, Spending one tap away', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(420, 2400);
@@ -155,7 +171,15 @@ void main() {
     final h = await _harness();
     final overview = _overview(h.connection);
     await tester.pumpWidget(
-      _app(UsageHubScreen(controller: h.connection, usageOverview: overview)),
+      _app(
+        UsageHubScreen(
+          controller: h.connection,
+          usage: h.usage,
+          usageOverview: overview,
+          clock: () => usageNow,
+          prepare: false,
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -166,200 +190,128 @@ void main() {
       ),
       findsOneWidget,
     );
-    final spent = _key('usage-tab-spent'),
-        remaining = _key('usage-tab-remaining');
+    final plans = _key('usage-tab-plans'),
+        spending = _key('usage-tab-spending');
     expect(
-      tester.getTopLeft(spent).dx,
-      lessThan(tester.getTopLeft(remaining).dx),
+      tester.getTopLeft(plans).dx,
+      lessThan(tester.getTopLeft(spending).dx),
     );
-    expect(find.text(_en.usageSectionSpent), findsOneWidget);
-    expect(find.text(_en.usageSectionRemaining), findsOneWidget);
+    expect(find.text(_en.usageTabPlans), findsOneWidget);
+    expect(find.text(_en.usageTabSpending), findsOneWidget);
+    // Plans first, with its own top-bar Refresh.
+    expect(_key('usage-plans'), findsOneWidget);
+    expect(_key('plans-refresh'), findsOneWidget);
+    expect(find.byType(KitTopBar), findsOneWidget);
 
-    // Spent is today's usage screen, embedded: same controls, same keys.
+    await tester.tap(spending);
+    await tester.pumpAndSettle();
+    // Spending is today's usage screen, embedded: same controls, same keys.
     expect(find.byType(UsageScreen), findsOneWidget);
     expect(_key('usage-content'), findsOneWidget);
     expect(_key('refresh-usage'), findsOneWidget);
+    expect(_key('plans-refresh'), findsNothing);
     expect(_key('usage-range-thirtyDays'), findsOneWidget);
     expect(_key('usage-total-cost'), findsOneWidget);
-    // One top bar: the sections do not bring their own.
-    expect(find.byType(KitTopBar), findsOneWidget);
-
-    await tester.tap(remaining);
-    await tester.pumpAndSettle();
-    expect(find.byType(ProviderQuotaScreen), findsOneWidget);
-    expect(find.text(_en.quotaNeedsCollector('Workstation')), findsOneWidget);
     expect(find.byType(KitTopBar), findsOneWidget);
     overview.dispose();
-    await _finish(tester, h.connection);
+    await _finish(tester, h.connection, h.usage);
   });
 
-  testWidgets('an entry point can open straight at Remaining', (tester) async {
+  testWidgets('an entry point can open straight at Spending', (tester) async {
     final h = await _harness();
     final overview = _overview(h.connection);
     await tester.pumpWidget(
       _app(
         UsageHubScreen(
           controller: h.connection,
+          usage: h.usage,
           usageOverview: overview,
-          initialSection: UsageSection.remaining,
+          initialSection: UsageSection.spending,
+          prepare: false,
         ),
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.byType(ProviderQuotaScreen), findsOneWidget);
-    expect(find.byType(UsageScreen), findsNothing);
+    expect(find.byType(UsageScreen), findsOneWidget);
+    expect(_key('refresh-usage'), findsOneWidget);
     overview.dispose();
-    await _finish(tester, h.connection);
+    await _finish(tester, h.connection, h.usage);
   });
 
-  testWidgets('each section is gated as its screen was', (tester) async {
-    // No usage statistics: Remaining alone, no tab bar.
-    var h = await _harness();
-    h.repository.supported = false;
-    expect(UsageHubScreen.sectionsFor(h.connection), [UsageSection.remaining]);
-    await tester.pumpWidget(_app(UsageHubScreen(controller: h.connection)));
-    await tester.pumpAndSettle();
-    expect(find.byType(KitTabSwitcher), findsNothing);
-    expect(_key('usage-section-remaining'), findsOneWidget);
-    expect(_key('usage-section-spent'), findsNothing);
-    await _finish(tester, h.connection);
-
-    // No saved server: Spent alone.
-    h = await _harness(profile: false);
-    expect(UsageHubScreen.sectionsFor(h.connection), [UsageSection.spent]);
-    final overview = _overview(h.connection);
-    await tester.pumpWidget(
-      _app(UsageHubScreen(controller: h.connection, usageOverview: overview)),
-    );
-    await tester.pumpAndSettle();
-    expect(find.byType(KitTabSwitcher), findsNothing);
-    expect(_key('usage-section-spent'), findsOneWidget);
-    expect(_key('usage-section-remaining'), findsNothing);
-    overview.dispose();
-    await _finish(tester, h.connection);
-  });
-
-  testWidgets(
-    'the hub has one Usage row, absent when neither section applies',
-    (tester) async {
-      var h = await _harness();
-      await tester.pumpWidget(_app(SettingsScreen(controller: h.connection)));
-      await tester.pumpAndSettle();
-      final row = _key('settings-category-usage');
-      expect(row, findsOneWidget);
-      expect(_key('settings-category-quota'), findsNothing);
-      // One Usage row, inside "This app".
-      expect(
-        find.descendant(of: _key('settings-group-this-app'), matching: row),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: row,
-          matching: find.text(
-            '${_en.usageSectionSpent} · ${_en.usageSectionRemaining}',
-          ),
-        ),
-        findsOneWidget,
-      );
-      await tester.ensureVisible(row);
-      await tester.pumpAndSettle();
-      await tester.tap(row);
-      // Not pumpAndSettle: Spent shows a progress bar while its first read
-      // waits on the platform timezone, which a widget test never answers.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.byType(UsageHubScreen), findsOneWidget);
-      await _finish(tester, h.connection);
-
-      // Neither usage statistics nor a saved server: no row, and so no group.
-      h = await _harness(profile: false);
-      h.repository.supported = false;
-      await tester.pumpWidget(_app(SettingsScreen(controller: h.connection)));
-      await tester.pumpAndSettle();
-      expect(_key('settings-category-usage'), findsNothing);
-      await _finish(tester, h.connection);
-    },
-  );
-
-  testWidgets('Remaining keeps monitoring and the threshold; how it notifies '
-      'is a link to Notifications', (tester) async {
-    tester.view.physicalSize = const Size(420, 2400);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final h = await _harness(monitoredSource: true);
+  testWidgets('Spending is absent where the server has no statistics, and '
+      'with one section there is no tab strip', (tester) async {
+    final h = await _harness(statistics: false);
     await tester.pumpWidget(
       _app(
         UsageHubScreen(
           controller: h.connection,
-          initialSection: UsageSection.remaining,
-          usageOverview: _overview(h.connection),
+          usage: h.usage,
+          clock: () => usageNow,
+          prepare: false,
         ),
       ),
     );
     await tester.pumpAndSettle();
-
-    expect(find.byType(QuotaMonitorSection), findsOneWidget);
-    expect(h.connection.quotaMonitor.sources, hasLength(1));
-    final threshold = _key('quota-threshold-profile-1-codex');
-    expect(threshold, findsOneWidget);
-    expect(
-      find.text(_en.quotaMonitorDisable(_en.quotaCodex, 'Workstation')),
-      findsOneWidget,
-    );
-    // The three notification toggles moved to Notifications.
-    expect(
-      find.descendant(
-        of: find.byType(QuotaMonitorSection),
-        matching: find.byType(Switch),
-      ),
-      findsNothing,
-    );
-
-    // Changing the threshold leaves the record's other fields alone.
-    await tester.tap(threshold);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(_en.quotaBudgetPercent('75')).last);
-    await tester.pumpAndSettle();
-    final rules = h.connection.quotaMonitor.rulesFor(
-      'profile-1',
-      QuotaProvider.codex,
-    )!;
-    expect(rules.threshold, 75);
-    expect(rules.notifications, isTrue);
-    expect(rules.wifiOnly, isTrue);
-    expect(rules.quietStart, 22 * 60);
-
-    await tester.tap(_key('quota-monitor-notification-settings'));
-    await tester.pumpAndSettle();
-    expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
-    // The legacy source's choices arrive there as the shared values.
-    Switch toggle(String key) => tester.widget<Switch>(
-      find.descendant(of: _key(key), matching: find.byType(Switch)),
-    );
-    expect(toggle('notify-quota-alerts').value, isTrue);
-    expect(toggle('notify-quiet-hours').value, isTrue);
-    expect(toggle('notify-wifi-only').value, isTrue);
-    await _finish(tester, h.connection);
+    expect(UsageHubScreen.sectionsFor(h.connection), [UsageSection.plans]);
+    expect(_key('usage-tab-plans'), findsNothing);
+    expect(_key('usage-tab-spending'), findsNothing);
+    expect(find.byType(UsageScreen), findsNothing);
+    expect(_key('usage-plans'), findsOneWidget);
+    expect(find.byType(KitTopBar), findsOneWidget);
+    await _finish(tester, h.connection, h.usage);
   });
 
-  group('layout at 320 dp and 2.5x text', () {
+  testWidgets('each section is gated by what it needs: Plans a saved server, '
+      'Spending usage statistics', (tester) async {
+    final both = await _harness();
+    expect(UsageHubScreen.sectionsFor(both.connection), [
+      UsageSection.plans,
+      UsageSection.spending,
+    ]);
+    final noStats = await _harness(statistics: false);
+    expect(UsageHubScreen.sectionsFor(noStats.connection), [
+      UsageSection.plans,
+    ]);
+    final noServer = await _harness(savedServer: false);
+    expect(UsageHubScreen.sectionsFor(noServer.connection), [
+      UsageSection.spending,
+    ]);
+    final nothing = await _harness(statistics: false, savedServer: false);
+    expect(UsageHubScreen.sectionsFor(nothing.connection), isEmpty);
+    await tester.pumpWidget(
+      _app(
+        UsageHubScreen(controller: nothing.connection, usage: nothing.usage),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(_key('usage-hub-unavailable'), findsOneWidget);
+    for (final h in [both, noStats, noServer, nothing]) {
+      await _finish(tester, h.connection, h.usage);
+    }
+  });
+
+  group('layout at 320 dp and 2.0x text', () {
     for (final locale in const [Locale('en'), Locale('ar')]) {
       testWidgets('no overflow in ${locale.languageCode}', (tester) async {
         const phone = Size(320, 640);
         tester.view.devicePixelRatio = 1;
         tester.view.physicalSize = phone;
         addTearDown(tester.view.reset);
-        final h = await _harness(monitoredSource: true);
-        final overview = _overview(h.connection);
+        final h = await _harness();
         await tester.pumpWidget(
           MediaQuery(
             data: const MediaQueryData(
               size: phone,
-              textScaler: TextScaler.linear(AppTheme.maxTextScale),
+              textScaler: TextScaler.linear(2.0),
             ),
             child: _app(
-              UsageHubScreen(controller: h.connection, usageOverview: overview),
+              UsageHubScreen(
+                controller: h.connection,
+                usage: h.usage,
+                initialSection: UsageSection.plans,
+                clock: () => usageNow,
+                prepare: false,
+              ),
               locale: locale,
             ),
           ),
@@ -367,42 +319,21 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         expect(
-          Directionality.of(tester.element(_key('usage-tab-spent'))),
+          Directionality.of(tester.element(_key('usage-tab-plans'))),
           locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
         );
-        // The kit scrolls long tab labels at large text; each remains reachable.
-        for (final key in ['usage-tab-spent', 'usage-tab-remaining']) {
-          await tester.ensureVisible(_key(key));
-          await tester.pumpAndSettle();
-          expect(_key(key).hitTestable(), findsOneWidget);
-          final box = tester.getRect(_key(key));
-          expect(box.left, greaterThanOrEqualTo(0), reason: key);
-          expect(box.right, lessThanOrEqualTo(phone.width), reason: key);
-        }
-
-        await tester.ensureVisible(_key('usage-tab-spent'));
-        await tester.pumpAndSettle();
-        // Walk Spent to its end, then Remaining to its end.
-        await tester.drag(_key('usage-content'), const Offset(0, -20000));
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        await tester.ensureVisible(_key('usage-tab-remaining'));
-        await tester.pumpAndSettle();
-        await tester.tap(_key('usage-tab-remaining'));
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
+        // Cards for an exhausted plan, an expired sign-in and a sign-in no
+        // reader reaches, all wrapping at 2.0x.
         final list = find.descendant(
-          of: _key('usage-section-remaining'),
+          of: _key('usage-section-plans'),
           matching: find.byType(ListView),
         );
-        for (var i = 0; i < 12; i++) {
-          await tester.drag(list, const Offset(0, -600));
+        for (var i = 0; i < 14; i++) {
+          await tester.drag(list, const Offset(0, -500));
           await tester.pump();
           expect(tester.takeException(), isNull);
         }
-        expect(_key('quota-monitor-section'), findsOneWidget);
-        overview.dispose();
-        await _finish(tester, h.connection);
+        await _finish(tester, h.connection, h.usage);
       });
     }
   });

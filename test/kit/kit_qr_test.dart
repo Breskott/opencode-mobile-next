@@ -160,7 +160,7 @@ void main() {
     expect(_paintedCells(tester, size.width, total), _darkCellsOf(_link));
   });
 
-  testWidgets('3. theme-proof: paper is graphiteLight.surface1 and ink is '
+  testWidgets('3. theme-proof: paper is graphiteLight.surface2 and ink is '
       'graphiteLight.text1 in dark, light and a high-contrast pack', (
     tester,
   ) async {
@@ -190,7 +190,7 @@ void main() {
       final decoration = container.decoration! as BoxDecoration;
       expect(
         decoration.color!.toARGB32(),
-        graphiteLight.surface1.toARGB32(),
+        graphiteLight.surface2.toARGB32(),
         reason: name,
       );
       expect(

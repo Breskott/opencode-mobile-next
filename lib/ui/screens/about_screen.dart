@@ -3,11 +3,15 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
+import '../../state/factsbook/factsbook_flag.dart';
+import '../../state/factsbook/factsbook_phone_node.dart';
+import 'factsbook/factsbook_routes.dart';
 import '../../update/shorebird_update_notice.dart';
 import '../../voice/notices.dart';
 import '../app_theme.dart';
@@ -293,6 +297,12 @@ class _AboutScreenState extends State<AboutScreen> {
                   ],
                 ),
               ],
+              // The developer switch: off by default, shown only with a
+              // connection that can remember it.
+              if (controller != null) ...[
+                SizedBox(height: tokens.sectionGap),
+                _DeveloperGroup(controller: controller),
+              ],
               SizedBox(height: tokens.sectionGap),
               KitRowGroup(
                 key: const ValueKey('about-open-source'),
@@ -320,19 +330,17 @@ class _AboutScreenState extends State<AboutScreen> {
                     trailing: const KitChevron(),
                     onTap: () => _openNotices(l10n),
                   ),
-                  // The voice models' licences, where they can run.
-                  if (platformCapabilities.supportsVoice)
-                    KitRow(
-                      key: const ValueKey('settings-voice-notices'),
-                      leading: KitRow.icon(context, AppIconography.policy),
-                      title: l10n.e7SettingsUi94,
-                      supporting: TextSpan(text: l10n.e7SettingsUi95),
-                      supportingMaxLines: 2,
-                      trailing: const KitChevron(),
-                      onTap: () => unawaited(showVoiceNotices(context)),
-                    ),
                 ],
               ),
+              // The voice models' licences, where they can run: part of Open
+              // source, listed here instead of on a page of their own.
+              if (platformCapabilities.supportsVoice) ...[
+                SizedBox(height: tokens.sectionGap),
+                KitArrival(
+                  id: 'settings-voice-notices',
+                  child: const VoiceNoticesView(),
+                ),
+              ],
             ],
           );
         },
@@ -491,4 +499,62 @@ Future<void> showPrivacyPolicy(BuildContext context) {
       return KitViewerContent.markdown(reflowMarkdown(text));
     }),
   );
+}
+
+/// About › Developer: the switch that shows FactsBook (D33: behind a hidden
+/// flag until v1 is ready). Off by default; the Memory section of Chats home
+/// appears when it is on.
+class _DeveloperGroup extends ConsumerStatefulWidget {
+  const _DeveloperGroup({required this.controller});
+
+  final ConnectionController controller;
+
+  @override
+  ConsumerState<_DeveloperGroup> createState() => _DeveloperGroupState();
+}
+
+class _DeveloperGroupState extends ConsumerState<_DeveloperGroup> {
+  late bool _on = FactsBookFlag.read(widget.controller.store.prefs);
+
+  Future<void> _set(bool on) async {
+    setState(() => _on = on);
+    await FactsBookFlag.write(widget.controller.store.prefs, on);
+    // The shell reads the flag once per provider; ask it to read again.
+    ref.invalidate(factsBookEnabledProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return KitRowGroup(
+      key: const ValueKey('about-developer'),
+      label: l10n.fbDeveloperTitle,
+      children: [
+        KitSwitchRow(
+          switchKey: const ValueKey('about-factsbook-switch'),
+          leading: KitRow.icon(context, AppIconography.database),
+          title: l10n.fbDeveloperFactsBook,
+          supporting: l10n.fbDeveloperFactsBookDetail,
+          value: _on,
+          // A build with the flag compiled on cannot be turned off here.
+          onChanged: FactsBookFlag.compiledOn
+              ? null
+              : (on) => unawaited(_set(on)),
+          disabledReason: FactsBookFlag.compiledOn
+              ? l10n.fbDeveloperFactsBookDetail
+              : null,
+        ),
+        if (_on && ref.watch(factsBookPhoneNodeHostProvider).supported)
+          KitRow(
+            key: const ValueKey('about-factsbook-phone-node'),
+            leading: KitRow.icon(context, AppIconography.phone),
+            title: l10n.fbNodeRow,
+            supporting: TextSpan(text: l10n.fbNodeRowDetail),
+            supportingMaxLines: 3,
+            trailing: const KitChevron(),
+            onTap: () => unawaited(openFactsBookPhoneNode(context)),
+          ),
+      ],
+    );
+  }
 }

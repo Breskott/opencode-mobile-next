@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:xterm/core.dart' as xterm;
 
 import '../platform/platform_capabilities.dart';
+import '../domain/agent_sign_in_foreground.dart';
 
 /// The app's one set of local shells; they outlive every screen.
 final localTerminalProvider = Provider<LocalTerminalSessions>((ref) {
@@ -23,6 +24,7 @@ class LocalShellInfo {
     required this.pid,
     this.running = true,
     this.exitCode,
+    this.signIn = false,
   });
 
   factory LocalShellInfo.fromMap(Map<Object?, Object?> map) {
@@ -32,6 +34,7 @@ class LocalShellInfo {
       pid: asInt(map['pid']) ?? 0,
       running: map['running'] != false,
       exitCode: asInt(map['exitCode']),
+      signIn: map['signIn'] == true,
     );
   }
 
@@ -39,6 +42,9 @@ class LocalShellInfo {
   final int pid;
   final bool running;
   final int? exitCode;
+
+  /// An agent's sign-in ([LocalTerminalSessions.startSignIn]), not a shell.
+  final bool signIn;
 }
 
 /// One reading of `list`: the shells that exist, and how many processes run
@@ -69,11 +75,26 @@ class LocalTerminalExit extends LocalTerminalEvent {
   final int code;
 }
 
+/// A sign-in asked the system to open a page (its stand-in `xdg-open`).
+class LocalTerminalOpenUrl extends LocalTerminalEvent {
+  const LocalTerminalOpenUrl(super.id, this.url);
+
+  final String url;
+}
+
 /// The calls into LocalTerminal.kt. Tests pass a fake.
 abstract class LocalTerminalBackend {
   Stream<LocalTerminalEvent> get events;
 
-  Future<LocalShellInfo> start({required int rows, required int cols});
+  /// Starts `bash -l`, or with [signInProfile] an agent's own sign-in
+  /// ([signInProgram]: the program and its arguments) for that profile's
+  /// agent account.
+  Future<LocalShellInfo> start({
+    required int rows,
+    required int cols,
+    String? signInProfile,
+    List<String>? signInProgram,
+  });
 
   Future<LocalTerminalListing> list();
 
@@ -125,15 +146,26 @@ class ChannelLocalTerminalBackend implements LocalTerminalBackend {
         raw['data'] as Uint8List,
       ),
       'exit' => LocalTerminalExit(id, (raw['code'] as num?)?.toInt() ?? -1),
+      'openUrl' when raw['url'] is String => LocalTerminalOpenUrl(
+        id,
+        raw['url'] as String,
+      ),
       _ => null,
     };
   }
 
   @override
-  Future<LocalShellInfo> start({required int rows, required int cols}) async {
+  Future<LocalShellInfo> start({
+    required int rows,
+    required int cols,
+    String? signInProfile,
+    List<String>? signInProgram,
+  }) async {
     final raw = await _methods.invokeMethod<Map<Object?, Object?>>('start', {
       'rows': rows,
       'cols': cols,
+      'signInProfile': ?signInProfile,
+      'signInProgram': ?signInProgram,
     });
     return LocalShellInfo.fromMap(raw ?? const {});
   }
@@ -210,6 +242,8 @@ class LocalShell extends ChangeNotifier {
   int _pid;
   int? _exitCode;
   String? _failure;
+  bool _disposed = false;
+  bool _quiesced = false;
   Timer? _resizeTimer;
   (int, int)? _sentSize;
   late final _decoder = const Utf8Decoder(
@@ -231,6 +265,10 @@ class LocalShell extends ChangeNotifier {
 
   bool get running => state == LocalShellState.running;
 
+  /// For an agent sign-in: the page Claude asked the system to open. The
+  /// screen showing the sign-in checks the address before opening it.
+  void Function(String url)? onOpenUrl;
+
   /// Applied to everything typed before it is sent: the key bar's sticky
   /// Ctrl and Alt. Null sends text as typed.
   String Function(String text)? inputFilter;
@@ -238,7 +276,7 @@ class LocalShell extends ChangeNotifier {
   /// Sends typed text or a key's bytes to the shell.
   void send(String text) {
     final id = _id;
-    if (id == null || !running || text.isEmpty) return;
+    if (_quiesced || id == null || !running || text.isEmpty) return;
     final filtered = inputFilter?.call(text) ?? text;
     unawaited(
       _backend.write(id, utf8.encode(filtered)).catchError((Object _) {}),
@@ -250,6 +288,7 @@ class LocalShell extends ChangeNotifier {
   }
 
   void _resized({required int rows, required int cols}) {
+    if (_quiesced) return;
     _resizeTimer?.cancel();
     // The keyboard sliding in resizes on every frame; the shell needs the end.
     _resizeTimer = Timer(const Duration(milliseconds: 80), _sendSize);
@@ -257,7 +296,7 @@ class LocalShell extends ChangeNotifier {
 
   void _sendSize() {
     final id = _id;
-    if (id == null || !running) return;
+    if (_quiesced || id == null || !running) return;
     final size = (terminal.viewHeight, terminal.viewWidth);
     if (size == _sentSize) return;
     _sentSize = size;
@@ -269,6 +308,7 @@ class LocalShell extends ChangeNotifier {
   }
 
   void _started(LocalShellInfo info, (int, int) size) {
+    if (_disposed) return;
     _id = info.id;
     _pid = info.pid;
     _sentSize = size;
@@ -278,19 +318,32 @@ class LocalShell extends ChangeNotifier {
   }
 
   void _failed(String message) {
+    if (_disposed) return;
     _failure = message;
     notifyListeners();
   }
 
   void _exited(int code) {
-    if (_exitCode != null) return;
+    if (_disposed || _exitCode != null) return;
     _exitCode = code;
     notifyListeners();
   }
 
+  // Stop screen-driven work immediately, even while an asynchronous native
+  // drain still owns this shell and its foreground lease.
+  void _quiesce() {
+    _quiesced = true;
+    onOpenUrl = null;
+    inputFilter = null;
+    _resizeTimer?.cancel();
+    _resizeTimer = null;
+  }
+
   @override
   void dispose() {
-    _resizeTimer?.cancel();
+    if (_disposed) return;
+    _disposed = true;
+    _quiesce();
     super.dispose();
   }
 }
@@ -355,13 +408,34 @@ class _TerminalSink implements Sink<String> {
   void close() {}
 }
 
+/// Native launch and foreground ownership must drain together. In particular,
+/// cancelling an admitted but pending PTY start still owes removal of its late ID.
+final class _SignInLifetime {
+  _SignInLifetime(this.shell);
+  final LocalShell shell;
+  final launchDone = Completer<void>();
+  final cancelled = Completer<void>();
+  AgentSignInForegroundBinding? binding;
+  Object? cleanupToken;
+  AgentSignInForegroundLease? lease;
+  StreamSubscription<void>? lost;
+  bool cancelRequested = false;
+  bool nativeStartIssued = false;
+  int? nativeId;
+  Future<void>? closing;
+  Future<void>? releasing;
+}
+
 /// The shells of this app's built-in Ubuntu, for as long as the app runs.
 ///
 /// Android owns the processes (LocalTerminal.kt); this holds what the screen
 /// draws. [load] adopts shells a previous run of the Dart side left behind.
 class LocalTerminalSessions extends ChangeNotifier {
-  LocalTerminalSessions({LocalTerminalBackend? backend})
-    : _backend = backend ?? ChannelLocalTerminalBackend();
+  LocalTerminalSessions({
+    LocalTerminalBackend? backend,
+    AgentSignInForegroundPort? signInForeground,
+  }) : _backend = backend ?? ChannelLocalTerminalBackend(),
+       _signInForeground = signInForeground;
 
   /// A shell is proot plus bash: what one costs against Android's limit on
   /// an app's extra processes.
@@ -374,7 +448,13 @@ class LocalTerminalSessions extends ChangeNotifier {
   static bool get supported => platformCapabilities.isAndroid;
 
   final LocalTerminalBackend _backend;
+  final AgentSignInForegroundPort? _signInForeground;
   final List<LocalShell> _shells = [];
+
+  /// Agent sign-ins: on a terminal, but not listed with the shells.
+  final List<LocalShell> _signIns = [];
+  final _signInLifetimes = <LocalShell, _SignInLifetime>{};
+  bool _disposed = false;
   StreamSubscription<LocalTerminalEvent>? _subscription;
   Future<void>? _loading;
   bool _loaded = false;
@@ -391,10 +471,12 @@ class LocalTerminalSessions extends ChangeNotifier {
   int? get processes => _processes;
 
   void _listen() {
+    if (_disposed) return;
     _subscription ??= _backend.events.listen(_event, onError: (Object _) {});
   }
 
   void _event(LocalTerminalEvent event) {
+    if (_disposed) return;
     final shell = _shellWithId(event.id);
     switch (event) {
       case LocalTerminalOutput(:final data):
@@ -407,12 +489,23 @@ class LocalTerminalSessions extends ChangeNotifier {
         );
       case LocalTerminalExit(:final code):
         shell?._exited(code);
-        if (shell != null) notifyListeners();
+        if (shell != null) _notifyChanged();
+      case LocalTerminalOpenUrl(:final url):
+        final signIn = _signInLifetimes[shell];
+        if (signIn != null) {
+          try {
+            _requireSignInCurrent(signIn);
+          } catch (_) {
+            _lostSignInForeground(signIn);
+            return;
+          }
+        }
+        shell?.onOpenUrl?.call(url);
     }
   }
 
   LocalShell? _shellWithId(int id) {
-    for (final shell in _shells) {
+    for (final shell in [..._shells, ..._signIns]) {
       if (shell.id == id) return shell;
     }
     return null;
@@ -428,6 +521,11 @@ class LocalTerminalSessions extends ChangeNotifier {
       final listing = await _backend.list();
       _processes = listing.processes;
       for (final info in listing.shells) {
+        // A sign-in left from an earlier run belongs to no screen now.
+        if (info.signIn) {
+          unawaited(_backend.remove(info.id).catchError((Object _) {}));
+          continue;
+        }
         if (_shellWithId(info.id) != null) continue;
         final shell = LocalShell._(
           _backend,
@@ -444,13 +542,13 @@ class LocalTerminalSessions extends ChangeNotifier {
       // No shells to adopt; starting one reports its own failure.
     }
     _loaded = true;
-    notifyListeners();
+    _notifyChanged();
   }
 
   Future<void> refreshProcesses() async {
     try {
       _processes = (await _backend.list()).processes;
-      notifyListeners();
+      _notifyChanged();
     } catch (_) {}
   }
 
@@ -461,15 +559,223 @@ class LocalTerminalSessions extends ChangeNotifier {
     final shell = LocalShell._(_backend, _nextNumber++);
     shell.terminal.resize(cols, rows);
     _shells.add(shell);
-    notifyListeners();
+    _notifyChanged();
     unawaited(_launch(shell));
     return shell;
   }
 
-  Future<void> _launch(LocalShell shell) async {
+  /// Starts an agent's own sign-in ([program]: its login command) for
+  /// [profileId]'s agent account on a terminal of its own (not listed in
+  /// [shells]). [endSignIn] removes it.
+  LocalShell startSignIn(
+    String profileId,
+    List<String> program, {
+    int rows = 24,
+    int cols = 80,
+  }) {
+    _listen();
+    final shell = LocalShell._(_backend, 0);
+    shell.terminal.resize(cols, rows);
+    final lifetime = _SignInLifetime(shell);
+    _signIns.add(shell);
+    _signInLifetimes[shell] = lifetime;
+    try {
+      if (_disposed) {
+        throw const AgentSignInForegroundException(
+          AgentSignInForegroundFailure.cancelled,
+        );
+      }
+      final injected = _signInForeground;
+      if (injected == null) {
+        final binding = AgentSignInForegroundRegistry.bindingFor(profileId);
+        if (binding == null || !binding.current) {
+          throw const AgentSignInForegroundException(
+            AgentSignInForegroundFailure.unsupported,
+          );
+        }
+        lifetime.binding = binding;
+        lifetime.cleanupToken = binding.addCleanup(() => endSignIn(shell));
+        lifetime.lease = binding.reserve();
+      } else {
+        lifetime.lease = injected.reserveAgentSignInForeground();
+      }
+      lifetime.lost = lifetime.lease!.lost.listen(
+        (_) => _lostSignInForeground(lifetime),
+        onError: (Object _) => _lostSignInForeground(lifetime),
+      );
+      unawaited(_launchSignIn(lifetime, profileId, List<String>.of(program)));
+    } catch (error) {
+      shell._failed(_signInFailure(error));
+      lifetime.launchDone.complete();
+      unawaited(endSignIn(shell).catchError((Object _) {}));
+    }
+    return shell;
+  }
+
+  /// Stops and forgets a sign-in started by [startSignIn].
+  /// A failed native drain keeps its lease and cleanup registration for retry.
+  Future<void> endSignIn(LocalShell shell) {
+    final lifetime = _signInLifetimes[shell];
+    if (lifetime == null) return Future<void>.value();
+    final existing = lifetime.closing;
+    if (existing != null) return existing;
+    final done = Completer<void>();
+    lifetime.closing = done.future;
+    lifetime.cancelRequested = true;
+    if (!lifetime.cancelled.isCompleted) lifetime.cancelled.complete();
+    _signIns.remove(shell);
+    shell._quiesce();
+    () async {
+      try {
+        await lifetime.lost?.cancel();
+        // No PTY can exist before backend.start is issued. End pending service
+        // admission promptly; otherwise keep protection until its exact ID drains.
+        if (!lifetime.nativeStartIssued) await _releaseSignInLease(lifetime);
+        await lifetime.launchDone.future;
+        final id = lifetime.nativeId;
+        if (id != null) {
+          await _backend.remove(id);
+          lifetime.nativeId = null;
+        }
+        await _releaseSignInLease(lifetime);
+        final token = lifetime.cleanupToken;
+        if (token != null) lifetime.binding?.removeCleanup(token);
+        lifetime.cleanupToken = null;
+        _signInLifetimes.remove(shell);
+        shell.dispose();
+        done.complete();
+      } catch (_) {
+        lifetime.closing = null;
+        done.completeError(
+          const AgentSignInForegroundException(
+            AgentSignInForegroundFailure.unavailable,
+          ),
+        );
+      }
+    }();
+    return done.future;
+  }
+
+  Future<void> closeSignIns() async {
+    for (final shell in _signInLifetimes.keys.toList()) {
+      await endSignIn(shell);
+    }
+  }
+
+  Future<void> _releaseSignInLease(_SignInLifetime lifetime) {
+    final existing = lifetime.releasing;
+    if (existing != null) return existing;
+    final lease = lifetime.lease;
+    if (lease == null) return Future<void>.value();
+    return lifetime.releasing = lease.release().catchError((Object error) {
+      lifetime.releasing = null;
+      throw error;
+    });
+  }
+
+  void _lostSignInForeground(_SignInLifetime lifetime) {
+    if (lifetime.cancelRequested) return;
+    lifetime.shell._failed(
+      _signInFailure(
+        const AgentSignInForegroundException(
+          AgentSignInForegroundFailure.unavailable,
+        ),
+      ),
+    );
+    unawaited(endSignIn(lifetime.shell).catchError((Object _) {}));
+  }
+
+  void _requireSignInCurrent(_SignInLifetime lifetime) {
+    if (_disposed ||
+        lifetime.cancelRequested ||
+        (lifetime.binding != null && !lifetime.binding!.current)) {
+      throw const AgentSignInForegroundException(
+        AgentSignInForegroundFailure.cancelled,
+      );
+    }
+    if (lifetime.lease?.active != true) {
+      throw const AgentSignInForegroundException(
+        AgentSignInForegroundFailure.unavailable,
+      );
+    }
+  }
+
+  Future<void> _launchSignIn(
+    _SignInLifetime lifetime,
+    String profileId,
+    List<String> program,
+  ) async {
+    var failed = false;
+    try {
+      await Future.any<void>([
+        lifetime.lease!.ready,
+        lifetime.cancelled.future.then<void>((_) {
+          throw const AgentSignInForegroundException(
+            AgentSignInForegroundFailure.cancelled,
+          );
+        }),
+      ]);
+      _requireSignInCurrent(lifetime);
+      final shell = lifetime.shell;
+      final size = (shell.terminal.viewHeight, shell.terminal.viewWidth);
+      lifetime.nativeStartIssued = true;
+      final info = await _backend.start(
+        rows: size.$1,
+        cols: size.$2,
+        signInProfile: profileId,
+        signInProgram: program,
+      );
+      lifetime.nativeId = info.id;
+      _requireSignInCurrent(lifetime);
+      shell._started(info, size);
+      unawaited(refreshProcesses());
+    } catch (error) {
+      failed = true;
+      if (!lifetime.cancelRequested && !_disposed) {
+        lifetime.shell._failed(_signInFailure(error));
+      }
+    } finally {
+      lifetime.launchDone.complete();
+      _notifyChanged();
+    }
+    if (failed) unawaited(endSignIn(lifetime.shell).catchError((Object _) {}));
+  }
+
+  static String _signInFailure(Object error) {
+    final reason = error is AgentSignInForegroundException
+        ? error.reason
+        : AgentSignInForegroundFailure.unavailable;
+    return switch (reason) {
+      AgentSignInForegroundFailure.unsupported =>
+        "Sign-in isn't ready on this phone yet.",
+      AgentSignInForegroundFailure.paused =>
+        'Background work is paused. Resume it before signing in.',
+      AgentSignInForegroundFailure.permission =>
+        'Allow notifications before signing in, then try again.',
+      AgentSignInForegroundFailure.unavailable =>
+        'Could not keep sign-in running. Try again.',
+      AgentSignInForegroundFailure.cancelled =>
+        "Sign-in stopped. Start it again when you're ready.",
+    };
+  }
+
+  void _notifyChanged() {
+    if (!_disposed) notifyListeners();
+  }
+
+  Future<void> _launch(
+    LocalShell shell, {
+    String? signInProfile,
+    List<String>? signInProgram,
+  }) async {
     final size = (shell.terminal.viewHeight, shell.terminal.viewWidth);
     try {
-      final info = await _backend.start(rows: size.$1, cols: size.$2);
+      final info = await _backend.start(
+        rows: size.$1,
+        cols: size.$2,
+        signInProfile: signInProfile,
+        signInProgram: signInProgram,
+      );
       shell._started(info, size);
       unawaited(refreshProcesses());
     } catch (error) {
@@ -477,7 +783,7 @@ class LocalTerminalSessions extends ChangeNotifier {
         error is PlatformException ? (error.message ?? error.code) : '$error',
       );
     }
-    notifyListeners();
+    _notifyChanged();
   }
 
   /// Stops [shell]; it stays listed as ended until [remove].
@@ -492,7 +798,7 @@ class LocalTerminalSessions extends ChangeNotifier {
   /// Stops and forgets [shell].
   Future<void> remove(LocalShell shell) async {
     _shells.remove(shell);
-    notifyListeners();
+    _notifyChanged();
     final id = shell.id;
     if (id != null) {
       try {
@@ -513,7 +819,12 @@ class LocalTerminalSessions extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_disposed) return;
+    _disposed = true;
     unawaited(_subscription?.cancel());
+    for (final shell in _signInLifetimes.keys.toList()) {
+      unawaited(endSignIn(shell).catchError((Object _) {}));
+    }
     for (final shell in _shells) {
       shell.dispose();
     }

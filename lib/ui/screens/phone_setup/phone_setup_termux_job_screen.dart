@@ -102,7 +102,7 @@ Future<void> openPhoneSetupTermuxJob(
 const phoneSetupProgressTermuxRouteName = 'phone-setup-progress-termux';
 
 /// Where Termux stands for the person steps.
-enum _Gate { checking, needTermux, needAllow, outdated, ready }
+enum _Gate { checking, needTermux, needAllow, outdated, inspectFailed, ready }
 
 class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
     with WidgetsBindingObserver {
@@ -276,23 +276,21 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
 
   /// The OpenCode Termux already runs stays the one it runs: a job for the
   /// other generation would install beside it and then have nothing to
-  /// start. Unknown (a fresh Termux) is the app's default.
+  /// start. Absent Ubuntu leaves the runtime to the engine: a saved job
+  /// retains its selection, while a genuinely new job uses the fresh default.
   Future<Map<String, Map<String, String>>> _params() async {
     final facts = widget.adding.isNotEmpty
         ? SetupJobParams.adding(widget.adding)
         : widget.firstSetup
         ? SetupJobParams.firstSetup
         : const <String, Map<String, String>>{};
-    TermuxInstallation? installed;
-    try {
-      installed =
-          await (widget.installation ?? TermuxBridge.inspectInstallation)();
-    } catch (_) {
-      installed = null;
-    }
+    final installed =
+        await (widget.installation ?? TermuxBridge.inspectInstallation)()
+            .timeout(const Duration(seconds: 15));
     final keep =
-        installed != null &&
-        (installed.runtimeSelected || installed.openCodeVersion != null);
+        installed.ubuntuInstalled ||
+        installed.runtimeSelected ||
+        installed.openCodeVersion != null;
     return {
       ...facts,
       if (keep) 'opencode': {'runtime': installed.runtime.wireName},
@@ -303,7 +301,23 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      await _engine.run(ids, params: await _params());
+      final Map<String, Map<String, String>> params;
+      try {
+        params = await _params();
+      } catch (failure) {
+        // A failed inventory is not evidence of a fresh installation. Keep
+        // the existing runtime untouched and offer the gate's Continue retry.
+        if (mounted) {
+          setState(() {
+            _started = false;
+            _gate = _Gate.inspectFailed;
+            _gateError = _l10n.e7SetupInspectTermuxFailed;
+            _gateDetails = productErrorDetails(failure);
+          });
+        }
+        return;
+      }
+      await _engine.run(ids, params: params);
     } catch (_) {
       // The engine publishes its own failure; nothing else to say here.
     } finally {
@@ -492,6 +506,7 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
         allowState = ComponentState.pending;
         allowStage = _gateError ?? l10n.phoneSetupTermuxAllowHow;
       case _Gate.outdated:
+      case _Gate.inspectFailed:
         termuxState = ComponentState.failed;
         termuxStage = null;
         allowState = ComponentState.pending;
@@ -532,7 +547,9 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
         row(component.id, ComponentState.pending),
     ];
     return SetupProgress(
-      state: _gate == _Gate.outdated ? SetupState.failed : SetupState.running,
+      state: _gate == _Gate.outdated || _gate == _Gate.inspectFailed
+          ? SetupState.failed
+          : SetupState.running,
       components: rows,
       overall: 0,
       current: switch (_gate) {
@@ -540,7 +557,9 @@ class _PhoneSetupTermuxJobScreenState extends State<PhoneSetupTermuxJobScreen>
         _Gate.ready => null,
         _ => termuxGetRowId,
       },
-      error: _gate == _Gate.outdated ? _gateError : null,
+      error: _gate == _Gate.outdated || _gate == _Gate.inspectFailed
+          ? _gateError
+          : null,
       // What the words leave out, under the view's Details fold.
       logTail: _gateDetails ?? '',
       jobId: 'termux-gate',

@@ -240,8 +240,8 @@ class _KitIconButtonState extends State<KitIconButton> {
     // The focus ring is always built and only its border switches: the
     // tree keeps the same shape whether or not the button is focused, so the
     // focused InkWell (and its FocusNode) is never rebuilt out from under the
-    // keyboard (LAY-10, G14). It paints in the foreground, so a hover or
-    // selected fill on the Material below never covers it (§8.3).
+    // keyboard (LAY-10, G14). It paints in the foreground, so a hover
+    // fill on the Material below never covers it (§8.3).
     final control = DecoratedBox(
       position: DecorationPosition.foreground,
       decoration: BoxDecoration(
@@ -263,16 +263,13 @@ class _KitIconButtonState extends State<KitIconButton> {
           child: SizedBox.square(
             dimension: tokens.minTarget,
             child: DecoratedBox(
-              // Pressed is surface3; a button already showing surface3 (a
-              // selected one, or a hovered one under a mouse) steps back down
-              // to surface2, the KitTappable rule for surface3.
+              // Pressed is surface3; a hovered one under a mouse already
+              // shows surface3 and steps back down to surface2, the
+              // KitTappable rule for surface3. Selected is the accent glyph
+              // alone: a filled circle read as a menu button.
               decoration: BoxDecoration(
                 color: active && _press.shown
-                    ? (widget.selected == true || _hovered
-                          ? roles.surface2
-                          : roles.surface3)
-                    : widget.selected == true
-                    ? roles.surface3
+                    ? (_hovered ? roles.surface2 : roles.surface3)
                     : null,
                 shape: BoxShape.circle,
               ),

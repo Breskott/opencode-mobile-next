@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_v2_summary">%1$d running · %2$d need you</string>
+    <string name="widget_v2_working">Working · %s</string>
+    <string name="widget_v2_allow">Allow once</string>
+    <string name="widget_v2_reject">Reject</string>
+    <string name="widget_v2_stop">Stop</string>
+    <string name="widget_v2_steer">Steer</string>
+    <string name="widget_v2_voice">Voice</string>
+    <string name="widget_v2_configure">Style</string>
+    <string name="widget_v2_approve">Approve plan</string>
+    <string name="widget_v2_resume">Resume</string>
+    <string name="widget_v2_tasks">%1$d / %2$d tasks</string>
+    <string name="widget_v2_offline">Background connection unavailable</string>
+    <string name="widget_v2_on_demand">Connects when you tap</string>
+    <string name="widget_v2_background_settings">Background settings</string>
+    <string name="widget_v2_ready">Ready</string>
+    <string name="widget_v2_sent">Action sent</string>
+    <string name="widget_v2_failed">Action unavailable</string>
+    <string name="widget_v2_pending">Sending…</string>
+    <string name="widget_v2_uncertain">Check the conversation</string>
+    <string name="widget_v2_after_reply">Send after reply</string>
+</resources>

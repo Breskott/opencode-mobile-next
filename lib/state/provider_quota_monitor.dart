@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 
+import '../background/usage_widget_snapshot.dart';
 import '../domain/provider_quota.dart';
 import 'budget_persistence.dart';
 import 'notification_preferences.dart';
@@ -131,6 +132,9 @@ class ProviderQuotaMonitor extends ChangeNotifier {
   final QuotaMonitorAlert alert;
   final Future<bool> Function(String) dismiss;
   final DateTime Function() clock;
+
+  /// Display numbers for the Usage home-screen widget; null disables it.
+  final UsageWidgetSnapshot? widget;
   final Duration foregroundInterval, backgroundInterval, timeout;
   final _observations = <String, QuotaMonitorObservation>{};
   final _epochs = <String, int>{};
@@ -163,6 +167,7 @@ class ProviderQuotaMonitor extends ChangeNotifier {
     required this.alert,
     required this.dismiss,
     DateTime Function()? clock,
+    this.widget,
     this.foregroundInterval = const Duration(minutes: 5),
     this.backgroundInterval = const Duration(minutes: 15),
     this.timeout = const Duration(seconds: 10),
@@ -203,6 +208,7 @@ class ProviderQuotaMonitor extends ChangeNotifier {
       _observations.remove(_id(id, provider));
       _expiry.remove(_id(id, provider))?.cancel();
       unawaited(_dismiss(id, provider));
+      unawaited(_widgetRemove(id, provider));
     }
   }
 
@@ -444,6 +450,7 @@ class ProviderQuotaMonitor extends ChangeNotifier {
           if (result == null) {
             return false;
           }
+          if (rules == null) await _widgetRemove(id, provider);
           if (reauthorize && currentCredential()) {
             _retiredCredentials.remove(targetID);
           }
@@ -651,6 +658,7 @@ class ProviderQuotaMonitor extends ChangeNotifier {
 
     if (_source(profile) != rules.source) {
       await _dismiss(id, provider);
+      await _widgetRemove(id, provider);
       return;
     }
     ProviderQuotaGateway? gateway;
@@ -692,17 +700,31 @@ class ProviderQuotaMonitor extends ChangeNotifier {
       if (!current()) {
         return;
       }
+      if (snapshot.provider == provider &&
+          snapshot.status == ProviderQuotaStatus.unconfigured) {
+        // Signed out where it is read: nothing to compare, say how to fix it.
+        publish(QuotaMonitorStatus.unavailable);
+        unawaited(_widgetNotSignedIn(profile, provider));
+        return;
+      }
       if (snapshot.provider != provider ||
           snapshot.account.ref != rules.account) {
         publish(QuotaMonitorStatus.sourceChanged);
         await _dismiss(id, provider);
+        await _widgetRemove(id, provider);
         return;
       }
       if (!_fresh(snapshot)) {
         publish(QuotaMonitorStatus.unavailable);
+        if (snapshot.status == ProviderQuotaStatus.authRequired) {
+          unawaited(_widgetAuth(profile, provider));
+        }
         return;
       }
       publish(QuotaMonitorStatus.current, snapshot);
+      if (current()) {
+        unawaited(_widgetRecord(profile, snapshot));
+      }
       final sourceID = _id(id, provider);
       _expiry.remove(sourceID)?.cancel();
       var expires = snapshot.expiresAt;
@@ -832,8 +854,12 @@ class ProviderQuotaMonitor extends ChangeNotifier {
           isProfilePresent: () => isReadable(id),
         );
       }
-    } catch (_) {
+    } catch (error) {
       publish(QuotaMonitorStatus.unavailable);
+      if (error is ProviderQuotaFailure &&
+          error.kind == QuotaFailureKind.collectorAuth) {
+        unawaited(_widgetAuth(profile, provider));
+      }
     } finally {
       try {
         gateway?.close();
@@ -843,6 +869,51 @@ class ProviderQuotaMonitor extends ChangeNotifier {
         _readingProfile = null;
       }
     }
+  }
+
+  Future<void> _widgetRecord(
+    ServerProfile profile,
+    ProviderQuotaSnapshot snapshot,
+  ) async {
+    try {
+      await widget?.record(
+        profileId: profile.id,
+        profileName: profile.name,
+        snapshot: snapshot,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _widgetRemove(String id, QuotaProvider provider) async {
+    try {
+      await widget?.removeProvider(profileId: id, provider: provider);
+    } catch (_) {}
+  }
+
+  Future<void> _widgetAuth(
+    ServerProfile profile,
+    QuotaProvider provider,
+  ) async {
+    try {
+      await widget?.markAuthNeeded(
+        profileId: profile.id,
+        profileName: profile.name,
+        provider: provider,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _widgetNotSignedIn(
+    ServerProfile profile,
+    QuotaProvider provider,
+  ) async {
+    try {
+      await widget?.markNotSignedIn(
+        profileId: profile.id,
+        profileName: profile.name,
+        providerId: provider.name,
+      );
+    } catch (_) {}
   }
 
   Future<void> _dismiss(String id, QuotaProvider provider) async {
@@ -862,6 +933,8 @@ class ProviderQuotaMonitor extends ChangeNotifier {
       _expiry.remove(_id(id, provider))?.cancel();
       unawaited(_dismiss(id, provider));
     }
+    final cleared = widget?.clearForProfile(id);
+    if (cleared != null) unawaited(cleared.catchError((_) => false));
     // Reversible deletion must retain consent retirement after credential
     // rotation. Only committed removal discards these safety identities.
     if (!retainIdentity) {

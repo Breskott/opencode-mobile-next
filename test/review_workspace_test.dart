@@ -60,9 +60,21 @@ String _navLabel(WidgetTester tester) {
 }
 
 Future<void> _openFileMenu(WidgetTester tester, String path) async {
-  await tester.tap(
-    find.descendant(of: _header(path), matching: find.byTooltip('More')),
+  final more = find.descendant(
+    of: _header(path),
+    matching: find.byTooltip('More'),
   );
+  // One change has no More button: its menu opens on a long press.
+  if (more.evaluate().isNotEmpty) {
+    await tester.tap(more);
+  } else {
+    await tester.longPress(
+      find.descendant(
+        of: _header(path),
+        matching: find.byKey(const ValueKey('review-file-header-menu')),
+      ),
+    );
+  }
   await tester.pumpAndSettle();
 }
 
@@ -273,6 +285,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('review-empty')), findsOneWidget);
     expect(find.text('Files this conversation changed.'), findsOneWidget);
+  });
+
+  testWidgets('on a phone the views are one compact row that opens a picker', (
+    tester,
+  ) async {
+    FileDiff added(String file, String line) => FileDiff(
+      file: file,
+      patch: '@@ -0,0 +1 @@\n+$line',
+      additions: 1,
+      deletions: 0,
+    );
+    await _pumpReview(
+      tester,
+      () async => [added('session.txt', 'session change')],
+      workingTreeLoader: () async => [added('working.txt', 'working change')],
+      branchLoader: () async => [added('branch.txt', 'branch change')],
+      size: const Size(412, 915),
+    );
+    // One row, not three: the diff starts near the top.
+    final picker = tester.getRect(find.byKey(const Key('review-scope-picker')));
+    expect(picker.height, lessThan(100));
+    expect(tester.getTopLeft(find.text('session change')).dy, lessThan(300));
+    // Every view is still reachable.
+    await tester.tap(find.byKey(const Key('review-scope-picker')));
+    await tester.pumpAndSettle();
+    expect(find.text('Uncommitted'), findsOneWidget);
+    expect(find.text('Whole branch'), findsOneWidget);
+    await tester.tap(find.text('Uncommitted'));
+    await tester.pumpAndSettle();
+    expect(find.text('working change'), findsOneWidget);
   });
 
   testWidgets('switches among session, working tree and branch views', (

@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
+import androidx.annotation.RequiresApi
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
 
@@ -41,27 +42,32 @@ object AppLifecycle {
     private var lastExit: Map<String, Any?>? = null
     private var lastExitRead = false
 
-    fun register(activity: Activity, messenger: BinaryMessenger, requestBatteryExemption: () -> Unit) {
+    fun register(activity: Activity, messenger: BinaryMessenger, replies: NativeChannelReplies, requestBatteryExemption: () -> Unit) {
         // How hot the phone is (oc/thermal), for the AI Team's thermal guard.
         ThermalMonitor.register(activity, messenger)
-        MethodChannel(messenger, CHANNEL).setMethodCallHandler { call, result ->
-            try {
+        MethodChannel(messenger, CHANNEL).setMethodCallHandler { call, rawResult ->
+            val result = replies.wrap(rawResult)
+            result.guarded("lifecycle") {
                 when (call.method) {
                     "launchReport" -> result.success(
                         mapOf(
                             "exit" to lastExit(activity),
                             "previousServices" to previousServices(activity),
+                            "lastCrash" to NativeCrashStore(activity.filesDir).read(),
                         ),
                     )
+                    "exitHistory" -> {
+                        val limit = AppExitHistoryPolicy.limit(
+                            (call.arguments as? Map<*, *>)?.get("limit"),
+                        )
+                        result.success(exitHistory(activity, limit ?: 0))
+                    }
                     "keepAliveInfo" -> result.success(keepAliveInfo(activity))
                     "openKeepAliveSetting" -> result.success(
                         openKeepAliveSetting(activity, call.argument<String>("setting") ?: "", requestBatteryExemption),
                     )
                     else -> result.notImplemented()
                 }
-            } catch (error: Exception) {
-                Log.w(TAG, "lifecycle call ${call.method} failed", error)
-                result.error("lifecycle", error.message ?: error.javaClass.simpleName, null)
             }
         }
     }
@@ -122,10 +128,36 @@ object AppLifecycle {
             "status" to newest.status,
             "importance" to newest.importance,
             "timestamp" to newest.timestamp,
-            "description" to (newest.description ?: ""),
+            "description" to "", // OS crash descriptions can contain the raw exception message.
         )
-        Log.i(TAG, "previous process ended: $text")
+        Log.i(TAG, "previous process ended: reason=${newest.reason} status=${newest.status}")
         return lastExit
+    }
+
+    /** Read-only history: never consumes or advances startup recovery state. */
+    fun exitHistory(context: Context, limit: Int): Map<String, Any?> =
+        AppExitHistoryPolicy.history(Build.VERSION.SDK_INT, context.packageName, limit) { maxNum ->
+            // The policy reads only on API 30 and newer; the check also tells lint so.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) retainedExits(context, maxNum) else emptyList()
+        }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun retainedExits(context: Context, maxNum: Int): Iterable<AppExitMetadata> {
+        val manager = context.getSystemService(ActivityManager::class.java)
+            ?: error("Activity manager unavailable")
+        return manager.getHistoricalProcessExitReasons(context.packageName, 0, maxNum)
+            .asSequence()
+            .filter { it.processName == context.packageName }
+            .map { record ->
+                AppExitMetadata(
+                    processName = record.processName,
+                    reason = record.reason,
+                    importance = record.importance,
+                    timestamp = record.timestamp,
+                    subReason = AppExitHistoryPolicy.subReason(record),
+                    status = record.status,
+                )
+            }.asIterable()
     }
 
     private fun keepAliveInfo(context: Context): Map<String, Any?> {

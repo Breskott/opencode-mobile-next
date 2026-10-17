@@ -9,7 +9,8 @@ import 'kit_tokens.dart';
 /// available on this server · Why". Rows a server cannot serve stay off the
 /// panel; this line is the one place that says so, instead of dimmed rows.
 ///
-/// It sits on the group's label rail (the gutter plus the label inset), so
+/// It sits on the group's label rail (the gutter, as the section label's
+/// words do), so
 /// it reads as part of the group above it. The [action] is a tertiary
 /// button at the end of the line; when the words and the action do not fit
 /// on one line (long words, large text) the action wraps under the words,
@@ -31,8 +32,8 @@ class KitGroupNote extends StatelessWidget {
     final action = this.action;
     return Padding(
       padding: EdgeInsetsDirectional.only(
-        start: tokens.gutter + tokens.space1,
-        end: tokens.gutter + tokens.space1,
+        start: tokens.gutter,
+        end: tokens.gutter,
         top: tokens.labelGap,
       ),
       child: Wrap(

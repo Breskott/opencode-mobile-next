@@ -26,6 +26,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../builtin/builtin_linux.dart' show BuiltinLinux;
 import '../../builtin/setup/components.dart' show SetupComponentIds;
 import '../../builtin/setup/phone_setup.dart';
 import '../../builtin/setup/setup_contract.dart';
@@ -197,13 +198,31 @@ Future<void> _runJob(
   BuildContext context,
   SetupHostKind host,
   Set<String> ids,
+  ServerProfile profile,
 ) async {
   final override = debugTeamPhoneRunJob;
   if (override != null) return override(context, host, ids);
   if (host == SetupHostKind.termux) {
     return openPhoneSetupTermuxJob(context, adding: ids);
   }
-  await PhoneSetup.engine.run(ids, params: SetupJobParams.adding(ids));
+  final runtime = BuiltinLinux.knownRuntimeFor(profile.flavor);
+  if (runtime == null) {
+    final l10n = _copy(context);
+    await showKitAlert(
+      context,
+      title: l10n.phoneServerCardFailedTitle,
+      body: l10n.phoneSetupErrorCannotStart,
+      icon: AppIconography.warning,
+    );
+    return;
+  }
+  await PhoneSetup.engine.run(
+    ids,
+    params: {
+      ...SetupJobParams.adding(ids),
+      'opencode': {'runtime': runtime.wireName},
+    },
+  );
   if (context.mounted) await openPhoneSetupProgress(context);
 }
 
@@ -248,7 +267,7 @@ Future<void> openTeamOnThisPhone(
     );
     if (ids == null || ids.isEmpty || !context.mounted) return;
     final before = engine.progress.value.jobId;
-    await _runJob(context, host, ids);
+    await _runJob(context, host, ids, profile);
     if (!context.mounted) return;
     final after = engine.progress.value;
     // Left before it finished, or it failed: the progress screen said so

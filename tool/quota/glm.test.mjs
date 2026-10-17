@@ -27,6 +27,32 @@ test('GLM reports explicit percentages without invented counts, durations or res
   ]);
 });
 
+test('GLM live shape: five-hour and weekly token windows with resets', () => {
+  // Shape seen from the live API on 2026-10-13 (values synthetic).
+  const live = { code: 200, success: true, data: { level: 'max', limits: [
+    { type: 'TIME_LIMIT', unit: 5, number: 1, usage: 4000, remaining: 4000, percentage: 0,
+      nextResetTime: NOW + 380 * 3600_000, usageDetails: [{ modelCode: 'search-prime', usage: 0 }] },
+    { type: 'TOKENS_LIMIT', unit: 3, number: 5, percentage: 1, nextResetTime: NOW + 3600_000 },
+    { type: 'TOKENS_LIMIT', unit: 6, number: 1, percentage: 12, nextResetTime: NOW + 23 * 3600_000 },
+  ] } };
+  const result = mapGlmUsage(live, 'a'.repeat(64), NOW);
+  assert.equal(result.status, 'ok');
+  assert.deepEqual(result.windows, [
+    { id: 'mcp', status: 'reported', usedPercent: 0, resetsAtMs: NOW + 380 * 3600_000 },
+    { id: 'tokens.5h', status: 'reported', usedPercent: 1, durationSeconds: 18_000,
+      resetsAtMs: NOW + 3600_000 },
+    { id: 'tokens.1w', status: 'reported', usedPercent: 12, durationSeconds: 604_800,
+      resetsAtMs: NOW + 23 * 3600_000 },
+  ]);
+  const odd = structuredClone(live); odd.data.limits[1].unit = 9;
+  assert.deepEqual(mapGlmUsage(odd, 'a'.repeat(64), NOW).windows[1],
+    { id: 'tokens.5u9', status: 'reported', usedPercent: 1, resetsAtMs: NOW + 3600_000 });
+  const twin = structuredClone(live); twin.data.limits[2].unit = 3; twin.data.limits[2].number = 5;
+  assert.throws(() => mapGlmUsage(twin, 'a'.repeat(64), NOW));
+  const badReset = structuredClone(live); badReset.data.limits[1].nextResetTime = 'soon';
+  assert.throws(() => mapGlmUsage(badReset, 'a'.repeat(64), NOW));
+});
+
 test('GLM unknown, duplicate and malformed windows fail visibly', async () => {
   for (const percent of [-1, 101, '50', {}, NaN]) {
     const body = fixture(); body.data.limits[0].percentage = percent;

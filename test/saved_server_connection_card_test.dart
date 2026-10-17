@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations_en.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/widgets/saved_server_connection_card.dart';
@@ -35,6 +36,51 @@ Widget _card({
 );
 
 void main() {
+  testWidgets(
+    'unknown ownership replaces restart and setup with safe recovery',
+    (tester) async {
+      var settings = 0;
+      var starts = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SavedServerConnectionCard(
+              profileName: 'This phone',
+              baseUrl: 'http://127.0.0.1:4097',
+              error: 'IllegalStateException: ownershipUnknown',
+              attempts: 1,
+              supportsTermux: false,
+              inAppServer: true,
+              inAppStartFailed: true,
+              inAppStartFailedBody:
+                  AppLocalizationsEn().inAppServerOwnershipRecoveryBody,
+              onRetry: () => starts++,
+              onStartPhoneServer: () => starts++,
+              onOpenInAppSetup: () => starts++,
+              onRecoverInAppOwnership: () => settings++,
+              onChangeServer: () {},
+            ),
+          ),
+        ),
+      );
+      expect(find.textContaining('ownershipUnknown'), findsNothing);
+      expect(find.text('Try again'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('saved-server-start-phone')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('saved-server-open-in-app-setup')),
+        findsNothing,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('saved-server-recover-ownership')),
+      );
+      expect(settings, 1);
+      expect(starts, 0);
+    },
+  );
+
   testWidgets('connecting state shows progress and no actions', (tester) async {
     tester.view.physicalSize = const Size(900, 1800);
     tester.view.devicePixelRatio = 1;

@@ -179,7 +179,7 @@ void main() {
       ),
       onReply: (reply, {message}) async {},
     );
-    expect(find.text('Edit a file'), findsOneWidget);
+    expect(find.text('Edit this file?'), findsOneWidget);
     await tester.tap(find.byKey(const Key('permission-card-review')));
     await tester.pumpAndSettle();
     expect(find.byType(KitDiffView), findsOneWidget);

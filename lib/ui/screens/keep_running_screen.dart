@@ -12,7 +12,8 @@ import '../../platform/keep_alive_advice.dart';
 import '../../state/connection.dart' show connProvider;
 import '../app_theme.dart';
 import '../kit/kit.dart';
-import 'settings_screen.dart' show NotificationsSettingsScreen;
+import 'settings_screen.dart'
+    show NotificationsPage, NotificationsSettingsScreen;
 
 /// Opens the keep-running controls, which live on the one "Notifications and
 /// background" page, scrolled to them.
@@ -26,6 +27,7 @@ Future<void> openKeepRunningScreen(BuildContext context) {
     (_) => NotificationsSettingsScreen(
       controller: controller,
       initialSection: 'keep-running',
+      page: NotificationsPage.background,
     ),
   );
 }

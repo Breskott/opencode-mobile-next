@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_v2_summary">%1$d قيد العمل · %2$d بحاجة إليك</string>
+    <string name="widget_v2_working">قيد العمل · %s</string>
+    <string name="widget_v2_allow">السماح مرة</string>
+    <string name="widget_v2_reject">رفض</string>
+    <string name="widget_v2_stop">إيقاف</string>
+    <string name="widget_v2_steer">توجيه</string>
+    <string name="widget_v2_voice">صوت</string>
+    <string name="widget_v2_configure">المظهر</string>
+    <string name="widget_v2_approve">اعتماد الخطة</string>
+    <string name="widget_v2_resume">متابعة</string>
+    <string name="widget_v2_tasks">%1$d / %2$d مهام</string>
+    <string name="widget_v2_offline">الاتصال في الخلفية غير متاح</string>
+    <string name="widget_v2_on_demand">يتصل عند الضغط</string>
+    <string name="widget_v2_background_settings">إعدادات الخلفية</string>
+    <string name="widget_v2_ready">جاهز</string>
+    <string name="widget_v2_sent">تم إرسال الإجراء</string>
+    <string name="widget_v2_failed">الإجراء غير متاح</string>
+    <string name="widget_v2_pending">جارٍ الإرسال…</string>
+    <string name="widget_v2_uncertain">تحقق من المحادثة</string>
+    <string name="widget_v2_after_reply">إرسال بعد الرد</string>
+</resources>

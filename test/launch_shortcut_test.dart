@@ -55,6 +55,22 @@ void main() {
     expect(shortcut.pending.value, LaunchAction.connect);
   });
 
+  test('background settings supports cold and live widget taps', () async {
+    messenger.setMockMethodCallHandler(
+      channel,
+      (call) async =>
+          call.method == 'consumeLaunchAction' ? 'background_settings' : null,
+    );
+    final shortcut = LaunchShortcut(channel: channel);
+    addTearDown(shortcut.dispose);
+    await shortcut.start();
+    expect(shortcut.take(), LaunchAction.backgroundSettings);
+    expect(shortcut.pending.value, isNull);
+    await launched('background_settings');
+    expect(shortcut.take(), LaunchAction.backgroundSettings);
+    expect(shortcut.pending.value, isNull);
+  });
+
   test('accepts a live shortcut tap while running', () async {
     messenger.setMockMethodCallHandler(channel, (call) async => null);
     final shortcut = LaunchShortcut(channel: channel);

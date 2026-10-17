@@ -5,16 +5,22 @@ import 'dart:async';
 
 import '../api/models.dart';
 import '../domain/server_gateway.dart';
+import '../domain/agent_handoff_history.dart';
 import '../domain/agent_account.dart';
 import 'account.dart';
 import 'mappers.dart';
+import 'handoff_record.dart';
 import 'transport.dart';
 import '../diagnostics/perf_trace.dart';
 
 const codexServerCapabilities = ServerCapabilities(
   agentAccount: true,
+  // 0.153.4 has fs/writeFile, but no qualified exclusive/scoped handoff
+  // writer is implemented. Filesystem RPC availability alone is insufficient.
+  agentHandoffFiles: false,
   promptAttachments: false,
   promptAgentMentions: false,
+  promptSteering: true,
   offlinePromptQueue: false,
   fileBrowsing: false,
   terminal: false,
@@ -46,6 +52,7 @@ const codexServerCapabilities = ServerCapabilities(
   webSearch: false,
   sessionShare: false,
   sessionArchive: false,
+  sessionDelete: false,
   sessionTodos: false,
   messageDelete: false,
   workspaceSymbols: false,
@@ -89,7 +96,12 @@ class _CodexOperationContext {
 }
 
 class CodexGateway
-    implements ServerGateway, ServerOperationsGateway, AgentAccountGateway {
+    implements
+        ServerGateway,
+        ServerOperationsGateway,
+        AgentAccountGateway,
+        AgentHandoffHistoryGateway,
+        MidTurnPromptGateway {
   final CodexTransport transport;
   String? _directory;
   bool _closed = false;
@@ -303,7 +315,8 @@ class CodexGateway
   @override
   Future<Health> health() async {
     await transport.connect();
-    return Health(healthy: true, version: 'Codex app-server (experimental)');
+    // The app-server reports no version; server pages say so in words.
+    return Health(healthy: true);
   }
 
   @override
@@ -389,6 +402,30 @@ class CodexGateway
 
   @override
   Future<Map<String, String>> sessionStatuses() async => Map.of(_statuses);
+
+  /// Full persisted thread projection, without thread/resume or subscription.
+  /// Codex's compatibility messages() resumes a thread; handoff must only read.
+  /// Transport caps the complete response at 4 MiB; oversized threads fail
+  /// visibly rather than silently exporting a truncated history.
+  @override
+  Future<List<MessageWithParts>> agentHandoffHistory(String sessionID) async {
+    codexString(sessionID, max: 256);
+    final context = await _captureOperation();
+    _checkOperation(context);
+    final result = await transport.requestInEpoch('thread/read', {
+      'threadId': sessionID,
+      'includeTurns': true,
+    }, epoch: context.transportEpoch);
+    _checkOperation(context);
+    final thread = codexObject(result['thread']);
+    if (thread['id'] != sessionID) {
+      throw CodexFailure(CodexFailureKind.invalidResponse);
+    }
+    // Prove project ownership before mapping or returning any transcript text.
+    codexSession(thread, directory: context.scope);
+    return codexHandoffMessages(thread);
+  }
+
   @override
   Future<List<MessageWithParts>> messages(String id) async {
     if (_resumed.contains(id) &&
@@ -430,7 +467,7 @@ class CodexGateway
     PromptTrace.sent(sessionID);
     if (attachments.isNotEmpty ||
         agentMentions.isNotEmpty ||
-        delivery != null ||
+        delivery == PromptDelivery.queue ||
         (agent != null && agent != 'codex') ||
         _uncertain.contains(sessionID)) {
       throw CodexFailure(
@@ -439,16 +476,20 @@ class CodexGateway
             : CodexFailureKind.unavailable,
       );
     }
+    codexString(sessionID, max: 256);
+    final prompt = codexString(text, max: 1024 * 1024);
+    if (delivery == PromptDelivery.steer) {
+      return _steer(sessionID, prompt);
+    }
     if (!_resumed.contains(sessionID)) await _resume(sessionID);
     if (!_sessions.containsKey(sessionID)) {
       throw CodexFailure(CodexFailureKind.scopeMismatch);
     }
     if (_statuses[sessionID] == 'busy') {
-      throw CodexFailure(CodexFailureKind.unavailable);
+      return _steer(sessionID, prompt);
     }
     final scope = _scope;
     final epoch = _locationEpoch;
-    final prompt = codexString(text, max: 1024 * 1024);
     // Once dispatch begins, even an unacknowledged first turn must recover
     // authoritatively. It is no longer safe to treat this as an empty thread.
     _newEmptyThreads.remove(sessionID);
@@ -469,6 +510,74 @@ class CodexGateway
     } on CodexFailure catch (error) {
       if (error.kind == CodexFailureKind.deliveryUnknown) {
         _uncertain.add(sessionID);
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  MidTurnPrompt? midTurnPrompt(String sessionID) =>
+      _sessions.containsKey(sessionID) ? MidTurnPrompt.joinsTurn : null;
+
+  /// Pinned 0.153.4 turn/steer takes input and an active-turn precondition, not
+  /// model/config changes. Read authoritative state without resuming the thread;
+  /// a stale target fails and is never retried as turn/start or interrupt.
+  Future<void> _steer(String sessionID, String prompt) async {
+    final expected = _statuses[sessionID] == 'busy' ? _turns[sessionID] : null;
+    final context = await _captureOperation();
+    _checkOperation(context);
+    final read = await transport.requestInEpoch('thread/read', {
+      'threadId': sessionID,
+      'includeTurns': true,
+    }, epoch: context.transportEpoch);
+    _checkOperation(context);
+    final thread = codexObject(read['thread']);
+    if (thread['id'] != sessionID) {
+      throw CodexFailure(CodexFailureKind.invalidResponse);
+    }
+    codexSession(thread, directory: context.scope);
+    final active = codexList(
+      thread['turns'],
+    ).map(codexObject).where((turn) => turn['status'] == 'inProgress').toList();
+    if (active.length != 1) throw CodexFailure(CodexFailureKind.staleRequest);
+    final turnID = codexString(active.single['id'], max: 256);
+    if (expected != null &&
+        (expected != turnID ||
+            _turns[sessionID] != expected ||
+            _statuses[sessionID] != 'busy')) {
+      throw CodexFailure(CodexFailureKind.staleRequest);
+    }
+    _checkOperation(context);
+    try {
+      final result = await transport.requestInEpoch(
+        'turn/steer',
+        {
+          'threadId': sessionID,
+          'input': [
+            {'type': 'text', 'text': prompt, 'text_elements': <Object>[]},
+          ],
+          'expectedTurnId': turnID,
+        },
+        epoch: context.transportEpoch,
+        mutation: true,
+      );
+      // The mutation may have been accepted even if the reply is malformed,
+      // the project changed, or the connection disappeared while awaiting it.
+      _checkOperation(context, mutation: true);
+      if (result['turnId'] != turnID) {
+        throw CodexFailure(CodexFailureKind.deliveryUnknown);
+      }
+      // A steer acknowledgement is not a new turn. In particular, do not
+      // overwrite an idle/completed notification received before this reply.
+    } on CodexFailure catch (error) {
+      if (error.kind == CodexFailureKind.deliveryUnknown ||
+          error.kind == CodexFailureKind.invalidResponse ||
+          error.kind == CodexFailureKind.scopeMismatch) {
+        if (_locationEpoch == context.locationEpoch &&
+            _directory == context.scope) {
+          _uncertain.add(sessionID);
+        }
+        throw CodexFailure(CodexFailureKind.deliveryUnknown);
       }
       rethrow;
     }

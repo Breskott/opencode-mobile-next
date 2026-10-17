@@ -11,10 +11,12 @@ import 'package:flutter/services.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../app_iconography.dart';
+import '../../theme_roles.dart' show ThemeRoles;
 import '../kit_bidi.dart';
 import '../kit_buttons.dart';
 import '../kit_copy.dart';
 import '../kit_divider.dart';
+import '../kit_image.dart';
 import '../kit_layout.dart';
 import '../kit_menu.dart';
 import '../kit_motion.dart';
@@ -25,6 +27,7 @@ import '../kit_tokens.dart';
 import '../motion/kit_motion_parts.dart';
 import 'kit_composer_chips.dart';
 import 'kit_markdown.dart';
+import 'kit_step_timeline.dart';
 
 /// Which piece of the transcript a [KitMessage] is.
 enum KitMessageKind { prompt, reply, thought, notice, marker }
@@ -34,12 +37,10 @@ enum KitMessageKind { prompt, reply, thought, notice, marker }
 /// action drops under the words"). The same threshold as KitToolRow.
 const double _kWrapTextScale = 1.3;
 
-/// How wide a [KitMessage.prompt] bubble may grow. [auto] (the default)
-/// is one rule for every prompt: the bubble hugs its words and may grow to
-/// the whole width, so a short prompt stays small and a long one wraps at
-/// the page width, with no jump between two styles. [compact] caps it at
-/// [KitLayout.bubbleMaxShare]; the default [auto] hugs up to the full width
-/// minus [KitLayout.bubbleStartInset]; [full] always fills the width.
+/// How wide a [KitMessage.prompt] bubble may grow. [auto] (the default) and
+/// [compact] hug the words and stop at [KitLayout.bubbleMaxShare] (85 %) of
+/// the column (owner decision 04A); [full] fills the width minus
+/// [KitLayout.bubbleStartInset].
 enum KitBubbleWidth { auto, compact, full }
 
 /// A transcript piece that is words (STANDARDS STATE-16, KIT-41): a prompt
@@ -253,6 +254,14 @@ class KitMessage extends StatelessWidget {
 
 // ── Prompt ────────────────────────────────────────────────────────────────
 
+/// The prompt bubble's fill. Dark: `surface2`. Light: `surface2` is white,
+/// the page's own colour, so the bubble would vanish; it is `text1` at 7 %
+/// over the ground instead, which stays visible on the ground and on white.
+/// `text1` words keep far more than 7:1 on it in both.
+Color kitPromptBubbleFill(ThemeRoles roles) => roles.isDark
+    ? roles.surface2
+    : Color.alphaBlend(roles.text1.withValues(alpha: .07), roles.ground);
+
 /// The bubble's corners: 20 everywhere but the bottom end (6), mirrored
 /// under RTL through the directional radius (VL §5 "20/20/6/20").
 const BorderRadiusDirectional _bubbleRadius = BorderRadiusDirectional.only(
@@ -289,9 +298,10 @@ class _Prompt extends StatelessWidget {
         // and a long one never wraps in a narrow column. The time stays at
         // the end edge.
         final stretch = message.bubbleWidth == KitBubbleWidth.full;
-        final maxWidth = message.bubbleWidth == KitBubbleWidth.compact
-            ? (width * KitLayout.bubbleMaxShare).floorToDouble()
-            : math.max(0.0, width - KitLayout.bubbleStartInset);
+        // 85 % of the column (owner decision 04A); replies stay full width.
+        final maxWidth = message.bubbleWidth == KitBubbleWidth.full
+            ? math.max(0.0, width - KitLayout.bubbleStartInset)
+            : (width * KitLayout.bubbleMaxShare).floorToDouble();
         return Align(
           alignment: AlignmentDirectional.centerEnd,
           child: ConstrainedBox(
@@ -419,6 +429,14 @@ class _BubbleState extends State<_Bubble> {
     // Read-only chips announce themselves only when one of them opens a
     // preview; otherwise their names join the bubble's one label.
     final chipsSpeak = attachments.any((item) => item.onOpen != null);
+    final photos = [
+      for (final item in attachments)
+        if (_isPhoto(item)) item,
+    ];
+    final chips = [
+      for (final item in attachments)
+        if (!_isPhoto(item)) item,
+    ];
     final words = message.body?.data.trim() ?? '';
 
     final label = [
@@ -438,11 +456,26 @@ class _BubbleState extends State<_Bubble> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (message.body case final body?) ExcludeSemantics(child: body),
-          if (attachments.isNotEmpty) ...[
+          // Sent photos show as pictures, not file names; the rest stay
+          // read-only chips.
+          if (photos.isNotEmpty) ...[
             SizedBox(height: tokens.space2),
             ExcludeSemantics(
               excluding: !chipsSpeak,
-              child: KitComposerChips.attachments(items: attachments),
+              child: Wrap(
+                spacing: tokens.space2,
+                runSpacing: tokens.space2,
+                children: [
+                  for (final photo in photos) _PromptPhoto(attachment: photo),
+                ],
+              ),
+            ),
+          ],
+          if (chips.isNotEmpty) ...[
+            SizedBox(height: tokens.space2),
+            ExcludeSemantics(
+              excluding: !chipsSpeak,
+              child: KitComposerChips.attachments(items: chips),
             ),
           ],
         ],
@@ -468,7 +501,7 @@ class _BubbleState extends State<_Bubble> {
     Widget bubble = DecoratedBox(
       key: message.bubbleKey,
       decoration: BoxDecoration(
-        color: roles.surface2,
+        color: kitPromptBubbleFill(roles),
         borderRadius: _bubbleRadius,
       ),
       position: DecorationPosition.background,
@@ -534,9 +567,12 @@ double? _hugWidth(BuildContext context, KitMarkdown body, double maxWidth) {
   final data = body.data.trim();
   if (data.isEmpty) return null;
   if (data.split('\n').any(_blockLine.hasMatch)) return null;
+  // What is drawn, not the source: a link is its label, and a file path in
+  // code is a chip with an inset either side.
+  final shown = kitMarkdownDisplay(data);
   final painter = TextPainter(
     text: TextSpan(
-      text: data,
+      text: shown.text,
       style: KitText.styleOf(context, body.role, tone: body.tone),
     ),
     textDirection: Directionality.of(context),
@@ -546,7 +582,9 @@ double? _hugWidth(BuildContext context, KitMarkdown body, double maxWidth) {
   painter.dispose();
   // One step of slack for rounding and inline marks (a code chip's inset).
   final tokens = KitTokens.of(context);
-  return (width + tokens.space1).ceilToDouble().clamp(0.0, maxWidth);
+  return (width + tokens.space1 + shown.pathChips * 2 * tokens.space1)
+      .ceilToDouble()
+      .clamp(0.0, maxWidth);
 }
 
 /// The keyboard focus ring on the bubble's own shape: [width] in `accent`,
@@ -594,10 +632,20 @@ class _Fold extends StatefulWidget {
     required this.onExpansionChanged,
     required this.foldKey,
     this.trailing,
+    this.railIcon,
+    this.railMark,
   });
 
-  /// The header's words and glyph, without the chevron.
+  /// The header's words and glyph, without the chevron. On a
+  /// [KitStepTimeline] the glyph is the rail's node instead: the caller
+  /// leaves it out and names it in [railIcon] or [railMark] (neither: a dot).
   final Widget line;
+
+  /// On a timeline: the step's glyph as a tile on the rail.
+  final IconData? railIcon;
+
+  /// On a timeline: a state mark in the node's place (the live mark).
+  final Widget? railMark;
 
   /// The header's semantic name.
   final String label;
@@ -668,43 +716,72 @@ class _FoldState extends State<_Fold> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
     final open = _open;
+    final onRail = KitStepTimeline.inside(context);
 
+    // On a timeline a fold is one line like every step: 32 dp (more only
+    // for larger text), its first line in the middle of it so the node and
+    // the rail can be placed from the tokens alone, no chevron (a tap opens
+    // it), and the 48 dp target centred on the line. Off a timeline it is
+    // the 48 dp line with the kit's chevron.
+    final wide = MediaQuery.textScalerOf(context).scale(1) >= _kWrapTextScale;
+    final stepHeight = onRail ? KitStepTimeline.stepLineHeight(context) : 0.0;
+    final pad = onRail
+        ? (stepHeight - MediaQuery.textScalerOf(context).scale(20)) / 2
+        : tokens.space1;
     Widget lineBox(Widget child) => ConstrainedBox(
-      constraints: BoxConstraints(minHeight: tokens.minTarget),
+      constraints: BoxConstraints(
+        minHeight: onRail ? stepHeight : tokens.minTarget,
+      ),
       child: Align(
-        alignment: AlignmentDirectional.centerStart,
-        heightFactor: 1,
+        alignment: onRail && wide
+            ? AlignmentDirectional.topStart
+            : AlignmentDirectional.centerStart,
+        heightFactor: onRail ? null : 1,
         child: Padding(
-          padding: EdgeInsetsDirectional.symmetric(vertical: tokens.space1),
+          padding: EdgeInsetsDirectional.symmetric(vertical: pad),
           child: child,
         ),
       ),
     );
+    Widget target(Widget tappable) => onRail && !wide
+        ? SizedBox(
+            height: stepHeight,
+            child: OverflowBox(
+              minHeight: tokens.minTarget,
+              maxHeight: tokens.minTarget,
+              child: tappable,
+            ),
+          )
+        : tappable;
 
     final Widget header;
     if (_opens) {
-      header = Semantics(
-        expanded: open,
-        child: KitTappable(
-          tappableKey: widget.foldKey,
-          onTap: _toggle,
-          label: widget.label,
-          shape: KitShape.tile,
-          surface: KitSurfaceLevel.ground,
-          child: lineBox(
-            Row(
-              children: [
-                Expanded(child: widget.line),
-                SizedBox(width: tokens.space1),
-                _FirstLine(
-                  child: ExcludeSemantics(
-                    child: SizedBox.square(
-                      dimension: tokens.smallIconSize,
-                      child: KitSpin.chevron(expanded: open),
+      header = target(
+        Semantics(
+          expanded: open,
+          child: KitTappable(
+            tappableKey: widget.foldKey,
+            onTap: _toggle,
+            label: widget.label,
+            shape: KitShape.tile,
+            surface: KitSurfaceLevel.ground,
+            child: lineBox(
+              onRail
+                  ? widget.line
+                  : Row(
+                      children: [
+                        Expanded(child: widget.line),
+                        SizedBox(width: tokens.space1),
+                        _FirstLine(
+                          child: ExcludeSemantics(
+                            child: SizedBox.square(
+                              dimension: tokens.smallIconSize,
+                              child: KitSpin.chevron(expanded: open),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-              ],
             ),
           ),
         ),
@@ -722,7 +799,6 @@ class _FoldState extends State<_Fold> with SingleTickerProviderStateMixin {
     Widget top = header;
     final trailing = widget.trailing;
     if (trailing != null) {
-      final wide = MediaQuery.textScalerOf(context).scale(1) >= _kWrapTextScale;
       top = wide
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -746,7 +822,7 @@ class _FoldState extends State<_Fold> with SingleTickerProviderStateMixin {
 
     // One shape open or shut, so the header (and its focus) never remounts.
     final body = widget.body;
-    return Column(
+    final column = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -757,6 +833,17 @@ class _FoldState extends State<_Fold> with SingleTickerProviderStateMixin {
             child: _Body(child: body),
           ),
       ],
+    );
+    // The node goes around the whole step, outside the tap region (which
+    // clips what it draws).
+    return KitStepTimeline.node(
+      context,
+      lineHeight: 20,
+      top: onRail ? 0 : tokens.space1,
+      boxHeight: onRail ? stepHeight : null,
+      icon: widget.railIcon,
+      mark: widget.railMark,
+      child: column,
     );
   }
 }
@@ -846,26 +933,33 @@ class _Thought extends StatelessWidget {
     final tokens = KitTokens.of(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final title = titleFor(l10n, message);
+    final onRail = KitStepTimeline.inside(context);
+    final words = KitText(
+      title,
+      role: KitTextRole.secondary,
+      tone: KitTextTone.secondary,
+    );
     return _Fold(
       foldKey: message.thoughtKey,
       label: title,
       expanded: message.expanded,
       onExpansionChanged: message.onExpansionChanged,
       body: message.body,
-      line: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _Glyph(AppIconography.idea),
-          SizedBox(width: tokens.space2),
-          Expanded(
-            child: KitText(
-              title,
-              role: KitTextRole.secondary,
-              tone: KitTextTone.secondary,
+      // On a timeline the thought is a sentence: a dot on the rail (the live
+      // mark while it is still thinking) and its words.
+      railMark: onRail && message.working
+          ? const KitStatusMark(state: KitMarkState.working)
+          : null,
+      line: onRail
+          ? words
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _Glyph(AppIconography.idea),
+                SizedBox(width: tokens.space2),
+                Expanded(child: words),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -925,23 +1019,27 @@ class _Notice extends StatelessWidget {
         : (message.icon ?? AppIconography.info);
 
     final action = message.action;
+    final onRail = KitStepTimeline.inside(context);
     return _Fold(
       foldKey: message.noticeKey,
       label: label,
       expanded: message.expanded,
       onExpansionChanged: message.onExpansionChanged,
       body: message.detail,
+      railIcon: onRail ? glyph : null,
       trailing: action == null
           ? null
           : KitButton.fromAction(action, role: KitButtonRole.tertiary),
-      line: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Glyph(glyph),
-          SizedBox(width: tokens.space2),
-          Expanded(child: wordsLine),
-        ],
-      ),
+      line: onRail
+          ? wordsLine
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Glyph(glyph),
+                SizedBox(width: tokens.space2),
+                Expanded(child: wordsLine),
+              ],
+            ),
     );
   }
 }
@@ -1013,6 +1111,53 @@ class _Marker extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+/// A sent picture with pixels to show: drawn as a thumbnail, not a chip.
+bool _isPhoto(KitAttachment item) =>
+    item.kind == KitAttachmentKind.image && item.thumbnail != null;
+
+/// One sent photo in a prompt bubble: a square thumbnail
+/// ([KitLayout.promptPhotoSize]) that opens the host's full view.
+class _PromptPhoto extends StatelessWidget {
+  const _PromptPhoto({required this.attachment});
+
+  final KitAttachment attachment;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final image = KitImage(
+      key: attachment.thumbnailKey,
+      source: attachment.thumbnail!,
+      semanticsLabel: null,
+      fit: KitImageFit.cover,
+      shape: KitShape.tile,
+      width: KitLayout.promptPhotoSize,
+      height: KitLayout.promptPhotoSize,
+    );
+    final onOpen = attachment.onOpen;
+    if (onOpen == null) {
+      return Semantics(
+        container: true,
+        image: true,
+        label: l10n.kitAttachmentImage(attachment.label),
+        child: ExcludeSemantics(child: image),
+      );
+    }
+    // Its own node, like an openable chip: the bubble's label stays the
+    // words, the photo is a button of its own.
+    return Semantics(
+      container: true,
+      child: KitTappable(
+        tappableKey: attachment.chipKey,
+        onTap: onOpen,
+        label: l10n.kitAttachmentOpen(attachment.label),
+        shape: KitShape.tile,
+        child: ExcludeSemantics(child: image),
       ),
     );
   }

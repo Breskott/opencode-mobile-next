@@ -48,6 +48,9 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      - name: Resolve the Widgetbook catalog
+        run: flutter pub get --directory widgetbook
+
       - name: Analyze
         run: flutter analyze
 

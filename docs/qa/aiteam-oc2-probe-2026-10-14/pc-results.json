@@ -1,0 +1,176 @@
+{
+  "collectedAt": "2026-10-14T14:28:51.937175+00:00",
+  "version": "2.0.29",
+  "host": "local PC",
+  "port": 4193,
+  "scratchRoot": "/home/eslam/Storage/tmp/oc2-probe-aiteam-pc/run-20261014-qr4XrD",
+  "listenerPid": 4187939,
+  "zenConnectStatus": 204,
+  "scratchLocationReloadStatus": 204,
+  "credentialSourceEntry": "opencode",
+  "otherCredentialEntriesUsed": false,
+  "roleEntryStored": true,
+  "permissions": [
+    {
+      "action": "*",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "read",
+      "resource": "*",
+      "effect": "allow"
+    },
+    {
+      "action": "glob",
+      "resource": "*",
+      "effect": "allow"
+    },
+    {
+      "action": "grep",
+      "resource": "*",
+      "effect": "allow"
+    }
+  ],
+  "modelAttempts": [
+    {
+      "providerID": "opencode",
+      "id": "claude-haiku-5-5",
+      "advertisedInputUSDPerMillion": 0.1,
+      "advertisedOutputUSDPerMillion": 0.5,
+      "promptStatus": 200,
+      "busyObserved": true,
+      "errorType": "provider.quota",
+      "errorStatus": 402
+    },
+    {
+      "providerID": "opencode",
+      "id": "big-pickle",
+      "advertisedInputUSDPerMillion": 0,
+      "advertisedOutputUSDPerMillion": 0,
+      "promptStatus": 200,
+      "busyObserved": true,
+      "errorType": "provider.auth",
+      "errorStatus": 403
+    }
+  ],
+  "transcript": [
+    {
+      "id": "msg_13ad00800001iJ29n9kC3ULnaF",
+      "type": "idle",
+      "outcome": "failed",
+      "error": {
+        "type": "provider.auth",
+        "status": 403
+      }
+    },
+    {
+      "id": "msg_13ad00567001t0EezswflUwuIy",
+      "type": "assistant",
+      "finish": "error",
+      "model": {
+        "id": "big-pickle",
+        "providerID": "opencode",
+        "variant": "default"
+      },
+      "error": {
+        "type": "provider.auth",
+        "status": 403
+      },
+      "contentCount": 0
+    },
+    {
+      "id": "msg_13ad00555001WCKa3hklacJZOl",
+      "type": "user"
+    },
+    {
+      "id": "msg_13ad00550001y43vflz7qVvrHA",
+      "type": "model-switched",
+      "model": {
+        "id": "big-pickle",
+        "providerID": "opencode"
+      }
+    },
+    {
+      "id": "msg_13acf9e89001hkd83Zb7u5i5EA",
+      "type": "idle",
+      "outcome": "failed",
+      "error": {
+        "type": "provider.quota",
+        "status": 402
+      }
+    },
+    {
+      "id": "msg_13acf9ab8001NgDOEl96ARRt5l",
+      "type": "assistant",
+      "finish": "error",
+      "model": {
+        "id": "claude-haiku-5-5",
+        "providerID": "opencode",
+        "variant": "default"
+      },
+      "error": {
+        "type": "provider.quota",
+        "status": 402
+      },
+      "contentCount": 0
+    },
+    {
+      "id": "msg_13acf9a990016vrP1KzYox0r3i",
+      "type": "user"
+    }
+  ],
+  "readonlyMarkerExists": false,
+  "readFixtureUnchanged": true,
+  "pendingPermissionCount": 0,
+  "activeAtEnd": {
+    "data": {}
+  },
+  "realToolDenialProven": false,
+  "roleDeliveredToModelProven": false,
+  "verdict": "blocked-paid-quota-and-free-tier-auth-failures-before-tools",
+  "cleanup": {
+    "verifiedListenerPid": 4187939,
+    "workingDirectoryVerified": true,
+    "signal": "SIGTERM",
+    "listenerAbsentAfterStop": true,
+    "processExited": true,
+    "entireScratchDirectoryDeleted": true,
+    "scratchCredentialStorageDeleted": true
+  },
+  "setupIncident": {
+    "cause": "initial npm install resolved ancestor package because scratch manifest was missing",
+    "ancestorPrefix": "/home/eslam",
+    "affectedManifest": "/home/eslam/package.json",
+    "affectedLockfile": "/home/eslam/package-lock.json",
+    "loggedPackageChanges": [
+      {
+        "operation": "ADD",
+        "path": "/home/eslam/node_modules/@opencode/cli-linux-x64-musl"
+      },
+      {
+        "operation": "ADD",
+        "path": "/home/eslam/node_modules/@opencode/cli-linux-x64-baseline-musl"
+      },
+      {
+        "operation": "ADD",
+        "path": "/home/eslam/node_modules/@opencode/cli-linux-x64-baseline"
+      },
+      {
+        "operation": "ADD",
+        "path": "/home/eslam/node_modules/@opencode/cli-linux-x64"
+      },
+      {
+        "operation": "ADD",
+        "path": "/home/eslam/node_modules/@opencode/cli"
+      },
+      {
+        "operation": "CHANGE",
+        "path": "/home/eslam/node_modules/@code-yeongyu/comment-checker"
+      }
+    ],
+    "correctedScratchInstall": "created private package.json and used explicit npm --prefix",
+    "ancestorRestored": false,
+    "reasonNotRestored": "no pre-install baseline; avoided guessed rollback of shared package state"
+  }
+}

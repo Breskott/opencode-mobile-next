@@ -56,12 +56,30 @@ import '../../widgets/team_controls.dart' show teamControlReceipt;
 import '../../widgets/team_host_form.dart' show showTeamHostGuideSheet;
 import '../../widgets/team_now.dart';
 import '../../widgets/team_vocabulary.dart';
+import '../../widgets/tool_card.dart' show toolLabel;
 import '../team_conversation/team_conversation.dart';
 import 'gate_sheet.dart' show showGateSheet;
 import 'team_states.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
+
+/// A team agent's step in plain words ("Ran the tests"); the raw command
+/// waits under Technical details. Any other tool is named as its step row
+/// names it ([toolLabel]), never by its raw id.
+@visibleForTesting
+String agentStepWords(AppLocalizations l10n, AgentStep step) =>
+    switch (step.kind) {
+      AgentStepKind.command => l10n.teamAgentStepCommand,
+      AgentStepKind.test => l10n.teamAgentStepTest,
+      AgentStepKind.read => l10n.teamAgentStepRead,
+      AgentStepKind.edit => l10n.teamAgentStepEdit,
+      AgentStepKind.search => l10n.teamAgentStepSearch,
+      AgentStepKind.other =>
+        step.tool.trim().isEmpty
+            ? l10n.teamAgentStepCommand
+            : l10n.teamAgentStepTool(toolLabel(step.tool, l10n: l10n)),
+    };
 
 class AgentScreen extends StatefulWidget {
   const AgentScreen({
@@ -225,21 +243,6 @@ class _AgentScreenState extends State<AgentScreen> {
     return null;
   }
 
-  /// A step in plain words ("Ran the tests"); the raw command waits under
-  /// Technical details.
-  static String _stepWords(AppLocalizations l10n, AgentStep step) =>
-      switch (step.kind) {
-        AgentStepKind.command => l10n.teamAgentStepCommand,
-        AgentStepKind.test => l10n.teamAgentStepTest,
-        AgentStepKind.read => l10n.teamAgentStepRead,
-        AgentStepKind.edit => l10n.teamAgentStepEdit,
-        AgentStepKind.search => l10n.teamAgentStepSearch,
-        AgentStepKind.other =>
-          step.tool.trim().isEmpty
-              ? l10n.teamAgentStepCommand
-              : l10n.teamAgentStepTool(step.tool.trim()),
-      };
-
   /// The raw command of [step], its first line, for Technical details.
   static String? _stepCommand(AgentStep? step) {
     final line = step?.command.trim().split('\n').first.trim();
@@ -343,6 +346,39 @@ class _AgentScreenState extends State<AgentScreen> {
     );
     if (!ok || !mounted) return;
     await _control(agent.id, AgentControlAction.stop);
+  }
+
+  /// The session did not end after a normal Stop: the stop went unanswered
+  /// or was refused, and the host still shows the agent running.
+  bool _stopDidNotWork(OrchestrationAgent agent) {
+    if (!_controller.capabilities.controlAgentKill) return false;
+    final state = teamSessionState(agent);
+    if (state == AgentState.stopped || state == AgentState.crashed) {
+      return false;
+    }
+    final record = _receipt(agent);
+    return record != null &&
+        record.kind == MutationKind.controlAgent &&
+        record.request.action == AgentControlAction.stop &&
+        (record.status == MutationStatus.unconfirmed ||
+            record.status == MutationStatus.rejected);
+  }
+
+  /// Force stop: ends the session at once, so it asks first, naming the
+  /// agent and saying what may be lost.
+  Future<void> _forceStop(OrchestrationAgent agent) async {
+    final l10n = _copy(context);
+    final ok = await showKitConfirm(
+      context,
+      title: l10n.teamAgentForceStopTitle(agent.name),
+      body: l10n.teamAgentForceStopBody(agent.name),
+      confirmLabel: l10n.teamAgentForceStop(agent.name),
+      kind: KitConfirmKind.stop,
+      sheetKey: const ValueKey('team-agent-force-stop-confirm'),
+      confirmKey: const ValueKey('team-agent-force-stop-confirm-action'),
+    );
+    if (!ok || !mounted) return;
+    await _control(agent.id, AgentControlAction.kill);
   }
 
   Future<void> _restart(OrchestrationAgent agent) async {
@@ -542,6 +578,17 @@ class _AgentScreenState extends State<AgentScreen> {
           disabledReason: _busy ? l10n.teamUiReceiptSent : null,
           onSelected: () => unawaited(_stop(agent, work)),
         ),
+      // Secondary, under Stop: the hard end for a session Stop did not end.
+      if (!stopped && _controller.capabilities.controlAgentKill)
+        KitMenuItem(
+          key: const ValueKey('team-agent-control-force-stop'),
+          label: l10n.teamAgentForceStop(name),
+          icon: AppIconography.stopCircle,
+          destructive: true,
+          enabled: !_busy,
+          disabledReason: _busy ? l10n.teamUiReceiptSent : null,
+          onSelected: () => unawaited(_forceStop(agent)),
+        ),
     ];
   }
 
@@ -608,6 +655,41 @@ class _AgentScreenState extends State<AgentScreen> {
                     wakeLabel: l10n.teamAgentStartIt,
                   ),
                 ],
+              ),
+            )
+          else if (_stopDidNotWork(agent))
+            pad(
+              KitNotice(
+                key: const ValueKey('team-agent-stop-stuck'),
+                tone: AppStatusTone.failure,
+                icon: AppIconography.warning,
+                title: l10n.teamAgentStopStuckTitle(
+                  teamAgentTitle(l10n, agent),
+                ),
+                message: l10n.teamAgentStopStuckBody,
+                actions: [
+                  KitAction(
+                    key: const ValueKey('team-agent-stop-stuck-force'),
+                    label: l10n.teamAgentForceStop(agent.name),
+                    onPressed: _busy
+                        ? null
+                        : () => unawaited(_forceStop(agent)),
+                  ),
+                ],
+              ),
+            )
+          else if (teamAgentUnavailableWords(l10n, agent) != null)
+            pad(
+              KitNotice(
+                key: const ValueKey('team-agent-unavailable'),
+                tone: AppStatusTone.failure,
+                icon: AppIconography.error,
+                title: l10n.teamAgentUnavailableTitle(
+                  teamAgentTitle(l10n, agent),
+                ),
+                message: l10n.teamAgentUnavailableBody(
+                  teamAgentUnavailableWords(l10n, agent)!,
+                ),
               ),
             )
           else if (state == AgentState.stopped || state == AgentState.crashed)
@@ -754,7 +836,9 @@ class _AgentScreenState extends State<AgentScreen> {
             state: _mark(state),
             paused: state == AgentState.stopped,
           ),
-          title: teamAgentStateWord(l10n, state),
+          title: teamAgentUnavailableWords(l10n, agent) != null
+              ? l10n.teamUiHomeAgentStateStopped
+              : teamAgentStateWord(l10n, state),
           titleKey: const ValueKey('team-agent-state'),
           supporting: facts.isEmpty ? null : TextSpan(text: facts),
           supportingKey: const ValueKey('team-agent-age'),
@@ -766,7 +850,7 @@ class _AgentScreenState extends State<AgentScreen> {
             leading: KitRow.icon(context, AppIconography.terminal),
             title: step == null
                 ? l10n.teamAgentLastActive(elapsed(lastActive!))
-                : l10n.teamAgentLastStep(_stepWords(l10n, step)),
+                : l10n.teamAgentLastStep(agentStepWords(l10n, step)),
             supporting: step != null && lastActive != null
                 ? TextSpan(text: l10n.teamAgentLastActive(elapsed(lastActive)))
                 : null,
@@ -861,6 +945,12 @@ class _AgentScreenState extends State<AgentScreen> {
           lastCommand,
           key: const ValueKey('team-agent-last-command'),
         ),
+      if (has(agent.unavailableReason))
+        KitTechnicalValue(
+          l10n.teamAgentUnavailableHostSays,
+          agent.unavailableReason!,
+          key: const ValueKey('team-agent-unavailable-reason'),
+        ),
       if (has(agent.rawState))
         KitTechnicalValue(l10n.teamUiRunLabelRawState, agent.rawState!),
       if (has(agent.pool))
@@ -872,6 +962,7 @@ class _AgentScreenState extends State<AgentScreen> {
     void collect(Map<String, Object?> map, String prefix) {
       for (final entry in map.entries) {
         final value = entry.value;
+        if (prefix.isEmpty && entry.key == 'unavailable_reason') continue;
         if (value is String || value is num || value is bool) {
           final text = '$value';
           if (text.trim().isEmpty || KitRedact.containsSecret(text)) continue;

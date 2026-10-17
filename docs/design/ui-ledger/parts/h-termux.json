@@ -2953,6 +2953,10 @@
   {
    "file": "lib/ui/screens/phone_setup/phone_setup_hero.dart",
    "reason": "layout only: PhoneSetupHero draws setup start and ready (the drawing at the top, then the state's slots); its actions are the host screens' and are recorded on their pages"
+  },
+  {
+   "file": "lib/ui/screens/this_phone/this_phone_details.dart",
+   "reason": "Part file of this_phone_screen.dart (same library, same page): the log fold, reply speed, performance values and installed list split out for size; recorded on the This phone page, not a surface of its own."
   }
  ],
  "notes": [

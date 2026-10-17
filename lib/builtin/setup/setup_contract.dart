@@ -27,6 +27,7 @@ class SetupComponent {
     this.defaultOn = false,
     this.estimatedSeconds = 60,
     this.downloadBytes,
+    this.installedBytes,
     this.downloadSize = const DownloadSize.unknown(),
     this.removeScript,
     this.presenceScript,
@@ -34,6 +35,7 @@ class SetupComponent {
     this.why,
     this.summary,
     this.native = false,
+    this.agentUser = false,
     this.jobStep = false,
     this.app,
   });
@@ -60,6 +62,10 @@ class SetupComponent {
   /// Display/preflight estimate only. Never use this for mobile consent.
   final int? downloadBytes;
 
+  /// Conservative known extracted/copied payload bytes for peak storage
+  /// admission. Null is unknown; this is independent of download consent.
+  final int? installedBytes;
+
   /// Trusted payload evidence for consent. Unknown unless a pinned manifest
   /// covers this installation; apt/npm estimates and HEAD overrides are not it.
   final DownloadSize downloadSize;
@@ -84,6 +90,9 @@ class SetupComponent {
 
   /// Installed by native code rather than a script (the Linux base itself).
   final bool native;
+
+  /// Install in the fixed non-root oc view. Never a caller-supplied uid.
+  final bool agentUser;
 
   /// Not something installed but a step the engine itself runs at the end of
   /// every job: starting OpenCode and connecting to it. It is in the registry
@@ -112,6 +121,7 @@ class SetupComponent {
         defaultOn: defaultOn,
         estimatedSeconds: estimatedSeconds,
         downloadBytes: bytes,
+        installedBytes: installedBytes,
         downloadSize: evidence ?? downloadSize,
         removeScript: removeScript,
         presenceScript: presenceScript,
@@ -119,9 +129,35 @@ class SetupComponent {
         why: why,
         summary: summary,
         native: native,
+        agentUser: agentUser,
         jobStep: jobStep,
         app: app,
       );
+
+  /// Adds known extracted payload evidence while retaining other metadata.
+  SetupComponent withInstalledBytes(int? bytes) => SetupComponent(
+    id: id,
+    title: title,
+    shortTitle: shortTitle,
+    checkScript: checkScript,
+    installScript: installScript,
+    dependsOn: dependsOn,
+    required: required,
+    defaultOn: defaultOn,
+    estimatedSeconds: estimatedSeconds,
+    downloadBytes: downloadBytes,
+    installedBytes: bytes,
+    downloadSize: downloadSize,
+    removeScript: removeScript,
+    presenceScript: presenceScript,
+    sizeScript: sizeScript,
+    why: why,
+    summary: summary,
+    native: native,
+    agentUser: agentUser,
+    jobStep: jobStep,
+    app: app,
+  );
 
   /// Keep the selected app component's payload evidence with its display size.
   SetupComponent withAppOffer(SetupAppOffer offer) =>
@@ -351,6 +387,40 @@ abstract final class SetupJobParams {
   ];
 }
 
+/// Owns the pending status reads of one screen. Cancelling stops their
+/// timeout timers and ends them quietly: an abandoned read is not a failure
+/// and not a fresh install, it simply has no reader any more.
+class SetupReadScope {
+  final _cancels = <void Function()>{};
+  bool _cancelled = false;
+
+  bool get cancelled => _cancelled;
+
+  /// Registers [onCancel]; returns what to call when the read ends first.
+  /// Cancelled already: [onCancel] runs now.
+  void Function() add(void Function() onCancel) {
+    if (_cancelled) {
+      onCancel();
+      return () {};
+    }
+    _cancels.add(onCancel);
+    return () => _cancels.remove(onCancel);
+  }
+
+  void cancel() {
+    _cancelled = true;
+    for (final cancel in _cancels.toList()) {
+      cancel();
+    }
+    _cancels.clear();
+  }
+}
+
+/// Thrown into a read whose [SetupReadScope] was cancelled.
+class SetupReadAbandoned implements Exception {
+  const SetupReadAbandoned();
+}
+
 /// Runs any set of components; first setup, "Add tools" and updates are all
 /// just different selections. Running again after an interruption skips what
 /// the check scripts find installed, so every run is also a resume.
@@ -373,7 +443,10 @@ abstract class SetupEngine {
   Future<void> cancel();
 
   /// Reads the persisted job (after an app restart) into [progress].
-  Future<void> restore();
+  ///
+  /// A screen passes a [SetupReadScope] and cancels it when it leaves, so a
+  /// read that never answers does not keep its timeout timer alive.
+  Future<void> restore({SetupReadScope? scope});
 
   /// Ids of optional components that are installed now.
   Future<Set<String>> installedOptional();

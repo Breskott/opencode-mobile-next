@@ -1,0 +1,29 @@
+{
+  "collectedAt": "2026-10-14T14:49:42.673349+00:00",
+  "version": "2.0.29",
+  "port": 4193,
+  "providerCredentialsUsed": false,
+  "modelCalls": 0,
+  "sessionId": "ses_ec51c0361ffeEbP3KRuZywqCa6",
+  "acceptedMessageId": "msg_13ae3fcca001Wf9HTK8v3dencj",
+  "resume": false,
+  "pendingCountBefore": 1,
+  "idleInterrupt": {
+    "interrupted": false
+  },
+  "pendingSurvivedInterrupt": true,
+  "denyAllPatchStatus": 204,
+  "denyAllReadbackExact": true,
+  "cancelStatus": 204,
+  "pendingCountAfter": 0,
+  "activeAfter": {
+    "data": {}
+  },
+  "cleanup": {
+    "verifiedListenerPid": 8816,
+    "signal": "SIGTERM",
+    "processExited": true,
+    "listenerAbsent": true,
+    "scratchDirectoryDeleted": true
+  }
+}

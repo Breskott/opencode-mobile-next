@@ -4,11 +4,13 @@ import 'package:flutter/widgets.dart';
 
 import '../../domain/connection_status.dart';
 import '../../state/connection.dart';
+import '../../state/profiles.dart' show ServerProfile;
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
 import 'connection_failure.dart';
 import 'phone_server_card.dart' show serverDisplayName;
+import 'runtime_switch_status.dart';
 import 'work_status_line.dart' show confirmPhoneServerRestart;
 
 /// The single presentation of the controller's connection snapshot. The
@@ -20,11 +22,43 @@ KitStatus? connectionKitStatus(
   String? note,
   bool serverOnThisPhone = false,
   Future<void> Function()? onRestartServer,
+  VoidCallback? onRecoverOwnership,
   BuildContext? Function()? actionContext,
+  ServerProfile? switchingTo,
 }) {
   final snapshot = controller.connectionStatus;
-  if (!snapshot.visible) return null;
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  // A deliberate switch between this phone's OpenCode versions
+  // ([phoneRuntimeSwitchTarget]): the server being left stops, refuses its
+  // old password and stops answering on purpose. One calm progress line
+  // names where the switch goes, whatever phase the old connection is in.
+  if (switchingTo != null) {
+    return KitStatus(
+      kind: KitStatusKind.connection,
+      id: 'connection:${snapshot.profileId}',
+      key: const ValueKey('connection-status-banner'),
+      icon: AppIconography.sync,
+      tone: AppStatusTone.progress,
+      message: l10n.connectionSwitchingTo(phoneRuntimeName(l10n, switchingTo)),
+      supporting: note,
+    );
+  }
+  if (!snapshot.visible) return null;
+  if (onRecoverOwnership != null) {
+    return KitStatus(
+      kind: KitStatusKind.connection,
+      id: 'connection:${snapshot.profileId}',
+      key: const ValueKey('connection-status-banner'),
+      icon: AppIconography.warning,
+      tone: AppStatusTone.failure,
+      message: l10n.inAppServerOwnershipRecoveryBody,
+      action: KitAction(
+        key: const ValueKey('connection-banner-recover-ownership'),
+        label: l10n.e7SetupOpenAppSettings,
+        onPressed: onRecoverOwnership,
+      ),
+    );
+  }
   BuildContext? target() => actionContext == null ? context : actionContext();
   void editServer() {
     final current = target();
@@ -35,7 +69,16 @@ KitStatus? connectionKitStatus(
     }
   }
 
-  final server = snapshot.serverName.isEmpty ? 'OpenCode' : snapshot.serverName;
+  // Named as the server switcher names it ("In-app Ubuntu", "Termux").
+  ServerProfile? owner;
+  for (final profile in controller.store.profiles) {
+    if (profile.id == snapshot.profileId) owner = profile;
+  }
+  final server = owner != null
+      ? serverDisplayName(owner, l10n, among: controller.store.profiles)
+      : snapshot.serverName.isEmpty
+      ? 'OpenCode'
+      : snapshot.serverName;
   if (snapshot.phase == ConnectionStatusPhase.credentialsUnreadable) {
     // The saved secret could not be read back on this phone: nothing was
     // tried and Reconnect cannot help. The way forward names its target;
@@ -99,9 +142,11 @@ KitStatus? connectionKitStatus(
       key: const ValueKey('connection-status-banner'),
       icon: AppIconography.locked,
       tone: AppStatusTone.failure,
+      // Names the server, as every other line here does: with several
+      // saved, "the password changed" alone leaves the person guessing.
       message: snapshot.usesToken
-          ? l10n.connectionTokenRejected
-          : l10n.e7BannerReconnectPassword,
+          ? l10n.connectionTokenRejectedFor(server)
+          : l10n.connectionPasswordRejectedFor(server),
       supporting: note,
       action: KitAction(
         key: ValueKey(
@@ -114,32 +159,59 @@ KitStatus? connectionKitStatus(
       ),
     );
   }
+  // A conversation with an agent on this phone (Claude Code) runs on that
+  // agent's own connection, not OpenCode's: name it.
+  final agentName = controller.isAgentBackend ? controller.profile?.name : null;
+  // Already connecting: say it once. The server is named only when more than
+  // one is saved, so the person can tell which one this is.
+  final several = controller.store.profiles.length > 1;
   final message = switch (snapshot.phase) {
-    ConnectionStatusPhase.connecting => l10n.e7SetupConnectingProfile(server),
-    ConnectionStatusPhase.reconnecting => l10n.e7BannerReconnectingServer(
-      server,
-    ),
+    ConnectionStatusPhase.serverBusy => l10n.workServerBusyPhone,
+    ConnectionStatusPhase.connecting || ConnectionStatusPhase.reconnecting =>
+      several
+          ? l10n.e7BannerReconnectingServer(server)
+          : l10n.connectionReconnectingQuiet,
+    _ when agentName != null => l10n.agentNotAnsweringPhone(agentName),
     _ =>
       serverOnThisPhone
           ? l10n.workServerNotAnsweringPhone
           : l10n.workServerNotAnswering(server),
   };
-  final retry = snapshot.retrying
+  final busy = snapshot.phase == ConnectionStatusPhase.serverBusy;
+  // While it is already reconnecting the way out is waiting; "Try now" sits
+  // in the menu, and the action never repeats the title's words.
+  final retry = snapshot.retrying || busy
       ? null
       : KitAction(
           key: const ValueKey('connection-banner-retry'),
-          label: l10n.connectionReconnectTo(
-            serverDisplayName(
-              controller.profile,
-              l10n,
-              among: controller.store.profiles,
-            ),
-          ),
+          label: snapshot.waiting
+              ? l10n.connectionTryNow
+              : l10n.connectionReconnectTo(
+                  serverDisplayName(
+                    controller.profile,
+                    l10n,
+                    among: controller.store.profiles,
+                  ),
+                ),
           onPressed: () => unawaited(controller.retryConnection()),
         );
-  final restart = serverOnThisPhone ? onRestartServer : null;
-  final restartAction = restart == null || snapshot.retrying || snapshot.waiting
+  final agentRecover = controller.recoverAgentBackend;
+  final agentRoute = agentRecover != null;
+  final restart = agentRoute
+      // Restarting OpenCode doesn't help a phone agent: start its helper.
+      ? agentRecover
+      : serverOnThisPhone
+      ? onRestartServer
+      : null;
+  final restartAction =
+      restart == null || snapshot.retrying || snapshot.waiting || busy
       ? null
+      : agentRoute
+      ? KitAction(
+          key: const ValueKey('connection-banner-restart'),
+          label: l10n.workServerRestart,
+          onPressed: () => unawaited(restart()),
+        )
       : KitAction(
           key: const ValueKey('connection-banner-restart'),
           label: l10n.workServerRestart,
@@ -147,7 +219,10 @@ KitStatus? connectionKitStatus(
             final current = target();
             if (current == null ||
                 !current.mounted ||
-                !await confirmPhoneServerRestart(current)) {
+                !await confirmPhoneServerRestart(
+                  current,
+                  commandRunning: controller.hasRunningTool,
+                )) {
               return;
             }
             await restart();
@@ -161,13 +236,18 @@ KitStatus? connectionKitStatus(
     kind: KitStatusKind.connection,
     id: 'connection:${snapshot.profileId}',
     key: const ValueKey('connection-status-banner'),
-    icon: snapshot.waiting ? AppIconography.sync : AppIconography.cloudOff,
-    tone: snapshot.waiting ? AppStatusTone.progress : AppStatusTone.failure,
+    icon: snapshot.waiting || busy
+        ? AppIconography.sync
+        : AppIconography.cloudOff,
+    tone: snapshot.waiting || busy
+        ? AppStatusTone.progress
+        : AppStatusTone.failure,
     message: message,
     supporting: supporting.isEmpty ? null : supporting.join(' '),
-    action: restartAction ?? retry,
+    action: snapshot.waiting ? null : restartAction ?? retry,
     more: [
-      if (restartAction != null && retry != null) retry,
+      if (snapshot.waiting && retry != null) retry,
+      if (!snapshot.waiting && restartAction != null && retry != null) retry,
       KitAction(
         key: const ValueKey('connection-banner-details'),
         label: l10n.e7BannerDetails,
@@ -255,11 +335,22 @@ Future<void> showConnectionDetailsSheet(
   BuildContext context,
   ConnectionController controller, {
   bool showChangeServer = true,
-}) {
+}) async {
+  final revision = controller.connectionRevision;
+  final helper = await controller.readConnectionHelperExit();
+  if (!context.mounted || revision != controller.connectionRevision) return;
   final snapshot = controller.connectionStatus;
   final manualRetry = snapshot.retrying;
   final reconnecting = snapshot.waiting;
   final error = controller.connectionError?.trim();
+  final details = [
+    if (error != null && error.isNotEmpty) error,
+    if (helper?.lastExitAt != null) ...[
+      'helper.lastExitAt: ${helper!.lastExitAt!.toUtc().toIso8601String()}',
+      'helper.lastExitCode: ${helper.lastExitCode ?? "unknown"}',
+      'helper.possibleCause: ${helper.possibleResourceKill ? "memory_or_phantom_kill (possible)" : "unknown"}',
+    ],
+  ].join('\n');
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   final navigator = Navigator.of(context);
   final profile = controller.profile;
@@ -319,11 +410,11 @@ Future<void> showConnectionDetailsSheet(
             for (final check in failure.checks)
               KitText('\u2022 $check', tone: KitTextTone.secondary),
           ],
-          if (error != null && error.isNotEmpty) ...[
+          if (details.isNotEmpty) ...[
             gap,
             // The plain diagnosis above is read first; the raw error waits
             // folded, one tap away, with its copy action (tinkerer).
-            KitDetailsFold(text: error),
+            KitDetailsFold(text: details),
           ],
         ],
       );

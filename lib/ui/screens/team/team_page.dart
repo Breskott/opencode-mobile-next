@@ -113,7 +113,7 @@ class PhoneTeamOffPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final flow = PhoneTeamSetup.of(connection, copy: l10n);
+    final flow = phoneTeamSetupForContext(context, connection);
     return ListenableBuilder(
       listenable: flow,
       builder: (context, _) {

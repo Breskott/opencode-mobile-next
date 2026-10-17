@@ -12,7 +12,23 @@ part of '../chat_screen.dart';
 // the agent waits; the work line above it says so.
 
 /// Who asks, in the card's caption: "The agent".
-String _requestWho(BuildContext context) => _chatL10n(context).chatRequestWho;
+///
+/// In a chat with an agent backend (Claude Code, Pi, ...) it names that
+/// agent, as agent cards do.
+String _requestWho(BuildContext context, {String? agentLabel}) {
+  final name =
+      agentLabel ??
+      context.findAncestorStateOfType<_ChatScreenState>()?._agentName;
+  return name == null || name.trim().isEmpty
+      ? _chatL10n(context).chatRequestWho
+      : name;
+}
+
+/// Who asks for a list row's request: its agent, and OpenCode for an
+/// OpenCode row (as the row and its permission requests say); null outside
+/// the list.
+String? _feedAgent(ChatFeedItem? item) =>
+    item == null ? null : item.agentLabel ?? 'OpenCode';
 
 /// The chat screen's controller for a card inside it; null outside a chat
 /// (a gallery), where the card cannot answer and says why.
@@ -103,10 +119,12 @@ class _PermissionAttentionCardState extends State<_PermissionAttentionCard> {
       );
     }
     final answers = PermissionAnswers.of(conn);
+    final delayed = conn.delayedAnswers;
     return ListenableBuilder(
-      listenable: answers,
+      listenable: Listenable.merge([answers, delayed]),
       builder: (context, _) {
         final answered = answers.answerFor(permission.id);
+        final held = delayed.isHeld(permission.id);
         void answer(String reply, {String? message}) => unawaited(
           answerPermissionRequest(conn, permission, reply, message: message),
         );
@@ -120,9 +138,20 @@ class _PermissionAttentionCardState extends State<_PermissionAttentionCard> {
             context,
             conn.permissionsForSession(permission.sessionID).length - 1,
           ),
+          queued: conn.permissionsForSession(permission.sessionID).length - 1,
           answered: answered,
+          alwaysAllow: permissionAlwaysStep(
+            context,
+            permission: permission,
+            supported:
+                conn.capabilities.persistentPermissionGrants &&
+                permission.canAlwaysAllow,
+            onConfirmed: () => answer('always'),
+          ),
           onAllow: () => answer('once'),
           onReject: () => answer('reject'),
+          heldLabel: held ? delayed.heldLabel(permission.id) : null,
+          onUndo: held ? () => delayed.undo(permission.id) : null,
           onRetry: answered == null
               ? null
               : () => answer(answered.reply, message: answered.message),
@@ -152,9 +181,23 @@ class _QuestionAttentionCard extends StatefulWidget {
     required this.replying,
     required this.onAnswer,
     required this.onMore,
+    this.connection,
+    this.feedItem,
+    this.inList = false,
   });
 
+  /// The Conversations row this card answers for; its answers go through
+  /// the main controller's feed route, whoever owns the conversation.
+  final ChatFeedItem? feedItem;
+
   final PendingQuestion question;
+
+  /// The connection that holds the question, when the card sits outside a
+  /// chat screen (under a Conversations row).
+  final ConnectionController? connection;
+
+  /// Under a list row: secondary buttons, no request slot.
+  final bool inList;
 
   /// The screen's own answer in flight (a sheet answered it); the card's
   /// own answers carry their receipt instead.
@@ -179,7 +222,46 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
   DateTime? _since;
   String? _refused;
 
+  /// The question object and request this card was built for (list rows
+  /// only), captured once: kept across Undo and never looked up again at
+  /// send time.
+  PendingQuestion? _shownQuestion;
+  PendingRequestIdentity? _shownRequest;
+
+  /// Undo and draft identity: two sources reusing a request id never share.
+  late final String _key = widget.feedItem == null
+      ? widget.question.id
+      : '${widget.feedItem!.identity}|${widget.question.id}';
+
+  @override
+  void initState() {
+    super.initState();
+    final owner = widget.connection;
+    final item = widget.feedItem;
+    if (widget.inList && owner != null && item != null) {
+      _shownQuestion = widget.question;
+      _shownRequest = owner.questionIdentityForFeedItem(item, widget.question);
+    }
+  }
+
+  /// A long question (a plan to approve) in a list row: its first line only;
+  /// the sheet has the whole text.
+  String _listLine(String text) {
+    if (!widget.inList) return text;
+    final line = text
+        .split('\n')
+        .map((part) => part.trim())
+        .firstWhere((part) => part.isNotEmpty, orElse: () => '');
+    return line.isEmpty ? text : line;
+  }
+
   List<QuestionPrompt> get _prompts => widget.question.prompts;
+
+  ConnectionController? _conn(BuildContext context) =>
+      widget.connection ?? _requestConnection(context);
+
+  Widget _slot(Widget child) =>
+      widget.inList ? child : _RequestSlot(child: child);
 
   @override
   void dispose() {
@@ -191,12 +273,15 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
     final profileId = conn?.profile?.id ?? conn?.store.activeId ?? '';
     if (profileId.isEmpty) return null;
     return KitDraft(
-      target: 'request.${widget.question.id}',
+      target: 'request.$_key',
       profileId: profileId,
       controller: _other,
     );
   }
 
+  /// Holds the answer for the undo window ([DelayedAnswers]); the card shows
+  /// it collapsed with Undo, then [_sendNow] sends it. A second answer while
+  /// one is held is ignored (Undo first).
   Future<void> _send(
     ConnectionController? conn,
     List<List<String>> answers,
@@ -207,13 +292,43 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
       widget.onAnswer(answers);
       return;
     }
-    setState(() {
-      _answer = words;
-      _since = requestSeenNow();
-      _refused = null;
-    });
+    final delayed = conn.delayedAnswers;
+    final id = _key;
+    if (delayed.isHeld(id)) return;
+    delayed.hold(id, label: words, send: () => _sendNow(conn, answers, words));
+  }
+
+  Future<void> _sendNow(
+    ConnectionController conn,
+    List<List<String>> answers,
+    String words,
+  ) async {
+    final request = _shownRequest;
+    if (request != null
+        ? !conn.isRequestPending(request)
+        : !conn.questions.containsKey(widget.question.id)) {
+      return;
+    }
+    if (mounted) {
+      setState(() {
+        _answer = words;
+        _since = requestSeenNow();
+        _refused = null;
+      });
+    }
     try {
-      await conn.answerQuestion(widget.question.id, answers);
+      // Under a list row the answer names the request it was shown for, so
+      // a newer question of the same id is never answered by mistake.
+      final item = widget.feedItem;
+      if (item != null && request != null) {
+        await conn.answerQuestionForFeedItem(
+          item,
+          answers,
+          expectedRequest: request,
+        );
+      } else {
+        await conn.answerQuestion(widget.question.id, answers);
+      }
       unawaited(_draft(conn)?.clear());
     } catch (error) {
       if (!mounted) return;
@@ -236,23 +351,39 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
         ? first!.title.trim()
         : l10n.chatUiOpenCodeNeedsInput;
     final count = _prompts.length;
-    final sending = _answer != null;
+    final delayed = _conn(context)?.delayedAnswers;
+    final heldLabel = delayed?.heldLabel(_key);
+    final held = delayed != null && heldLabel != null;
+    final sending = !held && _answer != null;
     return KitRequestCard.ask(
       kind: KitRequestKind.question,
       title: title,
-      who: _requestWho(context),
+      who: _requestWho(context, agentLabel: _feedAgent(widget.feedItem)),
       reason: KitNeedsYouReason.decision,
       ifIgnored: _requestIfIgnored(context, 0),
       announcement: l10n.chatUiQuestionLabel(title),
       since: _seen,
+      detailMarkdown:
+          !widget.inList && count == 1 && (first?.markdown ?? false),
       detail: first == null || first.question.trim().isEmpty
           ? null
           : count > 1
-          ? l10n.chatUiQuestionsSummary(first.question, count)
-          : first.question,
-      phase: sending ? KitRequestPhase.sending : KitRequestPhase.waiting,
-      answer: _answer,
-      receipt: sending
+          ? l10n.chatUiQuestionsSummary(_listLine(first.question), count)
+          : _listLine(first.question),
+      phase: held
+          ? KitRequestPhase.answered
+          : sending
+          ? KitRequestPhase.sending
+          : KitRequestPhase.waiting,
+      answer: held ? heldLabel : _answer,
+      receipt: held
+          ? KitReceipt(
+              state: KitReceiptState.confirmed,
+              label: heldLabel,
+              onUndo: () => delayed.undo(_key),
+              undoKey: const Key('question-card-undo'),
+            )
+          : sending
           ? KitReceipt(state: KitReceiptState.sending, since: _since)
           : _refused == null
           ? null
@@ -260,15 +391,23 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
       answers: answers,
       onDetails: onDetails,
       detailsKey: const Key('question-card-more'),
+      inList: widget.inList,
     );
   }
 
   @override
-  Widget build(BuildContext context) => _RequestSlot(child: _content(context));
+  Widget build(BuildContext context) {
+    final conn = _conn(context);
+    if (conn == null) return _slot(_content(context));
+    return ListenableBuilder(
+      listenable: conn.delayedAnswers,
+      builder: (context, _) => _slot(_content(context)),
+    );
+  }
 
   Widget _content(BuildContext context) {
     final l10n = _chatL10n(context);
-    final conn = _requestConnection(context);
+    final conn = _conn(context);
     final first = _prompts.firstOrNull;
     final single =
         first != null &&
@@ -319,8 +458,9 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
                 showQuestionDetails(
                   context,
                   controller: conn,
-                  question: widget.question,
+                  question: _shownQuestion ?? widget.question,
                   card: card,
+                  request: _shownRequest,
                 ),
               ),
       );
@@ -342,6 +482,7 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
                     : choice.description,
               ),
           ],
+          secondary: widget.inList,
           onSend: (chosen) =>
               unawaited(_send(conn, [chosen.toList()], chosen.join(', '))),
         ),
@@ -349,8 +490,9 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
           showQuestionDetails(
             context,
             controller: conn,
-            question: widget.question,
+            question: _shownQuestion ?? widget.question,
             card: card,
+            request: _shownRequest,
           ),
         ),
       );
@@ -359,11 +501,51 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
 
     return _card(
       context,
-      answers: const KitRequestInSheet(key: Key('question-card-answer')),
-      onDetails: widget.onMore,
+      answers: KitRequestInSheet(
+        key: const Key('question-card-answer'),
+        secondary: widget.inList,
+      ),
+      onDetails: _shownQuestion == null || conn == null
+          ? widget.onMore
+          : () => unawaited(
+              showQuestionSheet(
+                context,
+                conn,
+                _shownQuestion!,
+                agentLabel:
+                    _feedAgent(widget.feedItem) ??
+                    context
+                        .findAncestorStateOfType<_ChatScreenState>()
+                        ?._agentName,
+              ),
+            ),
     );
   }
 }
+
+/// A waiting question as the card under its Conversations row: the same
+/// card as in the chat, answered through [owner] (the connection that holds
+/// it) with its Undo window, secondary buttons (the list keeps its own one
+/// primary), and "Answer" opening the full question sheet over the list.
+Widget questionRequestCard(
+  BuildContext context, {
+  Key? key,
+  required ConnectionController owner,
+  required ChatFeedItem item,
+  required PendingQuestion question,
+  required bool inList,
+}) => _QuestionAttentionCard(
+  key: key,
+  question: question,
+  replying: false,
+  connection: owner,
+  feedItem: item,
+  inList: inList,
+  onAnswer: (_) {},
+  onMore: () => unawaited(
+    showQuestionSheet(context, owner, question, agentLabel: _feedAgent(item)),
+  ),
+);
 
 /// "Rate limited. Retrying 2 in 0:42" — the server sends no attempt ceiling,
 /// so the banner names the attempt rather than inventing a total. [now]
@@ -382,16 +564,17 @@ String retryBannerHeadline(
   final cause = classifyAgentError(retry.message ?? '');
   final rateLimit = cause == null || cause == AgentErrorCause.rateLimited;
   final next = retry.next;
-  if (next == null) {
+  final delta = next?.difference(now ?? DateTime.now());
+  // No time, or a time already past, has no countdown to show: a clock
+  // stuck at 0:00 reads as a frozen app, so the plain "Retrying…" stands.
+  if (next == null || delta == null || delta <= Duration.zero) {
     return rateLimit
         ? strings.chatUiRateLimitRetry(attempt)
         : strings.chatUiRetryingSoon(attempt);
   }
-  final delta = next.difference(now ?? DateTime.now());
-  final remaining = delta.isNegative ? Duration.zero : delta;
   return rateLimit
-      ? strings.chatUiRateLimitCountdown(attempt, _countdown(remaining))
-      : strings.chatUiRetryingCountdown(attempt, _countdown(remaining));
+      ? strings.chatUiRateLimitCountdown(attempt, _countdown(delta))
+      : strings.chatUiRetryingCountdown(attempt, _countdown(delta));
 }
 
 String _countdown(Duration d) {
@@ -431,6 +614,13 @@ class _RetryAttentionCard extends StatelessWidget {
         ? null
         : words.headline;
     final hasMessage = message != null && message.isNotEmpty;
+    // A server that says what to do (upgrade, add credit) is heard: its
+    // words and one labelled button, the address opened only through
+    // openExternalLink.
+    final action = retry.action;
+    final ask = action == null
+        ? null
+        : [action.title, action.message].where((t) => t.isNotEmpty).join('. ');
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: KitLayout.readingWidth),
@@ -440,10 +630,21 @@ class _RetryAttentionCard extends StatelessWidget {
             vertical: tokens.space1,
           ),
           child: KitNotice(
-            title: hasMessage ? title : null,
-            message: hasMessage ? message : title,
+            title: hasMessage || ask != null ? title : null,
+            message: ask ?? (hasMessage ? message : title),
             tone: AppStatusTone.progress,
             icon: AppIcons.retry,
+            actions: [
+              if (action != null &&
+                  action.link != null &&
+                  action.label.isNotEmpty)
+                KitAction(
+                  key: const ValueKey('retry-action'),
+                  label: action.label,
+                  onPressed: () =>
+                      unawaited(openExternalLink(context, action.link)),
+                ),
+            ],
           ),
         ),
       ),
@@ -475,37 +676,20 @@ class _FormRequestCardState extends State<_FormRequestCard> {
   @override
   Widget build(BuildContext context) => _RequestSlot(child: _content(context));
 
-  Widget _content(BuildContext context) => ListenableBuilder(
-    listenable: FormAnswerReceipts.instance,
-    builder: (context, _) {
-      final l10n = _chatL10n(context);
-      final form = widget.form;
-      final title = form.title ?? l10n.chatUiInputRequested;
-      final sent = FormAnswerReceipts.instance.receiptFor(form.id);
-      final sending = sent != null && !sent.failed;
-      return KitRequestCard.ask(
-        kind: KitRequestKind.form,
-        title: title,
-        who: _requestWho(context),
-        reason: KitNeedsYouReason.decision,
-        ifIgnored: _requestIfIgnored(context, 0),
-        announcement: l10n.chatUiQuestionLabel(title),
-        since: _seen,
-        detail: l10n.chatUiQuestionCount(form.fields.length),
-        phase: sending ? KitRequestPhase.sending : KitRequestPhase.waiting,
-        answer: sending ? l10n.kitRequestSendAnswers : null,
-        receipt: sent == null
-            ? null
-            : sent.failed
-            ? KitReceipt(state: KitReceiptState.refused, reason: sent.error)
-            : KitReceipt(state: KitReceiptState.sending, since: sent.since),
-        answers: KitRequestInSheet(
-          key: ValueKey('form-request-answer-${form.id}'),
-        ),
-        onDetails: widget.onAnswer,
-      );
-    },
-  );
+  Widget _content(BuildContext context) {
+    final connection = _requestConnection(context);
+    final request = connection?.formRequestForForm(widget.form);
+    if (connection == null || request == null) return const SizedBox.shrink();
+    return capturedFormRequestCard(
+      context,
+      connection,
+      request,
+      answerKey: ValueKey('form-request-answer-${widget.form.id}'),
+      who: _requestWho(context),
+      since: _seen,
+      onAnswer: widget.onAnswer,
+    );
+  }
 }
 
 /// A single-line, self-hiding note above the composer for composer-local

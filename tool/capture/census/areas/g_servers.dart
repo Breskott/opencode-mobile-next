@@ -11,7 +11,6 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/domain/agent_account.dart';
 import 'package:opencode_mobile/domain/external_agent.dart';
 import 'package:opencode_mobile/domain/profile_monitor.dart';
-import 'package:opencode_mobile/domain/provider_quota.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/camera.dart';
@@ -20,7 +19,6 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/external_agents.dart';
 import 'package:opencode_mobile/state/profile_monitor.dart' show ProfileMonitor;
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/state/provider_quota_overview.dart';
 import 'package:opencode_mobile/state/usage_overview.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/agent_account_screen.dart';
@@ -29,7 +27,6 @@ import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/host_management_screen.dart';
 import 'package:opencode_mobile/ui/screens/pairing_scanner_screen.dart';
 import 'package:opencode_mobile/ui/screens/profile_monitor_screen.dart';
-import 'package:opencode_mobile/ui/screens/provider_quota_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tailscale_setup_screen.dart';
@@ -328,38 +325,6 @@ Future<({ConnectionController controller, ProfileStore store})> _monitorSetup(
 // Provider quota
 // ---------------------------------------------------------------------------
 
-Map<String, dynamic> _quotaFixtureJson({int fetchedAtMs = 1000000}) => {
-  'schemaVersion': 1,
-  'provider': 'codex',
-  'source': 'codex.wham',
-  'status': 'ok',
-  'freshness': 'fresh',
-  'fetchedAtMs': fetchedAtMs,
-  'expiresAtMs': fetchedAtMs + 60000,
-  'account': {'ref': 'a' * 64, 'status': 'matched', 'plan': 'plus'},
-  'ordinaryUsageAllowed': true,
-  'windows': [
-    {
-      'id': 'primary',
-      'status': 'reported',
-      'usedPercent': 25.5,
-      'durationSeconds': 18000,
-      'resetsAtMs': fetchedAtMs + 300000,
-    },
-    {'id': 'secondary', 'status': 'missing'},
-  ],
-};
-
-class _QuotaGateway implements ProviderQuotaGateway {
-  @override
-  Future<ProviderQuotaSnapshot> readSnapshot() async =>
-      ProviderQuotaSnapshot.fromJson(
-        _quotaFixtureJson(fetchedAtMs: _demoTime.millisecondsSinceEpoch),
-      );
-  @override
-  void close() {}
-}
-
 class _DemoProfileStore extends ProfileStore {
   _DemoProfileStore(SharedPreferences prefs, this._profile)
     : super(prefs: prefs);
@@ -368,20 +333,6 @@ class _DemoProfileStore extends ProfileStore {
   List<ServerProfile> get profiles => [_profile];
   @override
   String? get activeId => _profile.id;
-}
-
-Future<ConnectionController> _quotaController(CensusKit kit) async {
-  final prefs = await kit.prefs();
-  final profile = ServerProfile(
-    id: 'quota-demo',
-    name: 'Shopfront server',
-    baseUrl: 'https://shopfront.example',
-    username: 'opencode',
-    password: 'sk-demo-0000',
-  );
-  final controller = ConnectionController(_DemoProfileStore(prefs, profile));
-  kit.onDispose(controller.dispose);
-  return controller;
 }
 
 // ---------------------------------------------------------------------------
@@ -513,21 +464,16 @@ final gServersArea = CensusArea(
 
     // -- profile-editor: reuse the motion-pass scenes for the add-server
     // flow, which is the same private screen for every entry point.
-    CensusShot(
-      'profile-editor',
-      state: 'add-opencode',
-      (kit) async {
-        final done = await mountServersMotionScene(
-          kit.tester,
-          ServersMotionScene.addOpenCode,
-          light: false,
-          boundary: kit.boundaryKey,
-        );
-        kit.onDispose(done);
-        kit.expectVisible(find.byKey(const ValueKey('server-profile-editor')));
-      },
-      note: 'Default "Add server": OpenCode chosen, the command and pairing.',
-    ),
+    CensusShot('profile-editor', state: 'add-opencode', (kit) async {
+      final done = await mountServersMotionScene(
+        kit.tester,
+        ServersMotionScene.addOpenCode,
+        light: false,
+        boundary: kit.boundaryKey,
+      );
+      kit.onDispose(done);
+      kit.expectVisible(find.byKey(const ValueKey('server-profile-editor')));
+    }, note: 'Default "Add server": OpenCode chosen, the command and pairing.'),
     CensusShot('profile-editor', state: 'add-codex', (kit) async {
       final done = await mountServersMotionScene(
         kit.tester,
@@ -540,21 +486,16 @@ final gServersArea = CensusArea(
         find.byKey(const ValueKey('codex-server-address-field')),
       );
     }),
-    CensusShot(
-      'profile-editor',
-      state: 'first-run-connect',
-      (kit) async {
-        final done = await mountServersMotionScene(
-          kit.tester,
-          ServersMotionScene.firstRunConnect,
-          light: false,
-          boundary: kit.boundaryKey,
-        );
-        kit.onDispose(done);
-        kit.expectVisible(find.byKey(const ValueKey('server-profile-editor')));
-      },
-      note: 'First-run "On my computer" -> OpenCode connect screen.',
-    ),
+    CensusShot('profile-editor', state: 'first-run-connect', (kit) async {
+      final done = await mountServersMotionScene(
+        kit.tester,
+        ServersMotionScene.firstRunConnect,
+        light: false,
+        boundary: kit.boundaryKey,
+      );
+      kit.onDispose(done);
+      kit.expectVisible(find.byKey(const ValueKey('server-profile-editor')));
+    }, note: 'First-run "On my computer" -> OpenCode connect screen.'),
     CensusShot('profile-editor', state: 'failed', (kit) async {
       final done = await mountServersMotionScene(
         kit.tester,
@@ -751,41 +692,36 @@ final gServersArea = CensusArea(
       );
       kit.expectText(_agentCard.name);
     }),
-    CensusShot(
-      'external-agents',
-      state: 'pending-deletion',
-      (kit) async {
-        final setup = await _agentSetup(kit);
-        final profile = await setup.agents.add(_agentCard, 'sk-demo-0000');
-        kit.mockChannel('plugins.it_nomads.com/flutter_secure_storage', (
-          call,
-        ) async {
-          if (call.method == 'delete') {
-            throw PlatformException(code: 'unavailable');
-          }
-          return switch (call.method) {
-            'readAll' => <String, String>{},
-            'containsKey' => false,
-            _ => null,
-          };
-        });
-        try {
-          await setup.agents.delete(profile.id);
-        } catch (_) {
-          // Expected: the mocked secure-storage delete above always fails.
+    CensusShot('external-agents', state: 'pending-deletion', (kit) async {
+      final setup = await _agentSetup(kit);
+      final profile = await setup.agents.add(_agentCard, 'sk-demo-0000');
+      kit.mockChannel('plugins.it_nomads.com/flutter_secure_storage', (
+        call,
+      ) async {
+        if (call.method == 'delete') {
+          throw PlatformException(code: 'unavailable');
         }
-        await kit.pumpApp(
-          ExternalAgentsScreen(
-            store: setup.agents,
-            gatewayFactory: () => _AgentGateway(),
-          ),
-          controller: setup.controller,
-          store: setup.controller.store,
-        );
-        kit.expectText('Try removing again');
-      },
-      note: 'Local deletion left incomplete (secure-storage delete refused).',
-    ),
+        return switch (call.method) {
+          'readAll' => <String, String>{},
+          'containsKey' => false,
+          _ => null,
+        };
+      });
+      try {
+        await setup.agents.delete(profile.id);
+      } catch (_) {
+        // Expected: the mocked secure-storage delete above always fails.
+      }
+      await kit.pumpApp(
+        ExternalAgentsScreen(
+          store: setup.agents,
+          gatewayFactory: () => _AgentGateway(),
+        ),
+        controller: setup.controller,
+        store: setup.controller.store,
+      );
+      kit.expectText('Try removing again');
+    }, note: 'Local deletion left incomplete (secure-storage delete refused).'),
 
     // -- external-agents-delete-sheet ---------------------------------------
     CensusShot('external-agents-delete-sheet', (kit) async {
@@ -1050,61 +986,6 @@ final gServersArea = CensusArea(
           'Host: HomeScreen tab 1 (Inbox/Activity), scrolled to the '
           'embedded saved-servers inbox summary and its pending request row.',
     ),
-
-    // -- provider-quota -------------------------------------------------
-    CensusShot('provider-quota', state: 'setup', (kit) async {
-      final controller = await _quotaController(kit);
-      final overview = ProviderQuotaOverview(
-        controller,
-        clock: () => _demoTime,
-        gatewayFactory: (_) => _QuotaGateway(),
-      );
-      kit.onDispose(overview.dispose);
-      await kit.pumpRaw(
-        _rawApp(
-          ProviderQuotaScreen(controller: controller, overview: overview),
-        ),
-      );
-      kit.expectText('Read remaining usage');
-    }),
-    CensusShot('provider-quota', state: 'loaded', (kit) async {
-      final controller = await _quotaController(kit);
-      final overview = ProviderQuotaOverview(
-        controller,
-        clock: () => _demoTime,
-        gatewayFactory: (_) => _QuotaGateway(),
-      );
-      kit.onDispose(overview.dispose);
-      await kit.pumpRaw(
-        _rawApp(
-          ProviderQuotaScreen(controller: controller, overview: overview),
-        ),
-      );
-      await overview.allowAndRefresh();
-      await kit.settle();
-      kit.expectText('Enable quota monitoring');
-    }),
-
-    // -- provider-quota-clear-dialog (the enrol dialog merged into the page) --
-    CensusShot('provider-quota-clear-dialog', (kit) async {
-      final controller = await _quotaController(kit);
-      final overview = ProviderQuotaOverview(
-        controller,
-        clock: () => _demoTime,
-        gatewayFactory: (_) => _QuotaGateway(),
-      );
-      kit.onDispose(overview.dispose);
-      await kit.pumpRaw(
-        _rawApp(
-          ProviderQuotaScreen(controller: controller, overview: overview),
-        ),
-      );
-      await overview.allowAndRefresh();
-      await kit.settle();
-      await kit.scrollTo(find.text('Clear saved provider thresholds'));
-      await kit.tapText('Clear saved provider thresholds');
-      kit.expectText('Clear saved provider thresholds');
-    }),
 
     // -- usage -------------------------------------------------
     CensusShot('usage', (kit) async {

@@ -286,3 +286,8 @@ In `test/kit/kit_diff_view_test.dart` (and the wrapper's own `test/diff_view_tes
 ## Open questions
 
 1. **Does G12 ("never appear in rendered text") cover diff lines? (owner: a privacy decision)** This freeze redacts the diff's clipboard output but shows diff lines unmasked, because masking a changed line hides what the person is reviewing and could make them approve a change they cannot see. SEC-2 lists the clipboard but not the screen. If the owner or coordinator decides G12 covers diffs, display redaction is a one-line change in the line builder, and the gallery adds a masked-line case. Until they answer, the rule above applies.
+
+## Inline and the page header (2026-10-14)
+
+- `inline: true` (the conversation's step, which already says "Edit checkout_test.dart +3 −1"): one file shows **no file header**; the lines and the fold rows have **no fill** (transparent over the page). Several files keep a header so each is named. The wrap toggle is the host's: it passes `wrap` and puts "Wrap lines" on the step's long-press menu. Diff line colours are unchanged.
+- The pinned file header (the full diff page, the review screen) is the page's ground with a hairline under it, not a `surface1` card.

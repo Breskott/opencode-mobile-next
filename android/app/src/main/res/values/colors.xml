@@ -7,4 +7,5 @@
     <color name="widgetText">#172019</color>
     <color name="widgetHint">#68776E</color>
     <color name="widgetAccent">#176B4B</color>
+    <color name="widgetTrack">#DCE5DE</color>
 </resources>

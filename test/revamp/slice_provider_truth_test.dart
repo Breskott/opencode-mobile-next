@@ -31,8 +31,8 @@ Future<void> _open(WidgetTester tester, Library3Controller c) async {
 
 void main() {
   mockLibrary3SecureStorage();
-  setUpAll(() => ProviderLogo.imageProviderOverride = (_) => null);
-  tearDownAll(() => ProviderLogo.imageProviderOverride = null);
+  setUpAll(() => ProviderLogo.logoLoaderOverride = (_) => null);
+  tearDownAll(() => ProviderLogo.logoLoaderOverride = null);
 
   testWidgets('a loaded provider reads Connected', (tester) async {
     final c = await library3Server();

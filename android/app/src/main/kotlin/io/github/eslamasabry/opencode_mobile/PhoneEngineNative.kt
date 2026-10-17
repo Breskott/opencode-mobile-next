@@ -13,8 +13,6 @@ import java.security.SecureRandom
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.FutureTask
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
 import java.util.UUID
 
 /** Native executable and credentials stay outside the proot filesystem. */
@@ -25,6 +23,7 @@ internal class PhoneEngineNative(private val context: Context) {
     private var activeProfile: String? = null
     private var activePort: Int? = null
     private var process: Process? = null
+    private var ownedPeer: NativeEnginePeer? = null
     private var restartRequired = false
     private var verifiedBoundary = false
     private var boundaryTier = "none"
@@ -36,6 +35,12 @@ internal class PhoneEngineNative(private val context: Context) {
 
     internal fun processId(): Int? {
         val child = process?.takeIf { it.isAlive } ?: return null
+        return processId(child)
+    }
+
+    internal fun ownedIdentity(): RuntimeProcessIdentity? = ownedPeer?.current(process, processId())
+
+    private fun processId(child: Process): Int? {
         val pid = try { (child.javaClass.getMethod("pid").invoke(child) as Number).toLong() } catch (_: Throwable) {
             try {
                 child.javaClass.getDeclaredField("pid").run { isAccessible = true; getInt(child).toLong() }
@@ -140,6 +145,7 @@ internal class PhoneEngineNative(private val context: Context) {
         activeProfile = profile
         activePort = null
         process = child
+        ownedPeer = null
         restartRequired = serverRunning
         verifiedBoundary = false
         boundaryTier = "none"
@@ -147,7 +153,8 @@ internal class PhoneEngineNative(private val context: Context) {
         boundaryGeneration = proof?.generation
         boundaryReason = if (proof != null) "attestation_pending" else fallbackReason
         try {
-            val (actualPort, health) = authenticatedStartup(child, token, profile)
+            val (actualPort, health, identity) = authenticatedStartup(child, token, profile)
+            ownedPeer = NativeEnginePeer(child, identity)
             activePort = actualPort
             boundaryTier = healthBoundaryTier(health, proof != null)
             verifiedBoundary = boundaryTier != "none"
@@ -172,6 +179,7 @@ internal class PhoneEngineNative(private val context: Context) {
         validateProfile(profile)
         if (activeProfile != profile) return
         val child = process
+        ownedPeer = null
         try { child?.outputStream?.close() } catch (_: Exception) { }
         if (child?.isAlive == true) {
             child.destroy()
@@ -231,41 +239,51 @@ internal class PhoneEngineNative(private val context: Context) {
         File(filesRoot, "oc.teamEngineDeletion.$profile")
 
     /** Only the private child stdout pipe can select the authenticated TCP port. */
-    private fun awaitReady(child: Process, token: String, profile: String): Int {
-        val task = FutureTask<Int> {
-            val output = java.io.ByteArrayOutputStream()
-            while (output.size() <= 1024) {
-                val byte = child.inputStream.read()
-                if (byte < 0) throw Failure("engine_start_failed")
-                if (byte == 10) break
-                output.write(byte)
-            }
-            if (output.size() > 1024) throw Failure("engine_ready_invalid")
-            verifiedReadyPort(output.toString("UTF-8"), token, profile)
+    private fun awaitReady(child: Process, token: String, profile: String): NativeEngineReady {
+        val task = FutureTask<NativeEngineReady> {
+            verifiedReady(readReadyLine(child), token, profile, processId(child), android.os.Process.myPid())
         }
         Thread(task, "phone-engine-ready").apply { isDaemon = true; start() }
         try {
-            val port = task.get(10, TimeUnit.SECONDS)
+            val ready = task.get(10, TimeUnit.SECONDS)
             if (!child.isAlive) throw Failure("engine_start_failed")
-            return port
+            return ready
         } catch (failure: Failure) {
-            task.cancel(true)
-            throw failure
+            cancelReadiness(task, failure)
         } catch (error: java.util.concurrent.ExecutionException) {
-            task.cancel(true)
-            val cause = error.cause
-            if (cause is Failure) throw cause
-            throw Failure("engine_ready_invalid")
+            cancelReadiness(task, error)
         } catch (_: Exception) {
-            task.cancel(true)
-            throw Failure("engine_ready_invalid")
+            cancelReadiness(task)
+        }
+    }
+
+    private fun readReadyLine(child: Process): String {
+        val output = java.io.ByteArrayOutputStream()
+        while (output.size() <= 1024) {
+            val byte = child.inputStream.read()
+            if (byte < 0) throw Failure("engine_start_failed")
+            if (byte == 10) break
+            output.write(byte)
+        }
+        if (output.size() > 1024) throw Failure("engine_ready_invalid")
+        return output.toString("UTF-8")
+    }
+
+    private fun cancelReadiness(task: FutureTask<NativeEngineReady>, error: Exception? = null): Nothing {
+        task.cancel(true)
+        throw when (error) {
+            is Failure -> error
+            is java.util.concurrent.ExecutionException -> error.cause as? Failure ?: Failure("engine_ready_invalid")
+            else -> Failure("engine_ready_invalid")
         }
     }
 
     /** Authenticate the private pipe before opening any bearer-authenticated socket. */
-    internal fun authenticatedStartup(child: Process, token: String, profile: String): Pair<Int, JSONObject> {
-        val port = awaitReady(child, token, profile)
-        return Pair(port, awaitHealth(child, port, token, profile))
+    internal fun authenticatedStartup(
+        child: Process, token: String, profile: String,
+    ): Triple<Int, JSONObject, RuntimeProcessIdentity> {
+        val ready = awaitReady(child, token, profile)
+        return Triple(ready.port, awaitHealth(child, ready.port, token, profile), ready.identity)
     }
 
     /** Resolve the system-owned app-data ancestor, never an agent-owned child. */
@@ -459,35 +477,29 @@ internal class PhoneEngineNative(private val context: Context) {
             return tier
         }
 
-        internal fun verifiedReadyPort(line: String, token: String, profile: String): Int {
+        internal fun verifiedReady(line: String, token: String, profile: String,
+            childPid: Int?, appPid: Int,
+        ): NativeEngineReady {
             try {
-                if (line.toByteArray(Charsets.UTF_8).size > 1024 || !TOKEN.matches(token)) throw Failure("engine_ready_invalid")
+                require(line.toByteArray(Charsets.UTF_8).size <= 1024 && TOKEN.matches(token))
                 val ready = JSONObject(line)
-                if (ready.has("startupError")) {
-                    if (ready.length() != 2 || ready.getInt("schemaVersion") != 1 ||
-                        ready.getString("startupError") !in STARTUP_ERRORS) throw Failure("engine_ready_invalid")
-                    // This private-pipe failure grants no authority and opens no socket.
-                    throw Failure(ready.getString("startupError"))
+                checkStartupError(ready)
+                fun fields(value: JSONObject): Map<String, Any?> = value.keys().asSequence().associateWith { key ->
+                    val item = value.get(key)
+                    if (item is JSONObject) fields(item) else item
                 }
-                val nonce = ready.getString("nonce")
-                val port = ready.getInt("port")
-                val signature = ready.getString("mac")
-                if (ready.length() != 5 || ready.getInt("schemaVersion") != 1 ||
-                    ready.getString("profileId") != profile || port !in 1024..65535 || port == 4097 ||
-                    nonce.length != 36 || UUID.fromString(nonce).toString() != nonce || !TOKEN.matches(signature)) {
-                    throw Failure("engine_ready_invalid")
-                }
-                val mac = Mac.getInstance("HmacSHA256")
-                mac.init(SecretKeySpec(token.toByteArray(Charsets.UTF_8), "HmacSHA256"))
-                val message = "oc-phone-engine-ready-v1\n$profile\n$port\n$nonce"
-                val expected = mac.doFinal(message.toByteArray(Charsets.UTF_8))
-                    .joinToString("") { "%02x".format(it.toInt() and 255) }
-                if (!MessageDigest.isEqual(expected.toByteArray(Charsets.US_ASCII), signature.toByteArray(Charsets.US_ASCII))) {
-                    throw Failure("engine_ready_invalid")
-                }
-                return port
+                return NativeEngineReadiness.verify(fields(ready), token, profile, childPid, appPid)
             } catch (failure: Failure) { throw failure
             } catch (_: Exception) { throw Failure("engine_ready_invalid") }
+        }
+
+        private fun checkStartupError(ready: JSONObject) {
+            if (ready.has("startupError")) {
+                if (ready.length() != 2 || ready.getInt("schemaVersion") != 1 ||
+                    ready.getString("startupError") !in STARTUP_ERRORS) throw Failure("engine_ready_invalid")
+                // This private-pipe failure grants no authority and opens no socket.
+                throw Failure(ready.getString("startupError"))
+            }
         }
 
         fun verifyBundle(context: Context, vararg names: String) {

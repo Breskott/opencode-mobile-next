@@ -13,6 +13,7 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_bidi.dart';
 import 'package:opencode_mobile/ui/kit/kit_diff_view.dart';
 import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
+import 'package:opencode_mobile/ui/kit/kit_menu.dart';
 
 import 'kit_motion_still.dart';
 
@@ -188,7 +189,8 @@ void main() {
       'only states its count', (tester) async {
     await _pump(tester, KitDiffView(files: [_sixty()]));
     expect(find.text('line 27'), findsNothing);
-    expect(find.text('Show 20 unchanged lines'), findsWidgets);
+    expect(find.text('… 27 lines above'), findsOneWidget);
+    expect(find.text('… 26 lines below'), findsOneWidget);
     expect(
       tester.getSize(_key('kit-diff-gap-0')).height,
       greaterThanOrEqualTo(48),
@@ -198,7 +200,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('line 8'), findsOneWidget);
     expect(find.text('line 7'), findsNothing);
-    expect(find.text('Show 7 unchanged lines'), findsOneWidget);
+    expect(find.text('… 7 lines above'), findsOneWidget);
 
     await tester.tap(_key('kit-diff-collapse-0'));
     await tester.pumpAndSettle();
@@ -209,7 +211,7 @@ void main() {
       tester,
       KitDiffView(files: [KitDiffFile.fromPatch('lib/a.dart', _twoHunks)]),
     );
-    expect(find.text('9 unchanged lines'), findsOneWidget);
+    expect(find.text('… 9 lines above'), findsOneWidget);
     expect(
       find.descendant(
         of: _key('kit-diff-gap-0'),
@@ -217,8 +219,8 @@ void main() {
       ),
       findsNothing,
     );
-    // Hunk headers read as line ranges.
-    expect(find.text('Lines 10–13'), findsOneWidget);
+    // One fold line says where a hunk starts: no "Lines 10–13" under it.
+    expect(find.text('Lines 10–13'), findsNothing);
   });
 
   group('3. mode follows the diff box', () {
@@ -340,6 +342,64 @@ void main() {
       );
       expect(changed, [2]);
     });
+  });
+
+  testWidgets('one change: no arrows, no count, no More button; its menu is '
+      'a long press on the header, in one line', (tester) async {
+    final picked = <String>[];
+    await _pump(
+      tester,
+      KitDiffView(
+        files: [_sixty('lib/notes.txt')],
+        fileActions: (file) => [
+          KitMenuItem(
+            label: 'Comment on file',
+            onSelected: () => picked.add(file.path),
+          ),
+        ],
+      ),
+    );
+    expect(_key('kit-diff-nav-previous'), findsNothing);
+    expect(_key('kit-diff-nav-next'), findsNothing);
+    expect(find.textContaining('Change 1 of'), findsNothing);
+    expect(find.byTooltip('More'), findsNothing);
+
+    // The name, then the folder and the counts, on one line.
+    final header = _key('kit-diff-file-header-lib/notes.txt');
+    expect(find.textContaining('notes.txt'), findsOneWidget);
+    expect(find.textContaining('lib/'), findsOneWidget);
+    expect(find.text('+1 −1'), findsOneWidget);
+    expect(tester.getSize(header).height, lessThan(80));
+    expect(
+      tester.getCenter(find.textContaining('notes.txt')).dy,
+      closeTo(tester.getCenter(find.text('+1 −1')).dy, 4),
+    );
+
+    // What More offered is on the header's long press.
+    await tester.longPress(_key('kit-diff-file-header-menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Comment on file'));
+    await tester.pumpAndSettle();
+    expect(picked, ['lib/notes.txt']);
+  });
+
+  testWidgets('two changes keep the arrows and "Change n of m"', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      KitDiffView(
+        files: [_spaced('a.txt', 2)],
+        fileActions: (file) => [
+          KitMenuItem(label: 'Comment on file', onSelected: () {}),
+        ],
+      ),
+    );
+    expect(_key('kit-diff-nav-previous'), findsOneWidget);
+    expect(_key('kit-diff-nav-next'), findsOneWidget);
+    expect(find.text('Change 1 of 2'), findsOneWidget);
+    expect(find.byTooltip('More'), findsOneWidget);
+    expect(_key('kit-diff-file-header-menu'), findsNothing);
   });
 
   testWidgets('5. the navigator moves across files and announces politely', (
@@ -566,8 +626,14 @@ void main() {
           onComment: comments.add,
         ),
       );
-      // Tapping a hunk's range selects every current line of it.
-      await tester.tap(find.text('Lines 10–13'));
+      // The fold line stands for the hunk's header: no second "Lines 10–13".
+      expect(find.text('Lines 10–13'), findsNothing);
+      // Selecting every current line of a hunk is a hunk.
+      await tester.tap(_key('kit-diff-line-0-current-10'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.tap(_key('kit-diff-line-0-current-13'), warnIfMissed: false);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
       await tester.pumpAndSettle();
       expect(find.text('4 lines selected'), findsOneWidget);
       await tester.tap(find.text('Comment'));
